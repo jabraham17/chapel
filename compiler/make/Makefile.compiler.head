@@ -97,6 +97,7 @@ COMP_CXXFLAGS := $(COMP_CXXFLAGS) \
                  $(ONLYCXXFLAGS) \
                  $(CHPL_MAKE_HOST_BUNDLED_COMPILE_ARGS) \
                  $(LLVM_EXTRA_CFLAGS) \
+                 $(LLVM_EXTRA_LIBS) \
                  $(CHPL_MAKE_HOST_SYSTEM_COMPILE_ARGS) \
                  $(ASSERTIONS_FLAG)
 

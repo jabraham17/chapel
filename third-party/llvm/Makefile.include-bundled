@@ -11,6 +11,7 @@ endif
 
 ifneq ("$(wildcard $(LLVM_RV_FILE2))","")
   CHPL_RV := 1
+  LLVM_RV_CFLAGS += -I$(LLVM_RV_FILE2)/include
 endif
 
 ifneq ("$(wildcard $(LLVM_POLLY_FILE))","")
@@ -18,7 +19,7 @@ ifneq ("$(wildcard $(LLVM_POLLY_FILE))","")
 endif
 
 ifdef CHPL_RV
-  LLVM_RV_CFLAGS=-DHAVE_LLVM_RV=1
+  LLVM_RV_CFLAGS += -DHAVE_LLVM_RV=1
   LLVM_RV_LIBS=-lRV -lgensleef
 endif
 

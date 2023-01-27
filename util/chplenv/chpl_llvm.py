@@ -1143,6 +1143,7 @@ def get_static_dynamic():
 @memoize
 def get_host_link_args():
     bundled, system, static_dynamic = compute_host_link_settings()
+    bundled.append('-lRV')
     return (bundled, system)
 
 # Return the isysroot argument provided by get_clang_basic_args, if any
