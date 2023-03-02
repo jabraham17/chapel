@@ -392,15 +392,16 @@ module SharedObject {
        The result type preserves nilability of the argument type.
        If the argument is non-nilable, it must be recognized by the compiler
        as an expiring value. */
+    deprecated "shared.create is deprecated - please use :proc:`shared.adopt` instead"
     inline proc type create(pragma "nil from arg" in take: owned) {
-      var result : shared = take;
-      return result;
+      return shared.adopt(take);
     }
 
     /* Creates a new `shared` class reference to the argument.
        The result has the same type as the argument. */
+    deprecated "shared.create is deprecated - please use :proc:`shared.adopt` instead"
     inline proc type create(pragma "nil from arg" in src: shared) {
-      return src;
+      return shared.adopt(src);
     }
 
     /* Starts managing the argument class instance `p`
@@ -410,11 +411,9 @@ module SharedObject {
        It is an error to directly delete the class instance
        after passing it to `shared.create()`. */
     pragma "unsafe"
+    deprecated "shared.create is deprecated - please use :proc:`shared.adopt` instead"
     inline proc type create(pragma "nil from arg" p : unmanaged) {
-      // 'result' may have a non-nilable type
-      var result: (p.type : shared);
-      result.retain(p);
-      return result;
+      return shared.adopt(p);
     }
 
     /*

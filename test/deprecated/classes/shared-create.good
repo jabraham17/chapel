@@ -1,0 +1,3 @@
+shared-create.chpl:7: warning: shared.create is deprecated - please use shared.adopt instead
+shared-create.chpl:12: warning: shared.create is deprecated - please use shared.adopt instead
+shared-create.chpl:17: warning: shared.create is deprecated - please use shared.adopt instead

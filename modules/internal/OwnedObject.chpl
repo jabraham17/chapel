@@ -205,8 +205,9 @@ module OwnedObject {
        of the argument. The result has the same type as the argument.
        If the argument is non-nilable, it must be recognized by the compiler
        as an expiring value. */
+    deprecated "owned.create is deprecated - please use :proc:`owned.adopt` instead"
     inline proc type create(pragma "nil from arg" in take: owned) {
-      return take;
+      return owned.adopt(take);
     }
 
     /* Starts managing the argument class instance `p`
@@ -216,11 +217,9 @@ module OwnedObject {
        It is an error to directly delete the class instance
        after passing it to `owned.create()`. */
     pragma "unsafe"
+    deprecated "owned.create is deprecated - please use :proc:`owned.adopt` instead"
     inline proc type create(pragma "nil from arg" p : unmanaged) {
-      // 'result' may have a non-nilable type
-      var result: (p.type : owned);
-      result.retain(p);
-      return result;
+      return owned.adopt(p);
     }
 
     /*
