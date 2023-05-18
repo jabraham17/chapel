@@ -41,6 +41,7 @@
 // If thisLoopParallelAccess is set, accessGroup will be set to the
 // metadata node to use in llvm.access.group metadata for this loop.
 static llvm::MDNode* generateLoopMetadata(bool thisLoopParallelAccess,
+                                          bool thisLoopVectorizable,
                                           llvm::MDNode*& accessGroup)
 {
   GenInfo* info = gGenInfo;
@@ -51,61 +52,66 @@ static llvm::MDNode* generateLoopMetadata(bool thisLoopParallelAccess,
   auto tmpNode        = llvm::MDNode::getTemporary(ctx, llvm::None);
   args.push_back(tmpNode.get());
 
-  // llvm.loop.vectorize.enable metadata is only used by LoopVectorizer to:
-  // 1) Explicitly disable vectorization of particular loop
-  // 2) Print warning when vectorization is enabled (using metadata) and
-  //    vectorization didn't occur
-  // Here we do not emit that metadata; instead emitting parallel
-  // llvm.loop.parallel_accesses.
+  if (thisLoopVectorizable) {
+    // llvm.loop.vectorize.enable metadata is only used by LoopVectorizer to:
+    // 1) Explicitly disable vectorization of particular loop
+    // 2) Print warning when vectorization is enabled (using metadata) and
+    //    vectorization didn't occur
+    // Here we do not emit that metadata; instead emitting parallel
+    // llvm.loop.parallel_accesses.
 
-  // Does the current loop, or any outer loop in the loop stack,
-  // require llvm.loop.parallel_accesses metadata?
-  bool anyParallelAccesses = false;
-  if (thisLoopParallelAccess) {
-    anyParallelAccesses = true;
-    accessGroup = llvm::MDNode::getDistinct(ctx, {});
-  } else {
-    accessGroup = NULL;
-    for (auto & loopData : info->loopStack) {
-      if (loopData.markMemoryOps)
-        anyParallelAccesses = true;
-    }
-  }
-
-  if (anyParallelAccesses) {
-    std::vector<llvm::Metadata*> v;
-    v.push_back(llvm::MDString::get(ctx, "llvm.loop.parallel_accesses"));
-
-    // Generate {"llvm.loop.parallel_accesses", group1, group2, ...}
-    // where the groups are any parallel loops we are currently in
-    // (including outer loops to this loop).
+    // Does the current loop, or any outer loop in the loop stack,
+    // require llvm.loop.parallel_accesses metadata?
+    bool anyParallelAccesses = false;
     if (thisLoopParallelAccess) {
-      v.push_back(accessGroup);
-    }
-    for (auto & loopData : info->loopStack) {
-      if (loopData.markMemoryOps) {
-        v.push_back(loopData.accessGroup);
+      anyParallelAccesses = true;
+      accessGroup = llvm::MDNode::getDistinct(ctx, {});
+    } else {
+      accessGroup = NULL;
+      for (auto & loopData : info->loopStack) {
+        if (loopData.markMemoryOps)
+          anyParallelAccesses = true;
       }
     }
 
-    llvm::MDNode* parAccesses = llvm::MDNode::get(ctx, v);
-    args.push_back(parAccesses);
+    if (anyParallelAccesses) {
+      std::vector<llvm::Metadata*> v;
+      v.push_back(llvm::MDString::get(ctx, "llvm.loop.parallel_accesses"));
+
+      // Generate {"llvm.loop.parallel_accesses", group1, group2, ...}
+      // where the groups are any parallel loops we are currently in
+      // (including outer loops to this loop).
+      if (thisLoopParallelAccess) {
+        v.push_back(accessGroup);
+      }
+      for (auto & loopData : info->loopStack) {
+        if (loopData.markMemoryOps) {
+          v.push_back(loopData.accessGroup);
+        }
+      }
+
+      llvm::MDNode* parAccesses = llvm::MDNode::get(ctx, v);
+      args.push_back(parAccesses);
+    }
+
+    // When using the Region Vectorizer, emit rv.loop.vectorize.enable metadata
+    if(fRegionVectorizer) {
+      llvm::Constant* one = llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx), true);
+      llvm::Metadata *loopVectorizeEnable[] = {
+          llvm::MDString::get(ctx, "rv.loop.vectorize.enable"),
+          llvm::ConstantAsMetadata::get(one) };
+
+      args.push_back(llvm::MDNode::get(ctx, loopVectorizeEnable));
+
+      // Note that the Region Vectorizer once required
+      // llvm.loop.vectorize.width but no longer does.
+    }
   }
 
-  // When using the Region Vectorizer, emit rv.loop.vectorize.enable metadata
-  if(fRegionVectorizer)
-  {
-    llvm::Constant* one = llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx),
-                                                 true);
-    llvm::Metadata *loopVectorizeEnable[] = {
-        llvm::MDString::get(ctx, "rv.loop.vectorize.enable"),
-        llvm::ConstantAsMetadata::get(one) };
+  llvm::Metadata *loopMustProgress[] = {
+      llvm::MDString::get(ctx, "llvm.loop.mustprogress")};
 
-    args.push_back(llvm::MDNode::get(ctx, loopVectorizeEnable));
-
-    // Note that the Region Vectorizer once required
-    // llvm.loop.vectorize.width but no longer does.
-  }
+  args.push_back(llvm::MDNode::get(ctx, loopMustProgress));
 
   llvm::MDNode *loopMetadata = llvm::MDNode::get(ctx, args);
   loopMetadata->replaceOperandWith(0, loopMetadata);
@@ -245,12 +251,11 @@ GenRet CForLoop::codegen()
     llvm::MDNode* accessGroup = nullptr;
     llvm::MDNode* loopMetadata = nullptr;
 
-    if(fNoVectorize == false && isVectorizable()) {
-      loopMetadata = generateLoopMetadata(isParallelAccessVectorizable(),
-                                          accessGroup);
-      LoopData data(accessGroup, isParallelAccessVectorizable());
-      info->loopStack.push_back(data);
-    }
+    loopMetadata = generateLoopMetadata(isParallelAccessVectorizable(),
+                                        fNoVectorize == false && isVectorizable(),
+                                        accessGroup);
+    LoopData data(accessGroup, isParallelAccessVectorizable());
+    info->loopStack.push_back(data);
 
     body.codegen("");
 
