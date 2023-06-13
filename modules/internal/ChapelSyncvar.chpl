@@ -951,8 +951,8 @@ module ChapelSyncvar {
   }
 
   pragma "init copy fn"
+  @deprecated(notes="Initializing a type-inferred variable from a 'single' is deprecated; apply '.readFF()' to the right-hand side")
   proc chpl__initCopy(ref sv : _singlevar(?t), definedConst: bool) {
-    compilerWarning("Initializing a type-inferred variable from a 'single' is deprecated; apply '.readFF()' to the right-hand side");
     return sv.readFF();
   }
 
