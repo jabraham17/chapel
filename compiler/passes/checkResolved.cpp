@@ -98,11 +98,12 @@ static void checkSyncSingleDefaultInitOrReturnNoRef() {
     auto isSingle = isSingleType(fnRetType);
     // TODO: add atomics?
     auto isRef = fn->returnsRefOrConstRef();
-    // TODO: unsure about this; should we allow the auto copy func to return by value?
-    auto isAutoCopy = fn->hasFlag(FLAG_AUTO_COPY_FN);
 
-    if(!isRef && !isAutoCopy && (isSync || isSingle)) {
-      USR_WARN(fn, "returning a %s by %s is unstable", isSync ? "sync" : "single", retTagDescrString(fn->retTag));
+    if(!isRef && (isSync || isSingle)) {
+      if(strcmp(fn->name, "chpl__compilerGeneratedCopySyncSingle") != 0 && 
+         strcmp(fn->name, "chpl__autoCopy") != 0) {
+        USR_WARN(fn, "returning a %s by %s is unstable", isSync ? "sync" : "single", retTagDescrString(fn->retTag));
+      }
     }
   }
 }
