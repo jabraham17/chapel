@@ -16,4 +16,9 @@ cat $TMPFILE > $OUTFILE
 sed -E 's/sync|single/SYNCSINGLE/' < $OUTFILE > $TMPFILE
 cat $TMPFILE > $OUTFILE
 
+# filter out the deprecation warnings from implicit read/write
+sed -E '/^.+deprecated.+$/d' < $OUTFILE > $TMPFILE
+cat $TMPFILE > $OUTFILE
+
+
 rm $TMPFILE
