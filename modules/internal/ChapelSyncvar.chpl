@@ -382,6 +382,7 @@ module ChapelSyncvar {
   }
 
   proc chpl__compilerGeneratedCopySyncSingle(ref sv : _syncvar(?)) {
+    // compilerWarning("copy initializing a 'sync' is unstable");
     // TODO: this should probably clone the value and full/empty state instead
     var ret: sv.type = sv.readFE();
     return ret;
@@ -395,6 +396,7 @@ module ChapelSyncvar {
 
   pragma "auto copy fn"
   proc chpl__autoCopy(const ref rhs : _syncvar, definedConst: bool) {
+    // compilerWarning("copy initializing a 'sync' is unstable");
     // Does it make sense to have a const sync? If so, can we make use of that
     // information here?
     return new _syncvar(rhs);
@@ -945,6 +947,7 @@ module ChapelSyncvar {
   }
 
   proc chpl__compilerGeneratedCopySyncSingle(ref sv : _singlevar(?)) {
+    // compilerWarning("copy initializing a 'single' is unstable");
     // TODO: this should probably clone the value and full/empty state instead
     var ret: sv.type = sv.readFF();
     return ret;
@@ -958,6 +961,7 @@ module ChapelSyncvar {
 
   pragma "auto copy fn"
   proc chpl__autoCopy(const ref rhs : _singlevar, definedConst: bool) {
+    // compilerWarning("copy initializing a 'single' is unstable");
     return new _singlevar(rhs);
   }
 
