@@ -79,7 +79,15 @@ static void checkForClassAssignOps(FnSymbol* fn) {
 static void checkSyncSingleDefaultInitOrReturnNoRef() {
   // checks for default init
   for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
-    if(at->builtDefaultInit) {
+    auto isCompilerGeneratedInit = [](FnSymbol* fn) {
+      return fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+              (fn->hasFlag(FLAG_DEFAULT_INIT) || fn->hasFlag(FLAG_COPY_INIT));
+    };
+    bool hasCompilerGeneratedInit = false;
+    for(auto fn : at->methods) {
+      if(fn && isCompilerGeneratedInit(fn)) hasCompilerGeneratedInit = true;
+    }
+    if(hasCompilerGeneratedInit) {
       for_fields(field, at) {
         bool isSync = isSyncType(field->type);
         bool isSingle = isSingleType(field->type);
