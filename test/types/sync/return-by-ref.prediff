@@ -8,12 +8,12 @@ TMPFILE=$OUTFILE.prediff.tmp
 sed -E 's/\.chpl:[0-9]*:/\.chpl:n:/' < $OUTFILE > $TMPFILE
 cat $TMPFILE > $OUTFILE
 
-# filter out record/class/union
-sed -E 's/class|record|union/AT/' < $OUTFILE > $TMPFILE
-cat $TMPFILE > $OUTFILE
-
 # filter out sync/single
 sed -E 's/sync|single/SYNCSINGLE/' < $OUTFILE > $TMPFILE
+cat $TMPFILE > $OUTFILE
+
+# filter return intent
+sed -E "s/by .+ is unstable/by RETINTENT is unstable/" < $OUTFILE > $TMPFILE
 cat $TMPFILE > $OUTFILE
 
 # TODO: this can be removed once the sync/single deprecations are gone

@@ -1,0 +1,8 @@
+-stestnum=1 # return-by-ref-warning.good
+-stestnum=2 # return-by-ref-warning.good
+-stestnum=3
+-stestnum=4
+-stestnum=5 # return-by-ref-warning.good
+-stestnum=6 # return-by-ref-warning.good
+-stestnum=7
+-stestnum=8
