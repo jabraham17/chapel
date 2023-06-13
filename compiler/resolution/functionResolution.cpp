@@ -11116,6 +11116,30 @@ static void checkNoVoidFields()
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*  Check for sync/single variables in classes/records that use default,       *
+*   compiler generated initializers                                           *
+*                                                                             *
+************************************** | *************************************/
+
+
+static void checkNoSyncSingleCompilerDefaultInit() {
+  for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
+    if(at->builtDefaultInit) {
+      // std::cout << "at has a default: '" << at->aggregateString() << " " << at->name() << "'\n";
+      for_fields(field, at) {
+        // std::cout << "  " << field->name << ": " << field->type->name() << "\n";
+        bool isSync = isSyncType(field->type);
+        bool isSingle = isSingleType(field->type);
+        if (isSync || isSingle) {
+          USR_WARN(at, "using a default initializer for a %s with %s elements is unstable", at->aggregateString(), isSync ? "sync" : "single");
+        }
+      }
+    }
+  }
+}
+
 
 void resolve() {
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
@@ -11193,6 +11217,8 @@ void resolve() {
   saveGenericSubstitutions();
 
   checkNoVoidFields();
+
+  checkNoSyncSingleCompilerDefaultInit();
 
   pruneResolvedTree();
 
