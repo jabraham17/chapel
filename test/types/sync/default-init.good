@@ -1,0 +1,1 @@
+default-init.chpl:n: warning: using a default initializer for a AT with SYNCSINGLE elements is unstable
