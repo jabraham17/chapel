@@ -1,1 +1,3 @@
+syncFieldTypeOnlyTypeFunc.chpl:5: warning: using a default initializer for a class with sync elements is unstable
+syncFieldTypeOnlyTypeFunc.chpl:6: warning: returning a sync by value is unstable
 false
