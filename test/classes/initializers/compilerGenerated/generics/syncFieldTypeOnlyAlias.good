@@ -1,3 +1,2 @@
 syncFieldTypeOnlyAlias.chpl:3: warning: using a default initializer for a class with sync elements is unstable
-syncFieldTypeOnlyAlias.chpl:4: warning: returning a sync by value is unstable
 false
