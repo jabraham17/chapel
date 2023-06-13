@@ -76,6 +76,37 @@ static void checkForClassAssignOps(FnSymbol* fn) {
   }
 }
 
+static void checkSyncSingleDefaultInitOrReturnNoRef() {
+  // checks for default init
+  for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
+    if(at->builtDefaultInit) {
+      for_fields(field, at) {
+        bool isSync = isSyncType(field->type);
+        bool isSingle = isSingleType(field->type);
+        // TODO: add atomics?
+        if (isSync || isSingle) {
+          USR_WARN(at, "using a default initializer for a %s with %s elements is unstable", at->aggregateString(), isSync ? "sync" : "single");
+        }
+      }
+    }
+  }
+
+  //checks for return by anything by ref
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    auto fnRetType = fn->retType;
+    auto isSync = isSyncType(fnRetType);
+    auto isSingle = isSingleType(fnRetType);
+    // TODO: add atomics?
+    auto isRef = fn->returnsRefOrConstRef();
+    // TODO: unsure about this; should we allow the auto copy func to return by value?
+    auto isAutoCopy = fn->hasFlag(FLAG_AUTO_COPY_FN);
+
+    if(!isRef && !isAutoCopy && (isSync || isSingle)) {
+      USR_WARN(fn, "returning a %s by %s is unstable", isSync ? "sync" : "single", retTagDescrString(fn->retTag));
+    }
+  }
+}
+
 void
 checkResolved() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -135,6 +166,8 @@ checkResolved() {
   checkConstLoops();
   checkExternProcs();
   checkExportedProcs();
+
+  checkSyncSingleDefaultInitOrReturnNoRef();
 }
 
 

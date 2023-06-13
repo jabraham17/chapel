@@ -11116,44 +11116,6 @@ static void checkNoVoidFields()
   }
 }
 
-/************************************* | **************************************
-*                                                                             *
-*  Check for sync/single variables in classes/records that use default,       *
-*   compiler generated initializers or which are returned not by ref          *
-*                                                                             *
-************************************** | *************************************/
-
-
-static void checkSyncSingleDefaultInitOrReturnNoRef() {
-  // checks for default init
-  for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
-    if(at->builtDefaultInit) {
-      for_fields(field, at) {
-        bool isSync = isSyncType(field->type);
-        bool isSingle = isSingleType(field->type);
-        // TODO: add atomics?
-        if (isSync || isSingle) {
-          USR_WARN(at, "using a default initializer for a %s with %s elements is unstable", at->aggregateString(), isSync ? "sync" : "single");
-        }
-      }
-    }
-  }
-
-  //checks for return by anything by ref
-  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
-    auto fnRetType = fn->getReturnQualType().type();
-    auto isSync = isSyncType(fnRetType);
-    auto isSingle = isSingleType(fnRetType);
-    // TODO: add atomics?
-
-    auto isRef = fn->returnsRefOrConstRef();
-
-    if(!isRef && (isSync || isSingle)) {
-      USR_WARN(fn, "returning a %s by %s is unstable", isSync ? "sync" : "single", retTagDescrString(fn->retTag));
-    }
-  }
-}
-
 
 void resolve() {
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
@@ -11231,8 +11193,6 @@ void resolve() {
   saveGenericSubstitutions();
 
   checkNoVoidFields();
-
-  checkSyncSingleDefaultInitOrReturnNoRef();
 
   pruneResolvedTree();
 
