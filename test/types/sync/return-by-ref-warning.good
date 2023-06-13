@@ -1,1 +1,1 @@
-return-by-ref.chpl:n: warning: returning a SYNCSINGLE by RETINTENT is unstable
+return-by-ref.chpl:n: warning: returning a sync by value is unstable
