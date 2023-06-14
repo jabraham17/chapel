@@ -14,6 +14,7 @@ delete r;
 
 class R {
   var count: sync int = 0;
+  proc init() {}
 
   proc next() {
     var c = count.readFE() + 1;

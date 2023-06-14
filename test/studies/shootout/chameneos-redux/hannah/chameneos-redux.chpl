@@ -27,6 +27,8 @@ class MeetingPlace {
   var spotsLeft$ : sync int;
   var partner : unmanaged Chameneos?;
 
+  proc init() {}
+
   /* constructor for MeetingPlace, sets the
      number of meetings to take place */
   proc init() {

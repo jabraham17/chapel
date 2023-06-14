@@ -7,6 +7,7 @@ var A: [1..n] int;
 class syncStack {
   var v: sync bool;
   var next: unmanaged syncStack?;
+  proc init() {}
 }
 
 proc pushSyncStack(s: unmanaged syncStack?) do return new unmanaged syncStack(next=s);

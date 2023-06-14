@@ -6,6 +6,9 @@ record vertex_struct {
 
   var vlock$: sync bool;
   proc init() { vlock$ = true; }
+  proc init=(other: vertex_struct) {
+    this.vlock$ = other.vlock$.readXX();
+  }
 
   // Note: the default for vlock$ should be "empty", so that the array elements
   // are initialized to that. The explicit constructor should make it "full".
