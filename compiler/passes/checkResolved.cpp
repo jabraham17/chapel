@@ -111,8 +111,8 @@ static void checkSyncSingleDefaultInitOrReturnNoRef() {
     bool isDefaultFormalFn = fn->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
 
     if(!isRef && !isDefaultFormalFn && (isSync || isSingle)) {
-      if(strcmp(fn->name, "chpl__compilerGeneratedCopySyncSingle") != 0 && 
-         strcmp(fn->name, "chpl__autoCopy") != 0) {
+      if(strcmp(fn->name, "chpl__compilerGeneratedCopySyncSingle") != 0 &&
+          fn->name != astr_autoCopy) {
         USR_WARN(fn, "returning a %s by %s is unstable", isSync ? "sync" : "single", retTagDescrString(fn->retTag));
       }
     }
