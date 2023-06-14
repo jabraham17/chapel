@@ -18,3 +18,22 @@ else if testnum == 3 {
   }
   var u = new U();
 }
+else if testnum == 4 {
+  record R {
+    var x: sync int;
+    proc init() {}
+    proc init=(other: R) {}
+  }
+  var r = new R();
+  class C {
+    var x: sync int;
+    proc init() {}
+  }
+  var c = new C();
+  union U {
+    var x: sync int;
+    proc init() {}
+    proc init=(other: U) {}
+  }
+  var u = new U();
+}

@@ -1,3 +1,4 @@
--stestnum=1
--stestnum=2
--stestnum=3
+-stestnum=1 # default-init-warning.good
+-stestnum=2 # default-init-warning.good
+-stestnum=3 # default-init-warning.good
+-stestnum=4
