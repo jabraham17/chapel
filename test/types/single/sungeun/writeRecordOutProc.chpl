@@ -9,12 +9,17 @@ record myR {
   proc init=(other: myR) {
     this.x = other.x;
     this.complete();
-    this.sx.writeEF(other.sx.readFE());
+    this.sx.writeEF(other.sx.readFF());
   }
 
   proc writeThis(wri) throws {
     wri.write("(x = ", x, ", sx = ", sx.readFF(), ")");
   }
+}
+
+operator myR.=(ref lhs: myR, rhs: myR) {
+  lhs.x = rhs.x;
+  lhs.sx.writeEF(rhs.sx.readFF());
 }
 
 var r: myR;

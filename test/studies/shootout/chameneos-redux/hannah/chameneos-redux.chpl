@@ -27,8 +27,6 @@ class MeetingPlace {
   var spotsLeft$ : sync int;
   var partner : unmanaged Chameneos?;
 
-  proc init() {}
-
   /* constructor for MeetingPlace, sets the
      number of meetings to take place */
   proc init() {
@@ -59,6 +57,16 @@ class Chameneos {
   var meetings : int;
   var meetingsWithSelf : int;
   var meetingCompleted$ : sync bool;
+
+  proc init(id: int = 0,
+            color: Color = Color.blue,
+            meetings: int = 0,
+            meetingsWithSelf: int = 0) {
+    this.id = id;
+    this.color = color;
+    this.meetings = meetings;
+    this.meetingsWithSelf = meetingsWithSelf;
+  }
 
   /* start tells a Chameneos to go to a given MeetingPlace, where it may meet
      with another Chameneos.  If it does, it will get the complement of the

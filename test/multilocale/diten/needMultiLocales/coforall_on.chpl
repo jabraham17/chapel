@@ -1,6 +1,7 @@
 record R {
   var a, b, c: single bool;
   var s: string;
+  proc init() {}
 }
 
 proc main() {

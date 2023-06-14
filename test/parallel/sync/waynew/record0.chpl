@@ -20,7 +20,7 @@ record E {
   var sf: sync real;
   proc init() {}
   proc init=(other: E) {
-    this.s = other.s.readXX();
+    this.sf = other.sf.readXX();
   }
 }
 
