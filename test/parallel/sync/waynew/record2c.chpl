@@ -9,6 +9,7 @@ param ITERATIONS = 10;
 
 record R {
   var s: sync int;
+  proc init() {}
 }
 var c: R;
 
