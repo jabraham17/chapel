@@ -1,8 +1,10 @@
-sync-casting.chpl:4: In function 'test16':
-sync-casting.chpl:7: warning: Casting sync variables is deprecated
-sync-casting.chpl:7: warning: Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side
-sync-casting.chpl:7: warning: Casting sync variables is deprecated
-sync-casting.chpl:21: In function 'test18':
-sync-casting.chpl:24: warning: Casting single variables is deprecated
-sync-casting.chpl:24: warning: Initializing a type-inferred variable from a 'single' is deprecated; apply a 'read??()' method to the right-hand side
-sync-casting.chpl:24: warning: Casting single variables is deprecated
+sync-casting.chpl:7: In function 'test16':
+sync-casting.chpl:10: warning: Casting sync variables is deprecated
+sync-casting.chpl:10: warning: Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side
+sync-casting.chpl:10: warning: Casting sync variables is deprecated
+sync-casting.chpl:24: In function 'test18':
+sync-casting.chpl:27: warning: Casting single variables is deprecated
+sync-casting.chpl:27: warning: Initializing a type-inferred variable from a 'single' is deprecated; apply a 'read??()' method to the right-hand side
+sync-casting.chpl:27: warning: Casting single variables is deprecated
+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:307: warning: returning a sync by value is unstable
+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:938: warning: returning a single by value is unstable

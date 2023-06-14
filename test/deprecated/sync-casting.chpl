@@ -1,6 +1,9 @@
 // sync casts added to avoid errors for = between types
 // these are deprecated because the = between types for sync is too
 
+// TODO jade: these casts will warn about returning by value.
+// Since we plan to remove this deprecation shortly, this isn't a problem
+
 proc test16() {
   writeln("test16");
   var s1: sync bool;
@@ -29,7 +32,7 @@ test18();
 proc test19() {
   writeln("test19");
   type t = single int;
-  var one = 1; 
+  var one = 1;
   var s1:single int = one:t;
 }
 test19();
