@@ -375,14 +375,15 @@ module ChapelSyncvar {
     lhs.wrapped.writeEF(lhs.wrapped.readFE() << rhs);
   }
 
+  // TODO Jade: remove me when compiler generated inits are removed
   proc chpl__compilerGeneratedAssignSyncSingle(ref lhs: _syncvar(?),
                                                ref rhs: _syncvar(?)) {
     // TODO: Should this clone the value and the full/empty state instead?
     lhs.writeEF(rhs.readFE());
   }
 
+  // TODO Jade: remove me when compiler generated inits are removed
   proc chpl__compilerGeneratedCopySyncSingle(ref sv : _syncvar(?)) {
-    // compilerWarning("copy initializing a 'sync' is unstable");
     // TODO: this should probably clone the value and full/empty state instead
     var ret: sv.type = sv.readFE();
     return ret;
@@ -396,7 +397,6 @@ module ChapelSyncvar {
 
   pragma "auto copy fn"
   proc chpl__autoCopy(const ref rhs : _syncvar, definedConst: bool) {
-    // compilerWarning("copy initializing a 'sync' is unstable");
     // Does it make sense to have a const sync? If so, can we make use of that
     // information here?
     return new _syncvar(rhs);
@@ -940,14 +940,15 @@ module ChapelSyncvar {
     return new _singlevar(from);
   }
 
+  // TODO Jade: remove me when compiler generated inits are removed
   proc chpl__compilerGeneratedAssignSyncSingle(ref lhs : _singlevar(?),
                                                ref rhs : _singlevar(?)) {
     // TODO: Should this clone the value and the full/empty state instead?
     lhs.writeEF(rhs.readFF());
   }
 
+  // TODO Jade: remove me when compiler generated inits are removed
   proc chpl__compilerGeneratedCopySyncSingle(ref sv : _singlevar(?)) {
-    // compilerWarning("copy initializing a 'single' is unstable");
     // TODO: this should probably clone the value and full/empty state instead
     var ret: sv.type = sv.readFF();
     return ret;
@@ -961,7 +962,6 @@ module ChapelSyncvar {
 
   pragma "auto copy fn"
   proc chpl__autoCopy(const ref rhs : _singlevar, definedConst: bool) {
-    // compilerWarning("copy initializing a 'single' is unstable");
     return new _singlevar(rhs);
   }
 
