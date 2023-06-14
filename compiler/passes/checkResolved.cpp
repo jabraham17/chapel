@@ -81,7 +81,11 @@ static void checkSyncSingleDefaultInitOrReturnNoRef() {
   for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
     auto isCompilerGeneratedInit = [](FnSymbol* fn) {
       return fn->hasFlag(FLAG_COMPILER_GENERATED) &&
-              (fn->hasFlag(FLAG_DEFAULT_INIT) || fn->hasFlag(FLAG_COPY_INIT));
+              (fn->hasFlag(FLAG_DEFAULT_INIT) ||
+               fn->hasFlag(FLAG_COPY_INIT) ||
+               fn->name == astrInit ||
+               fn->name == astrInitEquals)
+              ;
     };
     bool hasCompilerGeneratedInit = false;
     for(auto fn : at->methods) {
