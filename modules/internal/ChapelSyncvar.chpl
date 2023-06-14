@@ -829,8 +829,8 @@ module ChapelSyncvar {
       isOwned = false;
     }
 
+    @deprecated(notes="Initializing a type-inferred variable from a 'single' is deprecated; apply a 'read??()' method to the right-hand side")
     proc init=(const ref other : _singlevar) {
-      compilerWarning("Initializing a type-inferred variable from a 'single' is deprecated; apply a 'read??()' method to the right-hand side");
       // Allow initialization from compatible single variables, e.g.:
       //   var x : single int = 5;
       //   var y : single real = x;
