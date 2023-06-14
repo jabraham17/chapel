@@ -93,7 +93,7 @@ static void checkSyncSingleDefaultInitOrReturnNoRef() {
         bool isSingle = isSingleType(field->type);
         // TODO: add atomics?
         if (isSync || isSingle) {
-          USR_WARN(at, "using a default initializer for a %s with %s elements is unstable", at->aggregateString(), isSync ? "sync" : "single");
+          USR_WARN(at, "relying on a compiler default initializer for a %s with %s elements is unstable", at->aggregateString(), isSync ? "sync" : "single");
         }
       }
     }

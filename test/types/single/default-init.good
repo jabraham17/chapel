@@ -1,1 +1,1 @@
-default-init.chpl:n: warning: using a default initializer for a AT with single elements is unstable
+default-init.chpl:n: warning: relying on a compiler default initializer for a AT with single elements is unstable

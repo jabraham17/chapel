@@ -1,2 +1,2 @@
-singleFieldTypeOnly.chpl:1: warning: using a default initializer for a class with single elements is unstable
+singleFieldTypeOnly.chpl:1: warning: relying on a compiler default initializer for a class with single elements is unstable
 false
