@@ -76,6 +76,19 @@ static void checkForClassAssignOps(FnSymbol* fn) {
   }
 }
 
+// Modified from iterator.cpp.
+static bool isIteratorOrForwarder(FnSymbol* it) {
+  // The test 'it->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)'
+  // gives a false negative when it->retType is "unknown"
+  // or a false positive for chpl__autoCopy(_iteratorRecord).
+  // FLAG_FN_RETURNS_ITERATOR is not a great test either because
+  // iteratorIndex() has it whereas it usually doesn't.
+
+  return it->hasFlag(FLAG_ITERATOR_FN) ||
+         it->hasFlag(FLAG_FN_RETURNS_ITERATOR) ||
+         it->hasFlag(FLAG_AUTO_II);
+}
+
 static void checkSyncSingleDefaultInitOrReturnNoRef() {
   // checks for default init
   for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
@@ -130,7 +143,13 @@ static void checkSyncSingleDefaultInitOrReturnNoRef() {
               (fn->name == astr_autoCopy || fn->name == astr_initCopy)) {
         // ignore warnings for init and auto copy
       }
+      else if(isAtomic && isIteratorOrForwarder(fn)) {
+        //strcmp(fn->name, "getValue") == 0 && fn->iteratorInfo != nullptr && fn->iteratorInfo->getValue == fn) {
+          // ignore warnings for iterator functions
+      }
       else {
+        // bool f = false;
+        // std::cout << "this func: " << fn->nameAndArgsToString(", ", false, f) << "\n";
         USR_WARN(fn,
           "returning a%s by %s is unstable",
           isSync ? " sync" : ( isSingle ? " single" : "n atomic"),
