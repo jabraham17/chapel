@@ -2533,6 +2533,7 @@ struct Converter {
     fn->addFlag(FLAG_MAYBE_REF);
     fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
     fn->addFlag(FLAG_COMPILER_GENERATED);
+    fn->addFlag(FLAG_FORWARDING_FN);
 
     // compute the 'this' formal type
     const uast::AggregateDecl* decl = nullptr;
