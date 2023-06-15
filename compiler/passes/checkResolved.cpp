@@ -95,9 +95,13 @@ static void checkSyncSingleDefaultInitOrReturnNoRef() {
       for_fields(field, at) {
         bool isSync = isSyncType(field->type);
         bool isSingle = isSingleType(field->type);
-        // TODO: add atomics?
-        if (isSync || isSingle) {
-          USR_WARN(at, "relying on a compiler default initializer for a %s with %s elements is unstable", at->aggregateString(), isSync ? "sync" : "single");
+        bool isAtomic = isAtomicType(field->type);
+
+        if (isSync || isSingle || isAtomic) {
+          USR_WARN(at,
+            "relying on a compiler default initializer for a %s with %s elements is unstable",
+            at->aggregateString(),
+            isSync ? "sync" : ( isSingle ? "single" : "atomic"));
         }
       }
     }
@@ -108,16 +112,29 @@ static void checkSyncSingleDefaultInitOrReturnNoRef() {
     auto fnRetType = fn->retType;
     auto isSync = isSyncType(fnRetType);
     auto isSingle = isSingleType(fnRetType);
-    // TODO: add atomics?
+    bool isAtomic = isAtomicType(fnRetType);
     auto isRef = fn->returnsRefOrConstRef();
 
     // TODO: should we special case this, or just ignore COMPILER_GENERATED
     bool isDefaultFormalFn = fn->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
 
-    if(!isRef && !isDefaultFormalFn && (isSync || isSingle)) {
-      if(strcmp(fn->name, "chpl__compilerGeneratedCopySyncSingle") != 0 &&
-          fn->name != astr_autoCopy) {
-        USR_WARN(fn, "returning a %s by %s is unstable", isSync ? "sync" : "single", retTagDescrString(fn->retTag));
+    // Note: This could be a single boolean check but it would be awful to read and debug
+    // This is written to try and be easy to read and assumes the compiler will make it one branch
+    if(!isRef && !isDefaultFormalFn && (isSync || isSingle || isAtomic)) {
+      if((isSync || isSingle) && 
+          (strcmp(fn->name, "chpl__compilerGeneratedCopySyncSingle") == 0 ||
+          fn->name == astr_autoCopy)) {
+        // ignore warnings for auto copy and copy to support sync/single deprecations
+      }
+      else if(isAtomic && 
+              (fn->name == astr_autoCopy || fn->name == astr_initCopy)) {
+        // ignore warnings for init and auto copy
+      }
+      else {
+        USR_WARN(fn,
+          "returning a%s by %s is unstable",
+          isSync ? " sync" : ( isSingle ? " single" : "n atomic"),
+          retTagDescrString(fn->retTag));
       }
     }
   }
