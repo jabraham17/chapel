@@ -76,52 +76,141 @@ static void checkForClassAssignOps(FnSymbol* fn) {
   }
 }
 
-static void checkSyncSingleDefaultInitOrReturnNoRef() {
-  // checks for default init
-  for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
-    auto isCompilerGeneratedInit = [](FnSymbol* fn) {
-      return fn->hasFlag(FLAG_COMPILER_GENERATED) &&
-              (fn->hasFlag(FLAG_DEFAULT_INIT) ||
-               fn->hasFlag(FLAG_COPY_INIT) ||
-               fn->name == astrInit ||
-               fn->name == astrInitEquals)
-              ;
-    };
-    bool hasCompilerGeneratedInit = false;
-    for(auto fn : at->methods) {
-      if(fn && isCompilerGeneratedInit(fn)) hasCompilerGeneratedInit = true;
-    }
-    if(hasCompilerGeneratedInit) {
-      for_fields(field, at) {
-        bool isSync = isSyncType(field->type);
-        bool isSingle = isSingleType(field->type);
-        // TODO: add atomics?
-        if (isSync || isSingle) {
-          USR_WARN(at, "relying on a compiler default initializer for a %s with %s elements is unstable", at->aggregateString(), isSync ? "sync" : "single");
-        }
-      }
-    }
-  }
+// // Modified from iterator.cpp.
+// static bool isIteratorOrForwarder(FnSymbol* it) {
+//   // The test 'it->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)'
+//   // gives a false negative when it->retType is "unknown"
+//   // or a false positive for chpl__autoCopy(_iteratorRecord).
+//   // FLAG_FN_RETURNS_ITERATOR is not a great test either because
+//   // iteratorIndex() has it whereas it usually doesn't.
 
-  //checks for return by anything by ref
-  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
-    auto fnRetType = fn->retType;
-    auto isSync = isSyncType(fnRetType);
-    auto isSingle = isSingleType(fnRetType);
-    // TODO: add atomics?
-    auto isRef = fn->returnsRefOrConstRef();
+//   return it->hasFlag(FLAG_ITERATOR_FN) ||
+//          it->hasFlag(FLAG_FN_RETURNS_ITERATOR) ||
+//          it->hasFlag(FLAG_AUTO_II);
+// }
 
-    // TODO: should we special case this, or just ignore COMPILER_GENERATED
-    bool isDefaultFormalFn = fn->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
 
-    if(!isRef && !isDefaultFormalFn && (isSync || isSingle)) {
-      if(strcmp(fn->name, "chpl__compilerGeneratedCopySyncSingle") != 0 &&
-          fn->name != astr_autoCopy) {
-        USR_WARN(fn, "returning a %s by %s is unstable", isSync ? "sync" : "single", retTagDescrString(fn->retTag));
-      }
-    }
-  }
-}
+// // Returns the element type, given an array type.
+// // static Type* arrayElementType(AggregateType* arrayType) {
+// //   Type* eltType = NULL;
+// //   INT_ASSERT(arrayType->symbol->hasFlag(FLAG_ARRAY));
+// //   Type* instType = arrayType->getField("_instance")->type;
+// //   AggregateType* instClass = toAggregateType(canonicalClassType(instType));
+// //   eltType = instClass->getField("eltType")->getValType();
+// //   return eltType;
+// // }
+
+// // // Returns the element type, given an array type.
+// // // Recurse into it if it is still an array.
+// // static Type* finalArrayElementType(AggregateType* arrayType) {
+// //   Type* eltType = NULL;
+// //   do {
+// //     eltType = arrayElementType(arrayType);
+// //     arrayType = toAggregateType(eltType);
+// //   } while (arrayType != NULL && arrayType->symbol->hasFlag(FLAG_ARRAY));
+
+// //   return eltType;
+// // }
+
+
+// static bool isOrContains(Type *type, Flag flag) {
+//   if(type == NULL) return false;
+//   else if(type->symbol->hasFlag(flag)) return true;
+//   else {
+//     Type* vt = type->getValType();
+//     // unwrap decorated classes
+//     if(isDecoratedClassType(vt)) {
+//       vt = canonicalClassType(vt)->getValType();
+//     }
+//     if(AggregateType* at = toAggregateType(vt)) {
+//       // get backing array instance and recurse
+//       if(at->symbol->hasFlag(FLAG_ARRAY)) {
+//         gdbShouldBreakHere();
+//         // Symbol* _instanceField = at->getField("_instance", false);
+//         // if(_instanceField != NULL && isOrContains(_instanceField->type, flag)) return true;
+//           auto eltType = arrayElementType(at);
+//         if(isOrContains(eltType, flag)) return true;
+//       }
+//       // // if base array, should have an eltType field
+//       // else if(isArrayClass(at)) {
+//       //   // gdbShouldBreakHere();
+//       //   for_fields(field, at) {
+//       //     std::cout << field->name << "\n";
+//       //   }
+//       //   Symbol *eltTypeField = at->getField("eltType", false);
+//       //   if(eltTypeField != NULL && isOrContains(eltTypeField->type, flag)) return true;
+//       //   if(eltTypeField == NULL) {
+//       //     Symbol *superField = at->getField("super", false);
+//       //     if(superField != NULL && isOrContains(superField->type, flag)) return true;
+//       //   }
+//       // }
+//       // if its a tuple, search the tuple fields
+//       // if(at->symbol->hasFlag(FLAG_TUPLE)) {
+//       //   for_fields(field, at) {
+//       //     Type* ft = field->type->getValType();
+//       //     if(isOrContains(ft, flag)) return true;
+//       //   }
+//       // }
+//     }
+//   }
+//   return false;
+// }
+// static bool isOrContainsSyncType(Type* t) { return isOrContains(t, FLAG_SYNC); }
+// static bool isOrContainsSingleType(Type* t) { return isOrContains(t, FLAG_SINGLE); }
+
+// static void checkSyncSingleDefaultInitOrReturnNoRef() {
+//   // checks for default init
+//   for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
+//     auto isCompilerGeneratedInit = [](FnSymbol* fn) {
+//       return fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+//               (fn->hasFlag(FLAG_DEFAULT_INIT) ||
+//                fn->hasFlag(FLAG_COPY_INIT) ||
+//                fn->name == astrInit ||
+//                fn->name == astrInitEquals)
+//               ;
+//     };
+//     bool hasCompilerGeneratedInit = false;
+//     for(auto fn : at->methods) {
+//       if(fn && isCompilerGeneratedInit(fn)) hasCompilerGeneratedInit = true;
+//     }
+//     if(hasCompilerGeneratedInit) {
+//       // std::cout << "current type: " <<  at->name() << "\n";
+//       for_fields(field, at) {
+//         bool isSync = isOrContainsSyncType(field->type);
+//         bool isSingle = isOrContainsSingleType(field->type);
+//         // TODO: add atomics?
+//         if (isSync || isSingle) {
+//           USR_WARN(at, "relying on a compiler default initializer for a %s with %s elements is unstable", at->aggregateString(), isSync ? "sync" : "single");
+//         }
+//       }
+//     }
+//   }
+
+//   //checks for return by anything by ref
+//   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+//     auto fnRetType = fn->retType;
+//     auto isSync = isOrContainsSyncType(fnRetType);
+//     auto isSingle = isOrContainsSyncType(fnRetType);
+//     // TODO: add atomics?
+//     auto isRef = fn->returnsRefOrConstRef();
+
+//     // TODO: should we special case this, or just ignore COMPILER_GENERATED
+//     bool isDefaultFormalFn = fn->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
+//     bool isForwarding = fn->hasFlag(FLAG_FORWARDING_FN);
+//     bool isIteratorSupportFunc = isIteratorOrForwarder(fn);
+
+//     if(!isRef &&
+//        !isForwarding &&
+//        !isIteratorSupportFunc &&
+//        !isDefaultFormalFn &&
+//        (isSync || isSingle)) {
+//       if(strcmp(fn->name, "chpl__compilerGeneratedCopySyncSingle") != 0 &&
+//           fn->name != astr_autoCopy) {
+//         USR_WARN(fn, "returning a %s by %s is unstable", isSync ? "sync" : "single", retTagDescrString(fn->retTag));
+//       }
+//     }
+//   }
+// }
 
 void
 checkResolved() {
@@ -183,7 +272,7 @@ checkResolved() {
   checkExternProcs();
   checkExportedProcs();
 
-  checkSyncSingleDefaultInitOrReturnNoRef();
+  // checkSyncSingleDefaultInitOrReturnNoRef();
 }
 
 
