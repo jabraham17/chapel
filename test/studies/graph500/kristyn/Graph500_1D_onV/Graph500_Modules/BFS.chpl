@@ -31,7 +31,7 @@ proc BFS ( root : vertex_id, ParentTree, G )
 
       forall v in G.Neighbors (u) do {
 
-        if ( visited$ (v).readXX() < 0 ) 
+        if ( visited$ (v).readXX() < 0 )
         {
           if (visited$ (v).readFE() < 0 )
           {

@@ -66,7 +66,7 @@ module Scalable_Graph_Generator
                                 n_raw_edges : int, Edges:[?ArrD] )
   {
       use BlockDist;
-      use Graph500_defs;
+      // use Graph500_defs;
       use Random;
       use Time;
 

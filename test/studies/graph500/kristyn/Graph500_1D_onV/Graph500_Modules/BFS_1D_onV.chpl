@@ -53,7 +53,7 @@ proc BFS ( root : vertex_id, ParentTree, G )
 
         forall v in G.Neighbors (u) do on v {
 
-          if ( visited$ (v).readXX() < 0 ) 
+          if ( visited$ (v).readXX() < 0 )
           {
             if (visited$ (v).readFE() < 0 )
             {
@@ -70,14 +70,14 @@ proc BFS ( root : vertex_id, ParentTree, G )
 
       }
 
-// barrier needed to insure all updates to Next_Level are complete
+      // barrier needed to insure all updates to Next_Level are complete
 
-      var myc = count;
+      var myc = count.readFE();
       if myc==1 {
-        barrier=true;
+        barrier.writeEF(true);
       } else {
-        count = myc-1;
-        barrier;
+        count.writeEF(myc-1);
+        barrier.readFF();
       }
 
 
