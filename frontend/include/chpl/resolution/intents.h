@@ -42,7 +42,7 @@ namespace resolution {
     can return a generic intent.
  */
 types::QualifiedType::Kind resolveIntent(const types::QualifiedType& t,
-                                         bool isThis, bool isInit);
+                                         bool isThis, bool isInit, bool isTaskIntent = false);
 
 
 } // end namespace resolution

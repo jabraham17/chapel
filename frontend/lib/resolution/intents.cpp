@@ -64,7 +64,8 @@ static QualifiedType::Kind constIntentForType(const Type* t) {
 
 static QualifiedType::Kind defaultIntentForType(const Type* t,
                                                 bool isThis,
-                                                bool isInit) {
+                                                bool isInit,
+                                                bool isTaskIntent = false) {
 
   // anything we don't know the type of has to have unknown intent
   if (t == nullptr || t->isUnknownType() || t->isErroneousType())
@@ -82,7 +83,7 @@ static QualifiedType::Kind defaultIntentForType(const Type* t,
       if (isInit)
         return QualifiedType::REF;
       else
-        return QualifiedType::REF_MAYBE_CONST;
+        return isTaskIntent ? QualifiedType::REF_MAYBE_CONST : QualifiedType::CONST_REF;
     } else {
       return QualifiedType::CONST_REF;
     }
@@ -105,7 +106,8 @@ static QualifiedType::Kind defaultIntentForType(const Type* t,
 
 QualifiedType::Kind resolveIntent(const QualifiedType& t,
                                   bool isThis,
-                                  bool isInit) {
+                                  bool isInit,
+                                  bool isTaskIntent) {
   auto kind = t.kind();
   auto type = t.type();
 
@@ -143,7 +145,7 @@ QualifiedType::Kind resolveIntent(const QualifiedType& t,
 
     case QualifiedType::DEFAULT_INTENT:
       // compute the default intent if needed
-      return defaultIntentForType(type, isThis, isInit);
+      return defaultIntentForType(type, isThis, isInit, isTaskIntent);
 
     // compute the const intent if needed
     case QualifiedType::CONST_INTENT:
