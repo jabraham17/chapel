@@ -1,0 +1,4 @@
+err-ref-maybe-const.chpl:7: In function 'bar':
+err-ref-maybe-const.chpl:8: error: const actual is passed to 'ref' formal 'a' of =
+note: to formal of type [domain(1,int(64),one)] int(64)
+  err-ref-maybe-const.chpl:19: called as bar(A: [domain(1,int(64),one)] int(64))
