@@ -348,7 +348,7 @@ static void resolveVarIntent(VarSymbol* sym) {
 
 void resolveIntents() {
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
-    resolveArgIntent(arg);
+    resolveArgIntent(arg, arg->getFunction()->hasFlag(FLAG_COBEGIN_OR_COFORALL));
   }
 
   // BHARSH TODO: This shouldn't be necessary, but will be until we fully

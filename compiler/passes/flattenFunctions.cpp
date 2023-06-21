@@ -280,16 +280,20 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
       // something like _ref_int, but the intent would be INTENT_CONST_IN and
       // RVF would fire in some situations.
       //
+
+      bool isArgThis = sym->hasFlag(FLAG_ARG_THIS);
+      bool isCoforall = fn->hasFlag(FLAG_COBEGIN_OR_COFORALL);
+      bool optOut = isArgThis || isCoforall;
+
       if (passByRef(sym)) {
         // The task function can take in its argument by REF_MAYBE_CONST
         // no matter the type. This enables e.g. a task function processing
         // array elements to correctly set array argument intent.
-        bool isArgThis = sym->hasFlag(FLAG_ARG_THIS);
-        IntentTag temp = isArgThis ? INTENT_REF_MAYBE_CONST : INTENT_REF;
+        IntentTag temp = optOut ? INTENT_REF_MAYBE_CONST : INTENT_REF;
         if (sym->isConstant()) {
           temp = INTENT_CONST_REF;
         }
-        intent = concreteIntent(temp, type, isArgThis);
+        intent = concreteIntent(temp, type, optOut);
         type = type->getValType()->refType;
       } else {
         IntentTag temp = INTENT_BLANK;
@@ -297,7 +301,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
           // Allows for RVF later
           temp = INTENT_CONST_REF;
         }
-        intent = concreteIntent(temp, type);
+        intent = concreteIntent(temp, type, optOut);
       }
 
       SET_LINENO(sym);
