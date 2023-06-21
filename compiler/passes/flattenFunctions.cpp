@@ -284,7 +284,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
         // The task function can take in its argument by REF_MAYBE_CONST
         // no matter the type. This enables e.g. a task function processing
         // array elements to correctly set array argument intent.
-        IntentTag temp = INTENT_REF_MAYBE_CONST;
+        IntentTag temp = INTENT_CONST_REF;//INTENT_REF_MAYBE_CONST;
         if (sym->isConstant()) {
           temp = INTENT_CONST_REF;
         }

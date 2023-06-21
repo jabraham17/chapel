@@ -1352,7 +1352,7 @@ createIteratorFn(FnSymbol* iterator, CallExpr* iteratorFnCall, Symbol* index,
   std::vector<CallExpr*> calls;
   collectSymExprs(iteratorFn, symExprs);
   collectCallExprs(iteratorFn, calls);
-  ArgSymbol* icArg = new ArgSymbol(blankIntentForType(ic->type), "_ic", ic->type);
+  ArgSymbol* icArg = new ArgSymbol(blankIntentForType(ic->type, true), "_ic", ic->type);
   iteratorFn->insertFormalAtTail(icArg);
 
   replaceIteratorFormals(iterator, icArg, symExprs);
@@ -1386,7 +1386,7 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
 
   // The index is passed to the loop body function as its first argument.
   Symbol*    index             = forLoop->indexGet()->symbol();
-  ArgSymbol* indexArg          = new ArgSymbol(blankIntentForType(index->type), "_index", index->type);
+  ArgSymbol* indexArg          = new ArgSymbol(blankIntentForType(index->type, true), "_index", index->type);
 
   // The recursive iterator loop wrapper is ... .
   FnSymbol*  loopBodyFnWrapper = new FnSymbol(astr("_rec_iter_loop_wrapper_", parent->name));

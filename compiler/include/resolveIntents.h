@@ -25,11 +25,11 @@
 #include "type.h"
 #include "expr.h"
 
-IntentTag blankIntentForType(Type* t);
+IntentTag blankIntentForType(Type* t, bool isTaskIntent = false);
 IntentTag constIntentForType(Type* t);
-IntentTag concreteIntent(IntentTag existingIntent, Type* t);
-IntentTag concreteIntentForArg(ArgSymbol* arg);
-void resolveArgIntent(ArgSymbol* arg);
+IntentTag concreteIntent(IntentTag existingIntent, Type* t, bool isTaskIntent = false);
+IntentTag concreteIntentForArg(ArgSymbol* arg, bool isTaskIntent = false);
+void resolveArgIntent(ArgSymbol* arg, bool isTaskIntent = false);
 
 #endif
 
