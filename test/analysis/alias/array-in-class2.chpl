@@ -10,9 +10,9 @@ class C {
 proc main() {
   var d = (new owned C()).borrow();
 
-  var A:[1..n] int; 
+  var A:[1..n] int;
   // Now we cannot conclude that c doesn't alias d
-  var sum = 0; 
+  var sum = 0;
   for k in 1..n {
     sum += A[i] + d.A[j];
     A[i] += 1;
@@ -26,7 +26,7 @@ proc main() {
   writeln(sum);
 }
 
-proc arrayArgs(a, b) {
+proc arrayArgs(ref a, b) {
   var sum = 0;
   for k in 1..n {
     sum += a[j] + b[j];
@@ -35,7 +35,7 @@ proc arrayArgs(a, b) {
   return sum;
 }
 
-proc innerArrayArgs(a, b) {
+proc innerArrayArgs(ref a, b) {
   var sum = 0;
   for k in 1..n {
     sum += a[j] + b[j];
@@ -44,7 +44,7 @@ proc innerArrayArgs(a, b) {
   return sum;
 }
 
-proc classArgs(A, d) {
+proc classArgs(ref A, d) {
   return innerArrayArgs(A, d.A);
 }
 

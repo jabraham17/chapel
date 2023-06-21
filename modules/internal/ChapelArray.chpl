@@ -2738,7 +2738,7 @@ module ChapelArray {
   }
 
   @chpldoc.nodoc
-  inline operator =(a: [], b: range(?)) {
+  inline operator =(ref a: [], b: range(?)) {
     if a.rank == 1 then
       chpl__transferArray(a, b);
     else
