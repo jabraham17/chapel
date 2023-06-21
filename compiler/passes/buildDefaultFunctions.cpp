@@ -1512,7 +1512,7 @@ static void buildRecordAssignmentFunction(AggregateType* ct) {
 
   ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", ct);
   arg1->addFlag(FLAG_MARKED_GENERIC);
-  ArgSymbol* arg2 = new ArgSymbol(INTENT_REF_MAYBE_CONST, "_arg2", ct);
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_CONST_REF, "_arg2", ct);
   arg2->addFlag(FLAG_MARKED_GENERIC);
 
   fn->insertFormalAtTail(arg1);
@@ -1559,7 +1559,7 @@ static void buildExternAssignmentFunction(Type* type)
   fn->addFlag(FLAG_INLINE);
 
   ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", type);
-  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", type);
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_CONST_REF, "_arg2", type);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
   fn->insertAtTail(new CallExpr(PRIM_ASSIGN, arg1, arg2));
