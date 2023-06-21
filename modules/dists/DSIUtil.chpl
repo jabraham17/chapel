@@ -579,7 +579,7 @@ proc bulkCommComputeActiveDims(LeftDims, RightDims) {
   var LeftActives, RightActives : minRank * int;
 
   var li = 0, ri = 0;
-  proc advance() {
+  proc advance(inout li, inout ri) {
     // Advance to positions in each domain where the sizes are equal.
     while LeftDims(li).sizeAs(int) == 1 && LeftDims(li).sizeAs(uint) != RightDims(ri).sizeAs(uint) do li += 1;
     while RightDims(ri).sizeAs(int) == 1 && RightDims(ri).sizeAs(uint) != LeftDims(li).sizeAs(uint) do ri += 1;
@@ -588,7 +588,7 @@ proc bulkCommComputeActiveDims(LeftDims, RightDims) {
   }
 
   do {
-    advance();
+    advance(li, ri);
 
     LeftActives(inferredRank)  = li;
     RightActives(inferredRank) = ri;
