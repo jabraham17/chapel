@@ -1102,7 +1102,7 @@ module ChapelArray {
     pragma "removable array access"
     pragma "alias scope from this"
     @chpldoc.nodoc // ref version
-    inline proc ref this(i: rank*_value.dom.idxType) ref {
+    inline proc const ref this(i: rank*_value.dom.idxType) ref {
       const value = _value;
       if boundsChecking then
         checkAccess(i, value=value);
@@ -1156,7 +1156,7 @@ module ChapelArray {
     pragma "removable array access"
     pragma "alias scope from this"
     @chpldoc.nodoc // ref version
-    inline proc ref this(i: _value.dom.idxType ...rank) ref do
+    inline proc const ref this(i: _value.dom.idxType ...rank) ref do
       return this(i);
 
     pragma "alias scope from this"
