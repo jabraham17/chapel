@@ -1,3 +1,1 @@
-saxpy2.chpl:1: In function 'saxpy':
-saxpy2.chpl:1: error: 'D' used before defined
-saxpy2.chpl:7: note: defined here
+y = 21.0 22.0 23.0 24.0 25.0 26.0 27.0 28.0 29.0 30.0

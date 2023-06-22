@@ -1,5 +1,5 @@
-proc saxpy(alpha, x:[D] real, y:[D] real) {
-  for i in D do  
+proc saxpy(alpha, x:[?D] real, ref y:[D] real) {
+  for i in D do
     y(i) +=  alpha*x(i);
 }
 
