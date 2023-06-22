@@ -2,7 +2,7 @@
 //John Feo <john.feo@pnl.gov> and Kristi Maschhoff <kristyn@cray.com> in 2010.
 
 // This version incorporates ideas from Kamesh Madduri's implementation
-// in terms of using a 1D distribution of the Vertex records, maintaining 
+// in terms of using a 1D distribution of the Vertex records, maintaining
 // a distributed queue, and sending work to the locale which owns a particular
 // vertex. Chapel accomplishes this using the Chapel on statement
 // The beauty here is that we are able to preserve the basic simplicity and
@@ -12,7 +12,7 @@ module Create_Parent_Tree
 {
 use Graph500_defs;
 
-proc BFS ( root : vertex_id, ParentTree, G )
+proc BFS ( root : vertex_id, ref ParentTree, G )
 {
 
   type Vertex_List = domain (index(vertex_domain) );
@@ -48,7 +48,8 @@ proc BFS ( root : vertex_id, ParentTree, G )
     var count: sync int = numLocales;
     var barrier: single bool;
 
-    coforall loc in Locales do on loc {
+// with (ref Active_Remaining)
+    coforall loc in Locales  do on loc {
       forall u in rcLocal(Active_Level)!.Members do {
 
         forall v in G.Neighbors (u) do on v {
