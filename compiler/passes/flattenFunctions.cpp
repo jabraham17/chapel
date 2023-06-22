@@ -283,7 +283,8 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
 
       bool isArgThis = sym->hasFlag(FLAG_ARG_THIS);
       bool isCoforall = fn->hasFlag(FLAG_COBEGIN_OR_COFORALL);
-      bool optOut = isArgThis || isCoforall;
+      bool isBegin = fn->hasFlag(FLAG_BEGIN);
+      bool optOut = isArgThis || isCoforall || isBegin;
 
       if (passByRef(sym)) {
         // The task function can take in its argument by REF_MAYBE_CONST
