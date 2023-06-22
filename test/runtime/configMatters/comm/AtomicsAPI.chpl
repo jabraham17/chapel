@@ -71,8 +71,8 @@ proc testOrderAtomicBool(a, ref i, ref b, param o: memoryOrder) {
   writeln();
 }
 
-proc asyncAdd(a) { begin { a.add(1); } }
-proc testAtomicT(a, ref i, ref b, type basetype) {
+proc asyncAdd(ref a) { begin { a.add(1); } }
+proc testAtomicT(ref a, ref i, ref b, type basetype) {
   param isInt = isIntegral(basetype);
   type xType = if isArray(a) then [a.domain] basetype else basetype;
 
@@ -82,7 +82,7 @@ proc testAtomicT(a, ref i, ref b, type basetype) {
                   var initval : a.type = 1;                     writeai ("init=   ", a, initval);
                   var initval2 : a.type = initval;              writeai ("init=(v)", a, initval2);
                   var initval3 = initval;                       writeai ("init=(v)", a, initval3);
-                  assert(initval3.type == atomic basetype);     
+                  assert(initval3.type == atomic basetype);
                 }
                 i = a.read();                                   writeai ("read    ", a, i);
                     a.write(1);                                 writea  ("write   ", a);
@@ -108,7 +108,7 @@ proc testAtomicT(a, ref i, ref b, type basetype) {
   writeln();
 }
 
-proc testOrderAtomicT(a, ref i, ref b, type basetype, param o: memoryOrder) {
+proc testOrderAtomicT(ref a, ref i, ref b, type basetype, param o: memoryOrder) {
   param isInt = isIntegral(basetype);
   type xType = if isArray(a) then [a.domain] basetype else basetype;
 
@@ -118,7 +118,7 @@ proc testOrderAtomicT(a, ref i, ref b, type basetype, param o: memoryOrder) {
                   var initval : a.type = 1;                          writeai ("init=   ", a, initval);
                   var initval2 : a.type = initval;                   writeai ("init=(v)", a, initval2);
                   var initval3 = initval;                            writeai ("init=(v)", a, initval3);
-                  assert(initval3.type == atomic basetype);     
+                  assert(initval3.type == atomic basetype);
                 }
                 i = a.read(o);                                       writeai ("read    ", a, i);
                     a.write(1, o);                                   writea  ("write   ", a);

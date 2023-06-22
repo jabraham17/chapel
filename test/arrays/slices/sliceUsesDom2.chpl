@@ -6,21 +6,21 @@ var A: [D] real;
 
 fill(A);
 
-proc fill(X: [?D]) {
+proc fill(ref X: [?D]) {
   forall (i,j) in D do
     X[i,j] = i + j / 10.0;
 }
 
 foo(A[SubD]);
 
-proc foo(X) {
+proc foo(ref X) {
   var A: X.type;
   var B: [X.domain] real;
   var C = -X;
 
   fill(A);
   fill(B);
-  
+
   writeln(A, "\n");
   writeln(B, "\n");
   writeln(C, "\n");
