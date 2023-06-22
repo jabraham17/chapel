@@ -1098,8 +1098,8 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 
 @chpldoc.nodoc
 /* Helper for Generic matrix-matrix multiplication */
-proc _matmatMultHelper(ref AMat: [?Adom] ?eltType,
-                       ref BMat : [?Bdom] eltType,
+proc _matmatMultHelper(    AMat: [?Adom] ?eltType,
+                           BMat : [?Bdom] eltType,
                        ref CMat : [] eltType)
 {
   // TODO - Add logic to calculate blockSize
@@ -2999,7 +2999,7 @@ module Sparse {
 
 
   /* Populate indPtr and total nnz (last element of indPtr) */
-  private proc pass1(ref A: [?ADom] ?eltType, ref B: [?BDom] eltType, ref indPtr) {
+  private proc pass1(A: [?ADom] ?eltType, B: [?BDom] eltType, ref indPtr) {
     // TODO: Parallelize - mask -> atomic ints,
     //                   - Write a scan to compute idxPtr in O(log(n))
 
@@ -3045,7 +3045,7 @@ module Sparse {
   }
 
   /* Populate indices and data */
-  private proc pass2(ref A: [?ADom] ?eltType, ref B: [?BDom] eltType, ref indPtr, ref ind, ref data) {
+  private proc pass2(A: [?ADom] ?eltType, B: [?BDom] eltType, ref indPtr, ref ind, ref data) {
     // TODO: Parallelize - next, sums -> task-private stacks
 
     /* Aliases for readability */
