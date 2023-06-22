@@ -461,7 +461,7 @@ algorithm used is made by the implementation.
   data is sorted.
 
  */
-proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   // TODO: This should have a flag `stable` to request a stable sort
   chpl_check_comparator(comparator, eltType);
 
@@ -478,7 +478,7 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
 
 @chpldoc.nodoc
 /* Error message for multi-dimension arrays */
-proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
   where Dom.rank != 1 || !Data.isRectangular() {
     compilerError("sort() is currently only supported for 1D rectangular arrays");
 }
@@ -840,7 +840,7 @@ module TimSort {
 
    */
 
-  proc timSort(Data: [?Dom] ?eltType, blockSize=16, comparator:?rec=defaultComparator) {
+  proc timSort(ref Data: [?Dom] ?eltType, blockSize=16, comparator:?rec=defaultComparator) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -850,7 +850,7 @@ module TimSort {
     _TimSort(Data, Dom.low, Dom.high, blockSize, comparator);
   }
 
-  private proc _TimSort(Data: [?Dom], lo:int, hi:int, blockSize=16, comparator:?rec=defaultComparator) {
+  private proc _TimSort(ref Data: [?Dom], lo:int, hi:int, blockSize=16, comparator:?rec=defaultComparator) {
     import Sort.InsertionSort;
 
     /*Parallelly apply insertionSort on each block of size `blockSize`
@@ -891,7 +891,7 @@ module TimSort {
    TimSort._Merge() creates a copy of the segments to be merged and
    stores the results back into the original memory.
   */
-  private proc _Merge(Dst: [?Dom] ?eltType, lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
+  private proc _Merge(ref Dst: [?Dom] ?eltType, lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
     /* Data[lo..mid by stride] is much slower than Data[lo..mid] when
      * Dom is unstrided.  So specify the latter explicitly when possible. */
     if mid >= hi {
@@ -951,7 +951,7 @@ module MergeSort {
        data is sorted.
 
    */
-  proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
+  proc mergeSort(ref Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -977,7 +977,7 @@ module MergeSort {
    * The data stays in Data "all they way down" until the first
    * _Merge(), then is moved back and forth as we return up the chain.
    */
-  private proc _MergeSort(Data: [?Dom], Scratch: [], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator, depth: int)
+  private proc _MergeSort(ref Data: [?Dom], ref Scratch: [], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator, depth: int)
     where Dom.rank == 1 {
     import Sort.InsertionSort;
 
@@ -1028,7 +1028,7 @@ module MergeSort {
     }
   }
 
-  private proc _Merge(Dst: [?Dom] ?eltType, Src: [], lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
+  private proc _Merge(ref Dst: [?Dom] ?eltType, Src: [], lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
     /* Data[lo..mid by stride] is much slower than Data[lo..mid] when
      * Dom is unstrided.  So specify the latter explicitly when possible. */
     const stride = abs(Dom.stride): Dom.idxType;
@@ -1228,7 +1228,7 @@ module QuickSort {
   }
 
  /* Use quickSort to sort Data */
- proc quickSort(Data: [?Dom] ?eltType,
+ proc quickSort(ref Data: [?Dom] ?eltType,
                 minlen=16,
                 comparator:?rec=defaultComparator) {
 
@@ -1251,7 +1251,7 @@ module QuickSort {
 
 
   /* Non-stridable quickSort to sort Data[start..end] */
-  proc quickSortImpl(Data: [?Dom] ?eltType,
+  proc quickSortImpl(ref Data: [?Dom] ?eltType,
                      minlen=16,
                      comparator:?rec=defaultComparator,
                      start:int = Dom.low, end:int = Dom.high) {
@@ -1332,7 +1332,7 @@ module SelectionSort {
        data is sorted.
 
    */
-  proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  proc selectionSort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
 
     if Dom.rank != 1 {
       compilerError("selectionSort() requires 1-D array");
@@ -1357,7 +1357,7 @@ module SelectionSort {
 @chpldoc.nodoc
 module ShellSort {
   private use Sort;
-  proc shellSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
+  proc shellSort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
                  start=Dom.low, end=Dom.high)
   {
     chpl_check_comparator(comparator, eltType);
@@ -2336,7 +2336,7 @@ module TwoArrayPartitioning {
   // (e.g. sorted by the next digit in radix sort)
   // Counts per bin are stored in state.counts. Other data in
   // state is used locally by this routine or used elsewhere
-  proc bucketize(start_n: int, end_n: int, dst:[], src:[],
+  proc bucketize(start_n: int, end_n: int, ref dst:[], src:[],
                  ref state: TwoArrayBucketizerSharedState,
                  criterion, startbit:int) {
 
@@ -2442,7 +2442,7 @@ module TwoArrayPartitioning {
       counts[bin] = total;
     }
   }
-  proc testBucketize(start_n: int, end_n: int, dst:[], src:[],
+  proc testBucketize(start_n: int, end_n: int, ref dst:[], src:[],
                      bucketizer, criterion, startbit:int) {
 
     var state = new TwoArrayBucketizerSharedState(bucketizer=bucketizer);
@@ -3279,7 +3279,7 @@ module MSBRadixSort {
     const maxTasks = here.maxTaskPar;//;here.numPUs(logical=true); // maximum number of tasks to make
   }
 
-  proc msbRadixSort(Data:[], comparator:?rec=defaultComparator) {
+  proc msbRadixSort(ref Data:[], comparator:?rec=defaultComparator) {
 
     var endbit:int;
     endbit = msbRadixSortParamLastStartBit(Data, comparator);
@@ -3297,7 +3297,7 @@ module MSBRadixSort {
   // not easy that late in compilation
   pragma "no gpu codegen"
   // startbit counts from 0 and is a multiple of RADIX_BITS
-  proc msbRadixSort(A:[], start_n:A.idxType, end_n:A.idxType, criterion,
+  proc msbRadixSort(ref A:[], start_n:A.idxType, end_n:A.idxType, criterion,
                     startbit:int, endbit:int,
                     settings /* MSBRadixSortSettings */)
   {
