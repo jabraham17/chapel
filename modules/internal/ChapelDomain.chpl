@@ -588,7 +588,7 @@ module ChapelDomain {
   }
 
   @chpldoc.nodoc
-  operator |=(a :domain, b: domain) where a.isRectangular() {
+  operator |=(ref a :domain, b: domain) where a.isRectangular() {
     compilerError("cannot invoke '|=' on a rectangular domain");
   }
 
@@ -626,7 +626,7 @@ module ChapelDomain {
   }
 
   @chpldoc.nodoc
-  operator &=(a :domain, b: domain) where a.isRectangular() {
+  operator &=(ref a :domain, b: domain) where a.isRectangular() {
     compilerError("cannot invoke '&=' on a rectangular domain");
   }
 
@@ -661,7 +661,7 @@ module ChapelDomain {
   }
 
   @chpldoc.nodoc
-  operator ^=(a :domain, b: domain) where a.isRectangular() {
+  operator ^=(ref a :domain, b: domain) where a.isRectangular() {
     compilerError("cannot invoke '^=' on a rectangular domain");
   }
 

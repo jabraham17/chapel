@@ -2862,67 +2862,67 @@ module ChapelArray {
   // op= overloads for array/scalar pairs
   //
   @chpldoc.nodoc
-  operator +=(a: [], b: _desync(a.eltType)) {
+  operator +=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e += b;
   }
 
   @chpldoc.nodoc
-  operator -=(a: [], b: _desync(a.eltType)) {
+  operator -=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e -= b;
   }
 
   @chpldoc.nodoc
-  operator *=(a: [], b: _desync(a.eltType)) {
+  operator *=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e *= b;
   }
 
   @chpldoc.nodoc
-  operator /=(a: [], b: _desync(a.eltType)) {
+  operator /=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e /= b;
   }
 
   @chpldoc.nodoc
-  operator %=(a: [], b: _desync(a.eltType)) {
+  operator %=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e %= b;
   }
 
   @chpldoc.nodoc
-  operator **=(a: [], b: _desync(a.eltType)) {
+  operator **=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e **= b;
   }
 
   @chpldoc.nodoc
-  operator &=(a: [], b: _desync(a.eltType)) {
+  operator &=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e &= b;
   }
 
   @chpldoc.nodoc
-  operator |=(a: [], b: _desync(a.eltType)) {
+  operator |=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e |= b;
   }
 
   @chpldoc.nodoc
-  operator ^=(a: [], b: _desync(a.eltType)) {
+  operator ^=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e ^= b;
   }
 
   @chpldoc.nodoc
-  operator >>=(a: [], b: _desync(a.eltType)) {
+  operator >>=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e >>= b;
   }
 
   @chpldoc.nodoc
-  operator <<=(a: [], b: _desync(a.eltType)) {
+  operator <<=(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e <<= b;
   }
@@ -2931,7 +2931,7 @@ module ChapelArray {
   // Swap operator for arrays
   //
   @chpldoc.nodoc
-  inline operator <=>(x: [?xD], y: [?yD]) {
+  inline operator <=>(ref x: [?xD], ref y: [?yD]) {
     if x.rank != y.rank then
       compilerError("rank mismatch in array swap");
 
