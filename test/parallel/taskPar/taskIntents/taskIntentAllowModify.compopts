@@ -1,0 +1,12 @@
+-stestnum=1 -smodify=false
+-stestnum=1 -smodify=true
+-stestnum=2 -smodify=false
+-stestnum=2 -smodify=true  # taskIntentAllowModify-err.good
+-stestnum=3 -smodify=false
+-stestnum=3 -smodify=true  # taskIntentAllowModify-err.good
+-stestnum=4 -smodify=false
+-stestnum=4 -smodify=true  # taskIntentAllowModify-err.good
+-stestnum=5 -smodify=false
+-stestnum=5 -smodify=true
+-stestnum=6 -smodify=false
+-stestnum=6 -smodify=true
