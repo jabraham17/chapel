@@ -669,7 +669,7 @@ module ChapelDomain {
   // BaseSparseDom operator overloads
   //
   @chpldoc.nodoc
-  operator +=(ref sd: domain, inds: [] index(sd)) where sd.isSparse() {
+  operator +=(ref sd: domain, ref inds: [] index(sd)) where sd.isSparse() {
     if inds.sizeAs(int) == 0 then return;
 
     sd._value.dsiBulkAdd(inds);
@@ -1933,7 +1933,7 @@ module ChapelDomain {
 
     @chpldoc.nodoc
     @unstable("bulkAdd() is subject to change in the future.")
-    proc ref bulkAdd(inds: [] _value.idxType, dataSorted=false,
+    proc ref bulkAdd(ref inds: [] _value.idxType, dataSorted=false,
         isUnique=false, preserveInds=true, addOn=nilLocale)
         where this.isSparse() && _value.rank==1 {
       if inds.isEmpty() then return 0;
@@ -2018,7 +2018,7 @@ module ChapelDomain {
        :rtype: int
     */
     @unstable("bulkAdd() is subject to change in the future.")
-    proc ref bulkAdd(inds: [] _value.rank*_value.idxType,
+    proc ref bulkAdd(ref inds: [] _value.rank*_value.idxType,
         dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale)
         where this.isSparse() && _value.rank>1 {
       if inds.isEmpty() then return 0;

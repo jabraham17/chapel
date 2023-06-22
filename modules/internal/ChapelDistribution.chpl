@@ -468,7 +468,7 @@ module ChapelDistribution {
       // this is a bug workaround
     }
 
-    override proc dsiBulkAdd(inds: [] index(rank, idxType),
+    override proc dsiBulkAdd(ref inds: [] index(rank, idxType),
         dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale){
 
       if !dataSorted && preserveInds {
@@ -480,7 +480,7 @@ module ChapelDistribution {
       }
     }
 
-    proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
+    proc bulkAdd_help(ref inds: [?indsDom] index(rank, idxType),
         dataSorted=false, isUnique=false, addOn=nilLocale){
       halt("Helper function called on the BaseSparseDomImpl");
 
@@ -544,7 +544,7 @@ module ChapelDistribution {
     // (1) sorts indices if !dataSorted
     // (2) verifies the flags are set correctly if boundsChecking
     // (3) checks OOB if boundsChecking
-    proc bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp) {
+    proc bulkAdd_prepareInds(ref inds, dataSorted, isUnique, cmp) {
       use Sort;
       if !dataSorted then sort(inds, comparator=cmp);
 
@@ -684,7 +684,7 @@ module ChapelDistribution {
       halt("clear not implemented for this distribution - BaseSparseDom");
     }
 
-    proc dsiBulkAdd(inds: [] index(rank, idxType),
+    proc dsiBulkAdd(ref inds: [] index(rank, idxType),
         dataSorted=false, isUnique=false, preserveInds=true,
         addOn=nilLocale): int {
 
