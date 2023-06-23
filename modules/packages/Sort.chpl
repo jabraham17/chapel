@@ -587,7 +587,7 @@ module BubbleSort {
       data is sorted.
 
    */
-  proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  proc bubbleSort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -625,7 +625,7 @@ module HeapSort {
       data is sorted.
 
    */
-  proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  proc heapSort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -691,7 +691,7 @@ module InsertionSort {
       data is sorted.
 
    */
-  proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.low, hi:int=Dom.high) {
+  proc insertionSort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.low, hi:int=Dom.high) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -720,7 +720,7 @@ module InsertionSort {
     }
   }
 
-  proc insertionSortMoveElts(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.low, hi:int=Dom.high) {
+  proc insertionSortMoveElts(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.low, hi:int=Dom.high) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -765,7 +765,7 @@ module BinaryInsertionSort {
     :arg comparator: :ref:`Comparator <comparators>` record that defines how the
        data is sorted.
    */
-  proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  proc binaryInsertionSort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -1085,7 +1085,7 @@ module QuickSort {
    equal to the pivot (and elements less are before eqStart and elements
    greater are after eqEnd).
    */
-  proc partition(Data: [?Dom] ?eltType,
+  proc partition(ref Data: [?Dom] ?eltType,
                  lo: int, pivIdx: int, hi: int,
                  comparator)
   {
