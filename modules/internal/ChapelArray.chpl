@@ -1099,7 +1099,7 @@ module ChapelArray {
     // array element access
     // When 'this' is 'const', so is the returned l-value.
 
-    pragma "reference to const when const this"
+    // pragma "reference to const when const this"
     pragma "removable array access"
     pragma "alias scope from this"
     @chpldoc.nodoc // ref version
@@ -1153,7 +1153,7 @@ module ChapelArray {
         return value.dsiAccess(i(0));
     }
 
-    pragma "reference to const when const this"
+    // pragma "reference to const when const this"
     pragma "removable array access"
     pragma "alias scope from this"
     @chpldoc.nodoc // ref version
@@ -1172,7 +1172,7 @@ module ChapelArray {
       return this(i);
 
 
-    pragma "reference to const when const this"
+    // pragma "reference to const when const this"
     pragma "alias scope from this"
     @chpldoc.nodoc // ref version
     inline proc ref localAccess(i: rank*_value.dom.idxType) ref
@@ -1235,7 +1235,7 @@ module ChapelArray {
           return value.dsiLocalAccess(i(0));
     }
 
-    pragma "reference to const when const this"
+    // pragma "reference to const when const this"
     pragma "alias scope from this"
     @chpldoc.nodoc // ref version
     inline proc ref localAccess(i: _value.dom.idxType ...rank) ref do
