@@ -1,0 +1,5 @@
+tuple-array-const.chpl:1: In function 't1':
+tuple-array-const.chpl:1: error: tuple formal 'tup' of 't1' is const and cannot be modified
+note: tuple element #0 of type [domain(1,int(64),one)] int(64)
+tuple-array-const.chpl:2: note: possibly set here
+  tuple-array-const.chpl:9: called as t1(tup: 2*[domain(1,int(64),one)] int(64))
