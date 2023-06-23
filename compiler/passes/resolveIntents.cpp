@@ -70,23 +70,23 @@ IntentTag constIntentForType(Type* t) {
 
 // Detect tuples containing e.g. arrays by reference
 // These should be const / not const element-by-element.
-static
-bool isTupleContainingRefMaybeConst(Type* t)
-{
-  AggregateType* at = toAggregateType(t);
-  if (t->symbol->hasFlag(FLAG_TUPLE)) {
-    for_fields(field, at) {
-      Type* fieldType = field->getValType();
-      if (field->isRef()) {
-        if (fieldType->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST))
-          return true;
-      }
-      if (isTupleContainingRefMaybeConst(fieldType))
-        return true;
-    }
-  }
-  return false;
-}
+// static
+// bool isTupleContainingRefMaybeConst(Type* t)
+// {
+//   AggregateType* at = toAggregateType(t);
+//   if (t->symbol->hasFlag(FLAG_TUPLE)) {
+//     for_fields(field, at) {
+//       Type* fieldType = field->getValType();
+//       if (field->isRef()) {
+//         if (fieldType->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST))
+//           return true;
+//       }
+//       if (isTupleContainingRefMaybeConst(fieldType))
+//         return true;
+//     }
+//   }
+//   return false;
+// }
 
 static bool isTupleContainingTypeWithFlag(Type* t, Flag f) {
   AggregateType* at = toAggregateType(t->getValType());
@@ -125,7 +125,7 @@ IntentTag blankIntentForType(Type* t, bool isTaskIntent) {
     // the entire tuple as INTENT_REF because that has a special meaning.
     // So go ahead and mark the tuple as INTENT_REF_MAYBE_CONST instead.
   } else if ((t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST) && isTaskIntent)
-            || isTupleContainingRefMaybeConst(t)
+            // || isTupleContainingRefMaybeConst(t)
             || isTupleContainingSyncType(t)
             || isTupleContainingSingleType(t)
             || isTupleContainingAtomicType(t)) {
