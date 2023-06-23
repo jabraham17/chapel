@@ -1,4 +1,4 @@
-proc t1( tup )
+proc t1( const tup )
 {
   tup(0)[0] = 2;
   writeln(tup(1)[0]);
@@ -46,7 +46,7 @@ proc run()
   t1( t );
 }
 
-proc reset(A)
+proc reset(ref A)
 {
   A = [1,2,3,4];
 }

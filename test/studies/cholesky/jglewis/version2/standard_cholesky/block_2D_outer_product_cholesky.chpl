@@ -7,46 +7,46 @@ module block_2D_outer_product_cholesky {
   //
   //               A(i,j) = + reduce ( L (i, ..) L (j, ..)
   //
-  // As written, these equations do not recognize the symmetry of A and the 
+  // As written, these equations do not recognize the symmetry of A and the
   // triangular structure of L.  Recognizing those two facts allows us to turn
   // these equations into an algorithm for computing the decomposition.
   //
-  // Main diagonal:  
+  // Main diagonal:
   //    L(j,j) = sqrt ( A(j,j) - (+ reduce [k in ..j-1] L(j,k)**2 ) )
   // Below main diagonal:
   //    L(i,j) = ( A(i,j) - (+ reduce [k in ..j-1] L(i,k) * L(j,k) ) ) / L(j,j)
   //
   // These equations can be promoted to block equations by treating:
-  //    scalar/ multiplication involving only non-diagonal blocks as ordinary 
+  //    scalar/ multiplication involving only non-diagonal blocks as ordinary
   //       matrix-matrix multiplication;
   //    scalar/ multiplication involving diagonal blocks as ordinary triangular
   //       or symmetric matrix-matrix multiplication;
   //    taking the Cholesky factor of a block as its square root.
   //
   // Conventionally only one array argument, A, is used in factorization
-  // routines, and only the lower triangle is used.  On output the entries of 
-  // L overwrite the entries of A.  The partial sums of the reductions are 
+  // routines, and only the lower triangle is used.  On output the entries of
+  // L overwrite the entries of A.  The partial sums of the reductions are
   // accumulated during the course of the algorithm also in the space occupied
   // by the input matrix  A.  Conventionally, the entries in the upper
-  // triangle of A are left untouched. 
+  // triangle of A are left untouched.
   // =========================================================================
- 
+
 
   // =========================================================================
   // The outer product Cholesky factorization computes one block column of L at
-  // each step. During each step the remaining columns of A are modified by a 
-  // low rank outer product modication -- the reduce operations are accumulated 
+  // each step. During each step the remaining columns of A are modified by a
+  // low rank outer product modication -- the reduce operations are accumulated
   // one block step at a time for each entry in the yet unfactored part of the
-  // matrix.  The computed entries of L will not otherwise need to be 
-  // referenced again in the factorization.  
+  // matrix.  The computed entries of L will not otherwise need to be
+  // referenced again in the factorization.
   // =========================================================================
-    
+
   use scalar_outer_product_cholesky,
-      block_partition_iterators, 
-      block_triangular_solve_variants, 
+      block_partition_iterators,
+      block_triangular_solve_variants,
       matrix_matrix_multiply_schur_complement;
 
-  proc block_2D_outer_product_cholesky ( A : [] )
+  proc block_2D_outer_product_cholesky ( ref A : [] )
 
     where ( A.domain.rank == 2 ) {
 
@@ -69,29 +69,29 @@ module block_2D_outer_product_cholesky {
 
 	// compute the remainder of the active block column of L by a
 	// block triangular solve realizing the equation
-	//      L (A22_rc_indices, A11_rc_indices) = 
+	//      L (A22_rc_indices, A11_rc_indices) =
 	//                            L (A22_rc_indices, A11_rc_indices) *
 	//                            L (A11_rc_indices, A11_rc_indices) ** (-T)
-	
-	transposed_2D_block_triangular_solve 
+
+	transposed_2D_block_triangular_solve
 	  ( A (A11_rc_indices, A11_rc_indices), A (A22_rc_indices, A11_rc_indices) );
-	
-	// make rank block_size (outerproduct) modification to the remaining 
+
+	// make rank block_size (outerproduct) modification to the remaining
 	// block rows and columns of  A, which become the Schur complement
 
-	symmetric_2D_block_schur_complement 
-	    (  A (A22_rc_indices, A22_rc_indices), 
+	symmetric_2D_block_schur_complement
+	    (  A (A22_rc_indices, A22_rc_indices),
 	       A (A22_rc_indices, A11_rc_indices) );
-	
+
       }
       else
 
 	// error return if matrix is not positive definite
-	
+
 	if !pos_def then return false;
     }
 
-    // return success 
+    // return success
 
     return true;
   }

@@ -123,7 +123,7 @@ proc printConfiguration() {
 // Initialize vectors B and C using a random stream of values and
 // optionally print them to the console
 //
-proc initVectors(B, C) {
+proc initVectors(ref B, ref C) {
   var randlist = new RandomStream(seed);
 
   randlist.fillRandom(B);
@@ -145,7 +145,7 @@ proc verifyResults(A, B, C) {
   // recompute the computation, destructively storing into B to save space
   //
   forall (b, c) in (B, C) do
-    b += alpha *c;  
+    b += alpha *c;
 
   if (printArrays) then writeln("A-hat is: ", B, "\n");  // and A-hat too
 

@@ -152,7 +152,7 @@ proc printConfiguration() {
 //
 // Initialize vectors B and C using a random stream of values
 //
-proc initVectors(B, C) {
+proc initVectors(ref B, ref C) {
   var randlist = new RandomStream(eltType=real, seed=seed);
 
   randlist.fillRandom(B);
@@ -168,7 +168,7 @@ proc verifyResults(A, B, C) {
   // recompute the computation, destructively storing into B to save space
   //
   forall (b, c) in zip(B, C) do
-    b += alpha *c;  
+    b += alpha *c;
 
   //
   // Compute the infinity-norm by computing the maximum reduction of the

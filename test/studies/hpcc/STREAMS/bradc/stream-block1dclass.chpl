@@ -28,7 +28,7 @@ proc main() {
 
   const ProblemSpace = ProblemDist.newDomain({1..m}, int(64));
 
-  var A = ProblemSpace.newArray(elemType), 
+  var A = ProblemSpace.newArray(elemType),
       B = ProblemSpace.newArray(elemType),
       C = ProblemSpace.newArray(elemType);
 
@@ -65,7 +65,7 @@ proc printConfiguration() {
 }
 
 
-proc initVectors(B, C) {
+proc initVectors(ref B, ref C) {
   // TODO: should write a fillRandom() implementation that does this
   coforall loc in B.dom.dist.targetLocs {
     on loc {
