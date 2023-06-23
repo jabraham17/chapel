@@ -67,7 +67,7 @@ proc main() {
 }
 
 
-proc computeTwiddles(W) {
+proc computeTwiddles(ref W) {
   const n = W.size;
   const delta = 2.0 * atan(1.0) / n;
 
@@ -83,7 +83,7 @@ proc computeTwiddles(W) {
 }
 
 
-proc bitReverseShuffle(W: [?WD]) {
+proc bitReverseShuffle(ref W: [?WD]) {
   const n = WD.size;
   const reverse = log2(n);
   var Perm: [WD] index(WD) = [i in WD] bitReverse(i, numBits = reverse);
@@ -102,7 +102,7 @@ proc bitReverse(val: ?valType, numBits = 64) {
 
 
 
-proc dfft(Z, W) {
+proc dfft(ref Z, W) {
   cft1st(Z, W);
 
   var span = radix;
@@ -133,7 +133,7 @@ proc dfft(Z, W) {
 }
 
 
-proc verifyResults(z, Z, execTime, Twiddles) {
+proc verifyResults(z, ref Z, execTime, Twiddles) {
   const N = Z.size;
 
   // BLC: This line wants /(complex,real) to be implemented directly:
@@ -159,7 +159,7 @@ proc verifyResults(z, Z, execTime, Twiddles) {
 }
 
 
-proc cft1st(A, W) {
+proc cft1st(ref A, W) {
   const n = A.domain.dim(0).size;
   var x0 = A(0) + A(1);
   var x1 = A(0) - A(1);
@@ -191,13 +191,13 @@ proc cft1st(A, W) {
   forall (j,k1) in zip(8..n-1 by 8, 1..) {
     var wk2 = W(k1);
     var wk1 = W(2*k1);
-    var wk3 = (wk1.re - 2* wk2.im * wk1.im, 
+    var wk3 = (wk1.re - 2* wk2.im * wk1.im,
                2 * wk2.im * wk1.re - wk1.im):complex;
 
     butterfly(wk1, wk2, wk3, A[j..j+3]);
 
     wk1 = W(2*k1+1);
-    wk3 = (wk1.re - 2*wk2.re * wk1.im, 
+    wk3 = (wk1.re - 2*wk2.re * wk1.im,
            2*wk2.re * wk1.re - wk1.im):complex;
     wk2 = wk2*1.0i;
     butterfly(wk1, wk2, wk3, A[j+4..j+7]);
@@ -205,7 +205,7 @@ proc cft1st(A, W) {
 }
 
 
-proc cftmd0(span, A, W) {
+proc cftmd0(span, ref A, W) {
   var wk1r = W(1).re;
   const m = radix*span;
 
@@ -220,7 +220,7 @@ proc cftmd0(span, A, W) {
 }
 
 
-proc cftmd1(span, A, W) {
+proc cftmd1(span, ref A, W) {
   const m = radix*span;
   const m2 = 2*m;
   const n = A.domain.dim(0).size;
@@ -246,7 +246,7 @@ proc cftmd1(span, A, W) {
 }
 
 
-proc cftmd2(span, A, W) {
+proc cftmd2(span, ref , W) {
   var m = radix*span;
   var m2 = 2*m;
   const n = A.domain.dim(0).size;
@@ -280,7 +280,7 @@ proc cftmd2(span, A, W) {
 }
 
 
-proc cftmd21(span, A, W) {
+proc cftmd21(span, ref A, W) {
   const n = A.domain.dim(0).size;
   var m = radix*span;
   var m2 = 2*m;
