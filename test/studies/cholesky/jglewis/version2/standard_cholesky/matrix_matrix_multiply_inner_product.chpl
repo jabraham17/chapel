@@ -1,10 +1,10 @@
 module matrix_matrix_multiply_inner_product {
-      
+
   // =======================================================
   // Symmetric Block Inner Product for a Single Block Column
   // =======================================================
 
-  proc block_1D_inner_product ( L : [] , A : [] )
+  proc block_1D_inner_product ( L : [] , ref A : [] )
 
     where ( A.domain.rank == 2 && L.domain.rank == 2) {
 
@@ -27,16 +27,16 @@ module matrix_matrix_multiply_inner_product {
 
     //  Symmetric modification to diagonal block, which is symmetric,
     //  so we cannot use a standard matrix-matrix product
-    
-    forall i in AJ_diag_rc_indices do 
+
+    forall i in AJ_diag_rc_indices do
       forall j in AJ_diag_rc_indices (..i) do
 	A (i,j) -= + reduce [k in L_prev_cols] L (i,k) * L (j,k);
 
     //  General modification to off-diagonal block
 
     for LK_col_indices in vector_block_partition (L_prev_cols) do
-      forall (i,j,k) in 
-    {AJ_subdiag_row_indices, AJ_diag_rc_indices, LK_col_indices} do 
+      forall (i,j,k) in
+    {AJ_subdiag_row_indices, AJ_diag_rc_indices, LK_col_indices} do
 	A (i,j) -= L (i,k) * L (j,k);
   }
 
@@ -47,7 +47,7 @@ module matrix_matrix_multiply_inner_product {
   // Column for a 2D Block Distributed Matrix
   // ================================================
 
-  proc block_2D_inner_product ( L : [] , A : [] )
+  proc block_2D_inner_product ( L : [] , ref A : [] )
 
     where ( A.domain.rank == 2 && L.domain.rank == 2) {
 
@@ -71,7 +71,7 @@ module matrix_matrix_multiply_inner_product {
 
     //  Symmetric modification to diagonal block
 
-    forall i in AJJ_rc_indices do 
+    forall i in AJJ_rc_indices do
       forall j in AJJ_rc_indices (..i) do
 	A (i,j) -= + reduce [k in L_prev_cols] L (i,k) * L (j,k);
 
@@ -80,10 +80,10 @@ module matrix_matrix_multiply_inner_product {
 
     for AIJ_row_indices in vector_block_partition ( AJ_subdiag_row_indices ) do
       for LK_col_indices in vector_block_partition ( L_prev_cols )  do
-	forall (i,j, k) in {AIJ_row_indices, AJJ_rc_indices, LK_col_indices} do 
+	forall (i,j, k) in {AIJ_row_indices, AJJ_rc_indices, LK_col_indices} do
 	  A (i,j) -= L (i,k) * L (j,k);
   }
-      
+
 
 
 

@@ -7,45 +7,45 @@ module block_2D_inner_product_cholesky  {
   //
   //               A(i,j) = + reduce ( L (i, ..) L (j, ..)
   //
-  // As written, these equations do not recognize the symmetry of A and the 
+  // As written, these equations do not recognize the symmetry of A and the
   // triangular structure of L.  Recognizing those two facts allows us to turn
   // these equations into an algorithm for computing the decomposition.
   //
-  // Main diagonal:  
+  // Main diagonal:
   //    L(j,j) = sqrt ( A(j,j) - (+ reduce [k in ..j-1] L(j,k)**2 ) )
   // Below main diagonal:
   //    L(i,j) = ( A(i,j) - (+ reduce [k in ..j-1] L(i,k) * L(j,k) ) ) / L(j,j)
   //
   // These equations can be promoted to block equations by treating:
-  //    scalar/ multiplication involving only non-diagonal blocks as ordinary 
+  //    scalar/ multiplication involving only non-diagonal blocks as ordinary
   //       matrix-matrix multiplication;
   //    scalar/ multiplication involving diagonal blocks as ordinary triangular
   //       or symmetric matrix-matrix multiplication;
   //    taking the Cholesky factor of a block as its square root.
   //
   // Conventionally only one array argument, A, is used in factorization
-  // routines, and only the lower triangle is used.  On output the entries of 
-  // L overwrite the entries of A.  The partial sums of the reductions are 
+  // routines, and only the lower triangle is used.  On output the entries of
+  // L overwrite the entries of A.  The partial sums of the reductions are
   // accumulated during the course of the algorithm also in the space occupied
   // by the input matrix  A.  Conventionally, the entries in the upper
-  // triangle of A are left untouched. 
+  // triangle of A are left untouched.
   // =========================================================================
- 
+
 
   // ==========================================================================
   // The inner product Cholesky factorization computes one block column of L at
   // each step, in a manner reflecting the reduction form of the defining
   // equations.  During each step the previous columns of L are read to
   // implement the separate reduction operations for each entry of the current
-  // column.  For efficiency, the reduction operations are combined into a 
+  // column.  For efficiency, the reduction operations are combined into a
   // matrix-vector product form.
   // ==========================================================================
-    
+
   use block_partition_iterators, symmetric_blas;
 
-  proc block_2D_inner_product_cholesky ( A : [] ) 
+  proc block_2D_inner_product_cholesky ( ref A : [] )
 
-    where ( A.domain.rank == 2 ) 
+    where ( A.domain.rank == 2 )
     {
     assert ( A.domain.dim (0) == A.domain.dim (1) );
 
@@ -54,14 +54,14 @@ module block_2D_inner_product_cholesky  {
 
     // compute L from A
 
-    for ( prev_cols, reduced_mtx_cols, leading_cols, trailing_cols ) in 
+    for ( prev_cols, reduced_mtx_cols, leading_cols, trailing_cols ) in
       symmetric_matrix_3_by_3_block_partition ( col_indices ) do {
 
       // modify the active block column of A with the combined effects of the
       // elimination steps on all previous block columns
 
       if prev_cols.size > 0 then
-	block_2D_inner_product ( A ( reduced_mtx_cols, prev_cols), 
+	block_2D_inner_product ( A ( reduced_mtx_cols, prev_cols),
 				 A ( reduced_mtx_cols, leading_cols ) );
 
       // compute the Cholesky factor of the active diagonal block
@@ -73,27 +73,26 @@ module block_2D_inner_product_cholesky  {
 
 	// compute the remainder of the active block column of L by a
 	// block triangular solve realizing the equation
-	//      L (trailing_cols, leading_cols) = 
+	//      L (trailing_cols, leading_cols) =
 	//                              L (trailing_cols, leading_cols) *
 	//                              L (leading_cols, leading_cols) ** (-T)
-	
-	transposed_2D_block_triangular_solve 
-	         ( A (leading_cols, leading_cols), 
+
+	transposed_2D_block_triangular_solve
+	         ( A (leading_cols, leading_cols),
 		   A (trailing_cols, leading_cols) );
-	
+
       }
-      else 
+      else
 
 	// error return if matrix is not positive definite
-	
+
 	if !pos_def then return false;
     }
 
-    // return success 
+    // return success
 
     return true;
 
     }
 
 }
-	

@@ -117,7 +117,7 @@ proc printConfiguration() {
 // Initialize vectors B and C using a random stream of values and
 // optionally print them to the console
 //
-proc initVectors(B, C) {
+proc initVectors(ref B, ref C) {
   /*
 
   TODO: fillRandom has a `forall`. We either need dynamic check and this
@@ -149,7 +149,7 @@ proc verifyResults(A, B, C) {
   //
   // Originally this was a forall, but I want the validation to be run on CPU.
   for (b, c) in zip(B, C) do
-    b += alpha *c;  
+    b += alpha *c;
 
   if (printArrays) then writeln("A-hat is: ", B, "\n");  // and A-hat too
 
@@ -172,7 +172,7 @@ proc verifyResults(A, B, C) {
     `for` loop.
 
      const delta = abs(a-b);
-       
+
     */
 
     const delta = if a<b then b-a else a-b;
