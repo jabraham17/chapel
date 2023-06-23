@@ -156,7 +156,7 @@ Access the copy of `replicatedVar` on the current locale.
 
 This is equivalent to ``replicatedVar[1]``.
 */
-proc rcLocal(replicatedVar: [?D] ?MYTYPE) ref: MYTYPE {
+proc rcLocal(ref replicatedVar: [?D] ?MYTYPE) ref: MYTYPE {
   return replicatedVar[rcDomainIx];
 }
 
