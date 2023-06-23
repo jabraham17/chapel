@@ -12,7 +12,7 @@ proc keep(ref arg) { }
 proc mark() { }
 
 // CHECK: void @loop1
-proc loop1(A, B) {
+proc loop1(ref A, B) {
   // Check that we don't generate llvm.access.group metadata in
   // non-order-independent loops
   for i in 0..n {
