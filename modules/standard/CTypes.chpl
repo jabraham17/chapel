@@ -761,7 +761,7 @@ module CTypes {
     :arg arr: the array for which a pointer should be returned
     :returns: a pointer to the array's elements
   */
-  inline proc c_ptrTo(arr: []): c_ptr(arr.eltType) {
+  inline proc c_ptrTo(ref arr: []): c_ptr(arr.eltType) {
     if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_ptrTo() at present");
 
