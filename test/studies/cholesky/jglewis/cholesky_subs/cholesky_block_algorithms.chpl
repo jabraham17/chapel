@@ -126,7 +126,7 @@ module cholesky_block_algorithms {
   // Symmetric Block Outer Product_Modification
   // ==========================================
 
-  proc symmetric_block_schur_complement ( A : [] , ref L : [], block_size )
+  proc symmetric_block_schur_complement ( ref A : [] , ref L : [], block_size )
 
     where ( A.domain.rank == 2 && L.domain.rank == 2)
 
