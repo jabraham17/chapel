@@ -982,6 +982,8 @@ bool CullRefCtx::checkContextCallExpr(CallExpr* call, GraphNode node,
     addDependency(revisitGraph, srcNode, node);
     revisit = true;
 
+    DEBUG_SYMBOL(sym);
+
     return true;
   }
 
@@ -1190,6 +1192,8 @@ bool CullRefCtx::checkGetRefTupleField(CallExpr* call,
         addDependency(revisitGraph, srcNode, tupFieldNode);
         revisit = true;
 
+        DEBUG_SYMBOL(sym);
+
         return true;
       }
     }
@@ -1237,6 +1241,8 @@ bool CullRefCtx::checkSetRefTupleField(CallExpr* call, GraphNode node,
     addDependency(revisitGraph, srcNode, makeNode(rhsSymbol, 0));
     revisit = true;
 
+    DEBUG_SYMBOL(sym);
+
     return true;
   }
 
@@ -1269,6 +1275,8 @@ bool CullRefCtx::checkCompilerRefTemporaries(CallExpr* call, GraphNode node,
     addDependency(revisitGraph, srcNode, node);
     revisit = true;
 
+    DEBUG_SYMBOL(sym);
+
     return true;
   }
 
@@ -1284,6 +1292,8 @@ bool CullRefCtx::checkOuterVariableInForall(SymExpr* se, GraphNode node,
     collectedSymbols.push_back(srcNode);
     addDependency(revisitGraph, srcNode, node);
     revisit = true;
+
+    DEBUG_SYMBOL(svar);
 
     return true;
   }
