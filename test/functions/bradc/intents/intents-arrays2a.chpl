@@ -31,7 +31,7 @@ proc callinout(inout x) {
 }
 
 
-proc callblank(x) {
+proc callblank(ref x) {
   writeln("in callblank, x is: ", x);
   forall i in D {
     x(i) += 1.0;
