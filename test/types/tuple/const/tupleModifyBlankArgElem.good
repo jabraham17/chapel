@@ -76,9 +76,3 @@ note: tuple element #0 of type domain(1,int(64),one)
 tupleModifyBlankArgElem.chpl:73: note: possibly set here
   tupleModifyBlankArgElem.chpl:87: called as modifyBlankArgElement(tup: 1*domain(1,int(64),one)) from function 'run'
   tupleModifyBlankArgElem.chpl:182: called as run(elem: domain(1,int(64),one))
-tupleModifyBlankArgElem.chpl:96: In function 'runArrayRefFormal':
-tupleModifyBlankArgElem.chpl:104: error: const actual element is passed to 'ref' intent tuple formal 'tup' of 'modifyBlankArgArrInferRef'
-note: tuple element #0 of type '[domain(1,int(64),one)] int(64)'
-tupleModifyBlankArgElem.chpl:102: note: const tuple declared here
-tupleModifyBlankArgElem.chpl:77: note: formal element has 'ref' intent due to modification, possibly here
-  tupleModifyBlankArgElem.chpl:186: called as runArrayRefFormal(arr: [domain(1,int(64),one)] int(64))

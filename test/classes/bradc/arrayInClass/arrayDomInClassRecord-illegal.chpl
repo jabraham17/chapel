@@ -19,7 +19,7 @@ baz(myC, 20);
 writeln("myC is: ", myC);
 
 
-proc foo(x,y) {
+proc foo(ref x,y) {
   x(1) = y;
 }
 
@@ -27,6 +27,6 @@ proc bar((x,y)) {
   x(1) = y;
 }
 
-proc baz(x,y) {
+proc baz(const ref x,y) {
   x.A(1) = y;
 }

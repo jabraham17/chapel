@@ -7,15 +7,15 @@
 // compiles and runs accurately.  There are a few modifications
 // needed to make this run:  A1D is a range instead of a 1D domain,
 // the output of the iterator IterateByBlocks is two ranges rather
-// than two subdomains of A1D and the temporary range, slice, is 
-// needed to represent the indefinite subdomain, CurrentBlockInds(k+1..). 
+// than two subdomains of A1D and the temporary range, slice, is
+// needed to represent the indefinite subdomain, CurrentBlockInds(k+1..).
 use IO;
 
 param n = 10;
 param blk = 5;
 
 var A1D: range = 1..n;
-const A2D = {A1D,A1D}; 
+const A2D = {A1D,A1D};
 var A: [A2D] real;
 
 // The variable slice is used to implement D(k+1..),
@@ -28,12 +28,12 @@ writeln("Unfactored Matrix:");
 writeln(A);
 
 for (CurrentBlockInds,TrailingBlockInds) in IterateByBlocks(A1D,blk) {
-  
+
   ref A11 = A[CurrentBlockInds,CurrentBlockInds];
   ref A21 = A[TrailingBlockInds,CurrentBlockInds];
   ref A12 = A[CurrentBlockInds,TrailingBlockInds];
   ref A22 = A[TrailingBlockInds,TrailingBlockInds];
-  
+
 // LU factorization of A11 and A12.
   for k in CurrentBlockInds {
 
@@ -60,7 +60,7 @@ for (CurrentBlockInds,TrailingBlockInds) in IterateByBlocks(A1D,blk) {
   for j in TrailingBlockInds { // This loop needs to be serial
     for k in CurrentBlockInds {
 //    slice = CurrentBlockInds(k+1..)
-      slice = k+1..CurrentBlockInds.high; 
+      slice = k+1..CurrentBlockInds.high;
       // This loop can be parallel, but for the purposes of testing
       //  make it serial to get deterministic results.
       for i in slice {
@@ -87,10 +87,10 @@ iter IterateByBlocks(D:range,blksize) {
     lo = i;
     hi = min(i+blksize-1,n);
     yield (i..hi,hi+1..n);
-  }   
+  }
 }
-  
-proc initA(A,filename:string){
+
+proc initA(ref A,filename:string){
 
 // Create full permutation matrix to permute A.
 // Very expensive, but easy way to permute the matrix

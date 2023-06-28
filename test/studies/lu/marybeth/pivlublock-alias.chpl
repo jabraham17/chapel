@@ -6,7 +6,7 @@
 // In this version, A1D is a range, not a 1D domain.  The iterator,
 // IterateByBlocks returns ranges, not subdomains of A1D.  Temporary
 // ranges, slice1 and slice2 are used to define what should be
-// subdomains sliced by indefinite ranges.  
+// subdomains sliced by indefinite ranges.
 //
 // The maxIndex reduction routine and the swap operator are not
 // implemented yet and need to be coded.  Since passing array aliases
@@ -20,7 +20,7 @@ param blk = 5;
 
 var A1D = 1..n;
 var slice0, slice1, slice2: range;
-const A2D = {A1D,A1D}; 
+const A2D = {A1D,A1D};
 var A: [A2D] real;
 var piv: [A1D] int;
 var ind, temp:int;
@@ -32,15 +32,15 @@ initA(A,'Adata.dat');
 writeln("Unfactored Matrix:");
 writeln(A);
 
-for (UnfactoredInds,CurrentBlockInds,TrailingBlockInds) 
+for (UnfactoredInds,CurrentBlockInds,TrailingBlockInds)
   in IterateByBlocks(A1D,blk) {
-  
+
   ref A1 = A[UnfactoredInds,CurrentBlockInds];
   ref A2 = A[UnfactoredInds,TrailingBlockInds];
   ref A12 = A[CurrentBlockInds,TrailingBlockInds];
   ref A22 = A[TrailingBlockInds,TrailingBlockInds];
 
-// LU factorization of A1 
+// LU factorization of A1
   for k in CurrentBlockInds {
 //  temporaries used instead of subdomains with indefinite ranges.
     slice0 = k..UnfactoredInds.high;
@@ -59,9 +59,9 @@ for (UnfactoredInds,CurrentBlockInds,TrailingBlockInds)
       for i in A1D {
         rtemp = A(k,i);
         A(k,i) = A(ind,i);
-        A(ind,i) = rtemp;       
-      } 
-    } 
+        A(ind,i) = rtemp;
+      }
+    }
     if (A1(k,k) != 0.0) {
       forall i in slice1 {
         A1(i,k) = A1(i,k)/A1(k,k);
@@ -71,7 +71,7 @@ for (UnfactoredInds,CurrentBlockInds,TrailingBlockInds)
       forall (i,j) in {slice1,slice2} {
         A1(i,j) -= A1(i,k)*A1(k,j);
       }
-    } 
+    }
     else halt("zero pivot encountered");
   }
 
@@ -116,11 +116,11 @@ iter IterateByBlocks(D:range,blksize) {
   for i in D by blksize {
     lo = i;
     hi = min(i + blksize-1,n);
-    yield (lo..n,i..hi,hi+1..n); 
-  }   
+    yield (lo..n,i..hi,hi+1..n);
+  }
 }
-  
-proc initA(A,filename:string){
+
+proc initA(ref A,filename:string){
 
   var Adat = open(filename, ioMode.r).reader();
 

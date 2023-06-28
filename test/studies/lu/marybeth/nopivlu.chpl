@@ -17,7 +17,7 @@ writeln(A);
 
 for k in 1..n-1 {
   const i = k+1..n;
-  if (A(k,k) != 0.0) { 
+  if (A(k,k) != 0.0) {
     A(i,k) = A(i,k)/A(k,k);
   }
   for j in k+1..n {
@@ -29,7 +29,7 @@ writeln("Factored Matrix:");
 writeln(A);
 writeln();
 
-proc initA(A,filename:string){
+proc initA(ref A,filename:string){
 
 // Create full permutation matrix to permute A.
 // Very expensive, but easy way to permute the matrix

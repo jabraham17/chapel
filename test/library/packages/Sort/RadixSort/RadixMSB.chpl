@@ -1,43 +1,43 @@
- 
+
  module RadixMSB {
    use BitOps;
    use Sort;
    use Random;
-   config param bucketBits=8; 
+   config param bucketBits=8;
 
-   proc radixSortMSB(array:[?dom] int) {
+   proc radixSortMSB(ref array:[?dom] int) {
 
      var auxArray:[1..array.size] int;
      var place = findPlace(array);
      __radixSortMSB(array,place,dom.low,dom.high,auxArray);
 
    }
-  
-   private proc __radixSortMSB(array:[] int, place: int, startIndex: int, endIndex: int, auxArray:[] int) {
+
+   private proc __radixSortMSB(ref array:[] int, place: int, startIndex: int, endIndex: int, ref auxArray:[] int) {
 
      // comparison sorting for <=100 elements
      if(array.size<=100) {
        InsertionSort.insertionSort(array[startIndex..endIndex]);
        return;
      }
-     
+
      param numBuckets = (1 << bucketBits);
      var counts:[0..numBuckets] int;
-     var curOffsets: [0..numBuckets] int; 
-   
+     var curOffsets: [0..numBuckets] int;
+
      //base case, exit condition
      if (endIndex<=startIndex || place<0) {
        return;
      }
-   
+
      for i in startIndex..endIndex {
        // find the postion to store a particular number in the counts array
        var currentDigit = findPosition(place, array[i], numBuckets);
-     
+
        //increment count at that position
        counts[currentDigit] += 1; //increment count at the position of the m.s.d.
      }
-    
+
      //update curOffsets
      curOffsets[0] = 0;
      for i in 1..numBuckets {
@@ -45,25 +45,25 @@
      }
 
 
-     //fill in the auxarray at correct positions 
+     //fill in the auxarray at correct positions
      for i in startIndex..endIndex {
        var countIndex = findPosition(place, array[i], numBuckets);
-       var auxIndex = curOffsets[countIndex];     
-       auxArray[auxIndex+1] = array[i];   
-       curOffsets[countIndex] += 1;                 
+       var auxIndex = curOffsets[countIndex];
+       auxArray[auxIndex+1] = array[i];
+       curOffsets[countIndex] += 1;
      }
-   
-     //swap slices of array and aux array   
+
+     //swap slices of array and aux array
      array[startIndex..endIndex] <=> auxArray[1..(endIndex-startIndex+1)];
- 
+
 
      //recursive call for subparts of array
      __radixSortMSB(array, place-bucketBits, startIndex, startIndex + curOffsets[0] -1, auxArray);
-     for m in 0..numBuckets-1 {        
+     for m in 0..numBuckets-1 {
        __radixSortMSB(array, place-bucketBits, startIndex + curOffsets[m] , startIndex + curOffsets[m+1] - 1, auxArray);
-         
-     }	
-  	
+
+     }
+
    }
 
    // To find a position where an element's count is to be updated in the counts array.
@@ -80,12 +80,12 @@
    // To find the place value from which msb sorting starts
    private proc findPlace(array:[] int) {
 
-     const maxEl = findMaxElement(array);    
+     const maxEl = findMaxElement(array);
      var lz = clz(maxEl);
      var numBits = 64 - lz ;
      var place = ((numBits)>>3)<<3;
 
      return place;
-   } 
-  
+   }
+
   }

@@ -2,7 +2,7 @@ param n = 10;
 param blk = 5;
 
 var A1D = 1..n;
-const A2D = {A1D,A1D}; 
+const A2D = {A1D,A1D};
 var A: [A2D] real;
 
 initA(A,'Adata.dat');
@@ -21,8 +21,8 @@ proc maxIndex(A:[?D]) {
   }
   return ind;
 }
-  
-proc initA(A,filename:string){
+
+proc initA(ref A,filename:string){
   use IO;
 
   var Adat = open('Adata.dat', ioMode.r).reader();

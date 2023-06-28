@@ -5,24 +5,24 @@ module scalar_inner_product_cholesky_strided {
   // each step, in a manner reflecting the reduction form of the defining
   // equations.  During each step the previous columns of L are read to
   // implement the separate reduction operations for each entry of the current
-  // column.  For efficiency, the reduction operations are combined into a 
+  // column.  For efficiency, the reduction operations are combined into a
   // matrix-vector product form.
   // =========================================================================
-    
-  proc scalar_inner_product_cholesky_strided ( A : [] ) 
 
-    where ( A.domain.rank == 2 ) 
+  proc scalar_inner_product_cholesky_strided ( ref A : [] )
+
+    where ( A.domain.rank == 2 )
     {
     // -----------------------------------------------------------------------
-    // the input argument is a square symmetric matrix, whose entries will be 
-    // overwritten by the entries of the Cholesky factor.  Only the entries in 
+    // the input argument is a square symmetric matrix, whose entries will be
+    // overwritten by the entries of the Cholesky factor.  Only the entries in
     // the lower triangule are referenced and modified.
     // The procedure additionally returns a success / failure flag, which is
     //   true if the matrix is numerically positive definite
     //   false if the matrix is not positive definite
-    // Note that while a factorization is computable for positive 
+    // Note that while a factorization is computable for positive
     // semi-definite matrices, we do not compute it because this factorization
-    // is designed for use in a context of solving a system of linear 
+    // is designed for use in a context of solving a system of linear
     // equations.
     // -----------------------------------------------------------------------
 
@@ -48,7 +48,7 @@ module scalar_inner_product_cholesky_strided {
 	for i in mtx_range (j+1..) do
 	  A (i, j ) = A (i, j) / A (j, j);
       }
-      else 
+      else
 
 	// error return if matrix is not positive definite
 	return false;

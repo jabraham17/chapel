@@ -58,7 +58,7 @@ proc initProblemSize() {
   if (debugInit) then
     writeln(numElems, " ", numNodes);
 
-  return (numElems, numNodes); 
+  return (numElems, numNodes);
 }
 
 
@@ -88,10 +88,10 @@ proc initCoordinates(XYZ) {
 proc initElemToNodeMapping(elemToNode: [?D]) {
   if (initFromFile) {
     param nodesPerElem = elemToNode[D.low].size;
-    for nodelist in elemToNode do 
+    for nodelist in elemToNode do
       for i in 0..nodesPerElem-1 do
         reader.read(nodelist[i]);
-    
+
     if debugInit {
       writeln("elemToNode mappings are:");
       for nodelist in elemToNode do
@@ -122,31 +122,31 @@ proc initElemToNodeMapping(elemToNode: [?D]) {
 
 // read/compute the greek variables
 
-proc initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap) {
+proc initGreekVars(ref lxim, ref lxip, ref letam, ref letap, ref lzetam, ref lzetap) {
   if (initFromFile) {
     for (xm,xp,em,ep,zm,zp) in zip(lxim, lxip, letam, letap, lzetam, lzetap) do
       reader.read(xm,xp,em,ep,zm,zp);
   } else {
     forall num in lxim.domain {
       const (i,j,k) = elemIdx1DTo3D(num);
-      
-      lxim[num] = if (k == 0) 
+
+      lxim[num] = if (k == 0)
                     then num
                     else elemIdx3DTo1D(i,j,k-1);
 
       lxip[num] = if (k == elemsPerEdge-1)
                     then num
                     else elemIdx3DTo1D(i,j,k+1);
-    
-      letam[num] = if (j == 0) 
+
+      letam[num] = if (j == 0)
                     then num
                     else elemIdx3DTo1D(i,j-1,k);
 
       letap[num] = if (j == elemsPerEdge-1)
                     then num
                     else elemIdx3DTo1D(i,j+1,k);
-    
-      lzetam[num] = if (i == 0) 
+
+      lzetam[num] = if (i == 0)
                     then num
                     else elemIdx3DTo1D(i-1,j,k);
 
@@ -206,7 +206,7 @@ inline proc initFreeSurface(ref freeSurface) {
   } else {
     for ij in DimNodeFace do
       freeSurface += nodeIdx2DTo1D(ij, X, nodesPerEdge-1);
-                  
+
     for ij in DimNodeFace do
       freeSurface += nodeIdx2DTo1D(ij, Y, nodesPerEdge-1);
 

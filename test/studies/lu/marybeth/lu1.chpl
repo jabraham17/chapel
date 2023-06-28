@@ -36,7 +36,7 @@ for k in 1..n-1 {
       A(ind,i) = temp;
     }
   }
-  if (A(k,k) != 0.0) { 
+  if (A(k,k) != 0.0) {
     for i in k+1..n {
       A(i,k) = A(i,k)/A(k,k);
     }
@@ -55,7 +55,7 @@ writeln("Pivot Vector:");
 writeln(piv);
 
 
-proc initA(A){
+proc initA(ref A){
 
 A(1,1) = 3.0;
 A(1,2) = 17.0;

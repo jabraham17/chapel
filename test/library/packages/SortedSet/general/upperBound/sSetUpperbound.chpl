@@ -16,14 +16,14 @@ proc upperBound(arr: [?d] int, target: int, out result:int): bool {
   return false;
 }
 
-proc doTest(arr: [?d] int) {
+proc doTest(ref arr: [?d] int) {
   var s1 = new sortedSet(int, false, defaultComparator);
 
   for x in arr {
     s1.add(x);
   }
 
-  sort(arr); 
+  sort(arr);
 
   for i in 0..#testIters {
     var now = arr[i];
@@ -34,7 +34,7 @@ proc doTest(arr: [?d] int) {
 
     var arrResult: int;
     var arrFound: bool = upperBound(arr, now, arrResult);
-    
+
     assert(setFound == arrFound);
     assert(!setFound || setResult == arrResult);
 
@@ -44,7 +44,7 @@ proc doTest(arr: [?d] int) {
     assert(setFound);
 
     arrFound = upperBound(arr, now, arrResult);
-    
+
     assert(setFound == arrFound);
     assert(!setFound || setResult == arrResult);
   }
