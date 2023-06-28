@@ -11,7 +11,7 @@
 
   Notes on the Initial Implementation
   -----------------------------------
-   
+
   This implementation was designed to mirror the overall structure of
   the C++ Lulesh but use Chapel constructs where they can help make
   the code more readable, easier to maintain, or more
@@ -105,16 +105,16 @@ const Elems = if useBlockDist then ElemSpace dmapped Block(ElemSpace)
                               else NodeSpace;
 
 
-                              
+
 param numdims = 3,
             X = 0,
             Y = 1,
             Z = 2;
-                              
+
 /* The coordinates */
 
 var xyz: [Nodes] numdims*real;
-                              
+
 
 
 
@@ -123,7 +123,7 @@ var xyz: [Nodes] numdims*real;
 
 param nodesPerElem = 8;
 
-                                 
+
 // We could name this, but chose not to since it doesn't add that much clarity
 //
 // const elemNeighbors = 0..nodesPerElem-1;
@@ -159,7 +159,7 @@ const u_cut = 1.0e-7,           /* velocity tolerance */
       v_cut = 1.0e-10,          /* relative volume tolerance */
       qlc_monoq = 0.5,          /* linear term coef for q */
       qqc_monoq = 2.0/3.0,      /* quadratic term coef for q */
-      qqc = 2.0, 
+      qqc = 2.0,
       qqc2 = 64.0 * qqc**2,
       eosvmax = 1.0e+9,
       eosvmin = 1.0e-9,
@@ -175,7 +175,7 @@ const u_cut = 1.0e-7,           /* velocity tolerance */
 config const stoptime = 1.0e-2,      /* end time for simulation */
              maxcycles = max(int),   /* max # of steps to take */
              dtfixed = -1.0e-7       /* fixed time increment */
-            ;        
+            ;
 
 
 /* The list of material elements */
@@ -257,7 +257,7 @@ proc main() {
       deprint("[[ p, e, q ]]", p, e, q);
     }
     if showProgress then
-      writef("time = %er, dt=%er%s\n", time, deltatime, 
+      writef("time = %er, dt=%er%s\n", time, deltatime,
        if doTiming then ", elapsed = " + (timeSinceEpoch().totalSeconds()-iterTime):string
                    else "");
   }
@@ -396,7 +396,7 @@ proc initBoundaryConditions() {
   // TODO: This is an example of an array that, in a distributed
   // memory code, would typically be completely local and only storing
   // the local nodes owned by the locale -- noting that some nodes
-  // are logically owned by multiple locales and therefore would 
+  // are logically owned by multiple locales and therefore would
   // redundantly be stored in both locales' surfaceNode arrays -- it's
   // essentially local scratchspace that does not need to be communicated
   // or kept coherent across locales.
@@ -445,7 +445,7 @@ inline proc localizeNeighborNodes(eli: index(Elems),
 
   for param i in 0..nodesPerElem-1 {
     const noi = elemToNode[eli][i];
-    
+
     x_local[i] = x[noi];
     y_local[i] = y[noi];
     z_local[i] = z[noi];
@@ -477,8 +477,8 @@ inline proc localizeNeighborNodes(eli: index(Elems),
 }
 
 inline proc TripleProduct(xyz1, xyz2, xyz3) {
-  return xyz1[X]*(xyz2[Y]*xyz3[Z] - xyz2[Z]*xyz3[Y]) + 
-         xyz2[X]*(xyz1[Z]*xyz3[Y] - xyz1[Y]*xyz3[Z]) + 
+  return xyz1[X]*(xyz2[Y]*xyz3[Z] - xyz2[Z]*xyz3[Y]) +
+         xyz2[X]*(xyz1[Z]*xyz3[Y] - xyz1[Y]*xyz3[Z]) +
          xyz3[X]*(xyz1[Y]*xyz2[Z] - xyz1[Z]*xyz2[Y]);
 }
 
@@ -504,7 +504,7 @@ proc CalcElemVolume(xyz) {
   return volume / 12.0;
 }
 
-proc InitStressTermsForElems(p, q, sigxxyyzz) {
+proc InitStressTermsForElems(p, q, ref sigxxyyzz) {
   forall i in sigxxyyzz.domain {
     const pq = -p[i] - q[i];
     sigxxyyzz[i] = (pq, pq, pq);
@@ -640,7 +640,7 @@ proc CalcElemCharacteristicLength(xyz, volume) {
   proc AreaFace(param p0, param p1, param p2, param p3) {
     const fxyz = (xyz[p2] - xyz[p0]) - (xyz[p3] - xyz[p1]),
           gxyz = (xyz[p2] - xyz[p0]) + (xyz[p3] - xyz[p1]),
-      area = (sumOfSquare(fxyz) * sumOfSquare(gxyz)) 
+      area = (sumOfSquare(fxyz) * sumOfSquare(gxyz))
              - sumOfProduct(fxyz, gxyz)**2;
 
     return area ;
@@ -707,7 +707,7 @@ proc CalcElemVelocityGradient(xyzvel, pfxyz, detJ, ref d3: 3*real) {
 }
 
 
-proc CalcPressureForElems(p_new: [?D] real, bvc, pbvc, 
+proc CalcPressureForElems(ref p_new: [?D] real, ref bvc, ref pbvc,
                           e_old, compression, vnewc,
                           pmin: real, p_cut: real, eosvmax: real) {
 
@@ -862,7 +862,7 @@ proc CalcForceForNodes() {
   // this was commented out in C++ code, so left out here
 }
 
-var sigxxyyzz: [Elems] 3*real, 
+var sigxxyyzz: [Elems] 3*real,
     determ: [Elems] real;
 
 proc CalcVolumeForceForElems() {
@@ -884,7 +884,7 @@ proc CalcVolumeForceForElems() {
 }
 
 
-proc IntegrateStressForElems(sigxxyyzz, determ) {
+proc IntegrateStressForElems(sigxxyyzz, ref determ) {
   forall k in Elems {
     var b_xyz: 8*(3*real);
     var xyz_local: 8*(3*real);
@@ -895,7 +895,7 @@ proc IntegrateStressForElems(sigxxyyzz, determ) {
     local {
       /* Volume calculation involves extra work for numerical consistency. */
       CalcElemShapeFunctionDerivatives(xyz_local, b_xyz, determ[k]);
-    
+
       CalcElemNodeNormals(b_xyz, xyz_local);
 
       SumElemStressesToNodeForces(b_xyz, sigxxyyzz[k], fxyz_local);
@@ -911,7 +911,7 @@ proc IntegrateStressForElems(sigxxyyzz, determ) {
 
 var dvdxyz, xyz8n: [Elems] 8*(3*real);
 
-proc CalcHourglassControlForElems(determ) {
+proc CalcHourglassControlForElems(ref determ) {
 
   forall eli in Elems {
     /* Collect domain nodes to elem nodes */
@@ -941,7 +941,7 @@ proc CalcHourglassControlForElems(determ) {
 }
 
 
-const gammaCoef: 4*(8*real) = // WAS: [1..4, 1..8] real = 
+const gammaCoef: 4*(8*real) = // WAS: [1..4, 1..8] real =
                 (( 1.0,  1.0, -1.0, -1.0, -1.0, -1.0,  1.0,  1.0),
                  ( 1.0, -1.0, -1.0,  1.0, -1.0,  1.0,  1.0, -1.0),
                  ( 1.0, -1.0,  1.0, -1.0,  1.0, -1.0,  1.0, -1.0),
@@ -963,7 +963,7 @@ proc CalcFBHourglassForceForElems(determ, xyz8n, dvdxyz) {
     /*
     for param i in 0..nodesPerElem-1 {
       const noi = elemToNode[eli][i];
-    
+
       xd1[i] = xd[noi];
       yd1[i] = yd[noi];
       zd1[i] = zd[noi];
@@ -982,7 +982,7 @@ proc CalcFBHourglassForceForElems(determ, xyz8n, dvdxyz) {
         }
 
         for param j in 0..7 {
-          hourgam[j][i] = gammaCoef[i][j] - volinv * 
+          hourgam[j][i] = gammaCoef[i][j] - volinv *
             (dvdxyz[eli][j][X] * hourmodxyz[X] +
              dvdxyz[eli][j][Y] * hourmodxyz[Y] +
              dvdxyz[eli][j][Z] * hourmodxyz[Z]);
@@ -1028,7 +1028,7 @@ proc ApplyAccelerationBoundaryConditionsForNodes() {
   // xdd[XSym] = 0.0;
   // ydd[YSym] = 0.0;
   // zdd[ZSym] = 0.0;
-  
+
   forall x in XSym do xyzdd[x][X] = 0.0;
   forall y in YSym do xyzdd[y][Y] = 0.0;
   forall z in ZSym do xyzdd[z][Z] = 0.0;
@@ -1072,7 +1072,7 @@ proc CalcLagrangeElements() {
 }
 
 
-proc CalcKinematicsForElems(dxxyyzz, const dt: real) {
+proc CalcKinematicsForElems(ref dxxyyzz, const dt: real) {
   // loop over all elements
   forall k in Elems {
     var b_xyz: 8*(3*real),
@@ -1125,7 +1125,7 @@ proc CalcQForElems() {
   // MONOTONIC Q option
 
   /* Calculate velocity gradients */
-  CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta, 
+  CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
                                   delx_xi, delx_eta, delx_zeta);
 
   /* Transfer velocity gradients in the first order elements */
@@ -1182,8 +1182,8 @@ proc UpdateVolumesForElems() {
 }
 
 
-proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta, 
-                                     delx_xi, delx_eta, delx_zeta) {
+proc CalcMonotonicQGradientsForElems(ref delv_xi, ref delv_eta, ref delv_zeta,
+                                     ref delx_xi, ref delx_eta, ref delx_zeta) {
   forall eli in Elems {
     const ptiny = 1.0e-36;
     var xyzl: 8*(3*real);
@@ -1197,9 +1197,9 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
       var axyz, dxyzv: 3*real;
 
       var dxyzj = -0.25 * ((xyzl[0]+xyzl[1]+xyzl[5]+xyzl[4]) - (xyzl[3]+xyzl[2]+xyzl[6]+xyzl[7])),
-      
+
           dxyzi =  0.25 * ((xyzl[1]+xyzl[2]+xyzl[6]+xyzl[5]) - (xyzl[0]+xyzl[3]+xyzl[7]+xyzl[4])),
-      
+
           dxyzk =  0.25 * ((xyzl[4]+xyzl[5]+xyzl[6]+xyzl[7]) - (xyzl[0]+xyzl[1]+xyzl[2]+xyzl[3]));
 
       /* find delvk and delxk ( i cross j ) */
@@ -1248,7 +1248,7 @@ proc CalcMonotonicQGradientsForElems(delv_xi, delv_eta, delv_zeta,
 }
 
 
-proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta, 
+proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
                             delx_xi, delx_eta, delx_zeta) {
   //got rid of call through to "CalcMonotonicQRegionForElems"
 
@@ -1289,13 +1289,13 @@ proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
 
     select bcMask & ETA_M {
       when 0          do delvm = delv_eta[letam[i]];
-      when ETA_M_SYMM do delvm = delv_eta[i];      
-      when ETA_M_FREE do delvm = 0.0;      
+      when ETA_M_SYMM do delvm = delv_eta[i];
+      when ETA_M_FREE do delvm = 0.0;
     }
     select bcMask & ETA_P {
       when 0          do delvp = delv_eta[letap[i]];
-      when ETA_P_SYMM do delvp = delv_eta[i];      
-      when ETA_P_FREE do delvp = 0.0;      
+      when ETA_P_SYMM do delvp = delv_eta[i];
+      when ETA_P_FREE do delvp = 0.0;
     }
 
     delvm = delvm * norm;
@@ -1316,13 +1316,13 @@ proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
 
     select bcMask & ZETA_M {
       when 0           do delvm = delv_zeta[lzetam[i]];
-      when ZETA_M_SYMM do delvm = delv_zeta[i];       
-      when ZETA_M_FREE do delvm = 0.0;        
+      when ZETA_M_SYMM do delvm = delv_zeta[i];
+      when ZETA_M_FREE do delvm = 0.0;
     }
     select bcMask & ZETA_P {
       when 0           do delvp = delv_zeta[lzetap[i]];
-      when ZETA_P_SYMM do delvp = delv_zeta[i];       
-      when ZETA_P_FREE do delvp = 0.0;        
+      when ZETA_P_SYMM do delvp = delv_zeta[i];
+      when ZETA_P_FREE do delvp = 0.0;
     }
 
     delvm = delvm * norm;
@@ -1371,7 +1371,7 @@ proc CalcMonotonicQForElems(delv_xi, delv_eta, delv_zeta,
 }
 
 
-  var e_old, delvc, p_old, q_old, compression, compHalfStep, 
+  var e_old, delvc, p_old, q_old, compression, compHalfStep,
     qq_old, ql_old, work, p_new, e_new, q_new, bvc, pbvc: [Elems] real;
 
 proc EvalEOSForElems(vnewc) {
@@ -1410,8 +1410,8 @@ proc EvalEOSForElems(vnewc) {
     }
   }
 
-  CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc, 
-                     p_old, e_old, q_old, compression, compHalfStep, 
+  CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
+                     p_old, e_old, q_old, compression, compHalfStep,
                      vnewc, work, delvc, qq_old, ql_old);
 
   forall i in MatElems {
@@ -1426,13 +1426,13 @@ proc EvalEOSForElems(vnewc) {
 
   var pHalfStep: [MatElems] real;
 
-proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
-                        p_old, e_old, q_old, compression, compHalfStep, 
+proc CalcEnergyForElems(ref p_new, ref e_new, ref q_new, ref bvc, ref pbvc,
+                        p_old, e_old, q_old, compression, compHalfStep,
                         vnewc, work, delvc, qq_old, ql_old) {
   // TODO: might need to move these consts into foralls or global
-  // Otherwise, they live on Locale0 and everyone else has to do 
+  // Otherwise, they live on Locale0 and everyone else has to do
   // remote reads.  OR: Check if they're remote value forwarded.
-  const rho0 = refdens; 
+  const rho0 = refdens;
   const sixth = 1.0 / 6.0;
 
   forall i in Elems {
@@ -1440,7 +1440,7 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
     if e_new[i] < emin then e_new[i] = emin;
   }
 
-  CalcPressureForElems(pHalfStep, bvc, pbvc, e_new, compHalfStep, 
+  CalcPressureForElems(pHalfStep, bvc, pbvc, e_new, compHalfStep,
                        vnewc, pmin, p_cut, eosvmax);
 
   forall i in Elems {
@@ -1479,8 +1479,8 @@ proc CalcEnergyForElems(p_new, e_new, q_new, bvc, pbvc,
       q_tilde = ssc * ql_old[i] + qq_old[i];
     }
 
-    e_new[i] -= (7.0*(p_old[i] + q_old[i]) 
-                 - 8.0*(pHalfStep[i] + q_new[i]) 
+    e_new[i] -= (7.0*(p_old[i] + q_old[i])
+                 - 8.0*(pHalfStep[i] + q_new[i])
                  + (p_new[i] + q_tilde)) * delvc[i] * sixth;
     if abs(e_new[i]) < e_cut then e_new[i] = 0.0;
     if e_new[i] < emin then e_new[i] = emin;
@@ -1518,7 +1518,7 @@ iter elemToNodes(elem) {
   for param i in 0..nodesPerElem-1 do
     yield elemToNode[elem][i];
 }
-                                 
+
 iter elemToNodesTuple(e) {
   for i in 0..#nodesPerElem do
     yield (elemToNode[e][i], i);

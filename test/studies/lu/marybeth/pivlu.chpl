@@ -38,7 +38,7 @@ for k in 1..n-1 {
     }
   }
   const i = k+1..n;
-  if (A(k,k) != 0.0) { 
+  if (A(k,k) != 0.0) {
     A(i,k) = A(i,k)/A(k,k);
   }
   for j in k+1..n {
@@ -52,7 +52,7 @@ writeln();
 writeln("Pivot Vector:");
 writeln(piv);
 
-proc initA(A,filename:string){
+proc initA(ref A,filename:string){
 
   var Adat = open(filename, ioMode.r).reader();
 

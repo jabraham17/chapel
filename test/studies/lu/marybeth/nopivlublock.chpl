@@ -19,7 +19,7 @@ for jblk in 1..n by blk {
   var low = jblk;
   var hi = if (jblk + blk-1) <= n then jblk+blk-1 else n;
   for k in low..hi {
-    if (A(k,k) != 0.0) { 
+    if (A(k,k) != 0.0) {
       for i in k+1..n {
         A(i,k) = A(i,k)/A(k,k);
       }
@@ -53,7 +53,7 @@ writeln();
 writeln("Factored Matrix:");
 writeln(A);
 
-proc initA(A,filename:string){
+proc initA(ref A,filename:string){
 
 // Create full permutation matrix to permute A.
 // Very expensive, but easy way to permute the matrix

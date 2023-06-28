@@ -41,7 +41,7 @@ for jblk in 1..n by blk {
         A(ind,i) = temp;
       }
     }
-    if (A(k,k) != 0.0) { 
+    if (A(k,k) != 0.0) {
       for i in k+1..n {
         A(i,k) = A(i,k)/A(k,k);
       }
@@ -78,7 +78,7 @@ writeln();
 writeln("Pivot Vector:");
 writeln(piv);
 
-proc initA(A,filename:string){
+proc initA(ref A,filename:string){
 
   var Adat = open(filename, ioMode.r).reader();
 

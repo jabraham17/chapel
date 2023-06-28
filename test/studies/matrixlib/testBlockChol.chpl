@@ -20,7 +20,7 @@ proc main() {
   blk = min(blk,n);
 
   var A1D = 1..n;
-  const A2D = {A1D,A1D}; 
+  const A2D = {A1D,A1D};
   var A: [A2D] real;
   initA(A,Adat);
   Adat.close();
@@ -42,16 +42,16 @@ proc readSize(Adat) {
 
   Adat.read(n);
   return n;
-} 
+}
 
 proc readBlk(Adat) {
   var blk: int;
 
   Adat.read(blk);
   return blk;
-} 
+}
 
-proc initA(A,Adat){
+proc initA(ref A,Adat){
   for ij in A.domain {
     Adat.read(A(ij));
   }
@@ -75,4 +75,4 @@ proc writeCholFactor(A:[?D],fac:string) {
     }
   }
   writeln(G);
-} 
+}

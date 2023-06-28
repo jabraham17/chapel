@@ -1,5 +1,5 @@
 
-proc modifyBlankArgArrInferRef(tup: (?t,)) where isArrayType(t) {
+proc modifyBlankArgArrInferRef(ref tup: (?t,)) where isArrayType(t) {
   tup[0][0] = 64;
 }
 
@@ -28,7 +28,7 @@ proc test3() {
   var arr: [0..0] int;
   const tup = (arr,);
 
-  proc modifyViaFormal(tup) {
+  proc modifyViaFormal(ref tup) {
     // Tuple is in the correct form. Automatically pass it off.
     modifyBlankArgArrInferRef(tup);
   }

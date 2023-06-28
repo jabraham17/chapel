@@ -15,14 +15,14 @@ proc lowerBound(arr: [?d] int, target: int, out result:int ): bool {
   return false;
 }
 
-proc doTest(arr: [?d] int) {
+proc doTest(ref arr: [?d] int) {
   var s1 = new sortedSet(int, false, defaultComparator);
 
   for x in arr {
     s1.add(x);
   }
 
-  sort(arr); 
+  sort(arr);
 
   for i in 0..#testIters {
     var now = arr[i];
@@ -33,7 +33,7 @@ proc doTest(arr: [?d] int) {
 
     var arrResult: int;
     var arrFound: bool = lowerBound(arr, now, arrResult);
-    
+
     assert(setFound == arrFound);
     assert(!setFound || setResult == arrResult);
 
@@ -42,7 +42,7 @@ proc doTest(arr: [?d] int) {
     (setFound, setResult) = s1.lowerBound(now);
 
     arrFound = lowerBound(arr, now, arrResult);
-    
+
     assert(setFound == arrFound);
     assert(!setFound || setResult == arrResult);
   }

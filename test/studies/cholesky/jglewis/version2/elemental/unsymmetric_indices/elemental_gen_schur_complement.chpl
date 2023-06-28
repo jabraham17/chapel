@@ -1,7 +1,7 @@
 module elemental_gen_schur_complement {
 
   // ===================================================
-  // SPECIAL VERSIONS OF BLAS ROUTINES, ALLOWING UNEQUAL 
+  // SPECIAL VERSIONS OF BLAS ROUTINES, ALLOWING UNEQUAL
   // (BUT UNSTRIDED) INDICES FOR ROWS AND COLUMNS
   // ===================================================
 
@@ -13,14 +13,14 @@ module elemental_gen_schur_complement {
   // eventual block size for this operation does not need to be the
   // same as the block size for the outer algorithm partitioning.
   // Note that the same code is used for block cyclic distributions
-  // and cyclic distributions.  The domains for the arrays are unstrided 
+  // and cyclic distributions.  The domains for the arrays are unstrided
   // in the standard block cyclic case and strided in the cyclic case.
- 
-  proc elemental_gen_schur_complement ( A : [], A_diag_offset, 
+
+  proc elemental_gen_schur_complement ( ref A : [], A_diag_offset,
 				       L12 : [], L21 : [] )
 
-    where ( A.domain.rank   == 2 && 
-	    L12.domain.rank == 2 && 
+    where ( A.domain.rank   == 2 &&
+	    L12.domain.rank == 2 &&
 	    L21.domain.rank == 2) {
 
     const schur_complement_rows = A.domain.dim (0);

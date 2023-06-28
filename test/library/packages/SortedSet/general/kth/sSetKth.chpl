@@ -5,14 +5,14 @@ use Sort;
 
 config const testIters = 128;
 
-proc doTest(arr: [?d] int) {
+proc doTest(ref arr: [?d] int) {
   var s1 = new sortedSet(int, false, defaultComparator);
 
   for x in arr {
     s1.add(x);
   }
 
-  sort(arr); 
+  sort(arr);
 
   for i in 0..#testIters {
     var now = arr[i];

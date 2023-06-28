@@ -23,23 +23,23 @@ module flagsortMSB {
    // To find the place value from which msb sorting starts
    private proc findPlace(array:[] int) {
 
-     const maxEl = findMaxElement(array);    
+     const maxEl = findMaxElement(array);
      var lz = clz(maxEl);
      var numBits = 64 - lz ;
      var place = ((numBits)>>3)<<3;
 
      return place;
    }
-  
+
    /* MSB helper function */
-   proc radixSortMSB(array:[?dom] int) {
+   proc radixSortMSB(ref array:[?dom] int) {
 
      var place = findPlace(array);
      __radixSortMSB(array,place,dom.low,dom.high);
 
    }
 
-   private proc __radixSortMSB(array:[] int, place: int, startIndex: int, endIndex: int) {
+   private proc __radixSortMSB(ref array:[] int, place: int, startIndex: int, endIndex: int) {
 
      // base case, exit condition
      if (place<0 || endIndex <= startIndex ) {
@@ -63,11 +63,11 @@ module flagsortMSB {
       off = startIndex + end - off;
       end = startIndex + end;
     }
- 
+
     var curbin = 0;
 
     /* Shuffle/re-distribute the elements according to the key part currently under consideration */
-    
+
     while true {
 
       while curbin <= numBuckets && counts[curbin] == curOffsets[curbin] {
@@ -84,15 +84,15 @@ module flagsortMSB {
       var endfast = max(counts[curbin], curOffsets[curbin]-2*max_buf);
       var bufstart = max(counts[curbin], curOffsets[curbin]-max_buf);
 
-     
+
       var i = bufstart;
-    
+
       while i < end {
         buf[used_buf+1] = array[i];
         used_buf += 1;
         i += 1;
       }
-      
+
       if tryUnroll {
         while counts[curbin] < endfast {
           for param j in 1..max_buf {
@@ -126,15 +126,15 @@ module flagsortMSB {
     for i in 1..numBuckets {
       counts[i] = curOffsets[i-1];
     }
- 
+
     for bin in 0..numBuckets {
       const binStart = counts[bin];
       const binEnd = if bin+1<=numBuckets then counts[bin+1]-1 else endIndex;
       const num = 1 + binEnd - binStart;
       if num > 1 {
          __radixSortMSB(array,place-bucketBits,binStart, binEnd);
-      }       
-    }	
+      }
+    }
   }
 }
 
