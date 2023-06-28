@@ -1625,7 +1625,7 @@ module SampleSortHelp {
   // it could copy the sample somewhere else for sorting.
   proc putRandomSampleAtArrayStart(in start_n:int,
                                    end_n:int,
-                                   A:[],
+                                   ref A:[],
                                    in numSamples:int,
                                    seed=1) {
     private use Random;
@@ -2004,7 +2004,7 @@ module SequentialInPlacePartitioning {
   // Returns the count for each bucket
   // Stores the data in dst in buckets according to the bucketizer.
   // (e.g. sorted by the next digit in radix sort)
-  proc bucketize(start_n: int, end_n: int, A:[],
+  proc bucketize(start_n: int, end_n: int, ref A:[],
                  bucketizer,
                  criterion, startbit:int) {
 
@@ -2454,7 +2454,7 @@ module TwoArrayPartitioning {
 
 
   private proc partitioningSortWithScratchSpaceHandleSampling(
-          start_n:int, end_n:int, A:[], Scratch:[],
+          start_n:int, end_n:int, ref A:[], ref Scratch:[],
           ref state: TwoArrayBucketizerSharedState,
           criterion, startbit:int):void {
     // If we are doing a sample sort, we need to gather a fresh sample.
@@ -2511,7 +2511,7 @@ module TwoArrayPartitioning {
 
   // Sorts the data in A.
   proc partitioningSortWithScratchSpace(
-          start_n:int, end_n:int, A:[], Scratch:[],
+          start_n:int, end_n:int, ref A:[], ref Scratch:[],
           ref state: TwoArrayBucketizerSharedState,
           criterion, startbit:int):void {
 
@@ -2652,7 +2652,7 @@ module TwoArrayPartitioning {
   }
 
   private proc distributedPartitioningSortWithScratchSpaceBaseCase(
-          start_n:int, end_n:int, A:[], Scratch:[],
+          start_n:int, end_n:int, ref A:[], ref Scratch:[],
           ref compat: TwoArrayBucketizerSharedState,
           criterion, startbit:int):void {
 
@@ -2706,7 +2706,7 @@ module TwoArrayPartitioning {
 
 
   private proc distributedPartitioningSortWithScratchSpaceHandleSampling(
-          start_n:int, end_n:int, A:[], Scratch:[],
+          start_n:int, end_n:int, ref A:[], ref Scratch:[],
           ref state: TwoArrayDistributedBucketizerSharedState,
           criterion, startbit:int):void {
     // If we are doing a sample sort, we need to gather a fresh sample.
@@ -2765,7 +2765,7 @@ module TwoArrayPartitioning {
   }
 
   proc distributedPartitioningSortWithScratchSpace(
-          start_n:int, end_n:int, A:[], Scratch:[],
+          start_n:int, end_n:int, ref A:[], ref Scratch:[],
           ref state1: TwoArrayDistributedBucketizerSharedState,
           ref state2: TwoArrayDistributedBucketizerSharedState,
           criterion, startbit:int): void {
@@ -3160,7 +3160,7 @@ module TwoArrayRadixSort {
   private use super.TwoArrayPartitioning;
   private use super.RadixSortHelp;
 
-  proc twoArrayRadixSort(Data:[], comparator:?rec=defaultComparator) {
+  proc twoArrayRadixSort(ref Data:[], comparator:?rec=defaultComparator) {
 
     var sequentialSizePerTask=4096;
     var baseCaseSize=16;
@@ -3218,7 +3218,7 @@ module TwoArraySampleSort {
 
   private use CTypes;
 
-  proc twoArraySampleSort(Data:[], comparator:?rec=defaultComparator) {
+  proc twoArraySampleSort(ref Data:[], comparator:?rec=defaultComparator) {
 
     var baseCaseSize=16;
     var distributedBaseCaseSize=1024;

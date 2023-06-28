@@ -396,7 +396,7 @@ module FFTW {
 
     :returns: The :type:`fftw_plan` representing the resulting plan
    */
-  proc plan_dft_c2r(realDom : domain, arr: [?D] ?t, flags : FFTW_Flag) : fftw_plan
+  proc plan_dft_c2r(realDom : domain, ref arr: [?D] ?t, flags : FFTW_Flag) : fftw_plan
     where t == real || t == complex
   {
     if !noFFTWsizeChecks then
