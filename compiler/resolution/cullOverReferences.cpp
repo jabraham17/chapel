@@ -459,6 +459,7 @@ void markSymbolConst(Symbol* sym)
     sym->addFlag(FLAG_CONST);
   }
 }
+#include "resolveIntents.h"
 static
 void markSymbolNotConst(Symbol* sym)
 {
@@ -471,11 +472,20 @@ void markSymbolNotConst(Symbol* sym)
   INT_ASSERT(!sym->qualType().isConst());
   if (arg && arg->intent == INTENT_REF_MAYBE_CONST) {
 
-    FnSymbol* fn = arg->getFunction();
     bool isArgThis = arg->hasFlag(FLAG_ARG_THIS);
-    bool isCoforall = fn->hasFlag(FLAG_COBEGIN_OR_COFORALL);
-    bool isBegin = fn->hasFlag(FLAG_BEGIN);
-    bool optOut = isArgThis || isCoforall || isBegin;
+    bool optOut = isArgThis;
+
+    if(FnSymbol* fn = arg->getFunction()) {
+      bool isCoforall = fn->hasFlag(FLAG_COBEGIN_OR_COFORALL);
+      bool isBegin = fn->hasFlag(FLAG_BEGIN);
+      optOut = optOut || isCoforall || isBegin;
+    }
+
+    if(!optOut) {
+      IntentTag defaultIntent = blankIntentForType(arg->type);
+      // if default intent is not ref-maybe-const, do nothing
+      if(defaultIntent != INTENT_REF_MAYBE_CONST) optOut = true;
+    }
 
     if(!optOut)
       USR_WARN(arg, "interpreting ref-maybe-const as ref is unstable");
