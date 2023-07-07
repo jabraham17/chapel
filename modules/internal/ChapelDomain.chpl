@@ -1713,7 +1713,7 @@ module ChapelDomain {
       }
 
       @chpldoc.nodoc
-      proc _moveInitializeElement(arr, idx, in value) {
+      proc _moveInitializeElement(ref arr, idx, in value) {
         import MemMove.moveInitialize;
         ref elem = arr[idx];
         moveInitialize(elem, value);
@@ -1742,7 +1742,7 @@ module ChapelDomain {
 
         It is an error if `idx` is not a valid index in `arr`.
       */
-      proc initialize(arr: [?d], idx, in value: arr.eltType) {
+      proc initialize(ref arr: [?d], idx, in value: arr.eltType) {
 
         // Check to make sure value and array element types match.
         if arr.eltType != value.type then
