@@ -1099,7 +1099,7 @@ module ChapelArray {
     // array element access
     // When 'this' is 'const', so is the returned l-value.
 
-    // pragma "reference to const when const this"
+    pragma "reference to const when const this"
     pragma "removable array access"
     pragma "alias scope from this"
     @chpldoc.nodoc // ref version
@@ -1153,7 +1153,7 @@ module ChapelArray {
         return value.dsiAccess(i(0));
     }
 
-    // pragma "reference to const when const this"
+    pragma "reference to const when const this"
     pragma "removable array access"
     pragma "alias scope from this"
     @chpldoc.nodoc // ref version
@@ -1172,7 +1172,7 @@ module ChapelArray {
       return this(i);
 
 
-    // pragma "reference to const when const this"
+    pragma "reference to const when const this"
     pragma "alias scope from this"
     @chpldoc.nodoc // ref version
     inline proc ref localAccess(i: rank*_value.dom.idxType) ref
@@ -1235,7 +1235,7 @@ module ChapelArray {
           return value.dsiLocalAccess(i(0));
     }
 
-    // pragma "reference to const when const this"
+    pragma "reference to const when const this"
     pragma "alias scope from this"
     @chpldoc.nodoc // ref version
     inline proc ref localAccess(i: _value.dom.idxType ...rank) ref do
@@ -2079,7 +2079,7 @@ module ChapelArray {
     return init_elts_method(size, eltType) == ArrayInit.parallelInit;
   }
 
-  proc _deinitElements(array: _array) {
+  proc _deinitElements(ref array: _array) {
     param needsDestroy = __primitive("needs auto destroy", array.eltType);
     if needsDestroy {
       if _deinitElementsIsParallel(array.eltType, array.size) {
@@ -3688,7 +3688,7 @@ module ChapelArray {
       halt("An array can only be passed to an external routine from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
 
     use CTypes;
-    const ptr = c_pointer_return(arr[arr.domain.low]);
+    ref ptr = c_pointer_return(arr[arr.domain.low]);
     if castToVoidStar then
       return ptr: c_void_ptr;
     else
