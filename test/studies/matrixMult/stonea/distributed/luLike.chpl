@@ -1,4 +1,4 @@
-// Tests block-matrix multiply of the form needed in LU-decomposition. 
+// Tests block-matrix multiply of the form needed in LU-decomposition.
 // The following diagram illustrates this process:
 //
 //     +-----+-----+-----+-----+
@@ -105,7 +105,7 @@ proc matrixMult_ijk(
     innerDim,
     const A : [outerDim, innerDim] int,
     const B : [innerDim, outerDim] int,
-    C : [outerDim, outerDim] int)
+    ref C : [outerDim, outerDim] int)
 {
     for i in outerDim {
         for j in outerDim {
