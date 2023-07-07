@@ -70,23 +70,23 @@ IntentTag constIntentForType(Type* t) {
 
 // Detect tuples containing e.g. arrays by reference
 // These should be const / not const element-by-element.
-// static
-// bool isTupleContainingRefMaybeConst(Type* t)
-// {
-//   AggregateType* at = toAggregateType(t);
-//   if (t->symbol->hasFlag(FLAG_TUPLE)) {
-//     for_fields(field, at) {
-//       Type* fieldType = field->getValType();
-//       if (field->isRef()) {
-//         if (fieldType->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST))
-//           return true;
-//       }
-//       if (isTupleContainingRefMaybeConst(fieldType))
-//         return true;
-//     }
-//   }
-//   return false;
-// }
+static
+bool isTupleContainingRefMaybeConst(Type* t)
+{
+  AggregateType* at = toAggregateType(t);
+  if (t->symbol->hasFlag(FLAG_TUPLE)) {
+    for_fields(field, at) {
+      Type* fieldType = field->getValType();
+      if (field->isRef()) {
+        if (fieldType->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST))
+          return true;
+      }
+      if (isTupleContainingRefMaybeConst(fieldType))
+        return true;
+    }
+  }
+  return false;
+}
 
 static bool isTupleContainingTypeWithFlag(Type* t, Flag f) {
   AggregateType* at = toAggregateType(t->getValType());
@@ -114,7 +114,7 @@ static bool isTupleContainingAtomicType(Type* t) {
   return isTupleContainingTypeWithFlag(t, FLAG_ATOMIC_TYPE);
 }
 
-IntentTag blankIntentForType(Type* t, bool isTaskIntent) {
+IntentTag blankIntentForType(Type* t) {
   IntentTag retval = INTENT_BLANK;
 
   if (isAtomicType(t)                                ||
@@ -124,8 +124,8 @@ IntentTag blankIntentForType(Type* t, bool isTaskIntent) {
     // Blank intent for sync/single/atomic types is ref, but we can't mark
     // the entire tuple as INTENT_REF because that has a special meaning.
     // So go ahead and mark the tuple as INTENT_REF_MAYBE_CONST instead.
-  } else if ((t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST) && isTaskIntent)
-            // || isTupleContainingRefMaybeConst(t)
+  } else if (t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST)
+            || isTupleContainingRefMaybeConst(t)
             || isTupleContainingSyncType(t)
             || isTupleContainingSingleType(t)
             || isTupleContainingAtomicType(t)) {
@@ -171,7 +171,7 @@ IntentTag blankIntentForType(Type* t, bool isTaskIntent) {
   return retval;
 }
 
-IntentTag concreteIntent(IntentTag existingIntent, Type* t, bool isTaskIntent) {
+IntentTag concreteIntent(IntentTag existingIntent, Type* t) {
   if (existingIntent == INTENT_BLANK || existingIntent == INTENT_CONST) {
     if (t->symbol->hasFlag(FLAG_REF)) {
       // Handle REF type
@@ -197,7 +197,7 @@ IntentTag concreteIntent(IntentTag existingIntent, Type* t, bool isTaskIntent) {
     }
 
     if (existingIntent == INTENT_BLANK) {
-      return blankIntentForType(t, isTaskIntent);
+      return blankIntentForType(t);
     } else if (existingIntent == INTENT_CONST) {
       return constIntentForType(t);
     }
@@ -215,7 +215,7 @@ static IntentTag constIntentForThisArg(Type* t) {
     return INTENT_CONST_IN;
 }
 
-static IntentTag blankIntentForThisArg(Type* t, bool isTaskIntent = false) {
+static IntentTag blankIntentForThisArg(Type* t) {
   // todo: be honest when 't' is an array or domain
 
   Type* valType = t->getValType();
@@ -230,7 +230,7 @@ static IntentTag blankIntentForThisArg(Type* t, bool isTaskIntent = false) {
   // This applies to both arguments of type _ref(t) and t
   if (isRecord(valType) || isUnion(valType) || isConstrainedType(valType) ||
       valType->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST))
-    return isTaskIntent ? INTENT_REF_MAYBE_CONST : INTENT_CONST_REF;
+    return INTENT_REF_MAYBE_CONST;
 
   if (isRecordWrappedType(t))
     // domain / distribution
@@ -248,17 +248,17 @@ IntentTag blankIntentForExternFnArg(Type* type) {
     // Pass c_array by ref by default for LLVM backend
     // (for C, an argument like int arg[2] is actually just int* arg).
     // This needs to be here because otherwise the following rule overrides it.
-    return INTENT_REF;
+    return INTENT_REF_MAYBE_CONST;
   else
     return INTENT_CONST_IN;
 }
 
-IntentTag concreteIntentForArg(ArgSymbol* arg, bool isTaskIntent) {
+IntentTag concreteIntentForArg(ArgSymbol* arg) {
 
   FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
 
   if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_BLANK)
-    return blankIntentForThisArg(arg->type, true /*not a task intent, but this should be const maybe ref for now*/);
+    return blankIntentForThisArg(arg->type);
   else if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_CONST)
     return constIntentForThisArg(arg->type);
   else if (fn->hasFlag(FLAG_EXTERN) && arg->intent == INTENT_BLANK)
@@ -273,11 +273,11 @@ IntentTag concreteIntentForArg(ArgSymbol* arg, bool isTaskIntent) {
     return INTENT_REF;
 
   else
-    return concreteIntent(arg->intent, arg->type, isTaskIntent);
+    return concreteIntent(arg->intent, arg->type);
 
 }
 
-void resolveArgIntent(ArgSymbol* arg, bool isTaskIntent) {
+void resolveArgIntent(ArgSymbol* arg) {
   if (!resolved) {
     if (arg->type == dtMethodToken ||
         arg->type == dtTypeDefaultToken ||
@@ -289,7 +289,7 @@ void resolveArgIntent(ArgSymbol* arg, bool isTaskIntent) {
     }
   }
 
-  IntentTag intent = concreteIntentForArg(arg, isTaskIntent);
+  IntentTag intent = concreteIntentForArg(arg);
 
   if (resolved) {
     // After resolution, change out/inout/in to ref
@@ -348,10 +348,7 @@ static void resolveVarIntent(VarSymbol* sym) {
 
 void resolveIntents() {
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
-    FnSymbol* fn = arg->getFunction();
-    bool isTaskIntent = fn->hasFlag(FLAG_COBEGIN_OR_COFORALL) || 
-                        fn->hasFlag(FLAG_BEGIN);
-    resolveArgIntent(arg, isTaskIntent);
+    resolveArgIntent(arg);
   }
 
   // BHARSH TODO: This shouldn't be necessary, but will be until we fully

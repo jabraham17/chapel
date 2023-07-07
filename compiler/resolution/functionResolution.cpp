@@ -7072,7 +7072,7 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
           formal->type = deref;
 
           // If the formal has a ref intent, DO need a ref type => restore it.
-          resolveArgIntent(formal, true);
+          resolveArgIntent(formal);
 
           if (formal->intent & INTENT_FLAG_REF) {
             formal->type = varActual->type;
@@ -7099,7 +7099,7 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
       bool shouldCapture = false;
       if (taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL) == true &&
           varActual->isConstValWillNotChange()      == false &&
-          (concreteIntent(formal->intent, formal->type->getValType(), true)
+          (concreteIntent(formal->intent, formal->type->getValType())
            & INTENT_FLAG_IN)) {
         // skip dummy_locale_arg: chpl_localeID_t
         if (argNum != 0 || taskFn->hasFlag(FLAG_ON) == false) {
