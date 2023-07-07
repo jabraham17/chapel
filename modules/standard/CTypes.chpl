@@ -782,7 +782,7 @@ module CTypes {
    Like :proc:`c_ptrTo` for arrays, but returns a :type:`c_ptrConst` which
    disallows direct modification of the pointee.
    */
-  inline proc c_ptrToConst(const arr: []): c_ptrConst(arr.eltType) {
+  inline proc c_ptrToConst(const ref arr: []): c_ptrConst(arr.eltType) {
     if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_ptrToConst() at present");
 
@@ -1010,7 +1010,7 @@ module CTypes {
     Note that the existence of this :type:`c_ptr` has no impact on the lifetime
     of the array. The returned pointer will be invalid if the array is freed.
   */
-  inline proc c_addrOf(arr: []) {
+  inline proc c_addrOf(ref arr: []) {
     if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_addrOf() at present");
 
@@ -1027,7 +1027,7 @@ module CTypes {
    Like :proc:`c_addrOf` for arrays, but returns a :type:`c_ptrConst` which
    disallows direct modification of the pointee.
   */
-  inline proc c_addrOfConst(arr: []) {
+  inline proc c_addrOfConst(const ref arr: []) {
     if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_addrOfConst() at present");
 
