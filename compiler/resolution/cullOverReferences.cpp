@@ -469,8 +469,11 @@ void markSymbolNotConst(Symbol* sym)
   // ref-with-unknown-constness and ref-not-const,
   // so we can just leave it alone.
   INT_ASSERT(!sym->qualType().isConst());
-  if (arg && arg->intent == INTENT_REF_MAYBE_CONST)
+  if (arg && arg->intent == INTENT_REF_MAYBE_CONST) {
+    if(!arg->hasFlag(FLAG_ARG_THIS))
+      USR_WARN(arg, "interpreting ref-maybe-const as ref is unstable");
     arg->intent = INTENT_REF;
+  }
 
   if (sym->hasFlag(FLAG_REF_IF_MODIFIED)) {
     sym->removeFlag(FLAG_REF_IF_MODIFIED);

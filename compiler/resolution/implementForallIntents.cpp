@@ -676,7 +676,9 @@ static ForallIntentTag forallIntentForArgIntent(IntentTag intent) {
     case INTENT_REF:       return TFI_REF;
     case INTENT_CONST_REF: return TFI_CONST_REF;
     case INTENT_BLANK:     return TFI_DEFAULT;
-    case INTENT_REF_MAYBE_CONST: return TFI_REF; //todo: TFI_REF_MAYBE_CONST ?
+    case INTENT_REF_MAYBE_CONST: 
+    //  USR_WARN(arg, "interpreting ref-maybe-const as ref is unstable");
+    return TFI_REF; //todo: TFI_REF_MAYBE_CONST ?
 
     case INTENT_OUT:
     case INTENT_INOUT:

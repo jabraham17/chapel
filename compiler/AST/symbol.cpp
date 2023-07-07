@@ -168,7 +168,7 @@ bool Symbol::inTree() {
 }
 
 
-static Qualifier qualifierForArgIntent(IntentTag intent)
+static Qualifier qualifierForArgIntent(/*ArgSymbol* arg,*/ IntentTag intent)
 {
   switch (intent) {
     case INTENT_IN:        return QUAL_VAL;
@@ -182,6 +182,8 @@ static Qualifier qualifierForArgIntent(IntentTag intent)
     case INTENT_TYPE:      return QUAL_UNKNOWN; // TODO
     case INTENT_BLANK:     return QUAL_UNKNOWN;
     case INTENT_REF_MAYBE_CONST:
+        //  if(!arg->hasFlag(FLAG_ARG_THIS))
+        //    USR_WARN(arg, "interpreting ref-maybe-const as ref is unstable");
            return QUAL_REF; // a white lie until cullOverReferences
 
     // no default to get compiler warning if other intents are added
