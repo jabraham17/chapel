@@ -19,7 +19,7 @@ record Planet {
   var mass : real;
 }
 
-proc advance(B: [] Planet, dt: real) {
+proc advance(ref B: [] Planet, dt: real) {
   for (b1, i) in zip(B, 0..) {
     for b2 in B[i+1..] {
       var dx = b1.x - b2.x;
@@ -58,7 +58,7 @@ proc energy(B : [] Planet) : real {
   return e;
 }
 
-proc offset_momentum(B : [] Planet) {
+proc offset_momentum(ref B : [] Planet) {
   var px,py,pz : real;
   for b in B {
     px += b.vx * b.mass;
@@ -98,7 +98,7 @@ proc main() {
                          2.37847173959480950e-03 * days_per_year,
                          -2.96589568540237556e-05 * days_per_year,
                          4.36624404335156298e-05 * solar_mass
-                         );				
+                         );
   bodies(4) = new Planet(1.53796971148509165e+01,
                          -2.59193146099879641e+01,
                          1.79258772950371181e-01,

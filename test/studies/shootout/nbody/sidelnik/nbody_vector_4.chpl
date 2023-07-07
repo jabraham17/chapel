@@ -21,7 +21,7 @@ record Planet {
   var mass : real;
 }
 
-proc advance(B: [] Planet, dt: real) {
+proc advance(ref B: [] Planet, dt: real) {
   for (b1, i) in zip(B, 0..) {
     for b2 in B[i+1..] {
       var d : [vecLen] real = b1.coord_vector - b2.coord_vector;
@@ -40,7 +40,7 @@ proc energy(B : [] Planet) : real {
   var e : real;
   for (b1,i) in zip(B,0..) {
     e += 0.5 * b1.mass * (b1.vel_vector(0)**2 +
-                          b1.vel_vector(1)**2 + 
+                          b1.vel_vector(1)**2 +
                           b1.vel_vector(2)**2);
     for b2 in B[i+1..] {
       var d : [vecLen] real = b1.coord_vector - b2.coord_vector;
@@ -51,7 +51,7 @@ proc energy(B : [] Planet) : real {
   return e;
 }
 
-proc offset_momentum(B : [] Planet) {
+proc offset_momentum(ref B : [] Planet) {
   var p : [vecLen] real;
   for b in B do
     p += b.vel_vector * b.mass;
@@ -61,7 +61,7 @@ proc offset_momentum(B : [] Planet) {
 proc main() {
   param NBODIES = 5;
   var bodies : [0..#NBODIES] Planet;
-  
+
   var p0,v0 : [vecLen] real = (0,0,0);
   bodies(0) = new Planet(p0,v0, solar_mass);
   var p1 : [vecLen] real = (4.84143144246472090e+00,
@@ -92,7 +92,7 @@ proc main() {
                           1.62824170038242295e-03 * days_per_year,
                           -9.51592254519715870e-05 * days_per_year);
   bodies(4) = new Planet(p4,v4, 5.15138902046611451e-05 * solar_mass);
-  
+
   offset_momentum(bodies);
   writef("%{#.#########}\n", energy(bodies));
   for 1..n {

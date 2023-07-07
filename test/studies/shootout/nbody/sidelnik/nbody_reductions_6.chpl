@@ -21,7 +21,7 @@ class Planet {
   var mass : real;
 }
 
-proc advance(B: [] unmanaged Planet, dt: real) {
+proc advance(ref B: [] unmanaged Planet, dt: real) {
   for i in NBODIES {
     ref b1 = B[i];
     for j in i+1..nbodies {
@@ -57,7 +57,7 @@ proc offset_momentum(B : [] unmanaged Planet) {
   //p = + reduce [b in B] (b.vel_vector * b.mass); <--- FAILS
   for b in B do
     p += b.vel_vector * b.mass;
-  
+
   B(0).vel_vector = -p / solar_mass;
 }
 
@@ -88,7 +88,7 @@ proc main() {
   var v4 : [vecLen] real = (2.68067772490389322e-03 * days_per_year,
                             1.62824170038242295e-03 * days_per_year,
                             -9.51592254519715870e-05 * days_per_year);
-  
+
   var bodies : [NBODIES] unmanaged Planet = [
     new unmanaged Planet(p0,v0, solar_mass),
     new unmanaged Planet(p1, v1, 9.54791938424326609e-04 * solar_mass),
@@ -103,6 +103,6 @@ proc main() {
     advance(bodies, 0.01);
   }
   writef("%{#.#########}\n", energy(bodies));
-  
+
   for body in bodies do delete body;
 }

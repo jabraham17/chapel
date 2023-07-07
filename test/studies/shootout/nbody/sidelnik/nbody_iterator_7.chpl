@@ -21,7 +21,7 @@ class Planet {
   var mass : real;
 }
 
-iter TriangleIter(B: [] unmanaged Planet) {
+iter TriangleIter(ref B: [] unmanaged Planet) {
   for i in NBODIES {
     for j in i+1..numBodies {
       yield (B[i],B[j]);
@@ -29,7 +29,7 @@ iter TriangleIter(B: [] unmanaged Planet) {
   }
 }
 
-proc advance(B: [] unmanaged Planet, dt: real) {
+proc advance(ref B: [] unmanaged Planet, dt: real) {
   for (b1,b2) in TriangleIter(B) {
     var d : [vecLen] real = b1.coord_vector - b2.coord_vector;
     var distance = sqrt(+ reduce d**2);
@@ -55,7 +55,7 @@ proc energy(B : [] unmanaged Planet) : real {
   return e;
 }
 
-proc offset_momentum(B : [] unmanaged Planet) {
+proc offset_momentum(ref B : [] unmanaged Planet) {
   var p : [vecLen] real;
   for b in B do
     p += b.vel_vector * b.mass;
@@ -89,7 +89,7 @@ proc main() {
   var v4 : [vecLen] real = (2.68067772490389322e-03 * days_per_year,
                             1.62824170038242295e-03 * days_per_year,
                             -9.51592254519715870e-05 * days_per_year);
-  
+
   var bodies : [NBODIES] unmanaged Planet = [
     new unmanaged Planet(p0,v0, solar_mass),
     new unmanaged Planet(p1, v1, 9.54791938424326609e-04 * solar_mass),
@@ -104,6 +104,6 @@ proc main() {
     advance(bodies, 0.01);
   }
   writef("%{#.#########}\n", energy(bodies));
-  
+
   for body in bodies do delete body;
 }

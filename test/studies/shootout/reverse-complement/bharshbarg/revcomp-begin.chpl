@@ -35,7 +35,7 @@ proc main(args: [] string) {
     numRead = r.readLine(data[idx..]);
     while numRead > 0 {
 
-      // Look for the start of a section, and if possible 
+      // Look for the start of a section, and if possible
       // spawn a task to start work on the previous section.
       if data[idx] == greaterThan {
         if start == 0 then start = idx;
@@ -44,7 +44,7 @@ proc main(args: [] string) {
           start = idx;
         }
       }
-      idx += numRead; 
+      idx += numRead;
       numRead = r.readLine(data[idx..]);
     }
 
@@ -58,7 +58,7 @@ proc main(args: [] string) {
   binout.write(data);
 }
 
-proc process(data : [], in front : int, in back : int) {
+proc process(ref data : [], in front : int, in back : int) {
 
   // Advance to the next line
   while data[front] != newLine do front += 1;

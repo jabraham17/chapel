@@ -133,7 +133,7 @@ proc dfft(ref Z, W) {
 }
 
 
-proc verifyResults(z, ref Z, execTime, Twiddles) {
+proc verifyResults(ref z, ref Z, execTime, Twiddles) {
   const N = Z.size;
 
   // BLC: This line wants /(complex,real) to be implemented directly:
@@ -160,7 +160,7 @@ proc verifyResults(z, ref Z, execTime, Twiddles) {
 
 
 proc cft1st(ref A, W) {
-  const n = A.domain.dim(0).size;
+const n = A.domain.dim(0).size;
   var x0 = A(0) + A(1);
   var x1 = A(0) - A(1);
   var x2 = A(2) + A(3);
@@ -246,7 +246,7 @@ proc cftmd1(span, ref A, W) {
 }
 
 
-proc cftmd2(span, ref , W) {
+proc cftmd2(span, ref A, W) {
   var m = radix*span;
   var m2 = 2*m;
   const n = A.domain.dim(0).size;

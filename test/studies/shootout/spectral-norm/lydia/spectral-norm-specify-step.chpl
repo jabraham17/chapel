@@ -26,7 +26,7 @@ inline proc eval_A(i, j) : real
 proc sum (i, j, inRange, flip : bool, U : [] real) {
   var sum : real;
   var end = j + step - 1;
-  if (end <= inRange - 1) { 
+  if (end <= inRange - 1) {
     for k in j..j+step-1 {
       var eval: real;
       if (!flip) then
@@ -39,7 +39,7 @@ proc sum (i, j, inRange, flip : bool, U : [] real) {
   return sum;
 }
 
-proc finishUp (i, inRange, U, Au, flip: bool) {
+proc finishUp (i, inRange, U, ref Au, flip: bool) {
   if ((inRange % step) != 0) then {
     for j in (inRange - (inRange % step))..inRange-1 {
       var eval: real;
@@ -52,15 +52,15 @@ proc finishUp (i, inRange, U, Au, flip: bool) {
   }
 }
 
-proc eval_A_times_u(U : [] real, inRange, Au : [] real)
+proc eval_A_times_u(U : [] real, inRange, ref Au : [] real)
 {
-  forall i in 0..#inRange { 
+  forall i in 0..#inRange {
     Au(i) = + reduce [j in 0..#inRange by step] (sum(i, j, inRange, false, U));
     finishUp(i, inRange, U, Au, false);
   }
 }
 
-proc eval_At_times_u(U : [] real, inRange, Au : [] real)
+proc eval_At_times_u(U : [] real, inRange, ref Au : [] real)
 {
   forall i in 0..#inRange {
     Au(i) = + reduce [j in 0..#inRange by step] (sum(i, j, inRange, true, U));
@@ -68,7 +68,7 @@ proc eval_At_times_u(U : [] real, inRange, Au : [] real)
   }
 }
 
-proc eval_AtA_times_u(u, AtAu, v : [] real, inRange)
+proc eval_AtA_times_u(u, ref AtAu, ref v : [] real, inRange)
 {
      eval_A_times_u(u, inRange, v);
      eval_At_times_u(v, inRange, AtAu);
