@@ -470,8 +470,16 @@ void markSymbolNotConst(Symbol* sym)
   // so we can just leave it alone.
   INT_ASSERT(!sym->qualType().isConst());
   if (arg && arg->intent == INTENT_REF_MAYBE_CONST) {
-    if(!arg->hasFlag(FLAG_ARG_THIS))
+
+    FnSymbol* fn = arg->getFunction();
+    bool isArgThis = arg->hasFlag(FLAG_ARG_THIS);
+    bool isCoforall = fn->hasFlag(FLAG_COBEGIN_OR_COFORALL);
+    bool isBegin = fn->hasFlag(FLAG_BEGIN);
+    bool optOut = isArgThis || isCoforall || isBegin;
+
+    if(!optOut)
       USR_WARN(arg, "interpreting ref-maybe-const as ref is unstable");
+
     arg->intent = INTENT_REF;
   }
 
