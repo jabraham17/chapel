@@ -1,4 +1,4 @@
-proc foo( input_array : [?dom] real ) : ([dom] real,) {
+proc foo( const ref input_array : [?dom] real ) : ([dom] real,) {
   return (input_array,);
 }
 
