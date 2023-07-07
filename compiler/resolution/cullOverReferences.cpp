@@ -473,7 +473,8 @@ void markSymbolNotConst(Symbol* sym)
   if (arg && arg->intent == INTENT_REF_MAYBE_CONST) {
 
     bool isArgThis = arg->hasFlag(FLAG_ARG_THIS);
-    bool optOut = isArgThis;
+    bool isVarArgExp = arg->hasFlag(FLAG_EXPANDED_VARARGS);
+    bool optOut = isArgThis || isVarArgExp;
 
     if(FnSymbol* fn = arg->getFunction()) {
       bool isCoforall = fn->hasFlag(FLAG_COBEGIN_OR_COFORALL);
