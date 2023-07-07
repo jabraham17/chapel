@@ -488,7 +488,7 @@ void markSymbolNotConst(Symbol* sym)
     }
 
     if(!optOut)
-      USR_WARN(arg, "interpreting ref-maybe-const as ref is unstable");
+      USR_WARN(arg, "interpreting 'ref-maybe-const' as 'ref' for '%s' is unstable", arg->name);
 
     arg->intent = INTENT_REF;
   }
