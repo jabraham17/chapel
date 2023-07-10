@@ -92,12 +92,14 @@ void ExpandExternArrayCalls::process(FnSymbol* fn) {
       formal->typeExpr->replace(
           new BlockStmt(
             new CallExpr("c_ptr", eltType->remove())));
+      formal->intent = INTENT_BLANK;
     } else {
       // generic arrays are replaced with 'c_void_ptr'
       SET_LINENO(formal);
       formal->typeExpr->replace(
           new BlockStmt(
             new UnresolvedSymExpr("chpl__c_void_ptr")));
+      formal->intent = INTENT_BLANK;
     }
   }
 
