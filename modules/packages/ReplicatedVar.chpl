@@ -119,12 +119,12 @@ private proc _rcTargetLocalesHelper(replicatedVar: [?D])
 }
 
 @chpldoc.nodoc // documented with the following entry
-proc rcReplicate(replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
+proc rcReplicate(ref replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
 { compilerError("the domain of first argument to rcReplicate()", _rcErr1); }
 
 /* Assign a value `valToReplicate` to copies of the replicated variable
    `replicatedVar` on all locales. */
-proc rcReplicate(replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
+proc rcReplicate(ref replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
   where isReplicatedArr(replicatedVar)
 {
   assert(replicatedVar.domain == rcDomainBase);
@@ -163,7 +163,7 @@ proc rcLocal(ref replicatedVar: [?D] ?MYTYPE) ref: MYTYPE {
 /*
 Access the copy of `replicatedVar` on the locale `remoteLoc`.
 */
-proc rcRemote(replicatedVar: [?D] ?MYTYPE, remoteLoc: locale) ref: MYTYPE {
+proc rcRemote(ref replicatedVar: [?D] ?MYTYPE, remoteLoc: locale) ref: MYTYPE {
   var result: MYTYPE;
   on remoteLoc do
     result = replicatedVar[rcDomainIx];
