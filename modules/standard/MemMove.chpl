@@ -581,7 +581,7 @@ module MemMove {
       const dstIdx = dstD.orderToIndex(dstLo + i);
       const srcIdx = srcD.orderToIndex(srcLo + i);
       ref dst = dstA[dstIdx];
-      ref src = srcA[srcIdx];
+      const ref src = srcA[srcIdx];
       _move(dst, src);
     }
   }
