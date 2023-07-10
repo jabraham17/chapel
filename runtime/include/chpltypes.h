@@ -73,7 +73,7 @@ typedef _Bool chpl_bool;
 typedef bool chpl_bool;
 #endif
 
-static inline void* c_pointer_return(void* x) { return x; }
+static inline void* c_pointer_return(const void* x) { return (void*)x; }
 // TODO: Return a const void* and remove the const-discarding cast, here as well
 // as in the GPU runtime versions.
 // This is currently not possible as our C backend does not consistently respect

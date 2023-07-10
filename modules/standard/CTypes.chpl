@@ -501,7 +501,7 @@ module CTypes {
     return __primitive("cast", t, x);
   }
   @chpldoc.nodoc
-  inline operator :(ref x:c_array, type t:c_ptr(?e)) where x.eltType == e {
+  inline operator :(const ref x:c_array, type t:c_ptr(?e)) where x.eltType == e {
     return c_ptrTo(x[0]);
   }
   @chpldoc.nodoc
@@ -510,7 +510,7 @@ module CTypes {
     return c_ptrTo(x[0]):c_ptrConst(e);
   }
   @chpldoc.nodoc
-  inline operator :(ref x:c_array, type t:c_void_ptr) {
+  inline operator :(const ref x:c_array, type t:c_void_ptr) {
     return c_ptrTo(x[0]):c_void_ptr;
   }
   @chpldoc.nodoc
@@ -740,7 +740,7 @@ module CTypes {
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   @chpldoc.nodoc
-  extern proc c_pointer_return(ref x:?t):c_ptr(t);
+  extern proc c_pointer_return(const ref x:?t):c_ptr(t);
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   @chpldoc.nodoc
@@ -761,7 +761,7 @@ module CTypes {
     :arg arr: the array for which a pointer should be returned
     :returns: a pointer to the array's elements
   */
-  inline proc c_ptrTo(ref arr: []): c_ptr(arr.eltType) {
+  inline proc c_ptrTo(const ref arr: []): c_ptr(arr.eltType) {
     if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_ptrTo() at present");
 
@@ -827,7 +827,7 @@ module CTypes {
 
     Halts if the ``string`` is empty and bounds checking is enabled.
   */
-  inline proc c_ptrTo(ref s: string): c_ptr(c_uchar)
+  inline proc c_ptrTo(const ref s: string): c_ptr(c_uchar)
     where cPtrToLogicalValue == true
   {
     if boundsChecking {
@@ -838,7 +838,7 @@ module CTypes {
   }
 
   @deprecated(notes="The c_ptrTo(string) overload that returns a c_ptr(string) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
-  inline proc c_ptrTo(ref s: string): c_ptr(string)
+  inline proc c_ptrTo(const ref s: string): c_ptr(string)
     where cPtrToLogicalValue == false
   {
     return c_addrOf(s);
@@ -874,7 +874,7 @@ module CTypes {
 
     Halts if the ``bytes`` is empty and bounds checking is enabled.
   */
-  inline proc c_ptrTo(ref b: bytes): c_ptr(c_uchar)
+  inline proc c_ptrTo(const ref b: bytes): c_ptr(c_uchar)
     where cPtrToLogicalValue == true
   {
     if boundsChecking {
@@ -885,7 +885,7 @@ module CTypes {
   }
 
   @deprecated(notes="The c_ptrTo(bytes) overload that returns a c_ptr(bytes) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
-  inline proc c_ptrTo(ref b: bytes): c_ptr(bytes)
+  inline proc c_ptrTo(const ref b: bytes): c_ptr(bytes)
     where cPtrToLogicalValue == false
   {
     return c_addrOf(b);
@@ -919,25 +919,25 @@ module CTypes {
     of the instance.  The returned pointer will be invalid if the instance is
     freed or even reallocated.
   */
-  inline proc c_ptrTo(ref c: class): c_void_ptr
+  inline proc c_ptrTo(const ref c: class): c_void_ptr
     where cPtrToLogicalValue == true
   {
     return c : c_void_ptr;
   }
-  inline proc c_ptrTo(ref c: class?): c_void_ptr
+  inline proc c_ptrTo(const ref c: class?): c_void_ptr
     where cPtrToLogicalValue == true
   {
     return c : c_void_ptr;
   }
 
   @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
-  inline proc c_ptrTo(ref c: class): c_ptr(c.type)
+  inline proc c_ptrTo(const ref c: class): c_ptr(c.type)
     where cPtrToLogicalValue == false
   {
     return c_addrOf(c);
   }
   @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
-  inline proc c_ptrTo(ref c: class?): c_ptr(c.type)
+  inline proc c_ptrTo(const ref c: class?): c_ptr(c.type)
     where cPtrToLogicalValue == false
   {
     return c_addrOf(c);
@@ -983,7 +983,7 @@ module CTypes {
     :returns: a pointer to the argument passed by reference
 
   */
-  inline proc c_ptrTo(ref x:?t):c_ptr(t) {
+  inline proc c_ptrTo(const ref x:?t):c_ptr(t) {
     return c_addrOf(x);
   }
 
@@ -1010,7 +1010,7 @@ module CTypes {
     Note that the existence of this :type:`c_ptr` has no impact on the lifetime
     of the array. The returned pointer will be invalid if the array is freed.
   */
-  inline proc c_addrOf(ref arr: []) {
+  inline proc c_addrOf(const ref arr: []) {
     if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_addrOf() at present");
 
@@ -1046,7 +1046,7 @@ module CTypes {
     Note that the behavior of this procedure is identical to :func:`c_ptrTo`
     for scalar types. It only differs for arrays, strings, and bytes.
   */
-  inline proc c_addrOf(ref x: ?t): c_ptr(t) {
+  inline proc c_addrOf(const ref x: ?t): c_ptr(t) {
     if isDomainType(t) then
       compilerError("c_addrOf domain type not supported", 2);
     return c_pointer_return(x);
