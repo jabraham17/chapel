@@ -61,7 +61,7 @@ record buf {
     cur = min(cur + n, cap);
   }
 
-  proc _memchr(c : uint(8), arr : []) {
+  proc _memchr(c : uint(8), ref arr : []) {
     extern proc memchr(s:c_void_ptr, c : c_int, n : c_size_t) : c_void_ptr;
     const ptr = c_ptrTo(arr);
     const ret = memchr(ptr, c:c_int, arr.size:c_size_t);
@@ -103,7 +103,7 @@ proc main(args: [] string) {
   const stdin = new file(0);
   var input = new buf(stdin, readSize);
   var data: list(uint(8));
-  
+
   // Use undocumented internals to fake a request for capacity.
   // Sets up 'data' to have an underlying capacity equal to the size of the
   // input file.

@@ -1,4 +1,4 @@
-// Tests block-matrix multiply of the form needed in LU-decomposition. 
+// Tests block-matrix multiply of the form needed in LU-decomposition.
 // The following diagram illustrates this process:
 //
 //     +-----+-----+-----+-----+
@@ -36,7 +36,7 @@ proc matrixMult_ijk(
     const n : int,
     const A : [?AD] int,
     const B : [?BD] int,
-    C : [?CD] int)
+    ref C : [?CD] int)
 {
     for (ai,ci) in zip(AD.dim(0), CD.dim(0)) {
         for (cj,bj) in zip(CD.dim(1), BD.dim(1)) {
@@ -48,7 +48,7 @@ proc matrixMult_ijk(
     }
 }
 
-proc luLikeMultiply(A : [1..n, 1..n] int)
+proc luLikeMultiply(ref A : [1..n, 1..n] int)
 {
     var ACopies : [A.domain[blkSize+1..n, blkSize+1..n]] int;
     var BCopies : [A.domain[blkSize+1..n, blkSize+1..n]] int;
@@ -63,13 +63,13 @@ proc luLikeMultiply(A : [1..n, 1..n] int)
         ACopies[cBlkD] = A[aBlkD];
     }
 
-    // stamp B down into BCopies, 
+    // stamp B down into BCopies,
     forall blkRow in 2..numBlocks {
-        var bBlkD : subdomain(BCopies.domain) = 
+        var bBlkD : subdomain(BCopies.domain) =
             {1..blkSize, blkSize+1..n};
         var cBlkD : subdomain(A.domain) =
             {(blkRow-1)*blkSize+1..blkRow*blkSize, blkSize+1..n};
-        
+
         BCopies[cBlkD] = A[bBlkD];
     }
 
@@ -100,7 +100,7 @@ proc main() {
     // Initialize array
     var A : [{1..n, 1..n}] int = [(i,j) in {1..n, 1..n}] i+j;
     var ACopy = A;
-    
+
     // Perform the multiplication in parallel
     writeln("Before mult: \n", A);
     luLikeMultiply(A);

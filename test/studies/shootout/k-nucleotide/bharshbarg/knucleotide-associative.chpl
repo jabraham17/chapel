@@ -99,7 +99,7 @@ proc main(args: [] string) {
   var tempdata : [1..lineSize] uint(8);
   var numRead = 0;
   var total = 0;
-  
+
   numRead = myin.readLine(tempdata);
   while numRead>0 && !startsWithThree(tempdata) {
     total += numRead;
@@ -111,11 +111,11 @@ proc main(args: [] string) {
   var data : [dataDom] uint(8);
   var idx = 1;
   numRead = myin.readLine(data[idx..]);
-  while numRead > 0 { 
-    idx += numRead - 1; 
+  while numRead > 0 {
+    idx += numRead - 1;
     numRead = myin.readLine(data[idx..]);
   }
-  
+
   // Resize our array to the amount actually read
   dataDom = {1..idx};
 

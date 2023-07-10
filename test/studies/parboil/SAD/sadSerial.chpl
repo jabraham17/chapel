@@ -175,13 +175,13 @@ proc sad4CPU(blkSad: [] uint(16), frame: [] uint(16), reference: [] uint(16), wi
   for (mby, yoff) in zip(0..#height, 0.. by 256*width) {
     for mbx in 0..#width {
       ref blkOff = blkSad[(SAD_TYPE_7_IX(width*height) + (mby*width + mbx) * (SAD_TYPE_7_CT * MAX_POS_PADDED))..];
-      ref frameOff = frame[(yoff + mbx*16)..];
+      const ref frameOff = frame[(yoff + mbx*16)..];
       sad4OneMacroblock(blkOff, frameOff, reference, mby*16, mbx*16, width, height);
     }
   }
 }
 
-proc sad4OneMacroblock(macroblockSad: [] uint(16), frame: [] uint(16), reference: [] uint(16), framey: int, framex: int, mbWidth: int, mbHeight: int) {
+proc sad4OneMacroblock(ref macroblockSad: [] uint(16), frame: [] uint(16), reference: [] uint(16), framey: int, framex: int, mbWidth: int, mbHeight: int) {
   var pos = 0;
   var width = mbWidth * 16;
   var height = mbHeight * 16;

@@ -51,7 +51,7 @@ HomoSapiens[2] = new Freq('g', 0.1975473066391);
 HomoSapiens[3] = new Freq('t', 0.3015094502008);
 
 // (Scan operation)
-proc sumAndScale(a :[?D]) {
+proc sumAndScale(ref a :[?D]) {
   var p : real = 0;
   for item in a {
     p += item.p;
@@ -90,7 +90,7 @@ proc makeLookup(a :[?D]) {
 proc addLine(nBytes: int) {
   for i in 0..nBytes-1 {
     var r  = random.next();
-    var ai = r : int; 
+    var ai = r : int;
     while (lookup[ai].p < r) {
       ai = ai + 1;
     }

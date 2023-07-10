@@ -78,7 +78,7 @@ var HomoSapiens: [0..3] Freq = [
 ];
 
 // Scan operation
-proc sumAndScale(a) {
+proc sumAndScale(ref a) {
   var p: real = 0;
   for item in a {
     p += item.p;
@@ -131,9 +131,9 @@ proc repeatMake(desc: string, alu: [], n: int) {
   stdout.writef("%s", desc);
   var r: int = alu.size;
   var s: [0..(r+LINE_LENGTH)] int(8);
-  for d in s.domain do 
+  for d in s.domain do
     s[d] = alu[d % r]: int(8);
-  
+
   var j: int;
   for i in 0..#(n / LINE_LENGTH) {
     j = (i * LINE_LENGTH) % r;
