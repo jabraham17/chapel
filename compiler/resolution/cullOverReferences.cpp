@@ -474,7 +474,8 @@ void markSymbolNotConst(Symbol* sym)
 
     bool isArgThis = arg->hasFlag(FLAG_ARG_THIS);
     bool isVarArgExp = arg->hasFlag(FLAG_EXPANDED_VARARGS);
-    bool optOut = isArgThis || isVarArgExp;
+    bool is_iterExpr = arg->name == astr("iterExpr"); // workaround for iters, eventually we just make this ref.
+    bool optOut = isArgThis || isVarArgExp || is_iterExpr;
 
     if(FnSymbol* fn = arg->getFunction()) {
       bool isCoforall = fn->hasFlag(FLAG_COBEGIN_OR_COFORALL);
