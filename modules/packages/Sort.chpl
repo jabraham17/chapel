@@ -2336,7 +2336,7 @@ module TwoArrayPartitioning {
   // (e.g. sorted by the next digit in radix sort)
   // Counts per bin are stored in state.counts. Other data in
   // state is used locally by this routine or used elsewhere
-  proc bucketize(start_n: int, end_n: int, ref dst:[], src:[],
+  proc bucketize(start_n: int, end_n: int, ref dst:[], ref src:[],
                  ref state: TwoArrayBucketizerSharedState,
                  criterion, startbit:int) {
 
