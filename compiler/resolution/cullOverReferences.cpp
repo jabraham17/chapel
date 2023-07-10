@@ -473,7 +473,7 @@ void markSymbolNotConst(Symbol* sym)
   if (arg && arg->intent == INTENT_REF_MAYBE_CONST) {
 
     bool isArgThis = arg->hasFlag(FLAG_ARG_THIS);
-    bool isVarArgExp = arg->hasFlag(FLAG_EXPANDED_VARARGS);
+    bool isVarArgExp = arg->hasFlag(FLAG_EXPANDED_VARARGS); // we have full control over this, we could just make these ref to start with
     bool is_iterExpr = arg->name == astr("iterExpr"); // workaround for iters, eventually we just make this ref.
     bool optOut = isArgThis || isVarArgExp || is_iterExpr;
 
