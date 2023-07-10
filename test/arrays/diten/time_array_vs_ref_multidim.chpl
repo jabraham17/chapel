@@ -3,7 +3,7 @@ config param maxAdds = 5;
 config const size = 100;
 config const nTrials = 100;
 
-proc arrayAccess(A: [] real, B: [] real, param nAdds) {
+proc arrayAccess(A: [] real, ref B: [] real, param nAdds) {
   const n = A.size;
   for 1..nTrials {
     for i in A.domain {
@@ -14,11 +14,11 @@ proc arrayAccess(A: [] real, B: [] real, param nAdds) {
   }
 }
 
-proc refAccess(A: [] real, B: [] real, param nAdds) {
+proc refAccess(A: [] real, ref B: [] real, param nAdds) {
   const n = A.size;
   for 1..nTrials {
     for i in A.domain {
-      ref rA = A[i];
+      const ref rA = A[i];
       for param adds in 1..nAdds {
         B[i] += rA + rA;
       }

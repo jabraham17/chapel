@@ -111,7 +111,7 @@ module RandomInterface {
     proc Stream.getNext(): eltType;
 
     // Cf. originally:  proc skipToNth(n: integral) throws
-    // 
+    //
     // Using an 'Integral' interface is comlicated here.
     // Also n: uint presently does not work, see #17568.
     // So for simplicity provide just an 'int' version.
@@ -142,7 +142,7 @@ module RandomInterface {
   }
 
   // a simplified IC version of fillRandom()
-  proc icFillRandom(stream: ?Stream, arr: ?ARR)
+  proc icFillRandom(stream: ?Stream, ref arr: ?ARR)
     where Stream implements PCGRandomStreamImpl &&
           ARR implements Array1d(stream.eltType)
     // would also like: Stream.eltType == ARR.eltType

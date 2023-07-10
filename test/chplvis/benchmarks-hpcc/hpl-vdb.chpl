@@ -28,7 +28,7 @@ type elemType = real;
 // Configuration constants indicating the problem size (n) and the
 // block size (blkSize)
 //
-config const n = computeProblemSize(numMatrices, elemType, rank=2, 
+config const n = computeProblemSize(numMatrices, elemType, rank=2,
                                     memFraction=2),
              blkSize = 8;
 
@@ -70,7 +70,7 @@ const targetLocales = setupLocaleGrid();
 //
 proc main() {
   printConfiguration();
-  
+
   //
   // MatVectSpace is a 2D domain that represents the n x n matrix
   // adjacent to the column vector b.  MatrixSpace is a subdomain that
@@ -108,9 +108,9 @@ proc main() {
 // blocked LU factorization with pivoting for matrix augmented with
 // vector of RHS values.
 //
-proc LUFactorize(n: int, Ab: [?AbD] elemType,
-                piv: [1..n] int) {
-  
+proc LUFactorize(n: int, ref Ab: [?AbD] elemType,
+                ref piv: [1..n] int) {
+
   // Initialize the pivot vector to represent the initially unpivoted matrix.
   piv = 1..n;
 
@@ -151,7 +151,7 @@ proc LUFactorize(n: int, Ab: [?AbD] elemType,
     //
     panelSolve(Ab, l, piv);
     updateBlockRow(Ab, tl, tr);
-    
+
     //
     // update trailing submatrix (if any)
     //
@@ -174,7 +174,7 @@ proc LUFactorize(n: int, Ab: [?AbD] elemType,
 //     |aaaaa|.....|.....|.....|  function but called AD here.  Similarly,
 //     +-----+-----+-----+-----+  'b' was 'tr' in the calling code, but BD
 //     |aaaaa|.....|.....|.....|  here.
-//     |aaaaa|.....|.....|.....|  
+//     |aaaaa|.....|.....|.....|
 //     |aaaaa|.....|.....|.....|
 //     +-----+-----+-----+-----+
 //
@@ -189,7 +189,7 @@ proc LUFactorize(n: int, Ab: [?AbD] elemType,
 // locale only stores one copy of each block it requires for all of
 // its rows/columns.
 //
-proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) {
+proc schurComplement(ref Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) {
   //
   // Copy data into replicated arrays so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.
@@ -251,16 +251,16 @@ proc replicateD2(Ab, AD) {
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
 //
-proc panelSolve(Ab: [] elemType,
+proc panelSolve(ref Ab: [] elemType,
                panel: domain,
-               piv: [] int) {
+               ref piv: [] int) {
 
   for k in panel.dim(1) {             // iterate through the columns
     const col = panel[k.., k..k];
-    
+
     // If there are no rows below the current column return
     if col.size == 0 then return;
-    
+
     // Find the pivot, the element with the largest absolute value.
     const (_, (pivotRow, _)) = maxloc reduce zip(abs(Ab(col)), col);
 
@@ -268,7 +268,7 @@ proc panelSolve(Ab: [] elemType,
     // is absolute value, so it can't be used directly).
     //
     const pivotVal = Ab[pivotRow, k];
-    
+
     // Swap the current row with the pivot row and update the pivot vector
     // to reflect that
     Ab[k..k, ..] <=> Ab[pivotRow..pivotRow, ..];
@@ -276,11 +276,11 @@ proc panelSolve(Ab: [] elemType,
 
     if (pivotVal == 0) then
       halt("Matrix cannot be factorized");
-    
+
     // divide all values below and in the same col as the pivot by
     // the pivot value
     Ab[k+1.., k..k] /= pivotVal;
-    
+
     // update all other values below the pivot
     forall (i,j) in panel[k+1.., k+1..] do
       Ab[i,j] -= Ab[i,k] * Ab[k,j];
@@ -293,7 +293,7 @@ proc panelSolve(Ab: [] elemType,
 // solve a block (tl for top-left) portion of a matrix. This function
 // solves the rows to the right of the block.
 //
-proc updateBlockRow(Ab: [] elemType,
+proc updateBlockRow(ref Ab: [] elemType,
                    tl: domain,
                    tr: domain) {
 
@@ -317,7 +317,7 @@ proc backwardSub(n: int,
   var x: [bd] elemType;
 
   for i in bd by -1 do
-    x[i] = (Ab[i,n+1] - (+ reduce [j in i+1..bd.high] (Ab[i,j] * x[j]))) 
+    x[i] = (Ab[i,n+1] - (+ reduce [j in i+1..bd.high] (Ab[i,j] * x[j])))
             / Ab[i,i];
 
   return x;
@@ -362,11 +362,11 @@ proc printConfiguration() {
   }
 }
 
-//   
+//
 // construct an n by n+1 matrix filled with random values and scale
 // it to be in the range -1.0..1.0
 //
-proc initAB(Ab: [] elemType) {
+proc initAB(ref Ab: [] elemType) {
   fillRandom(Ab, seed);
   Ab = Ab * 2.0 - 1.0;
 }
@@ -374,7 +374,7 @@ proc initAB(Ab: [] elemType) {
 //
 // calculate norms and residuals to verify the results
 //
-proc verifyResults(Ab, MatrixSpace, x) {
+proc verifyResults(ref Ab, MatrixSpace, x) {
   if !verify then return true;
   initAB(Ab);
 

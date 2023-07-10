@@ -15,11 +15,11 @@ proc arrayAccess(A: [] real, ref B: [] real, param nAdds) {
   }
 }
 
-proc refAccess(ref A: [] real, ref B: [] real, param nAdds) {
+proc refAccess(A: [] real, ref B: [] real, param nAdds) {
   const n = A.size;
   for 1..nTrials {
     for i in 0..#n {
-      ref rA = A[i];
+      const ref rA = A[i];
       for param adds in 1..nAdds {
         B[i] += rA + rA;
       }

@@ -56,7 +56,7 @@ test4();
 // The below is a reproducer for part of LAPACK_Matrix_test.
 writeln("reproducer");
 
-proc putInto2D( arrayOfArrays: [?D1] ?t, twoArray: [?D2] ?o): void{
+proc putInto2D( arrayOfArrays: [?D1] ?t, ref twoArray: [?D2] ?o): void{
   writeln("in putInto2D");
   writeln("D1 is ", D1);
   writeln("arrayOfArrays is ", arrayOfArrays);
@@ -71,11 +71,11 @@ proc putInto2D( arrayOfArrays: [?D1] ?t, twoArray: [?D2] ?o): void{
   var formed: domain(2) = {D1.dim(0), arrayOfArrays[D1.dim(0).low].domain.dim(0)};
   writeln("formed is ", formed);
   assert( formed.dim(0).size == D2.dim(0).size && formed.dim(1).size == D2.dim(1).size );
-  var trans = ( D2.dim(0).low - formed.dim(0).low, D2.dim(1).low - formed.dim(1).low ); 
+  var trans = ( D2.dim(0).low - formed.dim(0).low, D2.dim(1).low - formed.dim(1).low );
   writeln("trans is ", trans);
 
   for (i,j) in D2 {
-    writeln("assigning ", (i,j)); 
+    writeln("assigning ", (i,j));
     const ref rhs1 = arrayOfArrays[i+trans[0]];
     var rhs2 = rhs1[j+trans[1]];
     ref lhs = twoArray[i,j];
@@ -85,22 +85,22 @@ proc putInto2D( arrayOfArrays: [?D1] ?t, twoArray: [?D2] ?o): void{
 }
 
 writeln( "1D row input => row" );
-var input_1_row: [1..4] real = 
-  [ 3.0, 1.0, 
+var input_1_row: [1..4] real =
+  [ 3.0, 1.0,
     4.0, 2.0 ];
 
 writeln( "1D col input => col" );
-var input_1_col: [1..4] real  = 
+var input_1_col: [1..4] real  =
   [ 3.0, 4.0,   // tranpose of [ 3.0, 1.0,
     1.0, 2.0 ]; //                 4.0, 2.0 ];
 
 // 1.5D data
 var input_1_5_row: [1..2][1..2] real =
-  [ [3.0, 1.0], 
+  [ [3.0, 1.0],
     [4.0, 2.0] ];
 
 var input_1_5_col: [1..2][1..2] real =
-  [ [3.0, 4.0], 
+  [ [3.0, 4.0],
     [1.0, 2.0] ];
 
 
