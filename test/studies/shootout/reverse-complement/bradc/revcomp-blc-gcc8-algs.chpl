@@ -117,8 +117,8 @@ proc main(args: [] string) {
      } else {
        compilerError("Unexpected shift algorithm: " + shiftAlg:string);
      }
-       
-        
+
+
     }
 
     // update where we'll read from next
@@ -207,7 +207,7 @@ proc revcomp(seq, size) {
   }
 }
 
-proc revcomp(in dstFront, in charAfter, spanLen, buff, seq) {
+proc revcomp(in dstFront, in charAfter, spanLen, ref buff, seq) {
   if spanLen%2 {
     charAfter -= 1;
     buff[dstFront] = cmpl[seq[charAfter]];
@@ -249,7 +249,7 @@ proc findSeqStart(buff, inds, ref ltLoc) {
       }
     }
     return ltLoc != max(int);
-    
+
   } else if searchAlg == Foreach {
     // this requires reduce intents. The solution here is potentially race-y.
     // Making it use a `for` instead of `foreach` results in what looks like an
