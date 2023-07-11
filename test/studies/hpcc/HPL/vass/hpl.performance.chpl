@@ -66,7 +66,7 @@ config var onlyBsub = false;
 config param checkBsub = boundsChecking;
 // for debugging; need to disable 'local' in bsComputeMyXs()
 config param bsFinalizeXiVerbose = false;
- 
+
 // hooks for debugging
 proc vmsg(args...) {}
 proc vmsgmore(args...) {}
@@ -181,7 +181,7 @@ var tInit, tPS1iter, tUBR1iter, tSC1call, tLF1iter, tBScall, tVer: VTimer;
   // Implementation consequences: (A) Need to zero it out in backwardSub().
   // (B) If we allocated replX separately from replK, we need to
   // replicate X where backwardSub currently invokes replicateK().
-  // 
+  //
   ref replX = replK;
 
   // Allocate these arrays just once.
@@ -226,8 +226,8 @@ var tInit, tPS1iter, tUBR1iter, tSC1call, tLF1iter, tBScall, tVer: VTimer;
 // vector of RHS values.
 //
 proc LUFactorize(n: indexType,
-                piv: [1..n] indexType) {
-  
+                ref piv: [1..n] indexType) {
+
   // Initialize the pivot vector to represent the initially unpivoted matrix.
   piv = 1..n;
 
@@ -278,7 +278,7 @@ proc LUFactorize(n: indexType,
     //
     panelSolve(l, piv);
     updateBlockRow(tl, tr);
-    
+
     //
     // update trailing submatrix (if any)
     //
@@ -301,7 +301,7 @@ proc LUFactorize(n: indexType,
 //     |aaaaa|.....|.....|.....|  function but called AD here.  Similarly,
 //     +-----+-----+-----+-----+  'b' was 'tr' in the calling code, but BD
 //     |aaaaa|.....|.....|.....|  here.
-//     |aaaaa|.....|.....|.....|  
+//     |aaaaa|.....|.....|.....|
 //     |aaaaa|.....|.....|.....|
 //     +-----+-----+-----+-----+
 //
@@ -420,7 +420,7 @@ proc DimensionalArr.dsiLocalSlice1((sliceDim1, sliceDim2)) {
 //
 proc panelSolve(
                panel: domain,
-               piv: [] indexType) {
+               ref piv: [] indexType) {
 
   const blk = panel.dim(0).low;
   const cornerLocale = targetLocaleCorner(blk);
@@ -437,10 +437,10 @@ proc panelSolve(
     tPS1iter.start();
     const col = panel[k.., k..k];
     vmsgmore("  col");
-    
+
     // If there are no rows below the current column return
     if col.size == 0 then { vmsg("panelSolve()"); return; }
-    
+
     // Find the pivot, the element with the largest absolute value.
     const (_, (pivotRow, _)) = maxloc reduce zip(abs(Ab(col)), col);
     vmsgmore("  reduce");
@@ -449,7 +449,7 @@ proc panelSolve(
     // is absolute value, so it can't be used directly).
     //
     const pivotVal = Ab[pivotRow, k];
-    
+
     // Swap the current row with the pivot row and update the pivot vector
     // to reflect that
     Ab[k..k, ..] <=> Ab[pivotRow..pivotRow, ..];
@@ -458,12 +458,12 @@ proc panelSolve(
 
     if (pivotVal == 0) then
       halt("Matrix cannot be factorized");
-    
+
     // divide all values below and in the same col as the pivot by
     // the pivot value
     Ab[k+1.., k..k] /= pivotVal;
     vmsgmore("  pivotVal");
-    
+
     // update all other values below the pivot
 /*
     forall (i,j) in panel[k+1.., k+1..] do
@@ -549,7 +549,7 @@ proc backwardSubRef(n: indexType) {
   var x: [bd] elemType;
 
   for i in bd by -1 do
-    x[i] = (Ab[i,n+1] - (+ reduce [j in i+1..bd.high] (Ab[i,j] * x[j]))) 
+    x[i] = (Ab[i,n+1] - (+ reduce [j in i+1..bd.high] (Ab[i,j] * x[j])))
             / Ab[i,i];
 
   return x;
@@ -618,7 +618,7 @@ proc backwardSub(nArg: indexType) {
       prevDiaFrom = diaFrom_N;
 
   while prevDiaFrom > 1 {
-      
+
     // the immediately preceeding block along the diagonal
     const locId1 = (prevLocId1 + (tl1-1)) % tl1,
           locId2 = (prevLocId2 + (tl2-1)) % tl2,
@@ -931,9 +931,9 @@ proc quit(doExit = true) {
   }
   if doExit { writeln("quit(): exiting");  exit(0); }
 }
-  
 
-//   
+
+//
 // construct an n by n+1 matrix filled with random values and scale
 // it to be in the range -1.0..1.0
 //
@@ -1014,7 +1014,7 @@ proc verifyResults(x) {
 
   // make the rest of the code operate locally without changing it
   ref Ab = makeLocalCopyOfAb();
-  
+
   const axmbNorm = norm(gaxpyMinus(Ab[.., 1..n], x, Ab[.., n+1..n+1]), normType.normInf);
   vmsgmore("axmbNorm");
 

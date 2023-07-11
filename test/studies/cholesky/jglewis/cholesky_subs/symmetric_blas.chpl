@@ -300,7 +300,7 @@ module symmetric_blas {
   // Symmetric Block Inner Product for a Single Block Column
   // =======================================================
 
-  proc block_inner_product ( L : [] , A : [] )
+  proc block_inner_product ( L : [] , ref A : [] )
 
     where ( A.domain.rank == 2 && L.domain.rank == 2) {
 

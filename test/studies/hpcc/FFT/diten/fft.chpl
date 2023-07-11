@@ -316,7 +316,7 @@ proc log4(x) do return logBasePow2(x, 2);
 // verify that the results are correct by reapplying the dfft and then
 // calculating the maximum error, comparing against epsilon
 //
-proc verifyResults(z, ref Z, ref Cyc, Twiddles) {
+proc verifyResults(const ref z, ref Z, ref Cyc, Twiddles) {
   if (printArrays) then writeln("After FFT, Z is: ", Z, "\n");
 
   Z = conjg(Z) / m;

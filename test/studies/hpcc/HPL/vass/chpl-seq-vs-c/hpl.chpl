@@ -68,8 +68,8 @@ proc main() {
   // standard distribution library is filled out, MatVectSpace will be
   // distributed using a BlockCyclic(blkSize) distribution.
   //
-  const MatVectSpace: domain(2, indexType) 
-//                    dmapped BlockCyclic(startIdx=(1,1), (blkSize,blkSize)) 
+  const MatVectSpace: domain(2, indexType)
+//                    dmapped BlockCyclic(startIdx=(1,1), (blkSize,blkSize))
                     = [1..n, 1..n+1],
         MatrixSpace = MatVectSpace[.., ..n];
 
@@ -104,9 +104,9 @@ proc main() {
 // blocked LU factorization with pivoting for matrix augmented with
 // vector of RHS values.
 //
-proc LUFactorize(n: indexType, Ab: [?AbD] elemType,
-                piv: [1..n] indexType) {
-  
+proc LUFactorize(n: indexType, ref Ab: [?AbD] elemType,
+                ref piv: [1..n] indexType) {
+
   // Initialize the pivot vector to represent the initially unpivoted matrix.
   piv = 1..n;
 
@@ -158,7 +158,7 @@ proc LUFactorize(n: indexType, Ab: [?AbD] elemType,
     //
     panelSolve(Ab, l, piv);
     updateBlockRow(Ab, tl, tr);
-    
+
     //
     // update trailing submatrix (if any)
     //
@@ -180,7 +180,7 @@ proc LUFactorize(n: indexType, Ab: [?AbD] elemType,
 //     |aaaaa|.....|.....|.....|  function but called AD here.  Similarly,
 //     +-----+-----+-----+-----+  'b' was 'tr' in the calling code, but BD
 //     |aaaaa|.....|.....|.....|  here.
-//     |aaaaa|.....|.....|.....|  
+//     |aaaaa|.....|.....|.....|
 //     |aaaaa|.....|.....|.....|
 //     +-----+-----+-----+-----+
 //
@@ -203,12 +203,12 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
   // replicated distributions aren't implemented yet, but imagine that
   // they look something like the following:
   //
-  //var replAbD: domain(2) 
+  //var replAbD: domain(2)
   //            dmapped new Dimensional(BlkCyc(blkSize), Replicated)) = AbD[AD];
   //
   const replAD: domain(2, indexType) = AD,
         replBD: domain(2, indexType) = BD;
-    
+
   const replA : [replAD] elemType = Ab[replAD],
         replB : [replBD] elemType = Ab[replBD];
 
@@ -244,7 +244,7 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
 //
 proc dgemmNativeInds(A: [] elemType,
                     B: [] elemType,
-                    C: [] elemType) {
+                    ref C: [] elemType) {
   if verb { show2e(A); writeln("="); show2e(B); writeln("="); show2e(C); writeln("==="); }
 
   for (iA, iC) in (A.domain.dim(0), C.domain.dim(0)) do
@@ -259,9 +259,9 @@ proc dgemmNativeInds(A: [] elemType,
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
 //
-proc panelSolve(Ab: [] elemType,
+proc panelSolve(ref Ab: [] elemType,
                panel: domain,
-               piv: [] indexType) {
+               ref piv: [] indexType) {
 
   if verb then writeln("panelSolve");
 
@@ -269,10 +269,10 @@ proc panelSolve(Ab: [] elemType,
     if verb then writeln("== ", k);
 
     const col = panel[k.., k..k];
-    
+
     // If there are no rows below the current column return
     if col.size == 0 then return;
-    
+
     // Find the pivot, the element with the largest absolute value.
     const (dum1 , (pivotRow, dum2)) = maxloc reduce(abs(Ab(col)), col);
 
@@ -281,7 +281,7 @@ proc panelSolve(Ab: [] elemType,
     //
     const pivotVal = Ab[pivotRow, k];
     if verb then writeln((tost(pivotVal), tost(dum1), pivotRow, dum2));
-    
+
     // Swap the current row with the pivot row and update the pivot vector
     // to reflect that
     Ab[k..k, ..] <=> Ab[pivotRow..pivotRow, ..];
@@ -291,11 +291,11 @@ proc panelSolve(Ab: [] elemType,
 
     if (pivotVal == 0) then
       halt("Matrix cannot be factorized");
-    
+
     // divide all values below and in the same col as the pivot by
     // the pivot value
     Ab[k+1.., k..k] /= pivotVal;
-    
+
     if verb { writeln("after normalizing"); writeln(piv); show2e(Ab); }
 
     // update all other values below the pivot
@@ -312,7 +312,7 @@ proc panelSolve(Ab: [] elemType,
 // solve a block (tl for top-left) portion of a matrix. This function
 // solves the rows to the right of the block.
 //
-proc updateBlockRow(Ab: [] elemType,
+proc updateBlockRow(ref Ab: [] elemType,
                    tl: domain,
                    tr: domain) {
 
@@ -345,7 +345,7 @@ proc backwardSub(n: indexType,
 
   for i in bd by -1 do
    {
-    x[i] = (Ab[i,n+1] - (+ reduce [j in i+1..bd.high] (Ab[i,j] * x[j]))) 
+    x[i] = (Ab[i,n+1] - (+ reduce [j in i+1..bd.high] (Ab[i,j] * x[j])))
             / Ab[i,i];
     if verb then writeln("== ", i, tost(x[i]));
    }
@@ -365,11 +365,11 @@ proc printConfiguration() {
   }
 }
 
-//   
+//
 // construct an n by n+1 matrix filled with random values and scale
 // it to be in the range -1.0..1.0
 //
-proc initAB(Ab: [] elemType) {
+proc initAB(ref Ab: [] elemType) {
  srand(seed);
  proc myrnd() return if elemType == int then rand() else realrnd();
 
@@ -405,7 +405,7 @@ proc tost(arg: elemType): string {
 //
 // calculate norms and residuals to verify the results
 //
-proc verifyResults(Ab, MatrixSpace, x) {
+proc verifyResults(ref Ab, MatrixSpace, x) {
 
   if verb { show2e(Ab); writeln(); }
 

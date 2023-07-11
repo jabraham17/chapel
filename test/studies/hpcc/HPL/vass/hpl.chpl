@@ -26,7 +26,7 @@ type indexType = int,
 // Configuration constants indicating the problem size (n) and the
 // block size (blkSize)
 //
-config const n = computeProblemSize(numMatrices, elemType, rank=2, 
+config const n = computeProblemSize(numMatrices, elemType, rank=2,
                                     memFraction=2, retType=indexType),
              blkSize = 8;
 
@@ -136,8 +136,8 @@ config var reproducible = false, verbose = false;
 // vector of RHS values.
 //
 proc LUFactorize(n: indexType,
-                piv: [1..n] indexType) {
-  
+                ref piv: [1..n] indexType) {
+
   // Initialize the pivot vector to represent the initially unpivoted matrix.
   piv = 1..n;
 
@@ -180,7 +180,7 @@ proc LUFactorize(n: indexType,
     //
     panelSolve(l, piv);
     updateBlockRow(tl, tr);
-    
+
     //
     // update trailing submatrix (if any)
     //
@@ -202,7 +202,7 @@ proc LUFactorize(n: indexType,
 //     |aaaaa|.....|.....|.....|  function but called AD here.  Similarly,
 //     +-----+-----+-----+-----+  'b' was 'tr' in the calling code, but BD
 //     |aaaaa|.....|.....|.....|  here.
-//     |aaaaa|.....|.....|.....|  
+//     |aaaaa|.....|.....|.....|
 //     |aaaaa|.....|.....|.....|
 //     +-----+-----+-----+-----+
 //
@@ -258,14 +258,14 @@ proc schurComplement(AD: domain, BD: domain, Rest: domain) {
 //
 proc panelSolve(
                panel: domain,
-               piv: [] indexType) {
+               ref piv: [] indexType) {
 
   for k in panel.dim(1) {             // iterate through the columns
     const col = panel[k.., k..k];
-    
+
     // If there are no rows below the current column return
     if col.size == 0 then return;
-    
+
     // Find the pivot, the element with the largest absolute value.
     const (_, (pivotRow, _)) = maxloc reduce zip(abs(Ab(col)), col);
 
@@ -273,7 +273,7 @@ proc panelSolve(
     // is absolute value, so it can't be used directly).
     //
     const pivotVal = Ab[pivotRow, k];
-    
+
     // Swap the current row with the pivot row and update the pivot vector
     // to reflect that
     Ab[k..k, ..] <=> Ab[pivotRow..pivotRow, ..];
@@ -281,11 +281,11 @@ proc panelSolve(
 
     if (pivotVal == 0) then
       halt("Matrix cannot be factorized");
-    
+
     // divide all values below and in the same col as the pivot by
     // the pivot value
     Ab[k+1.., k..k] /= pivotVal;
-    
+
     // update all other values below the pivot
     forall (i,j) in panel[k+1.., k+1..] do
       Ab[i,j] -= Ab[i,k] * Ab[k,j];
@@ -321,7 +321,7 @@ proc backwardSub(n: indexType) {
   var x: [bd] elemType;
 
   for i in bd by -1 do
-    x[i] = (Ab[i,n+1] - (+ reduce [j in i+1..bd.high] (Ab[i,j] * x[j]))) 
+    x[i] = (Ab[i,n+1] - (+ reduce [j in i+1..bd.high] (Ab[i,j] * x[j])))
             / Ab[i,i];
 
   return x;
@@ -339,7 +339,7 @@ proc printConfiguration() {
   }
 }
 
-//   
+//
 // construct an n by n+1 matrix filled with random values and scale
 // it to be in the range -1.0..1.0
 //
@@ -353,7 +353,7 @@ proc initAB() {
 //
 proc verifyResults(x) {
   initAB();
-  
+
   const axmbNorm = norm(gaxpyMinus(Ab[.., 1..n], x, Ab[.., n+1..n+1]), normType.normInf);
 
   const a1norm   = norm(Ab[.., 1..n], normType.norm1),

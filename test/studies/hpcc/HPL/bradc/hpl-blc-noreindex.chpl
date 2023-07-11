@@ -26,7 +26,7 @@ type indexType = int,
 // Configuration constants indicating the problem size (n) and the
 // block size (blkSize)
 //
-config const n = computeProblemSize(numMatrices, elemType, rank=2, 
+config const n = computeProblemSize(numMatrices, elemType, rank=2,
                                     memFraction=2, retType=indexType),
              blkSize = 8;
 
@@ -65,8 +65,8 @@ proc main() {
   // standard distribution library is filled out, MatVectSpace will be
   // distributed using a BlockCyclic(blkSize) distribution.
   //
-  const MatVectSpace: domain(2, indexType) 
-                      dmapped BlockCyclic(startIdx=(1,1), (blkSize,blkSize)) 
+  const MatVectSpace: domain(2, indexType)
+                      dmapped BlockCyclic(startIdx=(1,1), (blkSize,blkSize))
                     = {1..n, 1..n+1},
         MatrixSpace = MatVectSpace[.., ..n];
 
@@ -93,9 +93,9 @@ proc main() {
 // blocked LU factorization with pivoting for matrix augmented with
 // vector of RHS values.
 //
-proc LUFactorize(n: indexType, Ab: [?AbD] elemType,
-                piv: [1..n] indexType) {
-  
+proc LUFactorize(n: indexType, ref Ab: [?AbD] elemType,
+                ref piv: [1..n] indexType) {
+
   // Initialize the pivot vector to represent the initially unpivoted matrix.
   piv = 1..n;
 
@@ -136,7 +136,7 @@ proc LUFactorize(n: indexType, Ab: [?AbD] elemType,
     //
     panelSolve(Ab, l, piv);
     updateBlockRow(Ab, tl, tr);
-    
+
     //
     // update trailing submatrix (if any)
     //
@@ -158,7 +158,7 @@ proc LUFactorize(n: indexType, Ab: [?AbD] elemType,
 //     |aaaaa|.....|.....|.....|  function but called AD here.  Similarly,
 //     +-----+-----+-----+-----+  'b' was 'tr' in the calling code, but BD
 //     |aaaaa|.....|.....|.....|  here.
-//     |aaaaa|.....|.....|.....|  
+//     |aaaaa|.....|.....|.....|
 //     |aaaaa|.....|.....|.....|
 //     +-----+-----+-----+-----+
 //
@@ -180,14 +180,14 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
   // replicated distributions aren't implemented yet, but imagine that
   // they look something like the following:
   //
-  //var replAbD: domain(2) 
+  //var replAbD: domain(2)
   //            dmapped new Dimensional(BlkCyc(blkSize), Replicated)) = AbD[AD];
   //
   var replAD: domain(2, indexType),
       replBD: domain(2, indexType);
   replAD = AD;
   replBD = BD;
-    
+
   const replA : [replAD] elemType = Ab[replAD],
         replB : [replBD] elemType = Ab[replBD];
 
@@ -201,7 +201,7 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
     // At this point, the dgemms should all be local, so assert that
     // fact
     //
-    //    writeln("On ", here.id, ", trying to access ", 
+    //    writeln("On ", here.id, ", trying to access ",
     //            (row..#blkSize, col..#blkSize));
 
     // TODO: enable this on distributed memory
@@ -227,7 +227,7 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
 //
 proc dgemmNativeInds(A: [] elemType,
                      B: [] elemType,
-                     C: [] elemType) {
+                     ref C: [] elemType) {
   for (iA, iC) in zip(A.domain.dim(0), C.domain.dim(0)) do
     for (jA, iB) in zip(A.domain.dim(1), B.domain.dim(0)) do
       for (jB, jC) in zip(B.domain.dim(1), C.domain.dim(1)) do
@@ -239,7 +239,7 @@ proc dgemmReindexed(p: indexType,    // number of rows in A
                    r: indexType,    // number of cols in B
                    A: [1..p, 1..q] elemType,
                    B: [1..q, 1..r] elemType,
-                   C: [1..p, 1..r] elemType) {
+                   ref C: [1..p, 1..r] elemType) {
   // Calculate (i,j) using a dot product of a row of A and a column of B.
   for i in 1..p do
     for j in 1..r do
@@ -253,7 +253,7 @@ proc dgemmIdeal(A: [1.., 1..] elemType,
   for i in C.domain.dim(0) do
     for j in C.domain.dim(1) do
       for k in A.domain.dim(1) do
-        C[i,j] -= A[i, k] * B[k, j];
+        ref C[i,j] -= A[i, k] * B[k, j];
 }
 
 
@@ -261,19 +261,19 @@ proc dgemmIdeal(A: [1.., 1..] elemType,
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
 //
-proc panelSolve(Ab: [] elemType,
+proc panelSolve(ref Ab: [] elemType,
                panel: domain,
-               piv: [] indexType) {
+               ref piv: [] indexType) {
 
   //
   // TODO: Use on clause here (or avoid using a range?
   //
   for k in panel.dim(1) {             // iterate through the columns
     var col = panel[k.., k..k];
-    
+
     // If there are no rows below the current column return
     if col.size == 0 then return;
-    
+
     // Find the pivot, the element with the largest absolute value.
     const (_, (pivotRow, _)) = maxloc reduce zip(abs(Ab(col)), col);
 
@@ -283,7 +283,7 @@ proc panelSolve(Ab: [] elemType,
     // TODO: could introduce a maxabsloc reduction that returns the
     //       raw value with the highest absolute value
     const pivotVal = Ab[pivotRow, k];
-    
+
     // Swap the current row with the pivot row and update the pivot vector
     // to reflect that
     Ab[k..k, ..] <=> Ab[pivotRow..pivotRow, ..];
@@ -291,11 +291,11 @@ proc panelSolve(Ab: [] elemType,
 
     if (pivotVal == 0) then
       halt("Matrix cannot be factorized");
-    
+
     // divide all values below and in the same col as the pivot by
     // the pivot value
     Ab[k+1.., k..k] /= pivotVal;
-    
+
     // update all other values below the pivot
     forall (i,j) in panel[k+1.., k+1..] do
       Ab[i,j] -= Ab[i,k] * Ab[k,j];
@@ -308,7 +308,7 @@ proc panelSolve(Ab: [] elemType,
 // solve a block (tl for top-left) portion of a matrix. This function
 // solves the rows to the right of the block.
 //
-proc updateBlockRow(Ab: [] elemType,
+proc updateBlockRow(ref Ab: [] elemType,
                    tl: domain,
                    tr: domain) {
 
@@ -333,7 +333,7 @@ proc backwardSub(n: indexType,
 
   // TODO: Really want a partial reduction here
   for i in bd by -1 do
-    x[i] = (Ab[i,n+1] - (+ reduce [j in i+1..bd.high] (Ab[i,j] * x[j]))) 
+    x[i] = (Ab[i,n+1] - (+ reduce [j in i+1..bd.high] (Ab[i,j] * x[j])))
             / Ab[i,i];
 
   return x;
@@ -350,11 +350,11 @@ proc printConfiguration() {
   }
 }
 
-//   
+//
 // construct an n by n+1 matrix filled with random values and scale
 // it to be in the range -1.0..1.0
 //
-proc initAB(Ab: [] elemType) {
+proc initAB(ref Ab: [] elemType) {
   fillRandom(Ab, seed);
   Ab = Ab * 2.0 - 1.0;
 }
@@ -362,7 +362,7 @@ proc initAB(Ab: [] elemType) {
 //
 // calculate norms and residuals to verify the results
 //
-proc verifyResults(Ab, MatrixSpace, x) {
+proc verifyResults(ref Ab, MatrixSpace, x) {
   initAB(Ab);
 
   const axmbNorm = norm(gaxpyMinus(Ab[.., 1..n], x, Ab[.., n+1..n+1]), normType.normInf);

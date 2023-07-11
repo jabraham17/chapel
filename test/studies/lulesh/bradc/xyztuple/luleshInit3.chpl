@@ -64,7 +64,7 @@ proc initProblemSize() {
 
 // read/compute the coordinates
 
-proc initCoordinates(XYZ) {
+proc initCoordinates(ref XYZ) {
   if (initFromFile) {
     for (x,y,z) in XYZ do
       reader.read(x, y, z);
@@ -85,7 +85,7 @@ proc initCoordinates(XYZ) {
 
 // read/compute the element-to-node mapping
 
-proc initElemToNodeMapping(elemToNode: [?D]) {
+proc initElemToNodeMapping(ref elemToNode: [?D]) {
   if (initFromFile) {
     param nodesPerElem = elemToNode[D.low].size;
     for nodelist in elemToNode do

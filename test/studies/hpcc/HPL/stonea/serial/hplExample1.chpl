@@ -66,7 +66,7 @@ proc dgemm(A : Panel2D, B : Panel2D, C : Panel2D)
 
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
-proc panelSolve(pnl : Panel2D, piv : [1..pnl.rows] int)
+proc panelSolve(ref pnl : Panel2D, ref piv : [1..pnl.rows] int)
 {
     ref matrix = pnl.matrix;
     ref panel  = pnl.panel;
@@ -86,9 +86,9 @@ proc panelSolve(pnl : Panel2D, piv : [1..pnl.rows] int)
         piv[k] <=> piv[pivotRow];
         matrix[pnl.rowOffset+k-1, ..] <=>
             matrix[pnl.rowOffset+pivotRow-1, ..];
-        
+
         if(pivot == 0) then halt("Matrix can not be factorized");
-        
+
         // divide all values below and in the same col as the pivot by
         // the pivot
         if k+1 <= pnl.rows {
@@ -125,16 +125,16 @@ proc updateBlockRow(blockPnl : Panel2D, blockRow : Panel2D) {
 
 // blocked LU factorization with pivoting for matrix augmented with vector of
 // RHS values.
-proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
+proc LUFactorize(n : int, ref A : [1..n, 1..n+1] real, ref piv : [1..n] int) {
     param blkSize = 3;
 
     forall i in 1..n do
         piv[i] = i;
-    
+
     for blk in 1..n by blkSize {
         var pnlSize = min(blkSize, n-blk+1);
         var remaining = n-blk-pnlSize+1;
-        
+
         var tlPnl = new Panel2D(A, blk, blk, pnlSize, pnlSize);
         var blPnl = new Panel2D(A, blk+pnlSize, blk, remaining, pnlSize);
         var lPnl  = new Panel2D(A, blk, blk, n-blk+1, pnlSize);
@@ -152,9 +152,9 @@ proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
       }
 }
 
-// -------------------------------------------------------------------------- 
+// --------------------------------------------------------------------------
 //   TESTING SYSTEM:
-// -------------------------------------------------------------------------- 
+// --------------------------------------------------------------------------
 
 proc matrixMult(
     const m : int,
@@ -329,7 +329,7 @@ proc test_updateBlockRow(rprt = true) : bool {
              randomOffset..#randomWidth] real;
     rand.fillRandom(A);
     var OrigA = A;
-    
+
     // capture X and Y
     var X = new Panel2D(
         A, randomOffset, randomOffset, randomHeight, randomHeight);
@@ -374,7 +374,7 @@ proc test_LUFactorize(rprt = true) : bool {
     var piv : [1..randomN] int;
 
     LUFactorize(randomN, A, piv);
-    
+
     var C : [1..randomN, 1..randomN] real;
     selfMult(randomN, A[1..randomN,1..randomN], C);
     permuteBack(C, piv);

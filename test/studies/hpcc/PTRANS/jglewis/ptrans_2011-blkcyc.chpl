@@ -2,8 +2,8 @@ module HPCC_PTRANS {
 
   //  ===============================================
   //  Chapel Implementation of HPCC PTRANS Benchmark
-  //  Compute  C = beta C + A', where  A  and  C  are 
-  //  large distributed dense matrices 
+  //  Compute  C = beta C + A', where  A  and  C  are
+  //  large distributed dense matrices
   //  ===============================================
 
 
@@ -20,11 +20,11 @@ module HPCC_PTRANS {
 
   param zero = 0.0, one = 1.0, epsilon = 2.2E-16;
 
-  use LinearAlgebra, 
+  use LinearAlgebra,
       Time,
       Math,
       BlockCycDist;
- 
+
 
   proc main () {
 
@@ -34,11 +34,11 @@ module HPCC_PTRANS {
 
     // declare distribution rules for matrix and transpose
 
-    const Matrix_Block_Dist 
+    const Matrix_Block_Dist
       = new unmanaged BlockCyclic ( startIdx=(1,1),
                           blocksize=(row_block_size, col_block_size) );
 
-    const Transpose_Block_Dist 
+    const Transpose_Block_Dist
       = new unmanaged BlockCyclic ( startIdx=(1,1),
                           blocksize=(row_block_size, col_block_size) );
 
@@ -49,7 +49,7 @@ module HPCC_PTRANS {
           transpose_domain  : domain (2) dmapped new dmap (
                               Transpose_Block_Dist) = { 1..n_cols, 1..n_rows };
 
-    var A                  : [matrix_domain   ] real, 
+    var A                  : [matrix_domain   ] real,
         C                  : [transpose_domain] real,
         C_save             : [transpose_domain] real,
         C_plus_A_transpose : [transpose_domain] real;
@@ -159,17 +159,17 @@ module HPCC_PTRANS {
 
   //  =====================================================
   //  | PTRANS:  compute  C = beta C + A',                |
-  //  | where  A  and  C  are distributed dense matrices. |  
+  //  | where  A  and  C  are distributed dense matrices. |
   //  =====================================================
 
-  proc Chapel_PTRANS ( A : [?A_domain] real, 
-                       C : [?C_domain] real, 
+  proc Chapel_PTRANS ( A : [?A_domain] real,
+                       ref C : [?C_domain] real,
                        beta : real ) : bool
     where ( A.rank == 2 ) && ( C.rank == 2 )
     {
 
     //  ---------------------------------------------------------------------
-    //  Array dimensions and distribution information is conveyed to the 
+    //  Array dimensions and distribution information is conveyed to the
     //  transpose operation by the domain specification of each matrix.
     //  The extended transpose operation is realized as three separate cases.
     //  ---------------------------------------------------------------------
@@ -184,14 +184,14 @@ module HPCC_PTRANS {
 
           forall (i,j) in C_domain do
             C [i,j] += A [j,i];
-    
+
         else if ( beta == 0.0 ) then
-      
+
           forall (i,j) in C_domain do
             C [i,j] = A [j,i];
-    
+
         else
-      
+
           forall (i,j) in C_domain do
             C [i,j] = beta * C [i,j]  +  A [j,i];
         return true;
@@ -200,17 +200,17 @@ module HPCC_PTRANS {
 
   //  =====================================================
   //  | PTRANS:  compute  C = beta C + A',                |
-  //  | where  A  and  C  are distributed dense matrices. |  
+  //  | where  A  and  C  are distributed dense matrices. |
   //  =====================================================
 
-  proc Chapel_blocked_PTRANS_v1 ( A : [?A_domain] real, 
-                                  C : [?C_domain] real, 
+  proc Chapel_blocked_PTRANS_v1 ( A : [?A_domain] real,
+                                  ref C : [?C_domain] real,
                                   beta : real           ) : bool
     where ( A.rank == 2 ) && ( C.rank == 2 )
     {
 
     //  ---------------------------------------------------------------------
-    //  Array dimensions and distribution information is conveyed to the 
+    //  Array dimensions and distribution information is conveyed to the
     //  transpose operation by the domain specification of each matrix.
     //  The extended transpose operation is realized as three separate cases.
     //  ---------------------------------------------------------------------
@@ -227,19 +227,19 @@ module HPCC_PTRANS {
               forall i in c_rows do
                 for j in c_cols do
                   C [i,j] += A [j,i];
-    
+
         else if ( beta == 0.0 ) then
-      
+
           for c_rows in block_partitioning (C_domain, 0) do
-            for c_cols in block_partitioning (C_domain, 1) do 
+            for c_cols in block_partitioning (C_domain, 1) do
               forall i in c_rows do
                 for j in c_cols do
                   C [i,j] = A [j,i];
-    
+
         else
-      
+
           for c_rows in block_partitioning (C_domain, 0) do
-            for c_cols in block_partitioning (C_domain, 1) do 
+            for c_cols in block_partitioning (C_domain, 1) do
               forall i in c_rows do
                 for j in c_cols do
                   C [i,j] = beta * C [i,j]  +  A [j,i];
@@ -249,17 +249,17 @@ module HPCC_PTRANS {
 
   //  =====================================================
   //  | PTRANS:  compute  C = beta C + A',                |
-  //  | where  A  and  C  are distributed dense matrices. |  
+  //  | where  A  and  C  are distributed dense matrices. |
   //  =====================================================
 
-  proc Chapel_blocked_PTRANS_v2 ( A : [?A_domain] real, 
-                                  C : [?C_domain] real, 
+  proc Chapel_blocked_PTRANS_v2 ( A : [?A_domain] real,
+                                  ref C : [?C_domain] real,
                                   beta : real           ) : bool
     where ( A.rank == 2 ) && ( C.rank == 2 )
     {
 
     //  ---------------------------------------------------------------------
-    //  Array dimensions and distribution information is conveyed to the 
+    //  Array dimensions and distribution information is conveyed to the
     //  transpose operation by the domain specification of each matrix.
     //  The extended transpose operation is realized as three separate cases.
     //  ---------------------------------------------------------------------
@@ -268,9 +268,9 @@ module HPCC_PTRANS {
               ( A_domain.dim(1) != C_domain.dim(0))  ) then
       return false;
     else {
-    
+
     // --------------------------------------------
-    // Acquire the specifications of the underlying 
+    // Acquire the specifications of the underlying
     // processor grid from A's distribution
     // --------------------------------------------
 
@@ -281,7 +281,7 @@ module HPCC_PTRANS {
     assert ( C_grid_domain.low(0) == 0 && C_grid_domain.low(1) == 0 );
 
     assert ( C (C.domain.low).locale.id == 0 );
-             
+
     // ------------------------------------------------
     // SPMD -- launch a separate task on each processor
     // ------------------------------------------------
@@ -295,27 +295,27 @@ module HPCC_PTRANS {
           for c_rows in SPMD_block_partitioning (C_domain, processor,
                                                  C_grid_domain,0) do
             for c_cols in SPMD_block_partitioning (C_domain, processor,
-                                                   C_grid_domain,1) do 
+                                                   C_grid_domain,1) do
               forall i in c_rows do
                 for j in c_cols do
                   C [i,j] += A [j,i];
-    
+
         else if ( beta == 0.0 ) then
-      
-          for c_rows in SPMD_block_partitioning (C_domain, processor, 
-                                                 C_grid_domain,0) do
-            for c_cols in SPMD_block_partitioning (C_domain, processor, 
-                                                   C_grid_domain,1) do 
-              forall i in c_rows do
-                for j in c_cols do
-                  C [i,j] = A [j,i];
-    
-        else
-      
+
           for c_rows in SPMD_block_partitioning (C_domain, processor,
                                                  C_grid_domain,0) do
             for c_cols in SPMD_block_partitioning (C_domain, processor,
-                                                   C_grid_domain,1) do 
+                                                   C_grid_domain,1) do
+              forall i in c_rows do
+                for j in c_cols do
+                  C [i,j] = A [j,i];
+
+        else
+
+          for c_rows in SPMD_block_partitioning (C_domain, processor,
+                                                 C_grid_domain,0) do
+            for c_cols in SPMD_block_partitioning (C_domain, processor,
+                                                   C_grid_domain,1) do
               forall i in c_cols do
                 for j in c_cols do
                   C [i,j] = beta * C [i,j]  +  A [j,i];
@@ -341,7 +341,7 @@ module HPCC_PTRANS {
 
     const block_size = if dimen == 0 then row_block_size else col_block_size;
     for block_low in C_domain.dim (dimen) by block_size do
-      yield block_low .. min ( block_low + block_size - 1, 
+      yield block_low .. min ( block_low + block_size - 1,
       C_domain.dim(dimen).high );
   }
 
@@ -359,13 +359,13 @@ module HPCC_PTRANS {
     // -------------------------------------------------------------------
 
     const block_size = if dimen == 0 then row_block_size else col_block_size;
-    for block_low in C_domain.dim (dimen) + block_size*processor (dimen) 
+    for block_low in C_domain.dim (dimen) + block_size*processor (dimen)
     by block_size*(grid.dim (dimen).high+1) do
-      yield block_low .. min ( block_low + block_size - 1, 
+      yield block_low .. min ( block_low + block_size - 1,
                                C_domain.dim(dimen).high );
   }
 
-  proc verify(C:[?transpose_domain], C_plus_A_transpose, 
+  proc verify(C:[?transpose_domain], C_plus_A_transpose,
               error_tolerance, PTRANS_time) {
     // -------------------------------------------
     // Check results and compute timing statistics
@@ -373,7 +373,7 @@ module HPCC_PTRANS {
 
     // error = max reduce abs ( C - C_plus_A_transpose );
 
-    const error = max reduce forall (i,j) in transpose_domain do 
+    const error = max reduce forall (i,j) in transpose_domain do
                                abs ( C [i,j] - C_plus_A_transpose  [i,j] );
 
     //    var n_errors : int;
@@ -390,13 +390,13 @@ module HPCC_PTRANS {
     //      else if ( n_errors >= n_error_max ) then
     //  break;
     //    }
-      
+
     if printPassFailOnly then
       writeln ( if error > error_tolerance
                 then "    *** FAILURE ***"
                 else "    *** SUCCESS ***" );
     else {
-      if ( error > error_tolerance ) then 
+      if ( error > error_tolerance ) then
         writeln ( "    *** FAILURE *** error     : ", error );
       else if ( error != zero ) then
         writeln ( "    *** SUCCESS ***  error    : ", error );
@@ -405,7 +405,7 @@ module HPCC_PTRANS {
     }
 
     const elapsed_time = PTRANS_time.elapsed ();
-    
+
     const GB_sec = if ( elapsed_time  > zero ) then
                      ( n_rows * n_cols * 8 ) / ( 1.0e9 * elapsed_time )
                    else

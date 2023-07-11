@@ -1,7 +1,7 @@
 module Verify
 {
 
-proc verify_bfs_tree (root : int, ParentTree, Edges): int
+proc verify_bfs_tree (root : int, ParentTree, const ref Edges): int
 {
 
    use Graph500_defs;

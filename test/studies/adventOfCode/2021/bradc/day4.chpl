@@ -54,7 +54,7 @@ proc playBingo() {
 
 proc lookForWinner(Checks: [] [1..5, 1..5] bool) {
   for i in Checks.domain {
-    ref b = Checks[i];
+    const ref b = Checks[i];
 
     for r in 1..5 do
       if + reduce b[r, ..] == 5 then

@@ -27,7 +27,7 @@ type indexType = int,
 // Configuration constants indicating the problem size (n) and the
 // block size (blkSize)
 //
-config const n = computeProblemSize(numMatrices, elemType, rank=2, 
+config const n = computeProblemSize(numMatrices, elemType, rank=2,
                                     memFraction=2, retType=indexType),
              blkSize = 5;
 
@@ -96,10 +96,10 @@ proc main() {
 // blocked LU factorization with pivoting for matrix augmented with
 // vector of RHS values.
 //
-proc LUFactorize(n: indexType, Ab: [1..n, 1..n+1] elemType,
-                piv: [1..n] indexType) {
+proc LUFactorize(n: indexType, ref Ab: [1..n, 1..n+1] elemType,
+                ref piv: [1..n] indexType) {
   const AbD = Ab.domain;    // alias Ab.domain to save typing
-  
+
   // Initialize the pivot vector to represent the initially unpivoted matrix.
   piv = 1..n;
 
@@ -141,7 +141,7 @@ proc LUFactorize(n: indexType, Ab: [1..n, 1..n+1] elemType,
     panelSolve(Ab, l, piv);
     if (tr.size > 0) then
       updateBlockRow(Ab, tl, tr);
-    
+
     //
     // update trailing submatrix (if any)
     //
@@ -193,13 +193,13 @@ proc schurComplement(Ab: [1..n, 1..n+1] elemType, ptOp: indexType) {
   // replicated distributions aren't implemented yet, but imagine that
   // they look something like the following:
   //
-  //var replAbD: domain(2) 
-  //            dmapped new Dimensional(BlkCyc(blkSize), Replicated)) 
+  //var replAbD: domain(2)
+  //            dmapped new Dimensional(BlkCyc(blkSize), Replicated))
   //          = AbD[ptSol.., 1..#blkSize];
   //
   const replAD: domain(2) dmapped Dist2D = AbD[ptSol.., ptOp..#blkSize],
         replBD: domain(2) dmapped Dist2D = AbD[ptOp..#blkSize, ptSol..];
-    
+
   const replA : [replAD] elemType = Ab[ptSol.., ptOp..#blkSize],
         replB : [replBD] elemType = Ab[ptOp..#blkSize, ptSol..];
 
@@ -238,9 +238,9 @@ proc dgemm(A: [?AD] ?t,
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
 //
-proc panelSolve(Ab: [] ?t,
+proc panelSolve(ref Ab: [] ?t,
                panel: domain(2, indexType) dmapped Dist2D,
-               piv: [] indexType) {
+               ref piv: [] indexType) {
   const pnlRows = panel.dim(0),
         pnlCols = panel.dim(1);
 
@@ -249,32 +249,32 @@ proc panelSolve(Ab: [] ?t,
   // domain
   //
   assert(piv.domain.dim(0) == Ab.domain.dim(0));
-  
+
   if (pnlCols.size == 0) then return;
-  
+
   for k in pnlCols {             // iterate through the columns
     var col = panel[k.., k..k];
-    
+
     // If there are no rows below the current column return
     if col.dim(0).size == 0 then return;
-    
+
     // Find the pivot, the element with the largest absolute value.
     const (_, (pivotRow, _)) = maxloc reduce zip(abs(Ab(col)), col),
           pivot = Ab[pivotRow, k];
-    
+
     // Swap the current row with the pivot row
     piv[k] <=> piv[pivotRow];
 
     Ab[k, ..] <=> Ab[pivotRow, ..];
-    
+
     if (pivot == 0) then
       halt("Matrix can not be factorized");
-    
+
     // divide all values below and in the same col as the pivot by
     // the pivot
     if k+1 <= pnlRows.high then
       Ab(col)[k+1.., k..k] /= pivot;
-    
+
     // update all other values below the pivot
     if k+1 <= pnlRows.high && k+1 <= pnlCols.high then
       forall (i,j) in panel[k+1.., k+1..] do
@@ -293,7 +293,7 @@ proc updateBlockRow(Ab: [] ?t, tl: domain(2) dmapped Dist2D, tr: domain(2) dmapp
         tlCols = tl.dim(1),
         trRows = tr.dim(0),
         trCols = tr.dim(1);
-  
+
   assert(tlCols == trRows);
 
   //
@@ -317,7 +317,7 @@ proc backwardSub(n: int,
 
   for i in b.domain by -1 {
     x[i] = b[i];
-    
+
     for j in i+1..b.domain.high do
       x[i] -= A[i,j] * x[j];
 
@@ -338,11 +338,11 @@ proc printConfiguration() {
   }
 }
 
-//   
+//
 // construct an n by n+1 matrix filled with random values and scale
 // it to be in the range -1.0..1.0
 //
-proc initAB(Ab: [] elemType) {
+proc initAB(ref Ab: [] elemType) {
   fillRandom(Ab, seed);
   Ab = Ab * 2.0 - 1.0;
 }
@@ -355,7 +355,7 @@ proc verifyResults(Ab, MatrixSpace, x) {
       b = Ab[.., n+1];
 
   initAB(Ab);
-  
+
   const axmbNorm = norm(gaxpyMinus(n, n, A, x, b), normType.normInf);
 
   const a1norm   = norm(A, normType.norm1),

@@ -21,7 +21,7 @@ var timer = new stopwatch();
 proc dgemm(
     A : [?AD] ?t,
     B : [?BD] t,
-    C : [?CD] t)
+    ref C : [?CD] t)
 {
     // Calculate (i,j) using a dot product of a row of A and a column of B.
     for i in AD.dim(0) {
@@ -75,7 +75,7 @@ proc schurComplement(
     //    Dimensional(BlkCyc(k), Replicated)) = AD[ptSol.., 1..#blkSize];
     const replAD : domain(2) = AD[ptSol.., ptOp..#blkSize];
     const replBD : domain(2) = AD[ptOp..#blkSize, ptSol..];
-    
+
     const replA : [replAD] real = A[ptSol.., ptOp..#blkSize];
     const replB : [replBD] real = A[ptOp..#blkSize, ptSol..];
 
@@ -100,9 +100,9 @@ proc schurComplement(
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
 proc panelSolve(
-    A : [] ?t,
+    ref A : [] ?t,
     panel : domain(2),
-    piv : [] int)
+    ref piv : [] int)
 {
     const pnlRows = panel.dim(0);
     const pnlCols = panel.dim(1);
@@ -128,11 +128,11 @@ proc panelSolve(
         // Swap the current row with the pivot row
         piv[k] <=> piv[pivotRow];
         A[k, ..] <=> A[pivotRow, ..];
-        
+
         if(pivot == 0) then {
             halt("Matrix can not be factorized");
         }
-        
+
         // divide all values below and in the same col as the pivot by
         // the pivot
         if k+1 <= pnlRows.high {
@@ -152,7 +152,7 @@ proc panelSolve(
 // LU decomposition.  Each step of the LU decomposition will solve a block
 // (tl for top-left) portion of a matrix. This function solves the rows to the
 // right of the block.
-proc updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
+proc updateBlockRow(ref A : [] ?t, tl : domain(2), tr : domain(2))
 {
     const tlRows = tl.dim(0);
     const tlCols = tl.dim(1);
@@ -172,7 +172,7 @@ proc updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
 
 // blocked LU factorization with pivoting for matrix augmented with vector of
 // RHS values.
-proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
+proc LUFactorize(n : int, ref A : [1..n, 1..n+1] real, ref piv : [1..n] int) {
     const AD = A.domain;    // alias A.domain to save typing
 
     // Initialize the pivot vector to represent the initially unpivoted matrix.
@@ -222,9 +222,9 @@ proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
     }
 }
 
-// -------------------------------------------------------------------------- 
+// --------------------------------------------------------------------------
 //   TESTING SYSTEM:
-// -------------------------------------------------------------------------- 
+// --------------------------------------------------------------------------
 // matrix-vector multiplication, solve equation A*x-y
 proc gaxpyMinus(
     n : int,
@@ -272,7 +272,7 @@ proc main() {
     var A   : [1..n, 1..n+1] real;
     var piv : [1..n] int;
     var x   : [1..n] real;
-   
+
     // construct an n by n+1 matrix filled with random values
     fillRandom(A, seed);
     A = A * 2.0 - 1.0;
@@ -318,7 +318,7 @@ proc main() {
         else "FAILED");
 
     // calculate and report performance
-    var performance = 
+    var performance =
         ((2.0/3.0) * n**3 + (3.0/2.0) * n**2) / timer.elapsed() * 1e-9;
     writeln("computation time: ", timer.elapsed(), " seconds.");
     writeln("performance: ", performance, " Gflops/s.");

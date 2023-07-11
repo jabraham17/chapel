@@ -100,7 +100,7 @@ proc foldSheet(Sheet: [?Dold], step=0) {
   }
 
   // 7 , 3
-  
+
 //  var newy = (oldy - horizontal) / (1 + horizontal);
 //  var newx = (oldx - vertical) / (1 + vertical);
   writeln((newy,newx));

@@ -56,7 +56,7 @@ proc main() {
 }
 
 
-proc computeTwiddles(W) {
+proc computeTwiddles(ref W) {
   const n = W.size;
   const delta = 2.0 * atan(1.0) / n;
 
@@ -103,8 +103,8 @@ proc bitReverse(val: ?valType, numBits = 64) {
 }
 
 
-proc dfft(A, W) {
-  
+proc dfft(ref A, W) {
+
   var span = 1;
   var m, m2: int;
 
@@ -149,7 +149,7 @@ proc dfft(A, W) {
 }
 
 
-proc verifyResults(z, Z, execTime, Twiddles) {
+proc verifyResults(const ref z, ref Z, execTime, Twiddles) {
   const N = Z.size;
 
   // BLC: This line wants /(complex,real) to be implemented directly:
@@ -180,7 +180,7 @@ proc verifyResults(z, Z, execTime, Twiddles) {
   }
 }
 
-proc butterfly(wk1: complex, wk2: complex, wk3: complex, 
+proc butterfly(wk1: complex, wk2: complex, wk3: complex,
               inout A:[?D] complex) {
   const i1 = D.lowBound,
         i2 = i1 + D.stride,

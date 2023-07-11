@@ -50,7 +50,7 @@ proc eval_At_times_u(u : [] real, inRange : int, ref Au : [] real, outRange1, ou
   }
 }
 
-proc eval_AtA_times_u(u, AtAu, v : [] real, inRange, range1, range2 : int)
+proc eval_AtA_times_u(u, ref AtAu, ref v : [] real, inRange, range1, range2 : int)
 {
            eval_A_times_u(u, inRange, v, range1, range2);
            b!.barrier();

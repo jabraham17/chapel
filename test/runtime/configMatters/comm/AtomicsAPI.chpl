@@ -148,7 +148,7 @@ proc testOrderAtomicT(ref a, ref i, ref b, type basetype, param o: memoryOrder) 
   writeln();
 }
 
-proc testUnorderedAtomicT(a, ref i, ref b, type basetype) {
+proc testUnorderedAtomicT(ref a, ref i, ref b, type basetype) {
   use UnorderedAtomics;
   inline proc fence() { unorderedAtomicTaskFence(); }
   param isInt = isIntegral(basetype);

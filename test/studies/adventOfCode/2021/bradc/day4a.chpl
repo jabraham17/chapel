@@ -63,10 +63,10 @@ proc playBingo() {
   halt("We didn't find a loser before running out of numbers");
 }
 
-proc lookForWinners(Checks: [] [1..5, 1..5] bool, Won: [] bool) {
+proc lookForWinners(Checks: [] [1..5, 1..5] bool, ref Won: [] bool) {
   for i in Checks.domain {
     if !Won[i] {
-      ref b = Checks[i];
+      const ref b = Checks[i];
 
       for r in 1..5 do
         if + reduce b[r, ..] == 5 then

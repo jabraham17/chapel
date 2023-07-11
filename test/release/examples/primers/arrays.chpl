@@ -147,7 +147,7 @@ writeln("After decrementing B's elements, B is:\n", B, "\n");
 // ``D``:
 //
 
-proc negateAndPrintArr(X: [?D] real) {
+proc negateAndPrintArr(ref X: [?D] real) {
   writeln("within negateAndPrintArr, D is: ", D, "\n");
   forall (i,j) in D do
     X[i,j] = -X[i,j];

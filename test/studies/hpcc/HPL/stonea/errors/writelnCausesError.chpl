@@ -11,7 +11,7 @@ proc dgemm(
     r : int,    // number of cols in B
     A : [?AD] ?t,
     B : [?BD] t,
-    C : [?CD] t)
+    ref C : [?CD] t)
 {
     // Calculate (i,j) using a dot product of a row of A and a column of B.
     for i in AD.dim(0) {
@@ -27,9 +27,9 @@ proc dgemm(
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
 proc panelSolve(
-    A : [] ?t,
+    ref A : [] ?t,
     panel : domain(2),
-    piv : [] int)
+    ref piv : [] int)
 {
     var pnlRows = panel.dim(0);
     var pnlCols = panel.dim(1);
@@ -52,11 +52,11 @@ proc panelSolve(
         // Swap the current row with the pivot row
         piv[k] <=> piv[pivotRow];
         A[k, ..] <=> A[pivotRow, ..];
-        
+
         if(pivot == 0) then {
             halt("Matrix can not be factorized");
         }
-        
+
         // divide all values below and in the same col as the pivot by
         // the pivot
         if k+1 <= pnlRows.high {
@@ -76,7 +76,7 @@ proc panelSolve(
 // LU decomposition.  Each step of the LU decomposition will solve a block
 // (tl for top-left) portion of a matrix. This function solves the rows to the
 // right of the block.
-proc updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
+proc updateBlockRow(ref A : [] ?t, tl : domain(2), tr : domain(2))
 {
     var tlRows = tl.dim(0);
     var tlCols = tl.dim(1);
@@ -96,7 +96,7 @@ proc updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
 
 // blocked LU factorization with pivoting for matrix augmented with vector of
 // RHS values.
-proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
+proc LUFactorize(n : int, ref A : [1..n, 1..n+1] real, ref piv : [1..n] int) {
     const ARows = A.domain.dim(0);
     const ACols = A.domain.dim(1);
 
@@ -121,14 +121,14 @@ proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
        |....| tl  |      tr        |  1    |         5: unfactoredCols
        |....|     |                |  |    |  7      6: ARows
        |....+-----+----------------| ---             7: ACols
-       |....|     |                |  |    3  |      
-       |....|     |                |          |      
+       |....|     |                |  |    3  |
+       |....|     |                |          |
        |....| bl  |      br        |  2    |  |
        |....|     |                |       |  |
        |....|     |                |  |    |  |
        +----+-----+----------------+ ------------
 
-       |    |    |                 |    
+       |    |    |                 |
        |    |-1 -|------ 4 --------|
        |    |                      |
        |    `--------- 5 ----------|
@@ -151,7 +151,7 @@ proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
         var bl = {trailingRows, blockRange};
         var br = {trailingRows, trailingCols};
         var l  = {unfactoredRows, blockRange};
-        
+
         // Now that we've sliced and diced A properly do the blocked-LU
         // computation:
         panelSolve(A, l, piv);
@@ -165,9 +165,9 @@ proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
       }
 }
 
-// -------------------------------------------------------------------------- 
+// --------------------------------------------------------------------------
 //   TESTING SYSTEM:
-// -------------------------------------------------------------------------- 
+// --------------------------------------------------------------------------
 proc matrixMult(
     const m : int,
     const p : int,
@@ -402,7 +402,7 @@ proc test_updateBlockRow(rprt = true) : bool {
              randomOffset..randomOffset+randomWidth-1] real;
     rand.fillRandom(A);
     var OrigA = A;
-    
+
     // capture X and Y
     var X = {randomOffset..randomOffset+randomHeight-1,
              randomOffset..randomOffset+randomHeight-1};
@@ -493,7 +493,7 @@ proc test_LUFactorize(rprt = true) : bool {
     var piv : [1..randomN] int;
 
     LUFactorize(randomN, A, piv);
-    
+
     var C : [1..randomN, 1..randomN] real;
     selfMult(randomN, A[1..randomN,1..randomN], C);
     permuteBack(C, piv);

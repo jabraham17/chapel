@@ -2,8 +2,8 @@ module HPCC_PTRANS {
 
   //  ===============================================
   //  Chapel Implementation of HPCC PTRANS Benchmark
-  //  Compute  C = beta C + A', where  A  and  C  are 
-  //  large distributed dense matrices 
+  //  Compute  C = beta C + A', where  A  and  C  are
+  //  large distributed dense matrices
   //  ===============================================
 
 
@@ -19,7 +19,7 @@ module HPCC_PTRANS {
 
   param zero = 0.0, one = 1.0, epsilon = 2.2E-16;
 
-  use LinearAlgebra, 
+  use LinearAlgebra,
       Time,
       Math,
       BlockDist;
@@ -32,20 +32,20 @@ module HPCC_PTRANS {
 
     // declare distribution rules for matrix and transpose
 
-    const Matrix_Block_Dist 
+    const Matrix_Block_Dist
       = new dmap(new Block(rank=2,idxType=int(64),boundingBox={1..n_rows, 1..n_cols}));
 
-    const Transpose_Block_Dist 
+    const Transpose_Block_Dist
       = new dmap(new Block(rank=2,idxType=int(64),boundingBox={1..n_cols, 1..n_rows}));
 
     // declare domains (index sets) for matrix and transpose
 
-    const matrix_domain     : domain (2, int (64) ) dmapped 
+    const matrix_domain     : domain (2, int (64) ) dmapped
                               Matrix_Block_Dist = { 1..n_rows, 1..n_cols },
-          transpose_domain  : domain (2, int (64)) dmapped 
+          transpose_domain  : domain (2, int (64)) dmapped
                               Transpose_Block_Dist = { 1..n_cols, 1..n_rows };
 
-    var A                  : [matrix_domain   ] real, 
+    var A                  : [matrix_domain   ] real,
         C                  : [transpose_domain] real,
         C_plus_A_transpose : [transpose_domain] real;
 
@@ -98,7 +98,7 @@ module HPCC_PTRANS {
     //    forall (i,j) in matrix_domain do
     //      norm_A$ += A [i,j] ** 2;
     //    norm_A$ = sqrt ( norm_A$ );
-    
+
     writeln ( "    norm of A                 : ", norm_A );
     writeln ( "    norm of C                 : ", norm_C );
 
@@ -123,7 +123,7 @@ module HPCC_PTRANS {
 
     // error = max reduce abs ( C - C_plus_A_transpose );
 
-    error = max reduce forall (i,j) in transpose_domain do 
+    error = max reduce forall (i,j) in transpose_domain do
       abs ( C [i,j] - C_plus_A_transpose  [i,j] );
 
     writeln ( "  Results" );
@@ -140,7 +140,7 @@ module HPCC_PTRANS {
     //      else if ( n_errors >= n_error_max ) then
     //	break;
     //    }
-      
+
     if printPassFailOnly then
       writeln ( if error > error_tolerance
                 then "    *** FAILURE ***"
@@ -156,7 +156,7 @@ module HPCC_PTRANS {
 
     if (printStats) {
       elapsed_time = PTRANS_time.elapsed ();
-    
+
       if ( elapsed_time  > zero ) then
         GB_sec = ( n_rows * n_cols * 8 ) / ( 1.0e9 * elapsed_time );
       else
@@ -166,20 +166,20 @@ module HPCC_PTRANS {
       writeln ( "    Gigabytes per second      : ", GB_sec );
     }
   }
-    
+
   //  =====================================================
   //  | PTRANS:  compute  C = beta C + A',                |
-  //  | where  A  and  C  are distributed dense matrices. |  
+  //  | where  A  and  C  are distributed dense matrices. |
   //  =====================================================
 
-  proc Chapel_PTRANS ( A : [?A_domain] real, 
-		      C : [?C_domain] real, 
+  proc Chapel_PTRANS ( A : [?A_domain] real,
+		      ref C : [?C_domain] real,
 		      beta : real ) : bool
     where ( A.rank == 2 ) && ( C.rank == 2 )
     {
 
     //  ---------------------------------------------------------------------
-    //  Array dimensions and distribution information is conveyed to the 
+    //  Array dimensions and distribution information is conveyed to the
     //  transpose operation by the domain specification of each matrix.
     //  The extended transpose operation is realized as three separate cases.
     //  ---------------------------------------------------------------------
@@ -193,14 +193,14 @@ module HPCC_PTRANS {
 
       	  forall (i,j) in C_domain do
 	    C [i,j] += A [j,i];
-    
+
 	else if ( beta == 0.0 ) then
-      
+
 	  forall (i,j) in C_domain do
 	    C [i,j] = A [j,i];
-    
+
 	else
-      
+
 	  forall (i,j) in C_domain do
 	    C [i,j] = beta * C [i,j]  +  A [j,i];
 	return true;

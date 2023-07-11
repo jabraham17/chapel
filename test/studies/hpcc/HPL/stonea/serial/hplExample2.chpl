@@ -26,7 +26,7 @@ proc dgemm(
 proc panelSolve(
     ref A : [] ?t,
         panel : domain(2),
-        piv : [] int)
+        ref piv : [] int)
 {
     var pnlRows = panel.dim(0);
     var pnlCols = panel.dim(1);
