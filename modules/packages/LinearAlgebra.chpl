@@ -574,7 +574,7 @@ proc Matrix(Dom: domain, type eltType=real) where Dom.rank == 2 {
 
    ``A`` can be sparse (CS) or dense.
 */
-proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
+proc Matrix(const ref A: [?Dom] ?Atype, type eltType=Atype)
   where isDenseMatrix(A)
 {
   var M: [Dom] eltType = A: eltType;
@@ -2768,7 +2768,7 @@ module Sparse {
     If ``A`` is sparse (CSR), the returned sparse matrix will be a copy of ``A``
     casted to ``eltType``
    */
-  proc CSRMatrix(A: [?Dom] ?Atype, type eltType=Atype) where isCSArr(A) {
+  proc CSRMatrix(const ref A: [?Dom] ?Atype, type eltType=Atype) where isCSArr(A) {
     var M: [Dom] eltType = A: eltType;
     return M;
   }
@@ -3436,7 +3436,7 @@ module Sparse {
 
   @chpldoc.nodoc
   /* Returns ``true`` if the array is dmapped to ``CS`` layout. */
-  proc isCSArr(A: []) param { return isCSType(A.domain.dist.type); }
+  proc isCSArr(const ref A: []) param { return isCSType(A.domain.dist.type); }
 
   @chpldoc.nodoc
   /* Returns ``true`` if the domain is dmapped to ``CS`` layout. */
