@@ -226,7 +226,7 @@ proc schurComplement(Ab: [1..n, 1..n+1] elemType, ptOp: indexType) {
 //
 proc dgemm(A: [?AD] ?t,
            B: [?BD] t,
-           C: [?CD] t) {
+           ref C: [?CD] t) {
   // Calculate (i,j) using a dot product of a row of A and a column of B.
   for i in AD.dim(0) do
     for j in CD.dim(1) do
@@ -288,7 +288,7 @@ proc panelSolve(ref Ab: [] ?t,
 // solve a block (tl for top-left) portion of a matrix. This function
 // solves the rows to the right of the block.
 //
-proc updateBlockRow(Ab: [] ?t, tl: domain(2) dmapped Dist2D, tr: domain(2) dmapped Dist2D) {
+proc updateBlockRow(ref Ab: [] ?t, tl: domain(2) dmapped Dist2D, tr: domain(2) dmapped Dist2D) {
   const tlRows = tl.dim(0),
         tlCols = tl.dim(1),
         trRows = tr.dim(0),
@@ -351,7 +351,7 @@ proc initAB(ref Ab: [] elemType) {
 // calculate norms and residuals to verify the results
 //
 proc verifyResults(Ab, MatrixSpace, x) {
-  ref A = Ab[MatrixSpace],
+  const ref A = Ab[MatrixSpace],
       b = Ab[.., n+1];
 
   initAB(Ab);
