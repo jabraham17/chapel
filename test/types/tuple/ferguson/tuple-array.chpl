@@ -1,20 +1,20 @@
-proc t1( ref tup )
+proc t1( tup )
 {
   tup(0)[1] = 2;
   writeln(tup(1)[1]);
 }
 
-proc t2( ref tup )
+proc t2( tup )
 {
   t1(tup);
 }
 
-proc t3( ref args ... )
+proc t3( args ... )
 {
   t2(args);
 }
 
-proc t4( ref args ... )
+proc t4( args ... )
 {
   t3( (...args) );
 }
