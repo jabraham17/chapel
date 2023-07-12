@@ -669,7 +669,7 @@ module ChapelDomain {
   // BaseSparseDom operator overloads
   //
   @chpldoc.nodoc
-  operator +=(ref sd: domain, inds: [] index(sd)) where sd.isSparse() {
+  operator +=(ref sd: domain, pragma "intent ref maybe const formal" inds: [] index(sd)) where sd.isSparse() {
     if inds.sizeAs(int) == 0 then return;
 
     sd._value.dsiBulkAdd(inds);
