@@ -16,7 +16,7 @@ proc main(args: [] string) {
                            hints=ioHintSet.mmap(true));
   var len = stdin.size;
   var data : [0..#len] uint(8);
-  
+
   sync { // wait for all process() tasks to complete before continuing
 
     while true {
@@ -47,7 +47,7 @@ proc main(args: [] string) {
       // Read until nextDescOffset into the data array.
       input.readBinary(c_ptrTo(data[descOffset]),
           (nextDescOffset-descOffset):c_ssize_t);
-      
+
 
       if !eof {
         // '-3' to skip over '\n>'
@@ -71,7 +71,7 @@ proc process(data, in start, in end) {
     do { cursor += dir; } while data[cursor] == "\n".toByte();
   }
   while start <= end {
-    ref d1 = data[start], d2 = data[end];
+    const ref d1 = data[start], d2 = data[end];
     (d1, d2) = (table[d2], table[d1]);
     advance(start, 1);
     advance(end, -1);

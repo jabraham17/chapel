@@ -117,7 +117,7 @@ proc initVectors(ref B, ref C) {
 //
 // Verify that the computation is correct
 //
-proc verifyResults(A, B, C) {
+proc verifyResults(A, ref B, C) {
   if (printArrays) then writeln("A is:     ", A, "\n");  // optionally print A
 
   //

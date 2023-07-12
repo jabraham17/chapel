@@ -143,7 +143,7 @@ proc revcomp(seq, size) {
   }
 }
 
-proc revcomp(in dstFront, in charAfter, spanLen, buff, seq) {
+proc revcomp(in dstFront, in charAfter, spanLen, ref buff, seq) {
   if spanLen%2 {
     charAfter -= 1;
     buff[dstFront] = cmpl[seq[charAfter]];

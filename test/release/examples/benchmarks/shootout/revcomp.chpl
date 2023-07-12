@@ -31,7 +31,7 @@ proc main(args: [] string) {
         start = idx + numRead;
       }
 
-      idx += numRead; 
+      idx += numRead;
       numRead = stdinNoLock.readLine(data[idx..]);
     }
 
@@ -46,7 +46,7 @@ proc main(args: [] string) {
 }
 
 
-proc process(data, start, end) {
+proc process(ref data, start, end) {
   const extra = (end - start) % columns,
         off = columns - extra - 1;
 

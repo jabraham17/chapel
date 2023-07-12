@@ -3,18 +3,18 @@ var global: c_array(int, 3);
 
 var count = 0;
 
-proc setit( arg: c_array(int, 3) ) {
+proc setit( ref arg: c_array(int, 3) ) {
   arg[0] = 0;
   arg[1] = 1;
   arg[2] = 2;
 }
-proc increment( arg: c_array(int, 3) ) {
+proc increment( ref arg: c_array(int, 3) ) {
   arg[0] += 1;
   arg[1] += 1;
   arg[2] += 1;
 }
 
-proc byblank( arg: c_array(int, 3) ) {
+proc byblank( ref arg: c_array(int, 3) ) {
   increment(global);
   increment(global);
   increment(arg);

@@ -43,7 +43,7 @@ config param HAVE_DIVEXACT_PREINV = false;
 config param printTimings = true;
 
 proc CHECK_MEMUSAGE {
-  //  writeln("CHECK_MEM_USAGE not implemented yet");  
+  //  writeln("CHECK_MEM_USAGE not implemented yet");
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -246,7 +246,7 @@ proc main() {
 
   writef("   P size=%n digits (%dr)\n", psize, psize:real/d);
   writef("   Q size=%n digits (%dr)\n", qsize, qsize:real/d);
-         
+
 
 
   /* output Pi and timing statistics */
@@ -265,7 +265,7 @@ proc main() {
 }
 
 
-proc build_sieve(s: [] sieve_t) {
+proc build_sieve(ref s: [] sieve_t) {
   const n = s.sizeAs(s.idxType)*2,
         m = sqrt(n): c_long;
 

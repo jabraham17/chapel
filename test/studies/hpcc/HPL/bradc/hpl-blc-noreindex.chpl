@@ -173,7 +173,7 @@ proc LUFactorize(n: indexType, ref Ab: [?AbD] elemType,
 // locale only stores one copy of each block it requires for all of
 // its rows/columns.
 //
-proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) {
+proc schurComplement(ref Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) {
   //
   // Copy data into replicated array so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.  These
@@ -249,11 +249,11 @@ proc dgemmReindexed(p: indexType,    // number of rows in A
 
 proc dgemmIdeal(A: [1.., 1..] elemType,
                B: [1.., 1..] elemType,
-               C: [1.., 1..] elemType) {
+               ref C: [1.., 1..] elemType) {
   for i in C.domain.dim(0) do
     for j in C.domain.dim(1) do
       for k in A.domain.dim(1) do
-        ref C[i,j] -= A[i, k] * B[k, j];
+        C[i,j] -= A[i, k] * B[k, j];
 }
 
 

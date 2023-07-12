@@ -31,7 +31,7 @@ record FakeLeader {
   iter these(param tag: iterKind) where tag == iterKind.leader {
     yield (0:indexType..#N_U, );
   }
-  
+
   iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     for i in followThis(0) do
       yield followThis;
@@ -71,7 +71,7 @@ proc printConfiguration() {
 }
 
 
-proc verifyResults(T: [?TDom], UpdateSpace) {
+proc verifyResults(ref T: [?TDom], UpdateSpace) {
   if (printArrays) then writeln("After updates, T is: ", T, "\n");
 
   forall (_,r) in zip(myFakeLeader, RAStream()) do

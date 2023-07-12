@@ -24,7 +24,7 @@ class Funcfl {
   var frhoSpace : domain(1);
   var frho : [frhoSpace] real;
   var rhor, zr : [zrSpace] real;
-} 
+}
 
 
 // 'Embedded atom model'
@@ -36,7 +36,7 @@ class ForceEAM : Force  {
   var frhoSpace : domain(1);
   var frho : [frhoSpace] real;
   var rhor, z2r : [rSpace] real;
-  
+
   // spline form for computation
   var deltaPotential, rdr, deltaDensity, rdrho : real;
   var splineSpace : domain(1);
@@ -46,7 +46,7 @@ class ForceEAM : Force  {
   var frho_spline : [frSplineSpace] real;
 
   var FP: [DistSpace] [perBinSpace] real;
-              
+
   var funcfl = new Funcfl();
 
   proc init(cf : real) {
@@ -67,10 +67,10 @@ class ForceEAM : Force  {
 
     mass = rd.readln(real);
 
-    (funcfl.numDensity, 
-     funcfl.deltaDensity, 
-     funcfl.numPotentials, 
-     funcfl.deltaPotential, 
+    (funcfl.numDensity,
+     funcfl.deltaDensity,
+     funcfl.numPotentials,
+     funcfl.deltaPotential,
      funcfl.cut) = rd.readln(int,real,int,real,real);
 
     funcfl.frhoSpace = {1..(funcfl.numDensity+1)};
@@ -158,7 +158,7 @@ class ForceEAM : Force  {
       k += 1;
       var zri : real = cof1 * funcfl.zr[k-1] + cof2 * funcfl.zr[k] + cof3 * funcfl.zr[k+1] + cof4 * funcfl.zr[k+2];
       f = 27.2 * 0.529 * zri * zri;
-    } 
+    }
   }
 
   proc array2spline() {
@@ -174,7 +174,7 @@ class ForceEAM : Force  {
   }
 
   // copied straight from c++, not entirely sure what it does
-  proc interp(n : int, delta : real, arr : [] real, spline : [] real) {
+  proc interp(n : int, delta : real, arr : [] real, ref spline : [] real) {
     for (f,m) in zip(arr[2..],1..) {
       spline[m*7 + 6] = f;
     }
@@ -206,7 +206,7 @@ class ForceEAM : Force  {
     }
   }
 
-  proc grab(rd,list : [] real) {
+  proc grab(rd,ref list : [] real) {
     for a in list[2..list.domain.high] {
       a = rd.read(real);
     }
@@ -291,7 +291,7 @@ class ForceEAM : Force  {
 
             const res = del * fpair;
             (fx, fy, fz) = (fx, fy, fz) + res;
-            
+
             fpair *= .5;
 
             if store {
@@ -348,7 +348,7 @@ class ForceLJ : Force {
         for(n,i) in a.neighs[1..a.ncount] {
           const del = x - Pos[n][i];
           const rsq = dot(del,del);
-          
+
           if rsq < cfsq {
             const sr2: real = 1.0 / rsq;
             const sr6 : real = sr2 * sr2 * sr2;
@@ -371,4 +371,4 @@ class ForceLJ : Force {
     // higher resolution performance timings - look at the actual computation
     maintime += fTimer.elapsed();
   }
-} 
+}

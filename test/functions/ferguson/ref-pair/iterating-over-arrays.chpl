@@ -11,13 +11,13 @@ proc getter() const ref {
   return globalArray;
 }
 
-proc tupleIndexFor(A, B) {
+proc tupleIndexFor(ref A, B) {
   for tup in zip(A, B) {
     tup(0) = 1;
   }
 }
 
-proc tupleIndexForall(A, B) {
+proc tupleIndexForall(ref A, B) {
   forall tup in zip(A, B) {
     tup(0) = 1;
   }
@@ -49,18 +49,18 @@ proc tupleIndexZipForall(tup) {
 
 
 
-writeln("tupleIndexFor sets 1st");  
+writeln("tupleIndexFor sets 1st");
 tupleIndexFor(getter(), getter());
-writeln("tupleIndexForall sets 1st");  
+writeln("tupleIndexForall sets 1st");
 tupleIndexForall(getter(), getter());
 
-writeln("tupleZipFor sets 2nd");  
+writeln("tupleZipFor sets 2nd");
 tupleZipFor( (getter(), getter()) );
-writeln("tupleZipForall sets 2nd");  
+writeln("tupleZipForall sets 2nd");
 tupleZipForall( (getter(), getter()) );
 
-writeln("tupleIndexZipFor sets all");  
+writeln("tupleIndexZipFor sets all");
 tupleIndexZipFor( (getter(), getter()) );
-writeln("tupleIndexZipForall sets all");  
+writeln("tupleIndexZipForall sets all");
 tupleIndexZipForall( (getter(), getter()) );
 

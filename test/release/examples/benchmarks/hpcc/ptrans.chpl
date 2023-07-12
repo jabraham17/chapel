@@ -1,6 +1,6 @@
 //  ===============================================
 //  Chapel Implementation of HPCC PTRANS Benchmark
-//  Compute  C = beta C + A', where  A  and  C  are 
+//  Compute  C = beta C + A', where  A  and  C  are
 //  large distributed dense matrices.
 //  Original version by John G. Lewis, Dec 2010
 //  ===============================================
@@ -33,9 +33,9 @@ config type eltType = real(64);
 // Configuration constants to set the problem size (numrows x numcols),
 // the block sizes, and the scalar multiplier, beta.
 //
-config const numrows = computeProblemSize(numMatrices, eltType, rank=2), 
+config const numrows = computeProblemSize(numMatrices, eltType, rank=2),
              numcols = numrows,
-             rowBlkSize = 8, 
+             rowBlkSize = 8,
              colBlkSize = rowBlkSize,
              beta:eltType = 1.0;
 
@@ -73,16 +73,16 @@ proc main() {
   // Declare domains (index sets) for the Matrix and its transpose
   // using the distributions above:
   //
-  const MatrixDom     : domain(2) dmapped new dmap(MatrixDist) 
+  const MatrixDom     : domain(2) dmapped new dmap(MatrixDist)
                       = {1..numrows, 1..numcols},
 
-        TransposeDom  : domain(2) dmapped new dmap(TransposeDist) 
+        TransposeDom  : domain(2) dmapped new dmap(TransposeDist)
                        = {1..numcols, 1..numrows};
 
   //
   // Declare the matrices themselves
   //
-  var A                  : [MatrixDom   ] eltType, 
+  var A                  : [MatrixDom   ] eltType,
       C                  : [TransposeDom] eltType;
 
   const error_tolerance = initArrays(A, C);
@@ -92,7 +92,7 @@ proc main() {
   // ------------------------
 
   const startTime = timeSinceEpoch().totalSeconds();
-    
+
   if (beta == 1.0) then
     forall (i,j) in TransposeDom do
       C[i,j] += A[j,i];
@@ -106,7 +106,7 @@ proc main() {
       C[i,j] = beta * C[i,j]  +  A[j,i];
 
   const execTime = timeSinceEpoch().totalSeconds() - startTime;
-  
+
   const validAnswer = verifyResults(C, error_tolerance);
   printResults(validAnswer, execTime);
 }
@@ -131,7 +131,7 @@ proc printConfiguration() {
 // We substitute less expensive test matrices that are still likely
 // to detect any addressing errors.
 //
-proc initArrays(A, C) {
+proc initArrays(ref A, ref C) {
   forall (i,j) in A.domain do
     A[i,j] = erf(i:eltType) * cos(j:eltType);
 
@@ -165,7 +165,7 @@ proc CPlusATranspose((i,j)) {
          erf(j:eltType) * cos(i:eltType);
 }
 
-                            
+
 //
 // Verify that the computation was correct
 //
@@ -183,7 +183,7 @@ proc verifyResults(C: [], tolerance) {
 //
 // Print out success or failure, timing, and GB/sec
 //
-proc printResults(successful, execTime) { 
+proc printResults(successful, execTime) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
 
   const GBPerSec = if (execTime  > 0.0) then
