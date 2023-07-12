@@ -235,7 +235,7 @@ module DistributedMap {
 
     // TODO: Is it necessary to lock everything?  Maybe can do something fancy
     // like figure out all the locales needed and then lock?
-    proc extend(m: map(keyType, valType)) {
+    proc extend(ref m: map(keyType, valType)) {
       for i in locDom {
         locks[i].lock();
       }

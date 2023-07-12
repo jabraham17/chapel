@@ -185,7 +185,7 @@ module Map {
       :arg parSafe: If `true`, this map will use parallel safe operations.
       :type parSafe: bool
     */
-    proc init=(other: map(?kt, ?vt, ?ps)) lifetime this < other {
+    proc init=(ref other: map(?kt, ?vt, ?ps)) lifetime this < other {
 
       // TODO: There has got to be some way that we can abstract this!
       // Arguably this is something that the compiler should be
@@ -291,7 +291,7 @@ module Map {
       :arg m: The other map
       :type m: map(keyType, valType)
     */
-    proc extend(m: map(keyType, valType, parSafe)) {
+    proc extend(ref m: map(keyType, valType, parSafe)) {
       _enter(); defer _leave();
 
       if !isCopyableType(keyType) || !isCopyableType(valType) then
