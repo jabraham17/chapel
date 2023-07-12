@@ -67,7 +67,7 @@ module CGMakeA {
     sort(IndArr);
 
     //  writeln("After sort, IndArr is: ", IndArr);
-    
+
     for i in IndArr {
       yield i;
     }
@@ -76,14 +76,14 @@ module CGMakeA {
   }
 
 
-  proc sprnvc(type elemType, n, nz, v, iv, randStr) {
+  proc sprnvc(type elemType, n, nz, ref v, ref iv, randStr) {
     var nn1 = 1;
     while (nn1 < n) do nn1 *= 2;
 
     var indices: domain(int);
 
     for nzv in 1..nz {
-      var vecelt: elemType, 
+      var vecelt: elemType,
           ind: int;
 
       do {
@@ -98,7 +98,7 @@ module CGMakeA {
   }
 
 
-  proc vecset(v, iv, inout nzv, i, val) {
+  proc vecset(ref v, ref iv, inout nzv, i, val) {
     var set = false;
     for k in 1..nzv {
       if (iv(k) == i) {

@@ -350,7 +350,7 @@ proc initAB(ref Ab: [] elemType) {
 //
 // calculate norms and residuals to verify the results
 //
-proc verifyResults(Ab, MatrixSpace, x) {
+proc verifyResults(ref Ab, MatrixSpace, x) {
   const ref A = Ab[MatrixSpace],
       b = Ab[.., n+1];
 

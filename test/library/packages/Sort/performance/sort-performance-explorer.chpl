@@ -21,7 +21,7 @@ config const seed = SeedGenerator.oddCurrentTime;
 var methods = ["default", "msbRadixSort", "quickSort", "mergeSort",
                "twoArraySample", "twoArrayRadix", "timSort"];
 
-proc testsort(input, method, parallel, cmp) {
+proc testsort(ref input, method, parallel, cmp) {
 
   if method == "default" {
     if parallel == false {
