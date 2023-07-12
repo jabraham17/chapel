@@ -1,3 +1,8 @@
+ifexpr2-1.chpl:13: warning: interpreting 'ref-maybe-const' as 'ref' for 'arg' is unstable
+ifexpr2-1.chpl:18: warning: interpreting 'ref-maybe-const' as 'ref' for 'b' is unstable
+ifexpr2-1.chpl:18: warning: interpreting 'ref-maybe-const' as 'ref' for 'c' is unstable
+ifexpr2-1.chpl:22: warning: interpreting 'ref-maybe-const' as 'ref' for 'b' is unstable
+ifexpr2-1.chpl:22: warning: interpreting 'ref-maybe-const' as 'ref' for 'c' is unstable
 CONST REF
 REF
 REF
