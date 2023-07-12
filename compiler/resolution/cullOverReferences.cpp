@@ -476,7 +476,8 @@ void markSymbolNotConst(Symbol* sym)
     bool isVarArgExp = arg->hasFlag(FLAG_EXPANDED_VARARGS); // we have full control over this, we could just make these ref to start with
     bool is_iterExpr = arg->name == astr("iterExpr"); // workaround for iters, eventually we just make this ref.
     bool isOuter = arg->hasFlag(FLAG_OUTER_VARIABLE); // we have full control here, but this should be ok
-    bool optOut = isArgThis || isVarArgExp || is_iterExpr || isOuter;
+    bool fromPragma = arg->hasFlag(FLAG_INTENT_REF_MAYBE_CONST_FORMAL); // this is still being used for tuples and sparse domains due to other compiler issues
+    bool optOut = isArgThis || isVarArgExp || is_iterExpr || isOuter || fromPragma;
 
     if(FnSymbol* fn = arg->getFunction()) {
       bool isCoforall = fn->hasFlag(FLAG_COBEGIN_OR_COFORALL);
