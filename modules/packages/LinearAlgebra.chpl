@@ -502,7 +502,7 @@ proc Vector(Dom: domain(1), type eltType=real) {
 
 
 /* Return a vector (1D array) with domain and values of ``A`` */
-proc Vector(A: [?Dom] ?Atype, type eltType=Atype ) {
+proc Vector(const ref A: [?Dom] ?Atype, type eltType=Atype ) {
   var V: [Dom] eltType = A: eltType;
   return V;
 }
@@ -1795,7 +1795,7 @@ proc solve_triu(const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
 
 /* Return the solution ``x`` to the linear system ``A * x = b``.
 */
-proc solve(A: [?Adom] ?eltType, b: [?bdom] eltType) {
+proc solve(A: [?Adom] ?eltType, ref b: [?bdom] eltType) {
   var (LU, ipiv) = lu(A);
   b = permute (ipiv, b, true);
   var z = solve_tril(LU, b);
