@@ -1,3 +1,7 @@
+const-error-iterated.chpl:21: warning: interpreting 'ref-maybe-const' as 'ref' for 'A' is unstable
+const-error-iterated.chpl:11: warning: interpreting 'ref-maybe-const' as 'ref' for 'A' is unstable
+const-error-iterated.chpl:16: warning: interpreting 'ref-maybe-const' as 'ref' for 'A' is unstable
+const-error-iterated.chpl:25: warning: interpreting 'ref-maybe-const' as 'ref' for 'A' is unstable
 const-error-iterated.chpl:32: error: const actual is passed to 'ref' formal 'A' of writeForA()
 note: to formal of type [domain(1,int(64),one)] int(64)
 const-error-iterated.chpl:11: note: to ref formal here

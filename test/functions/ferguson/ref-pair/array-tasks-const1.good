@@ -1,3 +1,4 @@
+array-tasks-const1.chpl:51: warning: interpreting 'ref-maybe-const' as 'ref' for 'x' is unstable
 array-tasks-const1.chpl:56: In function 'writeCaptureForall':
 array-tasks-const1.chpl:58: error: const actual is passed to 'ref' formal 'x' of writeit()
 note: to formal of type [domain(1,int(64),one)] int(64)

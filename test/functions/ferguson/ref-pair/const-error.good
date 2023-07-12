@@ -1,3 +1,6 @@
+const-error.chpl:11: warning: interpreting 'ref-maybe-const' as 'ref' for 'x' is unstable
+const-error.chpl:15: warning: interpreting 'ref-maybe-const' as 'ref' for 'x' is unstable
+const-error.chpl:19: warning: interpreting 'ref-maybe-const' as 'ref' for 'x' is unstable
 const-error.chpl:38: In function 'g':
 const-error.chpl:41: error: const actual is passed to 'ref' formal 'x' of setElement()
 note: to formal of type [domain(1,int(64),one)] int(64)

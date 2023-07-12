@@ -1,3 +1,6 @@
+const-error-iterated2.chpl:11: warning: interpreting 'ref-maybe-const' as 'ref' for 'A' is unstable
+const-error-iterated2.chpl:16: warning: interpreting 'ref-maybe-const' as 'ref' for 'A' is unstable
+const-error-iterated2.chpl:22: warning: interpreting 'ref-maybe-const' as 'ref' for 'A' is unstable
 const-error-iterated2.chpl:28: error: const actual is passed to 'ref' formal 'A' of writeForAZip()
 note: to formal of type [domain(1,int(64),one)] int(64)
 const-error-iterated2.chpl:11: note: to ref formal here
