@@ -140,7 +140,7 @@ proc rcCollect(replicatedVar: [?D] ?MYTYPE, collected: [?CD] MYTYPE): void
 
 /* Copy the value of the replicated variable `replicatedVar` on each locale
    into the element of the array `collected` that corresponds to that locale.*/
-proc rcCollect(replicatedVar: [?D] ?MYTYPE, collected: [?CD] MYTYPE): void
+proc rcCollect(replicatedVar: [?D] ?MYTYPE, ref collected: [?CD] MYTYPE): void
   where isReplicatedArr(replicatedVar)
 {
   var targetLocales = _rcTargetLocalesHelper(replicatedVar);
