@@ -3,9 +3,9 @@
  *  For now, memory size is a compile time parameter.  That will
  *  be changed to a runtime parameter later.
  *
- *  Timing is not implemented yet.  So, the GUPs number is not 
+ *  Timing is not implemented yet.  So, the GUPs number is not
  *  computed.
- *  
+ *
  *  This program performs the updates to Table and checks if they
  *  are correct.
  *
@@ -13,10 +13,10 @@
  *  will be made to make it a true Chapel program.
  *
  *  last revised 9/18/2008 by marybeth
- */  
+ */
 param POLY:uint(64) = 0x0000000000000007;
 param PERIOD:int(64) = 1317624576693539401;
-param MEMSIZE:int = 1000; 
+param MEMSIZE:int = 1000;
 
 var NUPDATE:int;
 
@@ -75,10 +75,10 @@ proc HPCC_starts(n:int(64)):uint(64) {
   return ran;
 }
 
-proc RandomAccessUpdate(TableSize:uint(64), Table: [] uint(64)) {
+proc RandomAccessUpdate(TableSize:uint(64), ref Table: [] uint(64)) {
   var i:int;
   var D: domain(1) =  {0..127};
-  var ran: [D] uint(64);              
+  var ran: [D] uint(64);
   var j:int;
 
   for i in Table.domain {
@@ -111,7 +111,7 @@ proc main() {
   var failure:int;
   var totalMem:real = (MEMSIZE:real)/8.0;
   var TableSize:uint(64);
-  var logTableSize:uint(64); 
+  var logTableSize:uint(64);
 
   /* calculate local memory per node for the update table */
   totalMem = (MEMSIZE:real)/(8.0);
@@ -155,7 +155,7 @@ proc main() {
   }
 
   writeln("Found ", temp, " errors in ", TableSize, " locations");
-  if (temp <= 0.01*TableSize) then 
+  if (temp <= 0.01*TableSize) then
     writeln("(passed)");
   else
     writeln("(failed)");

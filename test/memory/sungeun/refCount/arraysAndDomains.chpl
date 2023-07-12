@@ -145,7 +145,7 @@ proc do_array(A:[]) {
   var A_domain: [A.domain] int; // add ref count and decrement in destructor
 
   if printProgress then writeln("Creating A_alias");
-  ref A_alias = A;  // no need to ref count
+  const ref A_alias = A;  // no need to ref count
 
   if printProgress then writeln("Creating A_slice");
   var A_slice = A[2..n-1];             // create new descriptor, ref count
@@ -162,7 +162,7 @@ proc do_tuple(t: _tuple) {
   var D = t(1);
 }
 
-proc if_fn(A:[], D) {
+proc if_fn(ref A:[], D) {
   ref X = if isDomain(D) then A[D] else A;
   X[D.first] = 1;
 }
