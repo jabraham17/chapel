@@ -1137,7 +1137,7 @@ module Random {
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > x.size || size.size > x.size``
      */
-      proc choice(x: [?dom], size:?sizeType=none, replace=true, prob:?probType=none)
+      proc choice(const ref x: [?dom], size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         var idx = _choice(this, dom, size=size, replace=replace, prob=prob);

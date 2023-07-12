@@ -2442,7 +2442,7 @@ module TwoArrayPartitioning {
       counts[bin] = total;
     }
   }
-  proc testBucketize(start_n: int, end_n: int, ref dst:[], src:[],
+  proc testBucketize(start_n: int, end_n: int, ref dst:[], ref src:[],
                      bucketizer, criterion, startbit:int) {
 
     var state = new TwoArrayBucketizerSharedState(bucketizer=bucketizer);
