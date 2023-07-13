@@ -1938,7 +1938,7 @@ module ChapelDomain {
 
     @chpldoc.nodoc
     @unstable("bulkAdd() is subject to change in the future.")
-    proc ref bulkAdd(ref inds: [] _value.idxType, dataSorted=false,
+    proc ref bulkAdd(pragma "intent ref maybe const formal"  inds: [] _value.idxType, dataSorted=false,
         isUnique=false, preserveInds=true, addOn=nilLocale)
         where this.isSparse() && _value.rank==1 {
       if inds.isEmpty() then return 0;
@@ -2023,7 +2023,7 @@ module ChapelDomain {
        :rtype: int
     */
     @unstable("bulkAdd() is subject to change in the future.")
-    proc ref bulkAdd(ref inds: [] _value.rank*_value.idxType,
+    proc ref bulkAdd(pragma "intent ref maybe const formal"  inds: [] _value.rank*_value.idxType,
         dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale)
         where this.isSparse() && _value.rank>1 {
       if inds.isEmpty() then return 0;

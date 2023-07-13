@@ -407,7 +407,7 @@ class CSDom: BaseSparseDomImpl {
     return 1;
   }
 
-  override proc bulkAdd_help(ref inds: [?indsDom] rank*idxType,
+  override proc bulkAdd_help(pragma "intent ref maybe const formal" inds: [?indsDom] rank*idxType,
       dataSorted=false, isUnique=false, addOn=nilLocale) {
     import Sort;
 

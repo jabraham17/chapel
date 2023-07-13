@@ -468,7 +468,7 @@ module ChapelDistribution {
       // this is a bug workaround
     }
 
-    override proc dsiBulkAdd(ref inds: [] index(rank, idxType),
+    override proc dsiBulkAdd(pragma "intent ref maybe const formal" inds: [] index(rank, idxType),
         dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale){
 
       if !dataSorted && preserveInds {
@@ -480,7 +480,7 @@ module ChapelDistribution {
       }
     }
 
-    proc bulkAdd_help(ref inds: [?indsDom] index(rank, idxType),
+    proc bulkAdd_help(pragma "intent ref maybe const formal" inds: [?indsDom] index(rank, idxType),
         dataSorted=false, isUnique=false, addOn=nilLocale){
       halt("Helper function called on the BaseSparseDomImpl");
 
@@ -684,7 +684,7 @@ module ChapelDistribution {
       halt("clear not implemented for this distribution - BaseSparseDom");
     }
 
-    proc dsiBulkAdd(ref inds: [] index(rank, idxType),
+    proc dsiBulkAdd(pragma "intent ref maybe const formal" inds: [] index(rank, idxType),
         dataSorted=false, isUnique=false, preserveInds=true,
         addOn=nilLocale): int {
 
