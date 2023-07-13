@@ -740,7 +740,7 @@ module CTypes {
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   @chpldoc.nodoc
-  extern proc c_pointer_return(const ref x:?t):c_ptr(t);
+  extern proc c_pointer_return(ref x:?t):c_ptr(t);
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   @chpldoc.nodoc
@@ -983,7 +983,7 @@ module CTypes {
     :returns: a pointer to the argument passed by reference
 
   */
-  inline proc c_ptrTo(const ref x:?t):c_ptr(t) {
+  inline proc c_ptrTo(ref x:?t):c_ptr(t) {
     return c_addrOf(x);
   }
 
@@ -1046,7 +1046,7 @@ module CTypes {
     Note that the behavior of this procedure is identical to :func:`c_ptrTo`
     for scalar types. It only differs for arrays, strings, and bytes.
   */
-  inline proc c_addrOf(const ref x: ?t): c_ptr(t) {
+  inline proc c_addrOf(ref x: ?t): c_ptr(t) {
     if isDomainType(t) then
       compilerError("c_addrOf domain type not supported", 2);
     return c_pointer_return(x);
