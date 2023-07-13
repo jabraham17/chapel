@@ -740,7 +740,7 @@ module CTypes {
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   @chpldoc.nodoc
-  extern proc c_pointer_return(ref x:?t):c_ptr(t);
+  extern proc c_pointer_return(pragma "intent ref maybe const formal" x:?t):c_ptr(t);
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   @chpldoc.nodoc
@@ -761,7 +761,7 @@ module CTypes {
     :arg arr: the array for which a pointer should be returned
     :returns: a pointer to the array's elements
   */
-  inline proc c_ptrTo(ref arr: []): c_ptr(arr.eltType) {
+  inline proc c_ptrTo(pragma "intent ref maybe const formal" arr: []): c_ptr(arr.eltType) {
     if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_ptrTo() at present");
 
@@ -983,7 +983,7 @@ module CTypes {
     :returns: a pointer to the argument passed by reference
 
   */
-  inline proc c_ptrTo(ref x:?t):c_ptr(t) {
+  inline proc c_ptrTo(pragma "intent ref maybe const formal" x:?t):c_ptr(t) {
     return c_addrOf(x);
   }
 
@@ -1010,7 +1010,7 @@ module CTypes {
     Note that the existence of this :type:`c_ptr` has no impact on the lifetime
     of the array. The returned pointer will be invalid if the array is freed.
   */
-  inline proc c_addrOf(ref arr: []) {
+  inline proc c_addrOf(pragma "intent ref maybe const formal" arr: []) {
     if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_addrOf() at present");
 
@@ -1046,7 +1046,7 @@ module CTypes {
     Note that the behavior of this procedure is identical to :func:`c_ptrTo`
     for scalar types. It only differs for arrays, strings, and bytes.
   */
-  inline proc c_addrOf(ref x: ?t): c_ptr(t) {
+  inline proc c_addrOf(pragma "intent ref maybe const formal" x: ?t): c_ptr(t) {
     if isDomainType(t) then
       compilerError("c_addrOf domain type not supported", 2);
     return c_pointer_return(x);
