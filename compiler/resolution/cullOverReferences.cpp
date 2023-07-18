@@ -479,11 +479,11 @@ void markSymbolNotConst(Symbol* sym)
     bool fromPragma = arg->hasFlag(FLAG_INTENT_REF_MAYBE_CONST_FORMAL); // this is still being used for tuples and sparse domains due to other compiler issues
     bool optOut = isArgThis || isVarArgExp || is_iterExpr || isOuter || fromPragma;
 
-    if(FnSymbol* fn = arg->getFunction()) {
-      bool isCoforall = fn->hasFlag(FLAG_COBEGIN_OR_COFORALL);
-      bool isBegin = fn->hasFlag(FLAG_BEGIN);
-      optOut = optOut || isCoforall || isBegin;
-    }
+    // if(FnSymbol* fn = arg->getFunction()) {
+    //   bool isCoforall = fn->hasFlag(FLAG_COBEGIN_OR_COFORALL);
+    //   bool isBegin = fn->hasFlag(FLAG_BEGIN);
+    //   optOut = optOut || isCoforall || isBegin;
+    // }
 
     if(!optOut) {
       IntentTag defaultIntent = blankIntentForType(arg->type);
