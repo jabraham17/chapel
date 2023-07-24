@@ -1911,7 +1911,7 @@ module ChapelArray {
       } else if this.idxType != bool && __primitive("call and fn resolves", "max", fullIdxType) {
         var foundIt = false;
         var locIdx = max(fullIdxType);
-        forall i in this.domain with (min reduce locIdx, max reduce foundIt) {
+        forall i in this.domain with (min reduce locIdx, max reduce foundIt, const ref this) {
           if this[i] == val && (!foundIt || i < locIdx) {
             locIdx = i;
             foundIt = true;
