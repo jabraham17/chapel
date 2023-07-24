@@ -67,20 +67,26 @@ proc stop(opType: string) {
 
 
 start();
-forall i in D {
+forall i in D
+with (ref reversedA, ref A)
+{
   assign(reversedA[i], A[size-i]);
 }
 stop("GET   ");
 
 start();
-forall i in D {
+forall i in D
+with (ref reversedA, ref A)
+{
   assign(reversedA[size-i], A[i]);
 }
 stop("PUT   ");
 
 start();
 const offset = 2 * (size/numLocales);
-forall i in D {
+forall i in D
+with (ref reversedA, ref A)
+{
   const offIdx = (i + offset) % (size+1);
   assign(reversedA[offIdx], A[size-offIdx]);
 }

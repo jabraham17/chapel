@@ -287,7 +287,7 @@ module SSCA2_kernels
         inline proc f1(ref BCaux, v) {
           BCaux[v].path_count$.write(0.0);
         }
-        forall v in vertex_domain do {
+        forall v in vertex_domain with (ref BCaux) do {
           BCaux[v].depend = 0.0;
           BCaux[v].min_distance.write(-1);
           f1(BCaux, v);

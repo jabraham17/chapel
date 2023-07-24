@@ -834,13 +834,17 @@ proc CalcPressureForElems(ref p_new: [?D] real, ref bvc, ref pbvc,
   //
   // TODO: Uncomment local once sparse domain is distributed
   //
-  forall i in D /* do local */ {
+  forall i in D /* do local */
+  with (ref bvc, ref pbvc, const ref compression)
+  {
     const c1s = 2.0 / 3.0;
     bvc[i] = c1s * (compression[i] + 1.0);
     pbvc[i] = c1s;
   }
 
-  forall i in D {
+  forall i in D
+  with (ref p_new, const ref bvc, const ref e_old, const ref vnewc)
+  {
     p_new[i] = bvc[i] * e_old[i];
 
     if abs(p_new[i]) < p_cut then p_new[i] = 0.0;

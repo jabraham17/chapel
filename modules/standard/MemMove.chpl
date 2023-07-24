@@ -430,7 +430,7 @@ module MemMove {
                          const ref src:[] eltType, const srcRegion) : void throws {
     _checkArgs(dst, dstRegion, src, srcRegion);
 
-    forall (di, si) in zip(dstRegion, srcRegion) {
+    forall (di, si) in zip(dstRegion, srcRegion) with (ref dst, const ref src) {
       moveInitialize(dst[di], moveFrom(src[si]));
     }
   }

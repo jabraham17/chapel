@@ -529,7 +529,7 @@ proc Vector(x: ?t, Scalars...?n, type eltType) where isNumericType(t) {
 
   V[0] = x: eltType;
 
-  forall i in 1..n {
+  forall i in 1..n with (ref V, const ref Scalars){
     V[i] = Scalars[i-1]: eltType;
   }
 
@@ -664,7 +664,9 @@ proc Matrix(const Arrays ...?n, type eltType) {
   var M: [{dim1, dim2}] eltType;
 
   if (isHomogeneousTuple(Arrays)) {
-    forall i in dim1 do {
+    forall i in dim1 do
+    with (ref M, const ref Arrays)
+    {
       if Arrays(i).size != Arrays(0).size then halt("Matrix() expected arrays of equal length");
       M[i, ..] = Arrays(i): eltType;
     }
@@ -1049,12 +1051,12 @@ proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
   if !trans {
     if Adom.shape(1) != Xdom.shape(0) then
       halt("Mismatched shape in matrix-vector multiplication");
-    forall i in Ydom do
+    forall i in Ydom with (ref Y, const ref A, const ref X) do
       Y[i] = + reduce (A[i,..]*X[..]);
   } else {
     if Adom.shape(0) != Xdom.shape(0) then
       halt("Mismatched shape in matrix-vector multiplication");
-    forall i in Ydom do
+    forall i in Ydom with (ref Y, const ref A, const ref X) do
       Y[i] = + reduce (A[.., i]*X[..]);
   }
 
@@ -1287,7 +1289,9 @@ private proc _diag_vec(A:[?Adom] ?eltType) {
   var diagonal : [0..#diagSize] eltType;
   forall (i, j, diagInd) in zip (Adom.dim(0)#diagSize,
                                  Adom.dim(1)#diagSize,
-                                 0..) do
+                                 0..)
+                            with (ref diagnoal, const ref A)
+                            do
     diagonal[diagInd] = A[i,j];
 
   return diagonal;
@@ -1306,7 +1310,9 @@ private proc _diag_vec(A:[?Adom] ?eltType, k) {
 
     forall (i, j, diagInd) in zip(Adom.dim(0)#length,
                                   Adom.dim(1)#length,
-                                  0..) do
+                                  0..)
+                                  with (ref diagnoal, const ref A)
+                                  do
       diagonal[diagInd] = A[i, j+offset];
 
     return diagonal;
@@ -1322,7 +1328,9 @@ private proc _diag_vec(A:[?Adom] ?eltType, k) {
 
     forall (i, j, diagInd) in zip(Adom.dim(0)#length,
                                   Adom.dim(1)#length,
-                                  0..) do
+                                  0..)
+                                  with (ref diagnoal, const ref A)
+                                  do
       diagonal[diagInd] = A[i+offset, j];
 
     return diagonal;
@@ -1332,7 +1340,7 @@ private proc _diag_vec(A:[?Adom] ?eltType, k) {
 private proc _diag_mat(A:[?Adom] ?eltType){
   var diagonal = Matrix(Adom.dim(0), eltType);
 
-  forall i in Adom.dim(0) do
+  forall i in Adom.dim(0) with (ref diagnoal, const ref A) do
     diagonal[i, i] = A[i];
 
   return diagonal;
@@ -1380,7 +1388,7 @@ proc tril(A: [?D] ?eltType, k=0) {
   if D.rank != 2 then
     compilerError("Rank is not 2");
   var L = Matrix(A);
-  forall (i, j) in D do
+  forall (i, j) in D with (ref L) do
     if (i < j-k) then L[i, j] = 0: eltType;
   return L;
 }
@@ -1427,7 +1435,7 @@ proc triu(A: [?D] ?eltType, k=0) {
   if D.rank != 2 then
     compilerError("Rank is not 2");
   var U = Matrix(A);
-  forall (i, j) in D do
+  forall (i, j) in D with (ref U) do
     if (i > j-k) then U[i, j] = 0;
   return U;
 }
@@ -1529,7 +1537,7 @@ proc trace(A: [?D] ?eltType) {
   const d = if m < n then 0 else 1;
 
   var trace = 0: eltType;
-  forall i in D.dim(d) with (+ reduce trace) {
+  forall i in D.dim(d) with (+ reduce trace, const ref A) {
     trace += A[i, i];
   }
   return trace;

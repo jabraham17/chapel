@@ -860,7 +860,9 @@ module TimSort {
     const size = (hi - lo) / stride + 1;
     const chunks = (size + blockSize - 1) / blockSize;
 
-    forall i in 0..#chunks {
+    forall i in 0..#chunks
+    with (ref Data)
+    {
       InsertionSort.insertionSort(Data, comparator = comparator, lo + (i * blockSize) * stride, min(hi, lo + ((i + 1) * blockSize * stride) - stride));
     }
 
@@ -3330,7 +3332,8 @@ module MSBRadixSort {
     // Step 1: count.
     if settings.alwaysSerial == false {
       forall i in start_n..end_n
-        with (+ reduce offsets,
+        with (const ref A,
+              + reduce offsets,
               min reduce min_ubits,
               max reduce max_ubits,
               || reduce any_ending) {
@@ -3493,7 +3496,7 @@ module MSBRadixSort {
         }
       }
 
-      forall (bin,(bin_start,bin_end)) in zip(0..#nbigsubs,bigsubs) {
+      forall (bin,(bin_start,bin_end)) in zip(0..#nbigsubs,bigsubs) with (ref A) {
         msbRadixSort(A, bin_start, bin_end, criterion, subbits, endbit, settings);
       }
     } else {

@@ -69,7 +69,7 @@ var stdinBin  = (new file(0)).reader(iokind.native, locking=false,
 proc main(args: [] string) {
   // set up the 'pairCmpl' map
   const chars = eol..<maxChars;
-  forall (i,j) in {chars, chars} do
+  forall (i,j) in {chars, chars} with (ref pairCmpl) do
     pairCmpl[join(i,j)] = join(cmpl(j), cmpl(i));
 
   // variables for reading into a dynamically growing buffer
@@ -96,12 +96,12 @@ proc main(args: [] string) {
       // shift the remaining characters down (only in parallel if no overlap)
       if shiftAlg == SerForall {
         serial (nextSeqStart < endOfRead) do
-          forall j in 0..<endOfRead do
+          forall j in 0..<endOfRead with (ref buff) do
             buff[j] = buff[j + nextSeqStart];
       } else if shiftAlg == Forall {
         // warning: not safe in general, but known to be for perf input
         // (but not for all practice inputs, I think?)
-        forall j in 0..<endOfRead do
+        forall j in 0..<endOfRead with (ref buff) do
           buff[j] = buff[j + nextSeqStart];
      } else if shiftAlg == Foreach {
         // warning: not safe in general, but known to be for perf input
@@ -232,7 +232,7 @@ proc findSeqStart(buff, inds, ref ltLoc) {
     return found;
   } else if searchAlg == Forall {
     ltLoc = max(int);
-    forall i in inds with (min reduce ltLoc) {
+    forall i in inds with (min reduce ltLoc, const ref buff) {
       if buff[i] == '>'.toByte() {
         ltLoc = min(ltLoc, i);
       }
@@ -243,7 +243,7 @@ proc findSeqStart(buff, inds, ref ltLoc) {
     // no task will have multiple '>' characters in its chunk (true for
     // all inputs on the site)
     ltLoc = max(int);
-    forall i in inds with (min reduce ltLoc) {
+    forall i in inds with (min reduce ltLoc, const ref buff) {
       if buff[i] == '>'.toByte() {
         ltLoc = i;
       }
