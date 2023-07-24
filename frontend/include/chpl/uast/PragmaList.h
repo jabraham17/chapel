@@ -33,6 +33,8 @@
 #define npr false /* NO, cannot be set via a pragma */
 #define ncm ""    /* no comment */
 
+PRAGMA(FORALL_INTENT_REF_MAYBE_CONST, npr, "forall intent ref maybe const", ncm)
+
 // flags to be added to the aggregation markers
 PRAGMA(AGG_MARKER, npr, "aggregation marker", ncm)
 PRAGMA(AGG_IN_STATIC_ONLY_CLONE, npr,

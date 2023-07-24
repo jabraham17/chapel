@@ -135,6 +135,11 @@ void AdjustMaybeRefs::process(const uast::AstNode* symbol,
       QualifiedType t = re.type();
       if (t.kind() == QualifiedType::REF_MAYBE_CONST) {
         if (refMaybeConstFormalsUsedRef.count(formal->id()) > 0) {
+          CHPL_ASSERT(formal->isNamedDecl());
+          CHPL_REPORT(context, Unstable, 
+                    std::string("interpreting 'ref-maybe-const' as 'ref' for '") +
+                    formal->toNamedDecl()->name().str() +
+                    "' is unstable", fn, formal->toNamedDecl());
           t = QualifiedType(QualifiedType::REF, t.type(), t.param());
         } else {
           t = QualifiedType(QualifiedType::CONST_REF, t.type(), t.param());

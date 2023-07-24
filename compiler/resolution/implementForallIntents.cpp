@@ -677,7 +677,6 @@ static ForallIntentTag forallIntentForArgIntent(IntentTag intent) {
     case INTENT_CONST_REF: return TFI_CONST_REF;
     case INTENT_BLANK:     return TFI_DEFAULT;
     case INTENT_REF_MAYBE_CONST: 
-    //  USR_WARN(arg, "interpreting ref-maybe-const as ref is unstable");
     return TFI_REF; //todo: TFI_REF_MAYBE_CONST ?
 
     case INTENT_OUT:
@@ -718,7 +717,7 @@ Potential culprits:
 // or before an implicit shadow variable is to be created.
 //
 static void resolveShadowVarTypeIntent(Type*& type, ForallIntentTag& intent,
-                                       bool& prune)
+                                       bool& prune, Symbol* sym, std::vector<Symbol*>* refMaybeConstAsRef = nullptr)
 {
   switch (intent) {
     case TFI_DEFAULT:
@@ -735,7 +734,13 @@ static void resolveShadowVarTypeIntent(Type*& type, ForallIntentTag& intent,
       }
 
       IntentTag argInt = (intent == TFI_DEFAULT) ? INTENT_BLANK : INTENT_CONST;
-      intent = forallIntentForArgIntent(concreteIntent(argInt, valType));
+      argInt = concreteIntent(argInt, valType);
+      intent = forallIntentForArgIntent(argInt);
+
+      if(argInt == INTENT_REF_MAYBE_CONST && intent == TFI_REF){ //&& refMaybeConstAsRef != nullptr) {
+        // refMaybeConstAsRef->push_back(sym);
+        sym->addFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
+      }
 
       break;
     }
@@ -821,7 +826,7 @@ static void assertNotRecordReceiver(Symbol* ovar, Expr* ref) {
 // except markPruned.
 //
 static void doImplicitShadowVars(ForallStmt* fs, BlockStmt* block,
-                                 SymbolMap& outer2shadow)
+                                 SymbolMap& outer2shadow, std::vector<Symbol*>& implicitShadowArrayRef)
 {
   std::vector<SymExpr*> symExprs;
   collectLcnSymExprs(block, symExprs);
@@ -852,7 +857,7 @@ static void doImplicitShadowVars(ForallStmt* fs, BlockStmt* block,
     bool  prune = false;
     if (sym->type == dtUnknown)
       USR_FATAL(se, "'%s' appears to be used before it is defined", sym->name);
-    resolveShadowVarTypeIntent(type, intent, prune); // updates the args
+    resolveShadowVarTypeIntent(type, intent, prune, sym, &implicitShadowArrayRef); // updates the args
 
     if (prune) {                      // do not convert to shadow var
       assertNotRecordReceiver(sym, se);
@@ -873,7 +878,7 @@ static void doImplicitShadowVars(ForallStmt* fs, BlockStmt* block,
   }
 }
 
-static void collectAndResolveImplicitShadowVars(ForallStmt* fs)
+static void collectAndResolveImplicitShadowVars(ForallStmt* fs, std::vector<Symbol*>& implicitShadowArrayRef)
 {
   if (!fs->needToHandleOuterVars())  // no shadow vars, please
     return;
@@ -888,10 +893,10 @@ static void collectAndResolveImplicitShadowVars(ForallStmt* fs)
     if (svar->isTaskPrivate())
       if (BlockStmt* initB = svar->initBlock())
         if (!initB->body.empty())
-          doImplicitShadowVars(fs, initB, outer2shadow);
+          doImplicitShadowVars(fs, initB, outer2shadow, implicitShadowArrayRef);
 
   // The bulk of the work is the loop body.
-  doImplicitShadowVars(fs, fs->loopBody(), outer2shadow);
+  doImplicitShadowVars(fs, fs->loopBody(), outer2shadow, implicitShadowArrayRef);
 }
 
 static Type* ovarOrSvarType(ShadowVarSymbol* svar) {
@@ -912,7 +917,7 @@ static void removeUsesOfShadowVar(ShadowVarSymbol* svar) {
 }
 
 static void resolveAndPruneExplicitShadowVars(ForallStmt* fs,
-                                              Expr* lastExplicitSVarDef)
+                                              Expr* lastExplicitSVarDef,  std::vector<Symbol*>& allExplicitShadowVars)
 {
   if (lastExplicitSVarDef == NULL)
     return;  // there were no explicit shadow vars
@@ -921,7 +926,16 @@ static void resolveAndPruneExplicitShadowVars(ForallStmt* fs,
   {
     Type* type  = ovarOrSvarType(svar);
     bool  prune = false;
-    resolveShadowVarTypeIntent(type, svar->intent, prune); // updates the args
+    resolveShadowVarTypeIntent(type, svar->intent, prune, svar); // updates the args
+    // explicit var overrides non explicit
+    if(svar->outerVarSym()) {
+      svar->outerVarSym()->removeFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
+    }
+    svar->removeFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
+    // if(svar->outerVarSym() != nullptr)
+    //   allExplicitShadowVars.push_back(svar->outerVarSym());
+    // else
+    //   allExplicitShadowVars.push_back(svar);
 
     // Ensure the svar is retained for a `this` with an explicit intent,
     // see convertFieldsOfRecordThis().
@@ -996,7 +1010,7 @@ static ShadowVarSymbol* createSVforFieldAccess(ForallStmt* fs, Symbol* ovar,
   Type*           svarType   = field->type;
   ForallIntentTag svarIntent = isConst ? TFI_CONST : TFI_DEFAULT;
   bool            pruneDummy = false;
-  resolveShadowVarTypeIntent(svarType, svarIntent, pruneDummy);
+  resolveShadowVarTypeIntent(svarType, svarIntent, pruneDummy, field);
 
   ShadowVarSymbol* svar = new ShadowVarSymbol(svarIntent,
                                               astr(field->name, "_svar"),
@@ -1149,7 +1163,8 @@ void setupAndResolveShadowVars(ForallStmt* fs)
   // Add them to fs->shadowVariables() and substitute them
   // for the outer vars in the loop body.
   //
-  collectAndResolveImplicitShadowVars(fs);
+  std::vector<Symbol*> implicitShadowArrayRef;
+  collectAndResolveImplicitShadowVars(fs, implicitShadowArrayRef);
 
   //
   // Resolve the explicit shadow variables i.e. the ones that
@@ -1159,11 +1174,69 @@ void setupAndResolveShadowVars(ForallStmt* fs)
   // Note: collectAndResolveImplicitShadowVars() needs to go earlier so that
   // it does not come across the explicit shadow vars that have been pruned.
   //
-  resolveAndPruneExplicitShadowVars(fs, lastExplicitSVarDef);
+  std::vector<Symbol*> allExplicitShadowVars;
+  resolveAndPruneExplicitShadowVars(fs, lastExplicitSVarDef, allExplicitShadowVars);
 
   //
   // In a method on a record, treat the record fields like outer variables
   // passed by the default intent.
   //
   convertFieldsOfRecordReceiver(fs);
+
+  //
+  // identify any svar with intent REF_MAYBE_CONST, throw a warning, and
+  // make it REF
+  //
+
+  std::vector<SymExpr*> allIterandSymExprs;
+  for_alist(expr, fs->iteratedExpressions()) {
+    collectSymExprs(expr, allIterandSymExprs);
+  }
+  if(fs->zipCall() != nullptr) {
+    collectSymExprs(fs->zipCall(), allIterandSymExprs);
+  }
+
+  // if any iterand has the marker, remove the marker
+  for(auto symExpr: allIterandSymExprs) {
+    symExpr->symbol()->removeFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST);
+  }
+
+  // now collect all syms from the forall, if any of them are ref-maybe-const, mark the forall
+  std::vector<SymExpr*> allSymExpr;
+  collectSymExprs(fs, allSymExpr);
+  for(auto symExpr: allSymExpr) {
+    if(symExpr->symbol()->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST)) {
+      fs->hasRefMaybeConst = true;
+    }
+  }
+
+
+  // for (auto implicit : implicitShadowArrayRef) {
+  //   // look for implicit in explicit list, if its there, dont warn. if its not
+  //   // there. warn
+  //   auto it = std::find(allExplicitShadowVars.begin(),
+  //                       allExplicitShadowVars.end(), implicit);
+  //   // if not in the explicit list
+  //   if (it == allExplicitShadowVars.end()) {
+  //     // check if its in the iterand
+  //     // auto it2 = std::find_if(allIterandSymExprs.begin(), allIterandSymExprs.end(),
+  //     //                     [&implicit](SymExpr *symExpr) {
+  //     //                       return (implicit == symExpr->symbol());
+  //     //                     });
+  //     // if (it2 == allIterandSymExprs.end()) {
+  //     // not in the iterand, we can warn!
+  //       USR_WARN(
+  //           implicit,
+  //           "interpreting 'ref-maybe-const' as 'ref' for '%s' is unstable",
+  //           implicit->name);
+  //     // }
+  //   }
+  // }
+
+  // for_shadow_vars(svar, temp, fs) {
+  //   if(svar->intent == TFI_REF_MAYBE_CONST && svar->defPoint->inTree()) {
+  //     USR_WARN(svar, "interpreting 'ref-maybe-const' as 'ref' for '%s' is unstable", svar->name);
+  //     svar->intent = TFI_REF;
+  //   }
+  // }
 }

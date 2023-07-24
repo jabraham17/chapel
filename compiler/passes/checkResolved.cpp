@@ -35,6 +35,7 @@
 #include "type.h"
 #include "TryStmt.h"
 #include "wellknown.h"
+#include "ForallStmt.h"
 
 #include "global-ast-vecs.h"
 
@@ -135,6 +136,98 @@ checkResolved() {
   checkConstLoops();
   checkExternProcs();
   checkExportedProcs();
+
+  forv_Vec(ForallStmt, fs, gForallStmts) {
+    if(fs->hasRefMaybeConst && fs->inTree()) {
+      USR_WARN(
+        fs,
+        "interpreting 'ref-maybe-const' as 'ref' in a forall is unstable");
+     }
+  }
+
+  // forv_Vec(VarSymbol, sym, gVarSymbols) {
+  //    if(sym->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST)) {
+  //     USR_WARN(
+  //       sym,
+  //       "interpreting 'ref-maybe-const' as 'ref' in a forall for '%s' is unstable",
+  //       sym->name);
+  //    }
+  // }
+  // forv_Vec(ArgSymbol, sym, gArgSymbols) {
+  //    if(sym->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST)) {
+  //     USR_WARN(
+  //       sym,
+  //       "interpreting 'ref-maybe-const' as 'ref' in a forall for '%s' is unstable",
+  //       sym->name);
+  //    }
+  // }
+  // forv_Vec(ShadowVarSymbol, sym, gShadowVarSymbols) {
+  //    if(sym->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST)) {
+  //     USR_WARN(
+  //       sym,
+  //       "interpreting 'ref-maybe-const' as 'ref' in a forall for '%s' is unstable",
+  //       sym->name);
+  //    }
+  // }
+
+
+  // forv_Vec(ForallStmt, fs, gForallStmts) {
+  //   // std::vector<SymExpr*> allIterandSymExprs;
+  //   // for_alist(expr, fs->iteratedExpressions()) {
+  //   //   collectSymExprs(expr, allIterandSymExprs);
+  //   // }
+  //   std::vector<SymExpr*> allSymExprs;
+  //   collectSymExprs(fs, allSymExprs);
+
+  //   std::unordered_set<Symbol*> handled;
+  //   for(auto symExpr: allSymExprs) {
+  //     if(!symExpr->inTree()) continue;
+  //     Symbol* sym = symExpr->symbol();
+
+  //     if(handled.count(sym) != 0) continue;
+  //     handled.insert(sym);
+
+  //     if(sym->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST)) {
+  //       // check if used in iterand
+  //       // auto it = std::find_if(allIterandSymExprs.begin(), allIterandSymExprs.end(),
+  //       //                 [&sym](SymExpr *symExpr) {
+  //       //                   return (sym == symExpr->symbol());
+  //       //                 });
+  //       // if(it == allIterandSymExprs.end()) {
+  //         // not in the iterand, we can warn!
+  //         USR_WARN(
+  //           fs,
+  //           "interpreting 'ref-maybe-const' as 'ref' in a forall for '%s' is unstable",
+  //           sym->name);
+  //       // }
+  //     }
+  //   }
+
+    // for_shadow_vars_and_defs(svar, svdef, temp, fs) {
+    //   // if marked ref-maybe-const
+    //   if(Symbol* sym = svar->outerVarSym()) {
+    //     if(sym->hasFlag(FLAG_FORALL_INTENT_REF_MAYBE_CONST)) {
+    //       USR_WARN(
+    //           sym,
+    //           "I got the flag %s",
+    //           sym->name);
+    //       // check if used in iterand
+    //       auto it = std::find_if(allIterandSymExprs.begin(), allIterandSymExprs.end(),
+    //                       [&sym](SymExpr *symExpr) {
+    //                         return (sym == symExpr->symbol());
+    //                       });
+    //       if(it == allIterandSymExprs.end()) {
+    //         // not in the iterand, we can warn!
+    //         USR_WARN(
+    //           sym,
+    //           "interpreting 'ref-maybe-const' as 'ref' for '%s' is unstable",
+    //           sym->name);
+    //       }
+    //     }
+    //   }
+    // }
+  // }
+
 }
 
 
