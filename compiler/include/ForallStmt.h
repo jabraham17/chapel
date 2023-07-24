@@ -138,7 +138,7 @@ public:
 
   void insertZipSym(Symbol *sym);
 
-  bool hasRefMaybeConst = false;
+  bool hasRefMaybeConst;
 
 private:
   AList          fIterVars;    // DefExprs of the induction vars

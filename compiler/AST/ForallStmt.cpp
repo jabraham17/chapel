@@ -43,6 +43,7 @@ ForallOptimizationInfo::ForallOptimizationInfo():
 
 ForallStmt::ForallStmt(BlockStmt* body):
   Stmt(E_ForallStmt),
+  hasRefMaybeConst(false),
   fLoopBody(body),
   fZippered(false),
   fZipCall(NULL),
@@ -90,6 +91,8 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
   _this->fVectorizationHazard   = fVectorizationHazard;
   _this->fIsForallExpr          = fIsForallExpr;
   // todo: fContinueLabel, fErrorHandlerLabel
+
+  _this->hasRefMaybeConst = hasRefMaybeConst;
 
   _this->fRecIterIRdef        = COPY_INT(fRecIterIRdef);
   _this->fRecIterICdef        = COPY_INT(fRecIterICdef);
