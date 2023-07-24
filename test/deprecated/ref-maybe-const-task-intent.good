@@ -1,0 +1,8 @@
+ref-maybe-const-task-intent.chpl:36: warning: interpreting 'ref-maybe-const' as 'ref' in a forall is unstable
+ref-maybe-const-task-intent.chpl:2: warning: interpreting 'ref-maybe-const' as 'ref' in a forall is unstable
+ref-maybe-const-task-intent.chpl:36: warning: interpreting 'ref-maybe-const' as 'ref' in a forall is unstable
+ref-maybe-const-task-intent.chpl:55: warning: interpreting 'ref-maybe-const' as 'ref' in a forall is unstable
+ref-maybe-const-task-intent.chpl:7: warning: interpreting 'ref-maybe-const' as 'ref' for 'y' is unstable
+ref-maybe-const-task-intent.chpl:13: warning: interpreting 'ref-maybe-const' as 'ref' for 'z' is unstable
+ref-maybe-const-task-intent.chpl:13: warning: interpreting 'ref-maybe-const' as 'ref' for 'z' is unstable
+ref-maybe-const-task-intent.chpl:19: warning: interpreting 'ref-maybe-const' as 'ref' for 'w' is unstable
