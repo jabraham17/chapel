@@ -18,7 +18,7 @@ proc fillRefArrays() {
 
 proc checkRNG(R, T: [?D2]) {
   var errs = 0;
-  [i in D2 with (ref errs)] if R[i]!=T[i] {  // race => can miscount errors
+  [i in D2 with (ref errs, const ref R, const ref T)] if R[i]!=T[i] {  // race => can miscount errors
     errs += 1;
     writeln(i, " does not match");
   }

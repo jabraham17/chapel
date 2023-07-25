@@ -10,16 +10,16 @@ inline proc toCopyType(val, type copyType) {
   if isRecord(copyType)    then return new R(val, val);
 }
 
-// Test unordered PUT where src is temp stack variable 
+// Test unordered PUT where src is temp stack variable
 proc testPUT(type copyType) {
   var A: [1..size] copyType;
 
   on Locales[numLocales-1] {
-    forall i in 1..size do
+    forall i in 1..size with (ref A) do
       unorderedCopy(A[i], toCopyType(i%2, copyType));
   }
 
-  forall i in 1..size do
+  forall i in 1..size with (const ref A) do
     assert(A[i] == toCopyType(i%2, copyType));
 
   if printResults {
@@ -34,14 +34,14 @@ proc testPUTArr(type copyType) {
 
   on Locales[numLocales-1] {
     var B: [1..size] copyType;
-    forall i in 1..size do
+    forall i in 1..size with(ref B) do
       B[i] = toCopyType(i%2, copyType);
 
-    forall i in 1..size do
+    forall i in 1..size with (ref A, const ref B) do
       unorderedCopy(A[i], B[i]);
   }
 
-  forall i in 1..size do
+  forall i in 1..size with (const ref A) do
     assert(A[i] == toCopyType(i%2, copyType));
 
   if printResults {
@@ -50,18 +50,18 @@ proc testPUTArr(type copyType) {
   }
 }
 
-// Test unordered GET 
+// Test unordered GET
 proc testGET(type copyType) {
   var A: [1..size] copyType;
-  forall i in 1..size do
+  forall i in 1..size with(ref A) do
     A[i] = toCopyType(i%2, copyType);
 
   on Locales[numLocales-1] {
     var B: [1..size] copyType;
-    forall i in 1..size do
+    forall i in 1..size with(ref B, const ref A) do
       unorderedCopy(B[i], A[i]);
 
-    forall i in 1..size do
+    forall i in 1..size with (const ref B) do
       assert(B[i] == toCopyType(i%2, copyType));
 
     if printResults {
@@ -77,12 +77,12 @@ proc testPUTComb() {
   var AI8: [1..size] int(8);
   var AI:  [1..size] int;
   var AR:  [1..size] real;
-  var AC:  [1..size] complex; 
-  var AT:  [1..size] 2*int; 
+  var AC:  [1..size] complex;
+  var AT:  [1..size] 2*int;
   var ARi: [1..size] R;
 
   on Locales[numLocales-1] {
-    forall i in 1..size {
+    forall i in 1..size with (ref AB, ref AI8, ref AI, ref AR, ref AC, ref AT, ref ARi){
       unorderedCopy(AB[i]  , (i%2):bool);
       unorderedCopy(AI8[i] , (i%max(int(8))):int(8));
       unorderedCopy(AI[i]  , i);
@@ -93,7 +93,7 @@ proc testPUTComb() {
     }
   }
 
-  forall i in 1..size {
+  forall i in 1..size with (const ref AB, const ref AI8, const ref AI, const ref AR, const ref AC, const ref AT, const ref ARi){
     assert(AB[i]  == (i%2):bool);
     assert(AI8[i] == (i%max(int(8))):int(8));
     assert(AI[i]  == i);
@@ -122,10 +122,10 @@ proc testGETComb() {
   var AI:  [1..size] int;
   var AR:  [1..size] real;
   var AC:  [1..size] complex;
-  var AT:  [1..size] 2*int; 
+  var AT:  [1..size] 2*int;
   var ARi: [1..size] R;
 
-  forall i in 1..size {
+  forall i in 1..size with (ref AB, ref AI8, ref AI, ref AR, ref AC, ref AT, ref ARi) {
     AB[i]  = (i%2):bool;
     AI8[i] = (i%max(int(8))):int(8);
     AI[i]  = i;
@@ -144,7 +144,7 @@ proc testGETComb() {
     var BT:  [1..size] 2*int;
     var BRi: [1..size] R;
 
-    forall i in 1..size {
+    forall i in 1..size with (ref BB, ref BI8, ref BI, ref BR, ref BC, ref BT, ref BRi, const ref AB, const ref AI8, const ref AI, const ref AR, const ref AC, const ref AT, const ref ARi){
       unorderedCopy(BB[i]  , AB[i]);
       unorderedCopy(BI8[i] , AI8[i]);
       unorderedCopy(BI[i]  , AI[i]);
@@ -154,7 +154,7 @@ proc testGETComb() {
       unorderedCopy(BRi[i] , ARi[i]);
     }
 
-    forall i in 1..size {
+    forall i in 1..size with (const ref BB, const ref BI8, const ref BI, const ref BR, const ref BC, const ref BT, const ref BRi) {
       assert(BB[i]  == (i%2):bool);
       assert(BI8[i] == (i%max(int(8))):int(8));
       assert(BI[i]  == i);

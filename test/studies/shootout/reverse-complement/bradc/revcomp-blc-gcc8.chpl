@@ -33,7 +33,7 @@ var stdinBin  = (new file(0)).reader(iokind.native, locking=false,
 proc main(args: [] string) {
   // set up the 'pairCmpl' map
   const chars = eol..<maxChars;
-  forall (i,j) in {chars, chars} do
+  forall (i,j) in {chars, chars} with (ref pairCmpl, const ref cmpl) do
     pairCmpl[join(i,j)] = join(cmpl(j), cmpl(i));
 
   // variables for reading into a dynamically growing buffer
@@ -59,7 +59,7 @@ proc main(args: [] string) {
 
       // shift the remaining characters down (only in parallel if no overlap)
       serial (nextSeqStart < endOfRead) do
-        forall j in 0..<endOfRead do
+        forall j in 0..<endOfRead with (ref buff) do
           buff[j] = buff[j + nextSeqStart];
     }
 
@@ -162,7 +162,7 @@ proc revcomp(in dstFront, in charAfter, spanLen, ref buff, seq) {
 // check whether there's a sequence start ('>') in 'buff[low..#count]'
 proc findSeqStart(buff, inds, ref ltLoc) {
   ltLoc = max(int);
-  forall i in inds with (min reduce ltLoc) {
+  forall i in inds with (min reduce ltLoc, const ref buff) {
     if buff[i] == '>'.toByte() {
       ltLoc = min(ltLoc, i);
     }

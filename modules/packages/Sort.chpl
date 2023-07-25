@@ -2436,7 +2436,7 @@ module TwoArrayPartitioning {
 
     // Compute the total counts
     ref counts = state.counts;
-    forall bin in 0..#nBuckets {
+    forall bin in 0..#nBuckets with (ref counts) {
       var total = 0;
       for tid in 0..#nTasks {
         total += state.globalCounts[bin*nTasks + tid];
@@ -2624,7 +2624,7 @@ module TwoArrayPartitioning {
 
     // TODO: sort small tasks by size
 
-    forall task in state.smallTasks {
+    forall task in state.smallTasks with (ref A) {
       const size = task.size;
       const taskEnd = task.start + size - 1;
       if size > 0 {

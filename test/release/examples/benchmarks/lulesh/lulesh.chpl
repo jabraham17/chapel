@@ -1000,7 +1000,7 @@ proc CalcVolumeForceForElems() {
   IntegrateStressForElems(sigxx, sigyy, sigzz, determ);
 
   /* check for negative element volume */
-  forall e in Elems {
+  forall e in Elems with (const ref determ) {
     if determ[e] <= 0.0 then
       halt("can't have negative volume (determ[", e, "]=", determ[e], ")");
   }
@@ -1040,7 +1040,7 @@ proc IntegrateStressForElems(sigxx, sigyy, sigzz, ref determ) {
 proc CalcHourglassControlForElems(ref determ) {
   var dvdx, dvdy, dvdz, x8n, y8n, z8n: [Elems] 8*real;
 
-  forall eli in Elems {
+  forall eli in Elems with (ref determ, ref dvdx, ref dvdy, ref dvdz, ref x8n, ref y8n, ref z8n ) {
     /* Collect domain nodes to elem nodes */
     var x1, y1, z1: 8*real;
     localizeNeighborNodes(eli, x, x1, y, y1, z, z1);
@@ -1059,7 +1059,7 @@ proc CalcHourglassControlForElems(ref determ) {
   }
 
   /* Do a check for negative volumes */
-  forall e in Elems {
+  forall e in Elems with (const ref v) {
     if v[e] <= 0.0 then
       halt("can't have negative (or zero) volume. (in Hourglass, v[", e, "]=", v[e], ")");
   }
@@ -1567,7 +1567,7 @@ proc EvalEOSForElems(vnewc) {
                      p_old, e_old, q_old, compression, compHalfStep,
                      vnewc, work, delvc, qq_old, ql_old);
 
-  forall i in MatElems {
+  forall i in MatElems with (ref p, ref e, ref q, const ref p_new, const ref e_new, const ref q_new) {
     p[i] = p_new[i];
     e[i] = e_new[i];
     q[i] = q_new[i];

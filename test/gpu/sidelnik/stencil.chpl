@@ -23,7 +23,7 @@ writeln(hostB);
 
 gpuB = hostB;
 
-forall i in subspace do {
+forall i in subspace with (ref gpuA, const ref gpuB) do {
   gpuA(i) = (gpuB(i-1) + gpuB(i) + gpuB(i+1))/3;
 }
 
