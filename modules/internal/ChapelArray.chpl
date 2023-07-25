@@ -1044,7 +1044,7 @@ module ChapelArray {
         checkSlice((...d.dsiDims()), value=value);
       } else if (d.isAssociative()) {
         use HaltWrappers;
-        forall i in d do
+        forall i in d with (const ref this) do
           if !this.domain.dsiMember(i) then
             HaltWrappers.boundsCheckHalt("index '" + i:string + "' is out-of-bounds");
       } else {

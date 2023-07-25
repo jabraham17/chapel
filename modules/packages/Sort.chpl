@@ -873,7 +873,7 @@ module TimSort {
 
     var numSize = blockSize;
     while(numSize < size) {
-      forall i in 0..<size by 2 * numSize {
+      forall i in 0..<size by 2 * numSize with (ref Data) {
 
         const l = lo + i * stride;
         const mid = lo + (i + numSize - 1) * stride;
@@ -2624,7 +2624,7 @@ module TwoArrayPartitioning {
 
     // TODO: sort small tasks by size
 
-    forall task in state.smallTasks with (ref A) {
+    forall task in state.smallTasks with (ref A, ref Scratch) {
       const size = task.size;
       const taskEnd = task.start + size - 1;
       if size > 0 {
@@ -2848,7 +2848,7 @@ module TwoArrayPartitioning {
       //       state, criterion, task.startbit);
 
       coforall (bktLoc, bktLocId, bktTask) in distTask.localesAndTasks(A)
-      with (ref state1, ref state2, ref nextDistTaskElts) do
+      with (ref state1, ref state2, ref nextDistTaskElts, const ref smallTasksPerLocale) do
       on bktLoc {
         // Each bucket can run in parallel - this allows each
         // bucket to use nested coforalls to barrier.
@@ -2902,7 +2902,7 @@ module TwoArrayPartitioning {
           // (i.e. the transpose of the order needed for scan)
           const toIdx = maxBuckets * tid;
           ref perLocale = state.perLocale;
-          forall dstTid in task.otherIds(tid) {
+          forall dstTid in task.otherIds(tid) with (ref perLocale, ref localCounts) {
             // perLocale[dstTid].globalCounts[toIdx..#maxBuckets] = localCounts;
             ShallowCopy.shallowCopyPutGet(
                 perLocale[dstTid].globalCounts, toIdx,
@@ -2939,7 +2939,8 @@ module TwoArrayPartitioning {
             ref globalEnds = state.perLocale[tid].globalEnds;
 
             // Compute the transpose
-            forall (tid,bkt) in {0..#nLocalesTotal, 0..#maxBuckets} {
+            forall (tid,bkt) in {0..#nLocalesTotal, 0..#maxBuckets}
+            with (const ref globalCounts, ref globalEnds) {
               var count = 0;
               if bktFirstLocale <= tid && tid <= bktLastLocale then
                 count = globalCounts[tid*maxBuckets+bkt];
@@ -2986,7 +2987,7 @@ module TwoArrayPartitioning {
             }
           }
 
-          forall bin in 0..#nBuckets {
+          forall bin in 0..#nBuckets with (ref A, ref Scratch, ref localOffsets, const ref globalCounts, const ref globalEnds) {
             var size = globalCounts[bin*nLocalesTotal + tid];
             if size > 0 {
               var localStart = localOffsets[bin];
@@ -3122,7 +3123,7 @@ module TwoArrayPartitioning {
 
     // Always use state 1 for small subproblems...
     ref state = state1;
-    coforall (loc,tid) in zip(A.targetLocales(),0..) with (ref state) do
+    coforall (loc,tid) in zip(A.targetLocales(),0..) with (ref state, const ref smallTasksPerLocale) do
     on loc {
       // Get the tasks to sort here
 

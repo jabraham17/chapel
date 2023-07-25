@@ -148,7 +148,7 @@ proc testArrayAPI2D(lbl, ref X: [], sliceDom, reindexDom) {
   writeln("X is:\n", X);
   writeln();
   if (X.rank > 1) then
-    forall ind in X.domain do
+    forall ind in X.domain with (ref X) do
       X.localAccess[(...ind)] += 0.1;
   writeln("X is:\n", X);
   writeln();

@@ -15,7 +15,7 @@ proc truncate(x) {
 proc transpose(A: [] real) where A.rank == 2 {
     var B : [A.domain] real;
 
-    forall (i, j) in A.domain do
+    forall (i, j) in A.domain with (ref B, const ref A) do
         B[i, j] = A[j, i];
 
     return B;
@@ -23,7 +23,7 @@ proc transpose(A: [] real) where A.rank == 2 {
 
 // Copy matrix B's transpose into matrix A
 proc transposeCopy(ref A: [] real, B: [] real) where A.rank == 2 && B.rank == 2 {
-    forall (i, j) in A.domain do
+    forall (i, j) in A.domain with (ref A, const ref B) do
         A[i, j] = B[j, i];
 }
 
@@ -34,7 +34,7 @@ operator *(V: [] real, M: [] real) where V.rank == 1 && M.rank == 2 {
     if V.domain.dim(0) != M.domain.dim(0) then
         halt("*: Vector and matrix dims must match");
 
-    for (i, j) in M.domain do
+    for (i, j) in M.domain with (ref R, const ref V, const ref M) do
         R[i] += V[j] * M[j, i];
 
     return R;
@@ -47,7 +47,7 @@ operator *(M: [] real, V: [] real) where V.rank == 1 && M.rank == 2 {
     if V.domain.dim(0) != M.domain.dim(1) then
         halt("*: Vector and matrix dims must match");
 
-    for (i, j) in M.domain do
+    for (i, j) in M.domain with (ref R, const ref V, const ref M) do
         R[i] += V[j] * M[i, j];
 
     return R;
