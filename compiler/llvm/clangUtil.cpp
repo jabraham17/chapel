@@ -102,7 +102,11 @@ using LlvmOptimizationLevel = llvm::PassBuilder::OptimizationLevel;
 #endif
 
 #ifdef HAVE_LLVM_RV
-#include "rv/passes.h"
+#ifdef LLVM_USE_OLD_PASSES
+#include "rv/legacy/passes.h"
+#else
+#include "rv/passes.h" // untested
+#endif
 #endif
 
 #endif
@@ -2335,7 +2339,7 @@ static void registerRVPasses(const llvm::PassManagerBuilder &Builder,
   if (developer)
     printf("Adding RV passes\n");
 
-  rv::addRVPasses(PM);
+  rv::addRVLegacyPasses(PM);
 }
 #endif
 
