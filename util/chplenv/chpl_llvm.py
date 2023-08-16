@@ -977,6 +977,8 @@ def get_host_compile_args():
         # TODO: is this still needed?
         bundled.append('-Wno-comment')
 
+    bundled.append('-I/home/engin/code/chapel/versions/2/chapel/third-party/llvm/rv/include')
+
     if llvm_val == 'system' or llvm_val == 'bundled':
         bundled.append('-DHAVE_LLVM')
 
@@ -1143,7 +1145,8 @@ def get_static_dynamic():
 @memoize
 def get_host_link_args():
     bundled, system, static_dynamic = compute_host_link_settings()
-    bundled.append('-lRV')
+    bundled.append('-L/home/engin/code/chapel/versions/2/chapel/third-party/llvm/install/linux64-x86_64/lib')  # need to do this in a more principled way
+    bundled.append('-lRV')  # need to do this in a more principled way
     return (bundled, system)
 
 # Return the isysroot argument provided by get_clang_basic_args, if any
