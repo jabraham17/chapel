@@ -50,7 +50,7 @@ if (NOT DEFINED LLVM_MAIN_SRC_DIR)
   execute_process(COMMAND "${LLVM_INSTALL_ROOT}/bin/llvm-config" --cxxflags
                   OUTPUT_VARIABLE LLVM_CXX_FLAGS
                   OUTPUT_STRIP_TRAILING_WHITESPACE)
-  set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${LLVM_CXX_FLAGS})
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LLVM_CXX_FLAGS}")
 
   # Check LLVM_ENABLE_ASSERTIONS
   execute_process(COMMAND "${LLVM_INSTALL_ROOT}/bin/llvm-config" --assertion-mode
@@ -107,6 +107,8 @@ OPTION(RV_ENABLE_SLEEF "Generate RV's builtin vector-math library" ON)
 OPTION(RV_ENABLE_CRT "Implement complex math functions using BC-compiler compiler-rt" OFF)
 OPTION(RV_DEBUG "Enable verbose debug output and expensive internal checks." OFF)
 OPTION(RV_ENABLE_PLUGIN "Build the RVPLUG pass plugin." ON)
+OPTION(RV_BUILD_TESTS "Build RV tests." ON)
+OPTION(RV_BUILD_TOOLS "Build RV tools." ON)
 
 if (RV_REBUILD_GENBC AND LLVM_RVPLUG_LINK_INTO_TOOLS)
   message(FATAL_ERROR "Cannot set RV_REBUILD_GENBC and LLVM_RVPLUG_LINK_INTO_TOOLS at the same time. If you want to update the vecmath bitcode files and buffers, (temporarily) disable LLVM_RVPLUG_LINK_INTO_TOOLS, compile LLVM and copy the BUILD/tools/rv/lib/*.gen.cpp files to rv/vecmath/prebuilt_genbc/.")
@@ -204,10 +206,14 @@ endif()
 add_subdirectory(src)
 
 # RV integrated tests
-add_subdirectory(test)
+if (RV_BUILD_TESTS)
+  add_subdirectory(test)
+endif()
 
 # rvTool, ..
-add_subdirectory(tools)
+if (RV_BUILD_TOOLS)
+  add_subdirectory(tools)
+endif()
 
 if ((NOT RV_COMPONENT_BUILD) AND RV_ENABLE_PLUGIN)
   add_subdirectory(plugin)
