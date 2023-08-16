@@ -205,6 +205,20 @@ llvm-install-support-only: FORCE
 	     $(CMAKE) --build . --target install-llvm-headers ; \
 	fi
 
+llvm-bundled-rv: FORCE
+	cd $(LLVM_SRC_DIR)/../rv &&
+	   $(CMAKE) -DLLVM_INSTALL_ROOT=/usr/lib/llvm-15 \
+		    -DLLVM_NATIVE_ARCH=X86 \
+		    -DRV_ENABLE_PLUGIN=off \
+		    -DRV_BUILD_TESTS=off \
+		    -DRV_BUILD_TOOLS=off \
+		    -DCMAKE_CXX_FLAGS="-I/home/engin/code/rv/src \
+		    		       -Wno-unused-function \
+				       -Wno-deprecated-declarations \
+				       -Wno-comment" \
+ 		    --install-prefix=/home/engin/code/rv/install
+	            -Wno-dev ..
+
 
 llvm: llvm-config llvm-build llvm-install
 
