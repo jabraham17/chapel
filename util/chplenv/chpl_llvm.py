@@ -441,6 +441,18 @@ def validate_llvm_config():
 
 
 @memoize
+def get_llvm_root():
+    llvm_config = find_system_llvm_config()
+    found_version, found_config_err = check_llvm_config(llvm_config)
+
+    bindir = None
+
+    if llvm_config and found_version and not found_config_err:
+        bindir = run_command([llvm_config, '--obj-root']).strip()
+
+    return bindir
+
+@memoize
 def get_system_llvm_config_bindir():
     llvm_config = find_system_llvm_config()
     found_version, found_config_err = check_llvm_config(llvm_config)

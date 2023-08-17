@@ -210,7 +210,7 @@ llvm-rv-only: FORCE
 
 llvm-build-rv-only: FORCE
 	cd $(LLVM_RV_BUILD_DIR) && \
-	   $(CMAKE) -DLLVM_INSTALL_ROOT=/usr/lib/llvm-15 \
+	   $(CMAKE) -DLLVM_INSTALL_ROOT=$(CHPL_MAKE_LLVM_ROOT) \
 		    -DLLVM_NATIVE_ARCH=X86 \
 		    -DRV_ENABLE_PLUGIN=off \
 		    -DRV_BUILD_TESTS=off \
