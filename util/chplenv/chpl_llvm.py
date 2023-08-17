@@ -20,8 +20,10 @@ def llvm_versions():
     return ('18','17','16','15','14','13','12','11',)
 
 @memoize
-def get_uniq_cfg_path_for(llvm_val, llvm_support_val):
-    if llvm_val == "bundled" or llvm_support_val == "bundled":
+def get_uniq_cfg_path_for(llvm_val, llvm_support_val, llvm_rv_val):
+    if (llvm_val == "bundled" or
+        llvm_support_val == "bundled" or
+        llvm_rv_val == 'bundled'):
         # put platform-arch-compiler for included llvm
         llvm_target_dir = chpl_bin_subdir.get('host')
     else:
@@ -34,20 +36,28 @@ def get_uniq_cfg_path_for(llvm_val, llvm_support_val):
 def get_uniq_cfg_path():
     llvm_val = get()
     llvm_support_val = get_llvm_support()
-    return get_uniq_cfg_path_for(llvm_val, llvm_support_val)
+    llvm_rv_val = get_llvm_rv()
+    return get_uniq_cfg_path_for(llvm_val, llvm_support_val, llvm_rv_val)
 
 def get_bundled_llvm_dir():
     chpl_third_party = get_chpl_third_party()
-    llvm_target_dir = get_uniq_cfg_path_for('bundled', 'bundled')
+    llvm_target_dir = get_uniq_cfg_path_for('bundled', 'bundled', 'bundled')
     llvm_subdir = os.path.join(chpl_third_party, 'llvm', 'install',
                                llvm_target_dir)
     return llvm_subdir
 
 def get_bundled_llvm_support_only_dir():
     chpl_third_party = get_chpl_third_party()
-    llvm_target_dir = get_uniq_cfg_path_for('none', 'bundled')
+    llvm_target_dir = get_uniq_cfg_path_for('none', 'bundled', 'none')
     llvm_subdir = os.path.join(chpl_third_party, 'llvm', 'install',
                                'support-only-' + llvm_target_dir)
+    return llvm_subdir
+
+def get_bundled_llvm_rv_only_dir():
+    chpl_third_party = get_chpl_third_party()
+    llvm_target_dir = get_uniq_cfg_path_for('none', 'none', 'bundled')
+    llvm_subdir = os.path.join(chpl_third_party, 'llvm', 'install',
+                               'rv-only-' + llvm_target_dir)
     return llvm_subdir
 
 def is_included_llvm_built(llvm_val):
@@ -294,6 +304,9 @@ def find_system_llvm_config():
 
     return ''
 
+@memoize
+def get_llvm_rv():
+    return 'bundled'
 
 # Returns whether to use the bundled or system LLVM for the
 # LLVM support module.
@@ -996,6 +1009,7 @@ def compute_host_link_settings():
     llvm_dynamic = True
     llvm_val = get()
     llvm_support_val = get_llvm_support()
+    llvm_rv_val = 'bundled'
     llvm_config = get_llvm_config()
 
     # If llvm_config is not discoverable (e.g. we're configured to use a system
@@ -1128,6 +1142,10 @@ def compute_host_link_settings():
         else:
             warning("included llvm not built yet")
 
+    if llvm_rv_val == 'bundled':
+        bundled.append('-L' + get_bundled_llvm_rv_only_dir() + '/lib')
+        bundled.append('-lRV')
+
     static_dynamic = "static"
     if llvm_dynamic:
         static_dynamic = "dynamic"
@@ -1145,8 +1163,6 @@ def get_static_dynamic():
 @memoize
 def get_host_link_args():
     bundled, system, static_dynamic = compute_host_link_settings()
-    bundled.append('-L/home/engin/code/chapel/versions/2/chapel/third-party/llvm/install/linux64-x86_64/lib')  # need to do this in a more principled way
-    bundled.append('-lRV')  # need to do this in a more principled way
     return (bundled, system)
 
 # Return the isysroot argument provided by get_clang_basic_args, if any

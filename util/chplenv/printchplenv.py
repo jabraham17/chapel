@@ -128,6 +128,7 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_RE2_IS_OVERRIDDEN', INTERNAL),
     ChapelEnv('CHPL_LLVM', COMPILER | DEFAULT, 'llvm'),
     ChapelEnv('  CHPL_LLVM_SUPPORT', COMPILER | NOPATH, 'llvm'),
+    ChapelEnv('  CHPL_LLVM_RV', COMPILER | NOPATH, 'llvm'),
     ChapelEnv('  CHPL_LLVM_CONFIG', COMPILER | NOPATH),
     ChapelEnv('  CHPL_LLVM_VERSION', COMPILER),
     ChapelEnv('  CHPL_LLVM_CLANG_C', INTERNAL),
@@ -223,6 +224,7 @@ def compute_all_values():
     ENV_VALS['  CHPL_RE2_IS_OVERRIDDEN'] = chpl_re2.is_overridden()
     ENV_VALS['CHPL_LLVM'] = chpl_llvm.get()
     ENV_VALS['  CHPL_LLVM_SUPPORT'] = chpl_llvm.get_llvm_support()
+    ENV_VALS['  CHPL_LLVM_RV'] = chpl_llvm.get_llvm_rv()
     ENV_VALS['  CHPL_LLVM_CONFIG'] = chpl_llvm.get_llvm_config()
     ENV_VALS['  CHPL_LLVM_VERSION'] = chpl_llvm.get_llvm_version()
     llvm_clang_c = chpl_llvm.get_llvm_clang('c')

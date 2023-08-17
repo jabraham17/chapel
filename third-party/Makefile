@@ -150,24 +150,39 @@ ifeq ($(CHPL_MAKE_LLVM), unset)
 llvm: FORCE
 	cd llvm && $(MAKE) unset
 
-else ifeq ($(CHPL_MAKE_LLVM), bundled)
+else
+
+ifeq ($(CHPL_MAKE_LLVM), bundled)
 # build the bundled LLVM
-llvm: $(LLVM_INSTALL_DIR)
 $(LLVM_INSTALL_DIR): $(LLVM_DEPEND)
 	rm -rf $(LLVM_INSTALL_DIR)
 	cd llvm && $(MAKE) llvm
+else
+# we are not building the bundled LLVM as a whole
+$(LLVM_INSTALL_DIR):
 
-else ifeq ($(CHPL_MAKE_LLVM_SUPPORT), bundled)
+
+ifeq ($(CHPL_MAKE_LLVM_SUPPORT), bundled)
 # build the bundled LLVM support library
-llvm: $(LLVM_SUPPORT_INSTALL_DIR)
 $(LLVM_SUPPORT_INSTALL_DIR): $(LLVM_DEPEND)
 	rm -rf $(LLVM_SUPPORT_INSTALL_DIR)
 	cd llvm && $(MAKE) llvm-support
-
 else
+$(LLVM_SUPPORT_INSTALL_DIR):
+endif # support
 
-# nothing to do for CHPL_LLVM=system / CHPL_LLVM_SUPPORT=system
-llvm:
+ifeq ($(CHPL_MAKE_LLVM_RV), bundled)
+# build the bundled LLVM RV library
+$(LLVM_RV_INSTALL_DIR): $(LLVM_DEPEND)
+	rm -rf $(LLVM_RV_INSTALL_DIR)
+	cd llvm && $(MAKE) llvm-rv
+else
+$(LLVM_RV_INSTALL_DIR):
+endif # rv
+
+endif # bundled
+
+llvm: $(LLVM_INSTALL_DIR) $(LLVM_SUPPORT_INSTALL_DIR) $(LLVM_RV_INSTALL_DIR)
 endif
 
 # Qthreads may use hwloc and/or jemalloc. Ensure they are built first.
