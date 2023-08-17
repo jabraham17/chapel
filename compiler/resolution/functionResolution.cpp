@@ -3103,31 +3103,6 @@ static void adjustClassCastCall(CallExpr* call)
     if (t && targetType != t) {
       targetTypeSe->setSymbol(t->symbol);
     }
-
-    // Now, do a borrow if it's a cast from managed to not managed.
-    // (Note, this assumes that managedType.borrow() does not throw/halt
-    //  for nilable managed types storing nil. If that changed, we'd
-    //  need another method to call here to get the possibly nil ptr).
-    if (isDecoratorManaged(valueD) &&
-        !isDecoratorManaged(d) &&
-        !valueIsType) {
-      if (isDecoratorUnknownManagement(d))
-        INT_FATAL(call, "actual value has unknown type");
-      // Convert it to borrow before trying to resolve the cast again
-      SET_LINENO(call);
-      VarSymbol* tmp = newTempConst("cast_tmp");
-      Symbol* valueSym = valueSe->symbol();
-      CallExpr* c = new CallExpr("borrow", gMethodToken, valueSym);
-      CallExpr* m = new CallExpr(PRIM_MOVE, tmp, c);
-      call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-      call->getStmtExpr()->insertBefore(m);
-      resolveCallAndCallee(c);
-      resolveCall(m);
-
-      // Now update the cast call we have to cast
-      // the result of the borrow
-      valueSe->setSymbol(tmp);
-    }
   }
 }
 
