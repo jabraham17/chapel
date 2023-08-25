@@ -975,6 +975,7 @@ def get_host_compile_args():
 
     llvm_val = get()
     llvm_support_val = get_llvm_support()
+    llvm_rv_val = get_llvm_rv()
     llvm_config = get_llvm_config()
 
     # quit early if the llvm value is unset
@@ -1002,7 +1003,8 @@ def get_host_compile_args():
         # TODO: is this still needed?
         bundled.append('-Wno-comment')
 
-    bundled.append('-I/home/engin/code/chapel/versions/2/chapel/third-party/llvm/rv/include')
+    if llvm_rv_val == 'bundled':
+        bundled.append('-I' + get_bundled_llvm_rv_only_dir() + '/include')
 
     if llvm_val == 'system' or llvm_val == 'bundled':
         bundled.append('-DHAVE_LLVM')
