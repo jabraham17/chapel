@@ -157,6 +157,10 @@ ifeq ($(CHPL_MAKE_LLVM), bundled)
 $(LLVM_INSTALL_DIR): $(LLVM_DEPEND)
 	rm -rf $(LLVM_INSTALL_DIR)
 	cd llvm && $(MAKE) llvm
+
+# we don't need to do anything specific for these two
+$(LLVM_SUPPORT_INSTALL_DIR):
+$(LLVM_RV_INSTALL_DIR):
 else
 # we are not building the bundled LLVM as a whole
 $(LLVM_INSTALL_DIR):

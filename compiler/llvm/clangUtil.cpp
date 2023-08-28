@@ -101,8 +101,6 @@ using LlvmOptimizationLevel = llvm::OptimizationLevel;
 using LlvmOptimizationLevel = llvm::PassBuilder::OptimizationLevel;
 #endif
 
-#define HAVE_LLVM_RV
-
 #ifdef HAVE_LLVM_RV
 #ifdef LLVM_USE_OLD_PASSES
 #include "rv/legacy/passes.h"

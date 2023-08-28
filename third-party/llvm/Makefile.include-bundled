@@ -20,7 +20,7 @@ endif
 
 ifdef CHPL_RV
   LLVM_RV_CFLAGS += -DHAVE_LLVM_RV=1
-  LLVM_RV_LIBS=-lRV -lgensleef
+  #LLVM_RV_LIBS=-lRV -lgensleef
 endif
 
 LLVM_EXTRA_CFLAGS=$(LLVM_RV_CFLAGS)
