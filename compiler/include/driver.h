@@ -298,6 +298,7 @@ extern bool fIncrementalCompilation;
 extern std::string llvmFlags;
 extern std::string llvmRemarksFilters;
 extern std::vector<std::string> llvmRemarksFunctionsToShow;
+extern bool fLlvmPrintPasses;
 
 extern bool fPrintAdditionalErrors;
 

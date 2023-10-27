@@ -342,6 +342,7 @@ static bool fPrintChplHome = false;
 std::string llvmFlags;
 std::string llvmRemarksFilters;
 std::vector<std::string> llvmRemarksFunctionsToShow;
+bool fLlvmPrintPasses;
 
 bool fPrintAdditionalErrors;
 
@@ -691,6 +692,17 @@ static void verifyStageAndSetStageNum(const ArgumentDescription* desc,
     USR_FATAL("Unknown llvm-print-ir-stage argument");
 
   llvmPrintIrStageNum = stageNum;
+}
+
+static void verifyLLVMPrintPasses(const ArgumentDescription* desc,
+                                      const char* arg)
+{
+  #ifndef LLVM_USE_OLD_PASSES
+  if(fLlvmPrintPasses) {
+    printf("Cannot use '--llvm-print-passes' with this version of LLVM");
+    clean_exit(1);
+  }
+  #endif
 }
 
 /*
@@ -1353,6 +1365,7 @@ static ArgumentDescription arg_desc[] = {
 // {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
  {"llvm-print-ir", ' ', "<name>", "Dump LLVM Intermediate Representation of given function to stdout", "S", NULL, "CHPL_LLVM_PRINT_IR", &setPrintIr},
  {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S", NULL, "CHPL_LLVM_PRINT_IR_STAGE", &verifyStageAndSetStageNum},
+{"llvm-print-passes", ' ', NULL, "Prints the LLVM pass pipelines", "F", &fLlvmPrintPasses, NULL, NULL},
  {"llvm-remarks", ' ', "<regex>", "Print LLVM optimization remarks", "S", NULL, NULL, &setLLVMRemarksFilters},
  {"llvm-remarks-function", ' ', "<name>", "Print LLVM optimization remarks only for these functions", "S", NULL, NULL, &setLLVMRemarksFunctions},
  {"verify", ' ', NULL, "Run consistency checks during compilation", "N", &fVerify, "CHPL_VERIFY", NULL},
