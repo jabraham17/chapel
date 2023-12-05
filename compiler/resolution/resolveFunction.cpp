@@ -2121,6 +2121,8 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
           // variables, which isn't allowed.  If we fib and claim that it
           // returns 'nothing', those assignments get removed and all is well.
           retType = dtNothing;
+          // an
+          USR_FATAL(fn, "unable to resolve yielded type of '%s'", fn->name);
         } else {
           retType = dtVoid;
         }
