@@ -2364,6 +2364,12 @@ void FnSymbol::codegenPrototype() {
             break;
         }
       }
+    } else {
+      if (hasEitherFlag(FLAG_EXTERN, FLAG_EXPORT)) {
+        func->setCallingConv(llvm::CallingConv::C);
+      } else {
+        func->setCallingConv(llvm::CallingConv::Fast);
+      }
     }
 
     func->setDSOLocal(true);
