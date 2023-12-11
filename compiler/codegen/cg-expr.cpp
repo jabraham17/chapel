@@ -44,6 +44,7 @@
 #include "llvm/IR/Module.h"
 #include "llvmUtil.h"
 #include "llvm/IR/IntrinsicsNVPTX.h"
+
 #include "clang/CodeGen/CGFunctionInfo.h"
 #endif
 
@@ -244,6 +245,7 @@ GenRet DefExpr::codegen() {
         info->lvt->addBlock(sym->cname, blockLabel);
       }
 
+
       info->irBuilder->CreateBr(blockLabel);
 
 #if HAVE_LLVM_VER >= 160
@@ -289,6 +291,7 @@ llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType,
   const llvm::DataLayout& layout = info->module->getDataLayout();
   llvm::LLVMContext &ctx = info->llvmContext;
   llvm::Value* val = NULL;
+
   llvm::AllocaInst* alloca = NULL;
 
   val = convertValueToType(irBuilder, layout, ctx,
@@ -318,7 +321,9 @@ static llvm::Value* extendToPointerSize(GenRet index, unsigned AS) {
   const llvm::DataLayout& DL = info->module->getDataLayout();
   llvm::Type* sizeTy = DL.getIntPtrType(info->module->getContext(), AS);
   unsigned sizeBits = DL.getTypeSizeInBits(sizeTy);
+
   unsigned idxBits = DL.getTypeSizeInBits(index.val->getType());
+
 
   if (idxBits < sizeBits) {
     return convertValueToType(index.val, sizeTy, !index.isUnsigned);
@@ -340,6 +345,7 @@ static llvm::Value* createInBoundsGEP(llvm::Type* gepType,
     const llvm::DataLayout& DL = info->module->getDataLayout();
     unsigned ptrBits = DL.getPointerSizeInBits(0);
     // Check that each idxList element is at least ptrBits big.
+
     // Otherwise, it always does signed extending, but sometimes
     // we want unsigned.
     for (auto v : idxList) {
@@ -468,6 +474,7 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
                                    addrType);
     INT_ASSERT(fn);
 
+
     llvm::Type* locAddrType = nullptr;
 
     if (isOpaquePointer(addrType)) {
@@ -486,7 +493,9 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
     // we are supposed to have since null has type void*.
     llvm::Value* locAddr = raddr.val;
     locAddr = info->irBuilder->CreatePointerCast(locAddr, locAddrType);
-    ret.val = info->irBuilder->CreateCall(fn, {locale.val, locAddr});
+    auto call = info->irBuilder->CreateCall(fn, {locale.val, locAddr});
+    call->setCallingConv(fn->getCallingConv());
+    ret.val = call;
 #endif
   }
 
@@ -554,6 +563,7 @@ void codegenInvariantStart(llvm::Type *valType, llvm::Value *addr)
   const llvm::DataLayout& dataLayout = info->module->getDataLayout();
 
   if (valType == nullptr) {
+
     valType = tryComputingPointerElementType(addr);
     INT_ASSERT(valType);
   }
@@ -989,7 +999,10 @@ GenRet codegenRaddr(GenRet wide)
     llvm::Function* fn = getAddrFn(info->module, &info->globalToWideInfo,
                                    addrType);
     INT_ASSERT(fn);
-    ret.val = info->irBuilder->CreateCall(fn, wide.val);
+
+    auto call = info->irBuilder->CreateCall(fn, wide.val);
+    call->setCallingConv(fn->getCallingConv());
+    ret.val = call;
 #endif
     ret = codegenCast(type, ret);
   }
@@ -1017,7 +1030,9 @@ static GenRet codegenRlocale(GenRet wide)
     // call GLOBAL_FN_GLOBAL_LOCID dummy function
     llvm::Function* fn = getLocFn(info->module, &info->globalToWideInfo, addrType);
     INT_ASSERT(fn);
-    ret.val = info->irBuilder->CreateCall(fn, wide.val);
+    auto call = info->irBuilder->CreateCall(fn, wide.val);
+    call->setCallingConv(fn->getCallingConv());
+    ret.val = call;
 #endif
   }
   ret.chplType = type;
@@ -1062,7 +1077,9 @@ static GenRet codegenRnode(GenRet wide){
     // call GLOBAL_FN_GLOBAL_NODEID dummy function
     llvm::Function* fn = getNodeFn(info->module, &info->globalToWideInfo, addrType);
     INT_ASSERT(fn);
-    ret.val = info->irBuilder->CreateCall(fn, wide.val);
+    auto call = info->irBuilder->CreateCall(fn, wide.val);
+    call->setCallingConv(fn->getCallingConv());
+    ret.val = call;
 #endif
   }
 
@@ -1286,6 +1303,7 @@ GenRet doCodegenFieldPtr(
           ret.fieldOffset = info->module->getDataLayout().
             getStructLayout(structType)->getElementOffset(fieldno);
           ret.fieldTbaaTypeDescriptor =
+
             ret.chplType->symbol->llvmTbaaTypeDescriptor;
         }
       }
@@ -1452,6 +1470,7 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
             llvm::IntegerType::getInt64Ty(info->module->getContext())));
     }
     GEPLocs.push_back(extendToPointerSize(index, AS));
+
 
     llvm::Type* gepBaseType = nullptr;
     if (baseValType->symbol->hasFlag(FLAG_DATA_CLASS)) {
@@ -2104,6 +2123,7 @@ static GenRet emitFmaForC(GenRet av, GenRet bv, GenRet cv) {
             "appropriate C intrinsic in module code instead");
   GenRet ret;
   return ret;
+
 }
 
 static GenRet emitFmaForLlvm(GenRet av, GenRet bv, GenRet cv) {
@@ -2291,10 +2311,13 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
         info->module->getContext(), "ternaryBlockIfTrue");
     llvm::BasicBlock *blockIfFalse = llvm::BasicBlock::Create(
         info->module->getContext(), "ternaryBlockIfFalse");
+
     llvm::BasicBlock *blockEnd = llvm::BasicBlock::Create(
         info->module->getContext(), "ternaryBlockEnd");
 
+
     GenRet ifTrueVal = codegenValue(ifTrue);
+
     GenRet ifFalseVal = codegenValue(ifFalse);
     PromotedPair values = convertValuesToLarger(
         ifTrueVal.val, ifFalseVal.val, ifTrueSigned, ifFalseSigned);
@@ -2424,6 +2447,7 @@ GenRet codegenGlobalArrayElement(const char* table_name,
     GEPLocs[0] = llvm::Constant::getNullValue(
         llvm::IntegerType::getInt64Ty(info->module->getContext()));
     GEPLocs[1] = extendToPointerSize(elt, 0);
+
 
     llvm::Value* elementPtr;
     elementPtr = createInBoundsGEP(global->getValueType(), table.val, GEPLocs);
@@ -2590,6 +2614,7 @@ static GenRet codegenCallExprInner(GenRet genFn, std::vector<GenRet>& args,
     const llvm::DataLayout& layout = info->module->getDataLayout();
     llvm::LLVMContext &ctx = info->llvmContext;
     unsigned int addrSpace = layout.getAllocaAddrSpace();
+
     const clang::CodeGen::CGFunctionInfo* CGI = nullptr;
 
     // TODO: Figure out how to get any CGI info from the type.
@@ -2674,6 +2699,7 @@ static GenRet codegenCallExprInner(GenRet genFn, std::vector<GenRet>& args,
     #else
     c = info->irBuilder->CreateCall(val, llArgs);
     #endif
+    // c->setCallingConv(val->getCallingConv());
 
     ret.val = c;
 
@@ -2750,6 +2776,7 @@ static GenRet codegenCallExprInner(GenRet function,
     llvm::IRBuilder<>* irBuilder = info->irBuilder;
     const llvm::DataLayout& layout = info->module->getDataLayout();
     llvm::LLVMContext &ctx = info->llvmContext;
+
 
     unsigned int stackSpace = layout.getAllocaAddrSpace();
 
@@ -3018,6 +3045,7 @@ static GenRet codegenCallExprInner(GenRet function,
 
     if (func) {
       c = info->irBuilder->CreateCall(func, llArgs);
+      c->setCallingConv(func->getCallingConv());
     } else {
       if (!fnType) INT_FATAL("Could not compute called function type");
 #if HAVE_LLVM_VER >= 90
@@ -3025,6 +3053,7 @@ static GenRet codegenCallExprInner(GenRet function,
 #else
       c = info->irBuilder->CreateCall(val, llArgs);
 #endif
+      // c->setCallingConv(val->getCallingConv());
     }
 
     if (func) {
@@ -3417,6 +3446,7 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
     llvm::Function *func = llvm::Intrinsic::getDeclaration(info->module, llvm::Intrinsic::memcpy, types);
     //llvm::FunctionType *fnType = func->getFunctionType();
 
+
 #if HAVE_LLVM_VER >= 70
     // LLVM 7 and later: memcpy has no alignment argument
     llvm::Value* llArgs[4];
@@ -3428,6 +3458,7 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
     // LLVM memcpy intrinsic has additional argument isvolatile
     // isVolatile?
     llArgs[3] = llvm::ConstantInt::get(llvm::Type::getInt1Ty(info->module->getContext()), 0, false);
+
 
 #else
     // LLVM 6 and earlier: memcpy had alignment argument
@@ -3441,12 +3472,15 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
     // alignment
     llArgs[3] = llvm::ConstantInt::get(llvm::Type::getInt32Ty(info->module->getContext()), 0, false);
     // isVolatile?
+
     llArgs[4] = llvm::ConstantInt::get(llvm::Type::getInt1Ty(info->module->getContext()), 0, false);
 #endif
+
 
     // We can't use IRBuilder::CreateMemCpy because that adds
     //  a cast to i8 (in address space 0).
     llvm::CallInst* CI = info->irBuilder->CreateCall(func, llArgs);
+    CI->setCallingConv(func->getCallingConv());
 
     llvm::MDNode* tbaaStructTag = NULL;
     if( pointedToType ) {
@@ -3473,7 +3507,9 @@ llvm::Constant* codegenSizeofLLVM(llvm::Type* type)
   const llvm::DataLayout& dl = info->module->getDataLayout();
   llvm::LLVMContext& ctx = info->module->getContext();
 
+
   INT_ASSERT(type->isSized());
+
   llvm::TypeSize ret = dl.getTypeAllocSize(type);
 #if HAVE_LLVM_VER >= 160
   auto intValue = ret.getKnownMinValue();
@@ -3563,6 +3599,7 @@ void codegenCopy(GenRet dest, GenRet src, Type* chplType=NULL)
       } else if( eltTy && isTypeSizeSmallerThan(info->module->getDataLayout(),
                                        eltTy,
                                        256 /* max bytes to load/store */)) {
+
         // OK
       } else {
         useMemcpy = true;
@@ -5398,6 +5435,7 @@ DEFINE_PRIM(GPU_ALLOC_SHARED) {
       llvm::UndefValue::get(arrayType), "gpuSharedMemory", nullptr,
       llvm::GlobalValue::NotThreadLocal, 3, false);
 
+
   // Get a void* pointer to the shared array.
   llvm::Type* voidPtrType = llvm::Type::getInt8PtrTy(info->llvmContext, 3);
   llvm::Value* sharedArrayPtr = gGenInfo->irBuilder->CreateBitCast(sharedArray, voidPtrType, "sharedArrayPtr");
@@ -5428,6 +5466,7 @@ DEFINE_PRIM(GPU_SYNC_THREADS) {
   llvm::Function *fun = llvm::Intrinsic::getDeclaration(gGenInfo->module,
     llvm::Intrinsic::nvvm_barrier0);
   ret.val = gGenInfo->irBuilder->CreateCall(fun);
+
   ret.isLVPtr = GEN_VAL;
   ret.chplType = chplReturnType;*/
 
@@ -5934,7 +5973,9 @@ DEFINE_PRIM(REGISTER_GLOBAL_VAR) {
 
       INT_ASSERT(fn);
 
-      ptr_wide_ptr.val = gGenInfo->irBuilder->CreateCall(fn, ptr_wide_ptr.val);
+      auto call = gGenInfo->irBuilder->CreateCall(fn, ptr_wide_ptr.val);
+      call->setCallingConv(fn->getCallingConv());
+      ptr_wide_ptr.val = call;
     }
 #endif
 
@@ -6077,6 +6118,7 @@ DEFINE_PRIM(FTABLE_CALL) {
       GEPLocs[0] = llvm::Constant::getNullValue(llvm::IntegerType::getInt64Ty(gGenInfo->module->getContext()));
       GEPLocs[1] = index.val;
       fnPtrPtr   = createInBoundsGEP(global->getValueType(),
+
                                      ftable.val, GEPLocs);
 #if HAVE_LLVM_VER >= 130
       fnPtr      = gGenInfo->irBuilder->CreateLoad(genericFnPtr, fnPtrPtr);
@@ -6091,6 +6133,7 @@ DEFINE_PRIM(FTABLE_CALL) {
       returnType = llvm::Type::getVoidTy(gGenInfo->module->getContext());
 
       llvm::Type*              argt   = NULL;
+
 
       argt = call->get(2)->typeInfo()->codegen().type;
 
@@ -6171,6 +6214,7 @@ DEFINE_PRIM(VIRTUAL_METHOD_CALL) {
           llvm::IntegerType::getInt64Ty(gGenInfo->module->getContext()));
       GEPLocs[1] = index.val;
       fnPtrPtr = createInBoundsGEP(global->getValueType(), table.val, GEPLocs);
+
 #if HAVE_LLVM_VER >= 130
       llvm::Instruction* fnPtrV =
         gGenInfo->irBuilder->CreateLoad(genericFnPtr, fnPtrPtr);

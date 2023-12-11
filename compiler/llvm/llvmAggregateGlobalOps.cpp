@@ -809,7 +809,8 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     args[4] = ConstantInt::get(Type::getInt1Ty(Context), 0, false);
 #endif
 
-    Instruction* aMemCpy = irBuilder.CreateCall(func, args);
+    auto aMemCpy = irBuilder.CreateCall(func, args);
+    aMemCpy->setCallingConv(func->getCallingConv());
 
     if (!Range.TheStores.empty())
       aMemCpy->setDebugLoc(Range.TheStores[0]->getDebugLoc());

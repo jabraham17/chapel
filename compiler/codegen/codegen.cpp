@@ -2142,7 +2142,8 @@ codegen_config() {
     info->irBuilder->SetInsertPoint(createConfigBlock);
 
     llvm::Function *initConfigFunc = getFunctionLLVM("initConfigVarTable");
-    info->irBuilder->CreateCall(initConfigFunc, {} );
+    auto call = info->irBuilder->CreateCall(initConfigFunc, {} );
+    call->setCallingConv(initConfigFunc->getCallingConv());
 
     llvm::Function *installConfigFunc = getFunctionLLVM("installConfigVar");
 
@@ -2180,7 +2181,8 @@ codegen_config() {
         args[6] = info->irBuilder->getInt32(var->hasFlag(FLAG_UNSTABLE));
         args[7] = genStringArg(var->getUnstableMsg());
 
-        info->irBuilder->CreateCall(installConfigFunc, args);
+        auto call = info->irBuilder->CreateCall(installConfigFunc, args);
+        call->setCallingConv(installConfigFunc->getCallingConv());
       }
     }
     info->irBuilder->CreateRetVoid();
