@@ -1025,6 +1025,9 @@ static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   fNoOptimizeForallUnordered = false;
   optimizeCCode = true;
   specializeCCode = true;
+
+  fLLVMWideOpt = true;
+
   setChecks(desc, unused);
 }
 
