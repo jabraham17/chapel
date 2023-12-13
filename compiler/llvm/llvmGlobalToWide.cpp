@@ -58,6 +58,7 @@
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/IR/InstrTypes.h"
 
 #include "llvm/Pass.h"
 
@@ -540,6 +541,34 @@ namespace {
             auto convertBack = createStoreLoadCast(newInsn, resVecType, insn);
 
             myReplaceInstWithInst(insn, convertBack);
+          }
+          break;
+        }
+        // Workaround: `icmp` instructions on a global address turn into `icmp`
+        // on a struct, which is illegal. We can fix this by bitcasting to and from `i128`
+        case Instruction::ICmp: {
+          auto lhsVal = insn->getOperand(0);
+          auto rhsVal = insn->getOperand(1);
+
+          if (lhsVal->getType()->isPointerTy() &&
+              lhsVal->getType()->getPointerAddressSpace() == info->globalSpace) {
+            assert(rhsVal->getType()->isPointerTy() &&
+                   rhsVal->getType()->getPointerAddressSpace() == info->globalSpace);
+            auto toType = Type::getInt128Ty(M.getContext());
+
+            auto newLhsVal = createStoreLoadCast(lhsVal, toType, insn);
+            auto newRhsVal = createStoreLoadCast(rhsVal, toType, insn);
+
+            auto oldCmp = cast<ICmpInst>(insn);
+            auto newCmp = CmpInst::Create(Instruction::ICmp,
+                                          oldCmp->getPredicate(),
+                                          newLhsVal,
+                                          newRhsVal,
+                                          "",
+                                          insn);
+            auto convertBack = createStoreLoadCast(newCmp, insn->getType(), insn);
+            myReplaceInstWithInst(insn, convertBack);
+
           }
           break;
         }
