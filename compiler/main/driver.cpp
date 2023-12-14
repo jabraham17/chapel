@@ -671,6 +671,11 @@ static void setDynamicLink(const ArgumentDescription* desc, const char* arg_unus
 
 static void setChapelDebug(const ArgumentDescription* desc, const char* arg_unused) {
   printCppLineno = true;
+
+  // TODO: llvm-wide-opt causes lots of issues with `-g`
+  if (fLLVMWideOpt) {
+    fLLVMWideOpt = false;
+  }
 }
 
 static void setPrintIr(const ArgumentDescription* desc, const char* arg) {
