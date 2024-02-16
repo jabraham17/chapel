@@ -111,6 +111,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_DIV:
   case PRIM_MOD:
   case PRIM_FMA:
+  case PRIM_MYSQRT:
   case PRIM_LSH:
   case PRIM_RSH:
   case PRIM_EQUAL:

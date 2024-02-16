@@ -1394,6 +1394,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_DIV:
     case PRIM_MOD:
     case PRIM_FMA:
+    case PRIM_MYSQRT:
     case PRIM_LSH:
     case PRIM_RSH:
     case PRIM_AND:
