@@ -2167,7 +2167,7 @@ static GenRet emitSqrtForLlvm(GenRet av) {
   INT_ASSERT(ty);
 
   if (!ty->isFPOrFPVectorTy()) {
-    INT_FATAL("The FMA primitive can only evaluate floating point types!");
+    INT_FATAL("The sqrt primitive can only evaluate floating point types!");
   }
 
   // The 'id' is the base intrinsic, and then 'tys' is used to mangle

@@ -619,12 +619,12 @@ module AutoMath {
 
      It is an error if the `x` is less than zero.
   */
+  inline proc sqrt(x: real(64)): real(64) {
+    return __primitive("mysqrt", x);
+  }
   // pragma "fn synchronization free"
   // pragma "codegen for CPU and GPU"
   // extern proc sqrt(x: real(64)): real(64);
-  proc sqrt(param x: real(64)): real(64) {
-    return __primitive("mysqrt", x);
-  }
 
   /* Returns the square root of the argument `x`.
 
@@ -645,7 +645,8 @@ module AutoMath {
     // pragma "fn synchronization free"
     // pragma "codegen for CPU and GPU"
     // extern proc sqrtf(x: real(32)): real(32);
-    return  __primitive("mysqrt", x);
+    // return sqrtf(x);
+    return __primitive("mysqrt", x);
   }
 
   /* Returns the square root of the argument `x`.
