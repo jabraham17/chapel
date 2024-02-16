@@ -2182,7 +2182,7 @@ static GenRet emitSqrtForLlvm(GenRet av) {
   return ret;
 }
 
-static GenRet codegenSqrt(GenRet a) {
+static GenRet codegenMySqrt(GenRet a) {
   GenInfo* info = gGenInfo;
   GenRet ret;
   if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
@@ -4692,8 +4692,8 @@ DEFINE_PRIM(MOD) {
 DEFINE_PRIM(FMA) {
     ret = codegenFma(call->get(1), call->get(2), call->get(3));
 }
-DEFINE_PRIM(MySqrt) {
-    ret = codegenSqrt(call->get(1));
+DEFINE_PRIM(MYSQRT) {
+    ret = codegenMySqrt(call->get(1));
 }
 DEFINE_PRIM(LSH) {
     ret = codegenLsh(call->get(1), call->get(2));
