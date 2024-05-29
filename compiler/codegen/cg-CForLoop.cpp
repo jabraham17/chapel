@@ -194,6 +194,20 @@ static void addLoopUserMetadata(LoopStmt* loop, std::vector<llvm::Metadata*>& ar
   }
 }
 
+// A loop is innermost if it has no nested loops.
+static bool isInnermostLoop(BlockStmt* block) {
+  for_alist(expr, block->body) {
+    if (LoopStmt* innerLoop = toLoopStmt(expr)) {
+      return false;
+    } else if (BlockStmt* innerBlock = toBlockStmt(expr)) {
+      if (!isInnermostLoop(innerBlock)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 // Returns the loop metadata node to associate with the branch.
 // If thisLoopParallelAccess is set, accessGroup will be set to the
 // metadata node to use in llvm.access.group metadata for this loop.
@@ -233,7 +247,10 @@ static llvm::MDNode* generateLoopMetadata(LoopStmt* loop,
     }
 
     // unroll all vectorizable loops by 2
-    args.push_back(constructLLVMMetadata("llvm.loop.unroll.count", int64_t(2)));
+    // only unroll if no inner loops
+    if (isInnermostLoop(loop)) {
+      args.push_back(constructLLVMMetadata("llvm.loop.unroll.count", int64_t(2)));
+    }
 
   }
 
