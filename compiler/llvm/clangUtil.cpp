@@ -2660,21 +2660,21 @@ void prepareCodegenLLVM()
   PB.registerLoopAnalyses(*info->LAM);
   PB.crossRegisterProxies(*info->LAM, *info->FAM, *info->CGAM, *info->MAM);
 
-  auto lvl = translateOptLevel();
-  if (lvl != LlvmOptimizationLevel::O0) {
-    info->FunctionSimplificationPM = new FunctionPassManager(
-        PB.buildFunctionSimplificationPipeline(lvl, ThinOrFullLTOPhase::None));
+  // auto lvl = translateOptLevel();
+  // if (lvl != LlvmOptimizationLevel::O0) {
+  //   info->FunctionSimplificationPM = new FunctionPassManager(
+  //       PB.buildFunctionSimplificationPipeline(lvl, ThinOrFullLTOPhase::None));
 
-    if (fLlvmPrintPasses) {
-      std::string Pipeline;
-      llvm::raw_string_ostream SOS(Pipeline);
-      info->FunctionSimplificationPM->printPipeline(SOS, [&info](StringRef ClassName) {
-        auto PassName = info->PIC->getPassNameForClassName(ClassName);
-        return PassName.empty() ? ClassName : PassName;
-      });
-      llvm::errs() << "Function Simplification Pipeline: '" << Pipeline << "'\n";
-    }
-  }
+  //   if (fLlvmPrintPasses) {
+  //     std::string Pipeline;
+  //     llvm::raw_string_ostream SOS(Pipeline);
+  //     info->FunctionSimplificationPM->printPipeline(SOS, [&info](StringRef ClassName) {
+  //       auto PassName = info->PIC->getPassNameForClassName(ClassName);
+  //       return PassName.empty() ? ClassName : PassName;
+  //     });
+  //     llvm::errs() << "Function Simplification Pipeline: '" << Pipeline << "'\n";
+  //   }
+  // }
 #endif
 }
 
