@@ -232,8 +232,8 @@ static llvm::MDNode* generateLoopMetadata(LoopStmt* loop,
       // llvm.loop.vectorize.width but no longer does.
     }
 
-    // unroll all vectorizable loops by 4
-    args.push_back(constructLLVMMetadata("llvm.loop.unroll.count", int64_t(4)));
+    // unroll all vectorizable loops by 2
+    args.push_back(constructLLVMMetadata("llvm.loop.unroll.count", int64_t(2)));
 
   }
 
