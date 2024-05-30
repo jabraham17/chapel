@@ -197,7 +197,7 @@ static void addLoopUserMetadata(LoopStmt* loop, std::vector<llvm::Metadata*>& ar
 // A loop is innermost if it has no nested loops.
 static bool isInnermostLoop(BlockStmt* block) {
   for_alist(expr, block->body) {
-    if (LoopStmt* innerLoop = toLoopStmt(expr)) {
+    if (isLoopStmt(expr)) {
       return false;
     } else if (BlockStmt* innerBlock = toBlockStmt(expr)) {
       if (!isInnermostLoop(innerBlock)) {
