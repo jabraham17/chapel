@@ -61,6 +61,8 @@
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/Linker/Linker.h"
 #include "llvm/MC/MCSubtargetInfo.h"
+#include "llvm/Transforms/Utils/Mem2Reg.h"
+#include "llvm/Transforms/InstCombine/InstCombine.h"
 
 #if HAVE_LLVM_VER >= 170
 #include "llvm/TargetParser/SubtargetFeature.h"
@@ -2660,20 +2662,24 @@ void prepareCodegenLLVM()
   PB.registerLoopAnalyses(*info->LAM);
   PB.crossRegisterProxies(*info->LAM, *info->FAM, *info->CGAM, *info->MAM);
 
+  info->FunctionSimplificationPM = new FunctionPassManager();
+  info->FunctionSimplificationPM->addPass(PromotePass());
+  info->FunctionSimplificationPM->addPass(InstCombinePass());
+
   // auto lvl = translateOptLevel();
   // if (lvl != LlvmOptimizationLevel::O0) {
   //   info->FunctionSimplificationPM = new FunctionPassManager(
   //       PB.buildFunctionSimplificationPipeline(lvl, ThinOrFullLTOPhase::None));
 
-  //   if (fLlvmPrintPasses) {
-  //     std::string Pipeline;
-  //     llvm::raw_string_ostream SOS(Pipeline);
-  //     info->FunctionSimplificationPM->printPipeline(SOS, [&info](StringRef ClassName) {
-  //       auto PassName = info->PIC->getPassNameForClassName(ClassName);
-  //       return PassName.empty() ? ClassName : PassName;
-  //     });
-  //     llvm::errs() << "Function Simplification Pipeline: '" << Pipeline << "'\n";
-  //   }
+    if (fLlvmPrintPasses) {
+      std::string Pipeline;
+      llvm::raw_string_ostream SOS(Pipeline);
+      info->FunctionSimplificationPM->printPipeline(SOS, [&info](StringRef ClassName) {
+        auto PassName = info->PIC->getPassNameForClassName(ClassName);
+        return PassName.empty() ? ClassName : PassName;
+      });
+      llvm::errs() << "Function Simplification Pipeline: '" << Pipeline << "'\n";
+    }
   // }
 #endif
 }
