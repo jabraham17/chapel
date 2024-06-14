@@ -2662,14 +2662,18 @@ void prepareCodegenLLVM()
   PB.registerLoopAnalyses(*info->LAM);
   PB.crossRegisterProxies(*info->LAM, *info->FAM, *info->CGAM, *info->MAM);
 
-  info->FunctionSimplificationPM = new FunctionPassManager();
-  info->FunctionSimplificationPM->addPass(PromotePass());
-  info->FunctionSimplificationPM->addPass(InstCombinePass());
+  // info->FunctionSimplificationPM = new FunctionPassManager();
+  // info->FunctionSimplificationPM->addPass(PromotePass());
+  // info->FunctionSimplificationPM->addPass(InstCombinePass());
 
-  // auto lvl = translateOptLevel();
-  // if (lvl != LlvmOptimizationLevel::O0) {
-  //   info->FunctionSimplificationPM = new FunctionPassManager(
-  //       PB.buildFunctionSimplificationPipeline(lvl, ThinOrFullLTOPhase::None));
+  auto lvl = translateOptLevel();
+  if (lvl != LlvmOptimizationLevel::O0) {
+    info->FunctionSimplificationPM = new FunctionPassManager(
+        PB.buildFunctionSimplificationPipeline(lvl, ThinOrFullLTOPhase::None));
+
+    //     std::string passes = "sroa<modify-cfg>,simplifycfg,always-inline,inline,simplifycfg,instcombine,aggressive-instcombine,simplifycfg,libcalls-shrinkwrap,tailcallelim,sroa<modify-cfg>,simplifycfg";
+    // info->FunctionSimplificationPM = new FunctionPassManager();
+    // PB.parsePassPipeline(*info->FunctionSimplificationPM, passes);
 
     if (fLlvmPrintPasses) {
       std::string Pipeline;
@@ -2680,7 +2684,7 @@ void prepareCodegenLLVM()
       });
       llvm::errs() << "Function Simplification Pipeline: '" << Pipeline << "'\n";
     }
-  // }
+  }
 #endif
 }
 
