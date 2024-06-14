@@ -3289,10 +3289,17 @@ GenRet codegenCallExprWithArgs(const char* fnName,
                                    fnSym, FD, defaultToValues);
   } else {
 #ifdef HAVE_LLVM
-    fn.val = getFunctionLLVM(fnName);
-    if (fn.val == nullptr) {
+
+    auto func = getFunctionLLVM(fnName);
+    if (func == nullptr) {
       INT_FATAL(fnSym, "unable to find function %s\n", fnName);
     }
+    if (strcmp(fnName, "chpl_gen_comm_get") == 0 ||
+        strcmp(fnName, "chpl_gen_comm_put") == 0 ||
+        strcmp(fnName, "chpl_memmove") == 0) {
+      func->addFnAttr(llvm::Attribute::AlwaysInline);
+    }
+    fn.val = func;
     return codegenCallExprWithArgs(fn, args, fnName,
                                    fnSym, FD, defaultToValues);
 #endif
