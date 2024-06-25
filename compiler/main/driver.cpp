@@ -361,6 +361,7 @@ std::string llvmFlags;
 std::string llvmRemarksFilters;
 std::vector<std::string> llvmRemarksFunctionsToShow;
 bool fLlvmPrintPasses = false;
+bool fUseNewLLVMPM = false;
 
 bool fPrintAdditionalErrors;
 
@@ -727,10 +728,10 @@ static void setLLVMRemarksFunctions(const ArgumentDescription* desc, const char*
 }
 
 static void setLLVMPrintPasses(const ArgumentDescription* desc, const char* arg) {
-#ifdef LLVM_USE_OLD_PASSES
+  if (!fUseNewLLVMPM) {
   printf("Cannot use '--llvm-print-passes' with this version of LLVM");
   clean_exit(1);
-#endif
+  }
 }
 
 static void handleLibrary(const ArgumentDescription* desc, const char* arg_unused) {
@@ -1381,6 +1382,7 @@ static ArgumentDescription arg_desc[] = {
  {"llvm-remarks", ' ', "<regex>", "Print LLVM optimization remarks", "S", NULL, NULL, &setLLVMRemarksFilters},
  {"llvm-remarks-function", ' ', "<name>", "Print LLVM optimization remarks only for these functions", "S", NULL, NULL, &setLLVMRemarksFunctions},
  {"llvm-print-passes", ' ', NULL, "Print the LLVM optimizations to be run", "F", &fLlvmPrintPasses, NULL, &setLLVMPrintPasses},
+ {"llvm-new-pm", ' ', NULL, "Use new LLVM PM", "F", &fUseNewLLVMPM, NULL, NULL},
  {"verify", ' ', NULL, "Run consistency checks during compilation", "N", &fVerify, "CHPL_VERIFY", NULL},
  {"parse-only", ' ', NULL, "Stop compiling after 'parse' pass for syntax checking", "N", &fParseOnly, NULL, NULL},
  {"parser-debug", ' ', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
