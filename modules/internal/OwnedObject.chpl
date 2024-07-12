@@ -262,26 +262,6 @@ module OwnedObject {
     lhs.chpl_p <=> rhs.chpl_p;
   }
 
-
-  // initCopy is defined explicitly as a workaround
-  // for problems with initializers in this case
-  pragma "init copy fn"
-  proc chpl__initCopy(pragma "leaves arg nil" pragma "nil from arg"
-                      ref src: _owned,
-                      definedConst: bool) {
-    var ret = new _owned(src);
-    return ret;
-  }
-
-  // autoCopy is defined explicitly as a workaround
-  // for problems with initializers in this case
-  pragma "auto copy fn"
-  proc chpl__autoCopy(pragma "leaves arg nil" pragma "nil from arg"
-                      ref src: _owned,
-                      definedConst: bool) {
-    var ret = new _owned(src);
-    return ret;
-  }
   // This is a workaround - compiler was resolving
   // chpl__autoDestroy(x:object) from internal coercions.
   pragma "auto destroy fn"
