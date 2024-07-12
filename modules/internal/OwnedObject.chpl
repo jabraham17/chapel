@@ -265,7 +265,6 @@ module OwnedObject {
 
   // initCopy is defined explicitly as a workaround
   // for problems with initializers in this case
-  pragma "compiler generated"
   pragma "last resort"
   pragma "init copy fn"
   pragma "suppress lvalue error"
@@ -278,7 +277,6 @@ module OwnedObject {
 
   // autoCopy is defined explicitly as a workaround
   // for problems with initializers in this case
-  pragma "compiler generated"
   pragma "last resort"
   pragma "auto copy fn"
   proc chpl__autoCopy(pragma "leaves arg nil" pragma "nil from arg"
