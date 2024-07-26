@@ -23,6 +23,7 @@
 #include "chpl-env.h"
 #include "chpltypes.h"
 #include "error.h"
+#include "chplcgfns.h"
 
 #ifdef LAUNCHER
 #include "chpllaunch.h"
@@ -189,4 +190,16 @@ void chpl_env_set_uint(const char* evName, uint64_t evVal, int overwrite) {
   char buf[21]; // big enough for 64-bit unsigned, plus trailing '\0'
   snprintf(buf, sizeof(buf), "%" PRIu64, evVal);
   chpl_env_set(evName, buf, overwrite);
+}
+
+
+chpl_bool chpl_is_oversubscribed(void) {
+  // if the user has explicit requested oversubscription, return true
+  const char* rt_oversubscribe = chpl_env_rt_get("OVERSUBSCRIBED", NULL);
+  if (rt_oversubscribe != NULL) {
+    return chpl_env_str_to_bool("OVERSUBSCRIBED", rt_oversubscribe, false);
+  }
+
+  // otherwise infer this from the value `CHPL_NETWORK`
+  return strcmp(CHPL_NETWORK, "virtual") == 0;
 }

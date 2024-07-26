@@ -77,6 +77,9 @@ size_t chpl_env_rt_get_size(const char* ev, size_t dflt) {
 void chpl_env_set(const char*, const char*, int);
 void chpl_env_set_uint(const char*, uint64_t, int);
 
+
+chpl_bool chpl_is_oversubscribed(void);
+
 #ifdef __cplusplus
 }
 #endif

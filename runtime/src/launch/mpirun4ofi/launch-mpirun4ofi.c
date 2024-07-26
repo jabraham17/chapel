@@ -52,7 +52,7 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
   ADD_LARGV("node:oversubscribe");
   ADD_LARGV("-bind-to");
   ADD_LARGV("none");
-  if (chpl_env_rt_get_bool("OVERSUBSCRIBED", false)) {
+  if (chpl_is_oversubscribed()) {
     ADD_LARGV("-mca");
     ADD_LARGV("mpi_yield_when_idle");
     ADD_LARGV("1");

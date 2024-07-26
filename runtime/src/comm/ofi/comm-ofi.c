@@ -1060,7 +1060,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
   envMaxHeapSize = chpl_comm_getenvMaxHeapSize();
 
-  envOversubscribed = chpl_env_rt_get_bool("OVERSUBSCRIBED", false);
+  envOversubscribed = chpl_is_oversubscribed();
 
   envUseTxCntr = chpl_env_rt_get_bool("COMM_OFI_TX_COUNTER", false);
   envUseAmTxCntr = chpl_env_rt_get_bool("COMM_OFI_AM_TX_COUNTER", false);

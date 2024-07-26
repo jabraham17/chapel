@@ -703,8 +703,7 @@ static void partitionResources(void) {
   }
 
   // CHPL_RT_OVERSUBSCRIBED overrides oversubscription determination
-
-  oversubscribed = chpl_env_rt_get_bool("OVERSUBSCRIBED", oversubscribed);
+  oversubscribed = chpl_is_oversubscribed();
 
   if ((verbosity >= 2) && (chpl_nodeID == 0)) {
     printf("oversubscribed = %s\n", oversubscribed ? "True" : "False");

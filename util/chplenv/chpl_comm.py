@@ -20,6 +20,8 @@ def get():
             comm_val = 'gasnet'
         elif network_val == 'efa':
             comm_val = 'ofi'
+        elif network_val == 'virtual':
+            comm_val = 'gasnet'
         else:
             comm_val = 'none'
     return comm_val

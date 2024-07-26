@@ -61,7 +61,7 @@ void chpl_comm_preLaunch(int32_t numLocales) {
   }
 #endif
 
-  if (chpl_env_rt_get_bool("OVERSUBSCRIBED", false)) {
+  if (chpl_is_oversubscribed()) {
     //
     // This only applies to the sockets provider.  Here in the launcher
     // we can't tell if that will be used, but setting it superfluously
