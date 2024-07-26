@@ -104,6 +104,7 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_CUDA_PATH', INTERNAL),
     ChapelEnv('  CHPL_ROCM_PATH', INTERNAL),
     ChapelEnv('  CHPL_CUDA_LIBDEVICE_PATH', INTERNAL),
+    ChapelEnv('CHPL_NETWORK', RUNTIME | LAUNCHER | DEFAULT, 'network'),
     ChapelEnv('CHPL_COMM', RUNTIME | LAUNCHER | DEFAULT, 'comm'),
     ChapelEnv('  CHPL_COMM_SUBSTRATE', RUNTIME | LAUNCHER | DEFAULT),
     ChapelEnv('  CHPL_GASNET_SEGMENT', RUNTIME | LAUNCHER | DEFAULT),
@@ -201,6 +202,7 @@ def compute_all_values():
     ENV_VALS['  CHPL_GPU'] = chpl_gpu.get()
     ENV_VALS['  CHPL_CUDA_LIBDEVICE_PATH'] = chpl_gpu.get_cuda_libdevice_path()
     ENV_VALS['  CHPL_GPU_MEM_STRATEGY'] = chpl_gpu.get_gpu_mem_strategy()
+    ENV_VALS['CHPL_NETWORK'] = chpl_network.get()
     ENV_VALS['CHPL_COMM'] = chpl_comm.get()
     ENV_VALS['  CHPL_COMM_SUBSTRATE'] = chpl_comm_substrate.get()
     ENV_VALS['  CHPL_GASNET_SEGMENT'] = chpl_comm_segment.get()

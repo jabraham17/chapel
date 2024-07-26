@@ -119,6 +119,7 @@ extern const char* CHPL_TARGET_CPU_FLAG;
 extern const char* CHPL_TARGET_COMPILER;
 extern const char* CHPL_TARGET_COMPILER_PRGENV;
 extern const char* CHPL_LOCALE_MODEL;
+extern const char* CHPL_NETWORK;
 extern const char* CHPL_COMM;
 extern const char* CHPL_COMM_SUBSTRATE;
 extern const char* CHPL_GASNET_SEGMENT;

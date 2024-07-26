@@ -262,13 +262,13 @@ Once connected to the instance via ssh, do the following:
       # this path may need to be adjusted, depending on where the Chapel release was downloaded
       . ~/chapel/util/setchplenv.bash
 
-      export CHPL_COMM=ofi
-      export CHPL_LAUNCHER=slurm-srun
-      export CHPL_COMM_OFI_OOB=pmi2
-      export SLURM_MPI_TYPE=pmi2
+      export CHPL_NETWORK=efa
+      # if using a cluster without EFA, set these variables instead
+      # export CHPL_COMM=ofi
+      # export CHPL_LAUNCHER=slurm-srun
+      # export CHPL_COMM_OFI_OOB=pmi2
 
-      # if using a cluster without EFA, use FI_PROVIDER=tcp instead
-      export FI_PROVIDER=efa
+      export SLURM_MPI_TYPE=pmi2
 
       export CHPL_LIBFABRIC=system
       export PKG_CONFIG_PATH=/opt/amazon/efa/lib64/pkgconfig/

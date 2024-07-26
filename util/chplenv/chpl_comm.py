@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 
-import chpl_platform, overrides
+import chpl_network, overrides
 from utils import memoize
 
 
@@ -9,16 +9,17 @@ from utils import memoize
 def get():
     comm_val = overrides.get('CHPL_COMM')
     if not comm_val:
-        platform_val = chpl_platform.get('target')
-        # Use ugni on cray-xc series
-        if platform_val == 'cray-xc':
+        network_val = chpl_network.get()
+        if network_val == 'aries':
             comm_val = 'ugni'
-        # Use ofi on hpe-cray-ex
-        elif platform_val == 'hpe-cray-ex':
+        elif network_val == 'slingshot':
             comm_val = 'ofi'
-        # Use gasnet on cray-cs and hpe-apollo
-        elif platform_val in ('cray-cs', 'hpe-apollo'):
+        elif network_val == 'infiniband':
             comm_val = 'gasnet'
+        elif network_val == 'ethernet':
+            comm_val = 'gasnet'
+        elif network_val == 'efa':
+            comm_val = 'ofi'
         else:
             comm_val = 'none'
     return comm_val

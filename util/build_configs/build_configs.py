@@ -90,6 +90,7 @@ known_dimensions = [
     ( 'target_machine',     'CHPL_TARGET_ARCH', ),
     ( 'cpu',                'CHPL_TARGET_CPU', ),
     ( 'locale_model',       'CHPL_LOCALE_MODEL', ),
+    ( 'network',            'CHPL_NETWORK', ),
     ( 'comm',               'CHPL_COMM', ),
     ( 'substrate',          'CHPL_COMM_SUBSTRATE', ),
     ( 'segment',            'CHPL_GASNET_SEGMENT', ),

@@ -39,6 +39,7 @@ chplvars = [
              'CHPL_ROCM_PATH',
              'CHPL_GPU_ARCH',
 
+             'CHPL_NETWORK',
              'CHPL_COMM',
              'CHPL_COMM_SUBSTRATE',
              'CHPL_GASNET_SEGMENT',

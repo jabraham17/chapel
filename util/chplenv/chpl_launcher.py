@@ -2,7 +2,7 @@
 
 import sys
 
-import chpl_comm, chpl_comm_substrate, chpl_platform, overrides
+import chpl_comm, chpl_comm_substrate, chpl_platform, chpl_network, overrides
 from utils import which, error, memoize, warning
 
 
@@ -28,6 +28,7 @@ def get():
 
     if not launcher_val:
         platform_val = chpl_platform.get('target')
+        network_val = chpl_network.get()
 
         if platform_val.startswith('cray-x') or platform_val.startswith('hpe-cray-'):
             has_aprun = which('aprun')
@@ -60,6 +61,8 @@ def get():
                 launcher_val = slurm_prefix('gasnetrun_ucx', platform_val)
             elif substrate_val == 'ofi':
                 launcher_val = slurm_prefix('gasnetrun_ofi', platform_val)
+        elif network_val == 'efa':
+            launcher_val = 'slurm-srun'
         else:
             if platform_val in ('cray-cs', 'hpe-apollo') and which('srun'):
                 launcher_val = 'slurm-srun'

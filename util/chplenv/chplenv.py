@@ -17,6 +17,7 @@ import chpl_jemalloc
 import chpl_launcher
 import chpl_libfabric
 import chpl_comm_ofi_oob
+import chpl_network
 import chpl_llvm
 import chpl_locale_model
 import chpl_gpu

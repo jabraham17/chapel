@@ -2,7 +2,7 @@
 import sys
 import os
 
-import chpl_comm, chpl_launcher, chpl_platform
+import chpl_comm, chpl_launcher, chpl_platform, chpl_network
 import overrides
 import third_party_utils
 
@@ -27,12 +27,15 @@ def get():
     #
     platform_val = chpl_platform.get('target')
     launcher_val = chpl_launcher.get()
-    if platform_val in ('cray-xc', 'hpe-cray-ex'):
+    network_val = chpl_network.get()
+    if platform_val in ('cray-xc', 'hpe-cray-ex') or network_val == 'slingshot':
         oob_val = 'pmi2'
     elif 'cray-' in platform_val:
         oob_val = 'mpi'
     elif 'mpi' in launcher_val:
         oob_val = 'mpi'
+    elif network_val == 'efa':
+        oob_val = 'pmi2'
     else:
         oob_val = 'sockets'
 

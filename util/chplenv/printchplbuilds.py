@@ -46,6 +46,7 @@ prefixes = {
     'gpu':          'CHPL_GPU',
     'gpu_mem':      'CHPL_GPU_MEM_STRATEGY',
     'comm':         'CHPL_COMM',
+    'network':      'CHPL_NETWORK',
     'tasks':        'CHPL_TASKS',
     'launch':       'CHPL_LAUNCHER',
     'tmr':          'CHPL_TIMERS',

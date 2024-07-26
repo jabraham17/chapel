@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 
-import chpl_comm, chpl_platform, overrides
+import chpl_comm, chpl_network, overrides
 from utils import memoize
 
 
@@ -10,16 +10,14 @@ def get():
     substrate_val = overrides.get('CHPL_COMM_SUBSTRATE')
     if not substrate_val:
         comm_val = chpl_comm.get()
-        platform_val = chpl_platform.get('target')
+        network_val = chpl_network.get()
 
         if comm_val == 'gasnet':
-            if platform_val == 'cray-xc':
+            if network_val == 'aries':
                 substrate_val = 'aries'
-            elif platform_val == 'hpe-cray-ex':
+            elif network_val == 'slingshot':
                 substrate_val = 'ofi'
-            elif platform_val in ('cray-cs', 'hpe-apollo'):
-                substrate_val = 'ibv'
-            elif platform_val == 'pwr6':
+            elif network_val == 'infiniband':
                 substrate_val = 'ibv'
             else:
                 substrate_val = 'udp'
