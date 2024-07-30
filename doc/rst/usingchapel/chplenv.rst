@@ -458,6 +458,36 @@ CHPL_TASKS
    various ``CHPL_TASKS`` options.
 
 
+.. _readme-chplenv.CHPL_NETWORK:
+
+CHPL_NETWORK
+~~~~~~~~~~~~
+
+   Optionally, set the ``CHPL_NETWORK`` environment variable to indicate what
+   network layer your system supports. If this variable can be inferred from
+   other variables set in the environment, it will be set automatically.
+   Otherwise, it will default to ``unset``. Note that ``unset`` only means that
+   the network layer could not be inferred, the network layer is not required
+   to be set.
+
+   Setting the network layer explicitly is a useful way to ensure good defaults
+   are used for a given system.
+
+   Current options are:
+
+        =========== ============================================
+        Value       Description
+        =========== ============================================
+        none        there is no network layer
+        virtual     uses gasnet with the udp conduit to emulate multiple locales
+        slingshot   slingshot is the default on hpe-cray-ex
+        infiniband  infiniband is the default on hpe-apollo, cray-cs, and pwr6 machines
+        ethernet    uses gasnet with the udp conduit
+        efa         uses libfabric with slurm
+        aries       uses ``CHPL_COMM=ugni``
+        unset       the network layer is not set and could not be inferred
+        =========== ============================================
+
 .. _readme-chplenv.CHPL_COMM:
 
 CHPL_COMM
