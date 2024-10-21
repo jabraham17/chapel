@@ -16,7 +16,7 @@ endif
 default: all
 
 all: test-venv chpldoc-venv \
-     gasnet gmp hwloc jemalloc libfabric libunwind qthread llvm
+     gasnet gmp hwloc jemalloc rpmalloc libfabric libunwind qthread llvm
 
 clean: FORCE
 	cd chpl-venv && $(MAKE) clean
@@ -24,6 +24,7 @@ clean: FORCE
 	cd gmp && $(MAKE) clean
 	cd hwloc && $(MAKE) clean
 	cd jemalloc && $(MAKE) clean
+	cd rpmalloc && $(MAKE) clean
 	cd libfabric && $(MAKE) clean
 	cd libunwind && $(MAKE) clean
 	cd llvm && $(MAKE) clean
@@ -37,6 +38,7 @@ cleanall: FORCE
 	cd gmp && $(MAKE) cleanall
 	cd hwloc && $(MAKE) cleanall
 	cd jemalloc && $(MAKE) cleanall
+	cd rpmalloc && $(MAKE) cleanall
 	cd libfabric && $(MAKE) cleanall
 	cd libunwind && $(MAKE) cleanall
 	cd llvm && $(MAKE) cleanall
@@ -50,6 +52,7 @@ clobber: FORCE
 	cd gmp && $(MAKE) clobber
 	cd hwloc && $(MAKE) clobber
 	cd jemalloc && $(MAKE) clobber
+	cd rpmalloc && $(MAKE) clobber
 	cd libfabric && $(MAKE) clobber
 	cd libunwind && $(MAKE) clobber
 	cd llvm && $(MAKE) clobber
@@ -74,6 +77,7 @@ GASNET_DEPEND         := $(call find_3p_depend, $(GASNET_DIR))
 GMP_DEPEND            := $(call find_3p_depend, $(GMP_DIR))
 HWLOC_DEPEND          := $(call find_3p_depend, $(HWLOC_DIR))
 JEMALLOC_DEPEND       := $(call find_3p_depend, $(JEMALLOC_DIR))
+RPMALLOC_DEPEND       := $(call find_3p_depend, $(RPMALLOC_DIR))
 LIBFABRIC_DEPEND      := $(call find_3p_depend, $(LIBFABRIC_DIR))
 LIBUNWIND_DEPEND      := $(call find_3p_depend, $(LIBUNWIND_DIR))
 LLVM_DEPEND           := $(call find_3p_depend, $(LLVM_DIR))
@@ -134,6 +138,11 @@ jemalloc: $(JEMALLOC_INSTALL_DIR)
 $(JEMALLOC_INSTALL_DIR): $(JEMALLOC_DEPEND)
 	rm -rf $(JEMALLOC_INSTALL_DIR) && rm -rf $(JEMALLOC_BUILD_DIR)
 	cd jemalloc && $(MAKE)
+
+rpmalloc: $(RPMALLOC_INSTALL_DIR)
+$(RPMALLOC_INSTALL_DIR): $(RPMALLOC_DEPEND)
+	rm -rf $(RPMALLOC_INSTALL_DIR) && rm -rf $(RPMALLOC_BUILD_DIR)
+	cd rpmalloc && $(MAKE)
 
 libfabric: $(LIBFABRIC_INSTALL_DIR)
 $(LIBFABRIC_INSTALL_DIR): $(LIBFABRIC_DEPEND)

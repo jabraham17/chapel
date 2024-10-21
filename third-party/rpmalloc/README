@@ -1,0 +1,36 @@
+==========================
+rpmalloc README for Chapel
+==========================
+
+This copy of rpmalloc is being released with Chapel for
+convenience and was obtained from:
+
+  https://github.com/mjansson/rpmalloc
+
+Any Chapel issues that seem to be related to rpmalloc should be
+directed to the Chapel team at https://chapel-lang.org/bugs.html.
+
+Chapel currently uses a tarball obtained from the 'develop' branch, using commit d60ad1f974a1a1bfc9ef8963c611e8f108b7665a.
+
+Upgrading rpmalloc versions
+===========================
+
+The directory $CHPL_HOME/third-party/rpmalloc/rpmalloc-src contains the
+un-tarballed rpmalloc package contents. Version updates should be done as
+follows, assuming the CWD is $CHPL_HOME/third-party/rpmalloc/:
+
+1. download and untar the latest rpmalloc version:
+  - `wget https://github.com/mjansson/rpmalloc/archive/refs/heads/develop.zip`
+  - `unzip develop.zip`
+2. `rm -rf rpmalloc-src`
+3. `mv rpmalloc-develop rpmalloc-src`
+4. Remove unused directories: `rm -rf rpmalloc-src/.github rpmalloc-src/test rpmalloc-src/build`
+5. `git add --force rpmalloc-src` (--force to ignore our .gitignore)
+6. update the version number/branch name/commit hash mentioned above
+7. make sure these instructions are up to date :)
+8. test (std config, and at least one that requires a shared-heap)
+9. commit, PR, merge, etc
+
+Note that these instructions are for a simple API compatible updates. If the
+rpmalloc API changes more care should be taken to see what changes have been
+made and if we need to change anything on our end.

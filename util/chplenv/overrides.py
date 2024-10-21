@@ -56,6 +56,7 @@ chplvars = [
              'CHPL_JEMALLOC', # note: these 3 are not in printchplenv --all
              'CHPL_HOST_JEMALLOC',
              'CHPL_TARGET_JEMALLOC',
+             'CHPL_TARGET_RPMALLOC',
 
              'CHPL_ATOMICS',
              'CHPL_NETWORK_ATOMICS',

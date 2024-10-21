@@ -25,6 +25,7 @@ import chpl_arch
 import chpl_mem
 import chpl_qthreads
 import chpl_re2
+import chpl_rpmalloc
 import chpl_tasks
 import chpl_tasks_debug
 import chpl_timers
