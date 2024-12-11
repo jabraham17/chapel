@@ -58,7 +58,7 @@ void checkArgsAndLocals()
   // Check that each VarSymbol and each ArgSymbol
   // has a DefExpr that is in the FnSymbol
   // or a parent of it.
-  for_alive_in_Vec(SymExpr, se, gSymExprs)
+  for_alive_in_Vec_par(SymExpr, se, gSymExprs)
   {
     DefExpr* def = se->symbol()->defPoint;
     Symbol* defInSym = def->parentSymbol;
@@ -79,7 +79,7 @@ void checkArgsAndLocals()
 // Ensures that primitives are used only where they are expected.
 void checkPrimitives()
 {
-  for_alive_in_Vec(CallExpr, call, gCallExprs)
+  for_alive_in_Vec_par(CallExpr, call, gCallExprs)
   {
     // Only interested in primitives
     if (!call->primitive)

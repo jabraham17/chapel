@@ -1468,7 +1468,7 @@ static void setQualRef(Symbol* sym) {
 
 void convertToQualifiedRefs() {
 #define fixRefSymbols(SymType) \
-  forv_Vec(SymType, sym, g##SymType##s) { \
+  forv_Vec_par(SymType, sym, g##SymType##s) { \
     setQualRef(sym); \
   }
 
@@ -1476,7 +1476,7 @@ void convertToQualifiedRefs() {
   fixRefSymbols(ArgSymbol);
   fixRefSymbols(ShadowVarSymbol);
 
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_Vec_par(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_ADDR_OF)) {
       call->primitive = primitives[PRIM_SET_REFERENCE];
     }

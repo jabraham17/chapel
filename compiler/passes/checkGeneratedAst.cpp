@@ -51,13 +51,13 @@ void
 checkGeneratedAst() {
   setupForCheckExplicitDeinitCalls();
 
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_Vec_par(CallExpr, call, gCallExprs) {
     checkManagedClassKinds(call);
     checkNamedArguments(call);
     checkExplicitDeinitCalls(call);
   }
 
-  forv_Vec(DefExpr, def, gDefExprs) {
+  forv_Vec_par(DefExpr, def, gDefExprs) {
     //
     // This test checks to see if query domains (e.g., '[?D]') are
     // used in places other than formal argument type specifiers.

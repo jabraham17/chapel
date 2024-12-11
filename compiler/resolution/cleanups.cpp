@@ -746,7 +746,7 @@ static void cleanupAfterRemoves() {
 
   // Note: some pointers are already zero'd in saveGenericSubstitutions
 
-  forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+  forv_Vec_par(ModuleSymbol, mod, gModuleSymbols) {
     // Zero the initFn pointer if the function is now dead. Ditto deinitFn.
     if (mod->initFn && !isAlive(mod->initFn))
       mod->initFn = NULL;
@@ -754,7 +754,7 @@ static void cleanupAfterRemoves() {
       mod->deinitFn = NULL;
   }
 
-  forv_Vec(ArgSymbol, arg, gArgSymbols) {
+  forv_Vec_par(ArgSymbol, arg, gArgSymbols) {
     if (arg->instantiatedFrom != NULL)
       arg->addFlag(FLAG_INSTANTIATED_GENERIC);
     arg->instantiatedFrom = NULL;

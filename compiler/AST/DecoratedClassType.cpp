@@ -405,22 +405,22 @@ static Type* convertToCanonical(Type* a) {
 
 static void convertClassTypes(void) {
 
-  forv_Vec(VarSymbol, var, gVarSymbols) {
+  forv_Vec_par(VarSymbol, var, gVarSymbols) {
     Type* newT = convertToCanonical(var->type);
     if (newT != var->type) var->type = newT;
   }
 
-  forv_Vec(ArgSymbol, arg, gArgSymbols) {
+  forv_Vec_par(ArgSymbol, arg, gArgSymbols) {
     Type* newT = convertToCanonical(arg->type);
     if (newT != arg->type) arg->type = newT;
   }
 
-  forv_Vec(ShadowVarSymbol, sv, gShadowVarSymbols) {
+  forv_Vec_par(ShadowVarSymbol, sv, gShadowVarSymbols) {
     Type* newT = convertToCanonical(sv->type);
     if (newT != sv->type) sv->type = newT;
   }
 
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+  forv_Vec_par(TypeSymbol, ts, gTypeSymbols) {
     Type* newT = convertToCanonical(ts->type);
     if (newT != ts->type) {
       TypeSymbol* newTS = newT->symbol;
@@ -442,7 +442,7 @@ static void convertClassTypes(void) {
     }
   }
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
+  forv_Vec_par(FnSymbol, fn, gFnSymbols) {
     Type* newRetT = convertToCanonical(fn->retType);
     if (newRetT != fn->retType) fn->retType = newRetT;
 

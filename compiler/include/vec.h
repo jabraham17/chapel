@@ -199,6 +199,24 @@ template <typename V> struct VecIteratorWatcher {
           ((_p = (_v).begin()[(intptr_t)qq__##_p]) || 1); \
          qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
 
+#define forv_Vec_par(_c, _p, _v) \
+  if ((_v).size()) \
+    _Pragma ("omp parallel for") \
+    for (_c *qq__##_p = (_c*)0, *_p = (_v).begin()[0]; \
+         ((intptr_t)(qq__##_p) < (int)(_v).size()) && \
+          ((_p = (_v).begin()[(intptr_t)qq__##_p]) || 1); \
+         qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
+
+#define forv_Vec_par_plus(_c, _p, _v, _reduction) \
+  if ((_v).size()) \
+    _Pragma ("omp parallel for reduction(+:"#_reduction")") \
+    for (_c *qq__##_p = (_c*)0, *_p = (_v).begin()[0]; \
+         ((intptr_t)(qq__##_p) < (int)(_v).size()) && \
+          ((_p = (_v).begin()[(intptr_t)qq__##_p]) || 1); \
+         qq__##_p = (_c*)(((intptr_t)qq__##_p) + 1))
+// #define forv_Vec_par(_v, _lambda)
+// std::for_each(std::execution::par, (_v).begin(), (_v).end(), _lambda)
+
 #endif
 
 // NOTE: historically forv_Vec has been used in place of a range for,
@@ -221,6 +239,10 @@ template <typename V> struct VecIteratorWatcher {
 
 #define for_alive_in_Vec(TYPE, VAR, VEC)                                       \
   forv_Vec(TYPE, VAR, VEC) if (VAR->inTree())
+
+#define for_alive_in_Vec_par(TYPE, VAR, VEC)                                       \
+  forv_Vec_par(TYPE, VAR, VEC) if (VAR->inTree())
+
 
 #define for_alive_in_expanding_Vec(TYPE, VAR, VEC)                             \
   forv_expanding_Vec(TYPE, VAR, VEC) if (VAR->inTree())

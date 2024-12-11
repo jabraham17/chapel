@@ -164,8 +164,9 @@ ModuleSymbol* ModuleSymbol::findMainModuleFromMainFunction() {
   FnSymbol*     matchFn = NULL;
   ModuleSymbol* retval  = NULL;
 
+  const char* mainName = astr("main");
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (strcmp("main", fn->name) == 0) {
+    if (fn->name == mainName) {
       ModuleSymbol* fnMod = fn->getModule();
 
       if (isModOrSubmodFromCommandLine(fnMod)) {

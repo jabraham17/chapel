@@ -1654,28 +1654,28 @@ static void uniquify_names(std::set<const char*> & cnames,
   // identifiers.  To disable, compile with --no-munge-user-idents
   //
   if (fMungeUserIdents && !fIdBasedMunging) {
-    forv_Vec(ModuleSymbol, sym, gModuleSymbols) {
+    forv_Vec_par(ModuleSymbol, sym, gModuleSymbols) {
       protectNameFromC(sym);
     }
-    forv_Vec(VarSymbol, sym, gVarSymbols) {
+    forv_Vec_par(VarSymbol, sym, gVarSymbols) {
       protectNameFromC(sym);
     }
-    forv_Vec(ShadowVarSymbol, sym, gShadowVarSymbols) {
+    forv_Vec_par(ShadowVarSymbol, sym, gShadowVarSymbols) {
       protectNameFromC(sym);
     }
-    forv_Vec(ArgSymbol, sym, gArgSymbols) {
+    forv_Vec_par(ArgSymbol, sym, gArgSymbols) {
       protectNameFromC(sym);
     }
-    forv_Vec(TypeSymbol, sym, gTypeSymbols) {
+    forv_Vec_par(TypeSymbol, sym, gTypeSymbols) {
       protectNameFromC(sym);
     }
-    forv_Vec(FnSymbol, sym, gFnSymbols) {
+    forv_Vec_par(FnSymbol, sym, gFnSymbols) {
       protectNameFromC(sym);
     }
-    forv_Vec(EnumSymbol, sym, gEnumSymbols) {
+    forv_Vec_par(EnumSymbol, sym, gEnumSymbols) {
       protectNameFromC(sym);
     }
-    forv_Vec(LabelSymbol, sym, gLabelSymbols) {
+    forv_Vec_par(LabelSymbol, sym, gLabelSymbols) {
       protectNameFromC(sym);
     }
   }
@@ -1693,7 +1693,7 @@ static void uniquify_names(std::set<const char*> & cnames,
   // change enum constant names into <type name>_<constant name> and
   // mangle if they clash with other types or enum constants
   //
-  forv_Vec(TypeSymbol, ts, types) {
+  forv_Vec_par(TypeSymbol, ts, types) {
     if (EnumType* enumType = toEnumType(ts->type)) {
       for_enums(constant, enumType) {
         Symbol* sym = constant->sym;

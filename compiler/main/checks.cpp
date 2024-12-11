@@ -203,7 +203,7 @@ void checkForPromotionsThatMayRace() {
 
   // for all CallExprs, if we call a promotion wrapper that is marked no promotion, warn
   // checking here after all ContextCallExpr's have been resolved to plain CallExpr's
-  for_alive_in_Vec(CallExpr, ce, gCallExprs) {
+  for_alive_in_Vec_par(CallExpr, ce, gCallExprs) {
 
     if (FnSymbol* fn = ce->theFnSymbol()) {
       if (fn->hasFlag(FLAG_PROMOTION_WRAPPER) &&
@@ -599,7 +599,7 @@ static void check_afterLowerErrorHandling()
     // TODO: check no more CatchStmt
 
     // check no more PRIM_THROW
-    forv_Vec(CallExpr, call, gCallExprs)
+    forv_Vec_par(CallExpr, call, gCallExprs)
     {
       if (call->isPrimitive(PRIM_THROW) && call->inTree())
         INT_FATAL(call, "PRIM_THROW should no longer exist");
@@ -648,7 +648,7 @@ static void check_afterInlineFunctions() {
 }
 
 static void checkIsIterator() {
-  forv_Vec(CallExpr, call, gCallExprs) {
+  forv_Vec_par(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_YIELD)) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
       // Violations should have caused USR_FATAL_CONT in checkGeneratedAst().
@@ -663,7 +663,7 @@ static void checkIsIterator() {
 //
 static void
 checkResolveRemovedPrims(void) {
-  for_alive_in_Vec(CallExpr, call, gCallExprs) {
+  for_alive_in_Vec_par(CallExpr, call, gCallExprs) {
     if (call->primitive) {
       switch(call->primitive->tag) {
         case PRIM_BLOCK_PARAM_LOOP:
@@ -700,7 +700,7 @@ checkResolveRemovedPrims(void) {
 static void checkNoRecordDeletes() {
   // No need to do for_alive_in_Vec - there shouldn't be any, period.
   // User errors are to be detected by chpl__delete() in the modules.
-  forv_Vec(CallExpr, call, gCallExprs)
+  forv_Vec_par(CallExpr, call, gCallExprs)
     if (FnSymbol* fn = call->resolvedFunction())
       if(fn->hasFlag(FLAG_DESTRUCTOR))
         if (!isClassLike(call->get(1)->typeInfo()->getValType()))
