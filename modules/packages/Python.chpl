@@ -813,7 +813,14 @@ module Python {
     }
 
     /*
-      Convert a Chapel value to a python object. This clones the Chapel value.
+      Convert a Chapel value to a python object. Most Chapel values will be
+      cloned when passed to Python. A subset of Chapel types can be references
+      directly from Python without copying.
+
+      Chapel types that can be passed by reference are:
+      - 1-D Chapel arrays of primitive types (ints, reals, and bools).
+      - 1-D Chapel arrays of types that can be passed by reference
+        (e.g. nested array of ints).
 
       This returns a new reference to a Python object.
 
@@ -858,8 +865,12 @@ module Python {
           PyBytes_FromStringAndSize(val.c_str(), val.size.safeCast(Py_ssize_t));
         this.checkException();
         return v;
-      } else if isArrayType(t) && val.rank == 1 && val.isDefaultRectangular(){
-        return toList(val);
+      } else if isArrayType(t) && val.rank == 1 && val.isDefaultRectangular() {
+        if canPassArrayByReference(val) {
+          return ArrayTypes.createArray(val);
+        } else {
+          return toList(val);
+        }
       } else if isArrayType(t) && val.isAssociative() {
         return toDict(val);
       } else if isSubtype(t, List.list) {
@@ -880,6 +891,8 @@ module Python {
 
     /*
       Convert a Python object to a Chapel value. This clones the Python value.
+      To aquire a reference to the Python object, use a Python wrapper type
+      (e.g. :type:`Value`, :type:`PyList`, or :type:`PyArray`).
 
       This steals a reference to the Python object, so the Chapel object will
       either own the Python object or it will decrement the reference count
@@ -2323,6 +2336,19 @@ module Python {
            arr.idxType == int &&
            arr.isDefaultRectangular();
   }
+  @chpldoc.nodoc
+  proc canPassArrayByReference(arr) param : bool {
+    if ! isSupportedArrayType(arr) then return false;
+
+    if isIntegralType(arr.eltType) ||
+       isRealType(arr.eltType) ||
+       arr.eltType == bool then return true;
+
+    if isArrayType(arr.eltType) then
+      return canPassArrayByReference(arr(0));
+
+    return false;
+  }
 
   /*
     Represents a handle to a Chapel array that is usable by Python code. This
@@ -2338,19 +2364,16 @@ module Python {
        called with the Python interpretation of the index.
 
 
-    To pass a Chapel array to a Python function, you would normally
-    just use the Chapel array directly, resulting in the data being copied in.
-    To avoid this copy, first create an :type:`Array` object, then pass that to
-    the Python function.
-
-    For example,
+    This type provides a way to explicitly pass Chapel arrays to Python by
+    reference, but for the most part this is not required. For example,
 
     .. code-block:: chapel
 
-       myPythonFunction(NoneType, myChapelArray); // copies the data
-
        var arr = new Array(interpreter, myChapelArray);
        myPythonFunction(NoneType, arr); // no copy is done
+
+       // no copy is done, under the hood Array is used
+       myPythonFunction(NoneType, myChapelArray);
 
     .. warning::
 
@@ -2368,13 +2391,13 @@ module Python {
       :arg interpreter: The interpreter that this object is associated with.
       :arg arr: The Chapel array to create the object from.
     */
-    proc init(in interpreter: borrowed Interpreter, ref arr: []) throws
+    proc init(in interpreter: borrowed Interpreter, const arr: []) throws
       where isSupportedArrayType(arr) {
       super.init(interpreter, ArrayTypes.createArray(arr), isOwned=true);
       this.eltType = arr.eltType;
     }
     @chpldoc.nodoc
-    proc init(in interpreter: borrowed Interpreter, ref arr: []) throws
+    proc init(in interpreter: borrowed Interpreter, const arr: []) throws
       where !isSupportedArrayType(arr) {
       compilerError("Only 1D local rectangular arrays are currently supported");
       this.eltType = nothing;
@@ -2976,7 +2999,7 @@ module Python {
       }
     }
 
-    proc createArray(ref arr: []): PyObjectPtr {
+    proc createArray(const arr: []): PyObjectPtr {
       type T = arr.eltType;
       param suffix = typeToArraySuffix(T);
       if suffix == "" then compilerError("Unsupported array type: " + T:string);
@@ -2993,7 +3016,7 @@ module Python {
         }
         return createPyArray(sub, arr.size.safeCast(Py_ssize_t), true);
       } else {
-        return createPyArray(c_ptrTo(arr), arr.size.safeCast(Py_ssize_t), false);
+        return createPyArray(c_ptrToConst(arr):c_ptr(void), arr.size.safeCast(Py_ssize_t), false);
       }
 
     }

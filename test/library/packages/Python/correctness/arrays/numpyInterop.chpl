@@ -26,10 +26,7 @@ proc main() {
     var y = [4, 5, 6];
     var a = 2;
 
-    var xArr = new Array(interp, x);
-    var yArr = new Array(interp, y);
-
-    var result = saxpy(xArr, yArr, a);
+    var result = saxpy(x, y, a);
     writeln("saxpy on 1D arrays: ", result);
   }
   writeln();
@@ -38,20 +35,14 @@ proc main() {
     var y = [[5.0, 6.0], [7.0, 8.0]];
     var a = 17.0;
 
-    var xArr = new Array(interp, x);
-    var yArr = new Array(interp, y);
-
-    var result = saxpy(xArr, yArr, a);
+    var result = saxpy(x, y, a);
     writeln("saxpy on nested arrays: ", result);
   }
   writeln();
   {
     var x = [1, 2, 3, 4];
     writeln("Before numpyAssign: ", x);
-    {
-      var xArr = new Array(interp, x);
-      numpyAssign(xArr);
-    }
+    numpyAssign(x);
     writeln("After numpyAssign: ", x);
   }
 
