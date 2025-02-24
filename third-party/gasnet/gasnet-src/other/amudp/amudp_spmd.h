@@ -102,6 +102,7 @@ extern int AMUDP_SPMDAllGather(void *source, void *dest, size_t len);
  */
 extern int AMUDP_SPMDLocalSpawn(int nproc, int argc, char **argv, char **extra_env); /* fork/exec the worker processes on this machine */
 extern int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env);   /* call ssh remote shell */
+extern void increment_portno(char* cmd, int increment_value); /* Increments port number for running gdbserver, allowing for oversubscribing */
 extern int AMUDP_SPMDCustomSpawn(int nproc, int argc, char **argv, char **extra_env);
 
 typedef struct {

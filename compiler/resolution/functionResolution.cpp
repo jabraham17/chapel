@@ -11401,7 +11401,27 @@ static void checkSpeciallyNamedMethods() {
   }
 }
 
+cchar* invalid_argument_types[] = {
+  "void",
+  "nothing",
+  "_ref_void",
+  "_DummyRef",
+  "_ref__DummyRef",
+  "_splitInitType",
+  "_TypeDefaultT",
+  "_uninstantiated",
+  "_ref__uninstantiated",
+  "tmodule=",
+  "_ref_tmodule=",
+  NULL
+};
 
+int isInvalid(TypeSymbol * ts){
+  for (int i = 0; invalid_argument_types[i] != NULL; i++) {
+    if (strcmp(invalid_argument_types[i], ts->cname) == 0) return 1;
+  }
+  return 0;
+}
 
 void resolve() {
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
@@ -11429,6 +11449,57 @@ void resolve() {
 
   if (chpl_gen_main)
     resolveFunction(chpl_gen_main);
+
+  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+    // if (strcmp("int32_t", ts->cname) != 0) continue;
+    Type* t = ts->type;
+    if (
+      is_bool_type(t) ||
+      is_int_type(t) ||
+      is_uint_type(t) ||
+      is_real_type(t) ||
+      // is_imag_type(t) ||
+      // is_complex_type(t) ||
+      // is_enum_type(t) ||
+      // isClass(t) ||
+      // isDecoratedClassType(t) ||
+      // t == dtOpaque ||
+      // t == dtTaskID ||
+      // t == dtFile ||
+      // t == dtNil ||
+      // t == dtStringC ||
+      // t == dtCVoidPtr ||
+      // t == dtCFnPtr ||
+      // t == dtNothing ||
+      // t == dtVoid ||
+      // t == dtUninstantiated ||
+      // t->symbol->hasFlag(FLAG_RANGE) ||
+      // // MPF: This rule seems odd to me
+      // (t->symbol->hasFlag(FLAG_EXTERN) && !isRecord(t)) ||
+      // isSyncType(t)          ||
+      // isSingleType(t)        ||
+      isRecordWrappedType(t)
+      // || // domain, array, or distribution
+      // isManagedPtrType(t) ||
+      // isConstrainedType(t) ||
+      // isAtomicType(t) ||
+      // isUnion(t) ||
+      // isRecord(t)
+      ) {} else continue;
+    if (isInvalid(ts) || ts->isKnownToBeGeneric()) {
+      // std::cout << "Skipping debug_print " << ts->cname << std::endl;
+      continue;
+    }
+
+    // std::cout << "Instantiating debug print for type " << ts->cname << std::endl;
+    SymbolMap subs;
+    subs.put(gChplDebugPrint->getFormal(1), ts);
+    FnSymbol* debugFn = instantiateWithoutCall(gChplDebugPrint, subs);
+    debugFn->addFlag(FLAG_COMPILER_GENERATED);
+    debugFn->addFlag(FLAG_ALWAYS_RESOLVE);
+    debugFn->cname = astr("chpl_debug_print_", ts->cname);
+    // std::cout << "Instantiated debug print as " << debugFn->cname << std::endl;
+  }
 
   resolveSupportForModuleDeinits();
 

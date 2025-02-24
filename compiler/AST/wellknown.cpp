@@ -68,6 +68,7 @@ FnSymbol *gChplHereFree;
 FnSymbol *gChplDecRunningTask;
 FnSymbol *gChplIncRunningTask;
 FnSymbol *gChplDoDirectExecuteOn;
+FnSymbol *gChplDebugPrint;
 FnSymbol *gBuildTupleType;
 FnSymbol *gBuildTupleTypeNoRef;
 FnSymbol *gBuildStarTupleType;
@@ -401,6 +402,12 @@ static WellKnownFn sWellKnownFns[] = {
     "chpl_here_free",
     &gChplHereFree,
     FLAG_LOCALE_MODEL_FREE
+  },
+
+  {
+    "chpl_debug_print",
+    &gChplDebugPrint,
+    FLAG_DEBUG_PRINT
   },
 
   {

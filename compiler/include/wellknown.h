@@ -75,6 +75,7 @@ extern Type* dt_size_t;
 // The well-known functions
 extern FnSymbol *gChplHereAlloc;
 extern FnSymbol *gChplHereFree;
+extern FnSymbol *gChplDebugPrint;
 extern FnSymbol *gChplDecRunningTask;
 extern FnSymbol *gChplIncRunningTask;
 extern FnSymbol *gChplDoDirectExecuteOn;

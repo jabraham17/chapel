@@ -1,0 +1,32 @@
+Hello! If you are reading this, you are likely the next team to inherit this project.  
+
+Our goal this quarter was to leave you with a more readable codebase while refining the previous groups implementation. 
+We also attempted to implement LLDB functionality. This document should serve as a helpful introduction to the codebase, 
+allowing you to hit the ground running. It will cover a dictionary of common terms, as well as a general dataflow. 
+If you have any questions, you can reach out to any of the following emails:
+
+ciaransanders@gmail.com
+Albert.joe.furlong@gmail.com
+
+Glossary:
+Locale: The unit of a super computer. Each Locale can be thought of as a separate machine on the network.
+Gasnet: Our method for connecting to multiple locales.
+
+Chpldbg - Chapel Debugger.
+Chpldbg.cxx/h - The source and header file for the program driver. This class is an intermediary between 
+the gui and the cdb_back, our backend proper.
+cdb_back.cxx - Lower level instructions for communicating with libmigd. This file references chpldbg multiple times, 
+whether by defined callbacks or reading / writing.
+libmigd - An ancient and unknown library written in sanskrit. It is indented with 3 spaces and has little to no documentation.
+I would stay away unless you have a brown hat and a whip and starred in the movie Indiana Jones and the Last Crusade.
+This is the interface for connecting to locales on other machines and sending gdb instructions. 
+
+DataFlow:
+
+Chpldbg is constructed and connects to the GUI. Chpldbg spools up two threads for reading from the backend and writing to the frontend. 
+This establishes two way communication while allowing Chpldbg to abstract itself from both the machine interface and the user interface.
+
+When a command is entered in the GUI, it is sent to the pipe. Chpldbg's write thread grabs it from the pipe, 
+and distributes it to the appropriate function in cdb_back. The read thread is grabbing messages from the backend 
+and appending them to the gui's input pipe. The backend takes these messages and sends them to the gdb servers through libmigd. 
+Messages are passed back in the same manner. 

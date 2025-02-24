@@ -361,6 +361,7 @@ PRAGMA(LLVM_RETURN_NOALIAS, ypr, "llvm return noalias", ncm)
 
 PRAGMA(LOCALE_MODEL_ALLOC, ypr, "locale model alloc", "locale model specific alloc")
 PRAGMA(LOCALE_MODEL_FREE, ypr, "locale model free", "locale model specific free")
+PRAGMA(DEBUG_PRINT , ypr, "debug print" , ncm)
 PRAGMA(INC_RUNNING_TASK, ypr, "inc running task", "running task incrementer")
 PRAGMA(DEC_RUNNING_TASK, ypr, "dec running task", "running task decrementer")
 PRAGMA(LOCALE_PRIVATE, ypr, "locale private", ncm)

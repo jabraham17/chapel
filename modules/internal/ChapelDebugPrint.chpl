@@ -29,7 +29,24 @@
 module ChapelDebugPrint {
   private use ChapelStandard, CTypes;
   private use ChapelIOStringifyHelper;
-
+  // Internal function that is instantiated for each type in the program.
+  // Used in the chapel debugger to print values at runtime.
+  pragma "debug print"
+  proc chpl_debug_print(const ref x) {
+    if (x.type == c_ptrConst(c_char)) {
+      writeln(x: string);
+    } else if (x.type == c_fn_ptr) {
+      writeln("c_fn_ptr");
+    } else if (x.type == c_FILE) {
+      writeln("_file");
+    } else if (x.type == opaque) {
+      writeln("opaque");
+    } else {
+    // if (x.type == int) {
+      writeln(x);
+    }
+  }
+  
   proc chpl_debug_stringify(args...) : string {
     var str = "";
     for param i in 0..args.size-1 {

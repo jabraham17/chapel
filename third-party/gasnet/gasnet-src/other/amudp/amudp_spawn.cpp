@@ -330,6 +330,10 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
    } else if (forkRet != 0) { // parent
       continue;
    } else {  // this is the child
+
+    /* Before building the ssh command, add i to the port number to allow for oversubscribing*/
+    increment_portno(cmd1, i);
+
     /* build the ssh command */
     snprintf(cmd2, cmd2_sz, "%s %s%s%s %s \"%scd %s ; %s\" "
       " < /dev/null || kill %i 2>/dev/null",
@@ -353,7 +357,6 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
 
       ssh_remote_path, cmd1, pid
     );
-
     // This is currently written to keep a local shell process alive as a parent for the ssh command,
     // mostly to ensure that ssh connection/authentication failure results in immediate job teardown.
     // Keeping our process tree intact simplifies clean exit synchronization via wait().
@@ -391,7 +394,32 @@ int AMUDP_SPMDSshSpawn(int nproc, int argc, char **argv, char **extra_env) {
  *  of AMUDP_ or AMX_ENV_PREFIX##_)
  */
 
+void increment_portno(char* cmd, int increment_value) {
+  char* gdbserverPos = strstr(cmd, "gdbserver");
+  char* colonPos = strchr(gdbserverPos, ':');
+  if (colonPos == NULL) return;
+  char* endPos = colonPos + 1;
+  while (*endPos >= '0' && *endPos <= '9') {
+    endPos++;
+  }
+
+  char* intString = strndup(colonPos + 1, endPos - colonPos - 1);
+  if (intString == NULL) return;
+  int intValue = atoi(intString);
+  free(intString);
+
+  intValue += increment_value;
+  char newIntString[20];
+  snprintf(newIntString, sizeof(newIntString), "%d", intValue);
+
+  size_t intLen = strlen(newIntString);
+  size_t replaceLen = endPos - colonPos - 1;
+  memmove(colonPos + 1 + intLen, endPos, strlen(endPos) + 1);
+  memcpy(colonPos + 1, newIntString, intLen);
+}
+
 int AMUDP_SPMDCustomSpawn(int nproc, int argc, char **argv, char **extra_env) {
+  fprintf(stdout,"HERE IN AMUDP_SPMDCustomSpawn!!\n");
   int i;
   char *spawn_cmd = NULL;
   char *spawn_servers = NULL;

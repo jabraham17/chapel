@@ -80,7 +80,7 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
                                       int32_t numLocales) {
   static char nlbuf[16];
   int largc;
-  const int largv_size = 3;
+  const int largv_size = 7;
   char *largv[largv_size];
 
   largc = 0;
@@ -89,6 +89,42 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
   snprintf(nlbuf, sizeof(nlbuf), "%d", numLocales);
   largv[largc++] = nlbuf;
 
+  {
+    const char* ev_use_chpldbg = getenv("CHPL_USE_CHPLDBG");
+    const char* ev_cdb_port = getenv("CDB_PORT");
+    const char* ev_test = getenv("CHPL_USE_CDB");
+
+    // if we are using chpldbg we should start the program with gdbserver//lldbserver
+    if (ev_use_chpldbg != NULL) {
+      char *server_path = chpl_mem_alloc(PATH_MAX,
+                                        CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+      char buf[512];
+      gethostname(buf, 512);
+
+      int addr_len = strlen("localhost:") + sizeof(ev_cdb_port);
+      char *server_addr = chpl_mem_alloc(addr_len, CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+      snprintf(server_addr, addr_len, "localhost:%s", ev_cdb_port);
+
+
+      if (strcmp(ev_use_chpldbg, "lldb") == 0) { // use lldb
+        if (chpl_run_cmdstr("which lldb-server", server_path, PATH_MAX) > 0) {
+          // lldb-server g localhost:3333 -- ./test_real ...
+          largv[largc++] = server_path;
+          largv[largc++] = (char *) "g";
+          largv[largc++] = server_addr;
+          largv[largc++] = (char *) "--";
+        }
+      }
+      else if(strcmp(ev_use_chpldbg, "gdb") == 0) { // Use gdb
+        if (chpl_run_cmdstr("which gdbserver", server_path, PATH_MAX) > 0) {
+          largv[largc++] = server_path;
+          largv[largc++] = server_addr;
+        } else {
+          chpl_warning("chpl_comm_use_cdb ignored because no gdbserver", 0, 0);
+        }
+      }
+    }
+  }
   {
     const char* s = getenv("GASNET_SPAWNFN");
     if (s == NULL || strcmp(s, "S") == 0)

@@ -1,0 +1,202 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0305
+header_name {.h}
+code_name {.cxx}
+decl {\#include <stdlib.h>} {public global
+}
+
+decl {\#include <string.h>} {public global
+}
+
+decl {\#include <string>} {public global
+}
+
+decl {\#include <pthread.h>} {public global
+}
+
+decl {\#include <errno.h>} {public global
+}
+
+decl {\#include <cstdlib>} {public global
+}
+
+decl {\#include <unistd.h>} {public global
+}
+
+decl {\#include "CommInput.h"} {public global
+}
+
+decl {\#include "CommandLog.h"} {public global
+}
+
+decl {\#include "LocaleTab.h"} {public global
+}
+
+decl {std::string data_pass_delimiter;} {private local
+}
+
+decl {\#define MSG_SIZE 512} {private local
+}
+
+decl {CommandLog *commLog = (CommandLog *)0;} {private local
+}
+
+decl {Fl_Group *commIn = (Fl_Group*)0;} {private local
+}
+
+decl {LocaleTab** localeTabs;} {private local
+}
+
+decl {Fl_Text_Buffer **tabBuffs;} {private local
+}
+
+decl {Fl_Text_Buffer **locale_buffers;} {private local
+}
+
+Function {start_fltk_gui(int numTabs, int r_fd, int w_fd)} {open return_type int
+} {
+  code {localeTabs = (LocaleTab**) malloc(sizeof(LocaleTab*) * numTabs);
+Fl_Text_Buffer *logBuf = new Fl_Text_Buffer();
+vector<string> *logVect = new vector<string>(0);
+tabBuffs = (Fl_Text_Buffer **) malloc(numTabs * sizeof(Fl_Text_Buffer *));
+int i;
+for(i = 0; i < numTabs; i++){
+  tabBuffs[i] = new Fl_Text_Buffer();
+}
+locale_buffers = &tabBuffs[1];
+
+pthread_t threads[2]; // stores read and write thread ID's 
+		        // threads[0] = reader thread
+		        // thread [1] = writer t
+/* Create reader thread */
+if(pthread_create(&threads[0], NULL, &fltk_reader_thread, (void *) &r_fd)){
+  tabBuffs[0]->append("error creating fltk_writer_thread");
+}} {}
+  Fl_Window MainWindow {
+    label chpldbg
+    callback {MainWindow->hide();} open
+    xywh {176 321 1255 750} type Double color 21 selection_color 50 hide resizable
+    code0 {{commIn = new CommInput(65,710,1125,35,commLog,w_fd); commIn->deactivate();}} size_range {1220 775 0 0}
+  } {
+    Fl_Tabs tabs {
+      label Tabs open
+      xywh {65 55 1125 556} box DOWN_BOX resizable
+      code0 {{make_tabs(numTabs, tabBuffs);}}
+      code1 {tabs->callback(tabs_cb);}
+    } {}
+    Fl_Group {} {open
+      xywh {65 630 1125 75} box DOWN_BOX
+    } {
+      Fl_Text_Display disp {
+        xywh {80 640 1095 55} selection_color 86 resizable
+        code0 {disp->buffer(logBuf);}
+        code1 {commLog = new CommandLog(logVect, disp, logBuf);}
+      }
+    }
+    Fl_Menu_Bar menu {open
+      xywh {0 0 1220 20} hotspot
+    } {}
+  }
+  code {Fl::lock();
+MainWindow->show();
+commIn->activate();
+Fl::focus(commIn);
+
+// indicate to backend the GUI is ready
+write(w_fd, "ready\\n", 7);
+
+int result = Fl::run();
+
+return result;} {}
+}
+
+Function {make_tabs(int numTabs, Fl_Text_Buffer** tabBuffs)} {open return_type void
+} {
+  code {int i = 0;
+char* names[numTabs-1];
+int numAvailable = get_names(names, numTabs-1);
+if((numTabs-1) > numAvailable){
+  printf("ERROR: There are only %d locales available \\n", numAvailable);
+  exit(0);
+}
+for(i = 0; i < numTabs; i++){
+  if(i == 0){
+    localeTabs[i] = new LocaleTab(65, 80, 1125, 530, tabBuffs[i], "Local");
+  } else {
+    localeTabs[i] = new LocaleTab(65, 80, 1125, 530, tabBuffs[i], names[i-1]);
+    localeTabs[i]->labelcolor(FL_RED);
+  }
+  localeTabs[i]->color((Fl_Color)48);
+  localeTabs[i]->end();
+}} {}
+}
+
+Function {tabs_cb(Fl_Widget* w, void*)} {open return_type void
+} {
+  code {Fl_Tabs *t = (Fl_Tabs*) w;
+t->selection_color( (t->value())->color() );} {}
+}
+
+Function {get_names(char** names, int size)} {open return_type int
+} {
+  code {int numAvailable = 0;
+char *localeNames = strdup(getenv("GASNET_SSH_SERVERS"));
+int len = strlen(localeNames);
+int i = 0, j = 0;
+numAvailable++;
+names[0] = &localeNames[0];
+for(i = 0; i < len; i++){
+  if(localeNames[i] == ' ' && j < size){
+    localeNames[i] = '\\0';
+    names[++j] = &localeNames[++i];
+    numAvailable++;
+  }
+}
+if(numAvailable == 1){
+  printf("Error: no servers available\\n");
+}
+return numAvailable;} {}
+}
+
+Function {fltk_reader_thread(void *arg)} {open return_type {void *}
+} {
+  code {int r_fd = *(int *) arg;
+int bytes_read;
+int ix;
+char msg_buf[MSG_SIZE];
+std::string s;
+std::string locales_str;
+std::string msg;
+
+read(r_fd, msg_buf, MSG_SIZE);
+data_pass_delimiter = std::string(msg_buf);
+
+while(true){
+  memset(msg_buf, 0, MSG_SIZE);
+  if((bytes_read = read(r_fd, msg_buf, MSG_SIZE)) < 0){
+  	tabBuffs[0]->append("error with fltk_read_thread\\n");
+  }
+  msg_buf[bytes_read] = '\\n';
+  msg_buf[bytes_read+1] = '\\0';
+  
+  s = std::string(msg_buf);
+
+  size_t size = s.find(data_pass_delimiter);
+  if(size != string::npos){
+    // message sent to specific locale tab
+    msg = s.substr(size+data_pass_delimiter.length(), string::npos);  
+    locales_str = s.substr(0, s.find(data_pass_delimiter));
+    ix = atoi(locales_str.c_str()) + 1;
+  } else {
+    // message sent to main tab
+    msg = s.substr(0, string::npos);
+    ix = 0;  
+  }
+
+  /* write to the appropriate tabs */
+  Fl::lock();
+  tabBuffs[ix]->append(msg.c_str());
+  Fl::unlock();
+  Fl::awake();
+}} {}
+}
