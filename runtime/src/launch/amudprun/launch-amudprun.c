@@ -92,7 +92,6 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
   {
     const char* ev_use_chpldbg = getenv("CHPL_USE_CHPLDBG");
     const char* ev_cdb_port = getenv("CDB_PORT");
-    const char* ev_test = getenv("CHPL_USE_CDB");
 
     // if we are using chpldbg we should start the program with gdbserver//lldbserver
     if (ev_use_chpldbg != NULL) {

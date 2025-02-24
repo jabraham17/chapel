@@ -70,7 +70,7 @@ static void fixArgs(int * argc, char* argv[], char * newargv[]){
     char * new_arg = (char*) malloc(sizeof(char) * (strlen(arg_buffer) + 1));
     memcpy(new_arg, arg_buffer, (strlen(arg_buffer) + 1));
 
-    newargv[(nonenviro - 1) + enviro - 1] = "-E";
+    newargv[(nonenviro - 1) + enviro - 1] = (char*)"-E";
     newargv[(nonenviro - 1) + enviro] = new_arg;
 
   }
