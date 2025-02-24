@@ -11401,7 +11401,7 @@ static void checkSpeciallyNamedMethods() {
   }
 }
 
-cchar* invalid_argument_types[] = {
+const char* invalid_argument_types[] = {
   "void",
   "nothing",
   "_ref_void",
@@ -11416,7 +11416,7 @@ cchar* invalid_argument_types[] = {
   NULL
 };
 
-int isInvalid(TypeSymbol * ts){
+static int isInvalid(TypeSymbol * ts){
   for (int i = 0; invalid_argument_types[i] != NULL; i++) {
     if (strcmp(invalid_argument_types[i], ts->cname) == 0) return 1;
   }
