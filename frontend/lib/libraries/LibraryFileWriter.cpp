@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,10 +21,7 @@
 
 #include "chpl/libraries/LibraryFileFormat.h"
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/uast/Include.h"
-#include "chpl/uast/MultiDecl.h"
-#include "chpl/uast/NamedDecl.h"
-#include "chpl/uast/TupleDecl.h"
+#include "chpl/uast/all-uast.h"
 #include "chpl/util/filesystem.h"
 #include "chpl/util/version-info.h"
 
@@ -118,9 +115,10 @@ void LibraryFileWriter::writeHeader() {
     fail("Too many modules to create library file");
   }
 
-  // write the placeholder module section table
+  // write the placeholder module section table,
+  // including the offset just after the last module
   size_t n = modules.size();
-  for (size_t i = 0; i < n; i++) {
+  for (size_t i = 0; i <= n; i++) {
     uint64_t zero = 0;
     fileStream.write((const char*) &zero, sizeof(zero));
   }
@@ -765,6 +763,7 @@ bool LibraryFileWriter::writeAllSections() {
   }
   // and the offset just after the last module
   moduleSectionOffsets.push_back(moduleRegion.end);
+  CHPL_ASSERT(moduleSectionOffsets.size() == modules.size()+1);
 
   // update the module section table
   // seek just after the fixed portion of the file header

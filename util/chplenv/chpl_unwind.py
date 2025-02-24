@@ -12,6 +12,10 @@ def get():
     osx = platform_val.startswith('darwin')
     val = overrides.get('CHPL_UNWIND')
 
+    if val and val not in ('none', 'bundled', 'system'):
+        error("Invalid CHPL_UNWIND value {0}\n"
+              "Valid values are none, bundled, or system".format(val))
+
     if linux:
         if val == 'bundled':
             return 'bundled'
@@ -38,7 +42,7 @@ def get_uniq_cfg_path():
 def get_compile_args():
     unwind_val = get()
     if unwind_val == 'bundled':
-         return third_party_utils.get_bundled_compile_args('libunwind')
+        return third_party_utils.get_bundled_compile_args('libunwind')
 
     return ([ ], [ ])
 

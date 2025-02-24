@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,15 +23,6 @@
 
 module ChapelBase {
 
-  // We deprecate in the module code so that we don't have to modify dyno
-  // to teach it about the 'c_string' type. We perform the deprecation in
-  // ChapelBase so that you don't have to 'import CTypes' to see the type
-  // 'c_string' (which could break a lot of programs). This is OK because
-  // after the deprecation period we can just remove 'c_string' entirely.
-  pragma "last resort"
-  @deprecated(notes="the type 'c_string' is deprecated; please 'use CTypes' and replace 'c_string' with 'c_ptrConst(c_char)'")
-  type c_string = chpl_c_string;
-
   // c_fn_ptr stuff
 
   // although it can just be a compiler-inserted primitive,
@@ -45,11 +36,13 @@ module ChapelBase {
   inline operator c_fn_ptr.=(ref a:c_fn_ptr, b:c_fn_ptr) {
     __primitive("=", a, b);
   }
+  pragma "do not resolve unless called"
   @chpldoc.nodoc
   @unstable
   proc c_fn_ptr.this() {
     compilerError("Can't call a C function pointer within Chapel");
   }
+  pragma "do not resolve unless called"
   @chpldoc.nodoc
   @unstable
   proc c_fn_ptr.this(args...) {
@@ -89,9 +82,6 @@ module ChapelBase {
   pragma "global type symbol"
   pragma "no object"
   class _object { }
-
-  @deprecated(notes="the 'object' abstract root class has been deprecated; please use 'RootClass' instead")
-  class object { }
 
   enum iterKind {leader, follower, standalone};
 
@@ -316,18 +306,45 @@ module ChapelBase {
     return false;
   }
 
-  inline operator <(a: int(8), b: int(8)) do return __primitive("<", a, b);
-  inline operator <(a: int(16), b: int(16)) do return __primitive("<", a, b);
-  inline operator <(a: int(32), b: int(32)) do return __primitive("<", a, b);
-  inline operator <(a: int(64), b: int(64)) do return __primitive("<", a, b);
+  // operator <(integral, integral)
 
-  inline operator <(a: uint(8), b: uint(8)) do return __primitive("<", a, b);
-  inline operator <(a: uint(16), b: uint(16)) do return __primitive("<", a, b);
-  inline operator <(a: uint(32), b: uint(32)) do return __primitive("<", a, b);
-  inline operator <(a: uint(64), b: uint(64)) do return __primitive("<", a, b);
+  // cast an int(?w) to uint(w)
+  private inline proc asUint(a: integral) do return a: uint(numBits(a.type));
+
+  inline operator <(a: integral, b: integral) do return
+    // prim("<") works correctly for same signed-ness even with diff. sizes
+    if isInt(a) then
+      if isInt(b) then __primitive("<", a, b)
+      else __primitive("<", a, 0) || __primitive("<", asUint(a), b)
+    else
+      if isUint(b) then __primitive("<", a, b)
+      else ! __primitive("<", b, 0) && __primitive("<", a, asUint(b));
+
+  inline operator <(a: integral, param b: integral) param
+    where isUint(a) && __primitive("<=", b, 0)
+    do return false;
+
+  inline operator <(param a: integral, b: integral) param
+    where isUint(b) && __primitive("<", a, 0)
+    do return true;
+
+  inline operator <(param a: integral, param b: integral) param do return
+    // prim("<") may be wrong with mixed int*uint ex. prim("<", 1, (-5):uint)
+    if a >= 0 then
+      if b >= 0 then __primitive("<", a, b) else false
+    else
+      if b >= 0 then true else __primitive("<", a, b);
+
+  // operator < involving bool
+  inline operator <(a: bool, b: bool)     do return a:int < b:int;
+  inline operator <(a: bool, b: integral) do return a:int < b;
+  inline operator <(a: integral, b: bool) do return a     < b:int;
+  inline operator <(param a: bool, param b: bool) param
+    do return __primitive("<", a, b);
 
   inline operator <(a: real(32), b: real(32)) do return __primitive("<", a, b);
   inline operator <(a: real(64), b: real(64)) do return __primitive("<", a, b);
+
   operator <(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -386,15 +403,6 @@ module ChapelBase {
   inline operator >=(param a: real(32), param b: real(32)) param do return __primitive(">=", a, b);
   inline operator >=(param a: real(64), param b: real(64)) param do return __primitive(">=", a, b);
 
-  inline operator <(param a: int(8), param b: int(8)) param do return __primitive("<", a, b);
-  inline operator <(param a: int(16), param b: int(16)) param do return __primitive("<", a, b);
-  inline operator <(param a: int(32), param b: int(32)) param do return __primitive("<", a, b);
-  inline operator <(param a: int(64), param b: int(64)) param do return __primitive("<", a, b);
-
-  inline operator <(param a: uint(8), param b: uint(8)) param do return __primitive("<", a, b);
-  inline operator <(param a: uint(16), param b: uint(16)) param do return __primitive("<", a, b);
-  inline operator <(param a: uint(32), param b: uint(32)) param do return __primitive("<", a, b);
-  inline operator <(param a: uint(64), param b: uint(64)) param do return __primitive("<", a, b);
   inline operator <(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
 
   inline operator <(param a: real(32), param b: real(32)) param do return __primitive("<", a, b);
@@ -1284,10 +1292,6 @@ module ChapelBase {
     compilerWarning("implicitly reading from a sync is deprecated; apply a '.read??()' method");
     a.readFE();
   }
-  inline proc chpl_statementLevelSymbol(a: single) {
-    compilerWarning("implicitly reading from a single is deprecated; apply a '.read??()' method");
-    a.readFF();
-  }
   // param and type args are handled in the compiler
 
   //
@@ -1320,10 +1324,6 @@ module ChapelBase {
       return x;
     } else if (isCoercible(t, int) || isCoercible(t, uint)) {
       return x != 0:x.type;
-    } else if t == strideKind {
-      // to support deprecation by Vass in 1.31 to implement #17131
-      compilerWarning("this condition is checking a strideKind value, which is deprecated; one possible cause is the recent change where a formal argument's type like 'range(?i,?b,?s)' causes 's' to be a strideKind where it used to be a bool");
-      return x.toStridable();
     } else {
       compilerError("invalid type ", t:string, " used in if or while condition");
     }
@@ -1333,9 +1333,6 @@ module ChapelBase {
     if isSubtype(t, sync(?)) {
       compilerWarning("direct reads of sync variables are deprecated; please apply a 'read??' method");
       return _cond_test(x.readFE());
-    } else if isSubtype(t, single(?)) {
-      compilerWarning("direct reads of single variables are deprecated; please use 'readFF'");
-      return _cond_test(x.readFF());
     } else if isCoercible(t, borrowed RootClass?) {
       return x != nil;
     } else if isCoercible(t, bool) {
@@ -1379,29 +1376,39 @@ module ChapelBase {
   inline proc ref chpl_anycomplex.re ref {
     return __primitive("complex_get_real", this);
   }
+  proc param chpl_anycomplex.re param {
+    return __primitive("complex_get_real", this);
+  }
   inline proc chpl_anycomplex.re {
     if this.type == complex(128) {
       pragma "fn synchronization free"
-      extern proc creal(x:complex(128)): real(64);
-      return creal(this);
+      pragma "codegen for CPU and GPU"
+      extern proc chpl_creal(x:complex(128)): real(64);
+      return chpl_creal(this);
     } else {
       pragma "fn synchronization free"
-      extern proc crealf(x:complex(64)): real(32);
-      return crealf(this);
+      pragma "codegen for CPU and GPU"
+      extern proc chpl_crealf(x:complex(64)): real(32);
+      return chpl_crealf(this);
     }
   }
   inline proc ref chpl_anycomplex.im ref {
     return __primitive("complex_get_imag", this);
   }
+  proc param chpl_anycomplex.im param {
+    return __primitive("complex_get_imag", this);
+  }
   inline proc chpl_anycomplex.im {
     if this.type == complex(128) {
       pragma "fn synchronization free"
-      extern proc cimag(x:complex(128)): real(64);
-      return cimag(this);
+      pragma "codegen for CPU and GPU"
+      extern proc chpl_cimag(x:complex(128)): real(64);
+      return chpl_cimag(this);
     } else {
       pragma "fn synchronization free"
-      extern proc cimagf(x:complex(64)): real(32);
-      return cimagf(this);
+      pragma "codegen for CPU and GPU"
+      extern proc chpl_cimagf(x:complex(64)): real(32);
+      return chpl_cimagf(this);
     }
   }
 
@@ -1626,6 +1633,19 @@ module ChapelBase {
       _ddata_allocate_postalloc(ret, size);
     }
 
+    return ret;
+  }
+
+  pragma "llvm return noalias"
+  proc _ddata_allocate_noinit_gpu_shared(type eltType, size: integral,
+                                         out callPostAlloc: bool,
+                                         subloc = c_sublocid_none) {
+    if CHPL_LOCALE_MODEL != "gpu" then
+      compilerError("_ddata_allocate_noinit_gpu_shared can't be called in this config");
+
+    var ret: _ddata(eltType);
+    // TODO why fixed size?
+    ret = __primitive("cast", ret.type, __primitive("gpu allocShared", 4096*8));
     return ret;
   }
 
@@ -2193,8 +2213,17 @@ module ChapelBase {
   inline operator :(x:chpl_anyreal, type t:chpl_anyreal) do
     return __primitive("cast", t, x);
 
+  proc chpl_checkCastAbstractEnumError(type enumType, type dstType) param do
+    if isAbstractEnumType(enumType) then
+      compilerError("cannot cast abstract enum type '" +
+                    enumType:string +
+                    "' to '" +
+                    dstType:string +
+                    "'");
+
   @unstable("enum-to-bool casts are likely to be deprecated in the future")
   inline operator :(x: enum, type t:bool) throws {
+    chpl_checkCastAbstractEnumError(x.type, t);
     return x: int: bool;
   }
   // operator :(x: enum, type t:integral)
@@ -2204,6 +2233,7 @@ module ChapelBase {
 
   @unstable("enum-to-float casts are likely to be deprecated in the future")
   inline operator :(x: enum, type t:chpl_anyreal) throws {
+    chpl_checkCastAbstractEnumError(x.type, t);
     return x: int: real;
   }
 
@@ -2216,28 +2246,47 @@ module ChapelBase {
     compilerError("cannot cast nil to " + t:string);
   }
 
+  proc chpl_castUnmanagedError(param typeStr: string) param do
+    compilerError("cannot cast to a '" + typeStr +
+                  "' with an implicit borrow; try adding an explicit '.borrow()'");
+
+
+  pragma "last resort"
+  operator :(x:owned class, type t:unmanaged class)
+    do chpl_castUnmanagedError(t:string);
+  pragma "last resort"
+  operator :(x:owned class?, type t:unmanaged class)
+    do chpl_castUnmanagedError(t:string);
+  pragma "last resort"
+  operator :(x:owned class, type t:unmanaged class?)
+    do chpl_castUnmanagedError(t:string);
+  pragma "last resort"
+  operator :(x:owned class?, type t:unmanaged class?)
+    do chpl_castUnmanagedError(t:string);
+
+  pragma "last resort"
+  operator :(x:shared class, type t:unmanaged class)
+    do chpl_castUnmanagedError(t:string);
+  pragma "last resort"
+  operator :(x:shared class?, type t:unmanaged class)
+    do chpl_castUnmanagedError(t:string);
+  pragma "last resort"
+  operator :(x:shared class, type t:unmanaged class?)
+    do chpl_castUnmanagedError(t:string);
+  pragma "last resort"
+  operator :(x:shared class?, type t:unmanaged class?)
+    do chpl_castUnmanagedError(t:string);
+
   // casting to unmanaged?, no class downcast
   pragma "last resort"
-  @deprecated("casting from a managed class to an 'unmanaged?' is deprecated")
   inline operator :(x:borrowed class?, type t:unmanaged class?)
-    where isSubtype(_to_unmanaged(x.type),t)
-  {
-    return __primitive("cast", t, x);
-  }
-  inline operator :(x:unmanaged class?, type t:unmanaged class?)
     where isSubtype(_to_unmanaged(x.type),t)
   {
     return __primitive("cast", t, x);
   }
 
   pragma "last resort"
-  @deprecated("casting from a managed class to an 'unmanaged?' is deprecated")
   inline operator :(x:borrowed class, type t:unmanaged class?)
-    where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
-  {
-    return __primitive("cast", t, x);
-  }
-  inline operator :(x:unmanaged class, type t:unmanaged class?)
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
   {
     return __primitive("cast", t, x);
@@ -2245,13 +2294,7 @@ module ChapelBase {
 
   // casting to unmanaged, no class downcast
   pragma "last resort"
-  @deprecated("casting from a managed class to an 'unmanaged' is deprecated")
   inline operator :(x:borrowed class, type t:unmanaged class)
-    where isSubtype(_to_unmanaged(x.type),t)
-  {
-    return __primitive("cast", t, x);
-  }
-  inline operator :(x:unmanaged class, type t:unmanaged class)
     where isSubtype(_to_unmanaged(x.type),t)
   {
     return __primitive("cast", t, x);
@@ -2280,16 +2323,7 @@ module ChapelBase {
 
   // casting away nilability, no class downcast
   pragma "last resort"
-  @deprecated("casting from a managed class to an 'unmanaged' is deprecated")
   inline operator :(x:borrowed class?, type t:unmanaged class)  throws
-    where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
-  {
-    if x == nil {
-      throw new owned NilClassError();
-    }
-    return __primitive("cast", t, x);
-  }
-  inline operator :(x:unmanaged class?, type t:unmanaged class)  throws
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
   {
     if x == nil {
@@ -2327,7 +2361,6 @@ module ChapelBase {
 
   // this version handles downcast to non-nil unmanaged
   pragma "last resort"
-  @deprecated("casting from a managed class to an 'unmanaged' is deprecated")
   inline operator :(x:borrowed class?, type t:unmanaged class) throws
     where isProperSubtype(t,_to_nonnil(_to_unmanaged(x.type)))
   {
@@ -2341,23 +2374,9 @@ module ChapelBase {
 
     return _to_nonnil(_to_unmanaged(tmp));
   }
-  inline operator :(x:unmanaged class?, type t:unmanaged class) throws
-    where isProperSubtype(t,_to_nonnil(_to_unmanaged(x.type)))
-  {
-    if x == nil {
-      throw new owned NilClassError();
-    }
-    var tmp = __primitive("dynamic_cast", t, x);
-    if tmp == nil {
-      throw new owned ClassCastError();
-    }
-
-    return _to_nonnil(_to_unmanaged(tmp));
-  }
 
   // this version handles downcast to nilable unmanaged
   pragma "last resort"
-  @deprecated("casting from a managed class to an 'unmanaged?' is deprecated")
   inline operator :(x:borrowed class?, type t:unmanaged class?)
     where isProperSubtype(t,_to_unmanaged(x.type))
   {
@@ -2367,29 +2386,10 @@ module ChapelBase {
     var tmp = __primitive("dynamic_cast", t, x);
     return _to_nilable(_to_unmanaged(tmp));
   }
-  inline operator :(x:unmanaged class?, type t:unmanaged class?)
-    where isProperSubtype(t,_to_unmanaged(x.type))
-  {
-    if x == nil {
-      return nil;
-    }
-    var tmp = __primitive("dynamic_cast", t, x);
-    return _to_nilable(_to_unmanaged(tmp));
-  }
 
   // this version handles downcast to nilable unmanaged
   pragma "last resort"
-  @deprecated("casting from a managed class to an 'unmanaged?' is deprecated")
   inline operator :(x:borrowed class, type t:unmanaged class?)
-    where isProperSubtype(_to_nonnil(_to_borrowed(t)),x.type)
-  {
-    if x == nil {
-      return nil;
-    }
-    var tmp = __primitive("dynamic_cast", t, x);
-    return _to_nilable(_to_unmanaged(tmp));
-  }
-  inline operator :(x:unmanaged class, type t:unmanaged class?)
     where isProperSubtype(_to_nonnil(_to_borrowed(t)),x.type)
   {
     if x == nil {
@@ -2420,8 +2420,10 @@ module ChapelBase {
     return (x.re, x.im):t;
 
   @unstable("enum-to-float casts are likely to be deprecated in the future")
-  inline operator :(x: enum, type t:chpl_anycomplex) throws do
+  inline operator :(x: enum, type t:chpl_anycomplex) throws {
+    chpl_checkCastAbstractEnumError(x.type, t);
     return (x:real, 0):t;
+  }
 
   //
   // casts to imag
@@ -2442,8 +2444,10 @@ module ChapelBase {
     return __primitive("cast", t, x.im);
 
   @unstable("enum-to-float casts are likely to be deprecated in the future")
-  inline operator :(x: enum, type t:chpl_anyimag)  throws do
+  inline operator :(x: enum, type t:chpl_anyimag)  throws {
+    chpl_checkCastAbstractEnumError(x.type, t);
     return x:real:imag;
+  }
 
   //
   // casts from complex
@@ -2616,15 +2620,6 @@ module ChapelBase {
   }
 
   // Type functions for representing function types
-
-  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
-  inline proc func() type { return __primitive("create fn type", void); }
-
-  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
-  inline proc func(type rettype) type { return __primitive("create fn type", rettype); }
-
-  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
-  inline proc func(type t...?n, type rettype) type { return __primitive("create fn type", (...t), rettype); }
 
   proc isIterator(ic: _iteratorClass) param do return true;
   proc isIterator(ir: _iteratorRecord) param do return true;
@@ -3134,56 +3129,6 @@ module ChapelBase {
   inline operator >(param a: int(32), b: int(32)) do return __primitive(">", a, b);
   inline operator >(param a: int(64), b: int(64)) do return __primitive(">", a, b);
 
-
-  // non-param/non-param
-  inline operator <(a: uint(8), b: int(8)) do return !(b < 0) && a < b : uint(8);
-  inline operator <(a: uint(16), b: int(16)) do return !(b < 0) && a < b : uint(16);
-  inline operator <(a: uint(32), b: int(32)) do return !(b < 0) && a < b : uint(32);
-  inline operator <(a: uint(64), b: int(64)) do return !(b < 0) && a < b : uint(64);
-
-  inline operator <(a: int(8), b: uint(8)) do return a < 0 || a : uint(8) < b;
-  inline operator <(a: int(16), b: uint(16)) do return a < 0 || a : uint(16) < b;
-  inline operator <(a: int(32), b: uint(32)) do return a < 0 || a : uint(32) < b;
-  inline operator <(a: int(64), b: uint(64)) do return a < 0 || a : uint(64) < b;
-
-  // non-param/param and param/non-param
-  // param/non-param version not necessary since < above works fine for that
-  inline operator <(a: uint(8), param b: uint(8)) {
-    if __primitive("==", b, 0) {
-      return false;
-    } else {
-      return __primitive("<", a, b);
-    }
-  }
-  inline operator <(a: uint(16), param b: uint(16)) {
-    if __primitive("==", b, 0) {
-      return false;
-    } else {
-      return __primitive("<", a, b);
-    }
-  }
-  inline operator <(a: uint(32), param b: uint(32)) {
-    if __primitive("==", b, 0) {
-      return false;
-    } else {
-      return __primitive("<", a, b);
-    }
-  }
-  inline operator <(a: uint(64), param b: uint(64)) {
-    if __primitive("==", b, 0) {
-      return false;
-    } else {
-      return __primitive("<", a, b);
-    }
-  }
-
-  inline operator <(a: int(8), param b: int(8)) do return __primitive("<", a, b);
-  inline operator <(a: int(16), param b: int(16)) do return __primitive("<", a, b);
-  inline operator <(a: int(32), param b: int(32)) do return __primitive("<", a, b);
-  inline operator <(a: int(64), param b: int(64)) do return __primitive("<", a, b);
-
-
-
   // non-param/non-param
   inline operator >=(a: uint(8), b: int(8)) do return b < 0 || a >= b : uint(8);
   inline operator >=(a: uint(16), b: int(16)) do return b < 0 || a >= b : uint(16);
@@ -3279,12 +3224,18 @@ module ChapelBase {
   inline operator <=(param a: int(64), b: int(64)) do return __primitive("<=", a, b);
 
 
+  pragma "suppress generic actual warning"
   proc isGenericType(type t) param do return __primitive("is generic type", t);
+  pragma "suppress generic actual warning"
   proc isNilableClassType(type t) param do return __primitive("is nilable class type", t);
+  pragma "suppress generic actual warning"
   proc isNonNilableClassType(type t) param do return __primitive("is non nilable class type", t);
 
+  pragma "suppress generic actual warning"
   proc isBorrowedOrUnmanagedClassType(type t:unmanaged) param do return true;
+  pragma "suppress generic actual warning"
   proc isBorrowedOrUnmanagedClassType(type t:borrowed) param do return true;
+  pragma "suppress generic actual warning"
   proc isBorrowedOrUnmanagedClassType(type t) param do return false;
 
   // These style element #s are used in the default Writer and Reader.
@@ -3315,16 +3266,13 @@ module ChapelBase {
     const moduleName: c_ptrConst(c_char); // for debugging; non-null, not owned
     const deinitFun:  chpl_c_fn_ptr;          // module deinit function
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
-    proc writeThis(ch) throws {
+    override proc serialize(writer, ref serializer) throws {
       try {
-      ch.writef("chpl_ModuleDeinit(%s)",string.createCopyingBuffer(moduleName));
+        writer.writef("chpl_ModuleDeinit(%s)",string.createCopyingBuffer(moduleName));
       }
       catch e: DecodeError { // let IoError propagate
         halt("Module name is not valid string!");
       }
-    }
-    override proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
     }
   }
   var chpl_moduleDeinitFuns = nil: unmanaged chpl_ModuleDeinit?;
@@ -3364,6 +3312,7 @@ module ChapelBase {
   // this could in principle be just _unmanaged (similar to type
   // constructor for a record) but that is more challenging because
   // _unmanaged is a built-in non-record type.
+  pragma "suppress generic actual warning"
   proc _to_unmanaged(type t) type {
     type rt = __primitive("to unmanaged class", t);
     return rt;
@@ -3373,6 +3322,7 @@ module ChapelBase {
     return ret;
   }
   // type constructor for converting to a borrow
+  pragma "suppress generic actual warning"
   proc _to_borrowed(type t) type {
     type rt = __primitive("to borrowed class", t);
     return rt;
@@ -3382,6 +3332,7 @@ module ChapelBase {
     return ret;
   }
   // changing nilability
+  pragma "suppress generic actual warning"
   proc _to_nonnil(type t) type {
     type rt = __primitive("to non nilable class", t);
     return rt;
@@ -3390,6 +3341,7 @@ module ChapelBase {
     var ret = __primitive("to non nilable class", arg);
     return ret;
   }
+  pragma "suppress generic actual warning"
   proc _to_nilable(type t) type {
     type rt = __primitive("to nilable class", t);
     return rt;
@@ -3454,6 +3406,7 @@ module ChapelBase {
 
   proc chpl_field_lt(a: [] ?t, b: [] t) {
     compilerError("ordered comparisons not supported by default on records with array fields");
+    return false;
   }
 
   inline proc chpl_field_lt(a, b) where !isArrayType(a.type) {
@@ -3462,9 +3415,21 @@ module ChapelBase {
 
   proc chpl_field_gt(a: [] ?t, b: [] t) {
     compilerError("ordered comparisons not supported by default on records with array fields");
+    return false;
   }
 
   inline proc chpl_field_gt(a, b) where !isArrayType(a.type) {
     return a > b;
+  }
+
+  // check if both arguments are local without `.locale` or `here`
+  proc chpl__bothLocal(const ref a, const ref b) {
+    extern proc chpl_equals_localeID(const ref x, const ref y): bool;
+
+    const aLoc = __primitive("_wide_get_locale", a._value);
+    const bLoc = __primitive("_wide_get_locale", b._value);
+
+    return chpl_equals_localeID(aLoc, bLoc) &&
+           chpl_equals_localeID(aLoc, here_id);
   }
 }

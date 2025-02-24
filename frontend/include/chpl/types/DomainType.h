@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,7 @@
 #define CHPL_TYPES_DOMAIN_TYPE_H
 
 #include "chpl/types/CompositeType.h"
+#include "chpl/resolution/resolution-types.h"
 
 namespace chpl {
 namespace types {
@@ -56,7 +57,7 @@ class DomainType final : public CompositeType {
   // TODO: distributions
   Kind kind_;
 
-  // Will compute idxType, rank, and stridable from 'subs'
+  // Will compute idxType, rank, and strides from 'subs'
   DomainType(ID id, UniqueString name,
              const DomainType* instantiatedFrom,
              SubstitutionsMap subs,
@@ -84,6 +85,12 @@ class DomainType final : public CompositeType {
                SubstitutionsMap subs,
                Kind kind = Kind::Unknown);
 
+  static const ID rankId;
+  static const ID rectangularIdxTypeId;
+  static const ID nonRectangularIdxTypeId;
+  static const ID stridesId;
+  static const ID parSafeId;
+
  public:
 
   /** Return the generic domain type */
@@ -91,14 +98,27 @@ class DomainType final : public CompositeType {
 
   /** Return a rectangular domain type */
   static const DomainType* getRectangularType(Context* context,
+                                              const QualifiedType& instance,
                                               const QualifiedType& rank,
                                               const QualifiedType& idxType,
-                                              const QualifiedType& stridable);
+                                              const QualifiedType& strides);
 
   /** Return an associative domain type */
   static const DomainType* getAssociativeType(Context* context,
+                                              const QualifiedType& instance,
                                               const QualifiedType& idxType,
                                               const QualifiedType& parSafe);
+
+  const Type* substitute(Context* context,
+                         const PlaceholderMap& subs) const override {
+    return getDomainType(context, id(), name(),
+                         Type::substitute(context, (const DomainType*) instantiatedFrom_, subs),
+                         resolution::substituteInMap(context, subs_, subs),
+                         kind_).get();
+  }
+
+  /** Get the default distribution type */
+  static const QualifiedType& getDefaultDistType(Context* context);
 
   Kind kind() const {
     return kind_;
@@ -112,26 +132,28 @@ class DomainType final : public CompositeType {
 
   const QualifiedType& rank() const {
     CHPL_ASSERT(kind_ == Kind::Rectangular);
-    return subs_.at(ID(UniqueString(), 0, 0));
+    return subs_.at(rankId);
   }
 
   const QualifiedType& idxType() const {
     if (kind_ == Kind::Rectangular) {
-      return subs_.at(ID(UniqueString(), 1, 0));
+      return subs_.at(rectangularIdxTypeId);
     } else {
-      return subs_.at(ID(UniqueString(), 0, 0));
+      return subs_.at(nonRectangularIdxTypeId);
     }
   }
 
-  const QualifiedType& stridable() const {
+  const QualifiedType& strides() const {
     CHPL_ASSERT(kind_ == Kind::Rectangular);
-    return subs_.at(ID(UniqueString(), 2, 0));
+    return subs_.at(stridesId);
   }
 
   const QualifiedType& parSafe() const {
     CHPL_ASSERT(kind_ == Kind::Associative);
-    return subs_.at(ID(UniqueString(), 1, 0));
+    return subs_.at(parSafeId);
   }
+
+  const RuntimeType* runtimeType(Context* context) const;
 
   ~DomainType() = default;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -37,10 +37,12 @@
 BlockStmt* CForLoop::buildCForLoop(CallExpr* call, BlockStmt* body, LLVMMetadataList attrs)
 {
   BlockStmt* retval = buildChapelStmt();
+  CForLoop*  loop   = new CForLoop(body);
+  retval->insertAtTail(loop);
+  loop->mLLVMMetadataList = attrs;
 
-  if (call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP) == true)
-  {
-    CForLoop*    loop          = new CForLoop(body);
+  if (call != nullptr) {
+    INT_ASSERT(call, call->isPrimitive(PRIM_BLOCK_C_FOR_LOOP));
 
     Expr*        initClause    = call->get(1)->copy();
     Expr*        testClause    = call->get(2)->copy();
@@ -55,18 +57,12 @@ BlockStmt* CForLoop::buildCForLoop(CallExpr* call, BlockStmt* body, LLVMMetadata
 
     loop->mContinueLabel = continueLabel;
     loop->mBreakLabel    = breakLabel;
-    loop->mLLVMMetadataList = attrs;
 
     loop->loopHeaderSet(initBlock, testBlock, incrBlock);
 
     loop->insertAtTail(new DefExpr(continueLabel));
 
-    retval->insertAtTail(loop);
     retval->insertAtTail(new DefExpr(breakLabel));
-  }
-  else
-  {
-    INT_ASSERT(false);
   }
 
   return retval;
@@ -75,6 +71,11 @@ BlockStmt* CForLoop::buildCForLoop(CallExpr* call, BlockStmt* body, LLVMMetadata
 CForLoop* CForLoop::buildWithBodyFrom(ForLoop* forLoop)
 {
   SymbolMap map;
+  return buildWithBodyFrom(forLoop, map);
+}
+
+CForLoop* CForLoop::buildWithBodyFrom(ForLoop* forLoop, SymbolMap &map)
+{
   CForLoop* retval = new CForLoop();
 
   retval->astloc            = forLoop->astloc;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -151,19 +151,12 @@ module BigInteger {
   use GMP;
   use HaltWrappers;
   use OS;
-  use ChplConfig only compiledForSingleLocale;
+  use ChplConfig only compiledForSingleLocale, CHPL_TARGET_PLATFORM;
 
   /*
    Local copy of IO.EFORMAT as it is being phased out and is private in IO
    */
   private extern proc chpl_macro_int_EFORMAT():c_int;
-
-  /* A compile-time parameter to control the behavior of bigint initializers
-     that take a string argument.
-  */
-  @chpldoc.nodoc()
-  @deprecated("bigint initializers will now always throw instead of halt, this config no longer impacts code and will be removed in a future release")
-  config param bigintInitThrows = true;
 
   // TODO: remove when initializers can throw in their body
   private proc throwingInitWorkaround() throws {
@@ -175,7 +168,7 @@ module BigInteger {
     precision integers across multiple locales.
   */
   pragma "ignore noinit"
-  record bigint : writeSerializable {
+  record bigint : serializable {
     // The underlying GMP C structure
     pragma "no init"
     @chpldoc.nodoc
@@ -216,7 +209,7 @@ module BigInteger {
     }
 
     /* See :proc:`init` */
-    proc init(x: int) {
+    proc init(x: int(?)) {
       init this;
       mpz_init_set_si(this.mpz, x.safeCast(c_long));
 
@@ -224,7 +217,7 @@ module BigInteger {
     }
 
     /* See :proc:`init` */
-    proc init(x: uint) {
+    proc init(x: uint(?)) {
       init this;
       mpz_init_set_ui(this.mpz, x.safeCast(c_ulong));
 
@@ -274,42 +267,6 @@ module BigInteger {
     /* See :proc:`init=` */
     proc init=(x : integral) do this.init(x);
 
-    pragma "last resort"
-    @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-    proc init(const ref num: bigint) do this.init(num);
-
-    pragma "last resort"
-    @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-    proc init(num: int) do this.init(num);
-
-    pragma "last resort"
-    @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-    proc init(num: uint) do this.init(num);
-
-    /* Initialize a :record:`bigint` from a string and optionally a provided base
-       to use with the string.  If the string is not a correct base ``base``
-       number, will throw a :type:`~OS.BadFormatError`.
-
-       :arg str: The value to be stored in the resulting :record:`bigint`.
-       :type str: `string`
-
-       :arg base: The base to use when creating the :record:`bigint` from ``str``.
-                  May vary from ``2`` to ``62`` or be ``0``.  Defaults to ``0``,
-                  which causes the base to be read from the start of the ``str``
-                  itself (``0x`` and ``0X`` will give hexadecimal, ``0b`` and
-                  ``0B`` will give binary, ``0`` will give octal, and everything
-                  else will be interpreted as decimal).
-       :type base: `int`
-
-       :throws BadFormatError: Thrown when ``str`` is not a correctly formatted
-                               number in base ``base``.
-
-     */
-    pragma "last resort"
-    @deprecated("the argument name 'str' is deprecated - please use 'x' instead")
-    proc init(str: string, base: int = 0) throws
-      do try! this.init(str, base);
-
     // Within a given locale, bigint assignment creates a deep copy of the
     // data and so the record "owns" the GMP data.
     //
@@ -351,7 +308,7 @@ module BigInteger {
         ret = mpz_sizeinbase(this.mpz, base_);
 
       } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
         on __primitive("chpl_on_locale_num", thisLoc) {
           ret = mpz_sizeinbase(this.mpz, base_);
@@ -376,7 +333,7 @@ module BigInteger {
         ret = this.mpz[0];
 
       } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
         on __primitive("chpl_on_locale_num", thisLoc) {
           ret = this.mpz[0];
@@ -421,7 +378,7 @@ module BigInteger {
         exp = tmp;
 
       } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
         on __primitive("chpl_on_locale_num", thisLoc) {
           var tmp: c_long;
@@ -444,7 +401,7 @@ module BigInteger {
         var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
         try! ret = string.createAdoptingBuffer(tmpvar);
       } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", thisLoc) {
           var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
           try! ret = string.createAdoptingBuffer(tmpvar);
@@ -454,19 +411,18 @@ module BigInteger {
       return ret;
     }
 
-    @deprecated("get_str is deprecated - please use a cast to a string or IO methods to get the string representation")
-    proc get_str(base: int = 10): string do return this.getStr(base);
-
-    @chpldoc.nodoc
-    proc writeThis(writer) throws {
+    /* Writes this number to a :type:`~IO.fileWriter` */
+    proc serialize(writer, ref serializer) throws {
       var s: string;
       s = this.getStr();
       writer.write(s);
     }
 
-    /* Writes this number to a :type:`~IO.fileWriter` */
-    proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+    /* Read this number from a :type:`~IO.fileReader` */
+    proc ref deserialize(reader, ref deserializer) throws {
+      var s: string;
+      reader.read(s);
+      this = new bigint(s);
     }
   }
 
@@ -475,37 +431,6 @@ module BigInteger {
      the computation.
    */
   enum roundingMode {
-    /*
-      Indicates that the quotient should be rounded down towards -infinity and
-      any remainder should have the same sign as the denominator.
-    */
-    down = -1,
-    /*
-      Indicates that the quotient should be rounded towards zero and any
-      remainder should have the same sign as the numerator.
-    */
-    zero = 0,
-    /*
-      Indicates that the quotient should be rounded up towards +infinity and any
-      remainder should have the opposite sign as the denominator.
-    */
-    up = 1
-  }
-
-  proc chpl_roundToRoundingMode(param r) param : roundingMode {
-    use BigInteger.round;
-    if r == down then return roundingMode.down;
-    if r == zero then return roundingMode.zero;
-    if r == up then return roundingMode.up;
-    compilerError("unknown bigint rounding mode");
-  }
-
-  /* An enumeration of the different rounding strategies, for use with e.g.
-     :proc:`~BigInteger.divQ` to determine how to round the quotient when performing
-     the computation.
-   */
-  @deprecated(notes="enum round is deprecated - please use enum :enum:`roundingMode` instead")
-  enum round {
     /*
       Indicates that the quotient should be rounded down towards -infinity and
       any remainder should have the same sign as the denominator.
@@ -555,7 +480,7 @@ module BigInteger {
     if compiledForSingleLocale() || x.localeId == chpl_nodeID {
       ret = mpz_get_si(x.mpz);
     } else {
-      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
+      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", xLoc) {
         ret = mpz_get_si(x.mpz);
@@ -579,7 +504,7 @@ module BigInteger {
     if compiledForSingleLocale() || x.localeId == chpl_nodeID {
       ret = mpz_get_ui(x.mpz);
     } else {
-      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
+      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", xLoc) {
         ret = mpz_get_ui(x.mpz);
@@ -608,7 +533,7 @@ module BigInteger {
     if compiledForSingleLocale() || x.localeId == chpl_nodeID {
       ret = mpz_get_d(x.mpz);
     } else {
-      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
+      const xLoc = chpl_buildLocaleID(x.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", xLoc) {
         ret = mpz_get_d(x.mpz);
@@ -629,12 +554,12 @@ module BigInteger {
   }
 
   /* See :proc:`bigint.set` */
-  operator bigint.=(ref lhs: bigint, rhs: int) {
+  operator bigint.=(ref lhs: bigint, rhs: int(?)) {
     lhs.set(rhs);
   }
 
   /* See :proc:`bigint.set` */
-  operator bigint.=(ref lhs: bigint, rhs: uint) {
+  operator bigint.=(ref lhs: bigint, rhs: uint(?)) {
     lhs.set(rhs);
   }
 
@@ -689,28 +614,28 @@ module BigInteger {
   }
 
   /* See :proc:`~BigInteger.add` */
-  operator bigint.+(const ref a: bigint, b: int): bigint {
+  operator bigint.+(const ref a: bigint, b: int(?)): bigint {
     var c = new bigint();
     BigInteger.add(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.add` */
-  operator bigint.+(const ref a: bigint, b: uint): bigint {
+  operator bigint.+(const ref a: bigint, b: uint(?)): bigint {
     var c = new bigint();
     BigInteger.add(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.add` */
-  operator bigint.+(a: int, const ref b: bigint): bigint {
+  operator bigint.+(a: int(?), const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.add(c, b, a);
     return c;
   }
 
   /* See :proc:`~BigInteger.add` */
-  operator bigint.+(a: uint, const ref b: bigint): bigint {
+  operator bigint.+(a: uint(?), const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.add(c, b, a);
     return c;
@@ -724,28 +649,28 @@ module BigInteger {
   }
 
   /* See :proc:`~BigInteger.sub` */
-  operator bigint.-(const ref a: bigint, b: int): bigint {
+  operator bigint.-(const ref a: bigint, b: int(?)): bigint {
     var c = new bigint();
     BigInteger.sub(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.sub` */
-  operator bigint.-(const ref a: bigint, b: uint): bigint {
+  operator bigint.-(const ref a: bigint, b: uint(?)): bigint {
     var c = new bigint();
     BigInteger.sub(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.sub` */
-  operator bigint.-(a: int, const ref b: bigint): bigint {
+  operator bigint.-(a: int(?), const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.sub(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.sub` */
-  operator bigint.-(a: uint, const ref b: bigint): bigint {
+  operator bigint.-(a: uint(?), const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.sub(c, a, b);
     return c;
@@ -759,28 +684,28 @@ module BigInteger {
   }
 
   /* See :proc:`~BigInteger.mul` */
-  operator bigint.*(const ref a: bigint, b: int): bigint {
+  operator bigint.*(const ref a: bigint, b: int(?)): bigint {
     var c = new bigint();
     BigInteger.mul(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.mul` */
-  operator bigint.*(const ref a: bigint, b: uint): bigint {
+  operator bigint.*(const ref a: bigint, b: uint(?)): bigint {
     var c = new bigint();
     BigInteger.mul(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.mul` */
-  operator bigint.*(a: int, const ref b: bigint): bigint {
+  operator bigint.*(a: int(?), const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.mul(c, b, a);
     return c;
   }
 
   /* See :proc:`~BigInteger.mul` */
-  operator bigint.*(a: uint, const ref b: bigint): bigint {
+  operator bigint.*(a: uint(?), const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.mul(c, b, a);
     return c;
@@ -819,7 +744,7 @@ module BigInteger {
   }
 
   /* See :proc:`~BigInteger.pow` */
-  operator bigint.**(const ref base: bigint, exp: int): bigint {
+  operator bigint.**(const ref base: bigint, exp: int(?)): bigint {
     var c = new bigint();
 
     if exp >= 0 {
@@ -832,7 +757,7 @@ module BigInteger {
   }
 
   /* See :proc:`~BigInteger.pow` */
-  operator bigint.**(const ref base: bigint, exp: uint): bigint {
+  operator bigint.**(const ref base: bigint, exp: uint(?)): bigint {
     const exp_ = exp.safeCast(c_ulong);
     var   c    = new bigint();
 
@@ -862,7 +787,7 @@ module BigInteger {
         mpz_tdiv_r_ui(res.mpz, x_.mpz, y);
 
       } else {
-        const resLoc = chpl_buildLocaleID(res.localeId, c_sublocid_any);
+        const resLoc = chpl_buildLocaleID(res.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", resLoc) {
           const x_ = x;
           mpz_tdiv_r_ui(res.mpz, x_.mpz, y);
@@ -870,7 +795,8 @@ module BigInteger {
       }
     }
 
-    if y.type == uint {
+    param intSize = if CHPL_TARGET_PLATFORM == "linux32" then 32 else 64;
+    if y.type == uint(intSize) {
       helper(result, x, y);
     }
     else {
@@ -900,42 +826,42 @@ module BigInteger {
   }
 
   /* See :proc:`bigint.%` */
-  operator bigint.%(const ref a: bigint, b: int): bigint {
+  operator bigint.%(const ref a: bigint, b: int(?)): bigint {
     var c = new bigint();
     BigInteger.modTrunc(c, a, b);
     return c;
   }
 
   /* See :proc:`bigint.%` */
-  operator bigint.%(const ref a: bigint, b: uint): bigint {
+  operator bigint.%(const ref a: bigint, b: uint(?)): bigint {
     var c = new bigint();
     BigInteger.modTrunc(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.shiftLeft` */
-  operator bigint.<<(const ref a: bigint, b: int): bigint {
+  operator bigint.<<(const ref a: bigint, b: int(?)): bigint {
     var c = new bigint();
     BigInteger.shiftLeft(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.shiftLeft` */
-  operator bigint.<<(const ref a: bigint, b: uint): bigint {
+  operator bigint.<<(const ref a: bigint, b: uint(?)): bigint {
     var c = new bigint();
     BigInteger.shiftLeft(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.shiftRight` */
-  operator bigint.>>(const ref a: bigint, b: int): bigint {
+  operator bigint.>>(const ref a: bigint, b: int(?)): bigint {
     var c = new bigint();
     BigInteger.shiftRight(c, a, b);
     return c;
   }
 
   /* See :proc:`~BigInteger.shiftRight` */
-  operator bigint.>>(const ref a: bigint, b: uint): bigint {
+  operator bigint.>>(const ref a: bigint, b: uint(?)): bigint {
     var c = new bigint();
     BigInteger.shiftRight(c, a, b);
     return c;
@@ -965,14 +891,14 @@ module BigInteger {
   private inline proc cmp(const ref x: bigint, const ref y: bigint)
     do return x.cmp(y);
 
-  private inline proc cmp(const ref x: bigint, y: int)
+  private inline proc cmp(const ref x: bigint, y: int(?))
     do return x.cmp(y);
-  private inline proc cmp(const ref x: bigint, y: uint)
+  private inline proc cmp(const ref x: bigint, y: uint(?))
     do return x.cmp(y);
 
-  private inline proc cmp(x: int, const ref y: bigint)
+  private inline proc cmp(x: int(?), const ref y: bigint)
     do return 0 - (y.cmp(x));
-  private inline proc cmp(x: uint, const ref y: bigint)
+  private inline proc cmp(x: uint(?), const ref y: bigint)
     do return 0 - (y.cmp(x));
 
 
@@ -981,19 +907,19 @@ module BigInteger {
     do return BigInteger.cmp(a, b) == 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.==(const ref a: bigint, b: int): bool
+  operator bigint.==(const ref a: bigint, b: int(?)): bool
     do return BigInteger.cmp(a, b) == 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.==(const ref a: bigint, b: uint): bool
+  operator bigint.==(const ref a: bigint, b: uint(?)): bool
     do return BigInteger.cmp(a, b) == 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.==(a: int, const ref b: bigint): bool
+  operator bigint.==(a: int(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) == 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.==(a: uint, const ref b: bigint): bool
+  operator bigint.==(a: uint(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) == 0;
 
   /* See :proc:`bigint.cmp` */
@@ -1001,19 +927,19 @@ module BigInteger {
     do return BigInteger.cmp(a, b) != 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.!=(const ref a: bigint, b: int): bool
+  operator bigint.!=(const ref a: bigint, b: int(?)): bool
     do return BigInteger.cmp(a, b) != 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.!=(const ref a: bigint, b: uint): bool
+  operator bigint.!=(const ref a: bigint, b: uint(?)): bool
     do return BigInteger.cmp(a, b) != 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.!=(a: int, const ref b: bigint): bool
+  operator bigint.!=(a: int(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) != 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.!=(a: uint, const ref b: bigint): bool
+  operator bigint.!=(a: uint(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) != 0;
 
   /* See :proc:`bigint.cmp` */
@@ -1021,19 +947,19 @@ module BigInteger {
     do return BigInteger.cmp(a, b) > 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.>(const ref a: bigint, b: int): bool
+  operator bigint.>(const ref a: bigint, b: int(?)): bool
     do return BigInteger.cmp(a, b) > 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.>(const ref a: bigint, b: uint): bool
+  operator bigint.>(const ref a: bigint, b: uint(?)): bool
     do return BigInteger.cmp(a, b) > 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.>(a: int, const ref b: bigint): bool
+  operator bigint.>(a: int(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) > 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.>(a: uint, const ref b: bigint): bool
+  operator bigint.>(a: uint(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) > 0;
 
   /* See :proc:`bigint.cmp` */
@@ -1041,19 +967,19 @@ module BigInteger {
     do return BigInteger.cmp(a, b) < 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.<(const ref a: bigint, b: int): bool
+  operator bigint.<(const ref a: bigint, b: int(?)): bool
     do return BigInteger.cmp(a, b) < 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.<(const ref a: bigint, b: uint): bool
+  operator bigint.<(const ref a: bigint, b: uint(?)): bool
     do return BigInteger.cmp(a, b) < 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.<(a: int, const ref b: bigint): bool
+  operator bigint.<(a: int(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) < 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.<(a: uint, const ref b: bigint): bool
+  operator bigint.<(a: uint(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) < 0;
 
   /* See :proc:`bigint.cmp` */
@@ -1061,19 +987,19 @@ module BigInteger {
     do return BigInteger.cmp(a, b) >= 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.>=(const ref a: bigint, b: int): bool
+  operator bigint.>=(const ref a: bigint, b: int(?)): bool
     do return BigInteger.cmp(a, b) >= 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.>=(const ref a: bigint, b: uint): bool
+  operator bigint.>=(const ref a: bigint, b: uint(?)): bool
     do return BigInteger.cmp(a, b) >= 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.>=(a: int, const ref b: bigint): bool
+  operator bigint.>=(a: int(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) >= 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.>=(a: uint, const ref b: bigint): bool
+  operator bigint.>=(a: uint(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) >= 0;
 
   /* See :proc:`bigint.cmp` */
@@ -1081,19 +1007,19 @@ module BigInteger {
     do return BigInteger.cmp(a, b) <= 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.<=(const ref a: bigint, b: int): bool
+  operator bigint.<=(const ref a: bigint, b: int(?)): bool
     do return BigInteger.cmp(a, b) <= 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.<=(const ref a: bigint, b: uint): bool
+  operator bigint.<=(const ref a: bigint, b: uint(?)): bool
     do return BigInteger.cmp(a, b) <= 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.<=(a: int, const ref b: bigint): bool
+  operator bigint.<=(a: int(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) <= 0;
 
   /* See :proc:`bigint.cmp` */
-  operator bigint.<=(a: uint, const ref b: bigint): bool
+  operator bigint.<=(a: uint(?), const ref b: bigint): bool
     do return BigInteger.cmp(a, b) <= 0;
 
   /* See :proc:`~BigInteger.add` */
@@ -1101,11 +1027,11 @@ module BigInteger {
     do BigInteger.add(a, a, b);
 
   /* See :proc:`~BigInteger.add` */
-  operator bigint.+=(ref a: bigint, b: int)
+  operator bigint.+=(ref a: bigint, b: int(?))
     do BigInteger.add(a, a, b);
 
   /* See :proc:`~BigInteger.add` */
-  operator bigint.+=(ref a: bigint, b: uint)
+  operator bigint.+=(ref a: bigint, b: uint(?))
     do BigInteger.add(a, a, b);
 
   /* See :proc:`~BigInteger.sub` */
@@ -1113,11 +1039,11 @@ module BigInteger {
     do BigInteger.sub(a, a, b);
 
   /* See :proc:`~BigInteger.sub` */
-  operator bigint.-=(ref a: bigint, b: int)
+  operator bigint.-=(ref a: bigint, b: int(?))
     do BigInteger.sub(a, a, b);
 
   /* See :proc:`~BigInteger.sub` */
-  operator bigint.-=(ref a: bigint, b: uint)
+  operator bigint.-=(ref a: bigint, b: uint(?))
     do BigInteger.sub(a, a, b);
 
   /* See :proc:`~BigInteger.mul` */
@@ -1125,11 +1051,11 @@ module BigInteger {
     do BigInteger.mul(a, a, b);
 
   /* See :proc:`~BigInteger.mul` */
-  operator bigint.*=(ref a: bigint, b:  int)
+  operator bigint.*=(ref a: bigint, b: int(?))
     do BigInteger.mul(a, a, b);
 
   /* See :proc:`~BigInteger.mul` */
-  operator bigint.*=(ref a: bigint, b: uint)
+  operator bigint.*=(ref a: bigint, b: uint(?))
     do BigInteger.mul(a, a, b);
 
   /* See :proc:`~BigInteger.div` */
@@ -1148,12 +1074,12 @@ module BigInteger {
   }
 
   /* See :proc:`~BigInteger.pow` */
-  operator bigint.**=(ref base: bigint, exp: int) {
+  operator bigint.**=(ref base: bigint, exp: int(?)) {
     BigInteger.pow(base, base, exp);
   }
 
   /* See :proc:`~BigInteger.pow` */
-  operator bigint.**=(ref base: bigint, exp: uint) {
+  operator bigint.**=(ref base: bigint, exp: uint(?)) {
     BigInteger.pow(base, base, exp);
   }
 
@@ -1162,11 +1088,11 @@ module BigInteger {
     do BigInteger.modTrunc(a, a, b);
 
   /* See :proc:`bigint.%` */
-  operator bigint.%=(ref a: bigint, b: int)
+  operator bigint.%=(ref a: bigint, b: int(?))
     do BigInteger.modTrunc(a, a, b);
 
   /* See :proc:`bigint.%` */
-  operator bigint.%=(ref a: bigint, b: uint)
+  operator bigint.%=(ref a: bigint, b: uint(?))
     do BigInteger.modTrunc(a, a, b);
 
   /* See :proc:`~BigInteger.and` */
@@ -1185,19 +1111,19 @@ module BigInteger {
   }
 
   /* See :proc:`~BigInteger.shiftLeft` */
-  operator bigint.<<=(ref a: bigint, b: int)
+  operator bigint.<<=(ref a: bigint, b: int(?))
     do BigInteger.shiftLeft(a, a, b);
 
   /* See :proc:`~BigInteger.shiftLeft` */
-  operator bigint.<<=(ref a: bigint, b: uint)
+  operator bigint.<<=(ref a: bigint, b: uint(?))
     do BigInteger.shiftLeft(a, a, b);
 
   /* See :proc:`~BigInteger.shiftRight` */
-  operator bigint.>>=(ref a: bigint, b:  int)
+  operator bigint.>>=(ref a: bigint, b: int(?))
     do BigInteger.shiftRight(a, a, b);
 
   /* See :proc:`~BigInteger.shiftRight` */
-  operator bigint.>>=(ref a: bigint, b: uint)
+  operator bigint.>>=(ref a: bigint, b: uint(?))
     do BigInteger.shiftRight(a, a, b);
 
   /* See :proc:`bigint.swap` */
@@ -1210,8 +1136,8 @@ module BigInteger {
       mpz_set(b.mpz, t.mpz);
 
     } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-      const bLoc = chpl_buildLocaleID(b.localeId, c_sublocid_any);
+      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_none);
+      const bLoc = chpl_buildLocaleID(b.localeId, c_sublocid_none);
 
       const aTmp = a;
 
@@ -1299,7 +1225,7 @@ module BigInteger {
 
   /* See :proc:`kronecker` */
   @unstable("kronecker is unstable and may change in the future")
-  proc kronecker(const ref a: bigint, b: int) : int {
+  proc kronecker(const ref a: bigint, b: int(?)) : int {
     const a_ = a.localize();
     const b_ = b.safeCast(c_long);
     var  ret : c_int;
@@ -1311,7 +1237,7 @@ module BigInteger {
 
   /* See :proc:`kronecker` */
   @unstable("kronecker is unstable and may change in the future")
-  proc kronecker(a: int, const ref b: bigint) : int {
+  proc kronecker(a: int(?), const ref b: bigint) : int {
     const a_ = a.safeCast(c_long);
     const b_ = b.localize();
     var  ret : c_int;
@@ -1323,7 +1249,7 @@ module BigInteger {
 
   /* See :proc:`kronecker` */
   @unstable("kronecker is unstable and may change in the future")
-  proc kronecker(const ref a: bigint, b: uint) : int {
+  proc kronecker(const ref a: bigint, b: uint(?)) : int {
     const a_ = a.localize();
     const b_ = b.safeCast(c_ulong);
     var  ret : c_int;
@@ -1335,7 +1261,7 @@ module BigInteger {
 
   /* See :proc:`kronecker` */
   @unstable("kronecker is unstable and may change in the future")
-  proc kronecker(a: uint, const ref b: bigint) : int {
+  proc kronecker(a: uint(?), const ref b: bigint) : int {
     const a_ = a.safeCast(c_ulong);
     const b_ = b.localize();
     var  ret : c_int;
@@ -1377,7 +1303,7 @@ module BigInteger {
       const denom_ = denom;
       mpz_divexact(result.mpz, numer_.mpz, denom_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const numer_ = numer;
         const denom_ = denom;
@@ -1389,36 +1315,6 @@ module BigInteger {
   /* See :proc:`~BigInteger.divExact` */
   proc divExact(ref result: bigint, const ref numer: bigint, denom: integral)
     do BigInteger.divExact(result, numer, new bigint(denom));
-
-  /*
-    Computes ``numer/denom`` and stores the result in ``result``, which is a
-    :record:`bigint` instance.
-
-    .. warning::
-       ``divexact`` is optimized to handle cases where ``numer/denom`` results
-       in an integer.  When ``numer/denom`` does not produce an integer, this
-       method may produce incorrect results.
-
-    :arg result: Where the result is stored
-    :type result: :record:`bigint`
-
-    :arg numer: numerator
-    :type numer: :record:`bigint`
-
-    :arg denom: denominator
-    :type denom: :record:`bigint` or ``integral``
-
-    .. seealso::
-       :proc:`GMP.mpz_divexact` and
-       `mpz_divexact <https://gmplib.org/manual/Integer-Division#index-mpz_005fdivexact>`_.
-  */
-  @deprecated("divexact is deprecated - please use :proc:`divExact` instead")
-  proc divexact(ref result: bigint, const ref numer: bigint, denom: integral)
-    do BigInteger.divExact(result, numer, denom);
-
-  @deprecated("divexact is deprecated - please use :proc:`divExact` instead")
-  proc divexact(ref result: bigint, const ref numer: bigint, const ref denom: bigint)
-    do BigInteger.divExact(result, numer, denom);
 
   /*
     Return ``true`` if ``this`` is exactly divisible by ``div``.  ``this`` is
@@ -1450,7 +1346,7 @@ module BigInteger {
   }
 
   /* See :proc:`~bigint.isDivisible` */
-  proc bigint.isDivisible(div: int) : bool {
+  proc bigint.isDivisible(div: int(?)) : bool {
     const t_ = this.localize();
     var div_ = 0 : c_ulong;
     var ret: c_int;
@@ -1469,7 +1365,7 @@ module BigInteger {
   }
 
   /* See :proc:`~bigint.isDivisible` */
-  proc bigint.isDivisible(div: uint) : bool {
+  proc bigint.isDivisible(div: uint(?)) : bool {
     const t_ = this.localize();
     const div_ = div.safeCast(c_ulong);
     var   ret: c_int;
@@ -1632,7 +1528,7 @@ module BigInteger {
       const mod_ = mod;
       mpz_powm(result.mpz, base_.mpz, exp_.mpz, mod_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const base_ = base;
         const exp_ = exp;
@@ -1645,7 +1541,7 @@ module BigInteger {
   /* See :proc:`~BigInteger.powMod` */
   proc powMod(ref result: bigint,
               const ref base: bigint,
-              exp: int,
+              exp: int(?),
               const ref mod: bigint)  {
     if exp >= 0 {
       BigInteger.powMod(result, base, exp:uint, mod);
@@ -1658,7 +1554,7 @@ module BigInteger {
   /* See :proc:`~BigInteger.powMod` */
   proc powMod(ref result: bigint,
               const ref base: bigint,
-              exp: uint,
+              exp: uint(?),
               const ref mod: bigint)  {
     const exp_ = exp.safeCast(c_ulong);
 
@@ -1669,7 +1565,7 @@ module BigInteger {
       const mod_ = mod;
       mpz_powm_ui(result.mpz, base_.mpz, exp, mod_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const base_ = base;
         const mod_  = mod;
@@ -1719,7 +1615,7 @@ module BigInteger {
        :proc:`GMP.mpz_pow_ui` and
        `mpz_pow_ui <https://gmplib.org/manual/Integer-Exponentiation#index-mpz_005fpow_005fui>`_.
   */
-  proc pow(ref result: bigint, const ref base: bigint, exp: int) {
+  proc pow(ref result: bigint, const ref base: bigint, exp: int(?)) {
     if exp >= 0 {
       BigInteger.pow(result, base, exp : uint);
     } else {
@@ -1729,7 +1625,7 @@ module BigInteger {
         const base_ = base;
         powNegativeExpHelper(result, base_, exp);
       } else {
-        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", resultLoc) {
           const base_ = base;
           powNegativeExpHelper(result, base_, exp);
@@ -1739,7 +1635,7 @@ module BigInteger {
   }
 
   /* See :proc:`~BigInteger.pow` */
-  proc pow(ref result: bigint, const ref base: bigint, exp: uint) {
+  proc pow(ref result: bigint, const ref base: bigint, exp: uint(?)) {
     const exp_ = exp.safeCast(c_ulong);
     if compiledForSingleLocale() {
       mpz_pow_ui(result.mpz, base.mpz, exp_);
@@ -1747,7 +1643,7 @@ module BigInteger {
       const base_ = base;
       mpz_pow_ui(result.mpz, base_.mpz, exp_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const base_ = base;
         mpz_pow_ui(result.mpz, base_.mpz, exp_);
@@ -1756,10 +1652,10 @@ module BigInteger {
   }
 
   /* See :proc:`~BigInteger.pow` */
-  proc pow(ref result: bigint, base: int, exp: int) {
+  proc pow(ref result: bigint, base: int(?), exp: int(?)) {
     if base >= 0 && exp >= 0 {
       BigInteger.pow(result, base : uint, exp : uint);
-    } else if base <  0 && exp >= 0 {
+    } else if base < 0 && exp >= 0 {
       BigInteger.pow(result, (0 - base) : uint, exp : uint);
 
       if (exp % 2) == 1 {
@@ -1771,7 +1667,7 @@ module BigInteger {
   }
 
   /* See :proc:`~BigInteger.pow` */
-  proc pow(ref result: bigint, base: uint, exp: uint) {
+  proc pow(ref result: bigint, base: uint(?), exp: uint(?)) {
     const base_ = base.safeCast(c_ulong);
     const exp_  = exp.safeCast(c_ulong);
 
@@ -1780,7 +1676,7 @@ module BigInteger {
     } else if result.localeId == chpl_nodeID {
       mpz_ui_pow_ui(result.mpz, base_, exp_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         mpz_ui_pow_ui(result.mpz, base_, exp_);
       }
@@ -1811,7 +1707,7 @@ module BigInteger {
       const x_ = x;
       ret = mpz_root(result.mpz, x_.mpz, n_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         ret = mpz_root(result.mpz, x_.mpz, n_);
@@ -1819,11 +1715,6 @@ module BigInteger {
     }
     return ret.safeCast(int);
   }
-
-  pragma "last resort"
-  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
-  proc root(ref result: bigint, const ref a: bigint, n: uint) : int
-    do return root(result, a, n);
 
   /* Sets ``result`` to the truncated integer ``n`` th root of ``x``. Stores
      the remainder in ``remain``.
@@ -1852,7 +1743,7 @@ module BigInteger {
       mpz_rootrem(result.mpz, remain_.mpz, x_.mpz, n_);
       remain = remain_;
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         var remain_: bigint;
         const x_ = x;
@@ -1861,10 +1752,6 @@ module BigInteger {
       }
     }
   }
-
-  @deprecated("rootrem is deprecated - please use :proc:`rootRem` instead")
-  proc rootrem(ref root: bigint, ref rem: bigint, const ref u: bigint, n: uint)
-    do BigInteger.rootRem(root, rem, u, n);
 
   /*
      Sets ``result`` to the truncated integer square root of ``x``.
@@ -1885,18 +1772,13 @@ module BigInteger {
       const x_ = x;
       mpz_sqrt(result.mpz, x_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_sqrt(result.mpz, x_.mpz);
       }
     }
   }
-
-  pragma "last resort"
-  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
-  proc sqrt(ref result: bigint, const ref a: bigint)
-    do sqrt(result, a);
 
   /* Sets ``result`` to the truncated integer square root of ``x``. Stores
      the remainder in ``remain``.
@@ -1925,7 +1807,7 @@ module BigInteger {
       mpz_sqrtrem(result.mpz, remain_.mpz, x_.mpz);
       remain = remain_;
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         var remain_ : bigint;
         const x_ = x;
@@ -1933,15 +1815,6 @@ module BigInteger {
         remain = remain_;
       }
     }
-  }
-
-  @deprecated("sqrtrem is deprecated - please use :proc:`sqrtRem` instead")
-  proc sqrtrem(ref root: bigint, ref rem: bigint, const ref a: bigint)
-    do BigInteger.sqrtRem(root, rem, a);
-
-  @deprecated("bigint.perfect_power_p is deprecated, use :proc:`bigint.isPerfectPower` instead")
-  proc bigint.perfect_power_p() : int {
-    return this.isPerfectPower();
   }
 
   /*
@@ -1968,11 +1841,6 @@ module BigInteger {
       return true;
     else
       return false;
-  }
-
-  @deprecated("bigint.perfect_square_p is deprecated, use :proc:`bigint.isPerfectSquare` instead")
-  proc bigint.perfect_square_p() : int {
-    return this.isPerfectSquare();
   }
 
   /*
@@ -2016,7 +1884,7 @@ module BigInteger {
     maybePrime,
     /* Indicates that the number is a prime. */
     isPrime
-  };
+  }
 
   /*
     Determine whether ``this`` is prime.  Returns one of the :enum:`primality`
@@ -2061,10 +1929,6 @@ module BigInteger {
       return isPrime;
   }
 
-  @deprecated("nextprime is deprecated - please use :proc:`~BigInteger.nextPrime` instead")
-  proc nextprime(ref result: bigint, const ref a: bigint)
-    do BigInteger.nextPrime(result, a);
-
   /* Set ``result`` to the next prime number greater than ``x``.
 
      .. note::
@@ -2088,7 +1952,7 @@ module BigInteger {
       const x_ = x;
       mpz_nextprime(result.mpz, x_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_nextprime(result.mpz, x_.mpz);
@@ -2118,7 +1982,7 @@ module BigInteger {
       const b_ = b;
       mpz_gcd(result.mpz, a_.mpz, b_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
         const b_ = b;
@@ -2129,7 +1993,7 @@ module BigInteger {
 
   /* See :proc:`gcd` */
   @unstable("gcd is unstable and may change in the future")
-  proc gcd(ref result: bigint, const ref a: bigint, b: int) {
+  proc gcd(ref result: bigint, const ref a: bigint, b: int(?)) {
     if b >= 0 {
       BigInteger.gcd(result, a, b : uint);
 
@@ -2140,7 +2004,7 @@ module BigInteger {
 
   /* See :proc:`gcd` */
   @unstable("gcd is unstable and may change in the future")
-  proc gcd(ref result: bigint, const ref a: bigint, b: uint) {
+  proc gcd(ref result: bigint, const ref a: bigint, b: uint(?)) {
     const b_ = b.safeCast(c_ulong);
     if compiledForSingleLocale() {
       mpz_gcd_ui(result.mpz, a.mpz, b_);
@@ -2148,7 +2012,7 @@ module BigInteger {
       const a_ = a;
       mpz_gcd_ui(result.mpz, a_.mpz, b_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
         mpz_gcd_ui(result.mpz, a_.mpz, b_);
@@ -2193,7 +2057,7 @@ module BigInteger {
       s = s_;
       t = t_;
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         var s_ : bigint;
         var t_ : bigint;
@@ -2228,7 +2092,7 @@ module BigInteger {
       const b_ = b;
       mpz_lcm(result.mpz, a_.mpz, b_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
         const b_ = b;
@@ -2239,7 +2103,7 @@ module BigInteger {
 
   /* See :proc:`lcm` */
   @unstable("lcm is unstable and may change in the future")
-  proc lcm(ref result: bigint, const ref a: bigint, b: int) {
+  proc lcm(ref result: bigint, const ref a: bigint, b: int(?)) {
     if b >= 0 then
       BigInteger.lcm(result, a, b:uint);
     else
@@ -2248,7 +2112,7 @@ module BigInteger {
 
   /* See :proc:`lcm` */
   @unstable("lcm is unstable and may change in the future")
-  proc lcm(ref result: bigint, const ref a: bigint, b: uint) {
+  proc lcm(ref result: bigint, const ref a: bigint, b: uint(?)) {
     const b_ = b.safeCast(c_ulong);
 
     if compiledForSingleLocale() {
@@ -2257,7 +2121,7 @@ module BigInteger {
       const a_ = a;
       mpz_lcm_ui(result.mpz, a_.mpz, b_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
         mpz_lcm_ui(result.mpz, a_.mpz, b_);
@@ -2303,7 +2167,7 @@ module BigInteger {
       const y_ = y;
       ret = mpz_invert(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -2314,34 +2178,6 @@ module BigInteger {
     if (ret.safeCast(int) == 0) {
       throw new owned InversionError();
     }
-  }
-
-  /* Set the value of ``result`` to the inverse of ``a`` modulo ``b``
-
-     .. note::
-        If an inverse does not exist, an :class:`InversionError` will be thrown,
-        and the value of ``result`` will be left undefined
-
-     This fulfills the same role as the GMP number theoretic function ``mpz_invert``.
-
-     :arg result: Where the result is stored
-     :type result: :record:`bigint`
-
-     :arg a: The dividend of the modulo operation
-     :type a: :record:`bigint`
-
-     :arg b: The divisor of the modulo operation
-     :type b: :record:`bigint`
-
-  */
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc invert(ref result: bigint, const ref a: bigint, const ref b: bigint) throws
-    do invert(result, a, b);
-
-  @deprecated("bigint.remove is deprecated, use :proc:`~BigInteger.removeFactor` instead")
-  proc ref bigint.remove(const ref a: bigint, const ref f: bigint) : uint {
-    return BigInteger.removeFactor(this, a,f);
   }
 
   // This helper is intended for use only when the factor is 0
@@ -2380,7 +2216,7 @@ module BigInteger {
           const fac_ = fac;
           ret = mpz_remove(result.mpz, x_.mpz, fac_.mpz);
       } else {
-        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", resultLoc) {
           const x_ = x;
           const fac_ = fac;
@@ -2413,7 +2249,7 @@ module BigInteger {
     } else if result.localeId == chpl_nodeID {
       mpz_fac_ui(result.mpz, a_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         mpz_fac_ui(result.mpz, a_);
       }
@@ -2443,7 +2279,7 @@ module BigInteger {
       const n_ = n;
       mpz_bin_ui(result.mpz, n_.mpz, k_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const n_ = n;
         mpz_bin_ui(result.mpz, n_.mpz, k_);
@@ -2461,7 +2297,7 @@ module BigInteger {
       if compiledForSingleLocale() || result.localeId == chpl_nodeID {
         mpz_bin_uiui(result.mpz, n_, k_);
       } else {
-        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", resultLoc) {
           mpz_bin_uiui(result.mpz, n_, k_);
         }
@@ -2490,7 +2326,7 @@ module BigInteger {
     if compiledForSingleLocale() || result.localeId == chpl_nodeID {
       mpz_fib_ui(result.mpz, n_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         mpz_fib_ui(result.mpz, n_);
       }
@@ -2525,7 +2361,7 @@ module BigInteger {
       mpz_fib2_ui(result.mpz, fnsub1_.mpz, n_);
       fnsub1 = fnsub1_;
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         var fnsub1_ : bigint;
         mpz_fib2_ui(result.mpz, fnsub1_.mpz, n_);
@@ -2533,10 +2369,6 @@ module BigInteger {
       }
     }
   }
-
-  @deprecated("lucnum is deprecated - please use :proc:`~BigInteger.lucNum` instead")
-  proc lucnum(ref result: bigint, n: integral)
-    do BigInteger.lucNum(result, n);
 
   /*
     Set ``result`` to the ``n`` th Lucas number.
@@ -2556,16 +2388,12 @@ module BigInteger {
     if compiledForSingleLocale() || result.localeId == chpl_nodeID {
       mpz_lucnum_ui(result.mpz, n_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         mpz_lucnum_ui(result.mpz, n_);
       }
     }
   }
-
-  @deprecated("lucnum2 is deprecated - please use :proc:`~BigInteger.lucNum2` instead")
-  proc lucnum2(ref result: bigint, ref fnsub1: bigint, n: integral)
-    do BigInteger.lucNum2(result, fnsub1, n);
 
   /*
     Set ``result`` to the ``n`` th Lucas number and set ``fnsub1`` to the
@@ -2595,7 +2423,7 @@ module BigInteger {
       mpz_lucnum2_ui(result.mpz, fnsub1_.mpz, n_);
       fnsub1 = fnsub1_;
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         var fnsub1_ : bigint;
         mpz_lucnum2_ui(result.mpz, fnsub1_.mpz, n_);
@@ -2603,9 +2431,6 @@ module BigInteger {
       }
     }
   }
-
-  @deprecated("popcount is deprecated - please use :proc:`bigint.popCount` instead")
-  proc bigint.popcount() : uint do return this.popCount();
 
   /*
     Returns the number of ``1`` bits in ``this``. If ``this`` is negative, the
@@ -2627,9 +2452,6 @@ module BigInteger {
 
     return ret.safeCast(uint);
   }
-
-  @deprecated("bigint.hamdist is deprecated - please use :proc:`bigint.hammingDistance` instead")
-  proc bigint.hamdist(const ref b: bigint): uint do return this.hammingDistance(b);
 
   /*
     Returns the number of bit positions that differ between ``this`` and ``x``.
@@ -2656,38 +2478,6 @@ module BigInteger {
 
     return ret.safeCast(uint);
   }
-
-  /*
-    Scan ``this``, starting from ``startBitIdx``, towards more significant
-    bits until the first ``0`` bit is found.  Return the index of the found
-    bit.
-
-    If the bit at ``startBitIdx`` is ``0``, will return ``startBitIdx``.
-
-    :arg startBitIdx: The index of the first bit to start searching for a ``0``
-    :type startBitIdx: ``integral``
-    :returns: The index of the first ``0`` bit after ``startBitIdx``, inclusive
-    :rtype: ``uint``
-  */
-  @deprecated("scan0 is deprecated - please use :proc:`bigint.findNext0` instead")
-  proc bigint.scan0(startBitIdx: integral): uint
-    do return this.findNext0(startBitIdx);
-
-  /*
-    Scan ``this``, starting from ``startBitIdx``, towards more significant
-    bits until the first ``1`` bit is found.  Return the index of the found
-    bit.
-
-    If the bit at ``startBitIdx`` is ``1``, will return ``startBitIdx``.
-
-    :arg startBitIdx: The index of the first bit to start searching for a ``1``
-    :type startBitIdx: ``integral``
-    :returns: The index of the first ``1`` bit after ``startBitIdx``, inclusive
-    :rtype: ``uint``
-  */
-  @deprecated("scan1 is deprecated - please use :proc:`bigint.findNext1` instead")
-  proc bigint.scan1(startBitIdx: integral): uint
-    do return this.findNext1(startBitIdx);
 
   /*
     Returns the index of the first ``0`` bit found, starting from
@@ -2739,10 +2529,6 @@ module BigInteger {
     return ret.safeCast(uint);
   }
 
-  // Set/Clr bit
-  @deprecated("bigint.setbit is deprecated - please use :proc:`bigint.setBit`")
-  proc ref bigint.setbit(bit_index: integral) do this.setBit(bit_index);
-
   /*
     Set the bit at ``idx`` of ``this``.
 
@@ -2759,16 +2545,13 @@ module BigInteger {
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_setbit(this.mpz, bi_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         mpz_setbit(this.mpz, bi_);
       }
     }
   }
-
-  @deprecated("bigint.clrbit is deprecated - please use :proc:`bigint.clearBit`")
-  proc ref bigint.clrbit(bit_index: integral) do this.clearBit(bit_index);
 
   /*
     Clear the bit at ``idx`` of ``this``.
@@ -2786,16 +2569,13 @@ module BigInteger {
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_clrbit(this.mpz, bi_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         mpz_clrbit(this.mpz, bi_);
       }
     }
   }
-
-  @deprecated("bigint.combit is deprecated - please use :proc:`bigint.toggleBit`")
-  proc ref bigint.combit(bit_index: integral) do this.toggleBit(bit_index);
 
   /*
     Toggle the bit at ``idx`` of ``this``. If the bit was 1, set it to 0. If
@@ -2814,16 +2594,13 @@ module BigInteger {
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_combit(this.mpz, bi_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         mpz_combit(this.mpz, bi_);
       }
     }
   }
-
-  @deprecated("bigint.tstbit is deprecated - please use :proc:`bigint.getBit`")
-  proc bigint.tstbit(bit_index: integral): int do return this.getBit(bit_index);
 
   /*
     Get the bit at ``idx`` of ``this``.
@@ -2884,11 +2661,6 @@ module BigInteger {
     return fits_into(t_.mpz, t);
   }
 
-  @deprecated("bigint.even_p is deprecated, use :proc:`bigint.isEven` instead")
-  proc bigint.even_p() : int {
-    return this.isEven();
-  }
-
   /*
     Returns ``true`` if ``this`` is an even number, ``false`` otherwise.
 
@@ -2908,11 +2680,6 @@ module BigInteger {
       return true;
     else
       return false;
-  }
-
-  @deprecated("bigint.odd_p is deprecated, use :proc:`bigint.isOdd` instead")
-  proc bigint.odd_p() : int {
-    return this.isOdd();
   }
 
   /*
@@ -2960,7 +2727,7 @@ module BigInteger {
       const y_ = y;
       mpz_add(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -2970,7 +2737,7 @@ module BigInteger {
   }
 
   /* See :proc:`add` */
-  proc add(ref result: bigint, const ref x: bigint, y: int) {
+  proc add(ref result: bigint, const ref x: bigint, y: int(?)) {
     if y >= 0 {
       BigInteger.add(result, x, y:uint);
     }
@@ -2985,7 +2752,7 @@ module BigInteger {
         mpz_sub_ui(result.mpz, x_.mpz, y_);
       }
       else {
-        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", resultLoc) {
           const x_ = x;
           mpz_sub_ui(result.mpz, x_.mpz, y_);
@@ -2995,7 +2762,7 @@ module BigInteger {
   }
 
   /* See :proc:`add` */
-  proc add(ref result: bigint, const ref x: bigint, y: uint) {
+  proc add(ref result: bigint, const ref x: bigint, y: uint(?)) {
     const y_ = y.safeCast(c_ulong);
     if compiledForSingleLocale() {
       mpz_add_ui(result.mpz, x.mpz, y_);
@@ -3005,28 +2772,13 @@ module BigInteger {
       mpz_add_ui(result.mpz, x_.mpz, y_);
     }
     else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_add_ui(result.mpz, x_.mpz, y_);
       }
     }
   }
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc add(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do BigInteger.add(result, a, b);
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc add(ref result: bigint, const ref a: bigint, b: int)
-    do BigInteger.add(result, a, b);
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc add(ref result: bigint, const ref a: bigint, b: uint)
-    do BigInteger.add(result, a, b);
 
   /*
      Sets ``result`` to the difference of ``x`` and ``y``.
@@ -3051,7 +2803,7 @@ module BigInteger {
       const y_ = y;
       mpz_sub(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -3061,7 +2813,7 @@ module BigInteger {
   }
 
   /* See :proc:`sub` */
-  proc sub(ref result: bigint, const ref x: bigint, y: int) {
+  proc sub(ref result: bigint, const ref x: bigint, y: int(?)) {
     if y >= 0 {
       BigInteger.sub(result, x, y:uint);
     } else {
@@ -3070,7 +2822,7 @@ module BigInteger {
   }
 
   /* See :proc:`sub` */
-  proc sub(ref result:bigint, const ref x: bigint, y: uint) {
+  proc sub(ref result:bigint, const ref x: bigint, y: uint(?)) {
     const y_ = y.safeCast(c_ulong);
 
     if compiledForSingleLocale() {
@@ -3079,7 +2831,7 @@ module BigInteger {
       const x_ = x;
       mpz_sub_ui(result.mpz, x_.mpz, y_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_sub_ui(result.mpz, x_.mpz, y_);
@@ -3088,7 +2840,7 @@ module BigInteger {
   }
 
   /* See :proc:`sub` */
-  proc sub(ref result: bigint, x: int, const ref y: bigint) {
+  proc sub(ref result: bigint, x: int(?), const ref y: bigint) {
     if x >= 0 {
       BigInteger.sub(result, x:uint, y);
     } else {
@@ -3102,7 +2854,7 @@ module BigInteger {
         mpz_add_ui(result.mpz, y_.mpz, x_);
         mpz_neg(result.mpz, result.mpz);
       } else {
-        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", resultLoc) {
           const y_ = y;
           mpz_add_ui(result.mpz, y_.mpz, x_);
@@ -3113,7 +2865,7 @@ module BigInteger {
   }
 
   /* See :proc:`sub` */
-  proc sub(ref result: bigint, x: uint, const ref y: bigint) {
+  proc sub(ref result: bigint, x: uint(?), const ref y: bigint) {
     const x_ = x.safeCast(c_ulong);
 
     if compiledForSingleLocale() {
@@ -3122,38 +2874,13 @@ module BigInteger {
       const y_ = y;
       mpz_ui_sub(result.mpz, x_, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const y_ = y;
         mpz_ui_sub(result.mpz, x_, y_.mpz);
       }
     }
   }
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc sub(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do BigInteger.sub(result, a, b);
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc sub(ref result: bigint, const ref a: bigint, b: int)
-    do BigInteger.sub(result, a, b);
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc sub(ref result:bigint, const ref a: bigint, b: uint)
-    do BigInteger.sub(result, a, b);
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc sub(ref result: bigint, a: int, const ref b: bigint)
-    do BigInteger.sub(result, a, b);
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc sub(ref result: bigint, a: uint, const ref b: bigint)
-    do BigInteger.sub(result, a, b);
 
   /*
      Sets ``result`` to the product of ``x`` and ``y``.
@@ -3179,7 +2906,7 @@ module BigInteger {
       const y_ = y;
       mpz_mul(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -3189,7 +2916,7 @@ module BigInteger {
   }
 
   /* See :proc:`mul` */
-  proc mul(ref result: bigint, const ref x: bigint, y: int) {
+  proc mul(ref result: bigint, const ref x: bigint, y: int(?)) {
     const y_ = y.safeCast(c_long);
 
     if compiledForSingleLocale() {
@@ -3198,7 +2925,7 @@ module BigInteger {
       const x_ = x;
       mpz_mul_si(result.mpz, x_.mpz, y_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_mul_si(result.mpz, x_.mpz, y_);
@@ -3207,8 +2934,8 @@ module BigInteger {
   }
 
   /* See :proc:`mul` */
-  proc mul(ref result: bigint, const ref x: bigint, y: uint) {
-    const y_ = y.safeCast(c_long);
+  proc mul(ref result: bigint, const ref x: bigint, y: uint(?)) {
+    const y_ = y.safeCast(c_ulong);
 
     if compiledForSingleLocale() {
       mpz_mul_ui(result.mpz, x.mpz, y_);
@@ -3216,40 +2943,13 @@ module BigInteger {
       const x_ = x;
       mpz_mul_ui(result.mpz, x_.mpz, y_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_mul_ui(result.mpz, x_.mpz, y_);
       }
     }
   }
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc mul(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do BigInteger.mul(result, a, b);
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc mul(ref result: bigint, const ref a: bigint, b: int)
-    do BigInteger.mul(result, a, b);
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc mul(ref result: bigint, const ref a: bigint, b: uint)
-    do BigInteger.mul(result, a, b);
-
-  @deprecated(notes="addmul is deprecated - please use :proc:`addMul` instead")
-  proc addmul(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do addMul(result, a, b);
-
-  @deprecated(notes="addmul is deprecated - please use :proc:`addMul` instead")
-  proc addmul(ref result: bigint, const ref a: bigint, b: int)
-    do addMul(result, a, b);
-
-  @deprecated(notes="addmul is deprecated - please use :proc:`addMul` instead")
-  proc addmul(ref result: bigint, const ref a: bigint, b: uint)
-    do addMul(result, a, b);
 
   /*
      Adds the product of ``x`` and ``y`` to ``result``
@@ -3275,7 +2975,7 @@ module BigInteger {
       const y_ = y;
       mpz_addmul(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -3285,14 +2985,14 @@ module BigInteger {
   }
 
   /* See :proc:`addMul` */
-  proc addMul(ref result: bigint, const ref x: bigint, y: int) {
+  proc addMul(ref result: bigint, const ref x: bigint, y: int(?)) {
     if y >= 0
       then addMul(result, x, y:uint);
       else subMul(result, x, (0 - y):uint);
   }
 
   /* See :proc:`addMul` */
-  proc addMul(ref result: bigint, const ref x: bigint, y: uint) {
+  proc addMul(ref result: bigint, const ref x: bigint, y: uint(?)) {
     const y_ = y.safeCast(c_ulong);
 
     if compiledForSingleLocale() {
@@ -3301,25 +3001,13 @@ module BigInteger {
       const x_ = x;
       mpz_addmul_ui(result.mpz, x_.mpz, y_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_addmul_ui(result.mpz, x_.mpz, y_);
       }
     }
   }
-
-  @deprecated(notes="submul is deprecated - please use :proc:`subMul` instead")
-  proc submul(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do subMul(result, a, b);
-
-  @deprecated(notes="submul is deprecated - please use :proc:`subMul` instead")
-  proc submul(ref result: bigint, const ref a: bigint, b: int)
-    do subMul(result, a, b);
-
-  @deprecated(notes="submul is deprecated - please use :proc:`subMul` instead")
-  proc submul(ref result: bigint, const ref a: bigint, b: uint)
-    do subMul(result, a, b);
 
   /*
      Subtracts the product of ``x`` and ``y`` from ``result``
@@ -3345,7 +3033,7 @@ module BigInteger {
       const y_ = y;
       mpz_submul(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -3355,14 +3043,14 @@ module BigInteger {
   }
 
   /* See :proc:`addMul` */
-  proc subMul(ref result: bigint, const ref x: bigint, y: int) {
+  proc subMul(ref result: bigint, const ref x: bigint, y: int(?)) {
     if y >= 0
       then subMul(result, x, y:uint);
       else addMul(result, x, (0 - y):uint);
   }
 
   /* See :proc:`addMul` */
-  proc subMul(ref result: bigint, const ref x: bigint, y: uint) {
+  proc subMul(ref result: bigint, const ref x: bigint, y: uint(?)) {
     const y_ = y.safeCast(c_ulong);
 
     if compiledForSingleLocale() {
@@ -3371,17 +3059,13 @@ module BigInteger {
       const x_ = x;
       mpz_submul_ui(result.mpz, x_.mpz, y_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_submul_ui(result.mpz, x_.mpz, y_);
       }
     }
   }
-
-  @deprecated(notes="mul_2exp is deprecated - please use :proc:`mul2Exp` instead")
-  proc mul_2exp(ref result: bigint, const ref a: bigint, b: integral)
-    do mul2Exp(result, a, b);
 
   /*
     Computes ``x*(2**exp)`` and stores the result in ``result``.
@@ -3409,7 +3093,7 @@ module BigInteger {
       const x_ = x;
       mpz_mul_2exp(result.mpz, x_.mpz, exp_);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_mul_2exp(result.mpz, x_.mpz, exp_);
@@ -3436,17 +3120,13 @@ module BigInteger {
       const x_ = x;
       mpz_neg(result.mpz, x_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_neg(result.mpz, x_.mpz);
       }
     }
   }
-
-  pragma "last resort"
-  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
-  proc neg(ref result: bigint, const ref a: bigint) do BigInteger.neg(result, a);
 
   /*
      Sets ``result`` to the absolute value of ``x``.
@@ -3467,51 +3147,13 @@ module BigInteger {
       const x_ = x;
       mpz_abs(result.mpz, x_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_abs(result.mpz, x_.mpz);
       }
     }
   }
-
-  pragma "last resort"
-  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
-  proc abs(ref result: bigint, const ref a: bigint) do BigInteger.abs(result, a);
-
-  @deprecated("divQ is deprecated - please use :proc:`div` with :enum:`roundingMode` instead")
-  proc divQ(ref result: bigint,
-            const ref numer: bigint,
-            const ref denom: bigint,
-            param rounding = round.zero)
-              do BigInteger.div(result, numer, denom, chpl_roundToRoundingMode(rounding));
-
-  /* Divide ``numer`` by ``denom``, forming a quotient and storing it in
-     ``result``.
-
-     :arg result: Where the result is stored
-     :type result: :record:`bigint`
-
-     :arg numer: The numerator of the division operation to be performed
-     :type numer: :record:`bigint`
-
-     :arg denom: The denominator of the division operation to be performed
-     :type denom: :record:`bigint`, ``integral``
-
-     :arg rounding: The rounding style to use, see :enum:`round` for a
-                    description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
-     :type rounding: ``round``
-
-     .. warning::
-        If the denominator is zero, the program behavior is undefined.
-  */
-  @deprecated("divQ is deprecated - please use :proc:`div` with :enum:`roundingMode` instead")
-  proc divQ(ref result: bigint,
-            const ref numer: bigint,
-            denom: integral,
-            param rounding = round.zero)
-              do BigInteger.div(result, numer, denom, chpl_roundToRoundingMode(rounding));
 
   /* Divide ``numer`` by ``denom``, forming a quotient and storing it in
      ``result``.
@@ -3559,7 +3201,7 @@ module BigInteger {
       const denom_ = denom;
       helper(result, numer_, denom_, rounding);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const numer_ = numer;
         const denom_ = denom;
@@ -3574,41 +3216,6 @@ module BigInteger {
                      denom: integral,
            param     rounding = roundingMode.zero)
     do BigInteger.div(result, numer, new bigint(denom), rounding);
-
-  /* Divide ``numer`` by ``denom``, forming a remainder and storing it in
-     ``result``.  The absolute value of the remainder will always be less than the
-     absolute value of the denominator (i.e. ``abs(result) < abs(denom)``).
-
-     :arg result: Where the result is stored
-     :type result: :record:`bigint`
-
-     :arg numer: The numerator of the division operation to be performed
-     :type numer: :record:`bigint`
-
-     :arg denom: The denominator of the division operation to be performed
-     :type denom: :record:`bigint`, ``integral``
-
-     :arg rounding: The rounding style to use, see :enum:`round` for a
-                    description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
-     :type rounding: ``round``
-
-     .. warning::
-        If the denominator is zero, the program behavior is undefined.
-  */
-  @deprecated("divR is deprecated - please use :proc:`rem` with :enum:`roundingMode` instead")
-  proc divR(ref result: bigint,
-            const ref numer: bigint,
-            denom: integral,
-            param rounding = round.zero)
-    do BigInteger.rem(result, numer, denom, chpl_roundToRoundingMode(rounding));
-
-  @deprecated("divR is deprecated - please use :proc:`rem` with :enum:`roundingMode` instead")
-  proc divR(ref result: bigint,
-            const ref numer: bigint,
-            const ref denom: bigint,
-            param rounding = round.zero)
-    do BigInteger.rem(result, numer, denom, chpl_roundToRoundingMode(rounding));
 
   /* Divide ``numer`` by ``denom``, forming a remainder and storing it in
      ``result``.  The absolute value of the remainder will always be less than the
@@ -3661,7 +3268,7 @@ module BigInteger {
       const denom_ = denom;
       helper(result, numer_, denom_, rounding);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const numer_ = numer;
         const denom_ = denom;
@@ -3737,7 +3344,7 @@ module BigInteger {
       helper(result, remain_, numer_, denom_, rounding);
       remain = remain_;
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         var   remain_ : bigint;
         const numer_ = numer;
@@ -3755,78 +3362,6 @@ module BigInteger {
                         denom: integral,
               param     rounding = roundingMode.zero)
     do BigInteger.divRem(result, remain, numer, new bigint(denom), rounding);
-
-  /* Divide ``numer`` by ``denom``, forming a quotient and storing it in
-     ``result``, and a remainder and storing it in ``remain``.  The quotient and
-     remainder will always satisfy ``numer = result*denom + remain`` after the
-     operation has finished.  The absolute value of the remainder will always be
-     less than the absolute value of the denominator (i.e. ``abs(result) <
-     abs(denom)``).
-
-     .. warning::
-        If ``result`` is also passed as the ``remain`` argument, the program
-        behavior is undefined.
-
-     :arg result: Where the result is stored
-     :type result: :record:`bigint`
-
-     :arg remain: Stores the remainder of the division
-     :type remain: :record:`bigint`
-
-     :arg numer: The numerator of the division operation to be performed
-     :type numer: :record:`bigint`
-
-     :arg denom: The denominator of the division operation to be performed
-     :type denom: :record:`bigint`, ``integral``
-
-     :arg rounding: The rounding style to use, see :enum:`round` for a
-                    description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
-     :type rounding: ``round``
-
-     .. warning::
-        If the denominator is zero, the program behavior is undefined.
-  */
-  @deprecated("divQR is deprecated - please use :proc:`divRem` with :enum:`roundingMode` instead")
-  proc divQR(ref result: bigint,
-             ref remain: bigint,
-             const ref numer: bigint,
-             denom: integral,
-             param rounding = round.zero)
-    do BigInteger.divRem(result, remain, numer, denom, chpl_roundToRoundingMode(rounding));
-
-  @deprecated("divQR is deprecated - please use :proc:`divRem` with :enum:`roundingMode` instead")
-  proc divQR(ref       result: bigint,
-             ref       remain: bigint,
-             const ref numer: bigint,
-             const ref denom: bigint,
-             param     rounding = round.zero)
-    do BigInteger.divRem(result, remain, numer, denom, chpl_roundToRoundingMode(rounding));
-
-  /* Divide ``numer`` by ``2^exp``, forming a quotient and storing it in
-     ``result``.
-
-     :arg result: Where the result is stored
-     :type result: :record:`bigint`
-
-     :arg numer: The numerator of the division operation to be performed
-     :type numer: :record:`bigint`
-
-     :arg exp: The exponent that 2 should be raised to before being used as the
-               denominator of the division operation to be performed
-     :type exp: ``integral``
-
-     :arg rounding: The rounding style to use, see :enum:`round` for a
-                    description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
-     :type rounding: ``round``
-   */
-  @deprecated(notes="divQ2Exp is deprecated - please use :proc:`div2Exp` with :enum:`roundingMode` instead")
-  proc divQ2Exp(ref result: bigint,
-                const ref numer: bigint,
-                exp: integral,
-                param rounding = round.zero)
-    do BigInteger.div2Exp(result, numer, exp, chpl_roundToRoundingMode(rounding));
 
   /* Divide ``numer`` by ``2^exp``, forming a quotient and storing it in
      ``result``.
@@ -3873,38 +3408,13 @@ module BigInteger {
       const numer_ = numer;
       helper(result, numer_, exp_, rounding);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const numer_ = numer;
         helper(result, numer_, exp_, rounding);
       }
     }
   }
-
-  /* Divide ``numer`` by ``2^exp``, forming a remainder and storing it in
-     ``result``.
-
-     :arg result: Where the result is stored
-     :type result: :record:`bigint`
-
-     :arg numer: The numerator of the division operation to be performed
-     :type numer: :record:`bigint`
-
-     :arg exp: The exponent that 2 should be raised to before being used as the
-               denominator of the division operation to be performed
-     :type exp: ``integral``
-
-     :arg rounding: The rounding style to use, see :enum:`round` for a
-                    description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
-     :type rounding: ``round``
-  */
-  @deprecated(notes="divR2Exp is deprecated - please use :proc:`rem2Exp` with :enum:`roundingMode` instead")
-  proc divR2Exp(ref result: bigint,
-                const ref numer: bigint,
-                exp: integral,
-                param     rounding = round.zero)
-    do BigInteger.rem2Exp(result, numer, exp, chpl_roundToRoundingMode(rounding));
 
   /* Divide ``numer`` by ``2^exp``, forming a remainder and storing it in
      ``result``.
@@ -3948,7 +3458,7 @@ module BigInteger {
       const numer_ = numer;
       helper(result, numer_, exp_, rounding);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const numer_ = numer;
         helper(result, numer_, exp_, rounding);
@@ -4031,7 +3541,7 @@ module BigInteger {
         const x_ = x;
         rem = mpz_fdiv_r_ui(res.mpz, x_.mpz, y);
       } else {
-        const resLoc = chpl_buildLocaleID(res.localeId, c_sublocid_any);
+        const resLoc = chpl_buildLocaleID(res.localeId, c_sublocid_none);
         on __primitive("chpl_on_locale_num", resLoc) {
           const x_ = x;
           rem = mpz_fdiv_r_ui(res.mpz, x_.mpz, y);
@@ -4064,35 +3574,6 @@ module BigInteger {
     }
   }
 
-  /* Computes the mod operator on the two arguments, defined as
-     ``mod(a, b) = a - b * floor(a / b)``.
-
-     The result is stored in ``result``.
-
-     The result is always >= 0 if `b` > 0.
-     It is an error if `b` == 0.
-  */
-  pragma "last resort"
-  @deprecated(notes=":proc:`~BigInteger.mod` with named formals `a` and `b` is deprecated, please use the version with `x` and `y` instead")
-  proc mod(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do BigInteger.mod(result, a, b);
-
-  /* Computes the mod operator on the two arguments, defined as
-     ``mod(a, b) = a - b * floor(a / b)``.
-
-     If b is of an unsigned type, then
-     fewer conditionals will be evaluated at run time.
-
-     The result is stored in ``result`` and returned as an ``int``.
-
-     The result is always >= 0 if `b` > 0.
-     It is an error if `b` == 0.
-  */
-  pragma "last resort"
-  @deprecated(notes=":proc:`~BigInteger.mod` with named formals `a` and `b` is deprecated, please use the version with `x` and `y` instead")
-  proc mod(ref result: bigint, const ref a: bigint, b: integral) : int
-    do return BigInteger.mod(result, a, b);
-
   /*
      Compares ``this`` and ``x``.
 
@@ -4118,7 +3599,7 @@ module BigInteger {
   }
 
   /* See :proc:`~bigint.cmp` */
-  proc bigint.cmp(x: int) : int {
+  proc bigint.cmp(x: int(?)) : int {
     const this_ = this.localize();
     const x_ = x.safeCast(c_long);
     var ret : c_int;
@@ -4129,7 +3610,7 @@ module BigInteger {
   }
 
   /* See :proc:`~bigint.cmp` */
-  proc bigint.cmp(x: uint) : int {
+  proc bigint.cmp(x: uint(?)) : int {
     const this_ = this.localize();
     const x_ = x.safeCast(c_ulong);
     var ret : c_int;
@@ -4149,22 +3630,6 @@ module BigInteger {
 
     return ret.safeCast(int);
   }
-
-  pragma "last resort"
-  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
-  proc bigint.cmp(const ref b: bigint) : int do return this.cmp(b);
-
-  pragma "last resort"
-  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
-  proc bigint.cmp(b: int) : int do return this.cmp(b);
-
-  pragma "last resort"
-  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
-  proc bigint.cmp(b: uint) : int do return this.cmp(b);
-
-  pragma "last resort"
-  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
-  proc bigint.cmp(b: real) : int do return this.cmp(b);
 
   /*
      Compares the absolute value of ``this`` and the absolute value of ``x``.
@@ -4212,18 +3677,6 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  pragma "last resort"
-  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
-  proc bigint.cmpabs(const ref b: bigint) : int do return this.cmpabs(b);
-
-  pragma "last resort"
-  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
-  proc bigint.cmpabs(b: uint) : int do return this.cmpabs(b);
-
-  pragma "last resort"
-  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
-  proc bigint.cmpabs(b: real) : int do return this.cmpabs(b);
-
   /*
      Returns the sign of ``this``.
 
@@ -4234,6 +3687,7 @@ module BigInteger {
         :proc:`GMP.mpz_sgn` and
         `mpz_sgn <https://gmplib.org/manual/Integer-Comparisons#index-mpz_005fsgn>`_.
   */
+  @unstable("bigint.sgn is unstable and may change its name and return type in the future")
   proc bigint.sgn() : int {
     const this_ = this.localize();
     var ret : c_int;
@@ -4265,7 +3719,7 @@ module BigInteger {
       const y_ = y;
       mpz_and(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -4273,11 +3727,6 @@ module BigInteger {
       }
     }
   }
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc and(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do BigInteger.and(result, a, b);
 
   /*
     Compute the bitwise inclusive or of ``x`` and ``y`` and store it in
@@ -4302,7 +3751,7 @@ module BigInteger {
       const y_ = y;
       mpz_ior(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -4310,10 +3759,6 @@ module BigInteger {
       }
     }
   }
-
-  @deprecated(notes="ior is deprecated - please use :proc:`or` instead")
-  proc ior(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do BigInteger.or(result, a, b);
 
   /*
     Compute the bitwise exclusive or of ``x`` and ``y`` and store it in
@@ -4338,7 +3783,7 @@ module BigInteger {
       const y_ = y;
       mpz_xor(result.mpz, x_.mpz, y_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         const y_ = y;
@@ -4346,11 +3791,6 @@ module BigInteger {
       }
     }
   }
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc xor(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do BigInteger.xor(result, a, b);
 
   /*
     Compute the bitwise one's complement of ``x`` and store it in ``result``.
@@ -4371,17 +3811,13 @@ module BigInteger {
       const x_ = x;
       mpz_com(result.mpz, x_.mpz);
     } else {
-      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_none);
       on __primitive("chpl_on_locale_num", resultLoc) {
         const x_ = x;
         mpz_com(result.mpz, x_.mpz);
       }
     }
   }
-
-  pragma "last resort"
-  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
-  proc com(ref result: bigint, const ref a: bigint) do BigInteger.com(result, a);
 
   /*
     Assign ``x`` to ``this``
@@ -4403,7 +3839,7 @@ module BigInteger {
       chpl_gmp_get_mpz(this.mpz, x.localeId, x.mpz[0]);
     }
     else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         if x.localeId == chpl_nodeID {
@@ -4418,13 +3854,13 @@ module BigInteger {
   }
 
   /* See :proc:`bigint.set` */
-  proc ref bigint.set(x : int) {
+  proc ref bigint.set(x: int(?)) {
     const x_ = x.safeCast(c_long);
 
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_set_si(this.mpz, x_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         mpz_set_si(this.mpz, x_);
@@ -4433,13 +3869,13 @@ module BigInteger {
   }
 
   /* See :proc:`bigint.set` */
-  proc ref bigint.set(x : uint) {
+  proc ref bigint.set(x: uint(?)) {
     const x_ = x.safeCast(c_ulong);
 
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_set_ui(this.mpz, x_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         mpz_set_ui(this.mpz, x_);
@@ -4454,7 +3890,7 @@ module BigInteger {
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_set_d(this.mpz, x_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         mpz_set_d(this.mpz, x_);
@@ -4469,33 +3905,13 @@ module BigInteger {
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       mpz_set_str(this.mpz, x.localize().c_str(), base_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         mpz_set_str(this.mpz, x.localize().c_str(), base_);
       }
     }
   }
-
-  pragma "last resort"
-  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
-  proc ref bigint.set(const ref a: bigint) do this.set(a);
-
-  pragma "last resort"
-  @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-  proc ref bigint.set(num : int) do this.set(num);
-
-  pragma "last resort"
-  @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-  proc ref bigint.set(num : uint) do this.set(num);
-
-  pragma "last resort"
-  @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-  proc ref bigint.set(num: real) do this.set(num);
-
-  pragma "last resort"
-  @deprecated("the argument name 'str' is deprecated - please use 'x' instead")
-  proc ref bigint.set(str: string, base: int = 0) do this.set(str, base);
 
   /*
     Swaps ``this`` and ``x``
@@ -4512,7 +3928,7 @@ module BigInteger {
       (this.localeId == chpl_nodeID && x.localeId == chpl_nodeID) {
       mpz_swap(this.mpz, x.mpz);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         var tmp = new bigint(x);
@@ -4523,10 +3939,6 @@ module BigInteger {
       }
     }
   }
-
-  pragma "last resort"
-  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
-  proc ref bigint.swap(ref a: bigint) do this.swap(a);
 
   @chpldoc.nodoc
   record bigintWrapper {
@@ -4589,7 +4001,7 @@ module BigInteger {
     if compiledForSingleLocale() || this.localeId == chpl_nodeID {
       hashHelper();
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_none);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
         hashHelper();

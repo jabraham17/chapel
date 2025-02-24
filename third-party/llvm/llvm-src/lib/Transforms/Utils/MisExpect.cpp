@@ -35,10 +35,12 @@
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/ProfDataUtils.h"
 #include "llvm/Support/BranchProbability.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/FormatVariadic.h"
+#include <algorithm>
 #include <cstdint>
 #include <functional>
 #include <numeric>
@@ -57,9 +59,10 @@ static cl::opt<bool> PGOWarnMisExpect(
     cl::desc("Use this option to turn on/off "
              "warnings about incorrect usage of llvm.expect intrinsics."));
 
-static cl::opt<unsigned> MisExpectTolerance(
+// Command line option for setting the diagnostic tolerance threshold
+static cl::opt<uint32_t> MisExpectTolerance(
     "misexpect-tolerance", cl::init(0),
-    cl::desc("Prevents emiting diagnostics when profile counts are "
+    cl::desc("Prevents emitting diagnostics when profile counts are "
              "within N% of the threshold.."));
 
 } // namespace llvm
@@ -70,8 +73,8 @@ bool isMisExpectDiagEnabled(LLVMContext &Ctx) {
   return PGOWarnMisExpect || Ctx.getMisExpectWarningRequested();
 }
 
-uint64_t getMisExpectTolerance(LLVMContext &Ctx) {
-  return std::max(static_cast<uint64_t>(MisExpectTolerance),
+uint32_t getMisExpectTolerance(LLVMContext &Ctx) {
+  return std::max(static_cast<uint32_t>(MisExpectTolerance),
                   Ctx.getDiagnosticsMisExpectTolerance());
 }
 
@@ -118,43 +121,6 @@ void emitMisexpectDiagnostic(Instruction *I, LLVMContext &Ctx,
 namespace llvm {
 namespace misexpect {
 
-// Helper function to extract branch weights into a vector
-Optional<SmallVector<uint32_t, 4>> extractWeights(Instruction *I,
-                                                  LLVMContext &Ctx) {
-  assert(I && "MisExpect::extractWeights given invalid pointer");
-
-  auto *ProfileData = I->getMetadata(LLVMContext::MD_prof);
-  if (!ProfileData)
-    return None;
-
-  unsigned NOps = ProfileData->getNumOperands();
-  if (NOps < 3)
-    return None;
-
-  auto *ProfDataName = dyn_cast<MDString>(ProfileData->getOperand(0));
-  if (!ProfDataName || !ProfDataName->getString().equals("branch_weights"))
-    return None;
-
-  SmallVector<uint32_t, 4> Weights(NOps - 1);
-  for (unsigned Idx = 1; Idx < NOps; Idx++) {
-    ConstantInt *Value =
-        mdconst::dyn_extract<ConstantInt>(ProfileData->getOperand(Idx));
-    uint32_t V = Value->getZExtValue();
-    Weights[Idx - 1] = V;
-  }
-
-  return Weights;
-}
-
-// TODO: when clang allows c++17, use std::clamp instead
-uint32_t clamp(uint64_t value, uint32_t low, uint32_t hi) {
-  if (value > hi)
-    return hi;
-  if (value < low)
-    return low;
-  return value;
-}
-
 void verifyMisExpect(Instruction &I, ArrayRef<uint32_t> RealWeights,
                      ArrayRef<uint32_t> ExpectedWeights) {
   // To determine if we emit a diagnostic, we need to compare the branch weights
@@ -185,13 +151,9 @@ void verifyMisExpect(Instruction &I, ArrayRef<uint32_t> RealWeights,
   uint64_t TotalBranchWeight =
       LikelyBranchWeight + (UnlikelyBranchWeight * NumUnlikelyTargets);
 
-  // FIXME: When we've addressed sample profiling, restore the assertion
-  //
-  // We cannot calculate branch probability if either of these invariants aren't
-  // met. However, MisExpect diagnostics should not prevent code from compiling,
-  // so we simply forgo emitting diagnostics here, and return early.
-  if ((TotalBranchWeight == 0) || (TotalBranchWeight <= LikelyBranchWeight))
-    return;
+  // Failing this assert means that we have corrupted metadata.
+  assert((TotalBranchWeight >= LikelyBranchWeight) && (TotalBranchWeight > 0) &&
+         "TotalBranchWeight is less than the Likely branch weight");
 
   // To determine our threshold value we need to obtain the branch probability
   // for the weights added by llvm.expect and use that proportion to calculate
@@ -203,7 +165,7 @@ void verifyMisExpect(Instruction &I, ArrayRef<uint32_t> RealWeights,
 
   // clamp tolerance range to [0, 100)
   auto Tolerance = getMisExpectTolerance(I.getContext());
-  Tolerance = clamp(Tolerance, 0, 99);
+  Tolerance = std::clamp(Tolerance, 0u, 99u);
 
   // Allow users to relax checking by N%  i.e., if they use a 5% tolerance,
   // then we check against 0.95*ScaledThreshold
@@ -218,26 +180,31 @@ void verifyMisExpect(Instruction &I, ArrayRef<uint32_t> RealWeights,
 
 void checkBackendInstrumentation(Instruction &I,
                                  const ArrayRef<uint32_t> RealWeights) {
-  auto ExpectedWeightsOpt = extractWeights(&I, I.getContext());
-  if (!ExpectedWeightsOpt)
+  // Backend checking assumes any existing weight comes from an `llvm.expect`
+  // intrinsic. However, SampleProfiling + ThinLTO add branch weights  multiple
+  // times, leading to an invalid assumption in our checking. Backend checks
+  // should only operate on branch weights that carry the "!expected" field,
+  // since they are guaranteed to be added by the LowerExpectIntrinsic pass.
+  if (!hasBranchWeightOrigin(I))
     return;
-  auto ExpectedWeights = ExpectedWeightsOpt.value();
+  SmallVector<uint32_t> ExpectedWeights;
+  if (!extractBranchWeights(I, ExpectedWeights))
+    return;
   verifyMisExpect(I, RealWeights, ExpectedWeights);
 }
 
 void checkFrontendInstrumentation(Instruction &I,
                                   const ArrayRef<uint32_t> ExpectedWeights) {
-  auto RealWeightsOpt = extractWeights(&I, I.getContext());
-  if (!RealWeightsOpt)
+  SmallVector<uint32_t> RealWeights;
+  if (!extractBranchWeights(I, RealWeights))
     return;
-  auto RealWeights = RealWeightsOpt.value();
   verifyMisExpect(I, RealWeights, ExpectedWeights);
 }
 
 void checkExpectAnnotations(Instruction &I,
                             const ArrayRef<uint32_t> ExistingWeights,
-                            bool IsFrontendInstr) {
-  if (IsFrontendInstr) {
+                            bool IsFrontend) {
+  if (IsFrontend) {
     checkFrontendInstrumentation(I, ExistingWeights);
   } else {
     checkBackendInstrumentation(I, ExistingWeights);

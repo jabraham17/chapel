@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -82,9 +82,16 @@ static void syntax(yyscan_t scanner, int nLines, int nCols,
 *                                                                           *
 ************************************* | ************************************/
 
-static int processIdentifier(yyscan_t scanner, bool queried) {
+// specialInitialChar might be:
+//  * '?' for a query identifier as in 'proc foo(arg: ?t)'
+//  * '@' for an attribute identifier as in @chpldoc.nodoc
+//  * everything else is considered a normal identifier
+static int processIdentifier(yyscan_t scanner, char specialInitialChar) {
   YYSTYPE* val = yyget_lval(scanner);
-  int retval = processToken(scanner, queried ? TQUERIEDIDENT : TIDENT);
+  int tokenType = TIDENT;
+  if (specialInitialChar == '?')      tokenType = TQUERIEDIDENT;
+  else if (specialInitialChar == '@') tokenType = TATTRIBUTEIDENT;
+  int retval = processToken(scanner, tokenType);
   // note: processToken calls updateLocation.
 
   const char* pch = yyget_text(scanner);
@@ -165,11 +172,6 @@ static int processStringLiteral(yyscan_t scanner,
                               context->convertLocation(*loc),
                               std::move(value),
                               quotes).release();
-  } else if (type == CSTRINGLITERAL) {
-    lit = CStringLiteral::build(context->builder,
-                                context->convertLocation(*loc),
-                                std::move(value),
-                                quotes).release();
   } else {
     CHPL_ASSERT(false && "unknown type in processStringLiteral");
   }
@@ -214,11 +216,6 @@ static int processTripleStringLiteral(yyscan_t scanner,
                               context->convertLocation(*loc),
                               std::move(value),
                               quotes).release();
-  } else if (type == CSTRINGLITERAL) {
-    lit = CStringLiteral::build(context->builder,
-                                context->convertLocation(*loc),
-                                std::move(value),
-                                quotes).release();
   } else {
     CHPL_ASSERT(false && "unknown type in processStringLiteral");
   }

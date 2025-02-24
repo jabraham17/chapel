@@ -9,7 +9,15 @@
 #ifndef _HLSL_HLSL_BASIC_TYPES_H_
 #define _HLSL_HLSL_BASIC_TYPES_H_
 
+namespace hlsl {
 // built-in scalar data types:
+
+/// \typedef template<typename Ty, int Size> using vector = Ty
+/// __attribute__((ext_vector_type(Size)))
+///
+/// \tparam Ty The base type of the vector may be any builtin integral or
+/// floating point type.
+/// \tparam Size The size of the vector may be any value between 1 and 4.
 
 #ifdef __HLSL_ENABLE_16_BIT
 // 16-bit integer.
@@ -34,7 +42,9 @@ typedef vector<uint16_t, 2> uint16_t2;
 typedef vector<uint16_t, 3> uint16_t3;
 typedef vector<uint16_t, 4> uint16_t4;
 #endif
-
+typedef vector<bool, 2> bool2;
+typedef vector<bool, 3> bool3;
+typedef vector<bool, 4> bool4;
 typedef vector<int, 2> int2;
 typedef vector<int, 3> int3;
 typedef vector<int, 4> int4;
@@ -48,11 +58,9 @@ typedef vector<uint64_t, 2> uint64_t2;
 typedef vector<uint64_t, 3> uint64_t3;
 typedef vector<uint64_t, 4> uint64_t4;
 
-#ifdef __HLSL_ENABLE_16_BIT
 typedef vector<half, 2> half2;
 typedef vector<half, 3> half3;
 typedef vector<half, 4> half4;
-#endif
 
 typedef vector<float, 2> float2;
 typedef vector<float, 3> float3;
@@ -60,5 +68,7 @@ typedef vector<float, 4> float4;
 typedef vector<double, 2> double2;
 typedef vector<double, 3> double3;
 typedef vector<double, 4> double4;
+
+} // namespace hlsl
 
 #endif //_HLSL_HLSL_BASIC_TYPES_H_

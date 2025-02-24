@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,7 +32,6 @@ namespace types {
 class ArrayType final : public CompositeType {
  private:
   // TODO:
-  // - create 'RuntimeType'
   // - Slicing
   // - Array literals
 
@@ -69,8 +68,19 @@ class ArrayType final : public CompositeType {
   static const ArrayType* getGenericArrayType(Context* context);
 
   static const ArrayType* getArrayType(Context* context,
+                                       const QualifiedType& instance,
                                        const QualifiedType& domainType,
                                        const QualifiedType& eltType);
+
+  const RuntimeType* getDomainRuntimeType() const;
+
+  const Type* substitute(Context* context,
+                         const PlaceholderMap& subs) const override {
+    return getArrayTypeQuery(context,
+                             id_, name_,
+                             Type::substitute(context, instantiatedFrom_->toArrayType(), subs),
+                             resolution::substituteInMap(context, subs_, subs)).get();
+  }
 
   QualifiedType domainType() const {
     auto it = subs_.find(domainId);
@@ -89,6 +99,8 @@ class ArrayType final : public CompositeType {
       return QualifiedType();
     }
   }
+
+  const RuntimeType* runtimeType(Context* context) const;
 
   ~ArrayType() = default;
 

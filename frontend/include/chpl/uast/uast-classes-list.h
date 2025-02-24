@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -78,6 +78,7 @@
   AST_NODE(Try)                        // old AST: TryStmt
   AST_NODE(Use)                        // old AST: UseStmt
   AST_NODE(VisibilityClause)           //
+  AST_NODE(When)                       //
   AST_NODE(WithClause)                 //
   AST_NODE(Yield)                      //
 
@@ -90,7 +91,6 @@
     AST_NODE(On)                       //
     AST_NODE(Serial)                   //
     AST_NODE(Sync)                     //
-    AST_NODE(When)                     //
   AST_END_SUBCLASSES(SimpleBlockLike)
 
   AST_BEGIN_SUBCLASSES(Loop)           // old AST: LoopExpr / LoopStmt
@@ -120,7 +120,6 @@
 
     AST_BEGIN_SUBCLASSES(StringLikeLiteral)
       AST_LEAF(BytesLiteral)
-      AST_LEAF(CStringLiteral)
       AST_LEAF(StringLiteral)
     AST_END_SUBCLASSES(StringLikeLiteral)
 

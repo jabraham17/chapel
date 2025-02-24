@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -36,8 +36,7 @@ testConstChecking(const char* test,
                   std::vector<int> expectedErrorLines) {
   printf("\n### %s\n", test);
 
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string testname = test;
@@ -294,24 +293,18 @@ static void test6a() {
   testConstChecking("test6a",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) { }
-
         proc test() {
           const x: int = 0;
           x = 34;
         }
       }
     )"""",
-    {8});
+    {5});
 }
 static void test6b() {
   testConstChecking("test6b",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) { }
-
         proc test() {
           const x: int = 0;
           const ref y = x;
@@ -319,15 +312,12 @@ static void test6b() {
         }
       }
     )"""",
-    {9});
+    {6});
 }
 static void test6c() {
   testConstChecking("test6c",
     R""""(
       module M {
-        // this would be in the standard library...
-        operator =(ref lhs: int, rhs: int) { }
-
         proc test() {
           const x: int = 0;
           ref y = x;
@@ -335,7 +325,38 @@ static void test6c() {
         }
       }
     )"""",
-    {8});
+    {5});
+}
+
+static void test7a() {
+  // This test exists because of a past bug in which the call to 'dummy' was
+  // incorrectly evaluated due to an incorrectly-formed CallInfo, caused by a
+  // failure to account for the implicit receiver. The CallInfo lacked an
+  // argument for 'this', leading to const-checking being off by one for
+  // arguments 'x' and 'constThing'. This resulted in a "failure" as the
+  // frontend thought we were passing 'constThing' to 'ref A'.
+  testConstChecking("test7a",
+    R"""(
+      module M {
+        record R {
+          var x : int;
+
+          proc dummy(ref A, const B) {
+          }
+
+          proc ref wrapper() {
+            const constThing : int;
+            dummy(x, constThing);
+          }
+        }
+
+        proc main() {
+          var r : R;
+          r.wrapper();
+        }
+      }
+    )""",
+  {});
 }
 
 // TODO: test const checking for associated functions
@@ -364,6 +385,8 @@ int main() {
   test6a();
   test6b();
   test6c();
+
+  test7a();
 
   return 0;
 }

@@ -1,5 +1,5 @@
 use BlockDist;
-use LayoutCS;
+use CompressedSparseLayout;
 use Random;
 
 config const N = 8;
@@ -7,7 +7,7 @@ const dimRange = 0..#N;
 
 config type sparseLayoutType = DefaultDist;
 
-const ParentDom = {dimRange, dimRange} dmapped blockDist({dimRange, dimRange},
+const ParentDom = {dimRange, dimRange} dmapped new blockDist({dimRange, dimRange},
     sparseLayoutType=sparseLayoutType);
 
 

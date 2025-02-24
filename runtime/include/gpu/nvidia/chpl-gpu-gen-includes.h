@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -58,6 +58,11 @@ __device__ static inline void chpl_gpu_force_sync() {
   // --fast.  It's likely due to an issue with clang discussed here:
   // https://github.com/llvm/llvm-project/issues/58626
   asm volatile("bar.sync 0;" : : : "memory");
+}
+
+__device__ static inline void chpl_gpu_force_warp_sync(unsigned mask) {
+  // Call nvidia's syncwarp
+  __syncwarp(mask);
 }
 
 __device__ static inline uint32_t chpl_gpu_getThreadIdxX() { return __nvvm_read_ptx_sreg_tid_x(); }

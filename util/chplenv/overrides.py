@@ -34,6 +34,7 @@ chplvars = [
 
              'CHPL_LOCALE_MODEL',
              'CHPL_GPU',
+             'CHPL_GPU_MEM_STRATEGY',
              'CHPL_CUDA_PATH',
              'CHPL_ROCM_PATH',
              'CHPL_GPU_ARCH',
@@ -41,8 +42,8 @@ chplvars = [
              'CHPL_COMM',
              'CHPL_COMM_SUBSTRATE',
              'CHPL_GASNET_SEGMENT',
-             'CHPL_GASNET_VERSION',
              'CHPL_LIBFABRIC',
+             'CHPL_COMM_OFI_OOB',
 
              'CHPL_TASKS',
              'CHPL_LAUNCHER',
@@ -50,9 +51,9 @@ chplvars = [
              'CHPL_UNWIND',
 
              'CHPL_HOST_MEM',
-             'CHPL_TARGET_MEM', # note: not in printchplenv --all
+             'CHPL_TARGET_MEM',
              'CHPL_MEM',
-             'CHPL_JEMALLOC', # note: these 3 are not in printchplenv --all
+             'CHPL_JEMALLOC',
              'CHPL_HOST_JEMALLOC',
              'CHPL_TARGET_JEMALLOC',
 
@@ -61,6 +62,7 @@ chplvars = [
 
              'CHPL_GMP',
              'CHPL_HWLOC',
+             'CHPL_HWLOC_PCI',
              'CHPL_RE2',
 
              'CHPL_LLVM',
@@ -70,6 +72,7 @@ chplvars = [
              'CHPL_LLVM_CLANG_CXX',
              # CHPL_LLVM_VERSION -- doesn't make sense to override it
              'CHPL_LLVM_GCC_PREFIX', # not in printchplenv --all
+             'CHPL_LLVM_GCC_INSTALL_DIR', # not in printchplenv --all
 
              'CHPL_AUX_FILESYS',
              'CHPL_LIB_PIC',
@@ -81,6 +84,14 @@ chplvars = [
              'CHPL_HOST_USE_SYSTEM_LIBCXX',
            ]
 
+
+# this has to be defined here to prevent circular imports with chpl_home_utils
+def get_chpl_home(source):
+    chpl_home = source.get('CHPL_HOME', '')
+    if not chpl_home:
+        dirname = os.path.dirname
+        chpl_home = dirname(dirname(dirname(os.path.realpath(__file__))))
+    return chpl_home
 
 class ChapelConfig(object):
     """ Class for parsing chplconfig file and providing 'get' interface """
@@ -119,7 +130,7 @@ class ChapelConfig(object):
         # Places to look for a chplconfig file, in order of priority
         chpl_config = os.environ.get('CHPL_CONFIG')
         home = os.path.expanduser('~')
-        chpl_home = os.environ.get('CHPL_HOME')
+        chpl_home = get_chpl_home(os.environ)
 
         if self.chplconfig_found(chpl_config, 'CHPL_CONFIG'):
             return
@@ -171,25 +182,29 @@ class ChapelConfig(object):
                 # Strip comments and trailing white space from line
                 line = line.split('#')[0].strip()
 
-                if self.skip_line(line, linenum):
+                res = self.check_line(line, linenum)
+                if not res:
                     continue
 
-                var, val = [f.strip() for f in line.split('=')]
+                var, val = res
                 self.chplconfig[var] = val
 
-    def skip_line(self, line, linenum):
+    def check_line(self, line, linenum):
         """
         Check the various conditions for skipping a line, accumulate warnings.
+
+        Returns the tuple (var, val) if the line is valid, otherwise None.
         """
 
         # Check if line is comment, by taking length of stripped line
         if len(line) == 0:
-            return True
+            return None
 
-        # Check for syntax errors
-        try:
-            var, val = [f.strip() for f in line.split('=')]
-        except ValueError:
+
+        parts = line.split('=', maxsplit=1)
+        var = parts[0].strip()
+        val = parts[-1].strip()
+        if len(parts) != 2 or val.startswith('='):
             self.warnings.append(
             (
                 'Syntax Error: {0}:line {1}\n'
@@ -197,7 +212,7 @@ class ChapelConfig(object):
                 '              Expected format is:\n'
                 '              > CHPL_VAR = VALUE'
             ).format(self.prettypath, linenum, line.strip('\n')))
-            return True
+            return None
 
         # Check if var is in the list of approved special variables
         if var not in chplvars:
@@ -205,8 +220,7 @@ class ChapelConfig(object):
             (
                 '{0}:line {1}: "{2}" is not an acceptable variable'
             ).format(self.prettypath, linenum, var))
-            return True
-
+            return None
         # Warn about duplicate entries, but don't skip, just overwrite
         elif var in self.chplconfig.keys():
             self.warnings.append(
@@ -215,7 +229,7 @@ class ChapelConfig(object):
             ).format(self.prettypath, linenum, var))
 
         # If we reach here, this is a valid assignment, so don't skip
-        return False
+        return (var, val)
 
     def printwarnings(self):
         """ Print any warnings accumulated throughout constructor """

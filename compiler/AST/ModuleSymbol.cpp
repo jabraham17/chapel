@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -92,7 +92,11 @@ const char* ModuleSymbol::modTagToString(ModTag modTag) {
 *                                                                             *
 ************************************** | *************************************/
 
-void ModuleSymbol::mainModuleNameSet(const ArgumentDescription* desc,
+void ModuleSymbol::setMainModule(ModuleSymbol* mainModule) {
+  sMainModule = mainModule;
+}
+
+void ModuleSymbol::setMainModuleName(const ArgumentDescription* desc,
                                      const char*                arg) {
   sMainModuleName = arg;
 }
@@ -117,6 +121,16 @@ ModuleSymbol* ModuleSymbol::mainModule() {
 
 ModuleSymbol* ModuleSymbol::findMainModuleByName() {
   ModuleSymbol* retval = NULL;
+
+  if (fDynoGenStdLib) {
+    // use ChapelStandard as the main module
+    const char* searchAstr = astr("ChapelStandard");
+    forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+      if (mod->name == searchAstr) {
+        return mod;
+      }
+    }
+  }
 
   if (sMainModuleName != "") {
     forv_Vec(ModuleSymbol, mod, userModules) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,7 +20,7 @@
 
 /*
 
-This module provides frequently used mathematical constants and functions.
+Support for frequently used mathematical constants and functions.
 
 It includes wrappers for many of the constants and functions in
 the C Math library, which is part of the C Language Standard (ISO/IEC 9899)
@@ -80,17 +80,22 @@ Constants
 Trigonometric Functions
 ^^^^^^^^^^^^^^^^^^^^^^^
 :proc:`~Math.acos`
-:proc:`~Math.acosh`
 :proc:`~Math.asin`
-:proc:`~Math.asinh`
 :proc:`~Math.atan`
 :proc:`~Math.atan2`
-:proc:`~Math.atanh`
 :proc:`~Math.cos`
-:proc:`~Math.cosh`
 :proc:`~Math.sin`
-:proc:`~Math.sinh`
 :proc:`~Math.tan`
+
+.. _math-hyperbolic:
+
+Hyperbolic Functions
+^^^^^^^^^^^^^^^^^^^^
+:proc:`~Math.acosh`
+:proc:`~Math.asinh`
+:proc:`~Math.atanh`
+:proc:`~Math.cosh`
+:proc:`~Math.sinh`
 :proc:`~Math.tanh`
 
 .. _math-log:
@@ -188,277 +193,405 @@ module Math {
   param e = 2.7182818284590452354;
   /* log2(e) */
   param log2E = 1.4426950408889634074;
-  /* log2(e) */
-  @deprecated(notes="'log2_e' is deprecated, please use :param:`log2E` instead")
-  param log2_e = 1.4426950408889634074;
   /* log10(e) */
   param log10E = 0.43429448190325182765;
-  /* log10(e) */
-  @deprecated(notes="'log10_e' is deprecated, please use :param:`log10E` instead")
-  param log10_e = 0.43429448190325182765;
   /* ln(2) (natural logarithm) */
   param ln2 = 0.69314718055994530942;
-  /* log(2) (natural logarithm) */
-  @deprecated(notes="'ln_2' is deprecated, please use :param:`ln2` instead")
-  param ln_2 = 0.69314718055994530942;
   /* ln(10) (natural logarithm) */
   param ln10 = 2.30258509299404568402;
-  /* log(10) (natural logarithm) */
-  @deprecated(notes="'ln_10' is deprecated, please use :param:`ln10` instead")
-  param ln_10 = 2.30258509299404568402;
   /* pi - the circumference/the diameter of a circle */
   param pi = 3.14159265358979323846;
   /* pi/2 */
   @unstable("'halfPi' is unstable due to questions about its utility.  If you are seeing negative performance impacts from using 'pi/2' instead of this 'param', please let us know!")
   param halfPi = 1.57079632679489661923;
-  /* pi/2 */
-  @deprecated(notes="'half_pi' is deprecated, please use :param:`halfPi` or 'pi/2' instead")
-  param half_pi = 1.57079632679489661923;
   /* pi/4 */
   @unstable("'quarterPi' is unstable due to questions about its utility.  If you are seeing negative performance impacts from using 'pi/4' instead of this 'param', please let us know!")
   param quarterPi = 0.78539816339744830962;
-  /* pi/4 */
-  @deprecated(notes="'quarter_pi' is deprecated, please use :param:`quarterPi` or 'pi/4' instead")
-  param quarter_pi = 0.78539816339744830962;
   /* 1/pi */
   @unstable("'reciprPi' is unstable due to questions about its utility.  If you are seeing negative performance impacts from using '1/pi' instead of this 'param', please let us know!")
   param reciprPi = 0.31830988618379067154;
-  /* 1/pi */
-  @deprecated(notes="'recipr_pi' is deprecated, please use :param:`reciprPi` or '1/pi' instead")
-  param recipr_pi = 0.31830988618379067154;
   /* 2/pi */
   @unstable("'twiceReciprPi' is unstable due to questions about its utility.  If you are seeing negative performance impacts from using '2/pi' instead of this 'param', please let us know!")
   param twiceReciprPi = 0.63661977236758134308;
-  /* 2/pi */
-  @deprecated(notes="'twice_recipr_pi' is deprecated, please use :param:`twiceReciprPi` or '2/pi' instead")
-  param twice_recipr_pi = 0.63661977236758134308;
   /* 2/sqrt(pi) */
   @unstable("'twiceReciprSqrtPi' is unstable due to questions about its utility.  If you are using this symbol, please let us know!")
   param twiceReciprSqrtPi = 1.12837916709551257390;
-  /* 2/sqrt(pi) */
-  @deprecated(notes="'twice_recipr_sqrt_pi' is deprecated, please use :param:`twiceReciprSqrtPi` or '2/sqrt(pi)' instead")
-  param twice_recipr_sqrt_pi = 1.12837916709551257390;
   /* sqrt(2) */
   @unstable("'sqrt2' is unstable due to questions about its utility.  If you are using this symbol, please let us know!")
   param sqrt2 = 1.41421356237309504880;
-  /* sqrt(2) */
-  @deprecated(notes="'sqrt_2' is deprecated, please use :param:`sqrt2` or 'sqrt(2)' instead")
-  param sqrt_2 = 1.41421356237309504880;
   /* 1/sqrt(2) */
   @unstable("'reciprSqrt2' is unstable due to questions about its utility.  If you are using this symbol, please let us know!")
   param reciprSqrt2 = 0.70710678118654752440;
-  /* 1/sqrt(2) */
-  @deprecated(notes="'recipr_sqrt_2' is deprecated, please use :param:`reciprSqrt2` or '1/sqrt(2)' instead")
-  param recipr_sqrt_2 = 0.70710678118654752440;
+
+  /*
+    Used to enable the new return types for some of the trigonometric and
+    hyperbolic functions that operate on ``imag``. Now, does nothing.
+
+    Functions previously affected:
+    - ``proc cos(imag): real``
+    - ``proc cosh(imag): real``
+    - ``proc sin(imag): imag``
+    - ``proc sinh(imag): imag``
+    - ``proc tan(imag): imag``
+    - ``proc tanh(imag): imag``
+    - ``proc asin(imag): imag``
+    - ``proc atanh(imag): imag``
+  */
+  @chpldoc.nodoc
+  @deprecated(notes="'useNewImaginaryTrig' is deprecated and will be removed in a future release. It now has no effect, and is 'true' by default.")
+  config param useNewImaginaryTrig = true;
 
   /* Returns the arc cosine of the argument `x`.
 
      It is an error if `x` is less than -1 or greater than 1.
   */
-  inline proc acos(x: real(64)): real(64) {
-    return chpl_acos(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc acos(x: real(64)): real(64);
 
   /* Returns the arc cosine of the argument `x`.
 
      It is an error if `x` is less than -1 or greater than 1.
   */
   inline proc acos(x : real(32)): real(32) {
-    return chpl_acos(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc acosf(x: real(32)): real(32);
+    return acosf(x);
   }
 
   /* Returns the arc cosine of the argument `x`. */
   inline proc acos(x: complex(64)): complex(64) {
-    return chpl_acos(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_cacosf(z: complex(64)): complex(64);
+    return chpl_cacosf(x);
   }
 
   /* Returns the arc cosine of the argument `x`. */
   inline proc acos(x: complex(128)): complex(128) {
-    return chpl_acos(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_cacos(z: complex(128)): complex(128);
+    return chpl_cacos(x);
   }
 
   /* Returns the inverse hyperbolic cosine of the argument `x`.
 
      It is an error if `x` is less than 1.
   */
-  inline proc acosh(x: real(64)): real(64) {
-    return chpl_acosh(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc acosh(x: real(64)): real(64);
 
   /* Returns the inverse hyperbolic cosine of the argument `x`.
 
      It is an error if `x` is less than 1.
   */
   inline proc acosh(x : real(32)): real(32) {
-    return chpl_acosh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc acoshf(x: real(32)): real(32);
+    return acoshf(x);
   }
 
   /* Returns the inverse hyperbolic cosine of the argument `x`. */
   inline proc acosh(x: complex(64)): complex(64) {
-    return chpl_acosh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_cacoshf(z: complex(64)): complex(64);
+    return chpl_cacoshf(x);
   }
 
   /* Returns the inverse hyperbolic cosine of the argument `x`. */
   inline proc acosh(x: complex(128)): complex(128) {
-    return chpl_acosh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_cacosh(z: complex(128)): complex(128);
+    return chpl_cacosh(x);
   }
 
   /* Returns the arc sine of the argument `x`.
 
      It is an error if `x` is less than -1 or greater than 1.
   */
-  inline proc asin(x: real(64)): real(64) {
-    return chpl_asin(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc asin(x: real(64)): real(64);
 
   /* Returns the arc sine of the argument `x`.
 
      It is an error if `x` is less than -1 or greater than 1.
   */
   inline proc asin(x : real(32)): real(32) {
-    return chpl_asin(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc asinf(x: real(32)): real(32);
+    return asinf(x);
   }
 
   /* Returns the arc sine of the argument `x`. */
   inline proc asin(x: complex(64)): complex(64) {
-    return chpl_asin(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_casinf(z: complex(64)): complex(64);
+    return chpl_casinf(x);
   }
 
   /* Returns the arc sine of the argument `x`. */
   inline proc asin(x: complex(128)): complex(128) {
-    return chpl_asin(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_casin(z: complex(128)): complex(128);
+    return chpl_casin(x);
   }
 
+  /*
+    Returns the arc sine of the argument `x`.
+    Uses the formula `asin(i*x) == i*asinh(x)`.
+  */
+  proc asin(x: imag(32)): imag(32) do
+    return asinh(x:real(32)) : imag(32);
+  /*
+    Returns the arc sine of the argument `x`.
+    Uses the formula `asin(i*x) == i*asinh(x)`.
+  */
+  proc asin(x: imag(64)): imag(64) do
+    return asinh(x:real(64)) : imag(64);
+
   /* Returns the inverse hyperbolic sine of the argument `x`. */
-  inline proc asinh(x: real(64)): real(64) {
-    return chpl_asinh(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc asinh(x: real(64)): real(64);
 
   /* Returns the inverse hyperbolic sine of the argument `x`. */
   inline proc asinh(x : real(32)): real(32) {
-    return chpl_asinh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc asinhf(x: real(32)): real(32);
+    return asinhf(x);
   }
 
   /* Returns the inverse hyperbolic sine of the argument `x`. */
   inline proc asinh(x: complex(64)): complex(64) {
-    return chpl_asinh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_casinhf(z: complex(64)): complex(64);
+    return chpl_casinhf(x);
   }
 
   /* Returns the inverse hyperbolic sine of the argument `x`. */
   inline proc asinh(x: complex(128)): complex(128) {
-    return chpl_asinh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_casinh(z: complex(128)): complex(128);
+    return chpl_casinh(x);
   }
 
-  /* Returns the arc tangent of the argument `x`. */
-  inline proc atan(x: real(64)): real(64) {
-    return chpl_atan(x);
-  }
+  /* Returns the arc tangent of the argument `x`.  The result lies in the
+     inclusive range [-pi/2,+pi/2].
+  */
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc atan(x: real(64)): real(64);
 
-  /* Returns the arc tangent of the argument `x`. */
+  /* Returns the arc tangent of the argument `x`.  The result lies in the
+     inclusive range [-pi/2,+pi/2].
+  */
   inline proc atan(x : real(32)): real(32) {
-    return chpl_atan(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc atanf(x: real(32)): real(32);
+    return atanf(x);
   }
 
-  /* Returns the arc tangent of the argument `x`. */
+  /* Returns the arc tangent of the argument `x`.  The result lies in the
+     inclusive range [-pi/2,+pi/2].
+  */
   inline proc atan(x: complex(64)): complex(64) {
-    return chpl_atan(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_catanf(z: complex(64)): complex(64);
+    return chpl_catanf(x);
   }
 
-  /* Returns the arc tangent of the argument `x`. */
+  /* Returns the arc tangent of the argument `x`.  The result lies in the
+     inclusive range [-pi/2,+pi/2].
+  */
   inline proc atan(x: complex(128)): complex(128) {
-    return chpl_atan(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_catan(z: complex(128)): complex(128);
+    return chpl_catan(x);
   }
 
   /* Returns the arc tangent of the ratio of the two arguments.
 
-     This is equivalent to
-     the arc tangent of `y` / `x` except that the signs of `y`
-     and `x` are used to determine the quadrant of the result. */
-  inline proc atan2(y: real(64), x: real(64)): real(64) {
-    return chpl_atan2(y, x);
-  }
+     This is the arc (or inverse) tangent of `y` / `x` which lies in the
+     inclusive range [-pi,+pi] where the signs of `y` and `x` are used to
+     determine the quadrant of the result.
+  */
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc atan2(y: real(64), x: real(64)): real(64);
 
   /* Returns the arc tangent of the ratio of the two arguments.
 
-     This is equivalent to
-     the arc tangent of `y` / `x` except that the signs of `y`
-     and `x` are used to determine the quadrant of the result. */
+     This is the arc (or inverse) tangent of `y` / `x` which lies in the
+     inclusive range [-pi,+pi] where the signs of `y` and `x` are used to
+     determine the quadrant of the result.
+  */
   inline proc atan2(y : real(32), x: real(32)): real(32) {
-    return chpl_atan2(y, x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc atan2f(y: real(32), x: real(32)): real(32);
+    return atan2f(y, x);
   }
 
   /* Returns the inverse hyperbolic tangent of the argument `x`.
 
      It is an error if `x` is less than -1 or greater than 1. */
-  inline proc atanh(x: real(64)): real(64) {
-    return chpl_atanh(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc atanh(x: real(64)): real(64);
 
   /* Returns the inverse hyperbolic tangent of the argument `x`.
 
      It is an error if `x` is less than -1 or greater than 1. */
   inline proc atanh(x : real(32)): real(32) {
-    return chpl_atanh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc atanhf(x: real(32)): real(32);
+    return atanhf(x);
   }
 
   /* Returns the inverse hyperbolic tangent of the argument `x`. */
   inline proc atanh(x: complex(64)): complex(64) {
-    return chpl_atanh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_catanhf(z: complex(64)): complex(64);
+    return chpl_catanhf(x);
   }
 
   /* Returns the inverse hyperbolic tangent of the argument `x`. */
   inline proc atanh(x: complex(128)): complex(128) {
-    return chpl_atanh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_catanh(z: complex(128)): complex(128);
+    return chpl_catanh(x);
   }
 
+  /*
+    Returns the inverse hyperbolic tangent of the argument `x`.
+    Uses the formula `atanh(i*x) == i*atan(x)`.
+  */
+  proc atanh(x: imag(32)): imag(32) do
+    return atan(x:real(32)) : imag(32);
+  /*
+    Returns the inverse hyperbolic tangent of the argument `x`.
+    Uses the formula `atanh(i*x) == i*atan(x)`.
+  */
+  proc atanh(x: imag(64)): imag(64) do
+    return atan(x:real(64)) : imag(64);
+
   /* Returns the cosine of the argument `x`. */
-  inline proc cos(x: real(64)): real(64) {
-    return chpl_cos(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc cos(x: real(64)): real(64);
 
   /* Returns the cosine of the argument `x`. */
   inline proc cos(x : real(32)): real(32) {
-    return chpl_cos(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc cosf(x: real(32)): real(32);
+    return cosf(x);
   }
 
   /* Returns the cosine of the argument `x`. */
   inline proc cos(x : complex(64)): complex(64) {
-    return chpl_cos(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_ccosf(z: complex(64)): complex(64);
+    return chpl_ccosf(x);
   }
 
   /* Returns the cosine of the argument `x`. */
   inline proc cos(x : complex(128)): complex(128) {
-    return chpl_cos(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_ccos(z: complex(128)): complex(128);
+    return chpl_ccos(x);
   }
 
+  /*
+    Returns the cosine of the argument `x`.
+    Uses the formula `cos(i*x) == cosh(x)`.
+  */
+  inline proc cos(x: imag(32)): real(32) do
+    return cosh(x:real(32));
+  /*
+    Returns the cosine of the argument `x`.
+    Uses the formula `cos(i*x) == cosh(x)`.
+  */
+  inline proc cos(x: imag(64)): real(64) do
+    return cosh(x:real(64));
+
   /* Returns the hyperbolic cosine of the argument `x`. */
-  inline proc cosh(x: real(64)): real(64) {
-    return chpl_cosh(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc cosh(x: real(64)): real(64);
 
   /* Returns the hyperbolic cosine of the argument `x`. */
   inline proc cosh(x : real(32)): real(32) {
-    return chpl_cosh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc coshf(x: real(32)): real(32);
+    return coshf(x);
   }
 
   /* Returns the hyperbolic cosine of the argument `x`. */
   inline proc cosh(x: complex(64)): complex(64) {
-    return chpl_cosh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_ccoshf(z: complex(64)): complex(64);
+    return chpl_ccoshf(x);
   }
 
   /* Returns the hyperbolic cosine of the argument `x`. */
   inline proc cosh(x: complex(128)): complex(128) {
-    return chpl_cosh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_ccosh(z: complex(128)): complex(128);
+    return chpl_ccosh(x);
   }
 
+  /*
+    Returns the hyperbolic cosine of the argument `x`.
+    Uses the formula `cosh(i*x) == cos(x)`.
+  */
+  inline proc cosh(x: imag(32)): real(32) do
+    return cos(x:real(32));
+  /*
+    Returns the hyperbolic cosine of the argument `x`.
+    Uses the formula `cosh(i*x) == cos(x)`.
+  */
+  inline proc cosh(x: imag(64)): real(64) do
+    return cos(x:real(64));
+
   /* Returns :proc:`~Math.ceil`\(`x`/`y`),
      i.e., the fraction `x`/`y` rounded up to the nearest integer.
 
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divCeil(param x: integral, param y: integral) param do
-    return chpl_divceil(x, y);
+  proc divCeil(param x: integral, param y: integral) param do return
+    if isNonnegative(x) then
+      if isNonnegative(y) then (x + y - 1) / y
+      else                     x / y
+    else
+      if isNonnegative(y) then x / y
+      else                     (x + y + 1) / y;
+
 
   /* Returns :proc:`~Math.ceil`\(`x`/`y`),
      i.e., the fraction `x`/`y` rounded up to the nearest integer.
@@ -466,7 +599,13 @@ module Math {
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divCeil(x: integral, y: integral) do return chpl_divceil(x, y);
+  proc divCeil(x: integral, y: integral) do return
+    if isNonnegative(x) then
+      if isNonnegative(y) then (x + y - 1) / y
+      else                     x / y
+    else
+      if isNonnegative(y) then x / y
+      else                     (x + y + 1) / y;
 
   /*
     A variant of :proc:`divCeil` that performs no runtime checks.
@@ -475,7 +614,9 @@ module Math {
   */
   @unstable("divCeilPos is unstable due to questions about its utility.  If you find this function valuable, please let us know!")
   proc divCeilPos(x: integral, y: integral) {
-    return chpl_divceilpos(x, y);
+    if !isIntType(x.type) || !isIntType(y.type) then
+      compilerError("divCeilPos() accepts only arguments of signed integer types");
+    return (x - 1) / y + 1;
   }
 
   /* Returns :proc:`~Math.floor`\(`x`/`y`),
@@ -485,7 +626,12 @@ module Math {
      fewer conditionals will be evaluated at run time.
   */
   proc divFloor(param x: integral, param y: integral) param do return
-    chpl_divfloor(x, y);
+    if isNonnegative(x) then
+      if isNonnegative(y) then x / y
+      else                     (x - y - 1) / y
+    else
+      if isNonnegative(y) then (x - y + 1) / y
+      else                     x / y;
 
   /* Returns :proc:`~Math.floor`\(`x`/`y`),
      i.e., the fraction `x`/`y` rounded down to the nearest integer.
@@ -493,7 +639,13 @@ module Math {
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divFloor(x: integral, y: integral) do return chpl_divfloor(x, y);
+  proc divFloor(x: integral, y: integral) do return
+    if isNonnegative(x) then
+      if isNonnegative(y) then x / y
+      else                     (x - y - 1) / y
+    else
+      if isNonnegative(y) then (x - y + 1) / y
+      else                     x / y;
 
   /*
     A variant of :proc:`divFloor` that performs no runtime checks.
@@ -502,21 +654,29 @@ module Math {
   */
   @unstable("divFloorPos is unstable due to questions about its utility.  If you find this function valuable, please let us know!")
   proc divFloorPos(x: integral, y: integral) {
-    return chpl_divfloorpos(x, y);
+    if !isIntType(x.type) || !isIntType(y.type) then
+      compilerError("divFloorPos() accepts only arguments of signed integer types");
+    return x / y;
   }
 
   /* Returns the error function of the argument `x`. This is equivalent to
      ``2/sqrt(pi)`` * the integral of ``exp(-t**2)dt`` from 0 to `x`. */
   @unstable("'erf' is unstable and may be renamed or moved to a different module in the future")
   inline proc erf(x: real(64)): real(64) {
-    return chpl_erf(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc erf(x: real(64)): real(64);
+    return erf(x);
   }
 
   /* Returns the error function of the argument `x`. This is equivalent to
      ``2/sqrt(pi)`` * the integral of ``exp(-t**2)dt`` from 0 to `x`. */
   @unstable("'erf' is unstable and may be renamed or moved to a different module in the future")
   inline proc erf(x : real(32)): real(32) {
-    return chpl_erf(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc erff(x: real(32)): real(32);
+    return erff(x);
   }
 
   /* Returns the complementary error function of the argument `x`.
@@ -524,7 +684,10 @@ module Math {
   */
   @unstable("'erfc' is unstable and may be renamed or moved to a different module in the future")
   inline proc erfc(x: real(64)): real(64) {
-    return chpl_erfc(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc erfc(x: real(64)): real(64);
+    return erfc(x);
   }
 
   /* Returns the complementary error function of the argument `x`.
@@ -532,118 +695,125 @@ module Math {
   */
   @unstable("'erfc' is unstable and may be renamed or moved to a different module in the future")
   inline proc erfc(x : real(32)): real(32) {
-    return chpl_erfc(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc erfcf(x: real(32)): real(32);
+    return erfcf(x);
   }
 
   /* Returns the value of the Napierian :param:`e` raised to the power of the
      argument `x`. */
-  inline proc exp(x: real(64)): real(64) {
-    return chpl_exp(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc exp(x: real(64)): real(64);
 
   /* Returns the value of the Napierian :param:`e` raised to the power of the
      argument `x`. */
   inline proc exp(x : real(32)): real(32) {
-    return chpl_exp(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc expf(x: real(32)): real(32);
+    return expf(x);
   }
 
   /* Returns the value of the Napierian :param:`e` raised to the power of the
      argument `x`. */
   inline proc exp(x: complex(64)): complex(64) {
-    return chpl_exp(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_cexpf(z: complex(64)): complex(64);
+    return chpl_cexpf(x);
   }
 
   /* Returns the value of the Napierian :param:`e` raised to the power of the
      argument `x`. */
   inline proc exp(x: complex(128)): complex(128) {
-    return chpl_exp(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_cexp(z: complex(128)): complex(128);
+    return chpl_cexp(x);
   }
 
   /* Returns the value of `2` raised to the power of the argument `x`. */
-  inline proc exp2(x: real(64)): real(64) {
-    return chpl_exp2(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc exp2(x: real(64)): real(64);
 
   /* Returns the value of `2` raised to the power of the argument `x`. */
   inline proc exp2(x : real(32)): real(32) {
-    return chpl_exp2(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc exp2f(x: real(32)): real(32);
+    return exp2f(x);
   }
 
   /* Returns one less than the value of the Napierian :param:`e` raised to the
      power of the argument `x`. */
-  inline proc expm1(x: real(64)): real(64) {
-     return chpl_expm1(x); }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc expm1(x: real(64)): real(64);
 
   /* Returns one less than the value of the Napierian :param:`e` raised to the
      power of the argument `x`. */
   inline proc expm1(x : real(32)): real(32) {
-    return chpl_expm1(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc expm1f(x: real(32)): real(32);
+    return expm1f(x);
   }
 
   /* Returns the gamma function of the argument `x`. */
   inline proc gamma(x: real(64)): real(64) {
-    return chpl_tgamma(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc tgamma(x: real(64)): real(64);
+    return tgamma(x);
   }
 
   /* Returns the gamma function of the argument `x`. */
   inline proc gamma(x : real(32)): real(32) {
-    return chpl_tgamma(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc tgammaf(x: real(32)): real(32);
+    return tgammaf(x);
   }
 
   /* Returns the value of the argument `x` multiplied by 2 raised to the
      argument `exp` power, i.e., ``x * 2**exp``. */
   inline proc ldExp(x:real(64), exp:int(32)):real(64) {
-    return chpl_ldexp(x, exp);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc ldexp(x:real(64), n:int(32)):real(64);
+    return ldexp(x, exp);
   }
 
   /* Returns the value of the argument `x` multiplied by 2 raised to the
      argument `exp` power, i.e., ``x * 2**exp``. */
   inline proc ldExp(x:real(32), exp:int(32)):real(32) {
-    return chpl_ldexp(x, exp);
-  }
-
-  /* Returns the value of the argument `x` multiplied by 2 raised to the
-     argument `n` power, i.e., ``x * 2**n``. */
-  @deprecated(notes="'ldexp' with an 'n' argument has been deprecated, please use :proc:`ldExp` with an 'exp' argument instead")
-  inline proc ldexp(x:real(64), n:int(32)):real(64) {
-    return ldExp(x, n);
-  }
-
-  /* Returns the value of the argument `x` multiplied by 2 raised to the
-     argument `n` power, i.e., ``x * 2**n``. */
-  @deprecated(notes="'ldexp' with an 'n' argument has been deprecated, please use :proc:`ldExp` with an 'exp' argument instead")
-  inline proc ldexp(x:real(32), n:int(32)):real(32) {
-    return ldExp(x, n);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc ldexpf(x:real(32), n:int(32)):real(32);
+    return ldexpf(x, exp);
   }
 
   /* Returns the natural logarithm of the absolute value
      of the gamma function of the argument `x`.
   */
   inline proc lnGamma(x: real(64)): real(64) {
-    return chpl_lgamma(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc lgamma(x: real(64)): real(64);
+    return lgamma(x);
   }
 
   /* Returns the natural logarithm of the absolute value
      of the gamma function of the argument `x`.
   */
   inline proc lnGamma(x : real(32)): real(32) {
-    return chpl_lgamma(x);
-  }
-
-  /* Returns the natural logarithm of the absolute value
-     of the gamma function of the argument `x`.
-  */
-  @deprecated(notes="'lgamma' has been deprecated in favor of :proc:`lnGamma`, please use that instead")
-  inline proc lgamma(x: real(64)): real(64) {
-    return lnGamma(x);
-  }
-
-  /* Returns the natural logarithm of the absolute value
-     of the gamma function of the argument `x`.
-  */
-  @deprecated(notes="'lgamma' has been deprecated in favor of :proc:`lnGamma`, please use that instead")
-  inline proc lgamma(x : real(32)): real(32) {
-    return lnGamma(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc lgammaf(x: real(32)): real(32);
+    return lgammaf(x);
   }
 
   /* Returns the natural logarithm of the argument `x`.
@@ -651,7 +821,7 @@ module Math {
      It is an error if `x` is less than or equal to zero.
   */
   inline proc ln(x: real(64)): real(64) {
-    return chpl_log(x);
+    return log(x);
   }
 
   /* Returns the natural logarithm of the argument `x`.
@@ -659,17 +829,17 @@ module Math {
      It is an error if `x` is less than or equal to zero.
   */
   inline proc ln(x : real(32)): real(32) {
-    return chpl_log(x);
+    return log(x);
   }
 
   /* Returns the natural logarithm of the argument `x`. */
   inline proc ln(x: complex(64)): complex(64) {
-    return chpl_log(x);
+    return log(x);
   }
 
   /* Returns the natural logarithm of the argument `x`. */
   inline proc ln(x: complex(128)): complex(128) {
-    return chpl_log(x);
+    return log(x);
   }
 
   /* Returns the natural logarithm of the argument `x`.
@@ -708,26 +878,35 @@ module Math {
 
      It is an error if `x` is less than or equal to zero.
   */
-  inline proc log(x: real(64)): real(64) {
-    return chpl_log(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc log(x: real(64)): real(64);
 
   /* Returns the natural logarithm of the argument `x`.
 
      It is an error if `x` is less than or equal to zero.
   */
   inline proc log(x : real(32)): real(32) {
-    return chpl_log(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc logf(x: real(32)): real(32);
+    return logf(x);
   }
 
   /* Returns the natural logarithm of the argument `x`. */
   inline proc log(x: complex(64)): complex(64) {
-    return chpl_log(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_clogf(z: complex(64)): complex(64);
+    return chpl_clogf(x);
   }
 
   /* Returns the natural logarithm of the argument `x`. */
   inline proc log(x: complex(128)): complex(128) {
-    return chpl_log(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_clog(z: complex(128)): complex(128);
+    return chpl_clog(x);
   }
 
   /* Returns the natural logarithm of the argument `x`.
@@ -766,16 +945,19 @@ module Math {
 
      It is an error if `x` is less than or equal to zero.
   */
-  inline proc log10(x: real(64)): real(64) {
-    return chpl_log10(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc log10(x: real(64)): real(64);
 
   /* Returns the base 10 logarithm of the argument `x`.
 
      It is an error if `x` is less than or equal to zero.
   */
   inline proc log10(x : real(32)): real(32) {
-    return chpl_log10(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc log10f(x: real(32)): real(32);
+    return log10f(x);
   }
 
   /* Returns the base 10 logarithm of the argument `x`.
@@ -823,7 +1005,10 @@ module Math {
      It is an error if `x` is less than or equal to -1.
   */
   inline proc log1p(x : real(32)): real(32) {
-    return chpl_log1p(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc log1pf(x: real(32)): real(32);
+    return log1pf(x);
   }
 
   /* Returns the natural logarithm of `x` + 1.
@@ -856,6 +1041,41 @@ module Math {
     }
   }
 
+  private inline proc _logBasePow2Help(in val, baseLog2) {
+    // These are used here to avoid including BitOps by default.
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_bitops_clz_32(x: c_uint) : uint(32);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_bitops_clz_64(x: c_ulonglong) : uint(64);
+
+    var lg2 = 0;
+
+    if numBits(val.type) <= 32 {
+      var tmp:uint(32) = val:uint(32);
+      lg2 = 32 - 1 - chpl_bitops_clz_32(tmp):int;
+    } else if numBits(val.type) == 64 {
+      var tmp:uint(64) = val:uint(64);
+      lg2 = 64 - 1 - chpl_bitops_clz_64(tmp):int;
+    } else {
+      compilerError("Integer width not handled in logBasePow2");
+    }
+
+    return lg2 / baseLog2;
+  }
+
+  private inline proc chpl_logBasePow2(val: int(?w), baseLog2) {
+    if boundsChecking && val < 1 {
+      HaltWrappers.boundsCheckHalt("Can't take the log() of a non-positive integer");
+    }
+    return _logBasePow2Help(val, baseLog2);
+  }
+
+  private inline proc chpl_logBasePow2(val: uint(?w), baseLog2) {
+    return _logBasePow2Help(val, baseLog2);
+  }
+
   /* Returns the log to the base `2**exp` of the given `x` value.
      If `exp` is `1`, then returns the log to the base `2`;
      if `exp` is `2`, then returns the log to the base `4`, etc.
@@ -880,46 +1100,23 @@ module Math {
     return chpl_logBasePow2(x, exp);
   }
 
-  /* Returns the log to the base `2**baseLog2` of the given `in` value.
-     If `baseLog2` is `1`, then returns the log to the base `2`;
-     if `baseLog2` is `2`, then returns the log to the base `4`, etc.
-     Any fractional part is discarded.
-
-     :rtype: `int`
-  */
-  pragma "last resort"
-  @deprecated("The 'val' and 'baseLog2' argument names are now deprecated, please use 'x' and 'exp' respectively")
-  inline proc logBasePow2(val: int(?w), baseLog2) {
-    return chpl_logBasePow2(val, baseLog2);
-  }
-
-  /* Returns the log to the base `2**baseLog2` of the given `in` value.
-     If `baseLog2` is `1`, then returns the log to the base `2`;
-     if `baseLog2` is `2`, then returns the log to the base `4`, etc.
-     Any fractional part is discarded.
-
-     :rtype: `int`
-  */
-  pragma "last resort"
-  @deprecated("The 'val' and 'baseLog2' argument names are now deprecated, please use 'x' and 'exp' respectively")
-  inline proc logBasePow2(val: uint(?w), baseLog2) {
-    return chpl_logBasePow2(val, baseLog2);
-  }
-
   /* Returns the base 2 logarithm of the argument `x`.
 
      It is an error if `x` is less than or equal to zero.
   */
-  inline proc log2(x: real(64)): real(64) {
-    return chpl_log2(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc log2(x: real(64)): real(64);
 
   /* Returns the base 2 logarithm of the argument `x`.
 
      It is an error if `x` is less than or equal to zero.
   */
   inline proc log2(x : real(32)): real(32) {
-    return chpl_log2(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc log2f(x: real(32)): real(32);
+    return log2f(x);
   }
 
   /* Returns the base 2 logarithm of the argument `x`,
@@ -931,7 +1128,7 @@ module Math {
   */
   @unstable("The version of 'log2' that takes an int argument is unstable")
   inline proc log2(x: int(?w)) {
-    return chpl_log2(x);
+    return chpl_logBasePow2(x, 1);
   }
 
   /* Returns the base 2 logarithm of the argument `x`,
@@ -943,7 +1140,7 @@ module Math {
   */
   @unstable("The version of 'log2' that takes an uint argument is unstable")
   inline proc log2(x: uint(?w)) {
-    return chpl_log2(x);
+    return chpl_logBasePow2(x, 1);
   }
 
   /* Returns the rounded integral value of the argument `x` determined by the
@@ -952,7 +1149,10 @@ module Math {
   */
   @unstable("nearbyint is unstable while we design more thorough rounding support")
   inline proc nearbyint(x: real(64)): real(64) {
-    return chpl_nearbyint(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc nearbyint(x: real(64)): real(64);
+    return nearbyint(x);
   }
 
   /* Returns the rounded integral value of the argument `x` determined by the
@@ -961,7 +1161,10 @@ module Math {
   */
   @unstable("nearbyint is unstable while we design more thorough rounding support")
   inline proc nearbyint(x : real(32)): real(32) {
-    return chpl_nearbyint(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc nearbyintf(x: real(32)): real(32);
+    return nearbyintf(x);
   }
 
   /* Returns the rounded integral value of the argument `x` determined by the
@@ -970,7 +1173,10 @@ module Math {
   */
   @unstable("rint is unstable while we design more thorough rounding support")
   inline proc rint(x: real(64)): real(64) {
-    return chpl_rint(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc rint(x: real(64)): real(64);
+    return rint(x);
   }
 
   /* Returns the rounded integral value of the argument `x` determined by the
@@ -979,151 +1185,257 @@ module Math {
   */
   @unstable("rint is unstable while we design more thorough rounding support")
   inline proc rint(x : real(32)): real(32) {
-    return chpl_rint(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc rintf(x: real(32)): real(32);
+    return rintf(x);
   }
 
   /* Returns the sine of the argument `x`. */
-  inline proc sin(x: real(64)): real(64) {
-    return chpl_sin(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc sin(x: real(64)): real(64);
 
   /* Returns the sine of the argument `x`. */
   inline proc sin(x: real(32)): real(32) {
-    return chpl_sin(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc sinf(x: real(32)): real(32);
+    return sinf(x);
   }
 
   /* Returns the sine of the argument `x`. */
   inline proc sin(x: complex(64)): complex(64) {
-    return chpl_sin(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_csinf(z: complex(64)): complex(64);
+    return chpl_csinf(x);
   }
 
   /* Returns the sine of the argument `x`. */
   inline proc sin(x: complex(128)): complex(128) {
-    return chpl_sin(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_csin(z: complex(128)): complex(128);
+    return chpl_csin(x);
   }
 
+  /*
+    Returns the sine of the argument `x`.
+    Uses the formula `sin(i*x) == i*sinh(x)`.
+  */
+  proc sin(x: imag(32)): imag(32) do
+    return sinh(x:real(32)) : imag(32);
+  /*
+    Returns the sine of the argument `x`.
+    Uses the formula `sin(i*x) == i*sinh(x)`.
+  */
+  proc sin(x: imag(64)): imag(64) do
+    return sinh(x:real(64)) : imag(64);
+
+
   /* Returns the hyperbolic sine of the argument `x`. */
-  inline proc sinh(x: real(64)): real(64) {
-    return chpl_sinh(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc sinh(x: real(64)): real(64);
 
   /* Returns the hyperbolic sine of the argument `x`. */
   inline proc sinh(x : real(32)): real(32) {
-    return chpl_sinh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc sinhf(x: real(32)): real(32);
+    return sinhf(x);
   }
 
   /* Returns the hyperbolic sine of the argument `x`. */
   inline proc sinh(x: complex(64)): complex(64) {
-    return chpl_sinh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_csinhf(z: complex(64)): complex(64);
+    return chpl_csinhf(x);
   }
 
   /* Returns the hyperbolic sine of the argument `x`. */
   inline proc sinh(x: complex(128)): complex(128) {
-    return chpl_sinh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_csinh(z: complex(128)): complex(128);
+    return chpl_csinh(x);
   }
 
+  /*
+    Returns the hyperbolic sine of the argument `x`.
+    Uses the formula `sinh(i*x) == i*sin(x)`.
+  */
+  proc sinh(x: imag(32)): imag(32) do
+    return sin(x:real(32)) : imag(32);
+  /*
+    Returns the hyperbolic sine of the argument `x`.
+    Uses the formula `sinh(i*x) == i*sin(x)`.
+  */
+  proc sinh(x: imag(64)): imag(64) do
+    return sin(x:real(64)) : imag(64);
+
+
   /* Returns the tangent of the argument `x`. */
-  inline proc tan(x: real(64)): real(64) {
-    return chpl_tan(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc tan(x: real(64)): real(64);
 
   /* Returns the tangent of the argument `x`. */
   inline proc tan(x : real(32)): real(32) {
-    return chpl_tan(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc tanf(x: real(32)): real(32);
+    return tanf(x);
   }
 
   /* Returns the tangent of the argument `x`. */
   inline proc tan(x: complex(64)): complex(64) {
-    return chpl_tan(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_ctanf(z: complex(64)): complex(64);
+    return chpl_ctanf(x);
   }
 
   /* Returns the tangent of the argument `x`. */
   inline proc tan(x: complex(128)): complex(128) {
-    return chpl_tan(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_ctan(z: complex(128)): complex(128);
+    return chpl_ctan(x);
   }
 
+  /*
+    Returns the tangent of the argument `x`.
+    Uses the formula `tan(i*x) == i*tanh(x)`.
+  */
+  proc tan(x: imag(32)): imag(32) do
+    return tanh(x:real(32)) : imag(32);
+  /*
+    Returns the tangent of the argument `x`.
+    Uses the formula `tan(i*x) == i*tanh(x)`.
+  */
+  proc tan(x: imag(64)): imag(64) do
+    return tanh(x:real(64)) : imag(64);
+
+
   /* Returns the hyperbolic tangent of the argument `x`. */
-  inline proc tanh(x: real(64)): real(64) {
-    return chpl_tanh(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc tanh(x: real(64)): real(64);
 
   /* Returns the hyperbolic tangent of the argument `x`. */
   inline proc tanh(x : real(32)): real(32) {
-    return chpl_tanh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc tanhf(x: real(32)): real(32);
+    return tanhf(x);
   }
 
   /* Returns the hyperbolic tangent of the argument `x`. */
   inline proc tanh(x: complex(64)): complex(64) {
-    return chpl_tanh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_ctanhf(z: complex(64)): complex(64);
+    return chpl_ctanhf(x);
   }
 
   /* Returns the hyperbolic tangent of the argument `x`. */
   inline proc tanh(x: complex(128)): complex(128) {
-    return chpl_tanh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_ctanh(z: complex(128)): complex(128);
+    return chpl_ctanh(x);
   }
 
-  /* Returns the gamma function of the argument `x`. */
-  @deprecated("'tgamma' has been deprecated in favor of :proc:`gamma`, please use that instead")
-  inline proc tgamma(x: real(64)): real(64) {
-    return chpl_tgamma(x);
-  }
-
-  /* Returns the gamma function of the argument `x`. */
-  @deprecated("'tgamma' has been deprecated in favor of :proc:`gamma`, please use that instead")
-  inline proc tgamma(x : real(32)): real(32) {
-    return chpl_tgamma(x);
-  }
+  /*
+    Returns the hyperbolic tangent of the argument `x`.
+    Uses the formula `tanh(i*x) == i*tan(x)`.
+  */
+  proc tanh(x: imag(32)): imag(32) do
+    return tan(x:real(32)) : imag(32);
+  /*
+    Returns the hyperbolic tangent of the argument `x`.
+    Uses the formula `tanh(i*x) == i*tan(x)`.
+  */
+  proc tanh(x: imag(64)): imag(64) do
+    return tan(x:real(64)) : imag(64);
 
   /* Returns the greatest common divisor of the integer arguments `x` and
      `y`. */
   proc gcd(in x: int,in y: int): int {
     (x, y) = (abs(x), abs(y));
-    return chpl_gcd(x, y);
+    while(y != 0) {
+      (x, y) = (y, x % y);
+    }
+    return x;
   }
 
   /* Returns the greatest common divisor of the integer arguments `x` and
      `y`. */
   proc gcd(in x: int(32),in y: int(32)): int(32) {
     (x, y) = (abs(x), abs(y));
-    return chpl_gcd(x, y);
+    while(y != 0) {
+      (x, y) = (y, x % y);
+    }
+    return x;
   }
 
   /* Returns the greatest common divisor of the integer arguments `x` and
      `y`. */
   proc gcd(in x: int(16),in y: int(16)): int(16) {
     (x, y) = (abs(x), abs(y));
-    return chpl_gcd(x, y);
+    while(y != 0) {
+      (x, y) = (y, x % y);
+    }
+    return x;
   }
 
   /* Returns the greatest common divisor of the integer arguments `x` and
      `y`. */
   proc gcd(in x: int(8),in y: int(8)): int(8) {
     (x, y) = (abs(x), abs(y));
-    return chpl_gcd(x, y);
+    while(y != 0) {
+      (x, y) = (y, x % y);
+    }
+    return x;
   }
 
   /* Returns the greatest common divisor of the unsigned integer arguments `x`
      and `y`. */
   proc gcd(in x: uint(64),in y: uint(64)): uint(64) {
-    return chpl_gcd(x, y);
+    while(y != 0) {
+      (x, y) = (y, x % y);
+    }
+    return x;
   }
 
   /* Returns the greatest common divisor of the unsigned integer arguments `x`
      and `y`. */
   proc gcd(in x: uint(32),in y: uint(32)): uint(32) {
-    return chpl_gcd(x, y);
+    while(y != 0) {
+      (x, y) = (y, x % y);
+    }
+    return x;
   }
 
   /* Returns the greatest common divisor of the unsigned integer arguments `x`
      and `y`. */
   proc gcd(in x: uint(16),in y: uint(16)): uint(16) {
-    return chpl_gcd(x, y);
+    while(y != 0) {
+      (x, y) = (y, x % y);
+    }
+    return x;
   }
 
   /* Returns the greatest common divisor of the unsigned integer arguments `x`
      and `y`. */
   proc gcd(in x: uint(8),in y: uint(8)): uint(8) {
-    return chpl_gcd(x, y);
+    while(y != 0) {
+      (x, y) = (y, x % y);
+    }
+    return x;
   }
 
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
@@ -1320,17 +1632,5 @@ module Math {
   @unstable("The 'fma()' procedure was recently added, and may change based on feedback")
   inline proc fma(x: real(32), y: real(32), z: real(32)): real(32) {
     return fmaSelectPrimitiveOrExternCall(x, y, z);
-  }
-
-  @unstable("The 'fma()' procedure was recently added, and may change based on feedback")
-  inline proc fma(x: imag(64), y: imag(64), z: imag(64)): imag(64) {
-    type t = real(64);
-    return fmaSelectPrimitiveOrExternCall(x:t, y:t, z:t):imag(64);
-  }
-
-  @unstable("The 'fma()' procedure was recently added, and may change based on feedback")
-  inline proc fma(x: imag(32), y: imag(32), z: imag(32)): imag(32) {
-    type t = real(32);
-    return fmaSelectPrimitiveOrExternCall(x:t, y:t, z:t):imag(32);
   }
 }

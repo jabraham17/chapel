@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -138,6 +138,12 @@ Expr* buildForLoopExpr(Expr* indices,
                        Expr* cond = NULL,
                        bool maybeArrayType = false,
                        bool zippered = false);
+Expr* buildForeachLoopExpr(Expr* indices,
+                           Expr* iterator,
+                           Expr* expr,
+                           Expr* cond = NULL,
+                           bool maybeArrayType = false,
+                           bool zippered = false);
 Expr* buildForallLoopExpr(Expr* indices,
                           Expr* iterator,
                           Expr* expr,
@@ -167,7 +173,10 @@ DefExpr*  buildClassDefExpr(const char*               name,
                             AggregateTag              tag,
                             const std::vector<Expr*>& inherits,
                             BlockStmt*                decls,
-                            Flag                      isExtern);
+                            Flag                      isExtern,
+                            ModTag                    modTag);
+
+AggregateType* installInternalType(AggregateType* ct, AggregateType* dt);
 
 void setupTypeIntentArg(ArgSymbol* arg);
 
@@ -203,8 +212,10 @@ ForwardingStmt* buildForwardingStmt(DefExpr* fnDef,
 BlockStmt* buildConditionalLocalStmt(Expr* condExpr, Expr* stmt);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
-                             const char* resourceName);
-BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block);
+                             const char* resourceName,
+                             Symbol*& outStoredResource);
+BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block,
+                           ModTag modTag);
 BlockStmt* buildOnStmt(Expr* expr, Expr* stmt);
 BlockStmt* buildBeginStmt(CallExpr* byref_vars, Expr* stmt);
 BlockStmt* buildSyncStmt(Expr* stmt);

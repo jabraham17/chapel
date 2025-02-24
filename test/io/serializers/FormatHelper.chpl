@@ -5,6 +5,7 @@ module FormatHelper {
   use IO;
   use ChplFormat;
   use ObjectSerialization;
+  use PrecisionSerializer;
 
   enum FormatKind {
     default,
@@ -12,6 +13,7 @@ module FormatHelper {
     little,
     big,
     syntax,
+    precision,
     object
   }
 
@@ -39,6 +41,10 @@ module FormatHelper {
         if writing then return new chplSerializer();
         else return new chplDeserializer();
       }
+      when FormatKind.precision {
+        if writing then return new precisionSerializer(4, 8);
+        else return new IO.defaultDeserializer(); // no precision deserializer
+      }
       when FormatKind.object {
         if writing then return new objectSerializer(endian=IO.endianness.little);
         else return new objectDeserializer(endian=IO.endianness.little);
@@ -58,10 +64,10 @@ module FormatHelper {
        format == FormatKind.object {
       var f = openMemFile();
       {
-        var w = f.writer();
+        var w = f.writer(locking=false);
         w.withSerializer(FormatWriter).write(val);
       }
-      var r = f.reader();
+      var r = f.reader(locking=false);
       try {
         while true {
           stdout.writef("%02xu", r.readByte());

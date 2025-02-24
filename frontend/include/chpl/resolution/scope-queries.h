@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -38,31 +38,51 @@ namespace resolution {
   const Scope* scopeForId(Context* context, ID id);
 
   /**
-    Given an ID for a Module, returns a Scope that represents
-    the Module scope (and what symbols are defined in it).
+    Given an ID for a Module,
+    returns a Scope that represents the Module's scope
+    (and notes the symbols that are defined in it).
    */
   const Scope* scopeForModule(Context* context, ID moduleId);
+
+
+  const bool& isNameBuiltinGenericType(Context* context, UniqueString name);
+
+  /**
+    The configuration used to look up a plain identifier in a scope
+    when resolving expressions.
+   */
+  const LookupConfig IDENTIFIER_LOOKUP_CONFIG = LOOKUP_DECLS |
+                                                LOOKUP_IMPORT_AND_USE |
+                                                LOOKUP_PARENTS |
+                                                LOOKUP_EXTERN_BLOCKS;
 
   /**
     Find what a name might refer to.
 
     'scope' is the context in which the name occurs (e.g. as an Identifier)
 
-    'receiverScopes' is the scope of a type containing the name, in the case of
-    method calls, field accesses, and resolving a name within a method.  It is a
-    Scope representing the record/class/union itself for the receiver. If
-    provided, the receiverScopes will be consulted after declarations within
-    'scope' but before its parents. It accepts multiple scopes in order to
-    handle classes with inheritance.
+    'methodLookupHelper' should be nullptr unless working on resolving a method
+    call/field access or forwarding expressions within a class/record.
+    It should be used for something like 'foo.bar()' and in
+    such a case, when looking up 'bar', it should reflect the scopes for 'foo'.
+    Methods at this scope will be considered in addition to the usual.
+
+    'receiverScopeHelper' should be provided any time it's possible for
+    the scope lookup process to encounter an enclosing method when resolving
+    something that might use the implicit 'this'. In particular, in a method,
+    something like 'baz' might refer to a field or a method. So, the
+    'receiverScopeHelper' assists in such cases by calculating a
+    MethodLookupHelper for the receiver.
 
     The config argument is a group of or-ed together bit flags that adjusts the
     behavior of the lookup. Please see 'LookupConfig' and the related constants
     such as 'LOOKUP_DECLS' for further details.
    */
-  std::vector<BorrowedIdsWithName>
+  MatchingIdsWithName
   lookupNameInScope(Context* context,
                     const Scope* scope,
-                    llvm::ArrayRef<const Scope*> receiverScopes,
+                    const MethodLookupHelper* methodLookupHelper,
+                    const ReceiverScopeHelper* receiverScopeHelper,
                     UniqueString name,
                     LookupConfig config);
 
@@ -70,11 +90,11 @@ namespace resolution {
     Same as lookupNameInScope but can produce warnings based on
     the ID passed in.
    */
-
-  std::vector<BorrowedIdsWithName>
+  MatchingIdsWithName
   lookupNameInScopeWithWarnings(Context* context,
                                 const Scope* scope,
-                                llvm::ArrayRef<const Scope*> receiverScopes,
+                                const MethodLookupHelper* methodLookupHelper,
+                                const ReceiverScopeHelper* receiverScopeHelper,
                                 UniqueString name,
                                 LookupConfig config,
                                 ID idForWarnings);
@@ -84,10 +104,11 @@ namespace resolution {
     Same as lookupNameInScope but traces how each symbol was found,
     for error messages.
    */
-  std::vector<BorrowedIdsWithName>
+  MatchingIdsWithName
   lookupNameInScopeTracing(Context* context,
                            const Scope* scope,
-                           llvm::ArrayRef<const Scope*> receiverScopes,
+                           const MethodLookupHelper* methodLookupHelper,
+                           const ReceiverScopeHelper* receiverScopeHelper,
                            UniqueString name,
                            LookupConfig config,
                            std::vector<ResultVisibilityTrace>& traceResult);
@@ -95,13 +116,27 @@ namespace resolution {
   /**
     Same as lookupNameInScope but includes a set tracking visited scopes.
    */
-  std::vector<BorrowedIdsWithName>
+  MatchingIdsWithName
   lookupNameInScopeWithSet(Context* context,
                            const Scope* scope,
-                           const llvm::ArrayRef<const Scope*> receiverScopes,
+                           const MethodLookupHelper* methodLookupHelper,
+                           const ReceiverScopeHelper* receiverScopeHelper,
                            UniqueString name,
                            LookupConfig config,
                            CheckedScopes& visited);
+
+  /**
+    Collect all symbols that are available in this scope, including ones
+    brought in through visibility statements. This function follows the
+    same rules as lookupNameInScope, except it collects all symbols instead
+    of one with a specific name.
+
+    Currently, this is only intended for tool support; the resolver itself
+    should rely on lookupNameInScope.
+   */
+  std::map<UniqueString, MatchingIdsWithName>
+  getSymbolsAvailableInScope(Context* context,
+                             const Scope* scope);
 
   /**
     Returns true if all of checkScope is visible from fromScope
@@ -131,18 +166,27 @@ namespace resolution {
 
 
   /**
-   * Given a scope, returns a list of IDs for all the modules that were either
-   * used or imported in that scope. May return an empty vector if no modules
-   * were used or imported in the scope.
+   Given a scope, returns a vector of IDs for all the modules and enums that
+   were either used or imported in that scope. May return an empty vector if
+   no modules were used or imported in the scope.
    */
-  const std::vector<ID> findUsedImportedModules(Context* context,
-                                                const Scope* scope);
+  const std::vector<ID> findUsedImportedIds(Context* context,
+                                            const Scope* scope);
+
+  /**
+   Given a ID for a module, returns a vector of IDs for all the modules
+   that are used, imported, or mentioned in that module.
+   */
+  const std::vector<ID>& findMentionedModules(Context* context, ID modId);
 
   /**
     Resolve the uses and imports in a given scope.
+
+    If 'skipPrivate' is set, avoids resolving visibility statements that
+    only expose scope-private symbols. This helps avoid unnecessary work.
   */
   const ResolvedVisibilityScope*
-  resolveVisibilityStmts(Context* context, const Scope* scope);
+  resolveVisibilityStmts(Context* context, const Scope* scope, bool skipPrivate = false);
 
   /**
     Return the scope for the automatically included 'ChapelStandard' module,
@@ -151,24 +195,29 @@ namespace resolution {
   const Scope* scopeForAutoModule(Context* context);
 
   /**
-    Given the ID for a module 'entrypoint', compute the order in which
-    modules should be initialized. Note that this ordering does not consider
-    liveliness, and modules that are never used or have no module level
-    statements will currently still be listed in the result.
+    Given the ID for the main module, compute the order in which
+    modules should be initialized. 'commandLineModules' can be provided
+    with the list of modules that are named on the command line.
 
-    The result is list of ID pairs. The first ID in a pair is the module
-    to be initialized, and the second ID is the module that first triggered
-    initialization. The second ID may be empty if the first ID is the
-    entrypoint module or if initialization was triggered implicitly.
+    The result is vector of IDs indicating the order in which
+    modules with those IDs should be initialized.
   */
-  const std::vector<std::pair<ID, ID>>&
-  moduleInitializationOrder(Context* context, ID entrypoint);
+  const std::vector<ID>&
+  moduleInitializationOrder(Context* context, ID mainModule,
+                            std::vector<ID> commandLineModules);
 
   /**
     Check for symbol names with multiple definitions within a scope.
     This query only exists to emit errors.
    */
   void emitMultipleDefinedSymbolErrors(Context* context, const Scope* scope);
+
+
+  /**
+    Given a Scope* for a Module, return a DeclMap containing all symbols
+    publicly available from that module, including those brought in
+    transitively by use/import. */
+  const ModulePublicSymbols* publicSymbolsForModule(Context* context, const Scope* modScope);
 
 
 } // end namespace resolution

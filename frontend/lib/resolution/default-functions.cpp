@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,6 +26,7 @@
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
+#include "chpl/uast/AstTag.h"
 #include "chpl/uast/all-uast.h"
 
 #include "Resolver.h"
@@ -37,6 +38,9 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+static bool isDeSerializeMethod(UniqueString name) {
+  return name == USTR("serialize") || name == USTR("deserialize");
+}
 
 /**
   Return true if 'name' is the name of a compiler generated method.
@@ -49,16 +53,24 @@ static bool isNameOfCompilerGeneratedMethod(UniqueString name) {
     return true;
   }
 
+  if (isDeSerializeMethod(name)) {
+    return true;
+  }
+
   return false;
 }
 
 static bool
-areOverloadsPresentInDefiningScope(Context* context, const Type* type,
+areOverloadsPresentInDefiningScope(Context* context,
+                                   const Type* type,
+                                   QualifiedType::Kind kind,
                                    UniqueString name) {
   const Scope* scopeForReceiverType = nullptr;
 
   if (auto compType = type->getCompositeType()) {
     scopeForReceiverType = scopeForId(context, compType->id());
+  } else if (auto enumType = type->toEnumType()) {
+    scopeForReceiverType = scopeForId(context, enumType->id());
   }
 
   // there is no defining scope
@@ -67,39 +79,58 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
   // do not look outside the defining module
   const LookupConfig config = LOOKUP_DECLS | LOOKUP_PARENTS | LOOKUP_METHODS;
 
-  auto vec = lookupNameInScope(context, scopeForReceiverType,
-                               /* receiver scopes */ {},
+  auto ids = lookupNameInScope(context, scopeForReceiverType,
+                               /* methodLookupHelper */ nullptr,
+                               /* receiverScopeHelper */ nullptr,
                                name, config);
 
+  // this ought to be solved by interfaces, but today it isn't. As a workaround
+  // for some standard types having their (de)serialize methods defined in
+  // ChapelIO, search that module too.
+  if (ids.numIds() == 0 && isDeSerializeMethod(name)) {
+    auto chapelIo =
+      parsing::getToplevelModule(context,
+                                 UniqueString::get(context, "ChapelIO"));
+    if (!chapelIo) return false;
+
+    ids = lookupNameInScope(context, scopeForModule(context, chapelIo->id()),
+                            /* methodLookupHelper */ nullptr,
+                            /* receiverScopeHelper */ nullptr,
+                            name, config);
+  }
+
   // nothing found
-  if (vec.size() == 0) return false;
+  if (ids.numIds() == 0) return false;
 
-  auto haveQt = QualifiedType(QualifiedType::VAR, type);
+  auto haveQt = QualifiedType(kind, type);
 
-  // loop through IDs and see if any are methods on the same type
-  for (auto& ids : vec) {
-    for (const auto& id : ids) {
-      auto node = parsing::idToAst(context, id);
-      CHPL_ASSERT(node);
+  // loop through IDs and see if any are methods or operators (method or
+  // standalone) on the same type
+  for (const auto& id : ids) {
+    // TODO: is idToAst appropriate here? Might be better to use
+    // UntypedFnSignature / TypedFnSignature.
+    auto node = parsing::idToAst(context, id);
+    CHPL_ASSERT(node);
 
-      if (auto fn = node->toFunction()) {
-        if (fn->isMethod()) {
-          ResolutionResultByPostorderID r;
-          auto vis = Resolver::createForInitialSignature(context, fn, r);
-          fn->thisFormal()->traverse(vis);
-          auto receiverQualType = vis.byPostorder.byAst(fn->thisFormal()).type();
+    if (auto fn = node->toFunction()) {
+      if (fn->isMethod() || fn->kind() == Function::Kind::OPERATOR) {
+        ResolutionResultByPostorderID r;
+        ResolutionContext rcval(context);
+        auto vis = Resolver::createForInitialSignature(&rcval, fn, r);
+        // use receiver for method, first formal for standalone operator
+        auto checkFormal =
+            (fn->isMethod() ? fn->thisFormal() : fn->formal(0));
+        checkFormal->traverse(vis);
+        auto receiverQualType = vis.byPostorder.byAst(checkFormal).type();
 
-          // return true if the receiver type matches or
-          // if the receiver type is a generic type and we have
-          // an instantiation.
-          auto result = canPass(context, haveQt, receiverQualType);
-          if (result.passes() && !result.converts() && !result.promotes()) {
-            return true;
-          }
-        } else if (fn->kind()==Function::Kind::OPERATOR) {
-          // TODO: There should probably be some more checks happening in here,
-          // but unsure of what they should be currently and this seems to work
-          // in basic testing.
+        // Return true if:
+        // * the receiver type matches
+        // * the receiver type is a generic type and we have an instantiation
+        // * the receiver type converts via implicit borrowing
+        auto result = canPass(context, haveQt, receiverQualType);
+        if (result.passes() &&
+            (!result.converts() || result.convertsWithBorrowing()) &&
+            !result.promotes()) {
           return true;
         }
       }
@@ -120,33 +151,30 @@ static bool isBuiltinTypeOperator(UniqueString name) {
 bool
 needCompilerGeneratedMethod(Context* context, const Type* type,
                             UniqueString name, bool parenless) {
-  if (isNameOfCompilerGeneratedMethod(name) ||
+  if (type == nullptr) return false;
+
+  if (type->isNothingType()) return false;
+
+  bool isAggregate = type->getCompositeType() || type->isRecordLike();
+  if ((isAggregate && isNameOfCompilerGeneratedMethod(name)) ||
       (type->isRecordType() && !isBuiltinTypeOperator(name))) {
-    if (!areOverloadsPresentInDefiningScope(context, type, name)) {
+    if (!areOverloadsPresentInDefiningScope(context, type, QualifiedType::INIT_RECEIVER, name)) {
       return true;
     }
   }
 
-  // Some basic getter methods for domain properties
-  //
-  // TODO: We can eventually replace these for calls on a domain *value* by
-  // looking at the property from the _instance implementation. But that won't
-  // work if we want to support these methods on a domain type-expression.
-  //
-  // TODO: calling these within a method doesn't work
-  if (type->isDomainType()) {
-    if (parenless) {
-      if (name == "idxType" || name == "rank" || name == "stridable" ||
-          name == "parSafe") {
-        return true;
-      }
-    } else {
-      if (name == "isRectangular" || name == "isAssociative") {
-        return true;
-      }
+  if (type->isPtrType()) {
+    if (name == "eltType") {
+      return true;
+    } else if (type->isHeapBufferType() && name == "this") {
+      return true;
     }
-  } else if (type->isArrayType()) {
-    if (name == "domain" || name == "eltType") {
+  } else if (type->isEnumType()) {
+    if (name == "size") {
+      return true;
+    }
+  } else if (type->isIteratorType()) {
+    if (name == "_shape_") {
       return true;
     }
   }
@@ -154,267 +182,529 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
   return false;
 }
 
-// generates the untyped function signature and typed function
-// signature formal entries for the 'this' method receiver for
-// some kind of 'init' or 'init='
-static void
-generateInitParts(Context* context,
-                  const CompositeType* inCompType,
-                  const CompositeType*& compType,
-                  std::vector<UntypedFnSignature::FormalDetail>& ufsFormals,
-                  std::vector<QualifiedType>& formalTypes,
-                  bool useGeneric) {
-  // adjust to refer to fully generic signature if needed
-  auto genericCompType = inCompType->instantiatedFromCompositeType();
-  if (useGeneric && genericCompType != nullptr) {
-    compType = genericCompType;
-  } else {
-    compType = inCompType;
-  }
+static bool initHelper(Context* context,
+                       Builder* builder,
+                       const AggregateDecl* typeDecl,
+                       const Location& dummyLoc,
+                       AstList& formals, AstList& superArgs, AstList& stmts) {
+  // Return 'true' if a super.init call is necessary
+  bool addSuperInit = false;
 
-  // start by adding a formal for the receiver
-  auto ufsReceiver = UntypedFnSignature::FormalDetail(USTR("this"),
-                                                      false,
-                                                      nullptr);
-  ufsFormals.push_back(std::move(ufsReceiver));
+  // Check if we need a super.init() call. If the parent has a default
+  // initializer, add arguments to the super.init() and formals to the
+  // current initializer.
+  if (auto cls = typeDecl->toClass()) {
+    auto t = initialTypeForTypeDecl(context, cls->id());
+    auto bct = t->getCompositeType()->toBasicClassType();
+    auto pct = bct->parentClassType();
 
-  // Determine the receiver type and intent.
-  QualifiedType qtReceiver;
+    if (pct && !pct->isObjectType()) {
+      addSuperInit = true;
 
-  // If the receiver is a record type, just give it the 'ref' intent.
-  if (compType->isRecordType() || compType->isUnionType()) {
-    qtReceiver = QualifiedType(QualifiedType::REF, compType);
+      const Type* manager = nullptr;
+      auto borrowedNonnilDecor =
+          ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+      auto parentReceiver =
+        ClassType::get(context, pct->toBasicClassType(), manager, borrowedNonnilDecor);
+      auto userDefinedExists = areOverloadsPresentInDefiningScope(context,
+                                 parentReceiver,
+                                 QualifiedType::INIT_RECEIVER,
+                                 USTR("init"));
 
-  // If the receiver is a basic class C, use 'const in x: borrowed C'.
-  } else if (auto basic = compType->toBasicClassType()) {
-    const Type* manager = nullptr;
-    auto nonNilBorrowed  = ClassTypeDecorator::BORROWED_NONNIL;
-    auto decor = ClassTypeDecorator(nonNilBorrowed);
-    auto receiverType = ClassType::get(context, basic, manager, decor);
-    CHPL_ASSERT(receiverType);
-    qtReceiver = QualifiedType(QualifiedType::CONST_IN, receiverType);
+      if (!userDefinedExists) {
+        auto& br = buildInitializer(context, pct->id());
+        auto fn = br.topLevelExpression(0)->toFunction();
 
-  } else {
-    CHPL_ASSERT(false && "Not possible!");
-  }
+        // Add formals and super.init() arguments
+        for (auto formal : fn->formals()) {
+          if (auto named = formal->toNamedDecl();
+              named && named->name() != USTR("this")) {
+            formals.push_back(formal->copy());
 
-  formalTypes.push_back(std::move(qtReceiver));
-}
-
-
-static const TypedFnSignature*
-generateInitSignature(Context* context, const CompositeType* inCompType) {
-  const CompositeType* compType = nullptr;
-  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
-  std::vector<QualifiedType> formalTypes;
-
-  generateInitParts(context, inCompType, compType,
-                    ufsFormals, formalTypes, /*useGeneric*/ true);
-
-  // consult the fields to build up the remaining untyped formals
-  const DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
-  auto& rf = fieldsForTypeDecl(context, compType, defaultsPolicy);
-
-  // TODO: generic types
-  if (rf.isGeneric()) {
-    CHPL_ASSERT(false && "Not handled yet!");
-  }
-
-  // TODO: super fields and invoking super
-  if (auto basic = compType->toBasicClassType()) {
-    if (auto parent = basic->parentClassType()) {
-      if (!parent->isObjectType()) {
-        CHPL_UNIMPL("initializers on inheriting classes");
+            owned<AstNode> arg = Identifier::build(builder, dummyLoc, named->name());
+            superArgs.push_back(std::move(arg));
+          }
+        }
       }
     }
   }
 
-  // push all fields -> formals in order
-  for (int i = 0; i < rf.numFields(); i++) {
-    auto fieldQt = rf.fieldType(i);
-    auto formalName = rf.fieldName(i);
-    bool formalHasDefault = rf.fieldHasDefaultValue(i);
-    const uast::Decl* formalAst = nullptr;
-
-    // A field may not have a default value. If it is default-initializable
-    // then the formal should still take a default value (in this case the
-    // default value is for the type, e.g., '0' for 'int'.
-    // TODO: If this isn't granular enough, we can introduce a 'DefaultValue'
-    // type that can be used as a sentinel.
-    formalHasDefault |= isTypeDefaultInitializable(context, fieldQt.type());
-
-    auto fd = UntypedFnSignature::FormalDetail(formalName, formalHasDefault,
-                                               formalAst);
-    ufsFormals.push_back(std::move(fd));
-
+  // Note: Using lambdas here to avoid threading several arguments
+  auto addFormal = [&](const VarLikeDecl* field,
+                       const AstNode* typeExpr,
+                       const AstNode* initExpr) -> void {
+    Formal::Intent kind;
     // for types & param, use the field kind, for values use 'in' intent
-    if (fieldQt.isType() || fieldQt.isParam()) {
-      formalTypes.push_back(fieldQt);
+    if (field->storageKind() == Qualifier::TYPE ||
+        field->storageKind() == Qualifier::PARAM) {
+      kind = (Formal::Intent)field->storageKind();
     } else {
-      auto qt = QualifiedType(QualifiedType::IN, fieldQt.type());
-      formalTypes.push_back(std::move(qt));
+      kind = Formal::Intent::IN;
+    }
+
+    owned<AstNode> formal = Formal::build(builder, dummyLoc,
+                                          /*attributeGroup=*/nullptr,
+                                          field->name(), kind,
+                                          typeExpr ? typeExpr->copy() : nullptr,
+                                          initExpr ? initExpr->copy() : nullptr);
+
+    // Create 'this.field = arg;' statement
+    owned<AstNode> lhs = Dot::build(builder, dummyLoc,
+                                    Identifier::build(builder, dummyLoc, USTR("this")),
+                                    field->name());
+    owned<AstNode> rhs = Identifier::build(builder, dummyLoc, field->name());
+    owned<AstNode> assign = OpCall::build(builder, dummyLoc, USTR("="),
+                                          std::move(lhs), std::move(rhs));
+    stmts.push_back(std::move(assign));
+
+    formals.push_back(std::move(formal));
+  };
+
+  std::function<void (const AstNode*)> processDecl = [&addFormal, &processDecl](auto ast) {
+    if (auto var = ast->toVarLikeDecl()) {
+      addFormal(var, var->typeExpression(), var->initExpression());
+    } else if (auto multi = ast->toMultiDecl()) {
+      auto it = multi->decls().begin();
+      auto groupBegin = it;
+      const AstNode* curTypeExpr = nullptr;
+      const AstNode* curInitExpr = nullptr;
+
+      // Iterate over decls until we find one with either a type-expression or
+      // init-expression. Once found, the inner loop propagates the
+      // type/init-expressions to previous decls without such expressions.
+      //
+      // For example, in a multi-decl like this:
+      //
+      //   var a, b: string, c, d = 0;
+      //
+      // The outer loop would do nothing for variables, 'a' and 'c'. Then,
+      // when 'b' and 'd' are examined, their expressions will be propagated
+      // back to 'a' and 'c' during the inner loop.
+      while (it != multi->decls().end()) {
+        const VarLikeDecl* curDecl = (*it)->toVarLikeDecl();
+
+        // TupleDecls currently not supported as fields
+        CHPL_ASSERT(curDecl != nullptr);
+
+        curTypeExpr = curDecl->typeExpression();
+        curInitExpr = curDecl->initExpression();
+
+        // Now, propagate to the previous decls forming the current 'group'.
+        // We process this group in a 'forward' direction, rather than a
+        // 'backward' direction, so that we preserve field declaration order.
+        if (curTypeExpr || curInitExpr) {
+          auto groupEnd = std::next(it);
+          auto groupIt = groupBegin;
+          while (groupIt != groupEnd) {
+            const VarLikeDecl* d = (*groupIt)->toVarLikeDecl();
+            addFormal(d, curTypeExpr, curInitExpr);
+            groupIt++;
+          }
+
+          groupBegin = groupEnd;
+        }
+
+        ++it;
+      }
+    } else if (auto tup = ast->toTupleDecl()) {
+      CHPL_ASSERT(false && "tuple decls cannot currently be used as fields");
+    } else if (auto fwd = ast->toForwardingDecl()) {
+      if (fwd->isDecl()) {
+        processDecl(fwd->expr());
+      }
+    }
+  };
+
+  for (auto d : typeDecl->decls()) {
+    processDecl(d);
+  }
+
+  return addSuperInit;
+}
+
+const BuilderResult& buildInitializer(Context* context, ID typeID) {
+  QUERY_BEGIN(buildInitializer, context, typeID);
+
+  auto typeDecl = parsing::idToAst(context, typeID)->toAggregateDecl();
+  auto bld = Builder::createForGeneratedCode(context, typeID);
+  auto builder = bld.get();
+  auto dummyLoc = parsing::locateId(context, typeID);
+
+  auto thisType = Identifier::build(builder, dummyLoc, typeDecl->name());
+  auto thisFormal = Formal::build(builder, dummyLoc, nullptr,
+                                  USTR("this"), Formal::DEFAULT_INTENT,
+                                  std::move(thisType), nullptr);
+
+  AstList formals;
+  AstList stmts;
+  AstList superArgs;
+  bool addSuperInit = initHelper(context, builder, typeDecl, dummyLoc,
+                                 formals, superArgs, stmts);
+
+  if (addSuperInit) {
+    owned<AstNode> dot = Dot::build(builder, dummyLoc,
+                                    Identifier::build(builder, dummyLoc,
+                                                      USTR("super")),
+                                    USTR("init"));
+    owned<AstNode> call = FnCall::build(builder, dummyLoc,
+                                        std::move(dot), std::move(superArgs),
+                                        /*callUsedSquareBrackets*/false);
+    stmts.insert(stmts.begin(), std::move(call));
+  }
+
+  auto body = Block::build(builder, dummyLoc, std::move(stmts));
+  auto genFn = Function::build(builder,
+                               dummyLoc, {},
+                               Decl::Visibility::PUBLIC,
+                               Decl::Linkage::DEFAULT_LINKAGE,
+                               /*linkageName=*/{},
+                               USTR("init"),
+                               /*inline=*/false, /*override=*/false,
+                               Function::Kind::PROC,
+                               /*receiver=*/std::move(thisFormal),
+                               Function::ReturnIntent::DEFAULT_RETURN_INTENT,
+                               // throws, primaryMethod, parenless
+                               false, false, false,
+                               std::move(formals),
+                               // returnType, where, lifetime, body
+                               {}, {}, {}, std::move(body));
+
+  builder->noteChildrenLocations(genFn.get(), dummyLoc);
+  builder->addToplevelExpression(std::move(genFn));
+
+  auto result = builder->result();
+  return QUERY_END(result);
+}
+
+static std::vector<UntypedFnSignature::FormalDetail>
+buildInitUfsFormals(const uast::Function* initFn) {
+  // compute the FormalDetails manually so that we can set the default-kind
+  // appropriately.
+  //
+  // TODO: give the Formals proper init-expressions so that we can rely on
+  // pre-existing code to create the UntypedFnSignature.
+  std::vector<UntypedFnSignature::FormalDetail> formals;
+  for (auto decl : initFn->formals()) {
+    UniqueString name;
+    bool hasDefault = false;
+
+    if (auto formal = decl->toFormal()) {
+      name = formal->name();
+
+      // Check if formal should have a default, which is never true for init=
+      if (initFn->name() != USTR("init=")) {
+        hasDefault = formal->initExpression() != nullptr;
+        if (decl != initFn->thisFormal()) {
+          if (formal->intent() != Formal::Intent::TYPE &&
+              formal->intent() != Formal::Intent::PARAM) {
+            if (formal->typeExpression() != nullptr) {
+              hasDefault = true;
+            }
+          }
+        }
+      }
+    }
+
+    auto defaultKind = hasDefault ? UntypedFnSignature::DK_DEFAULT
+                                  : UntypedFnSignature::DK_NO_DEFAULT;
+    auto fd = UntypedFnSignature::FormalDetail(name, defaultKind,
+                                               decl, decl->isVarArgFormal());
+    formals.push_back(fd);
+  }
+
+  return formals;
+}
+
+static const TypedFnSignature*
+generateInitSignature(Context* context, const CompositeType* inCompType) {
+  if (auto ct = inCompType->getCompositeType()->toBasicClassType()) {
+    if (ct->isObjectType()) {
+      return nullptr;
     }
   }
 
-  // build the untyped signature
-  auto ufs = UntypedFnSignature::get(context,
-                        /*id*/ compType->id(),
-                        /*name*/ USTR("init"),
-                        /*isMethod*/ true,
-                        /*isTypeConstructor*/ false,
-                        /*isCompilerGenerated*/ true,
-                        /*throws*/ false,
-                        /*idTag*/ parsing::idToTag(context, compType->id()),
-                        /*kind*/ uast::Function::Kind::PROC,
-                        /*formals*/ std::move(ufsFormals),
-                        /*whereClause*/ nullptr);
+  auto& br = buildInitializer(context, inCompType->id());
 
-  // now build the other pieces of the typed signature
-  bool needsInstantiation = rf.isGeneric();
+  auto initFn = br.topLevelExpression(0)->toFunction();
+  auto formals = buildInitUfsFormals(initFn);
 
-  auto ret = TypedFnSignature::get(context,
-                                   ufs,
-                                   std::move(formalTypes),
-                                   TypedFnSignature::WHERE_NONE,
-                                   needsInstantiation,
-                                   /* instantiatedFrom */ nullptr,
-                                   /* parentFn */ nullptr,
-                                   /* formalsInstantiated */ Bitmap());
+  // find the unique-ified untyped signature
+  auto uSig = UntypedFnSignature::get(context, initFn->id(), initFn->name(),
+                                   true,
+                                   /* isTypeConstructor */ false,
+                                   /* isCompilerGenerated */ true,
+                                   /* throws */ false,
+                                   /* idTag */ asttags::Function,
+                                   uast::Function::Kind::PROC,
+                                   std::move(formals), nullptr,
+                                   inCompType->id());
 
-  return ret;
+  ResolutionContext rcval(context);
+  return typedSignatureInitial(&rcval, uSig);
+}
+
+const BuilderResult& buildInitEquals(Context* context, ID typeID) {
+  QUERY_BEGIN(buildInitEquals, context, typeID);
+
+  auto typeDecl = parsing::idToAst(context, typeID)->toAggregateDecl();
+  auto bld = Builder::createForGeneratedCode(context, typeID);
+  auto builder = bld.get();
+  auto dummyLoc = parsing::locateId(context, typeID);
+
+  auto thisType = Identifier::build(builder, dummyLoc, typeDecl->name());
+  auto thisFormal = Formal::build(builder, dummyLoc, nullptr,
+                                  USTR("this"), Formal::DEFAULT_INTENT,
+                                  std::move(thisType), nullptr);
+
+  // TODO: constrain type to be same as 'typeID', possibly through 'this.type'?
+  auto otherName = UniqueString::get(context, "other");
+  auto otherFormal = Formal::build(builder, dummyLoc, nullptr,
+                                   otherName, Formal::DEFAULT_INTENT,
+                                   nullptr, nullptr);
+  AstList formals;
+  formals.push_back(std::move(otherFormal));
+
+  AstList stmts;
+
+  auto ct = initialTypeForTypeDecl(context, typeID)->getCompositeType();
+
+  // attempt to resolve the fields
+  DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
+  const ResolvedFields& rf = fieldsForTypeDecl(context, ct,
+                                               defaultsPolicy,
+                                               /* syntaxOnly */ true);
+  for (int i = 0; i < rf.numFields(); i++) {
+    auto name = rf.fieldName(i);
+    // Create 'this.field = other.field;' statement
+    owned<AstNode> lhs = Dot::build(builder, dummyLoc,
+                                    Identifier::build(builder, dummyLoc, USTR("this")),
+                                    name);
+    owned<AstNode> rhs = Dot::build(builder, dummyLoc,
+                                    Identifier::build(builder, dummyLoc, otherName),
+                                    name);
+    owned<AstNode> assign = OpCall::build(builder, dummyLoc, USTR("="),
+                                          std::move(lhs), std::move(rhs));
+    stmts.push_back(std::move(assign));
+  }
+
+  auto body = Block::build(builder, dummyLoc, std::move(stmts));
+  auto genFn = Function::build(builder,
+                               dummyLoc, {},
+                               Decl::Visibility::PUBLIC,
+                               Decl::Linkage::DEFAULT_LINKAGE,
+                               /*linkageName=*/{},
+                               USTR("init="),
+                               /*inline=*/false, /*override=*/false,
+                               Function::Kind::PROC,
+                               /*receiver=*/std::move(thisFormal),
+                               Function::ReturnIntent::DEFAULT_RETURN_INTENT,
+                               // throws, primaryMethod, parenless
+                               false, false, false,
+                               std::move(formals),
+                               // returnType, where, lifetime, body
+                               {}, {}, {}, std::move(body));
+
+  builder->noteChildrenLocations(genFn.get(), dummyLoc);
+  builder->addToplevelExpression(std::move(genFn));
+
+  auto result = builder->result();
+  return QUERY_END(result);
 }
 
 static const TypedFnSignature*
 generateInitCopySignature(Context* context, const CompositeType* inCompType) {
-  const CompositeType* compType = nullptr;
-  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
-  std::vector<QualifiedType> formalTypes;
+  auto& br = buildInitEquals(context, inCompType->id());
+  auto initFn = br.topLevelExpression(0)->toFunction();
+  auto formals = buildInitUfsFormals(initFn);
 
-  generateInitParts(context, inCompType, compType,
-                    ufsFormals, formalTypes, /*useGeneric*/ false);
+  // find the unique-ified untyped signature
+  auto uSig = UntypedFnSignature::get(context, initFn->id(), initFn->name(),
+                                   true,
+                                   /* isTypeConstructor */ false,
+                                   /* isCompilerGenerated */ true,
+                                   /* throws */ false,
+                                   /* idTag */ asttags::Function,
+                                   uast::Function::Kind::PROC,
+                                   std::move(formals), nullptr,
+                                   inCompType->id());
 
-  // add a formal for the 'other' argument
-  auto name = UniqueString::get(context, "other");
-  bool hasDefault = false;
-  const uast::Decl* node = nullptr;
+  ResolutionContext rcval(context);
+  return typedSignatureInitial(&rcval, uSig);
+}
 
-  auto fd = UntypedFnSignature::FormalDetail(name, hasDefault, node);
-  ufsFormals.push_back(std::move(fd));
+const BuilderResult& buildDeinit(Context* context, ID typeID) {
+  QUERY_BEGIN(buildDeinit, context, typeID);
 
-  CHPL_ASSERT(formalTypes.size() == 1);
-  auto otherType = QualifiedType(QualifiedType::CONST_REF,
-                                 formalTypes[0].type());
-  formalTypes.push_back(std::move(otherType));
+  auto bld = Builder::createForGeneratedCode(context, typeID);
+  auto builder = bld.get();
+  auto dummyLoc = parsing::locateId(context, typeID);
 
-  // build the untyped signature
-  auto ufs = UntypedFnSignature::get(context,
-                        /*id*/ compType->id(),
-                        /*name*/ USTR("init="),
-                        /*isMethod*/ true,
-                        /*isTypeConstructor*/ false,
-                        /*isCompilerGenerated*/ true,
-                        /*throws*/ false,
-                        /*idTag*/ parsing::idToTag(context, compType->id()),
-                        /*kind*/ uast::Function::Kind::PROC,
-                        /*formals*/ std::move(ufsFormals),
-                        /*whereClause*/ nullptr);
+  auto thisType = Identifier::build(builder, dummyLoc, typeID.symbolName(context));
+  auto thisFormal = Formal::build(builder, dummyLoc, nullptr,
+                                  USTR("this"), Formal::DEFAULT_INTENT,
+                                  std::move(thisType), nullptr);
 
-  // now build the other pieces of the typed signature
-  auto ret = TypedFnSignature::get(context,
-                                   ufs,
-                                   std::move(formalTypes),
-                                   TypedFnSignature::WHERE_NONE,
-                                   /*needsInstantiation*/ false,
-                                   /* instantiatedFrom */ nullptr,
-                                   /* parentFn */ nullptr,
-                                   /* formalsInstantiated */ Bitmap());
+  AstList formals;
 
-  return ret;
+  // Empty body. Easier to let other parts of resolution infer the contents.
+  // TODO: Insert call to parent deinit
+  AstList stmts;
+  auto body = Block::build(builder, dummyLoc, std::move(stmts));
+
+  auto genFn = Function::build(builder,
+                               dummyLoc, {},
+                               Decl::Visibility::PUBLIC,
+                               Decl::Linkage::DEFAULT_LINKAGE,
+                               /*linkageName=*/{},
+                               USTR("deinit"),
+                               /*inline=*/false, /*override=*/false,
+                               Function::Kind::PROC,
+                               /*receiver=*/std::move(thisFormal),
+                               Function::ReturnIntent::DEFAULT_RETURN_INTENT,
+                               // throws, primaryMethod, parenless
+                               false, false, false,
+                               std::move(formals),
+                               // returnType, where, lifetime, body
+                               {}, {}, {}, std::move(body));
+
+  builder->noteChildrenLocations(genFn.get(), dummyLoc);
+  builder->addToplevelExpression(std::move(genFn));
+
+  auto result = builder->result();
+  return QUERY_END(result);
 }
 
 static const TypedFnSignature*
 generateDeinitSignature(Context* context, const CompositeType* inCompType) {
-  const CompositeType* compType = nullptr;
   std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
-  std::vector<QualifiedType> formalTypes;
+  auto& br = buildDeinit(context, inCompType->id());
+  auto deinitFn = br.topLevelExpression(0)->toFunction();
 
-  generateInitParts(context, inCompType, compType,
-                    ufsFormals, formalTypes, /*useGeneric*/ false);
+  auto fd = UntypedFnSignature::FormalDetail(USTR("this"),
+                                           UntypedFnSignature::DK_NO_DEFAULT,
+                                           deinitFn->thisFormal(), false);
+  ufsFormals.push_back(fd);
 
   // build the untyped signature
   auto ufs = UntypedFnSignature::get(context,
-                        /*id*/ compType->id(),
+                        /*id*/ deinitFn->id(),
                         /*name*/ USTR("deinit"),
                         /*isMethod*/ true,
                         /*isTypeConstructor*/ false,
                         /*isCompilerGenerated*/ true,
                         /*throws*/ false,
-                        /*idTag*/ parsing::idToTag(context, compType->id()),
+                        /*idTag*/ asttags::Function,
                         /*kind*/ uast::Function::Kind::PROC,
                         /*formals*/ std::move(ufsFormals),
                         /*whereClause*/ nullptr);
 
-  // now build the other pieces of the typed signature
-  auto ret = TypedFnSignature::get(context,
-                                   ufs,
-                                   std::move(formalTypes),
-                                   TypedFnSignature::WHERE_NONE,
-                                   /*needsInstantiation*/ false,
-                                   /* instantiatedFrom */ nullptr,
-                                   /* parentFn */ nullptr,
-                                   /* formalsInstantiated */ Bitmap());
+  ResolutionContext rcval(context);
+  return typedSignatureInitial(&rcval, ufs);
+}
 
-  return ret;
+const BuilderResult& buildDeSerialize(Context* context, ID typeID, bool isSerializer) {
+  QUERY_BEGIN(buildDeSerialize, context, typeID, isSerializer);
+
+  // TODO:
+  // - use types for formals
+  // - add calls to (de)serializeDefaultImpl
+
+  auto bld = Builder::createForGeneratedCode(context, typeID);
+  auto builder = bld.get();
+  auto dummyLoc = parsing::locateId(context, typeID);
+
+  auto thisType = Identifier::build(builder, dummyLoc, typeID.symbolName(context));
+  auto thisFormal = Formal::build(builder, dummyLoc, nullptr,
+                                  USTR("this"), Formal::DEFAULT_INTENT,
+                                  std::move(thisType), nullptr);
+
+  auto writerArg = Formal::build(builder, dummyLoc, nullptr, UniqueString::get(context, "writer"),
+                                 Formal::DEFAULT_INTENT, {}, nullptr);
+  auto serializerArg = Formal::build(builder, dummyLoc, nullptr, UniqueString::get(context, "serializer"),
+                                 Formal::DEFAULT_INTENT, {}, nullptr);
+  AstList formals;
+  formals.push_back(std::move(writerArg));
+  formals.push_back(std::move(serializerArg));
+
+  AstList stmts;
+  auto body = Block::build(builder, dummyLoc, std::move(stmts));
+
+  auto genFn = Function::build(builder,
+                               dummyLoc, {},
+                               Decl::Visibility::PUBLIC,
+                               Decl::Linkage::DEFAULT_LINKAGE,
+                               /*linkageName=*/{},
+                               USTR("serialize"),
+                               /*inline=*/false, /*override=*/false,
+                               Function::Kind::PROC,
+                               /*receiver=*/std::move(thisFormal),
+                               Function::ReturnIntent::DEFAULT_RETURN_INTENT,
+                               // throws, primaryMethod, parenless
+                               true, false, false,
+                               std::move(formals),
+                               // returnType, where, lifetime, body
+                               {}, {}, {}, std::move(body));
+
+  builder->noteChildrenLocations(genFn.get(), dummyLoc);
+  builder->addToplevelExpression(std::move(genFn));
+
+  auto result = builder->result();
+  return QUERY_END(result);
 }
 
 static const TypedFnSignature*
-generateDomainMethod(Context* context,
-                     const DomainType* dt,
-                     UniqueString name) {
-  // Build a basic function signature for methods querying some aspect of
-  // a domain's type.
-  // TODO: we should really have a way to just set the return type here
-  const TypedFnSignature* result = nullptr;
-  std::vector<UntypedFnSignature::FormalDetail> formals;
+generateDeSerialize(Context* context, const CompositeType* compType,
+                    UniqueString name, std::string channel,
+                    std::string deSerializer) {
+  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
   std::vector<QualifiedType> formalTypes;
 
-  formals.push_back(UntypedFnSignature::FormalDetail(USTR("this"), false, nullptr));
-  formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, dt));
+  auto& br = buildDeSerialize(context, compType->id(), name == USTR("serialize"));
+  auto genFn = br.topLevelExpression(0)->toFunction();
 
+  ufsFormals.push_back(
+      UntypedFnSignature::FormalDetail(USTR("this"),
+                                       UntypedFnSignature::DK_NO_DEFAULT,
+                                       genFn->thisFormal()));
+  ufsFormals.push_back(
+      UntypedFnSignature::FormalDetail(UniqueString::get(context, channel),
+                                       UntypedFnSignature::DK_NO_DEFAULT,
+                                       genFn->formal(1)));
+  ufsFormals.push_back(
+      UntypedFnSignature::FormalDetail(UniqueString::get(context, deSerializer),
+                                       UntypedFnSignature::DK_NO_DEFAULT,
+                                       genFn->formal(2)));
+
+  // build the untyped signature
   auto ufs = UntypedFnSignature::get(context,
-                        /*id*/ dt->id(),
+                        /*id*/ genFn->id(),
                         /*name*/ name,
                         /*isMethod*/ true,
                         /*isTypeConstructor*/ false,
                         /*isCompilerGenerated*/ true,
-                        /*throws*/ false,
-                        /*idTag*/ parsing::idToTag(context, dt->id()),
+                        /*throws*/ true,
+                        /*idTag*/ asttags::Function,
                         /*kind*/ uast::Function::Kind::PROC,
-                        /*formals*/ std::move(formals),
+                        /*formals*/ std::move(ufsFormals),
                         /*whereClause*/ nullptr);
 
-  // now build the other pieces of the typed signature
-  result = TypedFnSignature::get(context, ufs, std::move(formalTypes),
-                                 TypedFnSignature::WHERE_NONE,
-                                 /* needsInstantiation */ false,
-                                 /* instantiatedFrom */ nullptr,
-                                 /* parentFn */ nullptr,
-                                 /* formalsInstantiated */ Bitmap());
-
-  return result;
+  ResolutionContext rcval(context);
+  return typedSignatureInitial(&rcval, ufs);
 }
 
 static const TypedFnSignature*
-generateArrayMethod(Context* context,
-                    const ArrayType* at,
+generateTupleMethod(Context* context,
+                    const TupleType* at,
                     UniqueString name) {
-  // Build a basic function signature for methods on an array
   // TODO: we should really have a way to just set the return type here
   const TypedFnSignature* result = nullptr;
   std::vector<UntypedFnSignature::FormalDetail> formals;
   std::vector<QualifiedType> formalTypes;
 
-  formals.push_back(UntypedFnSignature::FormalDetail(USTR("this"), false, nullptr));
+  formals.push_back(
+      UntypedFnSignature::FormalDetail(USTR("this"),
+                                       UntypedFnSignature::DK_NO_DEFAULT,
+                                       nullptr));
   formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, at));
 
   auto ufs = UntypedFnSignature::get(context,
@@ -424,7 +714,7 @@ generateArrayMethod(Context* context,
                         /*isTypeConstructor*/ false,
                         /*isCompilerGenerated*/ true,
                         /*throws*/ false,
-                        /*idTag*/ parsing::idToTag(context, at->id()),
+                        /*idTag*/ asttags::Tuple,
                         /*kind*/ uast::Function::Kind::PROC,
                         /*formals*/ std::move(formals),
                         /*whereClause*/ nullptr);
@@ -435,7 +725,8 @@ generateArrayMethod(Context* context,
                                  /* needsInstantiation */ false,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
-                                 /* formalsInstantiated */ Bitmap());
+                                 /* formalsInstantiated */ Bitmap(),
+                                 /* outerVariables */ {});
 
   return result;
 }
@@ -451,9 +742,10 @@ fieldAccessorQuery(Context* context,
   std::vector<QualifiedType> formalTypes;
 
   // start by adding a formal for the receiver
-  auto ufsReceiver = UntypedFnSignature::FormalDetail(USTR("this"),
-                                                      false,
-                                                      nullptr);
+  auto ufsReceiver =
+    UntypedFnSignature::FormalDetail(USTR("this"),
+                                     UntypedFnSignature::DK_NO_DEFAULT,
+                                     nullptr);
   ufsFormals.push_back(std::move(ufsReceiver));
 
   const Type* thisType = compType;
@@ -487,7 +779,8 @@ fieldAccessorQuery(Context* context,
                                  /* needsInstantiation */ false,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
-                                 /* formalsInstantiated */ Bitmap());
+                                 /* formalsInstantiated */ Bitmap(),
+                                 /* outerVariables */ {});
 
   return QUERY_END(result);
 }
@@ -511,7 +804,10 @@ generateOperatorFormalDetail(const UniqueString name,
                              QualifiedType::Kind qtKind,
                              bool hasDefault = false,
                              const uast::Decl* decl = nullptr) {
-  auto fd = UntypedFnSignature::FormalDetail(name, hasDefault, decl);
+  auto defaultKind = hasDefault ? UntypedFnSignature::DK_DEFAULT
+                                : UntypedFnSignature::DK_NO_DEFAULT;
+
+  auto fd = UntypedFnSignature::FormalDetail(name, defaultKind, decl);
   ufsFormals.push_back(std::move(fd));
 
   auto qtFd = QualifiedType(qtKind, compType);
@@ -616,37 +912,192 @@ generateRecordBinaryOperator(Context* context, UniqueString op,
                                    needsInstantiation,
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
-                                   /* formalsInstantiated */ Bitmap());
+                                   /* formalsInstantiated */ Bitmap(),
+                                   /* outerVariables */ {});
 
   return ret;
 }
 
 static const TypedFnSignature*
 generateRecordAssignment(Context* context, const CompositeType* lhsType) {
+  // rhs used to be 'maybe const' but now 'const' is default.
+  //
+  // TODO: it's possible that we need to compute the dyno equivalent of
+  //       FLAG_COPY_MUTATES to get the right constness here.
   return generateRecordBinaryOperator(context, USTR("="), lhsType,
-                                      /*this*/ QualifiedType::CONST_REF,
-                                      /*lhs*/  QualifiedType::CONST_REF,
-                                      /*rhs*/  QualifiedType::CONST_REF);
+                                      /*this*/ QualifiedType::TYPE,
+                                      /*lhs*/  QualifiedType::REF,
+                                      /*rhs*/  QualifiedType::CONST_REF );
 }
 
 static const TypedFnSignature*
 generateRecordComparison(Context* context, const CompositeType* lhsType) {
   return generateRecordBinaryOperator(context, USTR("=="), lhsType,
-                                      /*this*/ QualifiedType::REF,
-                                      /*lhs*/  QualifiedType::REF,
+                                      /*this*/ QualifiedType::TYPE,
+                                      /*lhs*/  QualifiedType::CONST_REF,
                                       /*rhs*/  QualifiedType::CONST_REF);
 }
 
+static const TypedFnSignature*
+generatePtrMethod(Context* context, QualifiedType receiverType,
+                   UniqueString name) {
+  // Build a basic function signature for methods on a PtrType
+  // TODO: we should really have a way to just set the return type here
+  const PtrType* pt = receiverType.type()->toPtrType();
+  const TypedFnSignature* result = nullptr;
+  std::vector<UntypedFnSignature::FormalDetail> formals;
+  std::vector<QualifiedType> formalTypes;
+
+  formals.push_back(
+      UntypedFnSignature::FormalDetail(USTR("this"),
+                                       UntypedFnSignature::DK_NO_DEFAULT,
+                                       nullptr));
+  // Allow calling 'eltType' on either a type or value
+  auto qual = receiverType.isType() ? QualifiedType::TYPE : QualifiedType::CONST_REF;
+  formalTypes.push_back(QualifiedType(qual, pt));
+
+  if (name == "this") {
+    formals.push_back(UntypedFnSignature::FormalDetail(
+        UniqueString::get(context, "i"), UntypedFnSignature::DK_NO_DEFAULT,
+        nullptr));
+    formalTypes.push_back(
+        QualifiedType(QualifiedType::VAR, AnyIntegralType::get(context)));
+  }
+
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ pt->id(context),
+                        /*name*/ name,
+                        /*isMethod*/ true,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*throws*/ false,
+                        /*idTag*/ asttags::Class,
+                        /*kind*/ uast::Function::Kind::PROC,
+                        /*formals*/ std::move(formals),
+                        /*whereClause*/ nullptr);
+
+  // now build the other pieces of the typed signature
+  result = TypedFnSignature::get(context, ufs, std::move(formalTypes),
+                                 TypedFnSignature::WHERE_NONE,
+                                 /* needsInstantiation */ false,
+                                 /* instantiatedFrom */ nullptr,
+                                 /* parentFn */ nullptr,
+                                 /* formalsInstantiated */ Bitmap(),
+                                 /* outerVariables */ {});
+
+  return result;
+}
+
+static const TypedFnSignature*
+generateEnumMethod(Context* context,
+                   const EnumType* et,
+                   UniqueString name) {
+  const TypedFnSignature* result = nullptr;
+  if (name == USTR("size") &&
+      !areOverloadsPresentInDefiningScope(context, et, QualifiedType::TYPE, name)) {
+    // TODO: we should really have a way to just set the return type here
+    std::vector<UntypedFnSignature::FormalDetail> formals;
+    std::vector<QualifiedType> formalTypes;
+
+    formals.push_back(
+        UntypedFnSignature::FormalDetail(USTR("this"),
+          UntypedFnSignature::DK_NO_DEFAULT,
+          nullptr));
+    formalTypes.push_back(QualifiedType(QualifiedType::TYPE, et));
+
+    auto ufs = UntypedFnSignature::get(context,
+        /*id*/ et->id(),
+        /*name*/ name,
+        /*isMethod*/ true,
+        /*isTypeConstructor*/ false,
+        /*isCompilerGenerated*/ true,
+        /*throws*/ false,
+        /*idTag*/ parsing::idToTag(context, et->id()),
+        /*kind*/ uast::Function::Kind::PROC,
+        /*formals*/ std::move(formals),
+        /*whereClause*/ nullptr);
+
+    // now build the other pieces of the typed signature
+    result = TypedFnSignature::get(context, ufs, std::move(formalTypes),
+        TypedFnSignature::WHERE_NONE,
+        /* needsInstantiation */ false,
+        /* instantiatedFrom */ nullptr,
+        /* parentFn */ nullptr,
+        /* formalsInstantiated */ Bitmap(),
+        /* outerVariables */ {});
+  }
+
+  return result;
+}
+
+static const TypedFnSignature*
+generateIteratorMethod(Context* context,
+                       const IteratorType* it,
+                       UniqueString name) {
+
+  const TypedFnSignature* result = nullptr;
+  if (name == "_shape_" &&
+      shapeForIterator(context, it)) {
+    std::vector<UntypedFnSignature::FormalDetail> formals;
+    std::vector<QualifiedType> formalTypes;
+
+    formals.push_back(
+        UntypedFnSignature::FormalDetail(USTR("this"),
+          UntypedFnSignature::DK_NO_DEFAULT,
+          nullptr));
+    formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, it));
+
+    // It's a little scary to compute the ID for the function in this way
+    // here because for the FnIterator and PromotionIterator cases, it will
+    // conflict with the underlying function. Maybe that's okay?
+    ID id;
+    uast::asttags::AstTag tag = uast::asttags::Variable;
+    if (auto loopExprIt = it->toLoopExprIteratorType()) {
+      id = loopExprIt->sourceLocation();
+    } else if (auto fnIt = it->toFnIteratorType()) {
+      id = fnIt->iteratorFn()->id();
+    } else if (auto promoIt = it->toPromotionIteratorType()) {
+      id = promoIt->scalarFn()->id();
+    } else {
+      CHPL_ASSERT(false && "case not handled");
+    }
+
+    auto ufs = UntypedFnSignature::get(context,
+        /*id*/ id,
+        /*name*/ name,
+        /*isMethod*/ true,
+        /*isTypeConstructor*/ false,
+        /*isCompilerGenerated*/ true,
+        /*throws*/ false,
+        /*idTag*/ tag,
+        /*kind*/ uast::Function::Kind::PROC,
+        /*formals*/ std::move(formals),
+        /*whereClause*/ nullptr);
+
+    // now build the other pieces of the typed signature
+    result = TypedFnSignature::get(context, ufs, std::move(formalTypes),
+        TypedFnSignature::WHERE_NONE,
+        /* needsInstantiation */ false,
+        /* instantiatedFrom */ nullptr,
+        /* parentFn */ nullptr,
+        /* formalsInstantiated */ Bitmap(),
+        /* outerVariables */ {});
+  }
+  return result;
+}
+
 static const TypedFnSignature* const&
-getCompilerGeneratedMethodQuery(Context* context, const Type* type,
+getCompilerGeneratedMethodQuery(Context* context, QualifiedType receiverType,
                                 UniqueString name, bool parenless) {
-  QUERY_BEGIN(getCompilerGeneratedMethodQuery, context, type, name, parenless);
+  QUERY_BEGIN(getCompilerGeneratedMethodQuery, context, receiverType, name, parenless);
+
+  const Type* type = receiverType.type();
 
   const TypedFnSignature* result = nullptr;
 
   if (needCompilerGeneratedMethod(context, type, name, parenless)) {
     auto compType = type->getCompositeType();
-    CHPL_ASSERT(compType);
+    CHPL_ASSERT(compType || type->isPtrType() || type->isEnumType() || type->isIteratorType());
 
     if (name == USTR("init")) {
       result = generateInitSignature(context, compType);
@@ -654,26 +1105,120 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
       result = generateInitCopySignature(context, compType);
     } else if (name == USTR("deinit")) {
       result = generateDeinitSignature(context, compType);
-    } else if (auto domainType = type->toDomainType()) {
-      result = generateDomainMethod(context, domainType, name);
-    } else if (auto arrayType = type->toArrayType()) {
-      result = generateArrayMethod(context, arrayType, name);
+    } else if (name == USTR("serialize")) {
+      result = generateDeSerialize(context, compType, name, "writer", "serializer");
+    } else if (name == USTR("deserialize")) {
+      result = generateDeSerialize(context, compType, name, "reader", "deserializer");
+    } else if (auto tupleType = type->toTupleType()) {
+      result = generateTupleMethod(context, tupleType, name);
     } else if (auto recordType = type->toRecordType()) {
       if (name == USTR("==")) {
         result = generateRecordComparison(context, recordType);
       } else if (name == USTR("=")) {
         result = generateRecordAssignment(context, recordType);
       } else {
-        CHPL_ASSERT(false && "record method not implemented yet!");
+        CHPL_UNIMPL("record method not implemented yet!");
       }
+    } else if (type->isPtrType()) {
+      result = generatePtrMethod(context, receiverType, name);
+    } else if (auto enumType = type->toEnumType()) {
+      result = generateEnumMethod(context, enumType, name);
+    } else if (auto iterType = type->toIteratorType()) {
+      result = generateIteratorMethod(context, iterType, name);
     } else {
-      CHPL_ASSERT(false && "should not be reachable");
+      CHPL_UNIMPL("should not be reachable");
     }
   }
 
-  CHPL_ASSERT(result->untyped()->name() == name);
+  CHPL_ASSERT(result == nullptr || result->untyped()->name() == name);
 
   return QUERY_END(result);
+}
+
+static void
+setupGeneratedEnumCastFormals(Context* context,
+                              const EnumType* enumType,
+                              std::vector<UntypedFnSignature::FormalDetail>& ufsFormals,
+                              std::vector<QualifiedType>& formalTypes,
+                              bool isFromCast /* otherwise, it's a "to" cast */) {
+  const Type* fromType;
+  const Type* toType;
+
+  if (isFromCast) {
+    fromType = enumType;
+    toType = AnyIntegralType::get(context);
+  } else {
+    fromType = AnyIntegralType::get(context);
+    toType = enumType;
+  }
+
+  auto fromQt = QualifiedType(QualifiedType::DEFAULT_INTENT, fromType);
+  auto toQt = QualifiedType(QualifiedType::TYPE, toType);
+
+  auto ufsFrom =
+      UntypedFnSignature::FormalDetail(UniqueString::get(context, "from"),
+                                       UntypedFnSignature::DK_NO_DEFAULT, nullptr);
+  ufsFormals.push_back(std::move(ufsFrom));
+  auto ufsTo =
+      UntypedFnSignature::FormalDetail(UniqueString::get(context, "to"),
+                                       UntypedFnSignature::DK_NO_DEFAULT, nullptr);
+  ufsFormals.push_back(std::move(ufsTo));
+
+  formalTypes.push_back(fromQt);
+  formalTypes.push_back(toQt);
+}
+
+static const TypedFnSignature*
+generateToOrFromCastForEnum(Context* context,
+                            const types::QualifiedType& lhs,
+                            const types::QualifiedType& rhs,
+                            bool isFromCast /* otherwise, it's a "to" cast */) {
+  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
+  std::vector<QualifiedType> formalTypes;
+
+  auto enumType = isFromCast ? lhs.type()->toEnumType() : rhs.type()->toEnumType();
+
+  if (enumType->isAbstract()) return nullptr;
+
+  setupGeneratedEnumCastFormals(context, enumType, ufsFormals, formalTypes,
+                                isFromCast);
+
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ enumType->id(),
+                        /*name*/ USTR(":"),
+                        /*isMethod*/ false,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*throws*/ false,
+                        /*idTag*/ parsing::idToTag(context, enumType->id()),
+                        /*kind*/ uast::Function::Kind::OPERATOR,
+                        /*formals*/ std::move(ufsFormals),
+                        /*whereClause*/ nullptr);
+
+  auto ret = TypedFnSignature::get(context,
+                                   ufs,
+                                   std::move(formalTypes),
+                                   TypedFnSignature::WHERE_NONE,
+                                   /* needsInstantiation */ true,
+                                   /* instantiatedFrom */ nullptr,
+                                   /* parentFn */ nullptr,
+                                   /* formalsInstantiated */ Bitmap(),
+                                   /* outerVariables */ {});
+  return ret;
+}
+
+static const TypedFnSignature*
+generateCastFromEnum(Context* context,
+                     const types::QualifiedType& lhs,
+                     const types::QualifiedType& rhs) {
+  return generateToOrFromCastForEnum(context, lhs, rhs, /*isFromCast*/ true);
+}
+
+static const TypedFnSignature*
+generateCastToEnum(Context* context,
+                   const types::QualifiedType& lhs,
+                   const types::QualifiedType& rhs) {
+  return generateToOrFromCastForEnum(context, lhs, rhs, /*isFromCast*/ false);
 }
 
 /**
@@ -685,9 +1230,305 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
   If no method was generated, returns nullptr.
 */
 const TypedFnSignature*
-getCompilerGeneratedMethod(Context* context, const Type* type,
+getCompilerGeneratedMethod(Context* context, const QualifiedType receiverType,
                            UniqueString name, bool parenless) {
-  return getCompilerGeneratedMethodQuery(context, type, name, parenless);
+  // Normalize receiverType to allow TYPE methods on c_ptr and _ddata, and to
+  // otherwise use the VAR Kind. The Param* value is also stripped away to
+  // reduce queries.
+  auto qt = receiverType;
+  bool isPtr = qt.hasTypePtr() ? qt.type()->isPtrType() : false;
+  if (!(qt.isType() && isPtr)) {
+    qt = QualifiedType(QualifiedType::VAR, qt.type());
+  }
+  return getCompilerGeneratedMethodQuery(context, qt, name, parenless);
+}
+
+static const TypedFnSignature* const&
+getOrderToEnumFunction(Context* context, bool paramVersion, const EnumType* et) {
+  QUERY_BEGIN(getOrderToEnumFunction, context, paramVersion, et);
+
+  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
+  std::vector<QualifiedType> formalTypes;
+
+  ufsFormals.push_back(
+      UntypedFnSignature::FormalDetail(UniqueString::get(context, "i"),
+                                       UntypedFnSignature::DK_NO_DEFAULT,
+                                       nullptr));
+  formalTypes.push_back(QualifiedType(paramVersion ?
+                                      QualifiedType::PARAM :
+                                      QualifiedType::DEFAULT_INTENT,
+                                      AnyIntegralType::get(context)));
+
+  ufsFormals.push_back(
+      UntypedFnSignature::FormalDetail(UniqueString::get(context, "et"),
+                                       UntypedFnSignature::DK_NO_DEFAULT,
+                                       nullptr));
+  formalTypes.push_back(QualifiedType(QualifiedType::TYPE, et));
+
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ et->id(),
+                        /*name*/ UniqueString::get(context, "chpl__orderToEnum"),
+                        /*isMethod*/ false,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*throws*/ false,
+                        /*idTag*/ parsing::idToTag(context, et->id()),
+                        /*kind*/ uast::Function::Kind::PROC,
+                        /*formals*/ std::move(ufsFormals),
+                        /*whereClause*/ nullptr);
+
+  auto ret = TypedFnSignature::get(context,
+                                   ufs,
+                                   std::move(formalTypes),
+                                   TypedFnSignature::WHERE_NONE,
+                                   /* needsInstantiation */ true,
+                                   /* instantiatedFrom */ nullptr,
+                                   /* parentFn */ nullptr,
+                                   /* formalsInstantiated */ Bitmap(),
+                                   /* outerVariables */ {});
+
+  return QUERY_END(ret);
+}
+
+static const TypedFnSignature* const&
+getEnumToOrderFunction(Context* context, bool paramVersion, const EnumType* et) {
+  QUERY_BEGIN(getEnumToOrderFunction, context, paramVersion, et);
+
+  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
+  std::vector<QualifiedType> formalTypes;
+
+  ufsFormals.push_back(
+      UntypedFnSignature::FormalDetail(UniqueString::get(context, "e"),
+                                       UntypedFnSignature::DK_NO_DEFAULT,
+                                       nullptr));
+  formalTypes.push_back(QualifiedType(paramVersion ?
+                                      QualifiedType::PARAM :
+                                      QualifiedType::DEFAULT_INTENT,
+                                      et));
+
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ et->id(),
+                        /*name*/ UniqueString::get(context, "chpl__enumToOrder"),
+                        /*isMethod*/ false,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*throws*/ false,
+                        /*idTag*/ parsing::idToTag(context, et->id()),
+                        /*kind*/ uast::Function::Kind::PROC,
+                        /*formals*/ std::move(ufsFormals),
+                        /*whereClause*/ nullptr);
+
+  auto formalsInstantiated = Bitmap();
+  auto ret = TypedFnSignature::get(context,
+                                   ufs,
+                                   std::move(formalTypes),
+                                   TypedFnSignature::WHERE_NONE,
+                                   /* needsInstantiation */ paramVersion,
+                                   /* instantiatedFrom */ nullptr,
+                                   /* parentFn */ nullptr,
+                                   /* formalsInstantiated */ Bitmap(),
+                                   /* outerVariables */ {});
+
+  return QUERY_END(ret);
+}
+
+const TypedFnSignature*
+getCompilerGeneratedFunction(Context* context,
+                             const CallInfo& ci) {
+  if (ci.name() == "chpl__orderToEnum") {
+    if (ci.numActuals() == 2) {
+      auto& firstQt = ci.actual(0).type();
+      auto& secondQt = ci.actual(1).type();
+
+      auto secondType = secondQt.type();
+      if (secondType && secondType->isEnumType()) {
+        bool paramVersion = firstQt.isParam();
+        return getOrderToEnumFunction(context, paramVersion, secondType->toEnumType());
+      }
+    }
+  } else if (ci.name() == "chpl__enumToOrder") {
+    if (ci.numActuals() == 1) {
+      auto& firstQt = ci.actual(0).type();
+
+      auto firstType = firstQt.type();
+      if (firstType && firstType->isEnumType()) {
+        bool paramVersion = firstQt.isParam();
+        return getEnumToOrderFunction(context, paramVersion, firstType->toEnumType());
+      }
+    }
+  }
+  return nullptr;
+}
+
+static const TypedFnSignature* const&
+getCompilerGeneratedBinaryOpQuery(Context* context,
+                                  types::QualifiedType lhs,
+                                  types::QualifiedType rhs,
+                                  UniqueString name) {
+  QUERY_BEGIN(getCompilerGeneratedBinaryOpQuery, context, lhs, rhs, name);
+
+  const TypedFnSignature* result = nullptr;
+  if (name == USTR(":")) {
+    if (lhs.type() && lhs.type()->isEnumType()) {
+      result = generateCastFromEnum(context, lhs, rhs);
+    } else if (rhs.type() && rhs.type()->isEnumType()) {
+      result = generateCastToEnum(context, lhs, rhs);
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+const TypedFnSignature*
+getCompilerGeneratedBinaryOp(Context* context,
+                             const types::QualifiedType lhs,
+                             const types::QualifiedType rhs,
+                             UniqueString name) {
+  return getCompilerGeneratedBinaryOpQuery(context, lhs, rhs, name);
+}
+
+static owned<Function> typeConstructorFnForInterface(Context* context,
+                                                     const Interface* itf,
+                                                     Builder* builder,
+                                                     Location fnLoc) {
+  AstList formals;
+  for (auto formal : itf->formals()) {
+    formals.push_back(formal->copy());
+  }
+
+  auto genFn = Function::build(builder, fnLoc, {},
+                               Decl::Visibility::PUBLIC,
+                               Decl::Linkage::DEFAULT_LINKAGE,
+                               /*linkageName=*/{},
+                               itf->name(),
+                               /*inline=*/false, /*override=*/false,
+                               Function::Kind::PROC,
+                               /*receiver=*/{},
+                               Function::ReturnIntent::DEFAULT_RETURN_INTENT,
+                               // throws, primaryMethod, parenless
+                               false, false, false,
+                               std::move(formals),
+                               // returnType, where, lifetime, body
+                               {}, {}, {}, {});
+
+
+  return genFn;
+}
+
+static owned<Function> typeConstructorFnForComposite(Context* context,
+                                                     const CompositeType* ct,
+                                                     Builder* builder,
+                                                     Location fnLoc) {
+  AstList formals;
+
+  if (auto bct = ct->toBasicClassType()) {
+    auto parent = bct->parentClassType();
+    if (parent && !parent->isObjectType()) {
+      auto& br = buildTypeConstructor(context, parent->id());
+      auto fn = br.topLevelExpression(0)->toFunction();
+
+      for (auto formal : fn->formals()) {
+        formals.push_back(formal->copy());
+      }
+    }
+  }
+
+  // attempt to resolve the fields
+  DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
+  const ResolvedFields& f = fieldsForTypeDecl(context, ct,
+                                              defaultsPolicy,
+                                              /* syntaxOnly */ true);
+
+  // find the generic fields from the type and add
+  // these as type constructor arguments.
+  int nFields = f.numFields();
+  for (int i = 0; i < nFields; i++) {
+    auto declId = f.fieldDeclId(i);
+    auto declAst = parsing::idToAst(context, declId);
+    CHPL_ASSERT(declAst);
+    auto fieldDecl = declAst->toVariable();
+    CHPL_ASSERT(fieldDecl);
+    QualifiedType formalType;
+    if (isFieldSyntacticallyGeneric(context, declId, nullptr)) {
+
+      auto typeExpr = fieldDecl->typeExpression();
+      auto initExpr = fieldDecl->initExpression();
+      auto kind = fieldDecl->kind() == Variable::PARAM ? Variable::PARAM : Variable::TYPE;
+      owned<AstNode> formal = Formal::build(builder, fnLoc,
+                                            /*attributeGroup=*/nullptr,
+                                            fieldDecl->name(),
+                                            (Formal::Intent)kind,
+                                            typeExpr ? typeExpr->copy() : nullptr,
+                                            initExpr ? initExpr->copy() : nullptr);
+      formals.push_back(std::move(formal));
+    }
+  }
+
+  auto genFn = Function::build(builder, fnLoc, {},
+                               Decl::Visibility::PUBLIC,
+                               Decl::Linkage::DEFAULT_LINKAGE,
+                               /*linkageName=*/{},
+                               ct->name(),
+                               /*inline=*/false, /*override=*/false,
+                               Function::Kind::PROC,
+                               /*receiver=*/{},
+                               Function::ReturnIntent::DEFAULT_RETURN_INTENT,
+                               // throws, primaryMethod, parenless
+                               false, false, false,
+                               std::move(formals),
+                               // returnType, where, lifetime, body
+                               {}, {}, {}, {});
+  return genFn;
+}
+
+const BuilderResult&
+buildTypeConstructor(Context* context, ID typeID) {
+  QUERY_BEGIN(buildTypeConstructor, context, typeID);
+
+  auto bld = Builder::createForGeneratedCode(context, typeID);
+  auto builder = bld.get();
+  auto dummyLoc = parsing::locateId(context, typeID);
+
+  auto tag = parsing::idToTag(context, typeID);
+  owned<Function> genFn;
+  if (asttags::isInterface(tag)) {
+    auto itf = parsing::idToAst(context, typeID)->toInterface();
+    genFn = typeConstructorFnForInterface(context, itf, builder, dummyLoc);
+  } else {
+    auto ct = initialTypeForTypeDecl(context, typeID)->getCompositeType();
+    genFn = typeConstructorFnForComposite(context, ct, builder, dummyLoc);
+  }
+
+  builder->noteChildrenLocations(genFn.get(), dummyLoc);
+  builder->addToplevelExpression(std::move(genFn));
+
+  // Finalize the uAST and obtain the BuilderResult
+  auto res = builder->result();
+
+  return QUERY_END(res);
+}
+
+const BuilderResult*
+builderResultForDefaultFunction(Context* context,
+                                UniqueString typePath,
+                                UniqueString name) {
+  auto typeID = ID(typePath);
+
+  if (name == USTR("init")) {
+    return &buildInitializer(context, typeID);
+  } else if (name == USTR("init=")) {
+    return &buildInitEquals(context, typeID);
+  } else if (name == USTR("deinit")) {
+    return &buildDeinit(context, typeID);
+  } else if (name == USTR("serialize")) {
+    return &buildDeSerialize(context, typeID, true);
+  } else if (name == USTR("deserialize")) {
+    return &buildDeSerialize(context, typeID, false);
+  } else if (typeID.symbolName(context) == name) {
+    return &buildTypeConstructor(context, typeID);
+  }
+
+  return nullptr;
 }
 
 

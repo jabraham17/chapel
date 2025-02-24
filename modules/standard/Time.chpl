@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -72,112 +72,36 @@ module Time {
                                            out yday:    int(32),
                                            out isdst:   int(32));
 
-  /* Specifies the units to be used when certain functions return a time */
-  @deprecated(notes="The 'TimeUnits' type is deprecated. Please specify times in seconds in this module.")
-  enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours }
-
-  /* Begin day-of-week enums */
-
-  /* Controls whether :type:`dayOfWeek` starts with `Monday = 0` or
-  `Monday = 1`.
-
-    - If true, :type:`dayOfWeek` represents Monday as day 1.
-    - If false, :type:`dayOfWeek` represents Monday as day 0. This behavior is
-      deprecated and will be removed in an upcoming release.
-
-    The deprecated behavior is on by default. To opt-in to the new behavior,
-    recompile your program with ``-scIsoDayOfWeek=true``.
-
-  */
-  config param cIsoDayOfWeek = false;
+  // Transition symbol for 1.32 dayOfWeek behavior change, deprecated in 2.1.
   @chpldoc.nodoc
-  param firstDayOfWeekNum = (if cIsoDayOfWeek then 1 else 0);
-  // This enum has a compiler-implemented deprecation warning for change-of-behavior
-  // controlled by `-scIsoDayOfWeek`, due to implementation issues with a
-  // @deprecated conditional on a config value.
+  @deprecated("'cIsoDayOfWeek' is deprecated and no longer affects the behavior of 'dayOfWeek'")
+  config param cIsoDayOfWeek = true;
+
   /*
      Days in the week, starting with Monday.
-     Monday is represented as 0 when :var:`cIsoDayOfWeek` is false (deprecated),
-     or 1 otherwise (future default).
-
-    .. warning::
-
-      In an upcoming release 'dayOfWeek' will represent Monday as 1 instead of
-      0 by default. During the deprecation period this behavior can be
-      controlled with :var:`cIsoDayOfWeek`.
+     Monday is represented as 1.
    */
   enum dayOfWeek {
     /**/
-    Monday = firstDayOfWeekNum,
-    /**/
-    Tuesday,
-    /**/
-    Wednesday,
-    /**/
-    Thursday,
-    /**/
-    Friday,
-    /**/
-    Saturday,
-    /**/
-    Sunday
-  }
-  @chpldoc.nodoc
-  enum _old_dayOfWeek {
-    Monday = 0,
-    Tuesday,
-    Wednesday,
-    Thursday,
-    Friday,
-    Saturday,
-    Sunday
-  }
-  @chpldoc.nodoc
-  enum _iso_dayOfWeek {
     Monday = 1,
+    /**/
     Tuesday,
+    /**/
     Wednesday,
+    /**/
     Thursday,
+    /**/
     Friday,
+    /**/
     Saturday,
+    /**/
     Sunday
   }
-
-  @deprecated(notes="enum 'Day' is deprecated. Please use :enum:`day` instead")
-  enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
-  /* Specifies the day of the week */
-  @deprecated(notes="enum 'day' is deprecated. Please use :enum:`dayOfWeek` instead")
-  enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
-  @chpldoc.nodoc
-  proc DayOfWeek {
-    compilerError("'DayOfWeek' was renamed. Please use 'dayOfWeek' instead");
-  }
-  /* Days in the week, starting with `Monday` = 1 */
-  @deprecated(notes="enum 'isoDayOfWeek' is deprecated. Please use :enum:`dayOfWeek` instead")
-  enum isoDayOfWeek {
-    Monday =    1,
-    Tuesday =   2,
-    Wednesday = 3,
-    Thursday =  4,
-    Friday =    5,
-    Saturday =  6,
-    Sunday =    7
-  }
-  @chpldoc.nodoc
-  proc ISODayOfWeek {
-    compilerError("'ISODayOfWeek was renamed. Please use 'isoDayOfWeek' instead");
-  }
-
-  /* End day-of-week enums */
 
   /* The minimum year allowed in `date` objects */
-  @deprecated("'MINYEAR' is deprecated; use `date.min.year` instead")
-  param MINYEAR = 1;
-  /* The maximum year allowed in `date` objects */
-  @deprecated("'MAXYEAR' is deprecated; use `date.max.year` instead")
-  param MAXYEAR = 9999;
   @chpldoc.nodoc
   param _MINYEAR = 1;
+  /* The maximum year allowed in `date` objects */
   @chpldoc.nodoc
   param _MAXYEAR = 9999;
 
@@ -334,7 +258,7 @@ module Time {
   /* Return the number of days in month `month` during the year `year`.
      The number for a month can change from year to year due to leap years.
 
-     :throws IllegalArgumentError: Thrown if `month` is out of range.
+     :throws IllegalArgumentError: If `month` is out of range.
 */
   proc daysInMonth(year: int, month: int) : int throws {
     if month < 1 || month > 12 then
@@ -432,25 +356,6 @@ module Time {
     return new date(year + 1900, month + 1, mday);
   }
 
-  @deprecated(notes="'date.fromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp().getDate()' instead")
-  proc type date.fromTimestamp(timestamp) : date {
-    return date.createFromTimestamp(timestamp);
-  }
-
-  /* The date that is `timestamp` seconds from the epoch */
-  @deprecated(notes="'date.createFromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp().getDate()' instead")
-  proc type date.createFromTimestamp(timestamp: real) : date {
-    const sec = timestamp: int;
-    const us = ((timestamp-sec) * 1000000 + 0.5): int;
-    const td = new timeDelta(seconds=sec, microseconds=us);
-    return unixEpoch.getDate() + td;
-  }
-
-  @deprecated(notes="'date.fromOrdinal' is deprecated, please use 'date.createFromOrdinal' instead")
-  proc type date.fromOrdinal(ord) : date {
-    return date.createFromOrdinal(ord);
-  }
-
   /* The `date` that is `ordinal` days from 1-1-0001 */
   proc type date.createFromOrdinal(ordinal: int) : date {
     if ordinal < 0 || ordinal > 1+date.max.toOrdinal() then
@@ -483,7 +388,7 @@ module Time {
     timeStruct.tm_mday = day: int(32);
     timeStruct.tm_mon = month: int(32);
     timeStruct.tm_year = year: int(32);
-    timeStruct.tm_wday = this._old_weekday(): int(32);
+    timeStruct.tm_wday = this.weekday(): int(32) - 1;
     timeStruct.tm_yday = (toOrdinal() - (new date(year, 1, 1)).toOrdinal() + 1): int(32);
     timeStruct.tm_isdst = (-1): int(32);
     return timeStruct;
@@ -496,26 +401,9 @@ module Time {
 
   /* Return the day of the week.
    */
-  proc date.weekday() : dayOfWeek where cIsoDayOfWeek {
+  proc date.weekday() : dayOfWeek {
     // January 1 0001 is a Monday
     return try! (((toOrdinal() + 6) % 7) + 1): dayOfWeek;
-  }
-  @deprecated(notes="The version of 'date.weekday' returning a :enum:`dayOfWeek` starting with `Monday = 0` is deprecated. Recompile with ``-sCIsoDayOfWeek=true`` to opt in to the new behavior of `Monday = 1`")
-  proc date.weekday() : dayOfWeek where !cIsoDayOfWeek {
-    return try! this._old_weekday():int:dayOfWeek;
-  }
-  @chpldoc.nodoc
-  proc date._old_weekday() : _old_dayOfWeek {
-    // January 1 0001 is a Monday
-    return try! (((toOrdinal() + 6) % 7)):_old_dayOfWeek;
-  }
-
-  /* Return the day of the week as an `isoDayOfWeek`.
-     `Monday` == 1, `Sunday` == 7 */
-  @deprecated(notes="'date.isoWeekday' is deprecated; use :proc:`date.weekday` instead")
-  proc date.isoWeekday() : isoDayOfWeek {
-    var offsetForIso = (if cIsoDayOfWeek then 0 else 1);
-    return try! (weekday(): int + offsetForIso): isoDayOfWeek;
   }
 
   /* Return the ISO week date as a tuple containing the ISO week-numbering year,
@@ -523,8 +411,8 @@ module Time {
    */
   proc date.isoWeekDate() : (int, int, int) {
     proc findThursday(d: date) {
-      var wd = d._old_weekday();
-      return d + new timeDelta(days = (_old_dayOfWeek.Thursday:int - wd:int));
+      var wd = d.weekday();
+      return d + new timeDelta(days = (dayOfWeek.Thursday:int - wd:int));
     }
 
     proc findyear(d: date) {
@@ -544,15 +432,7 @@ module Time {
     const firstDay = findFirstDayOfYear(y);
     const delta = this - firstDay;
 
-    return (y, 1+delta.days/7, (_old_weekday(): int) + 1);
-  }
-
-  /* Return the ISO week date as a tuple containing the ISO week-numbering year,
-     ISO week number, and ISO weekday number.
-   */
-  @deprecated(notes="`date.isoCalendar` is deprecated; use :proc:`date.isoWeekDate` instead")
-  proc date.isoCalendar() : (int, int, int) {
-    return this.isoWeekDate();
+    return (y, 1+delta.days/7, weekday(): int);
   }
 
   /* Get a `string` representation of this `date` in ISO format
@@ -576,12 +456,6 @@ module Time {
       daystr = "0" + daystr;
 
     return yearstr + "-" + monthstr + "-" + daystr;
-  }
-
-  /* Return the date as a `string` in ISO 8601 format: "YYYY-MM-DD" */
-  @deprecated(notes="`date.isoFormat` is deprecated; use cast to string instead")
-  proc date.isoFormat() : string {
-    return this:string;
   }
 
   /* Return a `string` representing the date */
@@ -613,7 +487,7 @@ module Time {
     timeStruct.tm_year = (year-1900): int(32); // 1900 based
     timeStruct.tm_mon = (month-1): int(32);    // 0 based
     timeStruct.tm_mday = day: int(32);
-    timeStruct.tm_wday = (_old_weekday(): int(32) + 1) % 7; // shift Sunday to 0
+    timeStruct.tm_wday = (weekday(): int(32)) % 7;
     timeStruct.tm_yday = (this - new date(year, 1, 1)).days: int(32);
 
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
@@ -628,21 +502,16 @@ module Time {
 
   // This method exists to work around a bug in chpldoc where the
   // 'private use' above this method somehow breaks documentation for the
-  // method that follows (formerly 'writeThis')
+  // method that follows
   @chpldoc.nodoc
   proc date._chpldoc_workaround() { }
 
-  @chpldoc.nodoc
-  proc date.writeThis(f) throws {
-    f.write(this:string);
-  }
-
   /* Writes this `date` formatted as ``YYYY-MM-DD`` */
   proc date.serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    writer.write(this:string);
   }
 
-  // Exists to support some common functionality for `dateTime.readThis`
+  // Exists to support some common functionality for `dateTime.deserialize`
   @chpldoc.nodoc
   proc ref date._readCore(f) throws {
     const dash = "-";
@@ -654,27 +523,22 @@ module Time {
     chpl_day = f.read(int);
   }
 
-  @chpldoc.nodoc
-  proc ref date.readThis(f) throws {
-    import JSON.jsonDeserializer;
-
-    const binary = f._binary(),
-          arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-          isjson = (arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary) ||
-            isSubtype(f.deserializerType, jsonDeserializer);
-
-    if isjson then
-      f.readLiteral('"');
-
-    this._readCore(f);
-
-    if isjson then
-      f.readLiteral('"');
-  }
-
   /* Reads this `date` with the same format used by :proc:`date.serialize` */
   proc ref date.deserialize(reader, ref deserializer) throws {
-    readThis(reader);
+    import JSON.jsonDeserializer;
+
+    const binary = reader._binary(),
+          arrayStyle = reader.styleElement(QIO_STYLE_ELEMENT_ARRAY),
+          isjson = (arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary) ||
+            isSubtype(reader.deserializerType, jsonDeserializer);
+
+    if isjson then
+      reader.readLiteral('"');
+
+    this._readCore(reader);
+
+    if isjson then
+      reader.readLiteral('"');
   }
 
   //
@@ -683,7 +547,7 @@ module Time {
   @chpldoc.nodoc
   proc date.init(reader: fileReader, ref deserializer) throws {
     this.init();
-    readThis(reader);
+    this.deserialize(reader, deserializer);
   }
 
   /* Operators on date values */
@@ -757,12 +621,6 @@ module Time {
     @unstable("timezone is unstable")
     proc timezone : shared Timezone? {
       return chpl_tz;
-    }
-
-    @chpldoc.nodoc
-    @deprecated(notes="'tzinfo' is deprecated, please use 'timezone' instead")
-    proc tzinfo {
-      return timezone;
     }
 
     /* The minimum representable `time` */
@@ -893,11 +751,6 @@ module Time {
     return ret;
   }
 
-  @deprecated(notes="`time.isoFormat` is deprecated; use cast to string instead")
-  proc time.isoFormat() : string {
-    return this:string;
-  }
-
   /* Return the offset from UTC */
   @unstable("'utcOffset' is unstable")
   proc time.utcOffset() : timeDelta {
@@ -942,7 +795,7 @@ module Time {
     timeStruct.tm_mday = 1;
     timeStruct.tm_mon = 1;
 
-    timeStruct.tm_wday = ((new date(1900, 1, 1))._old_weekday():int(32) + 1) % 7;
+    timeStruct.tm_wday = ((new date(1900, 1, 1)).weekday():int(32)) % 7;
     timeStruct.tm_yday = 0;
 
     if timezone.borrow() != nil {
@@ -964,16 +817,11 @@ module Time {
     return str;
   }
 
-  @chpldoc.nodoc
-  proc time.writeThis(f) throws {
-    f.write(this:string);
-  }
-
   /* Writes this `time` formatted as  ``hh:mm:ss.ssssss``,
      followed by ``±hh:mm`` if a timezone is specified
    */
   proc time.serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    writer.write(this:string);
   }
 
   // Exists to support some common functionality for `dateTime.deserialize`
@@ -990,27 +838,22 @@ module Time {
     chpl_microsecond = f.read(int);
   }
 
-  @chpldoc.nodoc
-  proc ref time.readThis(f) throws {
-    import JSON.jsonDeserializer;
-
-    const binary = f._binary(),
-          arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary  ||
-            isSubtype(f.deserializerType, jsonDeserializer);
-
-    if isjson then
-      f.readLiteral('"');
-
-    this._readCore(f);
-
-    if isjson then
-      f.readLiteral('"');
-  }
-
   /* Reads this `time` with the same format used by :proc:`time.serialize` */
   proc ref time.deserialize(reader, ref deserializer) throws {
-    readThis(reader);
+    import JSON.jsonDeserializer;
+
+    const binary = reader._binary(),
+          arrayStyle = reader.styleElement(QIO_STYLE_ELEMENT_ARRAY),
+          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary  ||
+            isSubtype(reader.deserializerType, jsonDeserializer);
+
+    if isjson then
+      reader.readLiteral('"');
+
+    this._readCore(reader);
+
+    if isjson then
+      reader.readLiteral('"');
   }
 
   //
@@ -1019,7 +862,7 @@ module Time {
   @chpldoc.nodoc
   proc time.init(reader: fileReader, ref deserializer) throws {
     this.init();
-    readThis(reader);
+    this.deserialize(reader, deserializer);
   }
 
 
@@ -1144,9 +987,6 @@ module Time {
     }
   }
 
-  @deprecated(notes="'datetime' is deprecated, please use :record:`dateTime` instead")
-  type datetime = dateTime;
-
   /* A record representing a combined `date` and `time` */
   record dateTime : serializable {
     var chpl_date: date;
@@ -1206,12 +1046,6 @@ module Time {
     @unstable("timezone is unstable")
     proc timezone : shared Timezone? {
       return chpl_time.timezone;
-    }
-
-    @chpldoc.nodoc
-    @deprecated(notes="'tzinfo' is deprecated, please use 'timezone' instead")
-    proc tzinfo {
-      return timezone;
     }
   }
 
@@ -1290,17 +1124,6 @@ module Time {
     return unixEpoch + td;
   }
 
-  @deprecated(notes="'dateTime.fromTimestamp' is deprecated, please use 'dateTime.createFromTimestamp' instead")
-  proc type dateTime.fromTimestamp(timestamp: real) : dateTime {
-    return dateTime.createFromTimestamp(timestamp, nil);
-  }
-
-  @deprecated(notes="'dateTime.fromTimestamp' is deprecated, please use 'dateTime.createFromTimestamp' instead")
-  proc type dateTime.fromTimestamp(timestamp: real,
-                                   in tz: shared Timezone?) : dateTime {
-    return dateTime.createFromTimestamp(timestamp, tz);
-  }
-
   /* The `dateTime` that is `timestamp` seconds from the epoch,
      in naive local time.
   */
@@ -1325,52 +1148,16 @@ module Time {
     }
   }
 
-  @deprecated(notes="'dateTime.utcFromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp' instead")
-  proc type dateTime.utcFromTimestamp(timestamp) : dateTime {
-    return dateTime.createUtcFromTimestamp(timestamp);
-  }
-
   /* The `dateTime` that is `timestamp` seconds from the epoch in UTC */
   proc type dateTime.createUtcFromTimestamp(timestamp) : dateTime {
     return unixEpoch + new timeDelta(seconds=timestamp: int, microseconds=((timestamp-timestamp: int)*1000000): int);
   }
 
-  @deprecated(notes="'dateTime.fromOrdinal' is deprecated, please use 'new dateTime(date.createFromOrdinal(ordinal))' instead")
-  proc type dateTime.fromOrdinal(ordinal) : dateTime {
-    return dateTime.createFromOrdinal(ordinal);
-  }
-
-  /* The `dateTime` that is `ordinal` days from 1-1-0001 */
-  @deprecated(notes="'dateTime.createFromOrdinal' is deprecated; use 'new dateTime(date.createFromOrdinal(ordinal))' instead")
-  proc type dateTime.createFromOrdinal(ordinal: int) : dateTime {
-    return new dateTime(date.createFromOrdinal(ordinal));
-  }
-
-  /* Form a `dateTime` value from a given `date` and `time` */
-  @deprecated(notes="`dateTime.combine` is deprecated; use `new dateTime` taking a `date` and `time` argument instead")
-  proc type dateTime.combine(d: date, t: time) : dateTime {
-    return new dateTime(d, t);
-  }
-
   /* Methods on dateTime values */
-
-  @deprecated(notes="'dateTime.getdate' is deprecated. Please use :proc:`dateTime.getDate` instead")
-  proc dateTime.getdate() : date {
-    return chpl_date;
-  }
 
   /* Get the `date` portion of the `dateTime` value */
   proc dateTime.getDate() : date {
     return chpl_date;
-  }
-
-  @deprecated(notes="'dateTime.gettime' is deprecated. Please use :proc:`dateTime.getTime` instead")
-  proc dateTime.gettime() : time {
-    if chpl_time.timezone.borrow() == nil then
-      return chpl_time;
-    else
-      return new time(hour=hour, minute=minute,
-                      second=second, microsecond=microsecond);
   }
 
   /* Get the `time` portion of the `dateTime` value, with `tz` = nil */
@@ -1460,7 +1247,7 @@ module Time {
     timeStruct.tm_mday = day: int(32);
     timeStruct.tm_mon = month: int(32);
     timeStruct.tm_year = year: int(32);
-    timeStruct.tm_wday = getDate()._old_weekday(): int(32);
+    timeStruct.tm_wday = getDate().weekday(): int(32) - 1;
     timeStruct.tm_yday = (getDate().toOrdinal() -
         (new date(year, 1, 1)).toOrdinal() + 1): int(32);
 
@@ -1492,51 +1279,6 @@ module Time {
     }
   }
 
-  /* Return the number of days since 1-1-0001 this `dateTime` represents */
-  @deprecated(notes="`dateTime.toOrdinal` is deprecated; use `dateTime.getDate().toOrdinal()` instead")
-  proc dateTime.toOrdinal() : int {
-    return getDate().toOrdinal();
-  }
-
-  /* Return the day of the week.
-   */
-  @deprecated(notes="`dateTime.weekday` is deprecated; use `dateTime.getDate().weekday()` instead")
-  proc dateTime.weekday() : dayOfWeek where cIsoDayOfWeek {
-    return getDate().weekday();
-  }
-  @deprecated(notes="The version of 'dateTime.weekday' returning a :type:`dayOfWeek` starting with `Monday = 0` is deprecated. Recompile with ``-sCIsoDayOfWeek=true`` to opt in to the new behavior of `Monday = 1`")
-  proc dateTime.weekday() : dayOfWeek where !cIsoDayOfWeek {
-    return getDate().weekday();
-  }
-
-  /* Return the day of the week as an `isoDayOfWeek`.
-     `Monday` == 1, `Sunday` == 7
-   */
-  @deprecated(notes="`dateTime.isoWeekday` is deprecated; use `dateTime.getDate().weekday()` instead")
-  proc dateTime.isoWeekday() : isoDayOfWeek {
-    return getDate().isoWeekday();
-  }
-
-  @chpldoc.nodoc
-  @deprecated(notes="`dateTime.isoweekday` is deprecated, please use `dateTime.getDate().weekday()` instead")
-  proc dateTime.isoweekday() : isoDayOfWeek {
-    return isoWeekday();
-  }
-
-  /* Return the ISO date as a tuple containing the ISO year, ISO week number,
-     and ISO day of the week
-   */
-  @deprecated(notes="`dateTime.isoCalendar` is deprecated; use `dateTime.getDate().isoWeekDate()` instead")
-  proc dateTime.isoCalendar() : (int, int, int) {
-    return getDate().isoCalendar();
-  }
-
-  @chpldoc.nodoc
-  @deprecated(notes="`dateTime.isocalendar` is deprecated, please use `dateTime.getDate().isoWeekDate()` instead")
-  proc dateTime.isocalendar() : (int, int, int) {
-    return getDate().isoCalendar();
-  }
-
   /* Get a `string` representation of this `dateTime` in ISO format
      ``YYYY-MM-DDThh:mm:ss.ssssss``, followed by ``±hh:mm`` if a timezone is
      specified
@@ -1544,7 +1286,7 @@ module Time {
   operator dateTime.:(x: dateTime, type t: string) {
     proc zeroPad(nDigits: int, i: int) {
       var numStr = i: string;
-      for i in 1..nDigits-numStr.size {
+      for 1..nDigits-numStr.size {
         numStr = "0" + numStr;
       }
       return numStr;
@@ -1572,41 +1314,6 @@ module Time {
     // characters on its own, so do it manually.
     var year = zeroPad(4, try! x.strftime("%Y"):int);
     return x.strftime(year + "-%m-%d" + "T" + "%H:%M:%S" + micro + offset);
-  }
-
-  /* Return the `dateTime` as a `string` in ISO format */
-  @deprecated(notes="`dateTime.isoFormat` is deprecated; use cast to string instead")
-  proc dateTime.isoFormat(sep="T") : string {
-    proc zeroPad(nDigits: int, i: int) {
-      var numStr = i: string;
-      for i in 1..nDigits-numStr.size {
-        numStr = "0" + numStr;
-      }
-      return numStr;
-    }
-    var micro = if microsecond > 0 then "." + zeroPad(6, microsecond) else "";
-    var offset: string;
-    if timezone.borrow() != nil {
-      var utcoff = utcOffset();
-      var sign: string;
-      if utcoff < new timeDelta(0) {
-        sign = '-';
-        utcoff = utcoff.abs();
-      } else {
-        sign = '+';
-      }
-      var hours = utcoff.seconds / (60*60);
-      var minutes = (utcoff.seconds % (60*60)) / 60;
-      offset = sign +
-               (if hours < 10 then "0" + hours: string else hours: string) +
-               ":" +
-               (if minutes < 10 then "0" + minutes: string else minutes: string);
-    }
-
-    // on our Linux64 systems, the "%Y" format doesn't zero-pad to 4
-    // characters on its own, so do it manually.
-    var year = zeroPad(4, try! strftime("%Y"):int);
-    return strftime(year + "-%m-%d" + sep + "%H:%M:%S" + micro + offset);
   }
 
   /* Create a `dateTime` as described by the `date_string` and
@@ -1651,7 +1358,7 @@ module Time {
     timeStruct.tm_year = (year-1900): int(32); // 1900 based
     timeStruct.tm_mon = (month-1): int(32);    // 0 based
     timeStruct.tm_mday = day: int(32);
-    timeStruct.tm_wday = (this.getDate()._old_weekday(): int(32) + 1) % 7; // shift Sunday to 0
+    timeStruct.tm_wday = (this.getDate().weekday(): int(32)) % 7;
     timeStruct.tm_yday = (this.replace(tz=nil) - new dateTime(year, 1, 1)).days: int(32);
 
     // Iterate over format specifiers in strftime(), replacing %f with microseconds
@@ -1705,43 +1412,33 @@ module Time {
     return this.strftime("%a %b %e %T %Y");
   }
 
-  @chpldoc.nodoc
-  proc dateTime.writeThis(f) throws {
-    f.write(this:string);
-  }
-
   /* Writes this `dateTime` formatted as ``YYYY-MM-DDThh:mm:ss.ssssss``,
      followed by ``±hh:mm`` if a timezone is specified
   */
   proc dateTime.serialize(writer, ref serializer) throws {
-    writeThis(writer);
-  }
-
-  @chpldoc.nodoc
-  proc ref dateTime.readThis(f) throws {
-    import JSON.jsonDeserializer;
-
-    const binary = f._binary(),
-          arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary ||
-            isSubtype(f.deserializerType, jsonDeserializer);
-
-    if isjson then
-      f.readLiteral('"');
-
-    chpl_date._readCore(f);
-    f.readLiteral("T");
-    chpl_time._readCore(f);
-
-    if isjson then
-      f.readLiteral('"');
+    writer.write(this:string);
   }
 
   /* Reads this `dateTime` with the same format used by
      :proc:`dateTime.serialize`
    */
   proc ref dateTime.deserialize(reader, ref deserializer) throws {
-    readThis(reader);
+    import JSON.jsonDeserializer;
+
+    const binary = reader._binary(),
+          arrayStyle = reader.styleElement(QIO_STYLE_ELEMENT_ARRAY),
+          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary ||
+            isSubtype(reader.deserializerType, jsonDeserializer);
+
+    if isjson then
+      reader.readLiteral('"');
+
+    chpl_date._readCore(reader);
+    reader.readLiteral("T");
+    chpl_time._readCore(reader);
+
+    if isjson then
+      reader.readLiteral('"');
   }
 
   //
@@ -1750,7 +1447,7 @@ module Time {
   @chpldoc.nodoc
   proc dateTime.init(reader: fileReader, ref deserializer) throws {
     this.init();
-    readThis(reader);
+    this.deserialize(reader, deserializer);
   }
 
 
@@ -1941,9 +1638,6 @@ module Time {
     }
   }
 
-
-  @deprecated(notes="'timedelta' is deprecated. Please use :record:`timeDelta` instead")
-  type timedelta = timeDelta;
   /* A record representing an amount of time.  A `timeDelta` has fields
      representing days, seconds, and microseconds.  These fields are always
      kept within the following ranges:
@@ -2105,7 +1799,7 @@ module Time {
   }
 
   @chpldoc.nodoc
-  operator timeDelta.>(lhs: timeDelta, rhs: timeDelta) : timeDelta {
+  operator timeDelta.>(lhs: timeDelta, rhs: timeDelta) : bool {
     const ls = (lhs.days*(24*60*60) + lhs.seconds);
     const rs = (rhs.days*(24*60*60) + rhs.seconds);
     if ls > rs then return true;
@@ -2142,16 +1836,9 @@ module Time {
       return this;
   }
 
-  /* Return the absolute value of `t`.  If `t` is negative, then returns `-t`,
-     else returns `t`.
-   */
-  @deprecated(notes="`abs` as a free function is deprecated; use :proc:`timeDelta.abs` instead")
-  proc abs(t: timeDelta) : timeDelta {
-    return t.abs();
-  }
-
   @chpldoc.nodoc
   operator :(t: timeDelta, type s:string) : string {
+    import Math;
     var str: string;
     if t.days != 0 {
       str = t.days: string + " day";
@@ -2167,14 +1854,14 @@ module Time {
     str += hours: string + ":";
     if minutes < 10 then
       str += "0";
-    str += minutes + ":";
+    str += minutes:string + ":";
     if seconds < 10 then
       str += "0";
-    str += seconds;
+    str += seconds:string;
     if microseconds != 0 {
       str += ".";
-      const usLog10 = log10(microseconds): int;
-      for i in 1..(5-usLog10) {
+      const usLog10 = Math.log10(microseconds): int;
+      for 1..(5-usLog10) {
         str += "0";
       }
 
@@ -2182,10 +1869,6 @@ module Time {
     }
     return str;
   }
-
-  @chpldoc.nodoc
-  @deprecated(notes="'TZInfo' is deprecated, please use 'Timezone' instead")
-  class TZInfo: Timezone { }
 
   /* Abstract base class for time zones. This class should not be used
      directly, but concrete implementations of time zones should be
@@ -2216,68 +1899,6 @@ module Time {
   }
 
   // TODO: Add a timezone class implementation
-
-
-/*
-   :arg  unit: The units for the returned value
-   :type unit: :type:`TimeUnits`
-
-   :returns: The elapsed time since midnight, local time, in the units specified
-   :rtype:   `real(64)`
- */
-@deprecated(notes="'getCurrentTime()' is deprecated please use 'timeSinceEpoch().totalSeconds()' instead")
-proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds) : real(64) do
-  return _convert_microseconds(unit, chpl_now_time());
-
-/*
-   :returns:  (year, month, day) as a tuple of 3 ints
-
-   The month is in the range 1 to 12.
-   The day   is in the range 1 to 31
-*/
-@deprecated(notes="'getCurrentDate' is deprecated; access the individual fields of 'date.utcToday()' as needed instead, or use 'date.today()' for local wall time")
-proc getCurrentDate() : (int, int, int) {
-  var today = date.utcToday();
-  return (today.year, today.month, today.day);
-}
-
-/*
-   :returns: The current day of the week, calculated from UTC time.
-   :rtype:   :type:`day`
- */
-@deprecated("'getCurrentDayOfWeek' is deprecated; please use 'date.utcToday().weekday()' instead, or 'date.today().weekday()' for local wall time")
-proc getCurrentDayOfWeek() : day {
-  var now = chpl_now_timevalue();
-
-  var seconds, minutes, hours, mday, month, year, wday, yday, isdst:int(32);
-
-  chpl_timevalue_parts(now, seconds, minutes, hours, mday, month, year, wday, yday, isdst);
-
-  return try! wday : day;
-}
-
-/*
-   Delay a task for a duration in the units specified. This function
-   will return without sleeping and emit a warning if the duration is
-   negative.
-
-   :arg  t: The duration for the time to sleep
-   :type t: `real`
-
-   :arg  unit: The units for the duration
-   :type unit: :type:`TimeUnits`
-*/
-@deprecated(notes="'sleep' with a 'TimeUnits' argument is deprecated. Please use 'sleep' with a time in seconds")
-inline proc sleep(t: real, unit: TimeUnits) : void {
-  use CTypes;
-  extern proc chpl_task_sleep(s:c_double) : void;
-
-  if t < 0 {
-    warning("sleep() called with negative time parameter: '", t, "'");
-    return;
-  }
-  chpl_task_sleep(_convert_to_seconds(unit, t:real):c_double);
-}
 
 /*
    Delay a task for a duration specified in seconds. This function
@@ -2366,30 +1987,6 @@ record stopwatch {
   }
 
   /*
-     Returns the cumulative elapsed time, in the units specified, between
-     all pairs of calls to :proc:`start` and :proc:`stop`
-     since the timer was created or the last call to :proc:`clear`.
-     If the timer is running, the elapsed time since the last call to
-     :proc:`start` is added to the return value.
-
-     :arg  unit: The units for the returned value
-     :type unit: :type:`TimeUnits`
-
-     :returns: The elapsed time in the units specified
-     :rtype:   `real(64)`
-  */
-  @deprecated(notes="'stopwatch.elapsed' with a 'TimeUnits' argument is deprecated. Please call 'stopwatch.elapsed' without an argument and assume it returns a time in seconds.")
-  proc elapsed(unit: TimeUnits) : real {
-    if running {
-      var time2: _timevalue = chpl_now_timevalue();
-
-      return _convert_microseconds(unit, accumulated + _diff_time(time2, time));
-    } else {
-      return _convert_microseconds(unit, accumulated);
-    }
-  }
-
-  /*
      Returns the cumulative elapsed time, in seconds, between
      all pairs of calls to :proc:`start` and :proc:`stop`
      since the timer was created or the last call to :proc:`clear`.
@@ -2410,76 +2007,6 @@ record stopwatch {
   }
 }
 
-@deprecated(notes="'Timer' is deprecated, please use 'stopwatch' instead")
-record Timer {
-  @chpldoc.nodoc
-  var time:        _timevalue = chpl_null_timevalue();
-
-  @chpldoc.nodoc
-  var accumulated: real       = 0.0;
-
-  @chpldoc.nodoc
-  var running:     bool       = false;
-
-  /*
-     Clears the elapsed time. If the timer is running then it is restarted
-     otherwise it remains in the stopped state.
-  */
-  proc clear() : void {
-    accumulated = 0.0;
-
-    if running {
-      time = chpl_now_timevalue();
-    }
-  }
-
-  /* Starts the timer. A warning is emitted if the timer is already running. */
-  proc ref start() : void {
-    if !running {
-      running = true;
-      time    = chpl_now_timevalue();
-    } else {
-      warning("start called on a timer that has not been stopped");
-    }
-  }
-
-  /* Stops the timer. A warning is emitted if the timer is not running. */
-  proc ref stop() : void {
-    if running {
-      var time2: _timevalue = chpl_now_timevalue();
-
-      accumulated += _diff_time(time2, time);
-      running      = false;
-    } else {
-      warning("stop called on a timer that has not been started");
-    }
-  }
-
-  /*
-     Returns the cumulative elapsed time, in the units specified, between
-     all pairs of calls to :proc:`start` and :proc:`stop`
-     since the timer was created or the last call to :proc:`clear`.
-     If the timer is running, the elapsed time since the last call to
-     :proc:`start` is added to the return value.
-
-     :arg  unit: The units for the returned value
-     :type unit: :type:`TimeUnits`
-
-     :returns: The elapsed time in the units specified
-     :rtype:   `real(64)`
-  */
-  @deprecated(notes="'Timer.elapsed' with a 'TimeUnits' argument is deprecated. Please call 'stopwatch.elapsed' without an argument and assume it returns a time in seconds.")
-  proc elapsed(unit: TimeUnits = TimeUnits.seconds) : real {
-    if running {
-      var time2: _timevalue = chpl_now_timevalue();
-
-      return _convert_microseconds(unit, accumulated + _diff_time(time2, time));
-    } else {
-      return _convert_microseconds(unit, accumulated);
-    }
-  }
-}
-
 // returns diff of two time values in microseconds
 private inline proc _diff_time(t1: _timevalue, t2: _timevalue) {
   extern proc chpl_timevalue_seconds(t:_timevalue):      int(64);
@@ -2492,34 +2019,6 @@ private inline proc _diff_time(t1: _timevalue, t2: _timevalue) {
   var us2 = chpl_timevalue_microseconds(t2);
 
   return (s1 * 1.0e+6 + us1) - (s2 * 1.0e+6 + us2);
-}
-
-// converts a time specified by unit into seconds
-@deprecated(notes="'_convert_to_seconds' is deprecated without replacement")
-private proc _convert_to_seconds(unit: TimeUnits, us: real) {
-  select unit {
-    when TimeUnits.microseconds do return us *    1.0e-6;
-    when TimeUnits.milliseconds do return us *    1.0e-3;
-    when TimeUnits.seconds      do return us;
-    when TimeUnits.minutes      do return us *   60.0;
-    when TimeUnits.hours        do return us * 3600.0;
-  }
-
-  HaltWrappers.exhaustiveSelectHalt("unknown timeunits type");
-}
-
-// converts microseconds to another unit
-@deprecated(notes="'_convert_microseconds' is deprecated without replacement")
-private proc _convert_microseconds(unit: TimeUnits, us: real) {
-  select unit {
-    when TimeUnits.microseconds do return us;
-    when TimeUnits.milliseconds do return us /    1.0e+3;
-    when TimeUnits.seconds      do return us /    1.0e+6;
-    when TimeUnits.minutes      do return us /   60.0e+6;
-    when TimeUnits.hours        do return us / 3600.0e+6;
-  }
-
-  HaltWrappers.exhaustiveSelectHalt("unknown timeunits type");
 }
 
 }

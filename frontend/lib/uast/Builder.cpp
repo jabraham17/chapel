@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -119,6 +119,18 @@ owned<Builder> Builder::createForIncludedModule(Context* context,
   return toOwned(b);
 }
 
+owned<Builder> Builder::createForGeneratedCode(Context* context,
+                                               ID generatedFrom) {
+  // Note: currently filePath only appears to be used when modules are
+  // involved, and generated uAST is currently expected to be a single
+  // top-level function. Locations will be set manually by caller.
+  auto uniqueFilename = UniqueString::get(context, "<dummy>");
+  auto b = new Builder(context, uniqueFilename, generatedFrom.symbolPath(),
+                       /* LibraryFile */ nullptr,
+                       /* isGenerated=*/true);
+  return toOwned(b);
+}
+
 owned<Builder> Builder::createForLibraryFileModule(
                                         Context* context,
                                         UniqueString filePath,
@@ -150,13 +162,57 @@ void Builder::noteAdditionalLocation(AstLocMap& m, AstNode* ast,
   m.emplace(ast, std::move(loc));
 }
 
+void Builder::tryNoteAdditionalLocation(AstLocMap& m, AstNode* ast,
+                                     Location loc) {
+  if (!ast || loc.isEmpty()) return;
+  auto found = m.find(ast);
+  if (found == m.end()) {
+    m.emplace_hint(found, ast, std::move(loc));
+  }
+}
+
+void Builder::copyAdditionalLocation(AstLocMap& m, const AstNode* from, const AstNode* to) {
+  if (!from || !to) return;
+  auto foundFrom = m.find(from);
+  if (foundFrom == m.end()) return;
+  auto foundTo = m.find(to);
+  if (foundTo == m.end()) {
+    m.emplace_hint(foundTo, to, foundFrom->second);
+  }
+}
+
+void Builder::deleteAdditionalLocation(AstLocMap& m, const AstNode* ast) {
+  if (!ast) return;
+  m.erase(ast);
+}
+
 #define LOCATION_MAP(ast__, location__) \
   void Builder::note##location__##Location(ast__* ast, Location loc) { \
     auto& m = CHPL_AST_LOC_MAP(ast__, location__); \
     noteAdditionalLocation(m, ast, std::move(loc)); \
+  } \
+  void Builder::tryNote##location__##Location(ast__* ast, Location loc) { \
+    auto& m = CHPL_AST_LOC_MAP(ast__, location__); \
+    tryNoteAdditionalLocation(m, ast, std::move(loc)); \
+  }\
+  void Builder::copy##location__##Location(const ast__* from, const ast__* to) { \
+    auto& m = CHPL_AST_LOC_MAP(ast__, location__); \
+    copyAdditionalLocation(m, from, to); \
+  }\
+  void Builder::delete##location__##Location(const ast__* ast) { \
+    auto& m = CHPL_AST_LOC_MAP(ast__, location__); \
+    deleteAdditionalLocation(m, ast); \
   }
 #include "chpl/uast/all-location-maps.h"
 #undef LOCATION_MAP
+
+void Builder::deleteAllLocations(const AstNode* ast) {
+  notedLocations_.erase(ast);
+  #define LOCATION_MAP(ast__, location__) \
+    CHPL_AST_LOC_MAP(ast__, location__).erase(ast);
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
+}
 
 void Builder::noteSymbolTableSymbols(SymbolTableVec vec) {
   symbolTableVec_ = std::move(vec);
@@ -164,7 +220,9 @@ void Builder::noteSymbolTableSymbols(SymbolTableVec vec) {
 }
 
 BuilderResult Builder::result() {
-  this->createImplicitModuleIfNeeded();
+  if (isGenerated() == false) {
+    this->createImplicitModuleIfNeeded();
+  }
   this->assignIDs();
 
   // if we have a symbolTableVec, use it to compute
@@ -285,7 +343,8 @@ void Builder::assignIDs() {
 
   for (auto const& ownedExpression: br.topLevelExpressions_) {
     AstNode* ast = ownedExpression.get();
-    if (ast->isModule() || ast->isComment()) {
+    bool isModuleOrComment = ast->isModule() || ast->isComment();
+    if (isGenerated() || isModuleOrComment) {
       UniqueString emptyString;
       doAssignIDs(ast, emptyString, i, commentIndex, pathVec, duplicates);
     } else {
@@ -388,6 +447,15 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
       }
     }
 
+    // Assumption: doAssignIDs is invoked on top-level uAST with an empty
+    // string for the symbolPath. If the symbolPath is not empty, and this
+    // builder is for generated uAST, then we have violated the assumption that
+    // there is only one scope-defining symbol.
+    if (isGenerated() && !symbolPath.isEmpty()) {
+      CHPL_ASSERT(false && "generated uAST may not contain scope-defining "
+                           "symbols other than the top-level symbol");
+    }
+
     int repeat = 0;
     auto search = duplicates.find(declName);
     if (search != duplicates.end()) {
@@ -434,7 +502,13 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     }
 
     int numContainedIds = freshId;
-    ast->setID(ID(newSymbolPath, -1, numContainedIds));
+    ID id;
+    if (isGenerated()) {
+      id = ID::generatedId(newSymbolPath, -1, numContainedIds);
+    } else {
+      id = ID(newSymbolPath, -1, numContainedIds);
+    }
+    ast->setID(id);
 
     // Note: when creating a new symbol (e.g. fn), we're not incrementing i.
     // The new symbol ID has the updated path (e.g. function name)
@@ -446,6 +520,7 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
 
   } else {
     // not a new scope
+    CHPL_ASSERT(!ast->isModule()); // modules should be a new scope
 
     // visit the children now to get integer part of ids in postorder
     for (auto & child : ast->children_) {
@@ -454,10 +529,15 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     }
 
     int afterChildID = i;
-    int myID = afterChildID;
     i++; // count the ID for the node we are currently visiting
     int numContainedIDs = afterChildID - firstChildID;
-    ast->setID(ID(symbolPath, myID, numContainedIDs));
+    ID id;
+    if (isGenerated()) {
+      id = ID::generatedId(symbolPath, afterChildID, numContainedIDs);
+    } else {
+      id = ID(symbolPath, afterChildID, numContainedIDs);
+    }
+    ast->setID(id);
   }
 
   // update idToAst_ for the visited AST node

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -330,7 +330,7 @@ void chpl_warning_explicit(const char *message, int32_t lineno,
 }
 
 #ifndef LAUNCHER
-static atomic_bool thisLocaleAlreadyExiting;
+static chpl_atomic_bool thisLocaleAlreadyExiting;
 void chpl_error_init(void) {
   atomic_init_bool(&thisLocaleAlreadyExiting, false);
 }

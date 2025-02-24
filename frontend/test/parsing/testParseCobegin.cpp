@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -106,6 +106,23 @@ static void test1(Parser* parser) {
   assert(cobegin->taskBody(2)->isComment());
 }
 
+static void test2(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
+      "cobegin with (re A) {;;}\n"
+      "cobegin with () {;;}\n"
+      "cobegin with ref A {;;}\n"
+);
+  auto numErrors = 5;
+  assert(guard.errors().size() == (size_t) numErrors);
+  assert("invalid intent expression in 'with' clause" == guard.error(1)->message());
+  assert("'with' clause cannot be empty" == guard.error(2)->message());
+  assert("missing parentheses around 'with' clause intents" == guard.error(4)->message());
+  // The other errors are from the parser as "near ...".
+  // It would be really nice to not have those be emitted at all.
+  assert(guard.realizeErrors() == numErrors);
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -115,6 +132,7 @@ int main() {
 
   test0(p);
   test1(p);
+  test2(p);
 
   return 0;
 }

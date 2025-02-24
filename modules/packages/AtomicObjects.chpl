@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,13 +26,10 @@
 
       - It relies on Chapel ``extern`` code blocks and so requires that
         the Chapel compiler is built with LLVM enabled.
-      - Currently only ``CHPL_TARGET_ARCH=x86_64`` is supported as it uses
-        the x86-64 instruction: CMPXCHG16B_.
-      - The implementation relies on ``GCC`` style inline assembly, and so
-        is restricted to a ``CHPL_TARGET_COMPILER`` value of ``gnu``,
-        ``clang``, or ``llvm``.
-
-    .. _CMPXCHG16B: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
+      - The implementation relies on using either ``GCC`` style inline assembly
+        (for x86-64) or a GCC/clang builtin, and so is restricted to a
+        ``CHPL_TARGET_COMPILER`` value of ``gnu``, ``clang``, or ``llvm``.
+      - The implementation does not work with ``CHPL_ATOMICS=locks``.
 
   This module provides support for performing atomic operations on pointers
   to  ``unmanaged`` classes, which can be thought of as building blocks for
@@ -119,16 +116,13 @@ prototype module AtomicObjects {
   private use IO;
   private use OS.POSIX;
 
-  if CHPL_TARGET_ARCH != "x86_64" {
-    compilerWarning("The AtomicObjects package module cannot support CHPL_TARGET_ARCH=", CHPL_TARGET_ARCH, ", only x86_64 is supported.");
-  }
-
   // Declaration of ``CMPXCHG16B`` primitives.
   extern {
     #include <stdint.h>
     #include <stdio.h>
     #include <stdlib.h>
 
+    __attribute__ ((aligned (16)))
     typedef struct uint128 {
       uint64_t lo;
       uint64_t hi;
@@ -138,23 +132,39 @@ prototype module AtomicObjects {
     // cmp: Expected value
     // with: New value to replace old
     // Returns: If successful or not
-    static inline int _cas128bit(uint128_t *src, uint128_t *cmp, uint128_t *with) {
-      char result;
-      __asm__ __volatile__ ("lock; cmpxchg16b (%6);"
-        "setz %7; "
-        : "=a" (cmp->lo),
-        "=d" (cmp->hi)
-        : "0" (cmp->lo),
-        "1" (cmp->hi),
-        "b" (with->lo),
-        "c" (with->hi),
-        "r" (src),
-        "m" (result)
-        : "cc", "memory");
+    static inline int _cas128bit(volatile uint128_t *src, uint128_t *cmp, uint128_t *with) {
+      #if defined(__x86_64__)
+        // We originally wrote _cas128bit expecting it to only apply on x86_64
+        // but later added a version that calls into a clang/gcc builtin that
+        // can handle other architectures. Maybe we should remove this branch
+        // and just always use the builtin but I'm hesitant to make that change
+        // without doing a performance analysis to ensure that it performs as
+        // well (or better) than this branch (I fully expect that it would).
+        char result;
+        __asm__ __volatile__ ("lock; cmpxchg16b (%6);"
+          "setz %7; "
+          : "=a" (cmp->lo),
+          "=d" (cmp->hi)
+          : "0" (cmp->lo),
+          "1" (cmp->hi),
+          "b" (with->lo),
+          "c" (with->hi),
+          "r" (src),
+          "m" (result)
+          : "cc", "memory");
         return result;
+      #elif defined(__has_builtin)
+        #if __has_builtin (__atomic_compare_exchange)
+          return __atomic_compare_exchange(src, cmp, with, 1, 1, 1);
+        #else
+          #error "Unable to build the AtomicObjects package module " \
+                 "so that it can perform 128-bit compare-and-swap operations."
+        #endif
+      #else
+        #error "Unable to build the AtomicObjects package module " \
+               "so that it can perform 128-bit compare-and-swap operations."
+      #endif
     }
-
-    typedef struct uint128 uint128_t;
 
     // srcvp: Address of a 16-byte aligned address or else General Protection Fault (GPF)
     // cmpvp: Expected value
@@ -239,7 +249,7 @@ prototype module AtomicObjects {
   }
 
   @chpldoc.nodoc
-  extern type atomic_uint_least64_t;
+  extern "chpl_atomic_uint_least64_t" type atomic_uint_least64_t;
 
   @chpldoc.nodoc
   extern type wide_ptr_t;
@@ -391,10 +401,6 @@ prototype module AtomicObjects {
     }
 
     @chpldoc.nodoc
-    proc readThis(f) throws {
-      compilerWarning("Reading an ABA is not supported");
-    }
-    @chpldoc.nodoc
     proc deserialize(reader, ref deserializer) throws {
       compilerWarning("Reading an ABA is not supported");
     }
@@ -406,12 +412,8 @@ prototype module AtomicObjects {
     }
 
     /* Writes an ABA */
-    proc writeThis(f) throws {
-      f.write("(ABA){cnt=", this.__ABA_cnt, ", obj=", this.getObject(), "}");
-    }
-    @chpldoc.nodoc
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write("(ABA){cnt=", this.__ABA_cnt, ", obj=", this.getObject(), "}");
     }
 
     forwarding this.getObject()!;
@@ -515,7 +517,7 @@ prototype module AtomicObjects {
     }
 
     @chpldoc.nodoc
-    inline proc atomicVariable ref {
+    inline proc ref atomicVariable ref {
       if hasABASupport {
         return atomicVar[0]._ABA_ptr;
       } else {
@@ -575,11 +577,11 @@ prototype module AtomicObjects {
       return ret;
     }
 
-    proc read() : objType? {
+    proc ref read() : objType? {
       return fromPointer(atomicVariable.read());
     }
 
-    proc compareAndSwap(expectedObj : objType?, newObj : objType?) : bool {
+    proc ref compareAndSwap(expectedObj : objType?, newObj : objType?) : bool {
       return atomicVariable.compareAndSwap(toPointer(expectedObj), toPointer(newObj));
     }
 
@@ -600,7 +602,7 @@ prototype module AtomicObjects {
       compareAndSwapABA(expectedObj, newObj.getObject());
     }
 
-    proc write(newObj:objType?) {
+    proc ref write(newObj:objType?) {
       atomicVariable.write(toPointer(newObj));
     }
 
@@ -625,7 +627,7 @@ prototype module AtomicObjects {
       write128bit_special(new ABA(objType?, toPointer(newObj), 0));
     }
 
-    inline proc exchange(newObj:objType?) : objType? {
+    inline proc ref exchange(newObj:objType?) : objType? {
       return fromPointer(atomicVariable.exchange(toPointer(newObj)));
     }
 
@@ -658,10 +660,6 @@ prototype module AtomicObjects {
     }
 
     @chpldoc.nodoc
-    proc readThis(f) throws {
-      compilerWarning("Reading an AtomicObject is not supported");
-    }
-    @chpldoc.nodoc
     proc deserialize(reader, ref deserializer) throws {
       compilerWarning("Reading an AtomicObject is not supported");
     }
@@ -676,12 +674,9 @@ prototype module AtomicObjects {
       compilerWarning("Deserializing an AtomicObject is not yet supported");
     }
 
-    proc writeThis(f) throws {
-      f.write(atomicVariable.read());
-    }
     @chpldoc.nodoc
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write(atomicVariable.read());
     }
   }
 }

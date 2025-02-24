@@ -41,6 +41,7 @@ Data Structures
 
    ConcurrentMap <packages/ConcurrentMap>
    DistributedBag <packages/DistributedBag>
+   DistributedBagDeprecated <packages/DistributedBagDeprecated>
    DistributedDeque <packages/DistributedDeque>
    DistributedIters <packages/DistributedIters>
    LinkedLists <packages/LinkedLists>
@@ -55,15 +56,25 @@ File Formats and I/O
 .. toctree::
    :maxdepth: 1
 
-   BinaryIO <packages/BinaryIO>
    ChplFormat <packages/ChplFormat>
    HDF5 <packages/HDF5>
    HDFS <packages/HDFS>
+   Image <packages/Image>
    NetCDF <packages/NetCDF>
+   ObjectSerialization <packages/ObjectSerialization>
+   ParallelIO <packages/ParallelIO>
+   PrecisionSerializer <packages/PrecisionSerializer>
    RecordParser <packages/RecordParser>
    TOML <packages/TOML>
    YAML <packages/YAML>
-   ObjectSerialization <packages/ObjectSerialization>
+   Zarr <packages/Zarr>
+
+Interoperability
+----------------
+.. toctree::
+   :maxdepth: 1
+
+   Python <packages/Python>
 
 Math / Numerical Computing
 --------------------------

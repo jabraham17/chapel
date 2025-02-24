@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+/* Distributed associative arrays. */
 @unstable("HashedDist is unstable and may change in the future")
 prototype module HashedDist {
 
@@ -91,7 +92,7 @@ mapper computes the target locale based upon a hash of the index.
 
 .. code-block:: chapel
 
-  var D: domain(string) dmapped Hashed(idxType=string);
+  var D: domain(string) dmapped new Hashed(idxType=string);
   // Now D is a distributed associative domain (set) of strings
   D += "one";
   D += "two";
@@ -177,12 +178,8 @@ record hashedDist : writeSerializable {
     return !(d1 == d2);
   }
 
-  proc writeThis(x) {
-    chpl_distHelp.writeThis(x);
-  }
-
   proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    chpl_distHelp.serialize(writer, serializer);
   }
 }
 
@@ -331,19 +328,15 @@ class HashedImpl : BaseDist, writeSerializable {
   //
   // print out the distribution
   //
-  proc writeThis(x) throws {
-    x.writeln("hashedDist");
-    x.writeln("----------");
-    x.writeln("distributed using: ", mapper);
-    x.writeln("across locales: ", targetLocales);
-    x.writeln("indexed via: ", targetLocDom);
-    x.writeln("resulting in: ");
-    //for locid in targetLocDom do
-    //  x.writeln("  [", locid, "] ", locDist(locid));
-  }
-
   override proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    writer.writeln("hashedDist");
+    writer.writeln("----------");
+    writer.writeln("distributed using: ", mapper);
+    writer.writeln("across locales: ", targetLocales);
+    writer.writeln("indexed via: ", targetLocDom);
+    writer.writeln("resulting in: ");
+    //for locid in targetLocDom do
+    //  writer.writeln("  [", locid, "] ", locDist(locid));
   }
 
   //
@@ -756,12 +749,8 @@ class LocUserMapAssocDom : writeSerializable {
   //
   // how to write out this locale's indices
   //
-  proc writeThis(x) throws {
-    x.write(myInds);
-  }
-
   override proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    writer.write(myInds);
   }
 
 
@@ -1021,7 +1010,7 @@ class UserMapAssocArr: AbsBaseArr(?) {
 
   proc dsiSerialWrite(f) throws where f.serializerType != nothing {
     use IO;
-    if f.serializerType == IO.defaultSerializer {
+    if isDefaultSerializerType(f.serializerType) {
       var ser = f.serializer.startArray(f, dom.dsiNumIndices:int);
       ser.startDim(dom.dsiNumIndices);
 
@@ -1160,15 +1149,11 @@ class LocUserMapAssocArr : writeSerializable {
   //
   // prints out this locale's piece of the array
   //
-  proc writeThis(x) throws {
+  override proc serialize(writer, ref serializer) throws {
     // May want to do something like the following:
     //      on loc {
     // but it causes deadlock -- see writeThisUsingOn.chpl
-    x.write(myElems);
-  }
-
-  override proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    writer.write(myElems);
   }
 
   //

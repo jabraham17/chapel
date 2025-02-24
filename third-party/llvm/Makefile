@@ -12,6 +12,14 @@ else
   CHPL_LLVM_DEBUG := -DCMAKE_BUILD_TYPE=Release
 endif
 
+# select the LLVM targets to build
+# this can make the build faster by only building the targets needed
+ifndef CHPL_LLVM_TARGETS_TO_BUILD
+  CHPL_LLVM_TARGETS_TO_BUILD := "host;X86;AArch64;NVPTX;AMDGPU"
+else
+  CHPL_LLVM_TARGETS_TO_BUILD := "$(CHPL_LLVM_TARGETS_TO_BUILD)"
+endif
+
 # activate LLVM asserts if it's from `make ASSERTS=1`
 # or if CHPL_LLVM_DEVELOPER is set
 CHPL_LLVM_ASSERTS := 0
@@ -42,6 +50,8 @@ CHPL_LLVM_DYNAMIC_OPTS:=
 ifeq ($(CHPL_LLVM_DYNAMIC),1)
   CHPL_LLVM_DYNAMIC_OPTS:=-DLLVM_BUILD_LLVM_DYLIB=ON -DLLVM_LINK_LLVM_DYLIB=ON
 endif
+
+CHPL_LLVM_NO_TESTS := -DLLVM_BUILD_TESTS=OFF -DLLVM_INCLUDE_TESTS=OFF -DLLVM_BUILD_BENCHMARKS=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF
 
 CMAKE ?= cmake
 
@@ -103,9 +113,9 @@ llvm-config: FORCE
 	    -DCLANG_ENABLE_ARCMT=0 \
 	    -DCLANG_ANALYZER_ENABLE_Z3_SOLVER=0 \
 	    -DCLANG_ENABLE_STATIC_ANALYZER=0 \
-	    -DLLVM_TARGETS_TO_BUILD="host;X86;AArch64;NVPTX;AMDGPU" \
+	    -DLLVM_TARGETS_TO_BUILD=$(CHPL_LLVM_TARGETS_TO_BUILD) \
 	    -DLLVM_INSTALL_UTILS=ON \
-	    -DLLVM_INCLUDE_TESTS=OFF \
+	    $(CHPL_LLVM_NO_TESTS) \
 	    $(CHPL_LLVM_ENABLE_PROJECTS) \
 	    $(CHPL_LLVM_DYNAMIC_OPTS) \
 	    $(CHPL_RV_CMAKE) \
@@ -128,7 +138,7 @@ llvm-config-support-only: FORCE
 	  echo ; \
 	  exit 1; \
 	fi
-	
+
 	cd $(LLVM_SUPPORT_BUILD_DIR) && $(CMAKE) \
 	    -DCMAKE_INSTALL_PREFIX=$(LLVM_SUPPORT_INSTALL_DIR) \
 	    -DCMAKE_C_COMPILER='$(CC)' \
@@ -143,7 +153,7 @@ llvm-config-support-only: FORCE
 	    -DCLANG_ENABLE_STATIC_ANALYZER=0 \
 	    -DLLVM_TARGETS_TO_BUILD="host" \
 	    -DLLVM_INSTALL_UTILS=OFF \
-	    -DLLVM_INCLUDE_TESTS=OFF \
+	    $(CHPL_LLVM_NO_TESTS) \
 	    -Wno-dev \
 	    $(LLVM_SRC_DIR) ; \
 
@@ -226,7 +236,7 @@ unset:
 	@echo "  2) 'bundled' to build with the LLVM packaged in the third-party directory"
 	@echo "  3) 'system' to use a pre-installed system-wide LLVM"
 	@echo "     Currently supported LLVM versions are: $(CHPL_LLVM_SUPPORTED_VERSIONS)"
-	@echo "See: https://chapel-lang.org/docs/latest/usingchapel/chplenv.html#chpl-llvm"
+	@echo "See: https://chapel-lang.org/docs/usingchapel/chplenv.html#chpl-llvm"
 	@exit 1
 
 FORCE:

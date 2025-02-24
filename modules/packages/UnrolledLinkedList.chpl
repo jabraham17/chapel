@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -108,7 +108,7 @@ module UnrolledLinkedList {
       data[size] = x;
       size += 1;
     }
-  };
+  }
 
   record unrolledLinkedList : writeSerializable {
 
@@ -162,6 +162,9 @@ module UnrolledLinkedList {
 
       :arg parSafe: If `true`, this unrolledLinkedList will use parallel safe operations.
       :type parSafe: `param bool`
+
+      :arg nodeCapacity: The capacity of one linked node of this unrolledLinkedList.
+      :type nodeCapacity: `int`
     */
     proc init(type eltType, param parSafe=false, nodeCapacity: int = 32) {
       _checkType(eltType);
@@ -183,6 +186,9 @@ module UnrolledLinkedList {
 
       :arg parSafe: If `true`, this unrolledLinkedList will use parallel safe operations.
       :type parSafe: `param bool`
+
+      :arg nodeCapacity: The capacity of one linked node of this unrolledLinkedList.
+      :type nodeCapacity: `int`
     */
     proc init(other: list(?t), param parSafe=false, nodeCapacity: int = 32) {
       _checkType(t);
@@ -207,6 +213,9 @@ module UnrolledLinkedList {
 
       :arg parSafe: If `true`, this unrolledLinkedList will use parallel safe operations.
       :type parSafe: `param bool`
+
+      :arg nodeCapacity: The capacity of one linked node of this unrolledLinkedList.
+      :type nodeCapacity: `int`
     */
     proc init(other: [?d] ?t, param parSafe=false, nodeCapacity: int = 32) {
       _checkType(t);
@@ -1149,30 +1158,23 @@ module UnrolledLinkedList {
 
     /*
       Write the contents of this unrolledLinkedList to a channel.
-
-      :arg ch: A channel to write to.
     */
-    proc writeThis(ch: fileWriter) throws {
+    proc serialize(writer, ref serializer) throws {
       _enter();
 
-      ch.write("[");
+      writer.write("[");
 
       var first = true;
 
       for x in this {
-        if !first then ch.write(", ");
+        if !first then writer.write(", ");
         else first = false;
-        ch.write(x);
+        writer.write(x);
       }
 
-      ch.write("]");
+      writer.write("]");
 
       _leave();
-    }
-
-    @chpldoc.nodoc
-    proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
     }
 
     /*

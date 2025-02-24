@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,7 +44,7 @@ BasicClassType::get(Context* context, ID id, UniqueString name,
                     const BasicClassType* parentType,
                     const BasicClassType* instantiatedFrom,
                     SubstitutionsMap subs) {
-  // getObjectType should be used to construct object
+  // getRootClassType should be used to construct RootClass
   // everything else should have a parent type.
   CHPL_ASSERT(parentType != nullptr);
   return getBasicClassType(context, id, name,
@@ -65,9 +65,8 @@ BasicClassType::getRootClassType(Context* context) {
 
 const BasicClassType*
 BasicClassType::getReduceScanOpType(Context* context) {
-  auto symbolPath = UniqueString::get(context, "ChapelReduce.ReduceScanOp");
-  auto name = UniqueString::get(context, "ReduceScanOp");
-  auto id = ID(symbolPath, -1, 0);
+  auto [id, name] = parsing::getSymbolFromTopLevelModule(
+      context, "ChapelReduce", "ReduceScanOp");
   auto objectType = getRootClassType(context);
 
   return getBasicClassType(context, id, name,
@@ -76,7 +75,8 @@ BasicClassType::getReduceScanOpType(Context* context) {
                            SubstitutionsMap()).get();
 }
 
-bool BasicClassType::isSubtypeOf(const BasicClassType* parentType,
+bool BasicClassType::isSubtypeOf(Context* context,
+                                 const BasicClassType* parentType,
                                  bool& converts,
                                  bool& instantiates) const {
 
@@ -93,7 +93,7 @@ bool BasicClassType::isSubtypeOf(const BasicClassType* parentType,
     }
 
     // check also if t is an instantiation of parentType
-    if (t->instantiatedFrom() == parentType) {
+    if (t->isInstantiationOf(context, parentType)) {
       if (t != this) converts = true;
       instantiates = true;
       return true;

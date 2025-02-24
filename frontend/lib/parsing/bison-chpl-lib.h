@@ -122,6 +122,33 @@ extern int yychpl_debug;
     return makeCommentsAndStmt(comments, stmt.release());
   }
 
+  struct MaybeIntent {
+    Qualifier intent;
+    bool isValid;
+  };
+  static inline
+  MaybeIntent makeIntent(Qualifier intent) {
+    MaybeIntent ret = {intent, true};
+    return ret;
+  }
+  static inline
+  MaybeIntent makeIntent(TaskVar::Intent intent) {
+    return makeIntent((Qualifier)intent);
+  }
+  static inline
+  MaybeIntent makeIntent(Function::ReturnIntent intent) {
+    return makeIntent((Qualifier)intent);
+  }
+  static inline
+  MaybeIntent makeIntent(Formal::Intent intent) {
+    return makeIntent((Qualifier)intent);
+  }
+  static inline
+  MaybeIntent makeInvalidIntent(Qualifier intent) {
+    MaybeIntent ret = {intent, false};
+    return ret;
+  }
+
   // A struct for storing a partially constructed function prototype
   // during parsing for linkage_spec/fn_decl_stmt/etc
   // It is just saving some components of a function to be used
@@ -137,16 +164,19 @@ extern int yychpl_debug;
     bool isInline;
     bool isOverride;
     Function::Kind kind;
-    Formal::Intent thisIntent;
+    MaybeIntent thisIntent;
+    TextLocation thisIntentLoc;
     Formal* receiver;
     Identifier* name;
-    Function::ReturnIntent returnIntent;
+    MaybeIntent returnIntent;
+    TextLocation returnIntentLoc;
     bool throws;
     ParserExprList* formals;
     AstNode* returnType;
     AstNode* where;
     ParserExprList* lifetime;
     ParserExprList* body;
+    TextLocation headerLoc;
   };
 
   // A struct to thread along some pieces of a module before it is built.
@@ -220,13 +250,13 @@ extern int yychpl_debug;
     // integer/enum values
 
     asttags::AstTag astTag;
-    Formal::Intent intentTag;
+    MaybeIntent intentTag;
     Function::Kind functionKind;
-    Function::ReturnIntent returnTag;
+    MaybeIntent returnTag;
     Decl::Linkage linkageTag;
     Module::Kind moduleKind;
     New::Management newManagement;
-    TaskVar::Intent taskIntent;
+    MaybeIntent taskIntent;
     Decl::Visibility visibilityTag;
     ThrowsTag throwsTag;
     Variable::Kind variableKind;
@@ -264,12 +294,12 @@ extern int yychpl_debug;
   #define YYSTYPE_IS_TRIVIAL 1
 
   #endif
-#line 300 "chpl.ypp"
+#line 330 "chpl.ypp"
 
   // forward declare ParserContext
   struct ParserContext;
 
-#line 273 "bison-chpl-lib.h"
+#line 303 "bison-chpl-lib.h"
 
 /* Token kinds.  */
 #ifndef YYCHPL_TOKENTYPE
@@ -282,12 +312,12 @@ extern int yychpl_debug;
     YYCHPL_UNDEF = 257,            /* "invalid token"  */
     TIDENT = 258,                  /* TIDENT  */
     TQUERIEDIDENT = 259,           /* TQUERIEDIDENT  */
-    INTLITERAL = 260,              /* INTLITERAL  */
-    REALLITERAL = 261,             /* REALLITERAL  */
-    IMAGLITERAL = 262,             /* IMAGLITERAL  */
-    STRINGLITERAL = 263,           /* STRINGLITERAL  */
-    BYTESLITERAL = 264,            /* BYTESLITERAL  */
-    CSTRINGLITERAL = 265,          /* CSTRINGLITERAL  */
+    TATTRIBUTEIDENT = 260,         /* TATTRIBUTEIDENT  */
+    INTLITERAL = 261,              /* INTLITERAL  */
+    REALLITERAL = 262,             /* REALLITERAL  */
+    IMAGLITERAL = 263,             /* IMAGLITERAL  */
+    STRINGLITERAL = 264,           /* STRINGLITERAL  */
+    BYTESLITERAL = 265,            /* BYTESLITERAL  */
     EXTERNCODE = 266,              /* EXTERNCODE  */
     TALIGN = 267,                  /* TALIGN  */
     TAS = 268,                     /* TAS  */
@@ -375,90 +405,88 @@ extern int yychpl_debug;
     TSELECT = 350,                 /* TSELECT  */
     TSERIAL = 351,                 /* TSERIAL  */
     TSHARED = 352,                 /* TSHARED  */
-    TSINGLE = 353,                 /* TSINGLE  */
-    TSPARSE = 354,                 /* TSPARSE  */
-    TSTRING = 355,                 /* TSTRING  */
-    TSUBDOMAIN = 356,              /* TSUBDOMAIN  */
-    TSYNC = 357,                   /* TSYNC  */
-    TTHEN = 358,                   /* TTHEN  */
-    TTHIS = 359,                   /* TTHIS  */
-    TTHROW = 360,                  /* TTHROW  */
-    TTHROWS = 361,                 /* TTHROWS  */
-    TTRUE = 362,                   /* TTRUE  */
-    TTRY = 363,                    /* TTRY  */
-    TTRYBANG = 364,                /* TTRYBANG  */
-    TTYPE = 365,                   /* TTYPE  */
-    TUINT = 366,                   /* TUINT  */
-    TUNDERSCORE = 367,             /* TUNDERSCORE  */
-    TUNION = 368,                  /* TUNION  */
-    TUNMANAGED = 369,              /* TUNMANAGED  */
-    TUSE = 370,                    /* TUSE  */
-    TVAR = 371,                    /* TVAR  */
-    TVOID = 372,                   /* TVOID  */
-    TWHEN = 373,                   /* TWHEN  */
-    TWHERE = 374,                  /* TWHERE  */
-    TWHILE = 375,                  /* TWHILE  */
-    TWITH = 376,                   /* TWITH  */
-    TYIELD = 377,                  /* TYIELD  */
-    TZIP = 378,                    /* TZIP  */
-    TALIAS = 379,                  /* TALIAS  */
-    TAND = 380,                    /* TAND  */
-    TASSIGN = 381,                 /* TASSIGN  */
-    TASSIGNBAND = 382,             /* TASSIGNBAND  */
-    TASSIGNBOR = 383,              /* TASSIGNBOR  */
-    TASSIGNBXOR = 384,             /* TASSIGNBXOR  */
-    TASSIGNDIVIDE = 385,           /* TASSIGNDIVIDE  */
-    TASSIGNEXP = 386,              /* TASSIGNEXP  */
-    TASSIGNLAND = 387,             /* TASSIGNLAND  */
-    TASSIGNLOR = 388,              /* TASSIGNLOR  */
-    TASSIGNMINUS = 389,            /* TASSIGNMINUS  */
-    TASSIGNMOD = 390,              /* TASSIGNMOD  */
-    TASSIGNMULTIPLY = 391,         /* TASSIGNMULTIPLY  */
-    TASSIGNPLUS = 392,             /* TASSIGNPLUS  */
-    TASSIGNREDUCE = 393,           /* TASSIGNREDUCE  */
-    TASSIGNSL = 394,               /* TASSIGNSL  */
-    TASSIGNSR = 395,               /* TASSIGNSR  */
-    TATMARK = 396,                 /* TATMARK  */
-    TBANG = 397,                   /* TBANG  */
-    TBAND = 398,                   /* TBAND  */
-    TBNOT = 399,                   /* TBNOT  */
-    TBOR = 400,                    /* TBOR  */
-    TBXOR = 401,                   /* TBXOR  */
-    TCOLON = 402,                  /* TCOLON  */
-    TCOMMA = 403,                  /* TCOMMA  */
-    TDIVIDE = 404,                 /* TDIVIDE  */
-    TDOT = 405,                    /* TDOT  */
-    TDOTDOT = 406,                 /* TDOTDOT  */
-    TDOTDOTDOT = 407,              /* TDOTDOTDOT  */
-    TEQUAL = 408,                  /* TEQUAL  */
-    TEXP = 409,                    /* TEXP  */
-    TGREATER = 410,                /* TGREATER  */
-    TGREATEREQUAL = 411,           /* TGREATEREQUAL  */
-    THASH = 412,                   /* THASH  */
-    TLESS = 413,                   /* TLESS  */
-    TLESSEQUAL = 414,              /* TLESSEQUAL  */
-    TMINUS = 415,                  /* TMINUS  */
-    TMOD = 416,                    /* TMOD  */
-    TNOTEQUAL = 417,               /* TNOTEQUAL  */
-    TOR = 418,                     /* TOR  */
-    TPLUS = 419,                   /* TPLUS  */
-    TQUESTION = 420,               /* TQUESTION  */
-    TSEMI = 421,                   /* TSEMI  */
-    TSHIFTLEFT = 422,              /* TSHIFTLEFT  */
-    TSHIFTRIGHT = 423,             /* TSHIFTRIGHT  */
-    TSTAR = 424,                   /* TSTAR  */
-    TSWAP = 425,                   /* TSWAP  */
-    TLCBR = 426,                   /* TLCBR  */
-    TRCBR = 427,                   /* TRCBR  */
-    TLP = 428,                     /* TLP  */
-    TRP = 429,                     /* TRP  */
-    TLSBR = 430,                   /* TLSBR  */
-    TRSBR = 431,                   /* TRSBR  */
-    TNOELSE = 432,                 /* TNOELSE  */
-    TDOTDOTOPENHIGH = 433,         /* TDOTDOTOPENHIGH  */
-    TUPLUS = 434,                  /* TUPLUS  */
-    TUMINUS = 435,                 /* TUMINUS  */
-    TLNOT = 436                    /* TLNOT  */
+    TSPARSE = 353,                 /* TSPARSE  */
+    TSTRING = 354,                 /* TSTRING  */
+    TSUBDOMAIN = 355,              /* TSUBDOMAIN  */
+    TSYNC = 356,                   /* TSYNC  */
+    TTHEN = 357,                   /* TTHEN  */
+    TTHIS = 358,                   /* TTHIS  */
+    TTHROW = 359,                  /* TTHROW  */
+    TTHROWS = 360,                 /* TTHROWS  */
+    TTRUE = 361,                   /* TTRUE  */
+    TTRY = 362,                    /* TTRY  */
+    TTRYBANG = 363,                /* TTRYBANG  */
+    TTYPE = 364,                   /* TTYPE  */
+    TUINT = 365,                   /* TUINT  */
+    TUNION = 366,                  /* TUNION  */
+    TUNMANAGED = 367,              /* TUNMANAGED  */
+    TUSE = 368,                    /* TUSE  */
+    TVAR = 369,                    /* TVAR  */
+    TVOID = 370,                   /* TVOID  */
+    TWHEN = 371,                   /* TWHEN  */
+    TWHERE = 372,                  /* TWHERE  */
+    TWHILE = 373,                  /* TWHILE  */
+    TWITH = 374,                   /* TWITH  */
+    TYIELD = 375,                  /* TYIELD  */
+    TZIP = 376,                    /* TZIP  */
+    TALIAS = 377,                  /* TALIAS  */
+    TAND = 378,                    /* TAND  */
+    TASSIGN = 379,                 /* TASSIGN  */
+    TASSIGNBAND = 380,             /* TASSIGNBAND  */
+    TASSIGNBOR = 381,              /* TASSIGNBOR  */
+    TASSIGNBXOR = 382,             /* TASSIGNBXOR  */
+    TASSIGNDIVIDE = 383,           /* TASSIGNDIVIDE  */
+    TASSIGNEXP = 384,              /* TASSIGNEXP  */
+    TASSIGNLAND = 385,             /* TASSIGNLAND  */
+    TASSIGNLOR = 386,              /* TASSIGNLOR  */
+    TASSIGNMINUS = 387,            /* TASSIGNMINUS  */
+    TASSIGNMOD = 388,              /* TASSIGNMOD  */
+    TASSIGNMULTIPLY = 389,         /* TASSIGNMULTIPLY  */
+    TASSIGNPLUS = 390,             /* TASSIGNPLUS  */
+    TASSIGNREDUCE = 391,           /* TASSIGNREDUCE  */
+    TASSIGNSL = 392,               /* TASSIGNSL  */
+    TASSIGNSR = 393,               /* TASSIGNSR  */
+    TATMARK = 394,                 /* TATMARK  */
+    TBANG = 395,                   /* TBANG  */
+    TBAND = 396,                   /* TBAND  */
+    TBNOT = 397,                   /* TBNOT  */
+    TBOR = 398,                    /* TBOR  */
+    TBXOR = 399,                   /* TBXOR  */
+    TCOLON = 400,                  /* TCOLON  */
+    TCOMMA = 401,                  /* TCOMMA  */
+    TDIVIDE = 402,                 /* TDIVIDE  */
+    TDOT = 403,                    /* TDOT  */
+    TDOTDOT = 404,                 /* TDOTDOT  */
+    TDOTDOTDOT = 405,              /* TDOTDOTDOT  */
+    TEQUAL = 406,                  /* TEQUAL  */
+    TEXP = 407,                    /* TEXP  */
+    TGREATER = 408,                /* TGREATER  */
+    TGREATEREQUAL = 409,           /* TGREATEREQUAL  */
+    THASH = 410,                   /* THASH  */
+    TLESS = 411,                   /* TLESS  */
+    TLESSEQUAL = 412,              /* TLESSEQUAL  */
+    TMINUS = 413,                  /* TMINUS  */
+    TMOD = 414,                    /* TMOD  */
+    TNOTEQUAL = 415,               /* TNOTEQUAL  */
+    TOR = 416,                     /* TOR  */
+    TPLUS = 417,                   /* TPLUS  */
+    TQUESTION = 418,               /* TQUESTION  */
+    TSEMI = 419,                   /* TSEMI  */
+    TSHIFTLEFT = 420,              /* TSHIFTLEFT  */
+    TSHIFTRIGHT = 421,             /* TSHIFTRIGHT  */
+    TSTAR = 422,                   /* TSTAR  */
+    TSWAP = 423,                   /* TSWAP  */
+    TLCBR = 424,                   /* TLCBR  */
+    TRCBR = 425,                   /* TRCBR  */
+    TLP = 426,                     /* TLP  */
+    TRP = 427,                     /* TRP  */
+    TLSBR = 428,                   /* TLSBR  */
+    TRSBR = 429,                   /* TRSBR  */
+    TNOELSE = 430,                 /* TNOELSE  */
+    TDOTDOTOPENHIGH = 431,         /* TDOTDOTOPENHIGH  */
+    TUPLUS = 432,                  /* TUPLUS  */
+    TUMINUS = 433,                 /* TUMINUS  */
+    TLNOT = 434                    /* TLNOT  */
   };
   typedef enum yychpl_tokentype yychpl_token_kind_t;
 #endif
@@ -497,14 +525,14 @@ yychpl_pstate *yychpl_pstate_new (void);
 void yychpl_pstate_delete (yychpl_pstate *ps);
 
 /* "%code provides" blocks.  */
-#line 308 "chpl.ypp"
+#line 338 "chpl.ypp"
 
   extern int yychpl_debug;
 
   void yychpl_error(YYLTYPE*       loc,
                     ParserContext* context,
                     const char*    errorMessage);
-#line 316 "chpl.ypp"
+#line 346 "chpl.ypp"
 
   // include ParserContext.h here because it depends
   // upon YYLTYPE and other types defined by the generated parser
@@ -513,6 +541,6 @@ void yychpl_pstate_delete (yychpl_pstate *ps);
   // include override of macro used to compute locations
   #include "parser-yylloc-default.h"
 
-#line 517 "bison-chpl-lib.h"
+#line 545 "bison-chpl-lib.h"
 
 #endif /* !YY_YYCHPL_BISON_CHPL_LIB_H_INCLUDED  */

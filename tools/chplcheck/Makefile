@@ -1,5 +1,5 @@
 #
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2025 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -23,6 +23,9 @@
 ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(realpath $(shell pwd)/../..)
 endif
+ifndef CHPL_MAKE_PYTHON
+export CHPL_MAKE_PYTHON := $(shell $(CHPL_MAKE_HOME)/util/config/find-python.sh)
+endif
 
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 include $(CHPL_MAKE_HOME)/third-party/chpl-venv/Makefile.include
@@ -33,11 +36,20 @@ link=$(bdir)/chplcheck
 all: chplcheck install
 
 chplcheck-venv:
-	cd ../../third-party && $(MAKE) chplcheck-venv
+	cd $(CHPL_MAKE_HOME)/third-party && $(MAKE) chplcheck-venv
 
 chplcheck: chplcheck-venv
 
-clean:
+chplcheck-docs:
+	$(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/doc/util/chplcheck-docs.py \
+		-r $(CHPL_MAKE_HOME)/tools/chplcheck/src/rules.py \
+		-o $(CHPL_MAKE_HOME)/doc/rst/tools/chplcheck/generated \
+		--examples-directory $(CHPL_MAKE_HOME)/tools/chplcheck/examples
+
+clean-chplcheck-docs:
+	rm -rf $(CHPL_MAKE_HOME)/doc/rst/tools/chplcheck/generated
+
+clean: clean-pycache
 ifneq ($(wildcard $(link)),)
 	@echo "Removing old symbolic link..."
 	rm -f $(link)
@@ -46,7 +58,10 @@ endif
 
 cleanall: clean
 
-clobber: clean
+clobber: clean clean-chplcheck-docs
+
+clean-pycache:
+	find $(CHPL_MAKE_HOME)/tools/chplcheck -type d -name __pycache__ -exec rm -rf {} +
 
 $(link): clean
 	@echo "Installing chplcheck symbolic link..."

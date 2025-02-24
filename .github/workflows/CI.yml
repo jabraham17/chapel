@@ -26,7 +26,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: make check
       run: |
         ./util/buildRelease/smokeTest chpl
@@ -39,19 +39,21 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v3 
+    - uses: actions/checkout@v4
     - name: make frontend-docs
       run: |
         make frontend-docs
     - name: make check-chpldoc && make docs
       # Uses a quickstart config to keep it from running too long
+      # also builds chapel-py so those docs are included
       run: |
-        ./util/buildRelease/smokeTest quickstart docs
+        ./util/buildRelease/smokeTest quickstart chapel-py docs
     - name: upload docs
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: documentation
         path: doc/html
+        include-hidden-files: true
 
   make_mason:
     runs-on: ubuntu-latest
@@ -61,7 +63,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: make mason
       # Use a quickstart config to keep it from running to long
       # While there, run a make check in that config for more coverage
@@ -76,13 +78,22 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: make test-dyno-with-asserts
+      # 'make modules' so the ChapelSysCTypes module is available
       run: |
-        make DYNO_ENABLE_ASSERTIONS=1 test-dyno -j`util/buildRelease/chpl-make-cpu_count`
+        CHPL_HOME=$PWD make modules
+        CHPL_HOME=$PWD make DYNO_ENABLE_ASSERTIONS=1 test-dyno -j`util/buildRelease/chpl-make-cpu_count`
     - name: run dyno linters
       run: |
-        CHPL_HOME=$PWD make run-dyno-linters
+        CHPL_HOME=$PWD CHPL_HOST_CC=clang-13 CHPL_HOST_CXX=clang++-13 make run-dyno-linters
+    - name: check undocumented symbols
+      run: |
+        CHPL_HOME=$PWD make DYNO_ENABLE_ASSERTIONS=1 chapel-py-venv -j`util/buildRelease/chpl-make-cpu_count`
+        CHPL_HOME=$PWD $PWD/tools/chpldoc/findUndocumentedSymbols --ci --ignore-deprecated --ignore-unstable $PWD/modules/standard
+    - name: lint standard modules
+      run: |
+        CHPL_HOME=$PWD make DYNO_ENABLE_ASSERTIONS=1 lint-standard-modules -j`util/buildRelease/chpl-make-cpu_count`
 
   make_check_llvm_none:
     runs-on: ubuntu-latest
@@ -92,7 +103,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: set llvm_none make check
       run: |
        CHPL_LLVM=none ./util/buildRelease/smokeTest chpl
@@ -104,19 +115,105 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 100000
     - name: Set ownership
       run: |
-        chown -R $(id -u):$(id -g) $PWD   
+        chown -R $(id -u):$(id -g) $PWD
     - name: find bad runtime calls
       run: |
         ./util/devel/lookForBadRTCalls
+    - name: find bad compiler calls
+      run: |
+        ./util/devel/lookForBadCompCalls
     - name: check annotations
       run: |
         CHPL_LLVM=none make test-venv
         CHPL_LLVM=none CHPL_HOME=$PWD ./util/test/run-in-test-venv.bash ./util/test/check_annotations.py
+    - name: check perf graphs
+      run: |
+        python3 ./util/test/check_perf_graphs.py
     - name: smokeTest lint
       run: |
         ./util/buildRelease/smokeTest lint
+  check_large_files:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: count PR commits
+        run: echo "PR_NUM_COMMITS=$(( ${{ github.event.pull_request.commits }} + 2 ))" >> "${GITHUB_ENV}"
+      - name: checkout commits on PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: ${{ env.PR_NUM_COMMITS }}
+      - name: check commits for large files
+        run: |
+          FILE_SIZE_LIMIT_KB=1024
+
+          baseSHA=${{github.event.pull_request.base.sha}}
+          headSHA=${{github.event.pull_request.head.sha}}
+
+          echo "Base SHA: $baseSHA"
+          echo "Head SHA: $headSHA"
+          echo "${{github.event.pull_request.commits}} commits in PR"
+
+          # Loop backward through commits added in the PR, starting from the
+          # latest.
+          commitIdx=0
+          for commit in $(git rev-list $baseSHA..$headSHA)
+          do
+            echo "Checking commit: $commit"
+            git checkout -q $commit
+
+            # Get list of added, copied, or modified files from this commit.
+            newFiles=$(git diff --name-only --diff-filter=ACM $commit^ $commit)
+            while read -r file; do
+              if [ "$file" = "" ]; then
+                  continue
+              fi
+              echo "Checking file: $file"
+
+              file_size=$(ls -l "$file" | awk '{print $5}')
+              file_size_kb=$((file_size / 1024))
+
+              if [ "$file_size_kb" -ge "$FILE_SIZE_LIMIT_KB" ]; then
+                echo "Error: ${file} is too large (size ${file_size_kb}KB, limit ${FILE_SIZE_LIMIT_KB}KB). Introduced in commit: $commit"
+                exit 1
+              fi
+            done <<< "$newFiles"
+
+            # Stop after going through the number of commits this PR has.
+            commitIdx=$((commitIdx+1))
+            if [ "$commitIdx" =  "${{github.event.pull_request.commits}}" ]; then
+              echo "Stopping after $commitIdx commits, on commit $commit"
+              break
+            fi
+          done
+
+  publish-docs:
+    if: github.event_name == 'push' && github.repository == 'chapel-lang/chapel'
+    runs-on: ubuntu-latest
+    needs: make_doc
+    steps:
+      - name: download docs
+        uses: actions/download-artifact@v4
+        with:
+          name: documentation
+
+      - name: setup keys
+        run: |
+          install -m 600 -D /dev/null ~/.ssh/id_rsa
+          echo "${{ secrets.WEBSITE_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.WEBSITE_KNOWN_HOSTS}}" > ~/.ssh/known_hosts
+
+      - name: push docs
+        run: |
+          echo "Publish module docs to web server"
+          # py-modindex.html is not needed
+          rm -f py-modindex.html
+          # Remove all hidden files except .htaccess
+          find . -maxdepth 1 -type f -name ".*" ! -name ".htaccess" -exec rm -f {} +
+          rsync -avz --cvs-exclude --delete --relative --dry-run . ${{ secrets.WEBSITE_USER }}@${{ secrets.WEBSITE_URL }}:${{ secrets.WEBSITE_PATH }}
+          rm ~/.ssh/id_rsa
+          rm ~/.ssh/known_hosts

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -117,13 +117,16 @@ class CompositeType : public Type {
     CHPL_ASSERT(instantiatedFrom_ == nullptr ||
            instantiatedFrom_->instantiatedFrom_ == nullptr);
 
-    // check that subs is consistent with instantiatedFrom
-    CHPL_ASSERT((instantiatedFrom_ == nullptr) == subs_.empty());
+    // check that subs is consistent with instantiatedFrom, except in the
+    // case of class types which can be generic with empty subs due to
+    // inheritance
+    CHPL_ASSERT(tag == typetags::BasicClassType ||
+                (instantiatedFrom_ == nullptr) == subs_.empty());
   }
 
   bool compositeTypeContentsMatchInner(const CompositeType* other) const {
     return id_ == other->id_ &&
-           name_ != other->name_ &&
+           name_ == other->name_ &&
            instantiatedFrom_ == other->instantiatedFrom_ &&
            subs_ == other->subs_;
   }
@@ -145,6 +148,11 @@ class CompositeType : public Type {
 
  public:
   virtual ~CompositeType() = 0; // this is an abstract base class
+
+  /* print the substitutions map like it would be printed for a composite type. */
+  static void stringifySubstitutions(std::ostream& ss,
+                                     chpl::StringifyKind stringKind,
+                                     const SubstitutionsMap& subs);
 
   virtual void stringify(std::ostream& ss,
                          chpl::StringifyKind stringKind) const override;
@@ -219,29 +227,17 @@ class CompositeType : public Type {
   /** Get the locale type */
   static const RecordType* getLocaleType(Context* context);
 
-  /** When compiling without a standard library (for testing purposes),
-      the compiler code needs to work around the fact that there
-      is no definition available for the bundled types needed
-      by the language but provided in the library (such as 'string' or 'Error').
-      This function allows code to easily detect that case.
-   */
-  static bool isMissingBundledType(Context* context, ID id);
+  /** Get the chpl_localeID_t type */
+  static const RecordType* getLocaleIDType(Context* context);
 
-  /** When compiling without a standard library (for testing purposes),
-      the compiler code needs to work around the fact that there
-      is no definition available for the class types needed
-      by the language but provided in the library (such as 'ReduceScanOp').
-      This function allows code to easily detect that case.
-   */
-  static bool isMissingBundledClassType(Context* context, ID id);
+  /** Get the _distribution type */
+  static const RecordType* getDistributionType(Context* context);
 
-  /** When compiling without a standard library (for testing purposes),
-      the compiler code needs to work around the fact that there
-      is no definition available for the record types needed
-      by the language but provided in the library (such as 'string').
-      This function allows code to easily detect that case.
-   */
-  static bool isMissingBundledRecordType(Context* context, ID id);
+  /** Get the record _owned implementing owned */
+  static const RecordType* getOwnedRecordType(Context* context, const BasicClassType* bct);
+
+  /** Get the record _shared implementing shared */
+  static const RecordType* getSharedRecordType(Context* context, const BasicClassType* bct);
 
   /* Get the Error type */
   static const ClassType* getErrorType(Context* context);

@@ -34,7 +34,7 @@ class BPFTTIImpl : public BasicTTIImplBase<BPFTTIImpl> {
 
 public:
   explicit BPFTTIImpl(const BPFTargetMachine *TM, const Function &F)
-      : BaseT(TM, F.getParent()->getDataLayout()), ST(TM->getSubtargetImpl(F)),
+      : BaseT(TM, F.getDataLayout()), ST(TM->getSubtargetImpl(F)),
         TLI(ST->getTargetLowering()) {}
 
   int getIntImmCost(const APInt &Imm, Type *Ty, TTI::TargetCostKind CostKind) {
@@ -57,19 +57,16 @@ public:
 
   InstructionCost getArithmeticInstrCost(
       unsigned Opcode, Type *Ty, TTI::TargetCostKind CostKind,
-      TTI::OperandValueKind Opd1Info = TTI::OK_AnyValue,
-      TTI::OperandValueKind Opd2Info = TTI::OK_AnyValue,
-      TTI::OperandValueProperties Opd1PropInfo = TTI::OP_None,
-      TTI::OperandValueProperties Opd2PropInfo = TTI::OP_None,
-    ArrayRef<const Value *> Args = ArrayRef<const Value *>(),
-    const Instruction *CxtI = nullptr) {
-      int ISD = TLI->InstructionOpcodeToISD(Opcode);
-      if (ISD == ISD::ADD && CostKind == TTI::TCK_RecipThroughput)
-        return SCEVCheapExpansionBudget.getValue() + 1;
+      TTI::OperandValueInfo Op1Info = {TTI::OK_AnyValue, TTI::OP_None},
+      TTI::OperandValueInfo Op2Info = {TTI::OK_AnyValue, TTI::OP_None},
+      ArrayRef<const Value *> Args = std::nullopt,
+      const Instruction *CxtI = nullptr) {
+    int ISD = TLI->InstructionOpcodeToISD(Opcode);
+    if (ISD == ISD::ADD && CostKind == TTI::TCK_RecipThroughput)
+      return SCEVCheapExpansionBudget.getValue() + 1;
 
-      return BaseT::getArithmeticInstrCost(Opcode, Ty, CostKind, Opd1Info,
-                                           Opd2Info, Opd1PropInfo,
-                                           Opd2PropInfo);
+    return BaseT::getArithmeticInstrCost(Opcode, Ty, CostKind, Op1Info,
+                                         Op2Info);
   }
 
   TTI::MemCmpExpansionOptions enableMemCmpExpansion(bool OptSize,
@@ -78,6 +75,10 @@ public:
     Options.LoadSizes = {8, 4, 2, 1};
     Options.MaxNumLoads = TLI->getMaxExpandSizeMemcmp(OptSize);
     return Options;
+  }
+
+  unsigned getMaxNumArgs() const {
+    return 5;
   }
 
 };

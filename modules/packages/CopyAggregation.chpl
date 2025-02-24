@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -50,7 +50,7 @@
 
      const size = 10000;
      const space = {0..size};
-     const D = space dmapped blockDist(space);
+     const D = space dmapped new blockDist(space);
      var A, reversedA: [D] int = D;
 
      forall (rA, i) in zip(reversedA, D) with (var agg = new SrcAggregator(int)) do
@@ -85,9 +85,10 @@
    matter.
  */
 module CopyAggregation {
-  use ChplConfig;
-  use CTypes;
   use AggregationPrimitives;
+  use CTypes;
+  use ChapelNumLocales;
+  use ChplConfig;
 
   private config param verboseAggregation = false;
 
@@ -111,12 +112,12 @@ module CopyAggregation {
     type elemType;
     @chpldoc.nodoc
     var agg: if aggregate then DstAggregatorImpl(elemType) else nothing;
-    inline proc copy(ref dst: elemType, const in srcVal: elemType) {
+    inline proc ref copy(ref dst: elemType, const in srcVal: elemType) {
       if aggregate then agg.copy(dst, srcVal);
                    else dst = srcVal;
     }
-    inline proc flush() {
-      if aggregate then agg.flush();
+    inline proc ref flush(freeBuffers=false) {
+      if aggregate then agg.flush(freeBuffers=freeBuffers);
     }
   }
 
@@ -133,8 +134,8 @@ module CopyAggregation {
       if aggregate then agg.copy(dst, src);
                    else dst = src;
     }
-    inline proc flush() {
-      if aggregate then agg.flush();
+    inline proc ref flush(freeBuffers=false) {
+      if aggregate then agg.flush(freeBuffers=freeBuffers);
     }
   }
 
@@ -161,7 +162,7 @@ module CopyAggregation {
     }
 
     proc ref deinit() {
-      flush();
+      flush(freeBuffers=true);
       for loc in myLocaleSpace {
         deallocate(lBuffers[loc]);
       }
@@ -169,10 +170,10 @@ module CopyAggregation {
       deallocate(bufferIdxs);
     }
 
-    proc ref flush() {
+    proc ref flush(freeBuffers: bool) {
       for offsetLoc in myLocaleSpace + lastLocale {
         const loc = offsetLoc % numLocales;
-        _flushBuffer(loc, bufferIdxs[loc], freeData=true);
+        _flushBuffer(loc, bufferIdxs[loc], freeData=freeBuffers);
       }
     }
 
@@ -262,7 +263,7 @@ module CopyAggregation {
     }
 
     proc ref deinit() {
-      flush();
+      flush(freeBuffers=true);
       for loc in myLocaleSpace {
         deallocate(dstAddrs[loc]);
         deallocate(lSrcAddrs[loc]);
@@ -272,10 +273,10 @@ module CopyAggregation {
       deallocate(bufferIdxs);
     }
 
-    proc ref flush() {
+    proc ref flush(freeBuffers: bool) {
       for offsetLoc in myLocaleSpace + lastLocale {
         const loc = offsetLoc % numLocales;
-        _flushBuffer(loc, bufferIdxs[loc], freeData=true);
+        _flushBuffer(loc, bufferIdxs[loc], freeData=freeBuffers);
       }
     }
 
@@ -356,6 +357,7 @@ module CopyAggregation {
 @chpldoc.nodoc
 module AggregationPrimitives {
   use CTypes;
+  use ChapelNumLocales;
   use Communication;
   public import Communication.get as GET;
   public import Communication.put as PUT;
@@ -392,7 +394,7 @@ module AggregationPrimitives {
     proc ref cachedAlloc(): c_ptr(elemType) {
       if data == nil {
         const rvf_size = size.safeCast(c_size_t);
-        on Locales[loc] do {
+        on Locales[loc] {
           data = allocate(elemType, rvf_size);
         }
       }

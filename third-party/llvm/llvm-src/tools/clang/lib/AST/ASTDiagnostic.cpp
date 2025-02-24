@@ -25,7 +25,8 @@
 using namespace clang;
 
 // Returns a desugared version of the QualType, and marks ShouldAKA as true
-// whenever we remove significant sugar from the type.
+// whenever we remove significant sugar from the type. Make sure ShouldAKA
+// is initialized before passing it in.
 QualType clang::desugarForDiagnostic(ASTContext &Context, QualType QT,
                                      bool &ShouldAKA) {
   QualifierCollector QC;
@@ -118,8 +119,7 @@ QualType clang::desugarForDiagnostic(ASTContext &Context, QualType QT,
       if (!TST->isTypeAlias()) {
         bool DesugarArgument = false;
         SmallVector<TemplateArgument, 4> Args;
-        for (unsigned I = 0, N = TST->getNumArgs(); I != N; ++I) {
-          const TemplateArgument &Arg = TST->getArg(I);
+        for (const TemplateArgument &Arg : TST->template_arguments()) {
           if (Arg.getKind() == TemplateArgument::Type)
             Args.push_back(desugarForDiagnostic(Context, Arg.getAsType(),
                                                 DesugarArgument));
@@ -228,7 +228,7 @@ break; \
           desugarForDiagnostic(Context, Ty->getBaseType(), ShouldAKA);
       QT = Context.getObjCObjectType(
           BaseType, Ty->getTypeArgsAsWritten(),
-          llvm::makeArrayRef(Ty->qual_begin(), Ty->getNumProtocols()),
+          llvm::ArrayRef(Ty->qual_begin(), Ty->getNumProtocols()),
           Ty->isKindOfTypeAsWritten());
     }
   }
@@ -425,7 +425,7 @@ void clang::FormatASTNodeDiagnosticArgument(
       Modifier = StringRef();
       Argument = StringRef();
       // Fall through
-      LLVM_FALLTHROUGH;
+      [[fallthrough]];
     }
     case DiagnosticsEngine::ak_qualtype: {
       assert(Modifier.empty() && Argument.empty() &&
@@ -539,7 +539,7 @@ class TemplateDiff {
   bool ShowColor;
 
   /// FromTemplateType - When single type printing is selected, this is the
-  /// type to be be printed.  When tree printing is selected, this type will
+  /// type to be printed.  When tree printing is selected, this type will
   /// show up first in the tree.
   QualType FromTemplateType;
 
@@ -986,7 +986,7 @@ class TemplateDiff {
         if (isEnd()) return;
 
         // Set to first template argument.  If not a parameter pack, done.
-        TemplateArgument TA = TST->getArg(0);
+        TemplateArgument TA = TST->template_arguments()[0];
         if (TA.getKind() != TemplateArgument::Pack) return;
 
         // Start looking into the parameter pack.
@@ -1007,7 +1007,7 @@ class TemplateDiff {
       /// isEnd - Returns true if the iterator is one past the end.
       bool isEnd() const {
         assert(TST && "InternalIterator is invalid with a null TST.");
-        return Index >= TST->getNumArgs();
+        return Index >= TST->template_arguments().size();
       }
 
       /// &operator++ - Increment the iterator to the next template argument.
@@ -1027,11 +1027,11 @@ class TemplateDiff {
         // Loop until a template argument is found, or the end is reached.
         while (true) {
           // Advance to the next template argument.  Break if reached the end.
-          if (++Index == TST->getNumArgs())
+          if (++Index == TST->template_arguments().size())
             break;
 
           // If the TemplateArgument is not a parameter pack, done.
-          TemplateArgument TA = TST->getArg(Index);
+          TemplateArgument TA = TST->template_arguments()[Index];
           if (TA.getKind() != TemplateArgument::Pack)
             break;
 
@@ -1051,7 +1051,7 @@ class TemplateDiff {
         assert(TST && "InternalIterator is invalid with a null TST.");
         assert(!isEnd() && "Index exceeds number of arguments.");
         if (CurrentTA == EndTA)
-          return TST->getArg(Index);
+          return TST->template_arguments()[Index];
         else
           return *CurrentTA;
       }
@@ -1215,46 +1215,19 @@ class TemplateDiff {
                                              bool &NeedAddressOf) {
     if (!Iter.isEnd()) {
       switch (Iter->getKind()) {
-        default:
-          llvm_unreachable("unknown ArgumentKind");
-        case TemplateArgument::Integral:
-          Value = Iter->getAsIntegral();
-          HasInt = true;
-          IntType = Iter->getIntegralType();
-          return;
-        case TemplateArgument::Declaration: {
-          VD = Iter->getAsDecl();
-          QualType ArgType = Iter->getParamTypeForDecl();
-          QualType VDType = VD->getType();
-          if (ArgType->isPointerType() &&
-              Context.hasSameType(ArgType->getPointeeType(), VDType))
-            NeedAddressOf = true;
-          return;
-        }
-        case TemplateArgument::NullPtr:
-          IsNullPtr = true;
-          return;
-        case TemplateArgument::Expression:
-          E = Iter->getAsExpr();
-      }
-    } else if (!Default->isParameterPack()) {
-      E = Default->getDefaultArgument();
-    }
-
-    if (!Iter.hasDesugaredTA()) return;
-
-    const TemplateArgument& TA = Iter.getDesugaredTA();
-    switch (TA.getKind()) {
-      default:
-        llvm_unreachable("unknown ArgumentKind");
+      case TemplateArgument::StructuralValue:
+        // FIXME: Diffing of structural values is not implemented.
+        // There is no possible fallback in this case, this will show up
+        // as '(no argument)'.
+        return;
       case TemplateArgument::Integral:
-        Value = TA.getAsIntegral();
+        Value = Iter->getAsIntegral();
         HasInt = true;
-        IntType = TA.getIntegralType();
+        IntType = Iter->getIntegralType();
         return;
       case TemplateArgument::Declaration: {
-        VD = TA.getAsDecl();
-        QualType ArgType = TA.getParamTypeForDecl();
+        VD = Iter->getAsDecl();
+        QualType ArgType = Iter->getParamTypeForDecl();
         QualType VDType = VD->getType();
         if (ArgType->isPointerType() &&
             Context.hasSameType(ArgType->getPointeeType(), VDType))
@@ -1265,13 +1238,62 @@ class TemplateDiff {
         IsNullPtr = true;
         return;
       case TemplateArgument::Expression:
-        // TODO: Sometimes, the desugared template argument Expr differs from
-        // the sugared template argument Expr.  It may be useful in the future
-        // but for now, it is just discarded.
-        if (!E)
-          E = TA.getAsExpr();
-        return;
+        E = Iter->getAsExpr();
+        break;
+      case TemplateArgument::Null:
+      case TemplateArgument::Type:
+      case TemplateArgument::Template:
+      case TemplateArgument::TemplateExpansion:
+        llvm_unreachable("TemplateArgument kind is not expected for NTTP");
+      case TemplateArgument::Pack:
+        llvm_unreachable("TemplateArgument kind should be handled elsewhere");
+      }
+    } else if (!Default->isParameterPack()) {
+      E = Default->getDefaultArgument().getArgument().getAsExpr();
     }
+
+    if (!Iter.hasDesugaredTA())
+      return;
+
+    const TemplateArgument &TA = Iter.getDesugaredTA();
+    switch (TA.getKind()) {
+    case TemplateArgument::StructuralValue:
+      // FIXME: Diffing of structural values is not implemented.
+      //        Just fall back to the expression.
+      return;
+    case TemplateArgument::Integral:
+      Value = TA.getAsIntegral();
+      HasInt = true;
+      IntType = TA.getIntegralType();
+      return;
+    case TemplateArgument::Declaration: {
+      VD = TA.getAsDecl();
+      QualType ArgType = TA.getParamTypeForDecl();
+      QualType VDType = VD->getType();
+      if (ArgType->isPointerType() &&
+          Context.hasSameType(ArgType->getPointeeType(), VDType))
+        NeedAddressOf = true;
+      return;
+    }
+    case TemplateArgument::NullPtr:
+      IsNullPtr = true;
+      return;
+    case TemplateArgument::Expression:
+      // TODO: Sometimes, the desugared template argument Expr differs from
+      // the sugared template argument Expr.  It may be useful in the future
+      // but for now, it is just discarded.
+      if (!E)
+        E = TA.getAsExpr();
+      return;
+    case TemplateArgument::Null:
+    case TemplateArgument::Type:
+    case TemplateArgument::Template:
+    case TemplateArgument::TemplateExpansion:
+      llvm_unreachable("TemplateArgument kind is not expected for NTTP");
+    case TemplateArgument::Pack:
+      llvm_unreachable("TemplateArgument kind should be handled elsewhere");
+    }
+    llvm_unreachable("Unexpected TemplateArgument kind");
   }
 
   /// DiffNonTypes - Handles any template parameters not handled by DiffTypes
@@ -1684,9 +1706,24 @@ class TemplateDiff {
                                                 : FromType.getAsString(Policy);
     std::string ToTypeStr = ToType.isNull() ? "(no argument)"
                                             : ToType.getAsString(Policy);
-    // Switch to canonical typename if it is better.
+    // Print without ElaboratedType sugar if it is better.
     // TODO: merge this with other aka printing above.
     if (FromTypeStr == ToTypeStr) {
+      const auto *FromElTy = dyn_cast<ElaboratedType>(FromType),
+                 *ToElTy = dyn_cast<ElaboratedType>(ToType);
+      if (FromElTy || ToElTy) {
+        std::string FromNamedTypeStr =
+            FromElTy ? FromElTy->getNamedType().getAsString(Policy)
+                     : FromTypeStr;
+        std::string ToNamedTypeStr =
+            ToElTy ? ToElTy->getNamedType().getAsString(Policy) : ToTypeStr;
+        if (FromNamedTypeStr != ToNamedTypeStr) {
+          FromTypeStr = FromNamedTypeStr;
+          ToTypeStr = ToNamedTypeStr;
+          goto PrintTypes;
+        }
+      }
+      // Switch to canonical typename if it is better.
       std::string FromCanTypeStr =
           FromType.getCanonicalType().getAsString(Policy);
       std::string ToCanTypeStr = ToType.getCanonicalType().getAsString(Policy);
@@ -1696,6 +1733,7 @@ class TemplateDiff {
       }
     }
 
+  PrintTypes:
     if (PrintTree) OS << '[';
     OS << (FromDefault ? "(default) " : "");
     Bold();
@@ -1874,10 +1912,11 @@ class TemplateDiff {
         // FIXME: Diffing the APValue would be neat.
         // FIXME: Suppress this and use the full name of the declaration if the
         // parameter is a pointer or reference.
+        TPO->getType().getUnqualifiedType().print(OS, Policy);
         TPO->printAsInit(OS, Policy);
         return;
       }
-      VD->printName(OS);
+      VD->printName(OS, Policy);
       return;
     }
 
@@ -1894,6 +1933,11 @@ class TemplateDiff {
       }
 
       OS << "nullptr";
+      return;
+    }
+
+    if (E) {
+      PrintExpr(E);
       return;
     }
 

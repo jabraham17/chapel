@@ -28,7 +28,7 @@ use IO;
 use DynamicIters;
 
 config const printTime: bool = true; // print timer
-config const globalSeed = NPBRandom.oddTimeSeed();
+config const globalSeed = (new randomStream(int(32))).seed;
 config const problemSize = 100000;
 config const T = 1000; // number of time steps
 config const tau = 10;
@@ -120,7 +120,7 @@ proc main(){
   }
 
   for i in computationSpaceRange do
-    space[0, i] = generator.getNext();
+    space[0, i] = generator.next();
 
   // 3 - jacobi 1D timed within an openmp loop
   timer.start();
@@ -163,7 +163,7 @@ proc verifyResult(ref space: [] Cell, lowerBound: int, upperBound: int,
   var generator = new randomStream( real, globalSeed );
 
   for i in computationSpaceRange do
-    space[0, i] = generator.getNext();
+    space[0, i] = generator.next();
 
   var read  = 0;
   var write = 1;

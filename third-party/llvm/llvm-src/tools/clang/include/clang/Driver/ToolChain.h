@@ -9,7 +9,6 @@
 #ifndef LLVM_CLANG_DRIVER_TOOLCHAIN_H
 #define LLVM_CLANG_DRIVER_TOOLCHAIN_H
 
-#include "clang/Basic/DebugInfoOptions.h"
 #include "clang/Basic/LLVM.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/Sanitizers.h"
@@ -21,14 +20,16 @@
 #include "llvm/ADT/FloatingPointMode.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/ADT/Triple.h"
+#include "llvm/Frontend/Debug/Options.h"
 #include "llvm/MC/MCTargetOptions.h"
 #include "llvm/Option/Option.h"
 #include "llvm/Support/VersionTuple.h"
 #include "llvm/Target/TargetOptions.h"
+#include "llvm/TargetParser/Triple.h"
 #include <cassert>
 #include <climits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -108,9 +109,20 @@ public:
     UNW_Libgcc
   };
 
+  enum class UnwindTableLevel {
+    None,
+    Synchronous,
+    Asynchronous,
+  };
+
   enum RTTIMode {
     RM_Enabled,
     RM_Disabled,
+  };
+
+  enum ExceptionsMode {
+    EM_Enabled,
+    EM_Disabled,
   };
 
   struct BitCodeLibraryInfo {
@@ -134,6 +146,8 @@ private:
 
   const RTTIMode CachedRTTIMode;
 
+  const ExceptionsMode CachedExceptionsMode;
+
   /// The list of toolchain specific path prefixes to search for libraries.
   path_list LibraryPaths;
 
@@ -150,7 +164,6 @@ private:
   mutable std::unique_ptr<Tool> StaticLibTool;
   mutable std::unique_ptr<Tool> IfsMerge;
   mutable std::unique_ptr<Tool> OffloadBundler;
-  mutable std::unique_ptr<Tool> OffloadWrapper;
   mutable std::unique_ptr<Tool> OffloadPackager;
   mutable std::unique_ptr<Tool> LinkerWrapper;
 
@@ -162,7 +175,6 @@ private:
   Tool *getIfsMerge() const;
   Tool *getClangAs() const;
   Tool *getOffloadBundler() const;
-  Tool *getOffloadWrapper() const;
   Tool *getOffloadPackager() const;
   Tool *getLinkerWrapper() const;
 
@@ -177,16 +189,24 @@ private:
     EffectiveTriple = std::move(ET);
   }
 
-  mutable llvm::Optional<CXXStdlibType> cxxStdlibType;
-  mutable llvm::Optional<RuntimeLibType> runtimeLibType;
-  mutable llvm::Optional<UnwindLibType> unwindLibType;
+  std::optional<std::string>
+  getFallbackAndroidTargetPath(StringRef BaseDir) const;
+
+  mutable std::optional<CXXStdlibType> cxxStdlibType;
+  mutable std::optional<RuntimeLibType> runtimeLibType;
+  mutable std::optional<UnwindLibType> unwindLibType;
 
 protected:
   MultilibSet Multilibs;
-  Multilib SelectedMultilib;
+  llvm::SmallVector<Multilib> SelectedMultilibs;
 
   ToolChain(const Driver &D, const llvm::Triple &T,
             const llvm::opt::ArgList &Args);
+
+  /// Executes the given \p Executable and returns the stdout.
+  llvm::Expected<std::unique_ptr<llvm::MemoryBuffer>>
+  executeToolChainProgram(StringRef Executable,
+                          unsigned SecondsToWait = 0) const;
 
   void setTripleEnvironment(llvm::Triple::EnvironmentType Env);
 
@@ -199,6 +219,11 @@ protected:
                                               StringRef Component,
                                               FileType Type,
                                               bool AddArch) const;
+
+  /// Find the target-specific subdirectory for the current target triple under
+  /// \p BaseDir, doing fallback triple searches as necessary.
+  /// \return The subdirectory path if it exists.
+  std::optional<std::string> getTargetSubDirPath(StringRef BaseDir) const;
 
   /// \name Utilities for implementing subclasses.
   ///@{
@@ -260,6 +285,10 @@ public:
     return EffectiveTriple;
   }
 
+  bool hasEffectiveTriple() const {
+    return !EffectiveTriple.getTriple().empty();
+  }
+
   path_list &getLibraryPaths() { return LibraryPaths; }
   const path_list &getLibraryPaths() const { return LibraryPaths; }
 
@@ -271,7 +300,21 @@ public:
 
   const MultilibSet &getMultilibs() const { return Multilibs; }
 
-  const Multilib &getMultilib() const { return SelectedMultilib; }
+  const llvm::SmallVector<Multilib> &getSelectedMultilibs() const {
+    return SelectedMultilibs;
+  }
+
+  /// Get flags suitable for multilib selection, based on the provided clang
+  /// command line arguments. The command line arguments aren't suitable to be
+  /// used directly for multilib selection because they are not normalized and
+  /// normalization is a complex process. The result of this function is similar
+  /// to clang command line arguments except that the list of arguments is
+  /// incomplete. Only certain command line arguments are processed. If more
+  /// command line arguments are needed for multilib selection then this
+  /// function should be extended.
+  /// To allow users to find out what flags are returned, clang accepts a
+  /// -print-multi-flags-experimental argument.
+  Multilib::flags_list getMultilibFlags(const llvm::opt::ArgList &) const;
 
   SanitizerArgs getSanitizerArgs(const llvm::opt::ArgList &JobArgs) const;
 
@@ -282,6 +325,9 @@ public:
 
   // Returns the RTTIMode for the toolchain with the current arguments.
   RTTIMode getRTTIMode() const { return CachedRTTIMode; }
+
+  // Returns the ExceptionsMode for the toolchain with the current arguments.
+  ExceptionsMode getExceptionsMode() const { return CachedExceptionsMode; }
 
   /// Return any implicit target and/or mode flag for an invocation of
   /// the compiler driver as `ProgName`.
@@ -386,7 +432,7 @@ public:
 
   /// IsIntegratedAssemblerDefault - Does this tool chain enable -integrated-as
   /// by default.
-  virtual bool IsIntegratedAssemblerDefault() const { return false; }
+  virtual bool IsIntegratedAssemblerDefault() const { return true; }
 
   /// IsIntegratedBackendDefault - Does this tool chain enable
   /// -fintegrated-objemitter by default.
@@ -474,15 +520,18 @@ public:
                                     StringRef Component,
                                     FileType Type = ToolChain::FT_Static) const;
 
-  // Returns target specific runtime paths.
-  path_list getRuntimePaths() const;
+  // Returns the target specific runtime path if it exists.
+  std::optional<std::string> getRuntimePath() const;
 
-  // Returns target specific standard library paths.
-  path_list getStdlibPaths() const;
+  // Returns target specific standard library path if it exists.
+  std::optional<std::string> getStdlibPath() const;
 
-  // Returns <ResourceDir>/lib/<OSName>/<arch>.  This is used by runtimes (such
-  // as OpenMP) to find arch-specific libraries.
-  std::string getArchSpecificLibPath() const;
+  // Returns target specific standard library include path if it exists.
+  std::optional<std::string> getStdlibIncludePath() const;
+
+  // Returns <ResourceDir>/lib/<OSName>/<arch> or <ResourceDir>/lib/<triple>.
+  // This is used by runtimes (such as OpenMP) to find arch-specific libraries.
+  virtual path_list getArchSpecificLibPaths() const;
 
   // Returns <OSname> part of above.
   virtual StringRef getOSLibName() const;
@@ -493,9 +542,9 @@ public:
   /// Returns true if gcov instrumentation (-fprofile-arcs or --coverage) is on.
   static bool needsGCovInstrumentation(const llvm::opt::ArgList &Args);
 
-  /// IsUnwindTablesDefault - Does this tool chain use -funwind-tables
-  /// by default.
-  virtual bool IsUnwindTablesDefault(const llvm::opt::ArgList &Args) const;
+  /// How detailed should the unwind tables be by default.
+  virtual UnwindTableLevel
+  getDefaultUnwindTableLevel(const llvm::opt::ArgList &Args) const;
 
   /// Test whether this toolchain supports outline atomics by default.
   virtual bool
@@ -522,8 +571,8 @@ public:
   virtual void CheckObjCARC() const {}
 
   /// Get the default debug info format. Typically, this is DWARF.
-  virtual codegenoptions::DebugInfoFormat getDefaultDebugFormat() const {
-    return codegenoptions::DIF_DWARF;
+  virtual llvm::codegenoptions::DebugInfoFormat getDefaultDebugFormat() const {
+    return llvm::codegenoptions::DIF_DWARF;
   }
 
   /// UseDwarfDebugFlags - Embed the compile options to clang into the Dwarf
@@ -532,7 +581,7 @@ public:
 
   /// Add an additional -fdebug-prefix-map entry.
   virtual std::string GetGlobalDebugPathRemapping() const { return {}; }
-  
+
   // Return the DWARF version to emit, in the absence of arguments
   // to the contrary.
   virtual unsigned GetDefaultDwarfVersion() const { return 5; }
@@ -559,8 +608,9 @@ public:
   }
 
   /// Adjust debug information kind considering all passed options.
-  virtual void adjustDebugInfoKind(codegenoptions::DebugInfoKind &DebugInfoKind,
-                                   const llvm::opt::ArgList &Args) const {}
+  virtual void
+  adjustDebugInfoKind(llvm::codegenoptions::DebugInfoKind &DebugInfoKind,
+                      const llvm::opt::ArgList &Args) const {}
 
   /// GetExceptionModel - Return the tool chain exception model.
   virtual llvm::ExceptionHandling
@@ -574,6 +624,9 @@ public:
 
   /// isThreadModelSupported() - Does this target support a thread model?
   virtual bool isThreadModelSupported(const StringRef Model) const;
+
+  /// isBareMetal - Is this a bare metal target.
+  virtual bool isBareMetal() const { return false; }
 
   virtual std::string getMultiarchTriple(const Driver &D,
                                          const llvm::Triple &TargetTriple,
@@ -589,7 +642,7 @@ public:
 
   /// ComputeEffectiveClangTriple - Return the Clang triple to use for this
   /// target, which may take into account the command line arguments. For
-  /// example, on Darwin the -mmacosx-version-min= command line argument (which
+  /// example, on Darwin the -mmacos-version-min= command line argument (which
   /// sets the deployment target) determines the version in the triple passed to
   /// Clang.
   virtual std::string ComputeEffectiveClangTriple(
@@ -625,6 +678,11 @@ public:
   virtual void addClangTargetOptions(const llvm::opt::ArgList &DriverArgs,
                                      llvm::opt::ArgStringList &CC1Args,
                                      Action::OffloadKind DeviceOffloadKind) const;
+
+  /// Add options that need to be passed to cc1as for this target.
+  virtual void
+  addClangCC1ASTargetOptions(const llvm::opt::ArgList &Args,
+                             llvm::opt::ArgStringList &CC1ASArgs) const;
 
   /// Add warning options that need to be passed to cc1 for this target.
   virtual void addClangWarningOptions(llvm::opt::ArgStringList &CC1Args) const;
@@ -688,6 +746,10 @@ public:
   bool addFastMathRuntimeIfAvailable(
     const llvm::opt::ArgList &Args, llvm::opt::ArgStringList &CmdArgs) const;
 
+  /// getSystemGPUArchs - Use a tool to detect the user's availible GPUs.
+  virtual Expected<SmallVector<std::string>>
+  getSystemGPUArchs(const llvm::opt::ArgList &Args) const;
+
   /// addProfileRTLibs - When -fprofile-instr-profile is specified, try to pass
   /// a suitable profile runtime library to the linker.
   virtual void addProfileRTLibs(const llvm::opt::ArgList &Args,
@@ -709,9 +771,9 @@ public:
   virtual VersionTuple computeMSVCVersion(const Driver *D,
                                           const llvm::opt::ArgList &Args) const;
 
-  /// Get paths of HIP device libraries.
+  /// Get paths for device libraries.
   virtual llvm::SmallVector<BitCodeLibraryInfo, 12>
-  getHIPDeviceLibs(const llvm::opt::ArgList &Args) const;
+  getDeviceLibs(const llvm::opt::ArgList &Args) const;
 
   /// Add the system specific linker arguments to use
   /// for the given HIP runtime library type.
@@ -737,10 +799,6 @@ public:
       const llvm::opt::ArgList &DriverArgs, const JobAction &JA,
       const llvm::fltSemantics *FPType = nullptr) const {
     return llvm::DenormalMode::getIEEE();
-  }
-
-  virtual Optional<llvm::Triple> getTargetVariantTriple() const {
-    return llvm::None;
   }
 
   // We want to expand the shortened versions of the triples passed in to

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -198,6 +198,10 @@ bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
     // Function is an iterator "helper", e.g. getValue
     // lowerIterators should make sure that getValue returns an "owned" record.
     else if (fn->hasFlag(FLAG_AUTO_II)      == true)
+      retval = false;
+
+    // Same as above, except for thunk "helper"s.
+    else if (fn->hasFlag(FLAG_THUNK_INVOKE) == true)
       retval = false;
 
     // Can't transform extern functions
@@ -707,10 +711,8 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
               // Skip this transformation if
               //  * the type differs
               //  * it is a domain (for A.domain returning unowned)
-              //  * if it's a sync or single variable (different init/auto copy)
-              if (actualType == returnType &&
-                  isSyncType(formalType)   == false &&
-                  isSingleType(formalType) == false)
+              //  * if it's a sync variable (different init/auto copy)
+              if (actualType == returnType && isSyncType(formalType) == false)
               {
                 bool copyFromUnownedDomain = false;
                 if (actualType->symbol->hasFlag(FLAG_DOMAIN)) {
@@ -972,7 +974,7 @@ void FixupDestructors::process(FnSymbol* fn) {
   }
 }
 
-static void ensureModuleDeinitFnAnchor(ModuleSymbol* mod, Expr*& anchor) {
+void ensureModuleDeinitFnAnchor(ModuleSymbol* mod, Expr*& anchor) {
   if (anchor)
     return;
 

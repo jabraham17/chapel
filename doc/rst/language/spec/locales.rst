@@ -1,5 +1,10 @@
 .. default-domain:: chpl
 
+.. index::
+   single: local
+   single: remote
+   single: locales; local
+   single: locales; remote
 .. _Chapter-Locales_Chapter:
 
 =======
@@ -18,6 +23,8 @@ any tasks running on this locale. The term *remote* will be used to
 describe another locale, the data on another locale, and the tasks
 running on another locale.
 
+.. index::
+   single: locales
 .. _Locales:
 
 Locales
@@ -31,6 +38,9 @@ the memories of other locales.  As an example, a single shared memory
 machine would be defined as a single locale. In contrast, a cluster of
 network-connected multicore nodes would have a locale for each node.
 
+.. index::
+   single: locale
+   single: types; locale
 .. _The_Locale_Type:
 
 Locale Types
@@ -41,6 +51,9 @@ Both data and tasks can be associated with a value of locale type.
 
 The default value for a variable with ``locale`` type is ``Locales[0]``.
 
+.. index::
+   single: locales; methods
+   single: predefined functions; locale
 .. _Locale_Methods:
 
 Locale Methods
@@ -50,6 +63,10 @@ The locale type supports the following methods:
 
 .. include:: /builtins/ChapelLocale.rst
 
+.. index::
+   single: Locales array
+   single: numLocales
+   single: execution environment
 .. _Predefined_Locales_Array:
 
 The Predefined Locales Array
@@ -103,6 +120,9 @@ locale values and referring to it in place of the Locales array.
    ``Locales`` array. Each locale is added to the ``MyLocales`` array
    four times in a round-robin fashion.
 
+.. index::
+   single: here
+   single: locales; here
 .. _here:
 
 The *here* Locale
@@ -126,6 +146,9 @@ program. It refers to the locale that the current task is running on.
 
 The identifier ``here`` is not a keyword and can be overridden.
 
+.. index::
+   single: locale
+   single: .locale
 .. _Querying_the_Locale_of_an_Expression:
 
 Querying the Locale of an Expression
@@ -206,6 +229,9 @@ replicated across all locales.
 
    when running on 5 locales.
 
+.. index::
+   single: on
+   single: statements; on
 .. _On:
 
 The On Statement
@@ -238,6 +264,8 @@ tasks across the network-connected locales upon which the program is running:
     coforall loc in Locales { on loc { ... } }
 
 
+.. index::
+   single: variable declarations; remote
 .. _remote_variable_declarations:
 
 Remote Variable Declarations
@@ -248,13 +276,32 @@ created in the locale where the task is running. Variables can be
 defined within an ``on-statement`` to define them on a particular locale
 such that the scope of the variables is outside the ``on-statement``.
 This is accomplished using a similar syntax but omitting the ``do``
-keyword and braces. The syntax is given by: 
+keyword and braces. The syntax is given by:
 
 .. code-block:: syntax
 
    remote-variable-declaration-statement:
      'on' expression variable-declaration-statement
 
-.. note::
+As with regular on-statements, the locale of the expression is queried
+as described in :ref:`Querying_the_Locale_of_an_Expression`. The initialization
+expression of the variable, if any, is executed on the target locale.
 
-  Support for this syntax is not yet implemented.
+   *Example*.
+
+   The code
+
+   .. code-block:: chapel
+
+     proc computeInitialValue() {
+       writeln(here.id);
+       return 42;
+     }
+
+     on Locales(1) var x: int = computeInitialValue();
+     writeln(x.locale.id);
+
+   prints ``1`` twice: once because the ``writeln`` statement inside the
+   ``computeInitialValue`` procedure is executed on locale 1, and once
+   at the end of the program because variable ``x`` is remote and resides on
+   locale 1.

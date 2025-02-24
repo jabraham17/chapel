@@ -1,6 +1,5 @@
 #
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
-# Copyright 2004-2019 Cray Inc.
+# Copyright 2023-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -18,11 +17,22 @@
 # limitations under the License.
 #
 
+"""
+=================
+Replace Utilities
+=================
+
+A set of utilities for performing search-and-replace operations on Chapel code,
+informed by Chapel's AST.
+"""
+
 import argparse
 import chapel
-import chapel.core
+import chapel
 import os
 import sys
+import typing
+
 
 class ReplacementContext:
     """
@@ -34,8 +44,7 @@ class ReplacementContext:
     contains that information.
     """
 
-
-    def __init__(self, path):
+    def __init__(self, path: str):
         """
         Given a file path, creates a ReplacementContext that contains the
         mapping information for that file.
@@ -47,13 +56,15 @@ class ReplacementContext:
         self.lines = {1: 0}
         self.lines_back = {}
         line = 1
-        for (i, char) in enumerate(self.content):
+        for i, char in enumerate(self.content):
             self.lines_back[i] = line
-            if char == '\n':
+            if char == "\n":
                 line += 1
-                self.lines[line] = i+1 # the next characrer is the start of the next line
+                self.lines[line] = (
+                    i + 1
+                )  # the next characrer is the start of the next line
 
-    def loc_to_idx(self, loc):
+    def loc_to_idx(self, loc: typing.Tuple[int, int]) -> int:
         """
         Given a location (as retrieved from an AST node), convert this
         location into an offset in the source file.
@@ -61,7 +72,7 @@ class ReplacementContext:
         (row, col) = loc
         return self.lines[row] + (col - 1)
 
-    def node_idx_range(self, node):
+    def node_idx_range(self, node: chapel.AstNode) -> typing.Tuple[int, int]:
         """
         Given a node, determine where it starts and ends in the given source
         file.
@@ -72,7 +83,7 @@ class ReplacementContext:
         range_end = self.loc_to_idx(loc.end())
         return (range_start, range_end)
 
-    def node_exact_string(self, node):
+    def node_exact_string(self, node: chapel.AstNode) -> str:
         """
         Return the substring that corresponds to the given node in the source
         file.
@@ -80,7 +91,7 @@ class ReplacementContext:
         (range_start, range_end) = self.node_idx_range(node)
         return self.content[range_start:range_end]
 
-    def node_indent(self, node):
+    def node_indent(self, node: chapel.AstNode) -> int:
         """
         Determine the number of characters between the given node and the
         beginning of the line.
@@ -88,7 +99,10 @@ class ReplacementContext:
         (range_start, _) = self.node_idx_range(node)
         return range_start - self.lines[self.lines_back[range_start]]
 
-def rename_formals(rc, fn, renames):
+
+def rename_formals(
+    rc: ReplacementContext, fn: chapel.Function, renames: typing.Dict[str, str]
+):
     """
     Helper iterator to be used in finder functions. Given a function
     and a map of ('original formal name' -> 'new formal name'), yields
@@ -100,11 +114,15 @@ def rename_formals(rc, fn, renames):
 
     for child in fn.formals():
         name = child.name()
-        if name not in renames: continue
+        if name not in renames:
+            continue
 
         yield (child, name_replacer(name))
 
-def rename_named_actuals(rc, call, renames):
+
+def rename_named_actuals(
+    rc: ReplacementContext, call: chapel.Call, renames: typing.Dict[str, str]
+):
     """
     Helper iterator to be used in finder functions. Given a function call expression,
     and a map of ('original name' -> 'new name'), yields
@@ -113,7 +131,8 @@ def rename_named_actuals(rc, call, renames):
     for actual in call.actuals():
         if isinstance(actual, tuple):
             (name, actual) = actual
-            if name not in renames: continue
+            if name not in renames:
+                continue
 
             actual_text = rc.node_exact_string(actual)
 
@@ -121,7 +140,13 @@ def rename_named_actuals(rc, call, renames):
             # yield (actual, actual_text.replace(name, renames[name]))
             yield from []
 
-def _do_replace(finder, ctx, filename, suffix, inplace):
+
+def replace(
+    finder: typing.Generator, ctx: chapel.Context, filename: str
+) -> str:
+    """
+    Drives replacement of text based on matches found in `finder`.
+    """
     asts = ctx.parse(filename)
     rc = ReplacementContext(filename)
     new_content = rc.content
@@ -136,7 +161,7 @@ def _do_replace(finder, ctx, filename, suffix, inplace):
         return lambda text: outer(inner(text))
 
     for ast in asts:
-        for (node, replace_with) in finder(rc, ast):
+        for node, replace_with in finder(rc, ast):
             uid = node.unique_id()
             # Old result doesn't matter or doesn't exist; throw it out.
             if not callable(replace_with) or uid not in nodes_to_replace:
@@ -147,13 +172,15 @@ def _do_replace(finder, ctx, filename, suffix, inplace):
             elif uid in nodes_to_replace:
                 # Old substitution is also a callable; need to create composition.
                 if callable(nodes_to_replace[uid]):
-                    nodes_to_replace[uid] = compose(replace_with, nodes_to_replace[uid])
+                    nodes_to_replace[uid] = compose(
+                        replace_with, nodes_to_replace[uid]
+                    )
                 # Old substitution is a string; we can apply the callable to get
                 # another string.
                 else:
                     nodes_to_replace[uid] = replace_with(nodes_to_replace[uid])
 
-    def recurse(node):
+    def recurse(node: chapel.AstNode):
         my_replace = None
         if node.unique_id() in nodes_to_replace:
             my_replace = nodes_to_replace[node.unique_id()]
@@ -175,7 +202,7 @@ def _do_replace(finder, ctx, filename, suffix, inplace):
             (replace_from, replace_to) = rc.node_idx_range(node)
             my_text = rc.node_exact_string(node)
             for child in reversed(list(node)):
-                for (child_from, child_to, child_str) in recurse(child):
+                for child_from, child_to, child_str in recurse(child):
                     # Child is not inside this node, so it can be replaced as before
                     if child_from >= replace_to:
                         yield (child_from, child_to, child_str)
@@ -186,12 +213,33 @@ def _do_replace(finder, ctx, filename, suffix, inplace):
                         child_from -= replace_from
                         child_to -= replace_from
 
-                        my_text = my_text[:child_from] + child_str + my_text[child_to:]
+                        my_text = (
+                            my_text[:child_from]
+                            + child_str
+                            + my_text[child_to:]
+                        )
             yield (replace_from, replace_to, my_replace(my_text))
 
     for ast in reversed(asts):
-        for (replace_from, replace_to, replace_with) in recurse(ast):
-            new_content = new_content[:replace_from] + replace_with + new_content[replace_to:]
+        for replace_from, replace_to, replace_with in recurse(ast):
+            new_content = (
+                new_content[:replace_from]
+                + replace_with
+                + new_content[replace_to:]
+            )
+
+    return new_content
+
+
+def _do_replace(
+    finder: typing.Generator,
+    ctx: chapel.Context,
+    filename: str,
+    suffix: str,
+    inplace: bool,
+):
+
+    new_content = replace(finder, ctx, filename)
 
     if inplace:
         store_into = filename
@@ -200,7 +248,12 @@ def _do_replace(finder, ctx, filename, suffix, inplace):
     with open(store_into, "w") as newfile:
         newfile.write(new_content)
 
-def run(finder, name='replace', description='A tool to search-and-replace Chapel expressions with others'):
+
+def run(
+    finder: typing.Generator,
+    name: str = "replace",
+    description: str = "A tool to search-and-replace Chapel expressions with others",
+):
     """
     Start a command-line replacer program with the given 'finder' function.
     This program will automatically support accepting a list of files on
@@ -214,19 +267,26 @@ def run(finder, name='replace', description='A tool to search-and-replace Chapel
     """
 
     parser = argparse.ArgumentParser(prog=name, description=description)
-    parser.add_argument('filenames', nargs='*')
-    parser.add_argument('--suffix', dest='suffix', action='store', default='.new')
-    parser.add_argument('--in-place', dest='inplace', action='store_true', default=False)
+    parser.add_argument("filenames", nargs="*")
+    parser.add_argument(
+        "--suffix", dest="suffix", action="store", default=".new"
+    )
+    parser.add_argument(
+        "--in-place", dest="inplace", action="store_true", default=False
+    )
     args = parser.parse_args()
 
-    for (filename, ctx) in chapel.files_with_contexts(args.filenames):
+    for filename, ctx in chapel.files_with_contexts(args.filenames):
         _do_replace(finder, ctx, filename, args.suffix, args.inplace)
+
 
 def fuse(*args):
     """
     Combines multiple 'finder' iterators into one.
     """
+
     def fused(rc, root):
         for arg in args:
             yield from arg(rc, root)
+
     return fused

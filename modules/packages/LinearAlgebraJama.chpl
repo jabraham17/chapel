@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -739,7 +739,7 @@ class EigenvalueDecomposition {
 
       var norm = 0.0;
       for i in 1..nn {
-         if (i < low | i > high) {
+         if (i < low || i > high) {
             d[i] = H[i,i];
             e[i] = 0.0;
          }
@@ -1141,7 +1141,7 @@ class EigenvalueDecomposition {
       // Vectors of isolated roots
 
       for i in 1..nn {
-         if (i < low | i > high) {
+         if (i < low || i > high) {
             for j in i..nn {
                V[i,j] = H[i,j];
             }
@@ -1592,7 +1592,7 @@ class Matrix {
       this.aDom = {1..m, 1..n};
       init this;
 
-      for i in 1..m {
+      for 1..m {
          if (this.aDom.high(1) != n) {
             assert((this.aDom.high(1) != n), "All rows must have the same length.");
          }

@@ -1,5 +1,7 @@
 .. default-domain:: chpl
 
+.. index::
+   single: memory consistency model
 .. _Chapter-Memory_Consistency_Model:
 
 ========================
@@ -12,7 +14,7 @@ as adopted by C11, C++11, Java, UPC, and Fortran 2008.
 
 Sequential consistency (SC) means that all Chapel tasks agree on the
 interleaving of memory operations and this interleaving results in an
-order is consistent with the order of operations in the program source
+order that is consistent with the order of operations in the program source
 code. *Conflicting memory operations*, i.e., operations to the same
 variable, or memory location, and one of which is a write, form a data
 race if they are from different Chapel tasks and can be executed
@@ -60,6 +62,8 @@ See *A Primer on Memory Consistency and Cache Coherence* by Sorin,
 This chapter will proceed in a manner inspired by the :math:`XC` memory
 model described there.
 
+.. index::
+   single: memory consistency model; sequential consistency for data-race-free programs
 .. _SC_for_DRF:
 
 Sequential Consistency for Data-Race-Free Programs
@@ -235,6 +239,8 @@ which preserve sequential program behavior:
 
 -  If :math:`S(a) <_p S'(a)` then :math:`S(a) <_m S'(a)`
 
+.. index::
+   single: memory consistency model; non-sequentially consistent atomic operations
 .. _non_sc_atomics:
 
 Non-Sequentially Consistent Atomic Operations
@@ -280,6 +286,8 @@ as ordinary loads or stores with two exceptions:
    eventually be visible to all other threads. This property is not true
    for normal loads and stores.
 
+.. index::
+   single: memory consistency model; unordered memory operations
 .. _unordered_operations:
 
 Unordered Memory Operations
@@ -395,6 +403,8 @@ move data between two arrays without requiring any ordering:
      unordered_store(B[P[i]], A[i]);
    }
 
+.. index::
+   single: memory consistency model; examples
 .. _MCM_examples:
 
 Examples
@@ -479,7 +489,7 @@ Examples
       }
 
    In contrast, spinning on a synchronization variable has well-defined
-   behavior:
+   behavior due to its associated memory synchronization:
 
    .. code-block:: chapel
 
@@ -491,21 +501,30 @@ Examples
 
    In this code, the first statement in the cobegin statement executes a
    loop until the variable is set to one. The second statement in the
-   cobegin statement sets the variable to one. Neither of these
-   statements block.
+   cobegin statement sets the variable to one. The use of the ``sync``
+   variable ensures that the first statement will see the update by the
+   second after it occurs.
 
    *Example (atomicSpinWait.chpl)*.
 
-   Atomic variables provide an alternative means to spin-wait. For
-   example:
+   Atomic variables provide an alternative way to spin-wait. For
+   example, if we were to re-declare ``x`` to have type ``atomic
+   int``, we could rewrite the while-loop above as ``while x.read() !=
+   1 do ;``.  However, the drawback of this approach is that the read
+   of an atomic variable does not yield the processor, so the thread
+   executing the while-loop will be exclusively focused on checking
+   the value of ``x``, potentially preventing other tasks from running
+   if there are insufficient system resources for them.
 
-
+   A more resource-friendly way to busy-wait on an ``atomic`` would be
+   to have the task yield within the body of its while-loop,
+   permitting other tasks to run, as follows:
 
    .. code-block:: chapel
 
       var x: atomic int;
       cobegin {
-        while x.read() != 1 do ;  // spin wait - monopolizes processor
+        while x.read() != 1 do currentTask.yieldExecution();  // spin wait
         x.write(1);
       }
 
@@ -513,14 +532,9 @@ Examples
 
    *Example (atomicWaitFor.chpl)*.
 
-   The main drawback of the above example is that it prevents the thread
-   executing the spin wait from doing other useful work. Atomic
-   variables include a waitFor method that will block the calling thread
-   until a read of the atomic value matches a particular value. In
-   contrast to the spin wait loop above, waitFor will allow other tasks
-   to be scheduled. For example:
-
-
+   Atomic variables also include a ``.waitFor()`` method that provides
+   a more succinct way of waiting for a particular value without
+   monopolizing system resources.  For example:
 
    .. code-block:: chapel
 

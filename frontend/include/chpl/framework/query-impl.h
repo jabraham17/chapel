@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,7 +27,13 @@
 #include "chpl/framework/stringify-functions.h"
 
 #ifndef CHPL_QUERY_TIMING_AND_TRACE_ENABLED
+#ifdef NDEBUG
+// release mode
+#define CHPL_QUERY_TIMING_AND_TRACE_ENABLED 0
+#else
+// debug mode
 #define CHPL_QUERY_TIMING_AND_TRACE_ENABLED 1
+#endif
 #endif
 
 /**
@@ -138,7 +144,7 @@ void Context::queryBeginTrace(const char* traceQueryName,
                 << " { ";
       clearTerminalColor(std::cout);
       std::cout << traceQueryName << " (";
-      queryArgsPrint(tupleOfArg);
+      queryArgsPrint(std::cout, tupleOfArg);
       std::cout << ") ";
       setTerminalColor(CYAN, std::cout);
       std::cout <<"hash: 0x"
@@ -227,8 +233,19 @@ Context::getResult(QueryMap<ResultType, ArgTs...>* queryMap,
     //  printf("Found result %p %s\n", savedElement, queryMap->queryName);
   }
 
-  if (newElementWasAdded == false && savedElement->lastChecked == -1) {
-    haltForRecursiveQuery(savedElement);
+  if (newElementWasAdded == false &&
+      (savedElement->lastChecked == -1 ||
+       savedElement->beingTestedForReuse)) {
+    // A recursion error was encountered. We will try to gracefully handle
+    // this error by adding it to the set of recursion errors on this
+    // result.
+    //
+    // When a query introduces a recursion error, its output is forced to
+    // be the default value of its type (e.g., pointer-returning queries
+    // return nullptr, class C queries return C()).
+    savedElement->recursionErrors.insert(savedElement);
+    updateResultForQueryMapR(queryMap, savedElement, tupleOfArgs, ResultType(),
+                             /* forSetter */ false);
   }
 
   return savedElement;
@@ -341,6 +358,12 @@ Context::queryEnd(
     this->updateResultForQueryMapR(queryMap, r, tupleOfArgs,
                                    std::move(result), /* forSetter */ false);
 
+  if (r->recursionErrors.count(r) != 0) {
+    // This query had the opportunity to handle its own recursion, but didn't.
+    // Emit a generic error.
+    emitErrorForRecursiveQuery(r);
+  }
+
   if (enableDebugTrace
       && std::find(queryTraceIgnoreQueries.begin(),
                    queryTraceIgnoreQueries.end(),
@@ -395,10 +418,26 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
   bool initialResult = (r->lastChanged == -1);
   auto currentRevision = this->currentRevisionNumber;
 
+  // If recursion errors happened at the time the result is being saved,
+  // the query is 'poisoned' by recursion and we should store the default result.
+  if (!r->recursionErrors.empty()) {
+    // Note: cannot use
+    //
+    //   ResultType dummyValue;
+    //
+    // The above for integers will leave them uninitialized; the below, using
+    // {}, will zero-initialize them. This matters especially for pointers:
+    // we don't want to return a garbage pointer from a recursion-causing
+    // query.
+
+    ResultType dummyValue {};
+    chpl::update<ResultType> combiner;
+    changed = combiner(r->result, dummyValue);
+  }
   // For setter queries, only run the combiner if the last
   // time the query was checked was an earlier revision.
   // If the combiner is skipped, 'changed' is left as false.
-  if (forSetter == false || r->lastChecked != currentRevision) {
+  else if (forSetter == false || r->lastChecked != currentRevision) {
     chpl::update<ResultType> combiner;
     changed = combiner(r->result, result);
     // now 'r->result' is updated and 'result' is garbage for collection
@@ -424,7 +463,17 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
   // save old result when appropriate
   // no need to save old result 1st time running this query
   // no need to save new result when old one is used due to no changes
-  if (initialResult || changed==false) {
+  //
+  // but, if we issued errors, even if 'changed' is false, the errors may
+  // contain newly-allocated data from the result, so keep that data.
+  // This is a workaround for Dyno memory issues; see the comment and TODO
+  // on QueryMapResultBase::oldResultForErrorContents.
+  if (initialResult) {
+    // no need to save old result
+  } else if (!r->errors.empty()) {
+    r->oldResultForErrorContents = queryMap->oldResults.size();
+    queryMap->oldResults.push_back(std::move(result));
+  } else if (changed==false) {
     // no need to save old result
   } else {
     queryMap->oldResults.push_back(std::move(result));
@@ -523,7 +572,22 @@ Context::isQueryRunning(
     return false;
   }
 
-  return search2->lastChecked == -1;
+  return search2->lastChecked == -1 || search2->beingTestedForReuse;
+}
+
+template<typename ResultType,
+         typename... ArgTs>
+const typename QueryMap<ResultType, ArgTs...>::MapType*
+Context::querySavedResults(
+     const ResultType& (*queryFunction)(Context* context, ArgTs...)) {
+  const void* queryFuncV = (const void*) queryFunction;
+  // Look up the map entry for this query
+  auto search = this->queryDB.find(queryFuncV);
+  if (search == this->queryDB.end()) {
+    return nullptr;
+  }
+
+  return &((QueryMap<ResultType, ArgTs...>*) search->second.get())->map;
 }
 
 
@@ -542,11 +606,10 @@ Context::querySetterUpdateResult(
 
 } // end namespace chpl
 
-#define QUERY_BEGIN_INNER(isInput, func, context, ...) \
+#define QUERY_BEGIN_INNER(isInput, func, funcName, context, ...) \
   auto* BEGIN_QUERY_FUNCTION = func; \
   Context* BEGIN_QUERY_CONTEXT = context; \
-  const char* BEGIN_QUERY_FUNC_NAME = #func; \
-  CHPL_ASSERT(0 == strcmp(BEGIN_QUERY_FUNC_NAME, __func__)); \
+  const char* BEGIN_QUERY_FUNC_NAME = (funcName); \
   auto BEGIN_QUERY_ARGS = std::make_tuple(__VA_ARGS__); \
   auto BEGIN_QUERY_MAP = context->queryBeginGetMap(BEGIN_QUERY_FUNCTION, \
                                                    BEGIN_QUERY_ARGS, \
@@ -567,14 +630,14 @@ Context::querySetterUpdateResult(
 
 #define QUERY_BEGIN_TIMING(context__) \
   context__->queryBeginTrace(BEGIN_QUERY_FUNC_NAME, BEGIN_QUERY_ARGS); \
-  auto QUERY_STOPWATCH = context__->makeQueryTimingStopwatch(BEGIN_QUERY_MAP)
+  auto QUERY_STOPWATCH = context__->makeQueryTimingStopwatch(BEGIN_QUERY_MAP, \
+                                                             BEGIN_QUERY_ARGS);
 
 #else
 
-#define QUERY_BEGIN_TIMING()
+#define QUERY_BEGIN_TIMING(context__)
 
 #endif
-
 
 /**
   Use QUERY_BEGIN at the start of the implementation of a particular query.
@@ -585,19 +648,24 @@ Context::querySetterUpdateResult(
   class Context, and then pass any arguments to the query.
  */
 #define QUERY_BEGIN(func, context, ...) \
-  QUERY_BEGIN_INNER(false, func, context, __VA_ARGS__); \
+  QUERY_BEGIN_INNER(false, func, #func, context, __VA_ARGS__); \
   if (QUERY_USE_SAVED()) { \
     return QUERY_GET_SAVED(); \
   } \
   auto QUERY_RECOMPUTATION_MARKER = context->markRecomputing(false); \
   QUERY_BEGIN_TIMING(context);
 
+#define QUERY_REGISTER_TRACER(tracerBody) \
+  BEGIN_QUERY_MAP->registerTracer([](const decltype(BEGIN_QUERY_ARGS)& args) { \
+    tracerBody; \
+  });
+
 /**
   QUERY_BEGIN_INPUT is like QUERY_BEGIN but should be used
   for input queries.
  */
 #define QUERY_BEGIN_INPUT(func, context, ...) \
-  QUERY_BEGIN_INNER(true, func, context, __VA_ARGS__) \
+  QUERY_BEGIN_INNER(true, func, #func, context, __VA_ARGS__) \
   if (QUERY_USE_SAVED()) { \
     return QUERY_GET_SAVED(); \
   } \
@@ -626,7 +694,6 @@ Context::querySetterUpdateResult(
                                  std::move(result), \
                                  BEGIN_QUERY_FUNC_NAME))
 
-
 /**
   Use QUERY_STORE_RESULT to implement a setter for a non-input query.
   Arguments are:
@@ -645,7 +712,6 @@ Context::querySetterUpdateResult(
                                    std::move(result), \
                                    #func, \
                                    false)
-
 
 /**
   Use QUERY_STORE_INPUT_RESULT to implement a setter for an input query.

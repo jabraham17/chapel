@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -424,11 +424,18 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
   // we have full control here, but this should be ok
   bool isOuter = arg->hasFlag(FLAG_OUTER_VARIABLE);
 
+  bool isArray = arg->type->symbol->hasFlag(FLAG_ARRAY);
+
   bool shouldWarn = !isOuter && !fromPragma && !isCompilerGenerated;
 
   // if its an outer variable but its used in a task intent, warn
   if (!shouldWarn && isOuter && isTaskIntent) {
     shouldWarn = true;
+  }
+
+  // should not warn for arrays in task functions
+  if(shouldWarn && isArray && isTaskIntent) {
+    shouldWarn = false;
   }
 
   // should not warn if a method is marked pragma "reference to const when const this"
@@ -1278,6 +1285,8 @@ bool CullRefCtx::checkCompilerRefTemporaries(CallExpr* call, GraphNode node,
                                              bool &revisit) {
   Symbol* sym = node.variable;
   CallExpr* call2 = call;
+  int targetIndex = -1;
+  int lhsFieldIndex = node.fieldIndex;
 
   if (call->isPrimitive(PRIM_ADDR_OF) ||
       call->isPrimitive(PRIM_SET_REFERENCE) ||
@@ -1286,14 +1295,38 @@ bool CullRefCtx::checkCompilerRefTemporaries(CallExpr* call, GraphNode node,
     call2 = toCallExpr(call->parentExpr);
   }
 
+
   if (!call2->isPrimitive(PRIM_MOVE))
     return false;
+
+  // If the call accesses only a portion of the symbol (via member access),
+  // check if that's the portion in `node`.
+
+  if (call->isPrimitive(PRIM_GET_MEMBER)) {
+    auto at = toAggregateType(sym->type);
+    INT_ASSERT(at);
+    INT_ASSERT(toSymExpr(call->get(2)));
+    auto fieldSym = toSymExpr(call->get(2))->symbol();
+    for_fields(field, at) {
+      targetIndex++;
+      if (fieldSym == field) break;
+    }
+
+    // The LHS is no longer a tuple, but a component, so reset field index.
+    lhsFieldIndex = 0;
+  } else if (call->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
+    // The LHS is no longer a tuple, but a component, so reset field index.
+    lhsFieldIndex = 0;
+  }
+  if (targetIndex != -1 && node.fieldIndex != targetIndex) {
+    return false;
+  }
 
   SymExpr* lhs       = toSymExpr(call2->get(1));
   Symbol*  lhsSymbol = lhs->symbol();
 
-  if (lhsSymbol != sym && isRefOrTupleWithRef(lhsSymbol, node.fieldIndex)) {
-    GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
+  if (lhsSymbol != sym && isRefOrTupleWithRef(lhsSymbol, lhsFieldIndex)) {
+    GraphNode srcNode = makeNode(lhsSymbol, lhsFieldIndex);
     collectedSymbols.push_back(srcNode);
     addDependency(revisitGraph, srcNode, node);
     revisit = true;

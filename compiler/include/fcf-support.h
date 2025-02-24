@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -124,6 +124,9 @@ const ClosureEnv& computeOuterVariables(FnSymbol* fn);
 
 /*** Use to ensure a clean error for failed capture without other context. */
 VarSymbol* errorSink(FunctionType::Kind);
+
+/*** When a function is being captured but it's a statement in and of itself, warn. */
+void emitWarningForStandaloneCapture(Expr* expr, const char* name);
 
 } // end namespace 'fcfs'
 

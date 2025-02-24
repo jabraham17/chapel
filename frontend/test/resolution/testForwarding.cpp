@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,14 +29,12 @@
 static void test1() {
   printf("test1\n");
 
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   const char* contents =
     R""""(
     module M {
-      operator +=(ref lhs: int, rhs: int) { }
       record Inner {
         var i: int;
         proc ref addOne() {
@@ -61,14 +59,12 @@ static void test1() {
 static void test2() {
   printf("test2\n");
 
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   const char* contents =
     R""""(
     module M {
-      operator +=(ref lhs: int, rhs: int) { }
       record Inner {
         var i: int;
         proc ref addOne() {
@@ -96,15 +92,12 @@ static void test2() {
 static void test3() {
   printf("test3\n");
 
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   const char* contents =
     R""""(
     module M {
-      operator +=(ref lhs: int, rhs: int) { }
-
       class C {
         forwarding var impl: unmanaged C;
       }
@@ -126,15 +119,12 @@ static void test3() {
 static void test4() {
   printf("test4\n");
 
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   const char* contents =
     R""""(
     module M {
-      operator =(ref lhs: int, rhs: int) { }
-      operator +=(ref lhs: int, rhs: int) { }
       record Inner {
         var i: int;
         proc init() { this.i = 0; };
@@ -161,15 +151,12 @@ static void test4() {
 static void test5a() {
   printf("test5a\n");
 
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   const char* contents =
     R""""(
     module M {
-      operator =(ref lhs: int, rhs: int) { }
-      operator +=(ref lhs: int, rhs: int) { }
       record Inner1 {
         var i: int;
         proc init() { this.i = 0; };
@@ -200,15 +187,12 @@ static void test5a() {
 static void test5b() {
   printf("test5b\n");
 
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   const char* contents =
     R""""(
     module M {
-      operator =(ref lhs: int, rhs: int) { }
-      operator +=(ref lhs: int, rhs: int) { }
       record Inner1 {
         var i: int;
         proc init() { this.i = 0; };
@@ -249,15 +233,12 @@ static void test5b() {
 static void test6a() {
   printf("test6a\n");
 
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   const char* contents =
     R""""(
     module M {
-      operator =(ref lhs: int, rhs: int) { }
-      operator +=(ref lhs: int, rhs: int) { }
       record Inner1 {
         var i: int;
         proc init() { this.i = 0; };
@@ -302,15 +283,12 @@ static void test6a() {
 static void test6b() {
   printf("test6b\n");
 
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   const char* contents =
     R""""(
     module M {
-      operator =(ref lhs: int, rhs: int) { }
-      operator +=(ref lhs: int, rhs: int) { }
       record Inner1 {
         var i: int;
         proc init() { this.i = 0; };
@@ -365,8 +343,7 @@ static void test6b() {
 static void testExpr() {
   printf("testExpr\n");
 
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   const char* contents =
@@ -396,8 +373,7 @@ static void testExpr() {
 }
 
 static void forwardForwardHelper(std::string stmt, bool isVar = false) {
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string contents =
@@ -456,7 +432,114 @@ static void testForwardForwardExpr() {
   forwardForwardHelper("forwarding var x = bar();", /*isVar=*/true);
 }
 
-// TODO: forwarding with only, except
+// Two different levels of forwarding->forwarding
+static void test7() {
+  printf("test7\n");
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  const char* contents =
+    R""""(
+    module M {
+      record Inner {
+        var i: int;
+        pragma "last resort"
+        proc ref addOne() {
+          i += 1;
+          return 1.0;
+        }
+      }
+      record Middle {
+        forwarding var impl: Inner;
+      }
+      record Outer {
+        forwarding var impl: Middle;
+        forwarding var anotherImpl: Inner;
+      }
+
+      var rec: Outer;
+      var x = rec.addOne();
+    }
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(context, contents);
+  assert(qt.type()->isRealType());
+
+  assert(guard.realizeErrors() == 0);
+}
+
+// Test that 'except' clause doesn't exclude other symbols.
+// Doesn't test 'except' correct exclusion functionality.
+static void test8() {
+  printf("test8\n");
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  const char* contents =
+    R""""(
+    module M {
+      record Foo {
+        var _instance : unmanaged Bar;
+
+        proc init(value) {
+          this._instance = value;
+        }
+
+        proc arbitrarySymbol do return 4;
+        forwarding _instance except arbitrarySymbol;
+      }
+
+      class Bar {
+        var asdf : int;
+      }
+
+      var myFoo = new Foo(new unmanaged Bar());
+      var x = myFoo.asdf;
+    }
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(context, contents);
+  assert(qt.type()->isIntType());
+
+  assert(guard.realizeErrors() == 0);
+}
+
+// Ensure we don't search for forwarded candidates after finding non-forwarded
+// ones, even if the forwarded candidates are methods.
+static void test9() {
+  printf("test9\n");
+
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  const char* contents =
+    R""""(
+    module M {
+      class Bar {
+        proc getVal() : real do return 4;
+      }
+
+      proc getVal() : int do return 3;
+
+      class Foo {
+        var b : owned Bar = new Bar();
+        forwarding b;
+
+        proc doSomething() do return getVal();
+      }
+
+      var f : Foo = new Foo();
+      var x = f.doSomething();
+    }
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(context, contents);
+  assert(qt.type()->isIntType());
+
+  assert(guard.realizeErrors() == 0);
+}
 
 
 int main() {
@@ -471,6 +554,13 @@ int main() {
 
   testExpr();
   testForwardForwardExpr();
+
+  test7();
+
+  // TODO: forwarding with only, except
+
+  test8();
+  test9();
 
   return 0;
 }

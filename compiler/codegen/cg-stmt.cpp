@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,6 +29,7 @@
 #include "ImportStmt.h"
 #include "LayeredValueTable.h"
 #include "llvmDebug.h"
+#include "llvmTracker.h"
 #include "llvmVer.h"
 #include "misc.h"
 #include "passes.h"
@@ -152,8 +153,10 @@ GenRet BlockStmt::codegen() {
     getFunction()->codegenUniqueNum++;
 
     blockStmtBody = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_body"));
+    trackLLVMValue(blockStmtBody);
 
-    info->irBuilder->CreateBr(blockStmtBody);
+    llvm::BranchInst* toBody = info->irBuilder->CreateBr(blockStmtBody);
+    trackLLVMValue(toBody);
 
     // Now add the body.
 #if HAVE_LLVM_VER >= 160
@@ -184,11 +187,26 @@ GenRet BlockStmt::codegen() {
 *                                                                   *
 ********************************* | ********************************/
 
+// If this is 'if gCpuVsGpuToken then ... else ...'
+// then return the appropriate branch, else nil.
+static BlockStmt* chooseCpuVsGpuBranch(CondStmt* cond) {
+  if (SymExpr* se = toSymExpr(cond->condExpr))
+    if (se->symbol() == gCpuVsGpuToken)
+      return gCodegenGPU ? cond->elseStmt : cond->thenStmt;
+  return nullptr;
+}
+
 GenRet
 CondStmt::codegen() {
   GenInfo* info    = gGenInfo;
   FILE*    outfile = info->cfile;
   GenRet   ret;
+
+  if (BlockStmt* chosenBlock = chooseCpuVsGpuBranch(this)) {
+    for_alist(node, chosenBlock->body)
+      node->codegen();
+    return ret;
+  }
 
   codegenStmt(this);
 
@@ -252,14 +270,20 @@ CondStmt::codegen() {
         info->module->getContext(),
         FNAME("cond_end"));
 
+    trackLLVMValue(condStmtIf);
+    trackLLVMValue(condStmtThen);
+    trackLLVMValue(condStmtEnd);
+
     if (elseStmt) {
       condStmtElse = llvm::BasicBlock::Create(info->module->getContext(),
                                               FNAME("cond_else"));
+      trackLLVMValue(condStmtElse);
     }
 
     info->lvt->addLayer();
 
-    info->irBuilder->CreateBr(condStmtIf);
+    llvm::BranchInst* toCond = info->irBuilder->CreateBr(condStmtIf);
+    trackLLVMValue(toCond);
 
 #if HAVE_LLVM_VER >= 160
     func->insert(func->end(), condStmtIf);
@@ -278,12 +302,14 @@ CondStmt::codegen() {
           condValue,
           llvm::ConstantInt::get(condValue->getType(), 0),
           FNAME("condition"));
+      trackLLVMValue(condValue);
     }
 
-    info->irBuilder->CreateCondBr(
+    llvm::BranchInst* condBr = info->irBuilder->CreateCondBr(
         condValue,
         condStmtThen,
         (elseStmt) ? condStmtElse : condStmtEnd);
+    trackLLVMValue(condBr);
 
 #if HAVE_LLVM_VER >= 160
     func->insert(func->end(), condStmtThen);
@@ -295,7 +321,8 @@ CondStmt::codegen() {
     info->lvt->addLayer();
     thenStmt->codegen();
 
-    info->irBuilder->CreateBr(condStmtEnd);
+    llvm::BranchInst* toEnd1 = info->irBuilder->CreateBr(condStmtEnd);
+    trackLLVMValue(toEnd1);
     info->lvt->removeLayer();
 
     if(elseStmt) {
@@ -308,7 +335,8 @@ CondStmt::codegen() {
 
       info->lvt->addLayer();
       elseStmt->codegen();
-      info->irBuilder->CreateBr(condStmtEnd);
+      llvm::BranchInst* toEnd2 = info->irBuilder->CreateBr(condStmtEnd);
+      trackLLVMValue(toEnd2);
       info->lvt->removeLayer();
     }
 
@@ -353,15 +381,18 @@ GenRet GotoStmt::codegen() {
     llvm::BasicBlock *blockLabel;
     if(!(blockLabel = info->lvt->getBlock(cname))) {
       blockLabel = llvm::BasicBlock::Create(info->module->getContext(), cname);
+      trackLLVMValue(blockLabel);
       info->lvt->addBlock(cname, blockLabel);
     }
 
-    info->irBuilder->CreateBr(blockLabel);
+    llvm::BranchInst* toLabel = info->irBuilder->CreateBr(blockLabel);
+    trackLLVMValue(toLabel);
 
     getFunction()->codegenUniqueNum++;
 
     llvm::BasicBlock *afterGoto = llvm::BasicBlock::Create(
         info->module->getContext(), FNAME("afterGoto"));
+    trackLLVMValue(afterGoto);
 #if HAVE_LLVM_VER >= 160
     func->insert(func->end(), afterGoto);
 #else

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -51,7 +51,7 @@ proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
   param rank=ranges.size;
   type EC = uint; // type for element counts
   var numElems = 1:EC;
-  for param i in 0..rank-1 do {
+  for param i in 0..rank-1 {
     numElems *= ranges(i).sizeAs(EC);
   }
 
@@ -65,7 +65,7 @@ proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
   var maxDim = -1;
   var maxElems = min(EC);
   // break/continue don't work with param loops (known future)
-  for /* param */ i in 0..rank-1 do {
+  for /* param */ i in 0..rank-1 {
     const curElems = ranges(i).sizeAs(EC);
     if curElems >= numChunks:EC {
       parDim = i;
@@ -301,7 +301,7 @@ proc densify(subs, wholes, userErrors = true)
   return result;
 }
 
-proc densify(s: range(?,bounds=?B), w: range(?IT,?), userErrors=true
+proc densify(s: range(?,bounds=?), w: range(?IT,?), userErrors=true
              ) : densiResult(s, w)
 {
   _densiEnsureBounded(s);
@@ -425,7 +425,7 @@ proc unDensify(denses, wholes, userErrors = true)
   return result;
 }
 
-proc unDensify(dense: range(?dIT,bounds=?B), whole: range(?IT,?)
+proc unDensify(dense: range(?dIT,bounds=?), whole: range(?IT,?)
                ) : densiResult(dense, whole)
 {
   _undensEnsureBounded(dense);
@@ -498,6 +498,8 @@ private proc asap1(arg) {
   if isSubtype(arg.type, BaseDom) then return asapTuple(arg.dsiDims());
   if isSubtype(arg.type, BaseArr) then return asapTuple(arg.dom.dsiDims());
   compilerError("asap1: unsupported argument type ", arg.type:string);
+  return false; // otherwise we get resolution errors before the compilerError
+                // above
 }
 
 // asapP1 = All Strides Are Positive - Param - 1 arg
@@ -566,7 +568,7 @@ proc createWholeDomainForInds(param rank, type idxType, param strides, inds) {
 // Compute the active dimensions of this assignment. For example, LeftDims
 // could be (1..1, 1..10) and RightDims (1..10, 1..1). This indicates that
 // a rank change occurred and that the inferredRank should be '1', the
-// LeftActives = (2,), the RightActives = (1,)
+// LeftActives = (1,), the RightActives = (0,)
 proc bulkCommComputeActiveDims(LeftDims, RightDims) {
   param LeftRank  = LeftDims.size;
   param RightRank = RightDims.size;
@@ -645,6 +647,22 @@ proc bulkCommTranslateDomain(srcSlice : domain, srcDom : domain, targetDom : dom
   return {(...rngs)};
 }
 
+// this is an overload for views that are ranges. This will be used by code
+// paths that comes from elided array views. We could consider using this
+// lighter weight implementation as a more general special case for 1D bulk
+// transfers.
+proc bulkCommTranslateDomain(srcSlice : domain, srcView : range(?),
+                             targetView : range(?)) {
+  if srcSlice.rank != 1 then
+    compilerError("bulkCommTranslateDomain: source slice and source domain must have identical rank");
+
+  param strides = chpl_strideUnion(targetView, srcSlice);
+
+  const dense = densify(srcSlice.dim(0), srcView);
+  const rng  = unDensify(dense, targetView);
+
+  return {rng};
+}
 //
 // bulkCommConvertCoordinate() converts
 //   point 'ind' within 'bView'
@@ -681,6 +699,17 @@ proc bulkCommConvertCoordinate(ind, bView:domain, aView:domain)
     result(i) = ar.orderToIndex(br.indexOrder(b(i)));
   }
   return result;
+}
+
+// this is a 1D, range-based version of the above. It is used by AVE, which
+// tries to avoid creating domains for views.
+proc bulkCommConvertCoordinate(ind, bView:range(?), aView:range(?))
+{
+  if boundsChecking then
+    assert(bView.contains(ind));
+
+  const result = aView.orderToIndex(bView.indexOrder(ind));
+  return (result,);
 }
 
 record chpl_PrivatizedDistHelper : writeSerializable {
@@ -721,47 +750,11 @@ record chpl_PrivatizedDistHelper : writeSerializable {
     _do_destroy();
   }
 
-  /* This is a workaround for an internal failure I experienced when
-     this code was part of newRectangularDom() and relied on split init:
-     var x;
-     if __prim(...) then x = ...;
-     else if __prim(...) then x = ...;
-     else compilerError(...); */
-  proc chpl_dsiNRDhelp(param rank, type idxType, param strides, ranges) {
-
-    // Due to a bug, see library/standard/Reflection/primitives/ResolvesDmap
-    // we use "method call resolves" instead of just "resolves".
-    if __primitive("method call resolves", _value, "dsiNewRectangularDom",
-                   rank, idxType, strides, ranges) {
-      return _value.dsiNewRectangularDom(rank, idxType, strides, ranges);
-    }
-
-    // The following supports deprecation by Vass in 1.31 to implement #17131
-    // Once range.stridable is removed, replace chpl_dsiNRDhelp() with
-    //   var x = _value.dsiNewRectangularDom(..., strides, ranges);
-    // and uncomment proc dsiNewRectangularDom() in ChapelDistribution.chpl
-
-    param stridable = strides.toStridable();
-    const ranges2 = chpl_convertRangeTuple(ranges, stridable);
-    if __primitive("method call resolves", _value, "dsiNewRectangularDom",
-                   rank, idxType, stridable, ranges2) {
-
-      compilerWarning("the domain map '", _value.type:string,
-                      "' needs to be updated from 'stridable: bool' to",
-                      " 'strides: strideKind' because 'stridable' is deprecated");
-
-      return _value.dsiNewRectangularDom(rank, idxType, stridable, ranges2);
-    }
-
-    compilerError("rectangular domains are not supported by",
-                  " the distribution ", this.type:string);
-  }
-
   proc newRectangularDom(param rank: int, type idxType,
                          param strides: strideKind,
                          ranges: rank*range(idxType, boundKind.both, strides),
                          definedConst: bool = false) {
-    var x = chpl_dsiNRDhelp(rank, idxType, strides, ranges);
+    var x = _value.dsiNewRectangularDom(rank, idxType, strides, ranges);
 
     x.definedConst = definedConst;
 
@@ -795,10 +788,6 @@ record chpl_PrivatizedDistHelper : writeSerializable {
   }
 
   proc idxToLocale(ind) do return _value.dsiIndexToLocale(ind);
-
-  proc writeThis(f) throws {
-    f.write(_value);
-  }
 
   @chpldoc.nodoc
   proc serialize(writer, ref serializer) throws {

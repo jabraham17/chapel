@@ -9,11 +9,11 @@
 #    https://chapel-lang.org/perf/chapcs/$SHORT_NAME
 #
 
-CWD=$(cd $(dirname $0) ; pwd)
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 export CHPL_TEST_PERF_CONFIG_NAME='chapcs'
 
-source $CWD/common-perf.bash
+source $UTIL_CRON_DIR/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test compiler performance with driver adjustments (but in monolithic mode)
-GITHUB_USER=riftember
-GITHUB_BRANCH=driver-print-passes
-SHORT_NAME=monolithic-comp
-START_DATE=11/15/23
+# Test performance with the latest qthreads release.
+GITHUB_USER=insertinterestingnamehere
+GITHUB_BRANCH=qthread
+SHORT_NAME=qthread122
+START_DATE=02/21/25
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
@@ -37,4 +37,4 @@ git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
 
 perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
-$CWD/nightly -cron ${perf_args} ${nightly_args}
+$UTIL_CRON_DIR/nightly -cron ${perf_args} ${nightly_args}

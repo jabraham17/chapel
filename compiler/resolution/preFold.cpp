@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,6 +20,7 @@
 
 #include "preFold.h"
 
+#include "arrayViewElision.h"
 #include "astutil.h"
 #include "buildDefaultFunctions.h"
 #include "fcf-support.h"
@@ -65,6 +66,8 @@ static std::vector<Expr* >                                 testCaptureVector;
 // lookup table for test function names and their index in testCaptureVector
 static std::map<std::string,int>                           testNameIndex;
 
+static Expr*          preFoldLateEnumConstantAccess(CallExpr* call);
+
 static Expr*          preFoldPrimInitVarForManagerResource(CallExpr* call);
 
 static Expr*          preFoldPrimResolves(CallExpr* call);
@@ -102,8 +105,9 @@ Expr* preFold(CallExpr* call) {
   } else if (isUnresolvedSymExpr(baseExpr) == true) {
     if (Expr* tmp = preFoldNamed(call)) {
       retval = tmp;
+    } else if (Expr* enumConstant = preFoldLateEnumConstantAccess(call)) {
+      retval = enumConstant;
     }
-
   } else if (SymExpr* symExpr = toSymExpr(baseExpr)) {
     // Primitive typeSpecifier -> SymExpr
     if (Type* type = typeForTypeSpecifier(call, true)) {
@@ -146,9 +150,18 @@ Expr* preFold(CallExpr* call) {
 
       thisTemp->addFlag(FLAG_EXPR_TEMP);
 
-      callExpr->replace(new UnresolvedSymExpr("this"));
+      // toCallExpr(baseExpr) lies and returns a CallExpr for ContextCall.
+      // In this case, we want to store the whole ContextCall in a temp;
+      // so, check if we were lied to.
+      Expr* receiver = nullptr;
+      if (auto cc = toContextCallExpr(callExpr->parentExpr)) {
+        receiver = cc;
+      } else {
+        receiver = callExpr;
+      }
 
-      retval = new CallExpr(PRIM_MOVE, thisTemp, callExpr);
+      receiver->replace(new UnresolvedSymExpr("this"));
+      retval = new CallExpr(PRIM_MOVE, thisTemp, receiver);
 
       call->insertAtHead(new SymExpr(thisTemp));
       call->insertAtHead(gMethodToken);
@@ -249,7 +262,9 @@ static void setRecordCopyableFlags(AggregateType* at) {
   if (!ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST) &&
       !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF)) {
 
-    if (isNonNilableOwned(at)) {
+    if (at->isGeneric() && !at->isGenericWithDefaults()) {
+      // do nothing for this case
+    } else if (isNonNilableOwned(at)) {
       // do nothing for this case
     } else if (Type* eltType = arrayElementType(at)) {
       if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
@@ -267,7 +282,7 @@ static void setRecordCopyableFlags(AggregateType* at) {
       // special case since while implicit reads of sync/single are not yet removed
       // with their removal, the init= that throws a warning will be gone
       FnSymbol* initEq = NULL;
-      if(!ts->hasFlag(FLAG_SYNC) && !ts->hasFlag(FLAG_SINGLE)) {
+      if(!ts->hasFlag(FLAG_SYNC)) {
         // Try resolving a test init= to set the flags
         const char* err = NULL;
         initEq = findCopyInitFn(at, err);
@@ -308,7 +323,9 @@ static void setRecordAssignableFlags(AggregateType* at) {
   if (!ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST) &&
       !ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF)) {
 
-    if (isNonNilableOwned(at)) {
+    if (at->isGeneric() && !at->isGenericWithDefaults()) {
+      // do nothing for this case
+    } else if (isNonNilableOwned(at)) {
       // do nothing for this case
     } else if (Type* eltType = arrayElementType(at)) {
 
@@ -462,6 +479,42 @@ static void setRecordDefaultValueFlags(AggregateType* at) {
       }
     }
   }
+}
+
+// See if the user is trying to access the enum constant of a type, but it
+// wasn't resolved during scope resolution, which means that type resolution
+// was required to figure out the receiver.
+static Expr* preFoldLateEnumConstantAccess(CallExpr* call) {
+  UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr);
+  if (!urse) return call;
+
+  if (call->numActuals() != 2) return call;
+  auto firstSym = toSymExpr(call->get(1));
+  if (!firstSym || firstSym->symbol() != gMethodToken) return call;
+
+  auto secondSym = toSymExpr(call->get(2));
+  if (!secondSym || !secondSym->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) return call;
+  auto enumType = toEnumType(secondSym->symbol()->type);
+  if (!enumType) return call;
+
+  if (shouldWarnUnstableFor(call)) {
+    USR_WARN(call, "accessing enum constants via a type alias is unstable");
+  }
+
+  // Now we have a type method call on a type variable that's an enum.
+  // We might be trying to access an element late / indirectly.
+  for_enums(constant, enumType) {
+    if (!strcmp(constant->sym->name, urse->unresolved)) {
+      constant->sym->maybeGenerateDeprecationWarning(call);
+      constant->sym->maybeGenerateUnstableWarning(call);
+
+      auto replaceWith = new SymExpr(constant->sym);
+      call->replace(replaceWith);
+      return replaceWith;
+    }
+  }
+
+  return call;
 }
 
 //
@@ -912,6 +965,24 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_PROTO_SLICE_ASSIGN: {
+    ArrayViewElisionPrefolder assignment(call);
+
+    if (assignment.supported()) {
+      retval = assignment.getReplacement();
+      call->replace(retval);
+    }
+    else {
+      retval = new CallExpr(PRIM_NOOP);
+      assignment.condStmt()->insertBefore(retval);
+    }
+
+    assignment.report();
+    assignment.updateAndFoldConditional();
+
+    break;
+  }
+
   case PRIM_CALL_RESOLVES:
   case PRIM_CALL_AND_FN_RESOLVES:
   case PRIM_METHOD_CALL_RESOLVES:
@@ -1244,6 +1315,24 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_SPLIT_INIT_UPDATE_TYPE: {
+    INT_ASSERT(call->numActuals() == 2);
+
+    SymExpr* lhs = toSymExpr(call->get(1));
+    SymExpr* rhs = toSymExpr(call->get(2));
+
+    INT_ASSERT(lhs != NULL);
+    INT_ASSERT(rhs != NULL);
+
+    if (lhs->typeInfo() == dtSplitInitType) {
+      if (rhs->typeInfo()->getValType() != dtSplitInitType) {
+        lhs->symbol()->type = rhs->typeInfo()->getValType();
+      }
+    }
+    retval = new CallExpr(PRIM_NOOP);
+    call->replace(retval);
+  }
+
   case PRIM_COERCE: {
     if (SymExpr* se = toSymExpr(call->get(2))) {
       if (dtDomain && se->symbol() == dtDomain->symbol) {
@@ -1426,10 +1515,16 @@ static Expr* preFoldPrimOp(CallExpr* call) {
         msgType = dtBorrowed;
 
       Type* t = e->typeInfo();
-      if (!isClassLikeOrManaged(t))
+      bool emit = true;
+
+      if (auto fn = toFnSymbol(call->parentSymbol)) {
+        emit = !fn->isCompilerGenerated();
+      }
+
+      if (emit && !isClassLikeOrManaged(t))
         USR_FATAL_CONT(call, "cannot make %s into a %s class",
                              toString(t), toString(msgType));
-      if (!isTypeExpr(e))
+      if (emit && !isTypeExpr(e))
         USR_FATAL_CONT(call, "cannot use decorator %s on a value",
                              toString(msgType));
 
@@ -1750,7 +1845,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
           //  type if the symbol represents a field, and taking the address of
           //  a type does not make sense.
 
-        } else if (argSym && argSym->hasFlag(FLAG_TYPE_VARIABLE)) {
+        } else if ((argSym && argSym->hasFlag(FLAG_TYPE_VARIABLE)) ||
+                   (varSym && varSym->hasFlag(FLAG_TYPE_VARIABLE))) {
           // No need to take address of a type arg. The flag is used here
           // because the intent is unreliable, and may be INTENT_BLANK.
 
@@ -1937,9 +2033,9 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       // Keep in sync with setIteratorRecordShape(CallExpr* call).
       INT_ASSERT(ir->type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
       Symbol* shapeSpec = toSymExpr(call->get(2))->symbol();
-      Symbol* fromForLoop = toSymExpr(call->get(3))->symbol();
-      retval = setIteratorRecordShape(call, ir, shapeSpec,
-                 getSymbolImmediate(fromForLoop)->bool_value());
+      Symbol* fromLoop = toSymExpr(call->get(3))->symbol();
+      auto loopType = (LoopExprType) getSymbolImmediate(fromLoop)->int_value();
+      retval = setIteratorRecordShape(call, ir, shapeSpec, loopType);
       call->replace(retval);
     }
 
@@ -1961,12 +2057,18 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_STATIC_FUNCTION_VAR_VALIDATE_TYPE:
+    // the typeof was nested inside this, so just replace with the call result.
+    retval = call->get(1)->remove();
+    call->replace(retval);
+    break;
+
   case PRIM_TYPEOF: {
     SymExpr* se = toSymExpr(call->get(1));
     Type* type = se->getValType();
 
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL_CONT(call, "can't apply '.type' to a type (%s)",
+      USR_FATAL_CONT(call, "can't apply '.type' to a type ('%s')",
                      toString(se->typeInfo()));
     } else if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
       retval = new CallExpr("chpl__convertValueToRuntimeType",
@@ -2010,11 +2112,43 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
-  case PRIM_STATIC_TYPEOF:
   case PRIM_STATIC_FIELD_TYPE:
+  case PRIM_STATIC_TYPEOF: {
+    auto exprToResolve = call->get(1);
+
+    // Insert a temporary block into the AST to use as a workspace.
+    auto tmpBlock = new BlockStmt(BLOCK_SCOPELESS);
+    call->getStmtExpr()->insertAfter(tmpBlock);
+
+    exprToResolve->remove();
+    tmpBlock->insertAtTail(exprToResolve);
+
+    // Resolution depends on normalized AST (and the expression is not).
+    normalize(tmpBlock);
+    resolveBlockStmt(tmpBlock);
+
+    // Remove the code we used for resolution; this is a static typeof
+    // primitive, so it should not have any side effects.
+    tmpBlock->remove();
+
+    // Now, put the resolve expression back into the call so that ->typeInfo()
+    // can invoke the normal primitive type resolution process.
+    call->insertAtHead(tmpBlock->body.last()->remove());
+
+    // Replace the type query call with a SymExpr of the type symbol.
+    // call->typeInfo() will request the type from the primitive
+    Type* type = call->typeInfo();
+    retval = new SymExpr(type->symbol);
+    call->replace(retval);
+
+    break;
+  }
+
+
+  case PRIM_THUNK_RESULT_TYPE:
   case PRIM_SCALAR_PROMOTION_TYPE: {
 
-    // Replace the type query call with a SymExpr of the type symbol
+    // Replace the type query call with a SymExpr of the type symbol.
     // call->typeInfo() will request the type from the primitive
     Type* type = call->typeInfo();
     retval = new SymExpr(type->symbol);
@@ -2240,6 +2374,38 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       retval = new CallExpr(PRIM_NOOP);
       call->replace(retval);
     }
+    break;
+  }
+
+  case PRIM_FORCE_THUNK: {
+    auto sizeSym = toSymExpr(call->get(1));
+    auto sizeType = sizeSym->symbol()->typeInfo()->getValType();
+    auto aggrT = toAggregateType(sizeType);
+
+    // call the invoke method of the thunk stored in aggrT->thunkInvoke
+    retval = new CallExpr(aggrT->thunkInvoke, gMethodToken, sizeSym->remove());
+    call->replace(retval);
+    break;
+  }
+
+  case PRIM_DEFAULT_INIT_VAR: {
+    // While visiting the primitive, reject calls to default init on
+    // incomplete types.
+    auto secondArg = toSymExpr(call->get(2))->symbol();
+    Symbol* checkForIncomplete = nullptr;
+    if (auto ts = toTypeSymbol(secondArg)) {
+      checkForIncomplete = ts;
+    } else if (auto vs = toVarSymbol(secondArg)) {
+      checkForIncomplete = vs->typeInfo()->symbol;
+    }
+    if (checkForIncomplete && checkForIncomplete->hasFlag(FLAG_INCOMPLETE)) {
+      USR_FATAL(call, "cannot default initialize incomplete 'extern' type '%s'",
+                checkForIncomplete->cname);
+    }
+
+    // All is well, proceed.
+    retval = call;
+    break;
   }
 
   default:
@@ -2412,14 +2578,16 @@ static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
     VarSymbol* tmp = newTemp(astr("tupleTemp"));
     tmp->addFlag(FLAG_REF_VAR);
 
+    auto field = tupType->getField(i);
+    auto prim = field->isRef() ? PRIM_GET_MEMBER_VALUE : PRIM_GET_MEMBER;
     // create the AST for 'tupleTemp = tuple.field'
     //
-    VarSymbol* field = new_CStringSymbol(tupType->getField(i)->name);
+    VarSymbol* fieldName = new_CStringSymbol(field->name);
     noop->insertBefore(new DefExpr(tmp));
     noop->insertBefore(new CallExpr(PRIM_MOVE, tmp,
-                                    new CallExpr(PRIM_GET_MEMBER,
+                                    new CallExpr(prim,
                                                  tupExpr->copy(),
-                                                 field)));
+                                                 fieldName)));
 
     // clone the body; subtract 2 from i to number unrollings from 0
     //
@@ -2456,6 +2624,45 @@ static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
   return noop;
 }
 
+
+// helper for inlineArgIntoCond()
+static bool tempIsUsedOnlyInMoveAndCond(Symbol* temp,
+                                        CallExpr* move, CondStmt* cond) {
+  for_SymbolSymExprs(se, temp)
+    if (se != move->get(1) && se != cond->condExpr)
+      return false;
+  return true;
+}
+
+//
+// This helps replace:
+//   def temp
+//   move temp <- _cond_test(argSym)
+//   if temp then ....
+// with
+//   if argSym then ....
+// where replacement is done by caller. 'argSym' is in 'retval'.
+//
+// Why not use this on all eligible boolean 'argSym's? That would break code
+// that expects the 'move', ex. test/functions/vass/ref-intent-bug-2big.chpl
+// with --no-local and test/classes/nilability/if-object-2.chpl.
+//
+static void inlineArgIntoCond(CallExpr*& call, Expr*& retval) {
+  if (CallExpr* move = toCallExpr(call->parentExpr))
+   if (CondStmt* cond = toCondStmt(move->next))
+    if (move->isPrimitive(PRIM_MOVE))
+     if (Symbol* temp = toSymExpr(move->get(1))->symbol())
+      if (call == move->get(2))
+       if (tempIsUsedOnlyInMoveAndCond(temp, move, cond))
+        {
+          temp->defPoint->remove();
+          cond->condExpr->replace(retval);
+          // set up for 'call->replace(retval)' in caller
+          // to replace 'move' with a no-op
+          call = move;
+          retval = new CallExpr(PRIM_NOOP);
+        }
+}
 
 static bool isMethodCall(CallExpr* call) {
   // The first argument could be DefExpr for a query expr, see
@@ -2812,6 +3019,8 @@ static Expr* preFoldNamed(CallExpr* call) {
         if (argType == dtBool) {
           // use the argument directly
           retval = argSE->remove();
+          if (argSym == gCpuVsGpuToken)
+            inlineArgIntoCond(call, retval); // modifies call, retval
 
         } else if (argType == dtBool->refType) {
           // dereference it so later passes get a value
@@ -2942,7 +3151,8 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
         // And it's not an array (arrays are always yielded by reference)
         // - see boundaries() in release/examples/benchmarks/miniMD/miniMD.
         if (!fieldType->symbol->hasFlag(FLAG_ARRAY) &&
-            !fieldType->symbol->hasFlag(FLAG_COPY_MUTATES)) {
+            !fieldType->symbol->hasFlag(FLAG_COPY_MUTATES) &&
+            !destSE->symbol()->hasFlag(FLAG_LOOP_INDEX_MUTABLE)) {
           destSE->symbol()->addFlag(FLAG_CONST);
         }
       } else {
@@ -2969,29 +3179,6 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
   return result;
 }
 
-// Deprecated by Vass in 1.31: redirect, with a deprecation warning,
-// from `range(boundedType=?b)` or `range(stridable=?s`)`
-// to   `range(bounds=?b)`      or `s = <arg>.stridable`
-static void checkRangeDeprecations(AggregateType* at, CallExpr* call,
-                                   VarSymbol* var, Symbol*& retval) {
-  if (retval == nullptr && at->symbol->hasFlag(FLAG_RANGE)) {
-    const char* requested = var->immediate->v_string.c_str();
-    if (!strcmp(requested, "boundedType")) {
-      USR_WARN(call,
-        "range.boundedType is deprecated; please use '.bounds' instead");
-      retval = at->getField("bounds");
-    } else if (!strcmp(requested, "stridable")) {
-      USR_WARN(call,
-        "range.stridable is deprecated; please use '.strides' instead");
-
-      // White lie: return a bogus value just so that the PRIM_QUERY case
-      // in preFoldPrimOp() generates the call 'var.stridable'.
-      retval = new VarSymbol(requested);
-      retval->addFlag(FLAG_PARAM);
-    }
-  }
-}
-
 //
 // determine field associated with query expression
 //
@@ -3004,7 +3191,6 @@ static Symbol* determineQueriedField(CallExpr* call) {
 
   if (var->immediate->const_kind == CONST_KIND_STRING) {
     retval = at->getField(var->immediate->v_string.c_str(), false);
-    checkRangeDeprecations(at, call, var, retval); // may update 'retval'
 
   } else {
     Vec<Symbol*> args;

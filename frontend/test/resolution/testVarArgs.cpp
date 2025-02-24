@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,13 +39,6 @@
 
 static bool debug = true;
 static bool verbose = true;
-
-static std::vector<Context*> globalContexts;
-static Context* getNewContext() {
-  Context* ret = new Context();
-  globalContexts.push_back(ret);
-  return ret;
-}
 
 std::vector<const ErrorBase*> errors;
 
@@ -121,9 +114,9 @@ struct Collector {
       const ResolvedExpression& result = rv.byAst(call);
       if (result.mostSpecific().isEmpty() == false) {
         const TypedFnSignature* sig = result.mostSpecific().only().fn();
-        auto fn = resolveFunction(rv.context(), sig, result.poiScope());
+        auto fn = resolveFunction(rv.rc(), sig, result.poiScope());
 
-        ResolvedVisitor<Collector> newRV(rv.context(), nullptr, *this, fn->resolutionById());
+        ResolvedVisitor<Collector> newRV(rv.rc(), nullptr, *this, fn->resolutionById());
         auto untyped = idToAst(rv.context(), sig->id());
         assert(untyped->id() == sig->id());
         untyped->traverse(newRV);
@@ -332,7 +325,11 @@ static std::string buildProgram(Qualifier formalIntent,
   }
   stream << "..." << count;
   stream << ") {\n";
-  stream << "  var varArgRet : args.type;\n";
+
+  stream << "  var varArgRet : args";
+  if (formalIntent != Qualifier::TYPE) stream << ".type";
+  stream << ";\n";
+
   stream << "  return varArgRet;\n";
   stream << "}\n\n";
 
@@ -358,7 +355,9 @@ static std::string buildProgram(Qualifier formalIntent,
     if (i > 0) stream << ", ";
     stream << "formal_" << std::to_string(i);
   }
-  stream << ").type;\n";
+  stream << ")";
+  if (formalIntent != Qualifier::TYPE) stream << ".type";
+  stream << ";\n";
   stream << "  return ret;\n";
   stream << "}\n\n";
 
@@ -499,15 +498,16 @@ static void testMatcher(Qualifier formalIntent,
   std::string program = buildProgram(formalIntent, formalType, count,
                                      info, fail);
 
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
 
   const Module* m = parseModule(context, program.c_str());
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   Collector col;
-  ResolvedVisitor<Collector> rv(context, m, col, rr);
+  ResolvedVisitor<Collector> rv(rc, m, col, rr);
   m->traverse(rv);
 
   if (guard.errors().size()) {
@@ -528,14 +528,16 @@ static void testMatcher(Qualifier formalIntent,
 static Collector
 customHelper(std::string program, bool fail = false,
              std::vector<owned<ErrorBase>>* errorsOut=nullptr) {
-  Context* context = getNewContext();
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
 
   const Module* m = parseModule(context, program.c_str());
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   Collector pc;
-  ResolvedVisitor<Collector> rv(context, m, pc, rr);
+  ResolvedVisitor<Collector> rv(rc, m, pc, rr);
   m->traverse(rv);
 
   int numErrors = guard.numErrors();
@@ -649,7 +651,7 @@ static void testConcrete() {
   testMatcher(Qualifier::DEFAULT_INTENT, "int", "",
               ArgInfo({"int", "int(8)", "int(32)"}));
 
-  // varargs specifiying a tuple as the formal type
+  // varargs specifying a tuple as the formal type
   testMatcher(Qualifier::DEFAULT_INTENT, "(int,int,int)", "",
               ArgInfo(3, "(int,int,int)"));
 
@@ -832,6 +834,43 @@ var c = fn(y=5.0, "hello", 1, "test", 3.0);
 
 }
 
+// regression test for a bug in which two fucntions (see body of the test)
+// are incorrectly considered ambiguous. The vararg-based function is less
+// specific than the 'integral'-based function since the latter constraints
+// the type more.
+static void testGenericInstantiationDisambiguation() {
+  Context* context = buildStdContext();
+  auto program =
+    R"""(
+    proc foo(x...) do return 1.0;
+    proc foo(x: integral) do return 1;
+
+    var x = foo(10);
+    )""";
+
+  auto qt = resolveTypeOfX(context, program);
+  CHPL_ASSERT(qt->isIntType());
+}
+
+static void testWhereClauseOnSizeQuery() {
+  auto context = buildStdContext();
+  auto program = std::string(
+    R"""(
+    proc test(xs ...?k) param where k > 1 do return true;
+    proc test(arg) param do return false;
+
+    param x = test(1);
+    param y = test(1, 2, 3);
+    )""");
+
+  auto qts = resolveTypesOfVariables(context, program, {"x", "y"});
+  auto& qtX = qts.at("x");
+  auto& qtY = qts.at("y");
+
+  ensureParamBool(qtX, false);
+  ensureParamBool(qtY, true);
+}
+
 //
 // TODO: test where-clauses:
 //
@@ -862,13 +901,10 @@ int main(int argc, char** argv) {
   testConcrete();
   testCount();
   testAlignment();
+  testGenericInstantiationDisambiguation();
+  testWhereClauseOnSizeQuery();
 
   printf("\nAll tests passed successfully.\n");
-
-  // Cleanup
-  for (auto* con : globalContexts) {
-    delete con;
-  }
 
   return 0;
 }

@@ -83,8 +83,8 @@ static void placeSplitBlockCarefully(BasicBlock *NewBB,
                                      Loop *L) {
   // Check to see if NewBB is already well placed.
   Function::iterator BBI = --NewBB->getIterator();
-  for (unsigned i = 0, e = SplitPreds.size(); i != e; ++i) {
-    if (&*BBI == SplitPreds[i])
+  for (BasicBlock *Pred : SplitPreds) {
+    if (&*BBI == Pred)
       return;
   }
 
@@ -95,10 +95,10 @@ static void placeSplitBlockCarefully(BasicBlock *NewBB,
   // Figure out *which* outside block to put this after.  Prefer an outside
   // block that neighbors a BB actually in the loop.
   BasicBlock *FoundBB = nullptr;
-  for (unsigned i = 0, e = SplitPreds.size(); i != e; ++i) {
-    Function::iterator BBI = SplitPreds[i]->getIterator();
+  for (BasicBlock *Pred : SplitPreds) {
+    Function::iterator BBI = Pred->getIterator();
     if (++BBI != NewBB->getParent()->end() && L->contains(&*BBI)) {
-      FoundBB = SplitPreds[i];
+      FoundBB = Pred;
       break;
     }
   }
@@ -172,7 +172,7 @@ static void addBlockAndPredsToSet(BasicBlock *InputBB, BasicBlock *StopBlock,
 /// us how to partition the loops.
 static PHINode *findPHIToPartitionLoops(Loop *L, DominatorTree *DT,
                                         AssumptionCache *AC) {
-  const DataLayout &DL = L->getHeader()->getModule()->getDataLayout();
+  const DataLayout &DL = L->getHeader()->getDataLayout();
   for (BasicBlock::iterator I = L->getHeader()->begin(); isa<PHINode>(I); ) {
     PHINode *PN = cast<PHINode>(I);
     ++I;
@@ -231,7 +231,7 @@ static Loop *separateNestedLoop(Loop *L, BasicBlock *Preheader,
   // a function call is present until a better alternative becomes
   // available. This is similar to the conservative treatment of
   // convergent function calls in GVNHoist and JumpThreading.
-  for (auto BB : L->blocks()) {
+  for (auto *BB : L->blocks()) {
     for (auto &II : *BB) {
       if (auto CI = dyn_cast<CallBase>(&II)) {
         if (CI->isConvergent()) {
@@ -392,14 +392,14 @@ static BasicBlock *insertUniqueBackedgeBlock(Loop *L, BasicBlock *Preheader,
 
   // Move the new backedge block to right after the last backedge block.
   Function::iterator InsertPos = ++BackedgeBlocks.back()->getIterator();
-  F->getBasicBlockList().splice(InsertPos, F->getBasicBlockList(), BEBlock);
+  F->splice(InsertPos, F, BEBlock->getIterator());
 
   // Now that the block has been inserted into the function, create PHI nodes in
   // the backedge block which correspond to any PHI nodes in the header block.
   for (BasicBlock::iterator I = Header->begin(); isa<PHINode>(I); ++I) {
     PHINode *PN = cast<PHINode>(I);
     PHINode *NewPN = PHINode::Create(PN->getType(), BackedgeBlocks.size(),
-                                     PN->getName()+".be", BETerminator);
+                                     PN->getName()+".be", BETerminator->getIterator());
 
     // Loop over the PHI node, moving all entries except the one for the
     // preheader over to the new PHI node.
@@ -429,8 +429,8 @@ static BasicBlock *insertUniqueBackedgeBlock(Loop *L, BasicBlock *Preheader,
       PN->setIncomingBlock(0, PN->getIncomingBlock(PreheaderIdx));
     }
     // Nuke all entries except the zero'th.
-    for (unsigned i = 0, e = PN->getNumIncomingValues()-1; i != e; ++i)
-      PN->removeIncomingValue(e-i, false);
+    PN->removeIncomingValueIf([](unsigned Idx) { return Idx != 0; },
+                              /* DeletePHIIfEmpty */ false);
 
     // Finally, add the newly constructed PHI node as the entry for the BEBlock.
     PN->addIncoming(NewPN, BEBlock);
@@ -440,7 +440,7 @@ static BasicBlock *insertUniqueBackedgeBlock(Loop *L, BasicBlock *Preheader,
     // eliminate the PHI Node.
     if (HasUniqueIncomingValue) {
       NewPN->replaceAllUsesWith(UniqueValue);
-      BEBlock->getInstList().erase(NewPN);
+      NewPN->eraseFromParent();
     }
   }
 
@@ -448,16 +448,15 @@ static BasicBlock *insertUniqueBackedgeBlock(Loop *L, BasicBlock *Preheader,
   // backedge blocks to jump to the BEBlock instead of the header.
   // If one of the backedges has llvm.loop metadata attached, we remove
   // it from the backedge and add it to BEBlock.
-  unsigned LoopMDKind = BEBlock->getContext().getMDKindID("llvm.loop");
   MDNode *LoopMD = nullptr;
-  for (unsigned i = 0, e = BackedgeBlocks.size(); i != e; ++i) {
-    Instruction *TI = BackedgeBlocks[i]->getTerminator();
+  for (BasicBlock *BB : BackedgeBlocks) {
+    Instruction *TI = BB->getTerminator();
     if (!LoopMD)
-      LoopMD = TI->getMetadata(LoopMDKind);
-    TI->setMetadata(LoopMDKind, nullptr);
+      LoopMD = TI->getMetadata(LLVMContext::MD_loop);
+    TI->setMetadata(LLVMContext::MD_loop, nullptr);
     TI->replaceSuccessorWith(Header, BEBlock);
   }
-  BEBlock->getTerminator()->setMetadata(LoopMDKind, LoopMD);
+  BEBlock->getTerminator()->setMetadata(LLVMContext::MD_loop, LoopMD);
 
   //===--- Update all analyses which we must preserve now -----------------===//
 
@@ -589,7 +588,7 @@ ReprocessLoop:
   if (MSSAU && VerifyMemorySSA)
     MSSAU->getMemorySSA()->verifyMemorySSA();
 
-  const DataLayout &DL = L->getHeader()->getModule()->getDataLayout();
+  const DataLayout &DL = L->getHeader()->getDataLayout();
 
   // Scan over the PHI nodes in the loop header.  Since they now have only two
   // incoming values (the loop is canonicalized), we may have simplified the PHI
@@ -631,8 +630,7 @@ ReprocessLoop:
     return true;
   };
   if (HasUniqueExitBlock()) {
-    for (unsigned i = 0, e = ExitingBlocks.size(); i != e; ++i) {
-      BasicBlock *ExitingBlock = ExitingBlocks[i];
+    for (BasicBlock *ExitingBlock : ExitingBlocks) {
       if (!ExitingBlock->getSinglePredecessor()) continue;
       BranchInst *BI = dyn_cast<BranchInst>(ExitingBlock->getTerminator());
       if (!BI || !BI->isConditional()) continue;
@@ -649,18 +647,13 @@ ReprocessLoop:
           continue;
         if (!L->makeLoopInvariant(
                 Inst, AnyInvariant,
-                Preheader ? Preheader->getTerminator() : nullptr, MSSAU)) {
+                Preheader ? Preheader->getTerminator() : nullptr, MSSAU, SE)) {
           AllInvariant = false;
           break;
         }
       }
-      if (AnyInvariant) {
+      if (AnyInvariant)
         Changed = true;
-        // The loop disposition of all SCEV expressions that depend on any
-        // hoisted values have also changed.
-        if (SE)
-          SE->forgetLoopDispositions(L);
-      }
       if (!AllInvariant) continue;
 
       // The block has now been cleared of all instructions except for
@@ -697,12 +690,6 @@ ReprocessLoop:
       ExitingBlock->eraseFromParent();
     }
   }
-
-  // Changing exit conditions for blocks may affect exit counts of this loop and
-  // any of its paretns, so we must invalidate the entire subtree if we've made
-  // any changes.
-  if (Changed && SE)
-    SE->forgetTopmostLoop(L);
 
   if (MSSAU && VerifyMemorySSA)
     MSSAU->getMemorySSA()->verifyMemorySSA();
@@ -741,6 +728,13 @@ bool llvm::simplifyLoop(Loop *L, DominatorTree *DT, LoopInfo *LI,
   while (!Worklist.empty())
     Changed |= simplifyOneLoop(Worklist.pop_back_val(), Worklist, DT, LI, SE,
                                AC, MSSAU, PreserveLCSSA);
+
+  // Changing exit conditions for blocks may affect exit counts of this loop and
+  // any of its parents, so we must invalidate the entire subtree if we've made
+  // any changes. Do this here rather than in simplifyOneLoop() as the top-most
+  // loop is going to be the same for all child loops.
+  if (Changed && SE)
+    SE->forgetTopmostLoop(L);
 
   return Changed;
 }

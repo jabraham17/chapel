@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -16,6 +16,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include "limits.h"
 
 #include "test-resolution.h"
 
@@ -45,6 +47,22 @@ static bool passesParamNarrowing(CanPassResult r) {
          r.conversionKind() == CanPassResult::PARAM_NARROWING;
 }
 
+static bool passesBorrowing(CanPassResult r) {
+  return r.passes() &&
+         !r.instantiates() &&
+         !r.promotes() &&
+         r.converts() &&
+         r.conversionKind() == CanPassResult::BORROWS;
+}
+
+static bool passesBorrowingSubtype(CanPassResult r) {
+  return r.passes() &&
+         !r.instantiates() &&
+         !r.promotes() &&
+         r.converts() &&
+         r.conversionKind() == CanPassResult::BORROWS_SUBTYPE;
+}
+
 static bool passesSubtype(CanPassResult r) {
   return r.passes() &&
          !r.instantiates() &&
@@ -61,7 +79,14 @@ static bool passesInstantiates(CanPassResult r) {
          r.conversionKind() == CanPassResult::NONE;
 }
 
-/*
+static bool passesInstantiatesBorrowing(CanPassResult r) {
+  return r.passes() &&
+         r.instantiates() &&
+         !r.promotes() &&
+         r.converts() &&
+         r.conversionKind() == CanPassResult::BORROWS;
+}
+
 static bool passesOther(CanPassResult r) {
   return r.passes() &&
          !r.instantiates() &&
@@ -69,7 +94,6 @@ static bool passesOther(CanPassResult r) {
          r.converts() &&
          r.conversionKind() == CanPassResult::OTHER;
 }
-*/
 
 static bool doesNotPass(CanPassResult r) {
   return !r.passes();
@@ -87,6 +111,7 @@ static void test1() {
   QualifiedType int32(QualifiedType::VAR, IntType::get(context, 32));
   QualifiedType int64(QualifiedType::VAR, IntType::get(context, 64));
   QualifiedType real0(QualifiedType::VAR, RealType::get(context, 0));
+  QualifiedType complex128(QualifiedType::VAR, ComplexType::get(context, 0));
 
   CanPassResult r;
   r = canPass(c, int0, int0); assert(passesAsIs(r));
@@ -120,6 +145,9 @@ static void test1() {
   r = canPass(c, int0, int16); assert(doesNotPass(r));
   r = canPass(c, int0, int32); assert(doesNotPass(r));
   r = canPass(c, int0, int64); assert(passesAsIs(r));
+
+  r = canPass(c, int0, complex128); assert(passesNumeric(r));
+  r = canPass(c, complex128, real0); assert(doesNotPass(r));
 }
 
 static void test2() {
@@ -324,11 +352,13 @@ static void test5() {
 
 static void test6() {
   printf("test6\n");
-  Context ctx;
+  auto config = getConfigWithHome();
+  Context ctx(config);
   Context* context = &ctx;
   Context* c = context;
+  setupModuleSearchPaths(context, false, false, {}, {});
 
-  // test that we can pass param string c_string
+  // test that we can pass param string c_string or c_ptrConst(c_char)
   // but we can't pass param string to bytes
 
   auto s = UniqueString::get(context, "hello");
@@ -343,20 +373,30 @@ static void test6() {
                                  CStringType::get(context));
   auto bytesQT = QualifiedType(QualifiedType::VAR,
                                CompositeType::getBytesType(context));
+
+  const chpl::types::Type* eltType = nullptr;
+  if (CHAR_MAX == SCHAR_MAX) {
+    eltType = IntType::get(context, 8);
+  } else {
+    eltType = UintType::get(context, 8);
+  }
+  auto cptrQT = QualifiedType(QualifiedType::VAR,
+                              CPtrType::getConst(context, eltType));
   CanPassResult r;
   r = canPass(c, paramString, stringQT); assert(passesAsIs(r));
   r = canPass(c, paramString, cStringQT); assert(passesParamNarrowing(r));
   r = canPass(c, paramString, bytesQT); assert(doesNotPass(r));
+  r = canPass(c, paramString, cptrQT); assert(passesOther(r));
 }
 
 static void test7() {
   printf("test7\n");
-  Context ctx;
-  Context* context = &ctx;
+  Context* context = buildStdContext();
   Context* c = context;
 
   // test that we can pass a child class to its parent class type
   // but that we can't do the inverse.
+  // Also test we can pass a class to its borrowed version.
 
   ID emptyId;
 
@@ -386,6 +426,13 @@ static void test7() {
     return QualifiedType(QualifiedType::VAR,
                          ClassType::get(context, bctArg, mgmtArg, decArg));
   };
+
+  auto borrowedGenericRefQt = QualifiedType(
+      QualifiedType::REF,
+      ClassType::get(context, AnyClassType::get(context), nullptr, borrowedQ));
+  auto unmanagedGenericRefQt = QualifiedType(
+      QualifiedType::REF,
+      ClassType::get(context, AnyClassType::get(context), nullptr, unmanagedQ));
 
   auto ownedMgmt = AnyOwnedType::get(context);
 
@@ -464,22 +511,22 @@ static void test7() {
   r = canPass(c, borrowedChildQ,   ownedChildQ);      assert(doesNotPass(r));
 
   // unmanaged - borrowed
-  r = canPass(c, unmanagedChild,   borrowedChild);    assert(passesSubtype(r));
-  r = canPass(c, unmanagedChild,   borrowedChildQ);   assert(passesSubtype(r));
+  r = canPass(c, unmanagedChild,   borrowedChild);    assert(passesBorrowing(r));
+  r = canPass(c, unmanagedChild,   borrowedChildQ);   assert(passesBorrowingSubtype(r));
   r = canPass(c, unmanagedChildQ,  borrowedChild);    assert(doesNotPass(r));
-  r = canPass(c, unmanagedChildQ,  borrowedChildQ);   assert(passesSubtype(r));
+  r = canPass(c, unmanagedChildQ,  borrowedChildQ);   assert(passesBorrowing(r));
 
-  // unamanaged - owned
+  // unmanaged - owned
   r = canPass(c, unmanagedChild,   ownedChild);       assert(doesNotPass(r));
   r = canPass(c, unmanagedChild,   ownedChildQ);      assert(doesNotPass(r));
   r = canPass(c, unmanagedChildQ,  ownedChild);       assert(doesNotPass(r));
   r = canPass(c, unmanagedChildQ,  ownedChildQ);      assert(doesNotPass(r));
 
   // owned - borrowed
-  r = canPass(c, ownedChild,       borrowedChild);    assert(passesSubtype(r));
-  r = canPass(c, ownedChild,       borrowedChildQ);   assert(passesSubtype(r));
+  r = canPass(c, ownedChild,       borrowedChild);    assert(passesBorrowing(r));
+  r = canPass(c, ownedChild,       borrowedChildQ);   assert(passesBorrowingSubtype(r));
   r = canPass(c, ownedChildQ,      borrowedChild);    assert(doesNotPass(r));
-  r = canPass(c, ownedChildQ,      borrowedChildQ);   assert(passesSubtype(r));
+  r = canPass(c, ownedChildQ,      borrowedChildQ);   assert(passesBorrowing(r));
 
   // owned - unmanaged
   r = canPass(c, ownedChild,       unmanagedChild);   assert(doesNotPass(r));
@@ -501,28 +548,33 @@ static void test7() {
   r = canPass(c, borrowedChildQ,   ownedParentQ);     assert(doesNotPass(r));
 
   // unmanaged - borrowed
-  r = canPass(c, unmanagedChild,   borrowedParent);   assert(passesSubtype(r));
-  r = canPass(c, unmanagedChild,   borrowedParentQ);  assert(passesSubtype(r));
+  r = canPass(c, unmanagedChild,   borrowedParent);   assert(passesBorrowingSubtype(r));
+  r = canPass(c, unmanagedChild,   borrowedParentQ);  assert(passesBorrowingSubtype(r));
   r = canPass(c, unmanagedChildQ,  borrowedParent);   assert(doesNotPass(r));
-  r = canPass(c, unmanagedChildQ,  borrowedParentQ);  assert(passesSubtype(r));
+  r = canPass(c, unmanagedChildQ,  borrowedParentQ);  assert(passesBorrowingSubtype(r));
 
-  // unamanaged - owned
+  // unmanaged - owned
   r = canPass(c, unmanagedChild,   ownedParent);      assert(doesNotPass(r));
   r = canPass(c, unmanagedChild,   ownedParentQ);     assert(doesNotPass(r));
   r = canPass(c, unmanagedChildQ,  ownedParent);      assert(doesNotPass(r));
   r = canPass(c, unmanagedChildQ,  ownedParentQ);     assert(doesNotPass(r));
 
   // owned - borrowed
-  r = canPass(c, ownedChild,       borrowedParent);   assert(passesSubtype(r));
-  r = canPass(c, ownedChild,       borrowedParentQ);  assert(passesSubtype(r));
+  r = canPass(c, ownedChild,       borrowedParent);   assert(passesBorrowingSubtype(r));
+  r = canPass(c, ownedChild,       borrowedParentQ);  assert(passesBorrowingSubtype(r));
   r = canPass(c, ownedChildQ,      borrowedParent);   assert(doesNotPass(r));
-  r = canPass(c, ownedChildQ,      borrowedParentQ);  assert(passesSubtype(r));
+  r = canPass(c, ownedChildQ,      borrowedParentQ);  assert(passesBorrowingSubtype(r));
 
   // owned - unmanaged
   r = canPass(c, ownedChild,       unmanagedParent);  assert(doesNotPass(r));
   r = canPass(c, ownedChild,       unmanagedParentQ); assert(doesNotPass(r));
   r = canPass(c, ownedChildQ,      unmanagedParent);  assert(doesNotPass(r));
   r = canPass(c, ownedChildQ,      unmanagedParentQ); assert(doesNotPass(r));
+
+
+  // check passing to generic class type
+  r = canPass(c, unmanagedChildQ, unmanagedGenericRefQt); assert(passesInstantiates(r));
+  r = canPass(c, unmanagedChildQ, borrowedGenericRefQt); assert(passesInstantiatesBorrowing(r));
 }
 
 static void test8() {
@@ -534,12 +586,55 @@ static void test8() {
   auto anyEnumType = QualifiedType(QualifiedType::VAR, AnyEnumType::get(c));
   auto anEnum = QualifiedType(QualifiedType::VAR,
       EnumType::get(context,
-                   ID(UniqueString::get(c, "someModule"), -1, 0),
+                   ID(UniqueString::get(c, "someModule")),
                    UniqueString::get(c, "someEnum")));
 
   // test passing an enum type to `enum` works fine
   CanPassResult r;
   r = canPass(context, anEnum, anyEnumType); assert(passesInstantiates(r));
+}
+
+static void test9() {
+  printf("test9\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      record Bar {
+        var x;
+      }
+
+      type t = Bar(int);
+      var b = new Bar(3);
+      )""", {"t", "b"});
+
+  CanPassResult r;
+  QualifiedType t = vars.at("t");
+  auto formal = QualifiedType(QualifiedType::IN, t.type());
+  r = canPass(context, vars.at("b"), formal); assert(passesAsIs(r));
+}
+
+static void test10() {
+  printf("test9\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto vars = resolveTypesOfVariables(context,
+      R"""(
+      class C {
+        type A, B;
+      }
+
+      type a = Bar(int);
+      type b = Bar(int, int);
+      )""", {"a", "b"});
+
+
+  // test that partial instantiation passing works with classes
+  CanPassResult r;
+  r = canPass(context, vars.at("b"), vars.at("a"));
+  assert(passesInstantiates(r));
 }
 
 int main() {
@@ -551,6 +646,8 @@ int main() {
   test6();
   test7();
   test8();
+  test9();
+  test10();
 
   return 0;
 }

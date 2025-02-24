@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -307,7 +307,7 @@ static bool needsAutoCopyAutoDestroyForArg(ArgSymbol* formal, Expr* arg,
   // where we might take the reference of a sync on the stack, and that stack
   // is about to go away.
   //
-  if (isSyncType(baseType) || isSingleType(baseType)) {
+  if (isSyncType(baseType)) {
     return true;
   }
 
@@ -954,7 +954,6 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
            (isRecord(def->sym->type)             &&
             !isRecordWrappedType(def->sym->type) &&
             !isSyncType(def->sym->type)          &&
-            !isSingleType(def->sym->type)        &&
             // Dont try to broadcast string literals, they'll get fixed in
             // another manner
             !(def->sym->type == dtString && def->sym->isImmediate())))) {
@@ -973,6 +972,12 @@ static void findHeapVarsAndRefs(Map<Symbol*, Vec<SymExpr*>*>& defMap,
         INT_ASSERT(initialization);
         insertBroadcast(initialization, def->sym);
 
+      } else if (def->sym->hasFlag(FLAG_REMOTE_VARIABLE)) {
+        // replicate address of remote variables
+        Expr* initialization = def->sym->getInitialization();
+
+        INT_ASSERT(initialization);
+        insertBroadcast(initialization, def->sym);
       } else {
         // put other global constants and all global variables on the heap
         // ... but not type variables without a runtime type component
@@ -1021,6 +1026,12 @@ makeHeapAllocations() {
         // don't heap-allocate globals
         continue;
       }
+    }
+
+    if (var->hasFlag(FLAG_REMOTE_VARIABLE)) {
+      // don't widen remote variables, they're already references
+      // to heap-allocated memory.
+      continue;
     }
 
     if (isString(var) && var->isImmediate()) {
@@ -1134,6 +1145,12 @@ makeHeapAllocations() {
           call->getStmtExpr()->insertBefore(new DefExpr(tmp));
           call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, use->symbol(), heapType->getField(1))));
           use->replace(new SymExpr(tmp));
+          if (call->isPrimitive(PRIM_ZERO_VARIABLE)) {
+            // aftering zeroing the value, we need to set it back
+            // otherwise its a dead store
+            call->getStmtExpr()->insertAfter(
+              new CallExpr(PRIM_SET_MEMBER, use->symbol(), heapType->getField(1), tmp));
+          }
         }
       } else if (use->parentExpr)
         INT_FATAL(var, "unexpected case");

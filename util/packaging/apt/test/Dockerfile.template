@@ -1,0 +1,26 @@
+FROM @@{OS_BASE_IMAGE}
+
+@@{INJECT_BEFORE_DEPS}
+
+@@{TEST_ENV}
+
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y vim sudo
+
+@@{USER_CREATION}
+
+COPY --chown=user @@{HOST_PACKAGE_PATH}/@@{PACKAGE_NAME} /home/user/@@{PACKAGE_NAME}
+
+USER root
+RUN apt-get install -y ./@@{PACKAGE_NAME}
+USER user
+WORKDIR /home/user
+
+RUN mason new MyPackage
+WORKDIR /home/user/MyPackage
+RUN chplcheck src/*.chpl
+RUN mason build
+RUN mason run -- -nl 1
+RUN mkdir test && touch test/test.chpl mason test
+WORKDIR /home/user

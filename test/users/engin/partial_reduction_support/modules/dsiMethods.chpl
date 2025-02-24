@@ -3,7 +3,7 @@ use BlockDist;
 use CyclicDist;
 use BlockCycDist;
 use Search;
-use LayoutCS;
+use CompressedSparseLayout;
 use DSIUtil;
 
 //
@@ -267,7 +267,7 @@ iter DefaultSparseArr.dsiPartialThese(param onlyDim, otherIdx,
 //
 
 //
-// LayoutCS support
+// CompressedSparseLayout support
 //
 
 proc CSDom.dsiPartialDomain(param exceptDim) where rank > 1 {
@@ -421,7 +421,7 @@ iter CSArr.dsiPartialThese(param onlyDim, otherIdx,
   }
 }
 //
-// end LayoutCS support
+// end CompressedSparseLayout support
 //
 
 //
@@ -488,7 +488,7 @@ proc BlockDom.dsiPartialDomain(param exceptDim) {
 
   var ranges = whole._value.ranges.withoutIdx(exceptDim);
   var space = {(...ranges)};
-  var ret = space dmapped blockDist(space, targetLocales =
+  var ret = space dmapped new blockDist(space, targetLocales =
       dist.targetLocales[(...faceSliceMask(this, exceptDim))]);
 
   return ret;
@@ -542,7 +542,7 @@ proc CyclicDom.dsiPartialDomain(param exceptDim) {
   var ranges = whole._value.ranges.withoutIdx(exceptDim);
   var space = {(...ranges)};
   var ret = space dmapped
-    cyclicDist(startIdx=this.dist.startIdx.withoutIdx(exceptDim),
+    new cyclicDist(startIdx=this.dist.startIdx.withoutIdx(exceptDim),
         targetLocales=dist.targetLocs[(...faceSliceMask(this,
             exceptDim))]);
 
@@ -636,7 +636,7 @@ proc BlockCyclicDom.dsiPartialDomain(param exceptDim) {
   var ranges = whole._value.ranges.withoutIdx(exceptDim);
   var space = {(...ranges)};
   var ret = space dmapped
-    blockCycDist(startIdx=this.dist.lowIdx.withoutIdx(exceptDim),
+    new blockCycDist(startIdx=this.dist.lowIdx.withoutIdx(exceptDim),
         blocksize=this.dist.blocksize.withoutIdx(exceptDim),
         targetLocales=
             dist.targetLocales[(...faceSliceMask(this, exceptDim))]);
@@ -738,7 +738,7 @@ proc SparseBlockDom.dsiPartialDomain(param exceptDim) {
 
   var ranges = whole._value.ranges.withoutIdx(exceptDim);
   var space = {(...ranges)};
-  var ret = space dmapped blockDist(space, targetLocales =
+  var ret = space dmapped new blockDist(space, targetLocales =
       dist.targetLocales[(...faceSliceMask(this, exceptDim))]);
 
   return ret;

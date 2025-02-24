@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -118,6 +118,12 @@ module ChapelIteratorSupport {
     //   test/expressions/loop-expr/zip-arrays.chpl
     return chpl__unref(
       chpl_buildStandInRTT(__primitive("scalar promotion type", t)) );
+  }
+
+  proc thunkToReturnType(type t:_thunkRecord) type {
+    // Todo: chpl__unref() may be unnecessary; see iteratorToArrayElementType.
+    return chpl__unref(
+      chpl_buildStandInRTT(__primitive("thunk result type", t)) );
   }
 
   // A helper to handle #16027 ex. test/reductions/reduceLoopOfPromoted.chpl
@@ -341,15 +347,28 @@ module ChapelIteratorSupport {
   }
 
   proc chpl_iteratorFromForExpr(ir: _iteratorRecord) param {
-    if Reflection.canResolveMethod(ir, "_fromForExpr_") then
-      return ir._fromForExpr_;
-    else
-      return false;
+    if Reflection.canResolveMethod(ir, "_fromForExpr_") {
+      // implementation assumes _fromForExpr_ always returns true if it exists.
+      return true;
+    }
+    return false;
   }
   proc chpl_iteratorFromForExpr(arg) param {
     // non-iterator-record cases are always parallel
     // Todo: what if it is an array or domain whose domain map
     // that does not provide parallel iterators?
+    return false;
+  }
+
+  proc chpl_iteratorFromForeachExpr(ir: _iteratorRecord) param {
+    if Reflection.canResolveMethod(ir, "_fromForeachExpr_") {
+      // implementation assumes _fromForeachExpr_ always returns true if it exists.
+      return true;
+    }
+    return false;
+  }
+  proc chpl_iteratorFromForeachExpr(arg) param {
+    // non-iterator-record cases are always parallel, not via foreach.
     return false;
   }
 

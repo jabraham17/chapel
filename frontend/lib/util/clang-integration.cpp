@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,6 +19,7 @@
 
 #include "chpl/util/clang-integration.h"
 
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/TemporaryFileResult.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parsing-queries.h"

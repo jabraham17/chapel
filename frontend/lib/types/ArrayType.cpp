@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,8 +19,11 @@
 
 #include "chpl/types/ArrayType.h"
 
+#include "chpl/types/RuntimeType.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/intents.h"
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/types/Param.h"
 
 namespace chpl {
@@ -28,6 +31,11 @@ namespace types {
 
 const ID ArrayType::domainId = ID(UniqueString(), 0, 0);
 const ID ArrayType::eltTypeId = ID(UniqueString(), 1, 0);
+
+const RuntimeType* ArrayType::runtimeType(Context* context) const {
+  return resolution::getRuntimeType(context, this);
+}
+
 
 void ArrayType::stringify(std::ostream& ss,
                            chpl::StringifyKind stringKind) const {
@@ -45,8 +53,8 @@ void ArrayType::stringify(std::ostream& ss,
 }
 
 static ID getArrayID(Context* context) {
-  auto symbolPath = UniqueString::get(context, "ChapelArray._array");
-  return ID(symbolPath, -1, 0);
+  return parsing::getSymbolIdFromTopLevelModule(context, "ChapelArray",
+                                                "_array");
 }
 
 const owned<ArrayType>&
@@ -61,8 +69,8 @@ ArrayType::getArrayTypeQuery(Context* context, ID id, UniqueString name,
 
 const ArrayType*
 ArrayType::getGenericArrayType(Context* context) {
-  auto name = UniqueString::get(context, "_array");
   auto id = getArrayID(context);
+  auto name = id.symbolName(context);
   SubstitutionsMap subs;
   const ArrayType* instantiatedFrom = nullptr;
   return getArrayTypeQuery(context, id, name, instantiatedFrom, subs).get();
@@ -70,17 +78,36 @@ ArrayType::getGenericArrayType(Context* context) {
 
 const ArrayType*
 ArrayType::getArrayType(Context* context,
+                        const QualifiedType& instance,
                         const QualifiedType& domainType,
                         const QualifiedType& eltType) {
+  auto genericArray = getGenericArrayType(context);
+
   SubstitutionsMap subs;
+  CHPL_ASSERT(domainType.isType() && domainType.type() &&
+              domainType.type()->isDomainType());
   subs.emplace(ArrayType::domainId, domainType);
+  CHPL_ASSERT((eltType.isType() || eltType.isTypeQuery()) && eltType.type());
   subs.emplace(ArrayType::eltTypeId, eltType);
-  auto name = UniqueString::get(context, "_array");
+
+  // Add substitution for _instance field
+  auto& rf = fieldsForTypeDecl(context, genericArray,
+                               resolution::DefaultsPolicy::IGNORE_DEFAULTS,
+                               /* syntaxOnly */ true);
+  ID instanceFieldId;
+  for (int i = 0; i < rf.numFields(); i++) {
+    if (rf.fieldName(i) == USTR("_instance")) {
+      instanceFieldId = rf.fieldDeclId(i);
+      break;
+    }
+  }
+  subs.emplace(instanceFieldId, instance);
+
   auto id = getArrayID(context);
+  auto name = id.symbolName(context);
   auto instantiatedFrom = getGenericArrayType(context);
   return getArrayTypeQuery(context, id, name, instantiatedFrom, subs).get();
 }
-
 
 } // end namespace types
 } // end namespace chpl

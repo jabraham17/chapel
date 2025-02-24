@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -160,10 +160,6 @@ static void test4() {
 
 static void test5() {
   std::string common = R"""(
-    operator =(ref lhs: int, rhs : int) {
-      __primitive("=", lhs, rhs);
-    }
-
     record R {
       type T = int;
       var field : T;
@@ -181,8 +177,7 @@ static void test5() {
 
   {
     // Test methods on generics with defaults
-    Context ctx;
-    auto context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
     std::string program = common + R"""(
       proc blah(x: R(string)) {
@@ -199,8 +194,7 @@ static void test5() {
   }
   {
     // Test passing to generic arguments with types that are generic-with-defaults
-    Context ctx;
-    auto context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
     std::string program = common + R"""(
       //
@@ -230,8 +224,7 @@ static void test5() {
   }
   {
     // Test passing to generic arguments with types that are generic-with-defaults
-    Context ctx;
-    auto context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
     std::string program = common + R"""(
       proc copy(arg) {
@@ -249,7 +242,7 @@ static void test5() {
     auto aType = r.byAst(a).type();
     assert(aType.type()->isCompositeType());
     auto subs = aType.type()->toCompositeType()->substitutions();
-    assert(subs.size() == 2);
+    assert(subs.size() == 1);
     for (auto pair : subs) {
       assert(pair.second.type()->isStringType());
     }

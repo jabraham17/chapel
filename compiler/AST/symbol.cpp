@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,6 +38,7 @@
 #include "type.h"
 #include "wellknown.h"
 #include "chpl/uast/OpCall.h"
+#include "chpl/util/filesystem.h"
 #include "chpl/util/filtering.h"
 
 #include "global-ast-vecs.h"
@@ -57,7 +58,6 @@ Symbol *gDummyRef = NULL;
 Symbol *gFixupRequiredToken = NULL;
 Symbol *gTypeDefaultToken = NULL;
 Symbol *gLeaderTag = NULL, *gFollowerTag = NULL, *gStandaloneTag = NULL;
-Symbol *gStrideOne = NULL, *gStrideAny = NULL; // deprecated by Vass in 1.31
 Symbol *gModuleToken = NULL;
 Symbol *gNoInit = NULL;
 Symbol *gSplitInit = NULL;
@@ -70,16 +70,17 @@ Symbol *gOpaque = NULL;
 Symbol *gTimer = NULL;
 Symbol *gTaskID = NULL;
 Symbol *gSyncVarAuxFields = NULL;
-Symbol *gSingleVarAuxFields = NULL;
+Symbol *gIgnoredPromotionToken = NULL;
 
 VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
-VarSymbol* gIteratorBreakToken = NULL;
 VarSymbol* gNodeID = NULL;
 VarSymbol *gModuleInitIndentLevel = NULL;
 VarSymbol *gInfinity = NULL;
 VarSymbol *gNan = NULL;
 VarSymbol *gUninstantiated = NULL;
+VarSymbol *gCpuVsGpuToken = NULL;
+VarSymbol *gIteratorBreakToken = NULL;
 
 llvm::SmallVector<VarSymbol*, 10> gCompilerGlobalParams;
 
@@ -461,13 +462,13 @@ const char* Symbol::getUnstableMsg() const {
 // When printing the deprecation message to the console we typically
 // want to filter out inline markup used for Sphinx (which is useful
 // for when generating the docs). See:
-// https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
+// https://chapel-lang.org/docs/tools/chpldoc/chpldoc.html#inline-markup-2
 // for information on the markup.
 const char* Symbol::getSanitizedMsg(std::string msg) const {
   return astr(chpl::removeSphinxMarkup(msg));
 }
 
-std::unordered_set<std::pair<Symbol*,Expr*>> dedupDeprecationWarnings;
+std::unordered_set<std::pair<Symbol*,Expr*>, chpl::detail::hasher<std::pair<Symbol*, Expr*>>> dedupDeprecationWarnings;
 
 void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
   if (!this->hasFlag(FLAG_DEPRECATED)) return;
@@ -536,7 +537,7 @@ static bool isUnstableShouldWarn(Symbol* sym, Expr* initialContext) {
   return fWarnUnstable;
 }
 
-std::unordered_set<std::pair<Symbol*,Expr*>> dedupUnstableWarnings;
+std::unordered_set<std::pair<Symbol*,Expr*>, chpl::detail::hasher<std::pair<Symbol*, Expr*>>> dedupUnstableWarnings;
 
 //based on maybeGenerateDeprecationWarning
 void Symbol::maybeGenerateUnstableWarning(Expr* context) {
@@ -1273,7 +1274,7 @@ llvm::FunctionType* llvmGetUnderlyingFunctionType(FunctionType* t) {
 
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),
-    llvmImplType(NULL),
+    llvmImplType(NULL), llvmAlignment(ALIGNMENT_UNINIT),
     llvmTbaaTypeDescriptor(NULL),
     llvmTbaaAccessTag(NULL), llvmConstTbaaAccessTag(NULL),
     llvmTbaaAggTypeDescriptor(NULL),
@@ -1450,15 +1451,15 @@ void LabelSymbol::accept(AstVisitor* visitor) {
 
 TemporaryConversionSymbol::TemporaryConversionSymbol(chpl::ID symId)
   : Symbol(E_TemporaryConversionSymbol, "<conv>", nullptr),
-    symId(symId), sig(nullptr)
+    symId(symId), rfn(nullptr)
 {
   gTemporaryConversionSymbols.add(this);
 }
 
 TemporaryConversionSymbol::TemporaryConversionSymbol(
-    const chpl::resolution::TypedFnSignature* sig)
+    const chpl::resolution::ResolvedFunction* rfn)
   : Symbol(E_TemporaryConversionSymbol, "<conv>", nullptr),
-    symId(), sig(sig)
+    symId(), rfn(rfn)
 {
   gTemporaryConversionSymbols.add(this);
 }
@@ -1469,8 +1470,8 @@ void TemporaryConversionSymbol::verify() {
 TemporaryConversionSymbol*
 TemporaryConversionSymbol::copyInner(SymbolMap* map) {
   TemporaryConversionSymbol* copy = nullptr;
-  if (sig) {
-    copy = new TemporaryConversionSymbol(sig);
+  if (rfn) {
+    copy = new TemporaryConversionSymbol(rfn);
   } else {
     copy = new TemporaryConversionSymbol(symId);
   }
@@ -1626,6 +1627,10 @@ bool isValidString(std::string str, int64_t* numCodepoints) {
   return chpl_enc_validate_buf(str.c_str(), str.length(), numCodepoints) == 0;
 }
 
+static std::string hashUnescapedString(std::string s) {
+  return chpl::fileHashToHex(chpl::hashString(s));
+}
+
 // Note that string immediate values are stored
 // with C escapes - that is newline is 2 chars \ n
 // so this function expects a string that could be in "" in C
@@ -1651,6 +1656,7 @@ VarSymbol *new_StringSymbol(const char *str) {
   // after normalization we need to insert everything in normalized form. We
   // also need to disable parts of normalize from running on literals inserted
   // at parse time.
+
   s = new VarSymbol(astr("_str_literal_", istr(literal_id++)), dtString);
   s->addFlag(FLAG_NO_AUTO_DESTROY);
   s->addFlag(FLAG_CONST);
@@ -1681,6 +1687,12 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   if (!invalid) {
     stringLiteralsHash.put(s->immediate, s);
+  }
+
+  if (fIdBasedMunging) {
+    // compute a SHA hash of the string to use as a string cname
+    std::string hashHex = hashUnescapedString(unescapedString);
+    s->cname = astr("~str~" + hashHex);
   }
 
   // String literal init function should be not created yet.
@@ -1721,6 +1733,13 @@ VarSymbol *new_BytesSymbol(const char *str) {
   *s->immediate = imm;
   bytesLiteralsHash.put(s->immediate, s);
 
+  if (fIdBasedMunging) {
+    // compute a SHA hash of the bytes to use as a string cname
+    std::string unescapedString = chpl::unescapeStringC(str);
+    std::string hashHex = hashUnescapedString(unescapedString);
+    s->cname = astr("~bstr~" + hashHex);
+  }
+
   // String literal init function should be not created yet.
   // Otherwise, the new bytes global will not be initialized.
   INT_ASSERT(initStringLiterals == NULL);
@@ -1755,25 +1774,21 @@ VarSymbol *new_CStringSymbol(const char *str) {
   s->immediate = new Immediate;
   *s->immediate = imm;
   uniqueConstantsHash.put(s->immediate, s);
+
+  if (fIdBasedMunging) {
+    // compute a SHA hash of the C string to use as a string cname
+    std::string unescapedString = chpl::unescapeStringC(str);
+    std::string hashHex = hashUnescapedString(unescapedString);
+    s->cname = astr("~cstr~" + hashHex);
+  }
+
   return s;
 }
 
 
 VarSymbol* new_BoolSymbol(bool b) {
-  Immediate imm;
-  imm.v_bool = b;
-  imm.const_kind = NUM_KIND_BOOL;
-  imm.num_index = BOOL_SIZE_SYS;
-  VarSymbol *s;
-  // doesn't use uniqueConstantsHash because new_BoolSymbol is only
-  // called to initialize dtBools[i]->defaultValue.
   // gTrue and gFalse are set up directly in initPrimitiveTypes.
-  PrimitiveType* dtRetType = dtBool;
-  s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
-  rootModule->block->insertAtTail(new DefExpr(s));
-  s->immediate = new Immediate;
-  *s->immediate = imm;
-  return s;
+  return b ? gTrue : gFalse;
 }
 
 VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size) {

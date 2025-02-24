@@ -1,8 +1,13 @@
 add_custom_target(ClangUnitTests)
-set_target_properties(ClangUnitTests PROPERTIES FOLDER "Clang tests")
+set_target_properties(ClangUnitTests PROPERTIES FOLDER "Clang/Tests")
 
 if(CLANG_BUILT_STANDALONE)
-  # LLVMTestingSupport library is needed for some of the unittests.
+  # LLVMTesting* libraries are needed for some of the unittests.
+  if (EXISTS ${LLVM_MAIN_SRC_DIR}/lib/Testing/Annotations
+      AND NOT TARGET LLVMTestingAnnotations)
+    add_subdirectory(${LLVM_MAIN_SRC_DIR}/lib/Testing/Annotations
+      lib/Testing/Annotations)
+  endif()
   if (EXISTS ${LLVM_MAIN_SRC_DIR}/lib/Testing/Support
       AND NOT TARGET LLVMTestingSupport)
     add_subdirectory(${LLVM_MAIN_SRC_DIR}/lib/Testing/Support
@@ -29,13 +34,14 @@ add_subdirectory(ASTMatchers)
 add_subdirectory(AST)
 add_subdirectory(CrossTU)
 add_subdirectory(Tooling)
-add_subdirectory(Introspection)
 add_subdirectory(Format)
 add_subdirectory(Frontend)
 add_subdirectory(Rewrite)
 add_subdirectory(Sema)
 add_subdirectory(CodeGen)
-add_subdirectory(Interpreter)
+if(HAVE_CLANG_REPL_SUPPORT)
+  add_subdirectory(Interpreter)
+endif()
 # FIXME: libclang unit tests are disabled on Windows due
 # to failures, mostly in libclang.VirtualFileOverlay_*.
 if(NOT WIN32 AND CLANG_TOOL_LIBCLANG_BUILD) 
@@ -44,4 +50,6 @@ endif()
 add_subdirectory(DirectoryWatcher)
 add_subdirectory(Rename)
 add_subdirectory(Index)
+add_subdirectory(InstallAPI)
 add_subdirectory(Serialization)
+add_subdirectory(Support)

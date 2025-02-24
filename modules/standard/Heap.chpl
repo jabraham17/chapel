@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,14 +28,13 @@
   * Querying the top element is O(1).
   * Initialization from an array is O(N).
 
-  The heap accepts a :ref:`comparator <comparators>` to determine how
-  elements are compared. The default comparator is `defaultComparator` and makes
-  a max-heap. In this case, ``top`` will return the greatest element in the
-  heap.
+  The heap accepts a :ref:`comparator <comparators>` to determine how elements
+  are compared. The default comparator is an instance of
+  :record:`~Sort.defaultComparator` and makes a max-heap. In this case, ``top``
+  will return the greatest element in the heap.
 
   If a ``reverseComparator`` is passed to ``init``,
   ``top`` will return the minimal element.
-
 */
 @unstable("The 'Heap' module is unstable")
 module Heap {
@@ -44,8 +43,16 @@ module Heap {
   private use List;
   private use IO;
 
-  public use Sort only defaultComparator, DefaultComparator,
-                       reverseComparator, ReverseComparator;
+  public use Sort only defaultComparator, reverseComparator;
+
+  // TODO: remove this module and its public use when the deprecations have been
+  // removed
+  pragma "ignore deprecated use"
+  private module HideDeprecatedReexport {
+    public use Sort only DefaultComparator, ReverseComparator;
+  }
+
+  public use HideDeprecatedReexport;
   private use Sort;
 
   // The locker is borrowed from List.chpl
@@ -132,12 +139,13 @@ module Heap {
 
       :arg eltType: The type of the elements
 
-      :arg comparator: The comparator to use
-
       :arg parSafe: If `true`, this heap will use parallel safe operations.
       :type parSafe: `param bool`
+
+      :arg comparator: The comparator to use
     */
-    proc init(type eltType, param parSafe = false, comparator: record = defaultComparator) {
+    proc init(type eltType, param parSafe = false,
+              comparator: record = new defaultComparator()) {
       _checkType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
@@ -298,7 +306,7 @@ module Heap {
     */
     proc push(const ref x: list(eltType)) {
       _enter();
-      for e in x do
+      for x do
         _push(x);
       _leave();
     }
@@ -335,6 +343,21 @@ module Heap {
       _heapify_down(0);
       _leave();
       return ret;
+    }
+
+    /*
+      Clear the contents of this heap.
+
+      .. warning::
+
+        Clearing the contents of this heap will invalidate all existing
+        references to the elements contained in this heap.
+    */
+    proc ref clear() {
+      on this {
+        _enter(); defer _leave();
+        _data.clear();
+      }
     }
 
     /*
@@ -375,18 +398,12 @@ module Heap {
     }
 
     /*
-      Write the contents of this heap to a channel in arbitrary order.
-
-      :arg ch: A channel to write to.
+      Write the contents of this heap to a ``fileWriter`` in arbitrary order.
     */
-    proc writeThis(ch: fileWriter) throws {
-      _enter();
-      ch.write(this._data);
-      _leave();
-    }
-    @chpldoc.nodoc
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      _enter();
+      writer.write(this._data);
+      _leave();
     }
   }
 
@@ -407,11 +424,15 @@ module Heap {
     :arg x: The list to initialize the heap from.
     :type x: `list(?t)`
 
+    :arg parSafe: If `true`, this heap will use parallel safe operations.
+    :type parSafe: `param bool`
+
     :arg comparator: The comparator to use
 
     :rtype: heap(t, comparator)
   */
-  proc createHeap(const ref x: list(?t), param parSafe: bool = false, comparator = defaultComparator) {
+  proc createHeap(const ref x: list(?t), param parSafe: bool = false,
+                  comparator: ? = new defaultComparator()) {
     var h = new heap(t, parSafe, comparator);
     h._commonInitFromIterable(x);
     return h;
@@ -423,11 +444,15 @@ module Heap {
     :arg x: The array to initialize the heap from.
     :type x: `[?d] ?t`
 
+    :arg parSafe: If `true`, this heap will use parallel safe operations.
+    :type parSafe: `param bool`
+
     :arg comparator: The comparator to use
 
     :rtype: heap(t, comparator)
   */
-  proc createHeap(const ref x: [?d] ?t, param parSafe: bool = false, comparator = defaultComparator) {
+  proc createHeap(const ref x: [?d] ?t, param parSafe: bool = false,
+                  comparator: ? = new defaultComparator()) {
     var h = new heap(t, parSafe, comparator);
     h._commonInitFromIterable(x);
     return h;

@@ -11,11 +11,8 @@
 #include "AArch64InstrInfo.h"
 #include "AArch64Subtarget.h"
 #include "AArch64TargetMachine.h"
-#include "llvm/ADT/DenseMap.h"
-#include "llvm/ADT/DepthFirstIterator.h"
+#include "llvm/ADT/APInt.h"
 #include "llvm/ADT/MapVector.h"
-#include "llvm/ADT/None.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Analysis/AliasAnalysis.h"
@@ -25,7 +22,7 @@
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Analysis/StackSafetyAnalysis.h"
-#include "llvm/Analysis/ValueTracking.h"
+#include "llvm/BinaryFormat/Dwarf.h"
 #include "llvm/CodeGen/LiveRegUnits.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/MachineFunction.h"
@@ -86,6 +83,26 @@ static cl::opt<size_t> ClMaxLifetimes(
     cl::ReallyHidden,
     cl::desc("How many lifetime ends to handle for a single alloca."),
     cl::Optional);
+
+// Mode for selecting how to insert frame record info into the stack ring
+// buffer.
+enum StackTaggingRecordStackHistoryMode {
+  // Do not record frame record info.
+  none,
+
+  // Insert instructions into the prologue for storing into the stack ring
+  // buffer directly.
+  instr,
+};
+
+static cl::opt<StackTaggingRecordStackHistoryMode> ClRecordStackHistory(
+    "stack-tagging-record-stack-history",
+    cl::desc("Record stack frames with tagged allocations in a thread-local "
+             "ring buffer"),
+    cl::values(clEnumVal(none, "Do not record stack ring history"),
+               clEnumVal(instr, "Insert instructions into the prologue for "
+                                "storing into the stack ring buffer")),
+    cl::Hidden, cl::init(none));
 
 static const Align kTagGranuleSize = Align(16);
 
@@ -306,8 +323,6 @@ public:
     initializeAArch64StackTaggingPass(*PassRegistry::getPassRegistry());
   }
 
-  bool isInterestingAlloca(const AllocaInst &AI);
-
   void tagAlloca(AllocaInst *AI, Instruction *InsertBefore, Value *Ptr,
                  uint64_t Size);
   void untagAlloca(AllocaInst *AI, Instruction *InsertBefore, uint64_t Size);
@@ -316,6 +331,7 @@ public:
                                    uint64_t Size, InitializerBuilder &IB);
 
   Instruction *insertBaseTaggedPointer(
+      const Module &M,
       const MapVector<AllocaInst *, memtag::AllocaInfo> &Allocas,
       const DominatorTree *DT);
   bool runOnFunction(Function &F) override;
@@ -383,8 +399,8 @@ Instruction *AArch64StackTagging::collectInitializers(Instruction *StartInst,
         break;
 
       // Check to see if this store is to a constant offset from the start ptr.
-      Optional<int64_t> Offset =
-          isPointerOffset(StartPtr, NextStore->getPointerOperand(), *DL);
+      std::optional<int64_t> Offset =
+          NextStore->getPointerOperand()->getPointerOffsetFrom(StartPtr, *DL);
       if (!Offset)
         break;
 
@@ -401,7 +417,8 @@ Instruction *AArch64StackTagging::collectInitializers(Instruction *StartInst,
         break;
 
       // Check to see if this store is to a constant offset from the start ptr.
-      Optional<int64_t> Offset = isPointerOffset(StartPtr, MSI->getDest(), *DL);
+      std::optional<int64_t> Offset =
+          MSI->getDest()->getPointerOffsetFrom(StartPtr, *DL);
       if (!Offset)
         break;
 
@@ -411,22 +428,6 @@ Instruction *AArch64StackTagging::collectInitializers(Instruction *StartInst,
     }
   }
   return LastInst;
-}
-
-bool AArch64StackTagging::isInterestingAlloca(const AllocaInst &AI) {
-  // FIXME: support dynamic allocas
-  bool IsInteresting =
-      AI.getAllocatedType()->isSized() && AI.isStaticAlloca() &&
-      // alloca() may be called with 0 size, ignore it.
-      *AI.getAllocationSizeInBits(*DL) > 0 &&
-      // inalloca allocas are not treated as static, and we don't want
-      // dynamic alloca instrumentation for them as well.
-      !AI.isUsedWithInAlloca() &&
-      // swifterror allocas are register promoted by ISel
-      !AI.isSwiftError() &&
-      // safe allocas are not interesting
-      !(SSI && SSI->isSafe(AI));
-  return IsInteresting;
 }
 
 void AArch64StackTagging::tagAlloca(AllocaInst *AI, Instruction *InsertBefore,
@@ -454,11 +455,12 @@ void AArch64StackTagging::tagAlloca(AllocaInst *AI, Instruction *InsertBefore,
 void AArch64StackTagging::untagAlloca(AllocaInst *AI, Instruction *InsertBefore,
                                       uint64_t Size) {
   IRBuilder<> IRB(InsertBefore);
-  IRB.CreateCall(SetTagFunc, {IRB.CreatePointerCast(AI, IRB.getInt8PtrTy()),
+  IRB.CreateCall(SetTagFunc, {IRB.CreatePointerCast(AI, IRB.getPtrTy()),
                               ConstantInt::get(IRB.getInt64Ty(), Size)});
 }
 
 Instruction *AArch64StackTagging::insertBaseTaggedPointer(
+    const Module &M,
     const MapVector<AllocaInst *, memtag::AllocaInfo> &AllocasToInstrument,
     const DominatorTree *DT) {
   BasicBlock *PrologueBB = nullptr;
@@ -480,6 +482,41 @@ Instruction *AArch64StackTagging::insertBaseTaggedPointer(
   Instruction *Base =
       IRB.CreateCall(IRG_SP, {Constant::getNullValue(IRB.getInt64Ty())});
   Base->setName("basetag");
+  auto TargetTriple = Triple(M.getTargetTriple());
+  // This is not a stable ABI for now, so only allow in dev builds with API
+  // level 10000.
+  // The ThreadLong format is the same as with HWASan, but the entries for
+  // stack MTE take two slots (16 bytes).
+  if (ClRecordStackHistory == instr && TargetTriple.isAndroid() &&
+      TargetTriple.isAArch64() && !TargetTriple.isAndroidVersionLT(10000) &&
+      !AllocasToInstrument.empty()) {
+    constexpr int StackMteSlot = -3;
+    constexpr uint64_t TagMask = 0xFULL << 56;
+
+    auto *IntptrTy = IRB.getIntPtrTy(M.getDataLayout());
+    Value *SlotPtr = memtag::getAndroidSlotPtr(IRB, StackMteSlot);
+    auto *ThreadLong = IRB.CreateLoad(IntptrTy, SlotPtr);
+    Value *FP = memtag::getFP(IRB);
+    Value *Tag = IRB.CreateAnd(IRB.CreatePtrToInt(Base, IntptrTy), TagMask);
+    Value *TaggedFP = IRB.CreateOr(FP, Tag);
+    Value *PC = memtag::getPC(TargetTriple, IRB);
+    Value *RecordPtr = IRB.CreateIntToPtr(ThreadLong, IRB.getPtrTy(0));
+    IRB.CreateStore(PC, RecordPtr);
+    IRB.CreateStore(TaggedFP, IRB.CreateConstGEP1_64(IntptrTy, RecordPtr, 1));
+    // Update the ring buffer. Top byte of ThreadLong defines the size of the
+    // buffer in pages, it must be a power of two, and the start of the buffer
+    // must be aligned by twice that much. Therefore wrap around of the ring
+    // buffer is simply Addr &= ~((ThreadLong >> 56) << 12).
+    // The use of AShr instead of LShr is due to
+    //   https://bugs.llvm.org/show_bug.cgi?id=39030
+    // Runtime library makes sure not to use the highest bit.
+    Value *WrapMask = IRB.CreateXor(
+        IRB.CreateShl(IRB.CreateAShr(ThreadLong, 56), 12, "", true, true),
+        ConstantInt::get(IntptrTy, (uint64_t)-1));
+    Value *ThreadLongNew = IRB.CreateAnd(
+        IRB.CreateAdd(ThreadLong, ConstantInt::get(IntptrTy, 16)), WrapMask);
+    IRB.CreateStore(ThreadLongNew, SlotPtr);
+  }
   return Base;
 }
 
@@ -491,12 +528,11 @@ bool AArch64StackTagging::runOnFunction(Function &Fn) {
   if (UseStackSafety)
     SSI = &getAnalysis<StackSafetyGlobalInfoWrapperPass>().getResult();
   F = &Fn;
-  DL = &Fn.getParent()->getDataLayout();
+  DL = &Fn.getDataLayout();
   if (MergeInit)
     AA = &getAnalysis<AAResultsWrapperPass>().getAAResults();
 
-  memtag::StackInfoBuilder SIB(
-      [this](const AllocaInst &AI) { return isInterestingAlloca(AI); });
+  memtag::StackInfoBuilder SIB(SSI);
   for (Instruction &I : instructions(F))
     SIB.visit(I);
   memtag::StackInfo &SInfo = SIB.get();
@@ -536,13 +572,13 @@ bool AArch64StackTagging::runOnFunction(Function &Fn) {
   SetTagFunc =
       Intrinsic::getDeclaration(F->getParent(), Intrinsic::aarch64_settag);
 
-  Instruction *Base = insertBaseTaggedPointer(SInfo.AllocasToInstrument, DT);
+  Instruction *Base =
+      insertBaseTaggedPointer(*Fn.getParent(), SInfo.AllocasToInstrument, DT);
 
   int NextTag = 0;
   for (auto &I : SInfo.AllocasToInstrument) {
     memtag::AllocaInfo &Info = I.second;
-    assert(Info.AI && isInterestingAlloca(*Info.AI));
-    TrackingVH<Instruction> OldAI = Info.AI;
+    assert(Info.AI && SIB.isInterestingAlloca(*Info.AI));
     memtag::alignAndPadAlloca(Info, kTagGranuleSize);
     AllocaInst *AI = Info.AI;
     int Tag = NextTag;
@@ -556,7 +592,10 @@ bool AArch64StackTagging::runOnFunction(Function &Fn) {
                               ConstantInt::get(IRB.getInt64Ty(), Tag)});
     if (Info.AI->hasName())
       TagPCall->setName(Info.AI->getName() + ".tag");
-    Info.AI->replaceAllUsesWith(TagPCall);
+    // Does not replace metadata, so we don't have to handle DbgVariableRecords.
+    Info.AI->replaceUsesWithIf(TagPCall, [&](const Use &U) {
+      return !memtag::isLifetimeIntrinsic(U.getUser());
+    });
     TagPCall->setOperand(0, Info.AI);
 
     // Calls to functions that may return twice (e.g. setjmp) confuse the
@@ -564,16 +603,16 @@ bool AArch64StackTagging::runOnFunction(Function &Fn) {
     // function return. Work around this by always untagging at every return
     // statement if return_twice functions are called.
     bool StandardLifetime =
+        !SInfo.CallsReturnTwice &&
         SInfo.UnrecognizedLifetimes.empty() &&
         memtag::isStandardLifetime(Info.LifetimeStart, Info.LifetimeEnd, DT, LI,
-                                   ClMaxLifetimes) &&
-        !SInfo.CallsReturnTwice;
+                                   ClMaxLifetimes);
     if (StandardLifetime) {
       IntrinsicInst *Start = Info.LifetimeStart[0];
       uint64_t Size =
           cast<ConstantInt>(Start->getArgOperand(0))->getZExtValue();
       Size = alignTo(Size, kTagGranuleSize);
-      tagAlloca(AI, Start->getNextNode(), Start->getArgOperand(1), Size);
+      tagAlloca(AI, Start->getNextNode(), TagPCall, Size);
 
       auto TagEnd = [&](Instruction *Node) { untagAlloca(AI, Node, Size); };
       if (!DT || !PDT ||
@@ -583,28 +622,26 @@ bool AArch64StackTagging::runOnFunction(Function &Fn) {
           End->eraseFromParent();
       }
     } else {
-      uint64_t Size = *Info.AI->getAllocationSizeInBits(*DL) / 8;
-      Value *Ptr = IRB.CreatePointerCast(TagPCall, IRB.getInt8PtrTy());
+      uint64_t Size = *Info.AI->getAllocationSize(*DL);
+      Value *Ptr = IRB.CreatePointerCast(TagPCall, IRB.getPtrTy());
       tagAlloca(AI, &*IRB.GetInsertPoint(), Ptr, Size);
-      for (auto &RI : SInfo.RetVec) {
+      for (auto *RI : SInfo.RetVec) {
         untagAlloca(AI, RI, Size);
       }
       // We may have inserted tag/untag outside of any lifetime interval.
       // Remove all lifetime intrinsics for this alloca.
-      for (auto &II : Info.LifetimeStart)
+      for (auto *II : Info.LifetimeStart)
         II->eraseFromParent();
-      for (auto &II : Info.LifetimeEnd)
+      for (auto *II : Info.LifetimeEnd)
         II->eraseFromParent();
     }
 
-    // Fixup debug intrinsics to point to the new alloca.
-    for (auto DVI : Info.DbgVariableIntrinsics)
-      DVI->replaceVariableLocationOp(OldAI, Info.AI);
+    memtag::annotateDebugRecords(Info, static_cast<unsigned long>(Tag));
   }
 
   // If we have instrumented at least one alloca, all unrecognized lifetime
   // intrinsics have to go.
-  for (auto &I : SInfo.UnrecognizedLifetimes)
+  for (auto *I : SInfo.UnrecognizedLifetimes)
     I->eraseFromParent();
 
   return true;

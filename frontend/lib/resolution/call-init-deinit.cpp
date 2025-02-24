@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,6 +22,7 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/ResolvedVisitor.h"
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/resolution/copy-elision.h"
@@ -132,8 +133,11 @@ struct CallInitDeinit : VarScopeVisitor {
   void handleReturn(const uast::Return* ast, RV& rv) override;
   void handleThrow(const uast::Throw* ast, RV& rv) override;
   void handleYield(const uast::Yield* ast, RV& rv) override;
-  void handleConditional(const Conditional* cond, RV& rv) override;
   void handleTry(const Try* t, RV& rv) override;
+  void handleDisjunction(const AstNode * node,
+                         VarFrame * currentFrame,
+                         const std::vector<VarFrame*>& frames,
+                         bool total, RV& rv) override;
   void handleScope(const AstNode* ast, RV& rv) override;
 };
 
@@ -158,7 +162,8 @@ static bool isValue(QualifiedType::Kind kind) {
           kind == QualifiedType::IN ||
           kind == QualifiedType::CONST_IN ||
           kind == QualifiedType::OUT ||
-          kind == QualifiedType::INOUT);
+          kind == QualifiedType::INOUT ||
+          kind == QualifiedType::INIT_RECEIVER);
 }
 static bool isValueOrParam(QualifiedType::Kind kind) {
   return isValue(kind) || kind == QualifiedType::PARAM;
@@ -256,6 +261,12 @@ void CallInitDeinit::checkUseOfDeinited(const AstNode* useAst, ID varId) {
   for (ssize_t i = n - 1; i >= 0; i--) {
     VarFrame* frame = scopeStack[i].get();
     if (frame->deinitedVars.count(varId) > 0) {
+      // For vars dead after a call, don't error for uses within that call.
+      if (frame->deinitedVars[varId] ==
+          parsing::idToParentId(context, useAst->id())) {
+        continue;
+      }
+
       // TODO: fix this error
       context->error(useAst, "use of dead / already deinited variable");
       break;
@@ -279,7 +290,7 @@ void CallInitDeinit::processDeinitsForReturn(const AstNode* atAst,
                                              ID skipVarId,
                                              RV& rv) {
   std::set<ID> initedAnyFrame;
-  std::set<ID> deinitedAnyFrame;
+  std::unordered_map<ID, ID> deinitedAnyFrame;
 
   ssize_t n = scopeStack.size();
 
@@ -296,7 +307,9 @@ void CallInitDeinit::processDeinitsForReturn(const AstNode* atAst,
   }
 
   // also count outOrInoutFormals as already deinited
-  deinitedAnyFrame.insert(outOrInoutFormals.begin(), outOrInoutFormals.end());
+  for (const auto& id : outOrInoutFormals) {
+    deinitedAnyFrame.emplace(id, ID());
+  }
 
   for (ssize_t i = n - 1; i >= 0; i--) {
     VarFrame* frame = scopeStack[i].get();
@@ -316,7 +329,7 @@ void CallInitDeinit::processDeinitsForReturn(const AstNode* atAst,
           resolveDeinit(atAst, varOrDeferId, type, rv);
         }
 
-        deinitedAnyFrame.insert(varOrDeferId);
+        deinitedAnyFrame.emplace(varOrDeferId, ID());
       }
     }
   }
@@ -348,56 +361,21 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
         recordInitializationOrder(parent, id);
       }
     }
-    for (const auto& id : frame->deinitedVars) {
-      if (frame->declaredVars.count(id) == 0) {
-        parent->deinitedVars.insert(id);
+    for (const auto& [declId, lastStmtId] : frame->deinitedVars) {
+      if (frame->declaredVars.count(declId) == 0) {
+        parent->deinitedVars.emplace(declId, lastStmtId);
       }
     }
   }
 }
 
-static bool isRecordLike(const Type* t) {
-  if (auto ct = t->toClassType()) {
-    auto decorator = ct->decorator();
-    // no action needed for 'borrowed' or 'unmanaged'
-    // (these should just default initialized to 'nil',
-    //  so nothing else needs to be resolved)
-    if (! (decorator.isBorrowed() || decorator.isUnmanaged())) {
-      return true;
-    }
-  } else if (t->isRecordType() || t->isUnionType()) {
-    return true;
-  }
-  // TODO: tuples?
-
-  return false;
-}
-
-static bool typeNeedsInitDeinitCall(const Type* t) {
-  if (t == nullptr || t->isUnknownType() || t->isErroneousType()) {
-    // can't do anything with these
-    return false;
-  } else if (t->isPrimitiveType() || t->isBuiltinType() || t->isCStringType() ||
-             t->isNilType() || t->isNothingType() || t->isVoidType()) {
-    // OK, we can always default initialize primitive numeric types,
-    // and as well we assume that for the non-generic builtin types
-    // e.g. TaskIdType.
-    // No need to resolve anything additional now.
-    return false;
-  } else if (t->isEnumType()) {
-    // OK, can default-initialize enums to first element
-    return false;
-  } else if (t->isFunctionType()) {
-    return false;
-  }
-
-  return isRecordLike(t);
-}
-
-
 void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
   // Type variables do not need default init.
   if (ast->storageKind() == Qualifier::TYPE) return;
+
+  if (isRef(ast->storageKind())) {
+    context->error(ast, "cannot default initialize references");
+  }
 
   ResolvedExpression& varRes = rv.byAst(ast);
   QualifiedType varType = varRes.type();
@@ -433,7 +411,7 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
     }
   }
 
-  if (!typeNeedsInitDeinitCall(vt)) {
+  if (!Type::needsInitDeinitCall(vt)) {
     // nothing to do here
   } else if (vt->isTupleType()) {
     // TODO: probably need to do something here, at least in some cases
@@ -450,6 +428,7 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
     // try to resolve 'init'
     // TODO: handle instantiations passing field types
     std::vector<CallInfoActual> actuals;
+    std::vector<const AstNode*> ignoredActualAsts;
     actuals.push_back(CallInfoActual(varType, USTR("this")));
     if (classType != nullptr && classType->manager() != nullptr) {
       // when default-initializing a shared C? or owned C?,
@@ -467,14 +446,8 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
           CallInfoActual(QualifiedType(QualifiedType::TYPE, t), chpl_t));
     } else if (compositeType != nullptr &&
                compositeType->instantiatedFromCompositeType() != nullptr) {
-      // pass generic type and param fields by the name
-      auto subs = compositeType->sortedSubstitutions();
-      for (const auto& pair : subs) {
-        const ID& id = pair.first;
-        const QualifiedType& qt = pair.second;
-        UniqueString fname = parsing::fieldIdToName(context, id);
-        actuals.push_back(CallInfoActual(qt, fname));
-      }
+      addExistingSubstitutionsAsActuals(context, compositeType, actuals,
+                                        ignoredActualAsts);
     }
 
     // Get the 'root' instantiation
@@ -491,18 +464,47 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
                         /* isParenless */ false,
                         std::move(actuals));
     const Scope* scope = scopeForId(context, ast->id());
-    auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
-    ResolvedExpression& opR = rv.byAst(ast);
-    resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
-                                          AssociatedAction::DEFAULT_INIT,
-                                          ast->id());
+    auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
+    auto c = resolver.resolveGeneratedCall(ast, &ci, &inScopes);
+    c.noteResult(&rv.byAst(ast), { { AssociatedAction::DEFAULT_INIT, ast->id() } });
   }
 }
 
 void CallInitDeinit::resolveAssign(const AstNode* ast,
                                    const QualifiedType& lhsType,
-                                   const QualifiedType& rhsType,
+                                   const QualifiedType& rhsTypeIn,
                                    RV& rv) {
+  VarFrame* frame = currentFrame();
+
+  auto rhsType = rhsTypeIn;
+  if (lhsType.isUnknown() || lhsType.isErroneousType() ||
+      rhsType.isUnknown() || rhsType.isErroneousType()) {
+    return;
+  }
+
+  if (auto call = ast->toOpCall()) {
+    if (call->op() == "=" && call->child(0)->isTuple()) {
+      // Tuple unpacking assignment, handled directly by Resolver
+      // (a, b, c) = foo();
+      return;
+    }
+  }
+  // In an 'if var' decl, resolve assign as though the RHS is non-nil.
+  // We'll verify it is at runtime.
+  if (auto conditional = frame->scopeAst->toConditional()) {
+    if (ast->id() == conditional->condition()->id()) {
+      if (auto ty = rhsType.type()) {
+        auto ct = ty->toClassType();
+        // Enforced during type resolution
+        CHPL_ASSERT(ct);
+
+        rhsType = QualifiedType(
+            rhsType.kind(),
+            ct->withDecorator(context, ct->decorator().addNonNil()));
+      }
+    }
+  }
+
   std::vector<CallInfoActual> actuals;
   actuals.push_back(CallInfoActual(lhsType, UniqueString()));
   actuals.push_back(CallInfoActual(rhsType, UniqueString()));
@@ -513,18 +515,17 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
-  auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
+  auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
+  auto c = resolver.resolveGeneratedCall(ast, &ci, &inScopes);
   ResolvedExpression& opR = rv.byAst(ast);
 
   auto op = ast->toOpCall();
   if (op != nullptr && op->op() == USTR("=")) {
     // if the syntax shows a '=' call, resolve that into the assign
-    resolver.handleResolvedCall(opR, ast, ci, c);
+    c.noteResult(&opR);
   } else {
     // otherwise, add an associated action
-    resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
-                                          AssociatedAction::ASSIGN,
-                                          ast->id());
+    c.noteResult(&opR, { { AssociatedAction::ASSIGN, ast->id() } });
   }
 }
 
@@ -534,7 +535,7 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
                                      const QualifiedType& rhsType,
                                      bool forMoveInit,
                                      RV& rv) {
-  if (!typeNeedsInitDeinitCall(lhsType.type())) {
+  if (!Type::needsInitDeinitCall(lhsType.type())) {
     // TODO: we could resolve it anyway
     return;
   }
@@ -549,7 +550,8 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
-  auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
+  auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
+  auto c = resolver.resolveGeneratedCall(ast, &ci, &inScopes);
 
   std::vector<const AstNode*> actualAsts;
   actualAsts.push_back(ast);
@@ -557,7 +559,7 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
   std::vector<Qualifier> intents;
   std::vector<QualifiedType> formalTypes;
 
-  computeActualFormalIntents(context, c.mostSpecific(), ci, actualAsts,
+  computeActualFormalIntents(context, c.result.mostSpecific(), ci, actualAsts,
                              intents, formalTypes);
 
   bool formalUsesInIntent = false;
@@ -587,7 +589,7 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
   if (lhsType.type() != rhsType.type()) {
     action = AssociatedAction::INIT_OTHER;
   }
-  resolver.handleResolvedAssociatedCall(opR, ast, ci, c, action, ast->id());
+  c.noteResult(&opR, { { action, ast->id() } });
 
   // If we were trying to move, but had to run an init= to change types,
   // and that init= did not accept its argument by 'in' intent, we need
@@ -605,7 +607,13 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
   if (isTypeParam(lhsType.kind())) {
     // OK, nothing else to do
   } else if (isValue(lhsType.kind()) && isValueOrParam(rhsType.kind())) {
-    if (lhsType.type() == rhsType.type()) {
+    // Accept if we can pass with only a subtype conversion
+    // (for passing non-nilable to nilable).
+    auto canPassResult = canPass(context, rhsType, lhsType);
+    if (canPassResult.passes() &&
+        (!canPassResult.converts() ||
+         canPassResult.conversionKind() ==
+             CanPassResult::ConversionKind::SUBTYPE)) {
       // Future TODO: might need to call something provided by the record
       // author to be a hook for move initialization across locales
       // (see issue #15676).
@@ -625,6 +633,8 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
                         rv);
       }
     }
+  } else if (isValue(lhsType.kind()) && (rhsType.isUnknown())) {
+    // don't do anything for move initialization of unknown types
   } else {
     CHPL_UNIMPL("value = copy init from ref");
   }
@@ -636,7 +646,7 @@ void CallInitDeinit::processInit(VarFrame* frame,
                                  const QualifiedType& rhsType,
                                  RV& rv) {
   if (lhsType.type() == rhsType.type() &&
-      !typeNeedsInitDeinitCall(lhsType.type())) {
+      !Type::needsInitDeinitCall(lhsType.type())) {
     // TODO: we should resolve it anyway
     return;
   }
@@ -676,17 +686,17 @@ void CallInitDeinit::processInit(VarFrame* frame,
 
       // The RHS must represent a variable that is now dead,
       // so note that in deinitedVars.
-      ID rhsId = refersToId(rhsAst, rv);
+      ID rhsDeclId = refersToId(rhsAst, rv);
       // copy elision with '=' should only apply to myVar = myOtherVar
-      CHPL_ASSERT(!rhsId.isEmpty());
-      frame->deinitedVars.insert(rhsId);
+      CHPL_ASSERT(!rhsDeclId.isEmpty());
+      frame->deinitedVars.emplace(rhsDeclId, ast->id());
     } else if (isCallProducingValue(rhsAst, rhsType, rv)) {
       // e.g. var x; x = callReturningValue();
       resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
     } else {
       // it is copy initialization, so use init= for records
       // and assign for other stuff
-      if (lhsType.type() != nullptr && isRecordLike(lhsType.type())) {
+      if (lhsType.type() != nullptr && lhsType.type()->isRecordLike()) {
         resolveCopyInit(ast, rhsAst,
                         lhsType, rhsType,
                         /* forMoveInit */ false,
@@ -705,7 +715,7 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
                                    RV& rv) {
 
   // nothing to do for 'int' etc
-  if (!typeNeedsInitDeinitCall(type.type())) {
+  if (!Type::needsInitDeinitCall(type.type())) {
     return;
   } else if (type.type()->isTupleType()) {
     // TODO: probably need to do something here, at least in some cases
@@ -713,16 +723,29 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
     return;
   }
 
+  QualifiedType deinitType = type;
+
+  // Deinit nilable class types as the corresponding non-nilable type, since we
+  // will have a runtime check to not call deinit on nil.
+  if (auto ct = type.type()->toClassType()) {
+    auto decorator = ct->decorator();
+    if (decorator.isNilable()) {
+      deinitType = QualifiedType(
+          type.kind(), ct->withDecorator(context, decorator.addNonNil()));
+    }
+  }
+
   std::vector<CallInfoActual> actuals;
-  actuals.push_back(CallInfoActual(type, USTR("this")));
+  actuals.push_back(CallInfoActual(deinitType, USTR("this")));
   auto ci = CallInfo (/* name */ USTR("deinit"),
-                      /* calledType */ type,
+                      /* calledType */ deinitType,
                       /* isMethodCall */ true,
                       /* hasQuestionArg */ false,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
-  auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
+  auto inScopes = CallScopeInfo::forNormalCall(scope, resolver.poiScope);
+  auto c = resolver.resolveGeneratedCall(ast, &ci, &inScopes);
 
   // Should we associate it with the current statement or the current block?
   const AstNode* assocAst = currentStatement();
@@ -731,17 +754,15 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
   }
 
   ResolvedExpression& opR = rv.byAst(assocAst);
-  resolver.handleResolvedAssociatedCall(opR, assocAst, ci, c,
-                                        AssociatedAction::DEINIT,
-                                        deinitedId);
+  c.noteResult(&opR, { { AssociatedAction::DEINIT, deinitedId } });
 }
 
 void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   VarFrame* frame = currentFrame();
 
   // check for use of deinited variables in type or init exprs
-  if (auto init = ast->initExpression()) {
-    processMentions(init, rv);
+  if (auto type = ast->typeExpression()) {
+    processMentions(type, rv);
   }
   if (auto init = ast->initExpression()) {
     processMentions(init, rv);
@@ -752,6 +773,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
 
   bool handledFormal = false;
   bool isCatchVariable = false;
+  bool isRefLoopIntent = false;
 
   if (ast->isFormal() || ast->isVarArgFormal()) {
 
@@ -789,6 +811,12 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     auto catchNode = parent->toCatch();
     CHPL_ASSERT(ast == catchNode->error());
     isCatchVariable = true;
+
+  // 'with ([const] ref x)' means to capture 'x' by ref, so no need to initialize it.
+  } else if (parent && parent->isWithClause()) {
+    if (isRef(ast->storageKind())) {
+      isRefLoopIntent = true;
+    }
   }
 
   if (handledFormal) {
@@ -812,8 +840,9 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     ID id = ast->id();
     frame->addToInitedVars(id);
     frame->localsAndDefers.push_back(id);
-  } else if (isCatchVariable) {
-    // initialized from the throw that activates this Catch
+  } else if (isCatchVariable || isRefLoopIntent) {
+    // initialized from the throw that activates this Catch, or implicitly with
+    // a reference to a variable in outer scope.
     ID id = ast->id();
     frame->addToInitedVars(id);
     frame->localsAndDefers.push_back(id);
@@ -861,10 +890,13 @@ void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
   // check for use of deinited variables
   processMentions(ast, rv);
 
+  bool isInit = splitInited;
+  isInit |= resolver.initResolver && resolver.initResolver->isInitPoint(ast);
+
   if (lhsType.isType() || lhsType.isParam()) {
     // these are basically 'move' initialization
     resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
-  } else if (splitInited) {
+  } else if (isInit) {
     processInit(frame, ast, lhsType, rhsType, rv);
   } else {
     // it is assignment, so resolve the '=' call
@@ -905,11 +937,19 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
   // check for use of deinited variables
   processMentions(actual, rv);
 
+  if (auto t = formalType.type()) {
+    if (auto ct = t->toClassType()) {
+      if (ct->decorator().isBorrowed()) return;
+    }
+  }
+
   // compute the actual type
   QualifiedType actualType = rv.byAst(actual).type();
 
   // is the copy for 'in' elided?
-  if (elidedCopyFromIds.count(actual->id()) > 0 && isValue(actualType.kind())) {
+  if (elidedCopyFromIds.count(actual->id()) > 0 &&
+      isValue(actualType.kind()) &&
+      Type::needsInitDeinitCall(actualType.type())) {
     // it is move initialization
     resolveMoveInit(actual, actual, formalType, actualType, rv);
 
@@ -918,7 +958,7 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
     ID actualId = refersToId(actual, rv);
     // copy elision should only apply to copies from variables
     CHPL_ASSERT(!actualId.isEmpty());
-    frame->deinitedVars.insert(actualId);
+    frame->deinitedVars.emplace(actualId, ast->id());
   } else {
     processInit(frame, actual, formalType, actualType, rv);
   }
@@ -964,7 +1004,7 @@ void CallInitDeinit::processReturnThrowYield(const uast::AstNode* ast, RV& rv) {
     if (copyElidesFromSkip) {
       // if it's a yield, we need to also mark the rhs ID variable dead
       VarFrame* frame = currentFrame();
-      frame->deinitedVars.insert(skipDeinitId);
+      frame->deinitedVars.emplace(skipDeinitId, ID());
 
     } else if (needsCopyOrConv) {
       QualifiedType fnRetType = returnOrYieldType();
@@ -993,25 +1033,6 @@ void CallInitDeinit::handleYield(const uast::Yield* ast, RV& rv) {
   processReturnThrowYield(ast, rv);
 }
 
-
-void CallInitDeinit::handleConditional(const Conditional* cond, RV& rv) {
-  // Any outer variables inited in the 'then' frame can be propagated up
-  VarFrame* frame = currentFrame();
-  VarFrame* parent = currentParentFrame();
-  VarFrame* thenFrame = currentThenFrame();
-  VarFrame* elseFrame = currentElseFrame();
-
-  // process end-of-block deinits in then/else blocks and then propagate
-  if (thenFrame && !thenFrame->returnsOrThrows) {
-    processDeinitsAndPropagate(thenFrame, frame, rv);
-  }
-  if (elseFrame && !elseFrame->returnsOrThrows) {
-    processDeinitsAndPropagate(elseFrame, frame, rv);
-  }
-
-  // propagate information out of Conditional itself
-  processDeinitsAndPropagate(frame, parent, rv);
-}
 void CallInitDeinit::handleTry(const Try* t, RV& rv) {
   VarFrame* frame = currentFrame();
   VarFrame* parent = currentParentFrame();
@@ -1027,12 +1048,27 @@ void CallInitDeinit::handleTry(const Try* t, RV& rv) {
   // propagate information out of the Try itself
   processDeinitsAndPropagate(frame, parent, rv);
 }
+
+void CallInitDeinit::handleDisjunction(const uast::AstNode * node,
+                                 VarFrame* currentFrame,
+                                 const std::vector<VarFrame*>& frames,
+                                 bool total, RV& rv) {
+
+  for (auto frame : frames) {
+    if(!frame->returnsOrThrows) {
+      processDeinitsAndPropagate(frame, currentFrame, rv);
+    }
+  }
+
+  //propagate out of the disjunction itself
+  processDeinitsAndPropagate(currentFrame, currentParentFrame(), rv);
+}
+
 void CallInitDeinit::handleScope(const AstNode* ast, RV& rv) {
   VarFrame* frame = currentFrame();
   VarFrame* parent = currentParentFrame();
   processDeinitsAndPropagate(frame, parent, rv);
 }
-
 
 void callInitDeinit(Resolver& resolver) {
   std::set<ID> splitInitedVars = computeSplitInits(resolver.context,
@@ -1051,9 +1087,16 @@ void callInitDeinit(Resolver& resolver) {
     symName = nd->name();
   }
 
-  CallInitDeinit uv(resolver.context, resolver,
-                    splitInitedVars, elidedCopyFromIds);
-  uv.process(resolver.symbol, resolver.byPostorder);
+  // TODO: Run this for module initializer code as well. Currently if enabled,
+  // it breaks a large number of dyno tests that have module-initializer code
+  // containing things we can't resolve default-init for yet, such as
+  // fully-defaulted generic types. Either adjust the tests to expect the errors
+  // for unsupported code, or add the support, then enable this on modules.
+  if (!resolver.symbol->isModule()) {
+    CallInitDeinit uv(resolver.context, resolver,
+                      splitInitedVars, elidedCopyFromIds);
+    uv.process(resolver.symbol, resolver.byPostorder);
+  }
 }
 
 

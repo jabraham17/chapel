@@ -3,7 +3,7 @@ export CHPL_MAKE_HOME=$(shell pwd)/..
 endif
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-ifdef CHPL_DEVELOPER
+ifneq (, $(call isTrue, $(CHPL_DEVELOPER)))
 DEBUG=1
 export DEBUG
 WARNINGS=1
@@ -29,7 +29,6 @@ clean: FORCE
 	cd llvm && $(MAKE) clean
 	cd qthread && $(MAKE) clean
 	cd re2 && $(MAKE) clean
-	cd fltk && $(MAKE) clean
 
 cleanall: FORCE
 	cd chpl-venv && $(MAKE) cleanall
@@ -42,7 +41,6 @@ cleanall: FORCE
 	cd llvm && $(MAKE) cleanall
 	cd qthread && $(MAKE) cleanall
 	cd re2 && $(MAKE) cleanall
-	cd fltk && $(MAKE) cleanall
 
 clobber: FORCE
 	cd chpl-venv && $(MAKE) clobber
@@ -55,7 +53,6 @@ clobber: FORCE
 	cd llvm && $(MAKE) clobber
 	cd qthread && $(MAKE) clobber
 	cd re2 && $(MAKE) clobber
-	cd fltk && $(MAKE) clobber
 
 depend:
 
@@ -88,13 +85,21 @@ chpldoc-venv: FORCE
 	cd chpl-venv && $(MAKE) chpldoc-venv
 
 c2chapel-venv: FORCE
-	cd chpl-venv && $(MAKE) c2chapel-venv
+	@if [ -z "$$CHPL_DONT_BUILD_C2CHAPEL_VENV" ]; then \
+	cd chpl-venv && $(MAKE) c2chapel-venv; \
+	fi
 
 chapel-py-venv: FORCE
 	cd chpl-venv && $(MAKE) chapel-py-venv
 
+cls-test-venv: FORCE
+	cd chpl-venv && $(MAKE) cls-test-venv
+
 chplcheck-venv: FORCE
 	cd chpl-venv && $(MAKE) chplcheck-venv
+
+chpl-language-server-venv: FORCE
+	cd chpl-venv && $(MAKE) chpl-language-server-venv
 
 # See gasnet/Makefile for explanation of the post-install step
 gasnet: $(GASNET_INSTALL_DIR)

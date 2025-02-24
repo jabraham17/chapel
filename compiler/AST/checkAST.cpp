@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -123,6 +123,7 @@ void checkPrimitives()
      case PRIM_IS_INSTANTIATION_ALLOW_VALUES:
      case PRIM_IS_PROPER_SUBTYPE:
      case PRIM_NEW:                 // new keyword
+     case PRIM_NEW_WITH_ALLOCATOR:
      case PRIM_ERROR:
      case PRIM_WARNING:
       if (resolved)

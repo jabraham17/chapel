@@ -1,35 +1,44 @@
 // Task Parallelism
 
 //
-// This primer illustrates Chapel's parallel tasking features,
+// This primer illustrates Chapel's task-parallel features,
 // namely the ``begin``, ``cobegin``, and ``coforall`` statements.
+// In Chapel, a `task` is a computation in the program that can,
+// and typically will, run in parallel with respect to other tasks.
+// These three statements are the only ways to create new tasks
+// within a Chapel program.
 
-config const n = 10; // Used for the coforall loop
+/*
+.. index::
+    single: begin
 
-// .. _primers-taskparallel-begin:
-//
-// Begin Statements
-// ----------------
-// The ``begin`` statement spawns a thread of execution that is independent
-// of the current (main) thread of execution.
+.. _primers-taskparallel-begin:
+
+Begin Statements
+----------------
+The ``begin`` statement creates a new parallel task that's independent
+of the original one encountering the ``begin``.
+*/
+
 writeln("1: ### The begin statement ###");
-
 begin writeln("1: output from spawned task");
 
-// The main thread of execution continues on to the next statement.
-// There is no guarantee as to which statement will execute first.
+// The original task continues on to the next statement.  In this
+// example, there is no guarantee which statement will execute first
+// since they can run in parallel and are not synchronized.
 writeln("1: output from main task");
 
 
+/*
+.. index::
+   single: cobegin
+.. _primers-taskparallel-cobegin:
 
-// .. _primers-taskparallel-cobegin:
-//
-// Cobegin Statements
-// ------------------
-// For more structured behavior, the ``cobegin`` statement can be used to
-// spawn a block of tasks, one for each statement.  Control continues
-// after the ``cobegin`` block, but only after all the tasks within the
-// ``cobegin`` block have completed.
+Cobegin Statements
+------------------
+For more structured behavior, the ``cobegin`` statement can be used to
+spawn a block of tasks, one for each statement.
+*/
 writeln("2: ### The cobegin statement ###");
 
 cobegin {
@@ -37,14 +46,19 @@ cobegin {
   writeln("2: output from spawned task 2");
 }
 
-// The output from within the ``cobegin`` statement will always precede the
-// following output from the main thread of execution.
+// The original task continues execution after the ``cobegin`` block,
+// but only after all the child tasks created by the ``cobegin`` block
+// have completed.  As a result, in this example, the output from
+// within the ``cobegin`` statement will always precede the following
+// output from the original task:
+
 writeln("2: output from main task");
 
 
-// If any ``begin`` statements are used within a ``cobegin`` statement,
-// the thread of execution does not wait for those ``begin`` statements
-// to complete.
+// If any ``begin`` statements are used within a ``cobegin``
+// statement's tasks, the original task does not wait for those
+// ``begin`` tasks to complete.  That is, the original task only waits
+// on the `cobegin`'s child tasks, not all of their descendent tasks.
 
 writeln("3: ### The cobegin statement with nested begin statements ###");
 
@@ -59,35 +73,45 @@ cobegin {
 writeln("3: output from main task");
 
 
+/*
+.. index::
+   single: coforall
+.. _primers-taskparallel-coforall:
 
-// .. _primers-taskparallel-coforall:
-//
-// Coforall Loops
-// --------------
-// Another more structured form of task parallelism is the
-// ``coforall`` loop.  This loop form is like a ``for`` loop in which
-// each iteration of the loop is executed by a distinct task.  Similar
-// to the ``cobegin`` statement, the main thread of execution does not
-// continue until the tasks created for each iteration have completed.
+Coforall Loops
+--------------
+Another structured form of task parallelism is the
+``coforall`` loop.  This loop form is like a ``for`` loop, except that
+each iteration of the loop is executed by a distinct task.  Similar
+to the ``cobegin`` statement, the original task does not
+continue until the tasks created for each iteration have completed.
+*/
 writeln("4: ### The coforall loop ###");
 
+config const n = 10;
+
 coforall i in 1..n {
-  writeln("4: output from spawned task 1 (iteration ", i, ")");
-  writeln("4: output from spawned task 2 (iteration ", i, ")");
+  writeln("4: output 1 from spawned task ", i);
+  writeln("4: output 2 from spawned task ", i);
 }
 
-// While the order of output within an iteration is deterministic (``1``
-// executes before ``2``), the order of output relative to other
-// iterations is not defined.  As with the ``cobegin`` statement, the output
-// from within the ``coforall`` loop will always precede the following
-// output.
+// While the statements within the loop body will execute in the
+// normal way (so in this case, the first ``writeln()`` will execute
+// before the second), the order of execution relative to other
+// iterations is undefined.
+
+// As with the ``cobegin`` statement, the original task will wait
+// until the ``coforall``'s child tasks have completed before
+// proceeding.  For this example, this means that all output from within
+// the ``coforall`` loop will precede the following output:
+
 writeln("4: output from main task");
 
 
 
-// As with the ``cobegin`` statement, any ``begin`` statements spawned within
-// a ``coforall`` loop are not guaranteed to be complete before the main
-// thread of execution continues.
+// Also like the ``cobegin`` statement, the original task will not wait
+// for any ``begin`` tasks spawned by its child tasks.
+
 writeln("5: ### The coforall loop with nested begin statements ###");
 coforall i in 1..n {
   begin writeln("5: output from spawned task 1 (iteration ", i, ")");
@@ -97,6 +121,8 @@ coforall i in 1..n {
 writeln("5: output from main task");
 
 /*
+.. index::
+   single: with; task intent
 .. _primers-taskparallel-task-intents:
 
 Task Intents
@@ -121,11 +147,16 @@ construct gets its own set of shadow variables, one per outer variable.
 
  - Each shadow variable is deallocated at the end of its task.
 
-The default argument intent (:ref:`The_Default_Intent`) is used by default.
-For most types this implies that the shadow variable is ``const``
-and cannot be modified from within the tasks.
-Synchronization variables (``sync`` and ``atomic``) are passed by
-reference (:ref:`primers-syncs`, :ref:`primers-atomics`).
+For most types, forall intents use the default argument intent
+(:ref:`The_Default_Intent`). For numeric types, this implies capturing the
+value of the outer variable by the time the task starts executing. Sync and
+atomic variables are passed by reference (:ref:`primers-syncs`,
+:ref:`primers-atomics`). Arrays infer their default intent based upon the
+declaration of the array. Mutable arrays (e.g. declared with ``var`` or passed
+by ``ref`` intent) have a default intent of ``ref``, while immutable arrays
+(e.g. declared with ``const`` or passed by ``const`` intent) have a default
+intent of ``const``. These defaults are described in :ref:`the language spec
+<Task_Intents>`.
 
 ``begin`` statements currently capture the values of outer variables
 of numeric types into their shadow variables at task creation time.

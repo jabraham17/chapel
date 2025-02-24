@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,7 +34,7 @@
      use BlockDist, PeekPoke;
 
      const space = {1..1000};
-     const D = space dmapped blockDist(space);
+     const D = space dmapped new blockDist(space);
      var A: [D] atomic int;
 
      forall i in D do

@@ -68,7 +68,7 @@ proc BlockArr.copyBtoC(B)
 		  __primitive("array_get",destr,
 			      B._value.locArr[dst].myElems._value.getDataIndex(schunkini)),
 		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
-		  dst, c_sublocid_any,
+		  dst, c_sublocid_none,
 		  __primitive("array_get",src,
 			      locArr[lid].myElems._value.getDataIndex(schunkini)),
 		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
@@ -129,7 +129,7 @@ proc  BlockArr.copyCtoB(B)
 		  __primitive("array_get",src,
                               locArr[lid].myElems._value.getDataIndex(schunkini)),
 		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
-		  dst, c_sublocid_any,
+		  dst, c_sublocid_none,
 		  __primitive("array_get",destr,
 			      B._value.locArr[dst].myElems._value.getDataIndex(schunkini)),
 		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
@@ -173,8 +173,8 @@ if (RedistStage>stages)
 var error:int=0;
 
 const Space = {1..n};
-const Dom = Space dmapped blockDist(boundingBox=Space);
-const DomC = Space dmapped cyclicDist(startIdx=(1));
+const Dom = Space dmapped new blockDist(boundingBox=Space);
+const DomC = Space dmapped new cyclicDist(startIdx=(1));
 
 var Dstages: domain(1,int)={1..stages};
 var AA,BB,CC,DD, XX:[Dom] real;

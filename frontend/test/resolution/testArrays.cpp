@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -18,7 +18,6 @@
  */
 
 #include "test-resolution.h"
-#include "test-minimal-modules.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
@@ -33,18 +32,13 @@
 // - this[] access
 // - Slices
 
-static QualifiedType findVarType(const Module* m,
-                                 const ResolutionResultByPostorderID& rr,
-                                 std::string name) {
-  const Variable* var = findOnlyNamed(m, name)->toVariable();
-  assert(var != nullptr);
-  return rr.byAst(var).type();
-}
-
 static void testArray(std::string domainType,
                       std::string eltType) {
-  Context ctx;
-  Context* context = &ctx;
+  std::string arrayText;
+  arrayText += "[" + domainType + "] " + eltType;
+  printf("Testing: %s\n", arrayText.c_str());
+
+  Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   // a different element type from the one we were given
@@ -53,11 +47,8 @@ static void testArray(std::string domainType,
     altElt = "string";
   }
 
-  std::string program = DomainModule + ArrayModule +
-R"""(
+  std::string program = R"""(
 module M {
-  use ChapelArray;
-  
   var d : )""" + domainType + R"""(;
   type eltType = )""" + eltType + R"""(;
 
@@ -94,7 +85,7 @@ module M {
   setFileText(context, path, std::move(program));
 
   const ModuleVec& vec = parseToplevel(context, path);
-  const Module* m = vec[2]; 
+  const Module* m = vec[0];
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
@@ -137,18 +128,18 @@ module M {
     assert(call->byAst(ETGood).type().type() == AType.type());
   }
 
-  assert(guard.errors().size() == 0);
-
-  std::string arrayText;
-  arrayText += "[" + domainType + "] " + eltType;
-  printf("Success: %s\n", arrayText.c_str());
+  assert(guard.realizeErrors() == 0);
 }
 
 int main() {
+  // rectangular
   testArray("domain(1)", "int");
   testArray("domain(1)", "string");
   testArray("domain(2)", "int");
+
+  // associative
   testArray("domain(int)", "int");
+  testArray("domain(int, true)", "int");
 
   return 0;
 }

@@ -5,7 +5,7 @@ use VisualDebug;
 // Use standard modules for vector and matrix Norms, Random numbers
 // and Timing routines
 //
-use LinearAlgebra, NPBRandom, Time;
+use LinearAlgebra, Random, Time;
 
 //
 // Use the user module for computing HPCC problem sizes
@@ -42,8 +42,7 @@ config const epsilon = 2.0e-15;
 // pseudo-random seed (based on the clock) or a fixed seed; and to
 // specify the fixed seed explicitly
 //
-config const useRandomSeed = true,
-             seed = if useRandomSeed then oddTimeSeed() else 31415;
+config const useRandomSeed = true;
 
 //
 // Configuration constants to control what's printed -- benchmark
@@ -78,7 +77,7 @@ proc main() {
   // rows and its low column bound.
   //
   const MatVectSpace: domain(2)
-    dmapped dimensionalDist2D(targetLocales,
+    dmapped new dimensionalDist2D(targetLocales,
                               new BlockCyclicDim(gridRows, lowIdx=1, blkSize),
                               new BlockCyclicDim(gridCols, lowIdx=1, blkSize))
                     = {1..n, 1..n+1},
@@ -217,7 +216,7 @@ proc schurComplement(ref Ab: [?AbD] elemType, AD: domain(?), BD: domain(?), Rest
 //
 proc replicateD1(Ab, BD) {
   const replBD = {1..blkSize, 1..n+1}
-    dmapped dimensionalDist2D(targetLocales,
+    dmapped new dimensionalDist2D(targetLocales,
                               new ReplicatedDim(gridRows),
                               new BlockCyclicDim(gridCols, lowIdx=1, blkSize));
   var replB: [replBD] elemType;
@@ -234,7 +233,7 @@ proc replicateD1(Ab, BD) {
 //
 proc replicateD2(Ab, AD) {
   const replAD = {1..n, 1..blkSize}
-    dmapped dimensionalDist2D(targetLocales,
+    dmapped new dimensionalDist2D(targetLocales,
                               new BlockCyclicDim(gridRows, lowIdx=1, blkSize),
                               new ReplicatedDim(gridCols));
   var replA: [replAD] elemType;
@@ -367,7 +366,7 @@ proc printConfiguration() {
 // it to be in the range -1.0..1.0
 //
 proc initAB(ref Ab: [] elemType) {
-  fillRandom(Ab, seed);
+  if useRandomSeed then fillRandom(Ab); else fillRandom(Ab, 31415);
   Ab = Ab * 2.0 - 1.0;
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -68,9 +68,9 @@ bool       isTupleContainingAnyReferences(Type* t);
 void       ensureEnumTypeResolved(EnumType* etype);
 
 bool       tryingToResolve();
-
 void       resolveFnForCall(FnSymbol* fn, CallExpr* call);
 FnSymbol*  tryResolveFunction(FnSymbol* fn);
+void       printCallstackForLastError();
 
 bool       canInstantiate(Type* actualType, Type* formalType);
 
@@ -167,6 +167,7 @@ void convertFieldsOfRecordThis(FnSymbol* fn);
 // forall intents
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
 void  resolveForallStmts2();
+bool shouldReplaceForLoopWithForall(ForLoop *forLoop);
 Expr* replaceForWithForallIfNeeded(ForLoop* forLoop);
 void  setReduceSVars(ShadowVarSymbol*& PRP, ShadowVarSymbol*& PAS,
                      ShadowVarSymbol*& RP, ShadowVarSymbol* AS);
@@ -262,6 +263,7 @@ void      makeRefType(Type* type);
 // FnSymbol changes
 void      insertFormalTemps(FnSymbol* fn);
 void      ensureInMethodList(FnSymbol* fn);
+void      setReturnAndReturnSymbolType(FnSymbol* fn, Type* retType);
 
 
 bool      hasAutoCopyForType(Type* type);
@@ -302,8 +304,9 @@ void resolveNormalCallCompilerWarningStuff(CallExpr* call, FnSymbol* resolvedFn)
 
 void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs);
 
-void warnForIntUintConversion(BaseAST* context, Type* formalType,
-                              Type* actualType, Symbol* actual);
+// warn for some int -> uint and small int -> real
+void warnForSomeNumericConversions(BaseAST* context, Type* formalType,
+                                   Type* actualType, Symbol* actual);
 
 void lvalueCheck(CallExpr* call);
 
@@ -408,6 +411,19 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
 void startGenerousResolutionForErrors();
 bool inGenerousResolutionForErrors();
 void stopGenerousResolutionForErrors();
+
+// Indicates if there has been an error since declaring a NewErrorRecorder.
+// Implements a stack discipline.
+extern bool newErrorRecord;
+class NewErrorRecorder {
+  bool prevRecord;
+public:
+  NewErrorRecorder(): prevRecord(newErrorRecord) { newErrorRecord = false; }
+  ~NewErrorRecorder() { newErrorRecord = this->prevRecord; }
+};
+
+static inline void recordNewCompilationError() { newErrorRecord = true; }
+static inline bool seenNewCompilationError() { return newErrorRecord; }
 
 // In chpl__initCopy etc we have a definedConst argument. This argument can be
 // at different places in the function signature. In various places, we call the

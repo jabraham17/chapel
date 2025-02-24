@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -47,6 +47,7 @@ extern "C" {
 #define OFI_ALL_DEBUGS(m)                                               \
   m(CFG,                    "config: fabric resources used")            \
   m(CFG_AV,                 "config: address vectors")                  \
+  m(CFG_AMO,                "config: AMOs")                             \
   m(PROV,                   "provider: selection")                      \
   m(PROV_HINTS,             "provider: hints")                          \
   m(PROV_ALL,               "provider: all matching")                   \
@@ -234,6 +235,15 @@ extern int chpl_comm_ofi_abort_on_error;
         INTERNAL_ERROR_V("sys_memalign(%#zx, %#zx): out of memory",     \
                          (size_t) (a), (size_t) (s));                   \
       }                                                                 \
+    } while (0)
+
+#define CHK_SYS_MMAP(p, sz, prot, flags, fd, off)                              \
+    do {                                                                       \
+      if((p = mmap(NULL, (sz), (prot), (flags), (fd), (off))) == MAP_FAILED) { \
+        INTERNAL_ERROR_V("mmap(NULL, %#zx, %#zx, %#zx, %d, %d): %s",           \
+                         (size_t)(sz), (size_t)(prot), (size_t)(flags),        \
+                         (int)(fd), (int)(off), strerror(errno));              \
+      }                                                                        \
     } while (0)
 
 #define CHK_SYS_FREE(p)                                                 \

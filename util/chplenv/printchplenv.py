@@ -9,43 +9,51 @@ filtered [filter].
 The default [content] provides user-facing variables.
 
 Options:
-  -h, --help    Show this help message and exit
+  -h, --help       Show this help message and exit
 
   [shortcut]
-  --all         Shortcut for --compiler --runtime --launcher, includes defaults
+  --all            Shortcut for --compiler --runtime --launcher, includes defaults
 
   [content]
-  --compiler    Select variables describing the configuration of the compiler
-  --runtime     Select variables describing the configuration of the runtime
-  --launcher    Select variables describing the configuration of the launcher
-  --internal    Select additional variables used during builds
-                 this flag is incompatible with [format]: --path
+  --compiler       Select variables describing the configuration of the compiler
+  --runtime        Select variables describing the configuration of the runtime
+  --launcher       Select variables describing the configuration of the launcher
+  --internal       Select additional variables used during builds
+                    this flag is incompatible with [format]: --path
 
   [filter]
-  --[no-]tidy   (default) [don't] Omit sub-variables irrelevant to the current
-                 configuration
-  --anonymize   Omit machine specific details, script location, and CHPL_HOME
-  --overrides   Omit variables that have not been user supplied via environment
-                 or chplconfig
-  --only-path   Omit variables that do not contibute to the build path
+  --[no-]tidy      (default) [don't] Omit sub-variables irrelevant to the current
+                    configuration
+  --anonymize      Omit machine specific details, script location, and CHPL_HOME
+  --overrides      Omit variables that have not been user supplied via environment
+                    or chplconfig
+  --only-path      Omit variables that do not contibute to the build path
+  --only=VARS      Print only the variables listed in VARS, separated by commas.
 
   [format]
-  --pretty      (default) Print variables in format: CHPL_KEY: VALUE
-                 indicating which options are set by environment variables (*)
-                 and which are set by configuration files (+)
-  --simple      Print variables in format: CHPL_KEY=VALUE
-                 output is compatible with chplconfig format
-  --cmake       Print variables in format: CHPL_KEY VALUE with quotes stripped
-                 from values. Output is compatible with cmake format
-  --make        Print variables in format: CHPL_MAKE_KEY=VALUE
-  --path        Print variables in format: VALUE1/VALUE2/...
-                 this flag always excludes CHPL_HOME and CHPL_MAKE
+  --pretty         (default) Print variables in format: CHPL_KEY: VALUE
+                    indicating which options are set by environment variables (*)
+                    and which are set by configuration files (+)
+  --simple         Print variables in format: CHPL_KEY=VALUE
+                    output is compatible with chplconfig format
+  --cmake          Print variables in format: CHPL_KEY VALUE with quotes stripped
+                    from values. Output is compatible with cmake format
+  --make           Print variables in format: CHPL_MAKE_KEY=VALUE
+  --path           Print variables in format: VALUE1/VALUE2/...
+                    this flag always excludes CHPL_HOME and CHPL_MAKE
+  --bash           Print variables in format: export CHPL_KEY=VALUE
+  --csh            Print variables in format: setenv CHPL_KEY VALUE
+  --value          Print only the values of the variables
+
+  [misc]
+  --ignore-errors  Continue processing even if an error occurs
 """
 
 from collections import namedtuple
 from functools import partial
 import optparse
 import os
+import re
 import unittest
 from sys import stdout, path
 
@@ -93,31 +101,35 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_TARGET_BACKEND_CPU', INTERNAL),
     ChapelEnv('CHPL_LOCALE_MODEL', RUNTIME | LAUNCHER | DEFAULT, 'loc'),
     ChapelEnv('  CHPL_GPU', RUNTIME | DEFAULT, 'gpu'),
+    ChapelEnv('  CHPL_GPU_SDK_VERSION', RUNTIME, 'gpu_vers'),
     ChapelEnv('  CHPL_GPU_ARCH', INTERNAL),
-    ChapelEnv('  CHPL_GPU_MEM_STRATEGY', RUNTIME , 'gpu_mem' ),
+    ChapelEnv('  CHPL_GPU_MEM_STRATEGY', RUNTIME , 'gpu_mem'),
     ChapelEnv('  CHPL_CUDA_PATH', INTERNAL),
     ChapelEnv('  CHPL_ROCM_PATH', INTERNAL),
     ChapelEnv('  CHPL_CUDA_LIBDEVICE_PATH', INTERNAL),
+    ChapelEnv('  CHPL_ROCM_LLVM_PATH', INTERNAL),
+    ChapelEnv('  CHPL_ROCM_AMDGCN_PATH', INTERNAL),
     ChapelEnv('CHPL_COMM', RUNTIME | LAUNCHER | DEFAULT, 'comm'),
     ChapelEnv('  CHPL_COMM_SUBSTRATE', RUNTIME | LAUNCHER | DEFAULT),
     ChapelEnv('  CHPL_GASNET_SEGMENT', RUNTIME | LAUNCHER | DEFAULT),
-    ChapelEnv('  CHPL_GASNET_VERSION', RUNTIME | LAUNCHER),
     ChapelEnv('  CHPL_LIBFABRIC', RUNTIME | INTERNAL | DEFAULT),
+    ChapelEnv('  CHPL_COMM_OFI_OOB', RUNTIME | INTERNAL | DEFAULT),
     ChapelEnv('CHPL_TASKS', RUNTIME | LAUNCHER | DEFAULT, 'tasks'),
     ChapelEnv('CHPL_LAUNCHER', LAUNCHER | DEFAULT, 'launch'),
     ChapelEnv('CHPL_TIMERS', RUNTIME | LAUNCHER | DEFAULT, 'tmr'),
     ChapelEnv('CHPL_UNWIND', RUNTIME | LAUNCHER | DEFAULT, 'unwind'),
     ChapelEnv('CHPL_HOST_MEM', COMPILER, 'hostmem'),
-    ChapelEnv('  CHPL_HOST_JEMALLOC', INTERNAL, 'jemalloc'),
-    ChapelEnv('CHPL_MEM', RUNTIME | LAUNCHER | DEFAULT, 'mem'),
-    ChapelEnv('CHPL_TARGET_MEM', INTERNAL, 'mem'),
-    ChapelEnv('  CHPL_TARGET_JEMALLOC', INTERNAL, 'jemalloc'),
+    ChapelEnv('  CHPL_HOST_JEMALLOC', RUNTIME | NOPATH, 'hostjemalloc'),
+    ChapelEnv('CHPL_MEM', INTERNAL, 'mem'), # deprecated and will be removed
+    ChapelEnv('CHPL_TARGET_MEM', RUNTIME | LAUNCHER | DEFAULT, 'mem'),
+    ChapelEnv('  CHPL_TARGET_JEMALLOC', RUNTIME | NOPATH, 'tgtjemalloc'),
     ChapelEnv('CHPL_MAKE', INTERNAL, 'make'),
     ChapelEnv('CHPL_ATOMICS', RUNTIME | LAUNCHER | DEFAULT, 'atomics'),
     ChapelEnv('  CHPL_NETWORK_ATOMICS', INTERNAL | DEFAULT),
     ChapelEnv('CHPL_GMP', INTERNAL | DEFAULT, 'gmp'),
     ChapelEnv('  CHPL_GMP_IS_OVERRIDDEN', INTERNAL),
     ChapelEnv('CHPL_HWLOC', RUNTIME | DEFAULT, 'hwloc'),
+    ChapelEnv('  CHPL_HWLOC_PCI', RUNTIME | INTERNAL, 'pci'),
     ChapelEnv('CHPL_RE2', RUNTIME | DEFAULT, 're2'),
     ChapelEnv('  CHPL_RE2_IS_OVERRIDDEN', INTERNAL),
     ChapelEnv('CHPL_LLVM', COMPILER | DEFAULT, 'llvm'),
@@ -192,19 +204,22 @@ def compute_all_values():
 
     ENV_VALS['CHPL_LOCALE_MODEL'] = chpl_locale_model.get()
     ENV_VALS['  CHPL_GPU'] = chpl_gpu.get()
+    ENV_VALS['  CHPL_GPU_SDK_VERSION'] = chpl_gpu.get_sdk_version()
     ENV_VALS['  CHPL_CUDA_LIBDEVICE_PATH'] = chpl_gpu.get_cuda_libdevice_path()
+    ENV_VALS['  CHPL_ROCM_LLVM_PATH'] = chpl_gpu.get_rocm_llvm_path()
+    ENV_VALS['  CHPL_ROCM_AMDGCN_PATH'] = chpl_gpu.get_rocm_amdgcn_path()
     ENV_VALS['  CHPL_GPU_MEM_STRATEGY'] = chpl_gpu.get_gpu_mem_strategy()
     ENV_VALS['CHPL_COMM'] = chpl_comm.get()
     ENV_VALS['  CHPL_COMM_SUBSTRATE'] = chpl_comm_substrate.get()
     ENV_VALS['  CHPL_GASNET_SEGMENT'] = chpl_comm_segment.get()
-    ENV_VALS['  CHPL_GASNET_VERSION'] = chpl_gasnet.get_version()
     ENV_VALS['  CHPL_LIBFABRIC'] = chpl_libfabric.get()
+    ENV_VALS['  CHPL_COMM_OFI_OOB'] = chpl_comm_ofi_oob.get()
     ENV_VALS['CHPL_TASKS'] = chpl_tasks.get()
     ENV_VALS['CHPL_LAUNCHER'] = chpl_launcher.get()
     ENV_VALS['CHPL_TIMERS'] = chpl_timers.get()
     ENV_VALS['CHPL_UNWIND'] = chpl_unwind.get()
     ENV_VALS['CHPL_HOST_MEM'] = chpl_mem.get('host')
-    ENV_VALS['CHPL_MEM'] = chpl_mem.get('target')
+    ENV_VALS['CHPL_TARGET_MEM'] = chpl_mem.get('target')
     ENV_VALS['  CHPL_HOST_JEMALLOC'] = chpl_jemalloc.get('host')
     ENV_VALS['  CHPL_TARGET_JEMALLOC'] = chpl_jemalloc.get('target')
     ENV_VALS['CHPL_MAKE'] = chpl_make.get()
@@ -213,6 +228,7 @@ def compute_all_values():
     ENV_VALS['CHPL_GMP'] = chpl_gmp.get()
     ENV_VALS['  CHPL_GMP_IS_OVERRIDDEN'] = chpl_gmp.is_overridden()
     ENV_VALS['CHPL_HWLOC'] = chpl_hwloc.get()
+    ENV_VALS['  CHPL_HWLOC_PCI'] = chpl_hwloc_pci.get()
     ENV_VALS['CHPL_RE2'] = chpl_re2.get()
     ENV_VALS['  CHPL_RE2_IS_OVERRIDDEN'] = chpl_re2.is_overridden()
     ENV_VALS['CHPL_LLVM'] = chpl_llvm.get()
@@ -250,7 +266,7 @@ def compute_internal_values():
     ENV_VALS['CHPL_TARGET_BACKEND_CPU'] = backend_info.cpu
     ENV_VALS['  CHPL_LLVM_TARGET_CPU'] = chpl_cpu.get_llvm_target_cpu().cpu
 
-    ENV_VALS['CHPL_TARGET_MEM'] = chpl_mem.get('target')
+    ENV_VALS['CHPL_MEM'] = chpl_mem.get('target')
     ENV_VALS['CHPL_RUNTIME_SUBDIR'] = printchplenv(set(['runtime']), print_format='path').rstrip('\n')
     ENV_VALS['CHPL_LAUNCHER_SUBDIR'] = printchplenv(set(['launcher']), print_format='path').rstrip('\n')
     ENV_VALS['CHPL_COMPILER_SUBDIR'] = printchplenv(set(['compiler']), print_format='path').rstrip('\n')
@@ -304,6 +320,7 @@ def compute_internal_values():
     ENV_VALS['  CHPL_ROCM_PATH'] = chpl_gpu.get_sdk_path("amd")
 
 
+
 """Return non-empty string if var is set via environment or chplconfig"""
 def user_set(env):
     env_stripped = env.strip()
@@ -330,14 +347,17 @@ def filter_tidy(chpl_env):
     llvm = ENV_VALS['CHPL_LLVM']
     locale = ENV_VALS['CHPL_LOCALE_MODEL']
     gpu = ENV_VALS['  CHPL_GPU']
+    host_mem = ENV_VALS['CHPL_HOST_MEM']
+    tgt_mem = ENV_VALS['CHPL_TARGET_MEM']
+    hwloc = ENV_VALS['CHPL_HWLOC']
 
     if chpl_env.name == '  CHPL_COMM_SUBSTRATE':
         return comm == 'gasnet'
     elif chpl_env.name == '  CHPL_GASNET_SEGMENT':
         return comm == 'gasnet'
-    elif chpl_env.name == '  CHPL_GASNET_VERSION':
-        return comm == 'gasnet'
     elif chpl_env.name == '  CHPL_LIBFABRIC':
+        return comm == 'ofi'
+    elif chpl_env.name == '  CHPL_COMM_OFI_OOB':
         return comm == 'ofi'
     elif chpl_env.name == '  CHPL_NETWORK_ATOMICS':
         return comm != 'none'
@@ -349,18 +369,50 @@ def filter_tidy(chpl_env):
         return gpu == 'nvidia'
     elif chpl_env.name == '  CHPL_CUDA_LIBDEVICE_PATH':
         return gpu == 'nvidia'
+    elif chpl_env.name == '  CHPL_ROCM_LLVM_PATH':
+        return gpu == 'amd'
+    elif chpl_env.name == '  CHPL_ROCM_AMDGCN_PATH':
+        return gpu == 'amd'
     elif chpl_env.name == '  CHPL_ROCM_PATH':
         return gpu == 'amd'
     elif chpl_env.name == '  CHPL_GPU_ARCH':
         return gpu == 'nvidia' or gpu == 'amd'
+    elif chpl_env.name == '  CHPL_GPU_SDK_VERSION':
+        return gpu != 'none'
+    elif chpl_env.name == '  CHPL_HOST_JEMALLOC':
+        return host_mem == 'jemalloc'
+    elif chpl_env.name == '  CHPL_TARGET_JEMALLOC':
+        return tgt_mem == 'jemalloc'
+    elif chpl_env.name == '  CHPL_HWLOC_PCI':
+        return hwloc == 'bundled'
     return True
 
+
+"""Filter out all variables except the one requested"""
+def _filter_only(chpl_env, only):
+    return chpl_env.name.strip() in only
 
 """Filter variables that are not selected in contents
 Requires a content argument via functools.partial
 """
 def _filter_content(chpl_env, contents=None):
     return chpl_env.content.intersection(contents)
+
+
+"""Quote and/or escape spaces and [some] special symbols in 'value',
+for use in a shell.
+"""
+def forShell(value):
+    # For simplicity, just wrap 'value' in single quotes, when needed.
+    # TODO: also handle single quotes occurring in 'value'.
+    # needEscapingRE is the RE that has the following symbols within []:
+    # \ " SPACE \t \n \r \f \v ~ ` # $ & * | ; " < > ? ! ( ) [ ] { }
+    needEscapingRE = "[\\\"" + \
+      r" \t\n\r\f\v\~\`\#\$\&\*\|\;\"\<\>\?\!\(\)\[\]\{\}]"
+    if re.search(needEscapingRE, value):
+        return "'" + value + "'"
+    else:
+        return value
 
 
 """Return string to be printed for a given variable and print_format
@@ -384,16 +436,22 @@ def _print_var(key, value, print_format=None, shortname=None):
         else:
             ret = "{0}".format(value)
         return ret + '/'
+    elif print_format == 'bash':
+        return "export {0}={1}\n".format(key_stripped, forShell(value))
+    elif print_format == 'csh':
+        return "setenv {0} {1}\n".format(key_stripped, forShell(value))
+    elif print_format == 'value':
+        return "{0}\n".format(value)
     else:
         raise ValueError("Invalid format '{0}'".format(print_format))
 
 
 """Return a string that contains the Chapel configuration variable info"""
-def printchplenv(contents, print_filters=None, print_format='pretty'):
+def printchplenv(contents, print_filters=None, print_format='pretty', only=None):
     global CHPL_ENVS
 
     if print_filters is None:
-        print_filters = ['tidy']
+        print_filters = set(['tidy'])
 
     # Error checking for external python codes calling printchplenv function
     if not ENV_VALS.items:
@@ -405,17 +463,20 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
 
     envs = filter(filter_content, CHPL_ENVS)
 
-    # --path or --only-path -- skip variables marked NOPATH
-    if print_format == 'path' or 'only-path' in print_filters:
-        envs = filter(filter_path, envs)
+    if only:
+        envs = filter(partial(_filter_only, only=only), envs)
+    else:
+        # --path or --only-path -- skip variables marked NOPATH
+        if print_format == 'path' or 'only-path' in print_filters:
+            envs = filter(filter_path, envs)
 
-    # --overrides
-    if 'overrides' in print_filters:
-        envs = filter(filter_overrides, envs)
+        # --overrides
+        if 'overrides' in print_filters:
+            envs = filter(filter_overrides, envs)
 
-    # --tidy
-    if 'tidy' in print_filters:
-        envs = filter(filter_tidy, envs)
+        # --tidy
+        if 'tidy' in print_filters:
+            envs = filter(filter_tidy, envs)
 
     # Specialize _print_var to use print_format as default arg
     print_var = partial(_print_var, print_format=print_format)
@@ -435,19 +496,20 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
 
     # Print environment variables and their values
     for env in envs:
-        value = ENV_VALS[env.name]
+        name = env.name
+        value = ENV_VALS[name]
         if print_format == 'path':
-            if env.name == 'CHPL_TARGET_CPU':
+            if name == 'CHPL_TARGET_CPU':
                 value = ENV_VALS['CHPL_RUNTIME_CPU']
-            elif env.name == 'CHPL_COMM' and chpl_comm_debug.get() == 'debug':
+            elif name == 'CHPL_COMM' and chpl_comm_debug.get() == 'debug':
                 value += '-debug'
-            elif env.name == 'CHPL_HWLOC' and chpl_hwloc_debug.get() == 'debug':
+            elif name == 'CHPL_HWLOC' and chpl_hwloc_debug.get() == 'debug':
                 value += '-debug'
-            elif env.name == 'CHPL_TASKS' and chpl_tasks_debug.get() == 'debug':
+            elif name == 'CHPL_TASKS' and chpl_tasks_debug.get() == 'debug':
                 value += '-debug'
-        if env.name == 'CHPL_LOCALE_MODEL' and value == 'numa' and print_format == 'pretty':
-                value += ' (deprecated)'
-        ret.append(print_var(env.name, value, shortname=env.shortname))
+        if only:
+            name = name.strip()
+        ret.append(print_var(name, value, shortname=env.shortname))
 
     # Handle special formatting case for --path
     if print_format == 'path':
@@ -486,6 +548,7 @@ def parse_args():
     parser.add_option('--anonymize', action='append_const', dest='filter', const='anonymize')
     parser.add_option('--overrides', action='append_const', dest='filter', const='overrides')
     parser.add_option('--only-path', action='append_const', dest='filter', const='only-path')
+    parser.add_option('--only', type=str, nargs=1, default=None, dest='only')
 
     #[format]
     parser.set_defaults(format='pretty')
@@ -494,6 +557,12 @@ def parse_args():
     parser.add_option('--make',   action='store_const', dest='format', const='make')
     parser.add_option('--cmake',  action='store_const', dest='format', const='cmake')
     parser.add_option('--path',   action='store_const', dest='format', const='path')
+    parser.add_option('--bash',   action='store_const', dest='format', const='bash')
+    parser.add_option('--csh',    action='store_const', dest='format', const='csh')
+    parser.add_option('--value',  action='store_const', dest='format', const='value')
+
+    #[misc]
+    parser.add_option('--ignore-errors', action='store_true', dest='ignore_errors')
 
     #[hidden]
     parser.add_option('--unit-tests', action='store_true', dest='do_unit_tests')
@@ -519,12 +588,20 @@ def main():
       exit(1)
 
     # Handle --all flag
+    all_content = ['runtime', 'launcher', 'compiler', 'default']
     if options.all:
-        options.content.extend(['runtime', 'launcher', 'compiler', 'default'])
+        options.content.extend(all_content)
 
     # Handle --tidy / --no-tidy flags
     if options.tidy:
         options.filter.append('tidy')
+
+    # Handle --only
+    only = None
+    if options.only:
+        only = set([o.strip() for o in options.only.split(",")])
+        options.content.extend(all_content + ['internal'])
+        options.filter.extend(['only', 'anonymize'])
 
     # Set default [content]
     if not options.content:
@@ -538,6 +615,13 @@ def main():
     if options.format == 'path' and 'internal' in contents:
         stdout.write('--path and --internal are incompatible flags\n')
         exit(1)
+    # Prevent --only --path, because it's useless
+    if options.format == 'path' and options.only:
+        stdout.write('--path and --only are incompatible flags\n')
+        exit(1)
+
+    if options.ignore_errors:
+        utils.ignore_errors = True
 
     # Populate ENV_VALS
     compute_all_values()
@@ -546,8 +630,10 @@ def main():
     if 'internal' in contents:
         compute_internal_values()
 
-    ret = printchplenv(contents, filters, options.format)
+    ret = printchplenv(contents, filters, options.format, only=only)
     stdout.write(ret)
+
+    utils.flush_warnings()
 
 
 if __name__ == '__main__':

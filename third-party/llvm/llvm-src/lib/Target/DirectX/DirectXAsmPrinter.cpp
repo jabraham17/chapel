@@ -40,8 +40,8 @@ public:
 } // namespace
 
 void DXILAsmPrinter::emitGlobalVariable(const GlobalVariable *GV) {
-  // If there is no initializer or the section is implicit, do nothing
-  if (!GV->hasInitializer() || GV->hasImplicitSection())
+  // If there is no initializer, or no explicit section do nothing
+  if (!GV->hasInitializer() || GV->hasImplicitSection() || !GV->hasSection())
     return;
   // Skip the LLVM metadata
   if (GV->getSection() == "llvm.metadata")
@@ -49,7 +49,7 @@ void DXILAsmPrinter::emitGlobalVariable(const GlobalVariable *GV) {
   SectionKind GVKind = TargetLoweringObjectFile::getKindForGlobal(GV, TM);
   MCSection *TheSection = getObjFileLowering().SectionForGlobal(GV, GVKind, TM);
   OutStreamer->switchSection(TheSection);
-  emitGlobalConstant(GV->getParent()->getDataLayout(), GV->getInitializer());
+  emitGlobalConstant(GV->getDataLayout(), GV->getInitializer());
 }
 
 extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeDirectXAsmPrinter() {

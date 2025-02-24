@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -67,8 +67,15 @@ class QualifiedType final {
   static const Kind FUNCTION = uast::Qualifier::FUNCTION;
   static const Kind PARENLESS_FUNCTION = uast::Qualifier::PARENLESS_FUNCTION;
   static const Kind MODULE = uast::Qualifier::MODULE;
+  static const Kind INIT_RECEIVER = uast::Qualifier::INIT_RECEIVER;
 
   static const char* kindToString(Kind k);
+
+  // Convenience functions to construct param types
+  static QualifiedType makeParamBool(Context* context, bool b);
+  static QualifiedType makeParamInt(Context* context, int64_t i);
+  static QualifiedType makeParamString(Context* context, UniqueString s);
+  static QualifiedType makeParamString(Context* context, std::string s);
 
  private:
   Kind kind_ = UNKNOWN;
@@ -87,6 +94,13 @@ class QualifiedType final {
   {
     // should only set param_ for kind_ == PARAM
     CHPL_ASSERT(param_ == nullptr || kind_ == Kind::PARAM);
+  }
+
+  /** replaces placeholders (as in PlaceholderType in the type) according
+      to their values in the 'subs' map. See also Type::substitute. */
+  const QualifiedType substitute(Context* context,
+                                 const PlaceholderMap& subs) const {
+    return QualifiedType(kind_, Type::substitute(context, type_, subs), param_);
   }
 
   /** Returns the kind of the expression this QualifiedType represents */
@@ -133,6 +147,10 @@ class QualifiedType final {
     if (genericParam || kind_ == TYPE_QUERY)
       return Type::GENERIC;
 
+    // params with know values (hasParamPtr()) can't be generic.
+    if (kind_ == PARAM)
+      return Type::CONCRETE;
+
     return typeGenericity();
   }
 
@@ -153,13 +171,18 @@ class QualifiedType final {
     return isUnknown() || (genericity() != Type::CONCRETE);
   }
 
+  bool isUnknownOrErroneous() const {
+    return isUnknown() || isErroneousType();
+  }
+
   /** Returns true if kind is TYPE */
   bool isType() const { return kind_ == Kind::TYPE; }
 
   /** Returns true if kind is PARAM */
   bool isParam() const { return kind_ == Kind::PARAM; }
 
-  /** Returns 'true' if storing a BoolParam 'true';
+  /** Returns 'true' if storing a BoolParam 'true'
+      or a numeric param storing nonzero;
       'false' otherwise
    */
   bool isParamTrue() const;
@@ -174,6 +197,9 @@ class QualifiedType final {
   */
   bool isParamKnownTuple() const;
 
+  /** Returns true if kind is TYPE_QUERY */
+  bool isTypeQuery() const { return kind_ == Kind::TYPE_QUERY; }
+
   /**
     Returns true if the value cannot be modified directly (but might
     be modified by some other aliasing variable).
@@ -187,6 +213,19 @@ class QualifiedType final {
   bool isImmutable() const {
     return uast::isImmutableQualifier(kind_);
   }
+  /**
+    Returns true if the value is a reference, whether constant or mutable.
+   */
+  bool isRef() const {
+    return uast::isRefQualifier(kind_);
+  }
+  /**
+    Returns true if the value is an in-intent formal, whether constant or
+    mutable.
+   */
+  bool isIn() const {
+    return uast::isInQualifier(kind_);
+  }
 
   /**
     Returns true if the kind is one of the non-concrete intents
@@ -196,6 +235,11 @@ class QualifiedType final {
     return uast::isGenericQualifier(kind_);
   }
 
+  /**
+    Returns true if the type might need to get more info from split-init.
+  */
+  bool needsSplitInitTypeInfo(Context* context) const;
+
   bool operator==(const QualifiedType& other) const {
     return kind_ == other.kind_ &&
            type_ == other.type_ &&
@@ -204,6 +248,7 @@ class QualifiedType final {
   bool operator!=(const QualifiedType& other) const {
     return !(*this == other);
   }
+
   void swap(QualifiedType& other) {
     std::swap(this->kind_, other.kind_);
     std::swap(this->type_, other.type_);
@@ -242,6 +287,13 @@ struct stringify<types::QualifiedType::Kind> {
 
 // docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT
+
+template <>
+struct mark<types::QualifiedType::Kind> {
+  void operator()(Context* context, types::QualifiedType::Kind t) {
+    // No need to mark enums
+  }
+};
 
 
 /// \endcond

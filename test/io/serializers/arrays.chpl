@@ -17,16 +17,16 @@ proc makeND(param rank : int) {
   return A;
 }
 
-proc test(A) {
+proc test(A, inexact = false) {
   printDebugFmt(A);
   var f = openMemFile();
   try {
-    f.writer().withSerializer(FormatWriter).write(A);
+    f.writer(locking=false).withSerializer(FormatWriter).write(A);
   } catch e {
     writeln("ERROR: ", e);
   }
   try {
-    var B = f.reader().withDeserializer(FormatReader).read(A.type);
+    var B = f.reader(locking=false).withDeserializer(FormatReader).read(A.type);
 
     var match = false;
     if isArray(A) {
@@ -34,9 +34,13 @@ proc test(A) {
         match = true;
         for (x,y) in zip(A,B) do
           for (a,b) in zip(x,y) do
-            match &&= (a == b);
+            if inexact
+              then match &&= (a - b < 1e-3);
+              else match &&= (a == b);
       } else {
-        match = && reduce (A == B);
+        match = if inexact
+          then && reduce (A - B < 1e-3)
+          else && reduce (A == B);
       }
     } else {
       match = (A == B);
@@ -65,11 +69,11 @@ proc main() {
   }
   {
     writeln("--- array of arrays ---");
-    var A : [1..3] [1..3] int;
+    var A : [1..3] [1..3] real;
     for i in 1..3 do
       for j in 1..3 do
-        A[i][j] = i*j;
-    test(A);
+        A[i][j] = i + j/10.0 + 0.0123456789;
+    test(A, true);
   }
   {
     writeln("--- record with array field ---");

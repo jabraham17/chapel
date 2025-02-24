@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -52,6 +52,10 @@ class CanPassResult {
     NUMERIC,
     /** A conversion that implements subtyping */
     SUBTYPE,
+    /** A conversion that borrows a managed type (without subtyping) */
+    BORROWS,
+    /** A conversion that implements subtyping AND borrows a managed type */
+    BORROWS_SUBTYPE,
     /** Non-subtype conversion that doesn't produce a param */
     OTHER,
   };
@@ -92,6 +96,8 @@ class CanPassResult {
   static bool isTypeGeneric(Context* context, const types::QualifiedType& qt);
   static bool isTypeGeneric(Context* context, const types::Type* t);
 
+  static CanPassResult ensureSubtypeConversionInstantiates(CanPassResult r);
+
   static bool
   canConvertNumeric(Context* context,
                     const types::Type* actualT,
@@ -110,13 +116,13 @@ class CanPassResult {
                                          types::ClassTypeDecorator actual,
                                          types::ClassTypeDecorator formal);
 
-  static CanPassResult canPassClassTypes(Context* context,
-                                         const types::ClassType* actualCt,
-                                         const types::ClassType* formalCt);
-
-  static CanPassResult canPassSubtype(Context* context,
+  static CanPassResult canPassSubtypeNonBorrowing(Context* context,
                                       const types::Type* actualT,
                                       const types::Type* formalT);
+
+  static CanPassResult canPassSubtypeOrBorrowing(Context* context,
+                                                 const types::Type* actualT,
+                                                 const types::Type* formalT);
 
   static CanPassResult canConvertTuples(Context* context,
                                         const types::TupleType* aT,
@@ -139,29 +145,37 @@ class CanPassResult {
   ~CanPassResult() = default;
 
   /** Returns true if the argument is passable */
-  bool passes() { return !failReason_; }
+  bool passes() const { return !failReason_; }
 
-  PassingFailureReason reason() {
+  PassingFailureReason reason() const {
     CHPL_ASSERT((bool) failReason_);
     return *failReason_;
   }
 
   /** Returns true if passing the argument will require instantiation */
-  bool instantiates() { return instantiates_; }
+  bool instantiates() const { return instantiates_; }
 
   /** Returns true if passing the argument will require promotion */
-  bool promotes() { return promotes_; }
+  bool promotes() const { return promotes_; }
 
   /** Returns true if implicit conversion is required */
-  bool converts() { return conversionKind_ != NONE; }
+  bool converts() const { return conversionKind_ != NONE; }
 
   /** What type of implicit conversion, if any, is needed? */
-  ConversionKind conversionKind() { return conversionKind_; }
+  ConversionKind conversionKind() const { return conversionKind_; }
 
   /** Returns true if an implicit param narrowing conversion is required */
-  bool convertsWithParamNarrowing(){
+  bool convertsWithParamNarrowing() const {
     return conversionKind_ == PARAM_NARROWING;
   }
+
+  /** Returns true if an implicit borrowing conversion is required.
+      Does not include borrowing with implicit subtyping. */
+  bool convertsWithBorrowing() const { return conversionKind_ == BORROWS; }
+
+  static CanPassResult canPassScalar(Context* context,
+                                     const types::QualifiedType& actualType,
+                                     const types::QualifiedType& formalType);
 
   // implementation of canPass to allow use of private fields
   static CanPassResult canPass(Context* context,
@@ -184,6 +198,103 @@ CanPassResult canPass(Context* context,
                       const types::QualifiedType& formalType) {
   return CanPassResult::canPass(context, actualType, formalType);
 }
+
+static inline
+CanPassResult canPassScalar(Context* context,
+                            const types::QualifiedType& actualType,
+                            const types::QualifiedType& formalType) {
+  return CanPassResult::canPassScalar(context, actualType, formalType);
+}
+
+/* Returns true if, all other things equal, a type with substitutions
+   'instances' is an instantiation of a type with substitutions 'generics'.
+
+   If 'allowMissing' is true, considers missing substitutions in 'generics'
+   to be "any type". Otherwise, requires that each susbtitution in
+   instances is matched by an existing substitution in generics. */
+bool canInstantiateSubstitutions(Context* context,
+                                 const SubstitutionsMap& instances,
+                                 const SubstitutionsMap& generics,
+                                 bool allowMissing);
+
+/* When trying to combine two kinds, you can't just pick one.
+   For instance, if any type in the list is a value, the result
+   should be a value, and if any type in the list is const, the
+   result should be const. Thus, combining `const ref` and `var`
+   should result in `const var`.
+
+   This class is used to describe the "mixing rules" of various kinds.
+   To this end, it breaks them down into their properties (const-ness,
+   ref-ness, etc) each of which are processed independently from
+   the others. */
+class KindProperties {
+ private:
+  bool isConst = false;
+  bool isRef = false;
+  bool isType = false;
+  bool isParam = false;
+  bool isValid = false;
+
+  KindProperties() {}
+
+  KindProperties(bool isConst, bool isRef, bool isType,
+                 bool isParam)
+    : isConst(isConst), isRef(isRef), isType(isType),
+      isParam(isParam), isValid(true) {}
+
+ private:
+  void invalidate();
+
+  /* Helper to check basic validity of combining two KindProperties. */
+  bool checkValidCombine(const KindProperties& other) const;
+
+ public:
+  /* Decompose a qualified type kind into its properties. */
+  static KindProperties fromKind(types::QualifiedType::Kind kind);
+
+  /* Set the refness property to the given one. */
+  void setRef(bool isRef);
+
+  /* Set the paramness property to the given one. */
+  void setParam(bool isParam);
+
+  /* Set the constness property to the given one. */
+  void setConst(bool isConst);
+
+  /* Combine two sets of kind properties into this one. The resulting
+     set of properties is compatible with both arguments (e.g. ref + val = val,
+     since values can't be made into references).
+     Takes the mathematical join with respect to constness (const + non-const = const). */
+  void combineWithJoin(const KindProperties& other);
+
+  /* Like combineWithJoin, but takes the mathematical meet with respect to
+     constness (const + non-const = non-const). */
+  void combineWithMeet(const KindProperties& other);
+
+  /* Combine two sets of kind properties, strictly enforcing properties of
+     the receiver (e.g. (receiver) param + (other) value = invalid, because
+     param-ness is required).
+
+     const-ness and ref-ness mismatch doesn't raise issues here since const/ref
+     checking is a separate pass. */
+  void strictCombineWith(const KindProperties& other);
+
+  /* Combine the properties of two kinds, returning the result as a kind. */
+  static types::QualifiedType::Kind combineKindsMeet(
+      types::QualifiedType::Kind kind1,
+      types::QualifiedType::Kind kind2);
+
+  /* Convert the set of kind properties back into a kind. */
+  types::QualifiedType::Kind toKind() const;
+
+  bool valid() const { return isValid; }
+
+  /* Creates a corresponding kind that is const */
+  static types::QualifiedType::Kind makeConst(types::QualifiedType::Kind kind);
+
+  /* Creates a corresponding kind that is not a reference */
+  static types::QualifiedType::Kind removeRef(types::QualifiedType::Kind kind);
+};
 
 /**
   An optional additional constraint on the kind of a type. Used in

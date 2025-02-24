@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -48,26 +48,12 @@ module CTypes {
   /* The Chapel type corresponding to the C 'double' type */
   extern type c_double = real(64);
 
-  @chpldoc.nodoc
-  @deprecated("'cFileTypeHasPointer' is deprecated and no longer affects the behavior of the 'c_FILE' type. A 'FILE*' should be represented by 'c_ptr(c_FILE)'")
-  config param cFileTypeHasPointer = false;
-
   /*
     Chapel type alias for a C ``FILE``
 
     A ``FILE*`` can be represented with ``c_ptr(c_FILE)``
   */
   extern "_cfiletype" type c_FILE;
-
-  /*
-    A Chapel type alias for ``void*`` in C. Casts from integral types to
-    ``c_void_ptr`` as well as casts from ``c_void_ptr`` to integral types are
-    supported and behave similarly to those operations in C.
-
-  */
-  pragma "last resort"
-  @deprecated(notes="c_void_ptr is deprecated, use 'c_ptr(void)' instead.")
-  type c_void_ptr = c_ptr(void);
 
   /*
 
@@ -144,13 +130,9 @@ module CTypes {
       }
       return __primitive("array_get", this, 0);
     }
-    @chpldoc.nodoc
-    inline proc writeThis(ch) throws {
-      (this:c_ptr(void)).writeThis(ch);
-    }
     /* Print this pointer */
     inline proc serialize(writer, ref serializer) throws {
-      (this:c_ptr(void)).writeThis(writer);
+      (this:c_ptr(void)).serialize(writer, serializer);
     }
   }
 
@@ -197,13 +179,9 @@ module CTypes {
       }
       return __primitive("array_get", this, 0);
     }
-    @chpldoc.nodoc
-    inline proc writeThis(ch) throws {
-      (this:c_ptr(void)).writeThis(ch);
-    }
     /* Print this pointer */
     inline proc serialize(writer, ref serializer) throws {
-      (this:c_ptr(void)).writeThis(writer);
+      (this:c_ptr(void)).serialize(writer, serializer);
     }
   }
 
@@ -245,6 +223,10 @@ module CTypes {
       Default-initializes a :type:`c_array`, where each element gets the default value of ``eltType``.
     */
     proc init(type eltType, param size) {
+      if eltType == void then
+        compilerError("c_array element type cannot be 'void'");
+      if eltType == nothing then
+        compilerError("c_array element type cannot be 'nothing'");
       this.eltType = eltType;
       this.size = size;
       init this;
@@ -312,23 +294,18 @@ module CTypes {
       return __primitive("array_get", this, i);
     }
 
-    @chpldoc.nodoc
-    proc writeThis(ch) throws {
-      ch.writeLiteral("[");
+    /* Print the elements */
+    proc const serialize(writer, ref serializer) throws {
+      writer.writeLiteral("[");
       var first = true;
       for i in 0..#size {
 
-        ch.write(this(i));
+        writer.write(this(i));
 
         if i != size-1 then
-          ch.writeLiteral(", ");
+          writer.writeLiteral(", ");
       }
-      ch.writeLiteral("]");
-    }
-
-    /* Print the elements */
-    proc const serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.writeLiteral("]");
     }
 
     /*
@@ -370,18 +347,14 @@ module CTypes {
     lhs = c_ptrTo(rhs[0]);
   }
 
-  // This type alias is a hack to enable defining writeThis on c_ptr(void)
-  // specifically, which is necessary to enable writeThis on things that
+  // This type alias is a hack to enable defining serialize on c_ptr(void)
+  // specifically, which is necessary to enable serialize on things that
   // implicitly convert to c_ptr(void).
   @chpldoc.nodoc
   type writable_c_ptr_void = c_ptr(void);
   @chpldoc.nodoc
-  inline proc writable_c_ptr_void.writeThis(ch) throws {
-    ch.writef("0x%xu", this:c_uintptr);
-  }
-  @chpldoc.nodoc
   inline proc writable_c_ptr_void.serialize(writer, ref serializer) throws {
-    this.writeThis(writer);
+    writer.writef("0x%xu", this:c_uintptr);
   }
 
   @chpldoc.nodoc
@@ -420,6 +393,24 @@ module CTypes {
   @chpldoc.nodoc
   inline operator :(x:c_fn_ptr, type t:c_ptr(void)) {
     return __primitive("cast", c_ptr(void), x);
+  }
+
+  // Enable fn_ptr == nil syntax for checking whether a function pointer is NULL
+  @chpldoc.nodoc
+  inline operator ==(a: c_fn_ptr, b: _nilType) {
+    return a:c_ptr(void) == b;
+  }
+  @chpldoc.nodoc
+  inline operator ==(a: _nilType, b: c_fn_ptr) {
+    return b == a;
+  }
+  @chpldoc.nodoc
+  inline operator !=(a: c_fn_ptr, b: _nilType) {
+    return !(a == b);
+  }
+  @chpldoc.nodoc
+  inline operator !=(a: _nilType, b: c_fn_ptr) {
+    return b != a;
   }
 
   // Note: we rely from nil to pointer types for ptr = nil, nil:ptr cases
@@ -477,12 +468,6 @@ module CTypes {
     }
     return __primitive("cast", t, x);
   }
-  // c_ptr(void) specialization to allow implicit conversion of casted value
-  pragma "last resort"
-  @chpldoc.nodoc
-  inline operator :(x:c_ptr(void), type t:c_ptr) {
-    return __primitive("cast", t, x);
-  }
   @chpldoc.nodoc
   inline operator c_ptrConst.:(x:c_ptrConst, type t:c_ptrConst) {
     // emit warning for C strict aliasing violations
@@ -517,17 +502,22 @@ module CTypes {
     return __primitive("cast", t, x);
   }
   @chpldoc.nodoc
-  inline operator :(ref x:c_array, type t:c_ptr(?e)) where x.eltType == e {
-    return c_ptrTo(x[0]);
+  inline operator :(ref x:c_array, type t:c_ptr) {
+    if t.eltType == void then
+      return __primitive("cast", t, c_ptrTo(x[0]));
+    else if x.eltType == t.eltType then
+      return c_ptrTo(x[0]);
+    else
+      compilerError("cast of c_array to c_ptr with a different element type");
   }
   @chpldoc.nodoc
-  inline operator :(const ref x:c_array, type t:c_ptrConst(?e))
-      where x.eltType == e {
-    return c_ptrToConst(x[0]);
-  }
-  @chpldoc.nodoc
-  inline operator :(ref x:c_array, type t:c_ptr(void)) {
-    return c_ptrTo(x[0]):c_ptr(void);
+  inline operator :(const ref x:c_array, type t:c_ptrConst) {
+    if t.eltType == void then
+      return __primitive("cast", t, c_ptrToConst(x[0]));
+    else if x.eltType == t.eltType then
+      return c_ptrToConst(x[0]);
+    else
+      compilerError("cast of c_array to c_ptr with a different element type");
   }
   @chpldoc.nodoc
   inline operator :(x:c_ptr, type t:c_ptr(void)) {
@@ -545,6 +535,8 @@ module CTypes {
   inline operator :(x:c_ptrConst, type t:c_ptrConst(void)) {
     return __primitive("cast", t, x);
   }
+  // c_ptr(void) specialization of c_ptr->c_ptr cast, to enable implicit
+  // conversion of casted value to c_ptr(void)
   @chpldoc.nodoc
   inline operator :(x:c_ptr(void), type t:c_ptr) {
     return __primitive("cast", t, x);
@@ -571,7 +563,7 @@ module CTypes {
   }
   pragma "last resort"
   @chpldoc.nodoc
-  inline operator :(x:c_ptr(void), type t:_anyManagementAnyNilable) {
+  inline operator :(x:c_ptr(void), type t:class) {
     if isUnmanagedClass(t) || isBorrowedClass(t) {
       compilerError("invalid cast from c_ptr(void) to "+ t:string +
                     " - cast to "+ _to_nilable(t):string +" instead");
@@ -587,17 +579,6 @@ module CTypes {
   }
   @chpldoc.nodoc
   inline operator :(x:c_ptr(void), type t:borrowed class?) {
-    return __primitive("cast", t, x);
-  }
-
-  @chpldoc.nodoc
-  @deprecated(notes="Casting from class types directly to c_ptr(void) is deprecated. Please use c_ptrTo/c_ptrToConst instead.")
-  inline operator :(x:borrowed, type t:c_ptr(void)) {
-    return __primitive("cast", t, x);
-  }
-  @chpldoc.nodoc
-  @deprecated(notes="Casting from class types directly to c_ptr(void) is deprecated. Please use c_ptrTo/c_ptrToConst instead.")
-  inline operator :(x:unmanaged, type t:c_ptr(void)) {
     return __primitive("cast", t, x);
   }
 
@@ -762,12 +743,6 @@ module CTypes {
   extern proc c_pointer_diff(a:c_ptr(void), b:c_ptr(void),
                              eltSize:c_ptrdiff):c_ptrdiff;
 
-  // Transition symbol for 1.31 c_ptrTo behavior deprecations,
-  // itself deprecated in 1.33.
-  @chpldoc.nodoc
-  @deprecated("'cPtrToLogicalValue' is deprecated and no longer affects the behavior of 'c_ptrTo'")
-  config param cPtrToLogicalValue = true;
-
   // Begin c_ptrTo overloads
 
   /*
@@ -830,16 +805,16 @@ module CTypes {
   */
   @chpldoc.nodoc
   inline proc c_ptrTo(ref arr: []): c_ptr(arr.eltType) {
-    if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
+    if (!chpl__isDROrDRView(arr)) then
       compilerError("Only single-locale rectangular arrays support c_ptrTo() at present");
 
-    if (arr._value.locale != here) then
-      halt(
-          "c_ptrTo() can only be applied to an array from the locale on " +
-          "which it lives (array is on locale " + arr._value.locale.id:string +
-          ", call was made on locale " + here.id:string + ")");
-
     if boundsChecking {
+      if (arr._value.locale != here) then
+        halt(
+            "c_ptrTo() can only be applied to an array from the locale on " +
+            "which it lives (array is on locale " + arr._value.locale.id:string +
+            ", call was made on locale " + here.id:string + ")");
+
       if (arr.size == 0) then
         halt("Can't create a C pointer for an array with 0 elements.");
     }
@@ -919,16 +894,16 @@ module CTypes {
    */
   @chpldoc.nodoc
   inline proc c_ptrToConst(const arr: []): c_ptrConst(arr.eltType) {
-    if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
+    if (!chpl__isDROrDRView(arr)) then
       compilerError("Only single-locale rectangular arrays support c_ptrToConst() at present");
 
-    if (arr._value.locale != here) then
-      halt(
-          "c_ptrToConst() can only be applied to an array from the locale on " +
-          "which it lives (array is on locale " + arr._value.locale.id:string +
-          ", call was made on locale " + here.id:string + ")");
-
     if boundsChecking {
+      if (arr._value.locale != here) then
+        halt(
+            "c_ptrToConst() can only be applied to an array from the locale on " +
+            "which it lives (array is on locale " + arr._value.locale.id:string +
+            ", call was made on locale " + here.id:string + ")");
+
       if (arr.size == 0) then
         halt("Can't create a C pointer for an array with 0 elements.");
     }
@@ -990,14 +965,12 @@ module CTypes {
   */
   @chpldoc.nodoc
   inline proc c_addrOf(ref arr: []) {
-    if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
-      compilerError("Only single-locale rectangular arrays support c_addrOf() at present");
-
-    if (arr._value.locale != here) then
-      halt(
-          "c_addrOf() can only be applied to an array from the locale on " +
-          "which it lives (array is on locale " + arr._value.locale.id:string +
-          ", call was made on locale " + here.id:string + ")");
+    if (boundsChecking && arr._value.locale != here) then
+      // Changed from error to unstable warning in 2.4. Warning can be removed
+      // once we're confident it's not causing problems.
+      if chpl_warnUnstable then
+        compilerWarning(
+            "calling c_addrOf on an array from another locale is unstable");
 
     return c_pointer_return(arr);
   }
@@ -1008,14 +981,11 @@ module CTypes {
   */
   @chpldoc.nodoc
   inline proc c_addrOfConst(const arr: []) {
-    if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
-      compilerError("Only single-locale rectangular arrays support c_addrOfConst() at present");
-
-    if (arr._value.locale != here) then
-      halt(
-          "c_addrOfConst() can only be applied to an array from the locale on " +
-          "which it lives (array is on locale " + arr._value.locale.id:string +
-          ", call was made on locale " + here.id:string + ")");
+    if (boundsChecking && arr._value.locale != here) then
+      // See note on corresponding c_addrOf overload
+      if chpl_warnUnstable then
+        compilerWarning(
+            "calling c_addrOfConst on an array from another locale is unstable");
 
     return c_pointer_return_const(arr);
   }
@@ -1034,6 +1004,14 @@ module CTypes {
     return c_pointer_return(x);
   }
 
+  // Added as unstable for 2.4, can be merged into stable version once we're
+  // confident in it.
+  @chpldoc.nodoc
+  @unstable("using 'c_addrOf' with a domain argument is unstable")
+  inline proc c_addrOf(ref x: ?t): c_ptr(t) where isDomainType(t) {
+    return c_pointer_return(x);
+  }
+
   /*
     Like :proc:`c_addrOf`, but returns a :type:`c_ptrConst` which disallows
     direct modification of the pointee.
@@ -1041,6 +1019,14 @@ module CTypes {
   inline proc c_addrOfConst(const ref x: ?t): c_ptrConst(t) {
     if isDomainType(t) then
       compilerError("c_addrOfConst domain type not supported");
+    return c_pointer_return_const(x);
+  }
+
+  // See note on corresponding c_addrOf overload
+  @chpldoc.nodoc
+  @unstable("using 'c_addrOfConst' with a domain argument is unstable")
+  inline proc c_addrOfConst(const ref x: ?t): c_ptrConst(t)
+      where isDomainType(t) {
     return c_pointer_return_const(x);
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -46,6 +46,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "TemporaryConversionThunk.h"
+#include "thunks.h"
 #include "TryStmt.h"
 #include "view.h"
 #include "WhileStmt.h"
@@ -513,6 +514,14 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
   }
 }
 
+void setReturnAndReturnSymbolType(FnSymbol* fn, Type* retType) {
+  fn->retType = retType;
+  Symbol* retSym = fn->getReturnSymbol();
+  INT_ASSERT(retSym);
+  retSym->type = retType;
+  fn->retTag = RET_VALUE;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -571,6 +580,10 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
 
       insertUnrefForArrayOrTupleReturn(fn);
 
+      if (fn->retExprType) {
+        resolveSpecifiedReturnType(fn);
+      }
+
       Type* yieldedType = NULL;
       resolveReturnTypeAndYieldedType(fn, &yieldedType);
 
@@ -578,6 +591,10 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
 
       if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
         protoIteratorClass(fn, yieldedType);
+      }
+
+      if (fn->hasFlag(FLAG_THUNK_BUILDER) == true) {
+        protoThunkRecord(fn);
       }
 
       if (fn->isMethod() == true && fn->_this != NULL) {
@@ -893,6 +910,7 @@ static void markIteratorAndLoops(FnSymbol* fn) {
           bool justYield = isLoopBodyJustYield(loop);
           if (justYield || markAllYieldingLoops) {
             loop->orderIndependentSet(true);
+            loop->exemptFromImplicitIntents();
           } else {
             if (fReportVectorizedLoops && fExplainVerbose) {
               if (!isLeaderIterator(fn)) {
@@ -1265,7 +1283,8 @@ bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
     bool isOutFormal = sym->hasFlag(FLAG_FORMAL_TEMP_OUT);
 
     SymExpr* typeSe = toSymExpr(call->get(2));
-    bool requireSplitInit = (typeSe->symbol() == dtSplitInitType->symbol);
+    bool requireSplitInit = (typeSe->symbol() ==
+                             dtSplitInitType->symbol);
 
     // Don't allow an out-formal to be split-init after a return because
     // that would leave the out-formal uninitialized.
@@ -1665,6 +1684,7 @@ void fixPrimInitsAndAddCasts(FnSymbol* fn) {
   }
 }
 
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -1708,13 +1728,7 @@ static void protoIteratorClass(FnSymbol* fn, Type* yieldedType) {
   iRecord->iteratorInfo = ii;
   fn->iteratorInfo      = ii;
 
-  fn->retType           = iRecord;
-  // Also adjust the type of the return symbol
-  Symbol* retSym = fn->getReturnSymbol();
-  INT_ASSERT(retSym);
-  retSym->type = iRecord;
-
-  fn->retTag            = RET_VALUE;
+  setReturnAndReturnSymbolType(fn, iRecord);
 
   fn->defPoint->insertBefore(new DefExpr(iClass->symbol));
   fn->defPoint->insertBefore(new DefExpr(iRecord->symbol));
@@ -2114,12 +2128,14 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
     if (!fn->iteratorInfo) {
       if (retTypes.n == 0) {
         if (isIterator) {
-          // This feels like it should be:
-          // retType = dtVoid;
-          //
-          // but that leads to compiler generated assignments of 'void' to
-          // variables, which isn't allowed.  If we fib and claim that it
-          // returns 'nothing', those assignments get removed and all is well.
+          const bool emitError = !fn->hasFlag(FLAG_PROMOTION_WRAPPER);
+          if (emitError) {
+            // TODO: Right now this has to be USR_FATAL in order to avoid
+            // the possibility of subsequent errors about 'nothing'.
+            USR_FATAL(fn, "iterators with no reachable 'yield' statements "
+                          "must declare their return type");
+          }
+
           retType = dtNothing;
         } else {
           retType = dtVoid;
@@ -2729,7 +2745,7 @@ static void issueInitConversionError(Symbol* to, Symbol* toType, Symbol* from,
 // Emit an init= or similar pattern to create 'to' of type 'toType' from 'from'
 // (the Symbol toType conveys any runtime type info beyond what to->type is.)
 //
-// No matter what, adds the initialization pattern after 'insertAfter'.
+// No matter what, adds the initialization pattern before 'insertBefore'.
 // Adds all calls added to the newCalls vector to be resolved later.
 static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
                                  bool fromPrimCoerce,
@@ -2753,7 +2769,7 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
     INT_ASSERT(toValType == toType->type);
 
     // generate a warning in some cases for int->uint implicit conversion
-    warnForIntUintConversion(insertBefore, toValType, fromValType, from);
+    warnForSomeNumericConversions(insertBefore, toValType, fromValType, from);
   }
 
   // seemingly redundant toType->type->symbol is for lowered runtime type vars
@@ -2881,35 +2897,49 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
       }
 
     } else if (toType->type == getCopyTypeDuringResolution(fromValType)) {
-      // today, this code should only apply to sync/single
-      // (since arrays are handled above with useRttCopy)
+
       // for sync/single, getCopyTypeDuringResolution returns the valType.
-      Type* valType = getCopyTypeDuringResolution(fromValType);
-
-      VarSymbol* tmp = newTemp("_cast_tmp_", valType);
-      insertBefore->insertBefore(new DefExpr(tmp));
-
-      CallExpr* readCall = NULL;
       if (isSyncType(fromValType)) {
+        Type* valType = getCopyTypeDuringResolution(fromValType);
+
+        VarSymbol* tmp = newTemp("_cast_tmp_", valType);
+        insertBefore->insertBefore(new DefExpr(tmp));
+
+        CallExpr* readCall = NULL;
+        INT_ASSERT(isSyncType(fromValType));
         readCall = new CallExpr("readFE", gMethodToken, from);
         USR_WARN(to, "implicitly reading from a sync is deprecated; "
-                     "apply a 'read\?\?()' method to the actual");
-      } else if (isSingleType(fromValType)) {
-        readCall = new CallExpr("readFF", gMethodToken, from);
-        USR_WARN(to, "implicitly reading from a single is deprecated; "
-                     "apply a 'read\?\?()' method to the actual");
-      } else {
-        INT_FATAL("not handled");
+                      "apply a 'read\?\?()' method to the actual");
+
+        newCalls.push_back(readCall);
+        CallExpr* setTmp = new CallExpr(PRIM_ASSIGN, tmp, readCall);
+        newCalls.push_back(setTmp);
+        insertBefore->insertBefore(setTmp);
+        // add a conversion / plain assignment setting to from tmp
+        insertInitConversion(to, toType, tmp,
+                             fromPrimCoerce, insertBefore, newCalls);
+
+      // This case can occur when an iterator appears on one or both sides
+      // of a ternary expression/if-expr.
+      } else if (fromValType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+        Type* toValType = toType->getValType();
+
+        if (toValType->symbol->hasFlag(FLAG_ARRAY)) {
+          VarSymbol* initTmp = newTemp("init_tmp_", toValType);
+          insertBefore->insertBefore(new DefExpr(initTmp));
+
+          auto initCopy = new CallExpr(astr_initCopy, from, definedConst);
+          newCalls.push_back(initCopy);
+
+          // TODO: Can the ASSIGN case occur? Can we weaken it?
+          auto op = toType->isRef() ? PRIM_ASSIGN : PRIM_MOVE;
+          auto call = new CallExpr(op, to, initCopy);
+          newCalls.push_back(call);
+          insertBefore->insertBefore(call);
+        } else {
+          INT_FATAL("Not handled yet!");
+        }
       }
-
-      newCalls.push_back(readCall);
-      CallExpr* setTmp = new CallExpr(PRIM_ASSIGN, tmp, readCall);
-      newCalls.push_back(setTmp);
-      insertBefore->insertBefore(setTmp);
-      // add a conversion / plain assignment setting to from tmp
-      insertInitConversion(to, toType, tmp,
-                           fromPrimCoerce, insertBefore, newCalls);
-
     } else if (isRecord(toType->type) || isUnion(toType->type)) {
       // insert an init= call
       CallExpr* initEq = NULL;

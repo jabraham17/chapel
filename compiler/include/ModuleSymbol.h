@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -42,7 +42,8 @@ public:
 
   static ModuleSymbol*    mainModule();
 
-  static void             mainModuleNameSet(const ArgumentDescription* desc,
+  static void             setMainModule(ModuleSymbol* mainModule);
+  static void             setMainModuleName(const ArgumentDescription* desc,
                                             const char*                arg);
 private:
   static ModuleSymbol*    findMainModuleByName();

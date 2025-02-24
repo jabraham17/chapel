@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -185,9 +185,9 @@ void chpl_setMemFlags(void) {
     hashSizeIndex = 0;
     hashSize = hashSizes[hashSizeIndex];
     memTable = sys_calloc(hashSize, sizeof(memTableEntry*));
-    chpl_atomic_thread_fence(memory_order_release);
+    chpl_atomic_thread_fence(chpl_memory_order_release);
     chpl_memTrack = local_memTrack;
-    chpl_atomic_thread_fence(memory_order_release);
+    chpl_atomic_thread_fence(chpl_memory_order_release);
   }
 }
 
@@ -791,3 +791,25 @@ void chpl_startVerboseMemHere(void) {
 void chpl_stopVerboseMemHere(void) {
   chpl_verbose_mem = 0;
 }
+
+int chpl_memtable_size(void) {
+  return hashSize;
+}
+
+void* chpl_memtable_entry(int idx) {
+  return memTable[idx];
+}
+
+void* chpl_memtable_next_entry(void* entry) {
+  return (void*)(((memTableEntry*)entry)->nextInBucket);
+}
+
+uintptr_t chpl_memtable_entry_addr(void* entry) {
+  return (uintptr_t)(((memTableEntry*)entry)->memAlloc);
+}
+
+size_t chpl_memtable_entry_size(void* entry) {
+  memTableEntry* _entry = (memTableEntry*)entry;
+  return (size_t)(_entry->size*_entry->number);
+}
+

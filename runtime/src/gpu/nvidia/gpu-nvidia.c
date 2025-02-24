@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,23 +33,29 @@
 #include "../common/cuda-utils.h"
 #include "../common/cuda-shared.h"
 #include "chpl-env-gen.h"
+#include "chpl-topo.h"
 
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <assert.h>
 #include <stdbool.h>
 
+
 // this is compiler-generated
 extern const char* chpl_gpuBinary;
+extern const uint64_t chpl_gpuBinarySize;
 
 static CUcontext *chpl_gpu_primary_ctx;
 static CUdevice  *chpl_gpu_devices;
+
+static int numAllDevices = -1;
+static int numDevices = -1;
+static int *dev_pid_to_lid_table;
 
 // array indexed by device ID (we load the same module once for each GPU).
 static CUmodule *chpl_gpu_cuda_modules;
 
 static int *deviceClockRates;
-
 
 static bool chpl_gpu_has_context(void) {
   CUcontext cuda_context = NULL;
@@ -64,8 +70,8 @@ static bool chpl_gpu_has_context(void) {
   }
 }
 
-static void switch_context(int dev_id) {
-  CUcontext next_context = chpl_gpu_primary_ctx[dev_id];
+static void switch_context(int dev_lid) {
+  CUcontext next_context = chpl_gpu_primary_ctx[dev_lid];
 
   if (!chpl_gpu_has_context()) {
     CUDA_CALL(cuCtxPushCurrent(next_context));
@@ -85,56 +91,121 @@ static void switch_context(int dev_id) {
   }
 }
 
+// Maps the "physical" device ID used by the CUDA library to the "logical"
+// device ID used by this locale. The two may differ due to co-locales.
+// Logical device IDs start with zero in each co-locale and are equal to the
+// sublocale ID. Physical device IDs are the same for all co-locales on the
+// machine.
+
+static int dev_pid_to_lid(int32_t dev_pid) {
+  assert((dev_pid >= 0) && (dev_pid < numAllDevices));
+  int dev_lid = dev_pid_to_lid_table[dev_pid];
+  assert((dev_lid >= 0) && (dev_lid < numDevices));
+  return dev_lid;
+}
+
+
+static CUmodule get_module(void) {
+  CUdevice device;
+  CUmodule module;
+
+  CUDA_CALL(cuCtxGetDevice(&device));
+  int dev_lid = dev_pid_to_lid((int32_t) device);
+  module = chpl_gpu_cuda_modules[dev_lid];
+  return module;
+}
+
 extern c_nodeid_t chpl_nodeID;
 
 // we can put this logic in chpl-gpu.c. However, it needs to execute
 // per-context/module. That's currently too low level for that layer.
-static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, CUmodule module) {
+static void chpl_gpu_impl_set_globals(c_sublocid_t dev_lid, CUmodule module) {
   CUdeviceptr ptr;
   size_t glob_size;
-  CUDA_CALL(cuModuleGetGlobal(&ptr, &glob_size, module, "chpl_nodeID"));
+
+  chpl_gpu_impl_load_global("chpl_nodeID", (void**)&ptr, &glob_size);
+
   assert(glob_size == sizeof(c_nodeid_t));
   chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size, NULL);
 }
 
-void chpl_gpu_impl_use_device(c_sublocid_t dev_id) {
-  switch_context(dev_id);
+void chpl_gpu_impl_load_global(const char* global_name, void** ptr,
+                               size_t* size) {
+  CUmodule module = get_module();
+  CUDA_CALL(cuModuleGetGlobal((CUdeviceptr*)ptr, size, module, global_name));
 }
 
-void chpl_gpu_impl_init(int* num_devices) {
+void* chpl_gpu_impl_load_function(const char* kernel_name) {
+  CUfunction function;
+  CUmodule module = get_module();
+  CUDA_CALL(cuModuleGetFunction(&function, module, kernel_name));
+  assert(function);
+
+  return (void*)function;
+}
+
+void chpl_gpu_impl_use_device(c_sublocid_t dev_lid) {
+  switch_context(dev_lid);
+}
+
+void chpl_gpu_impl_begin_init(int* num_all_devices) {
   CUDA_CALL(cuInit(0));
+  CUDA_CALL(cuDeviceGetCount(&numAllDevices));
+  *num_all_devices = numAllDevices;
+}
 
-  CUDA_CALL(cuDeviceGetCount(num_devices));
+void chpl_gpu_impl_collect_topo_addr_info(chpl_topo_pci_addr_t* into,
+                                          int device_num) {
+  CUdevice cuDevice;
+  CUDA_CALL(cuDeviceGet(&cuDevice, device_num));
+  int domain, bus, device;
+  CUDA_CALL(cuDeviceGetAttribute(&domain, CU_DEVICE_ATTRIBUTE_PCI_DOMAIN_ID,
+                                 cuDevice));
+  CUDA_CALL(cuDeviceGetAttribute(&bus, CU_DEVICE_ATTRIBUTE_PCI_BUS_ID,
+                                 cuDevice));
+  CUDA_CALL(cuDeviceGetAttribute(&device, CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID,
+                                 cuDevice));
+  into->domain = (uint8_t) domain;
+  into->bus = (uint8_t) bus;
+  into->device = (uint8_t) device;
+  into->function = 0;
+}
 
-  const int loc_num_devices = *num_devices;
-  chpl_gpu_primary_ctx = chpl_malloc(sizeof(CUcontext)*loc_num_devices);
-  chpl_gpu_devices = chpl_malloc(sizeof(CUdevice)*loc_num_devices);
-  chpl_gpu_cuda_modules = chpl_malloc(sizeof(CUmodule)*loc_num_devices);
-  deviceClockRates = chpl_malloc(sizeof(int)*loc_num_devices);
+// Allocate the GPU data structures. Note that the CUDA API, specifically
+// cuCtxGetDevice, returns the global device ID so we need deviceIDToIndex
+// to map from the global device ID to an array index.
+void chpl_gpu_impl_setup_with_device_count(int num_my_devices) {
+  numDevices = num_my_devices;
+  chpl_gpu_primary_ctx = chpl_malloc(sizeof(CUcontext)*numDevices);
+  chpl_gpu_devices = chpl_malloc(sizeof(CUdevice)*numDevices);
+  chpl_gpu_cuda_modules = chpl_malloc(sizeof(CUmodule)*numDevices);
+  deviceClockRates = chpl_malloc(sizeof(int)*numDevices);
+  dev_pid_to_lid_table = chpl_malloc(sizeof(int) * numAllDevices);
+}
 
-  int i;
-  for (i=0 ; i<loc_num_devices ; i++) {
-    CUdevice device;
-    CUcontext context;
+void chpl_gpu_impl_setup_device(int my_index, int global_index) {
+  CUdevice device;
+  CUDA_CALL(cuDeviceGet(&device, global_index));
 
-    CUDA_CALL(cuDeviceGet(&device, i));
-    CUDA_CALL(cuDevicePrimaryCtxSetFlags(device, CU_CTX_SCHED_BLOCKING_SYNC));
-    CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
+  CUcontext context;
 
-    CUDA_CALL(cuCtxSetCurrent(context));
-    // load the module and setup globals within
-    CUmodule module = chpl_gpu_load_module(chpl_gpuBinary);
-    chpl_gpu_cuda_modules[i] = module;
+  CUDA_CALL(cuDevicePrimaryCtxSetFlags(device,
+                                       CU_CTX_SCHED_BLOCKING_SYNC));
+  CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
 
-    cuDeviceGetAttribute(&deviceClockRates[i], CU_DEVICE_ATTRIBUTE_CLOCK_RATE, device);
+  CUDA_CALL(cuCtxSetCurrent(context));
+  // load the module and setup globals within
+  CUmodule module = chpl_gpu_load_module(chpl_gpuBinary, chpl_gpuBinarySize);
+  chpl_gpu_cuda_modules[my_index] = module;
 
-    chpl_gpu_devices[i] = device;
-    chpl_gpu_primary_ctx[i] = context;
+  cuDeviceGetAttribute(&deviceClockRates[my_index],
+                       CU_DEVICE_ATTRIBUTE_CLOCK_RATE, device);
 
-    // TODO can we refactor some of this to chpl-gpu to avoid duplication
-    // between runtime layers?
-    chpl_gpu_impl_set_globals(i, module);
-  }
+  chpl_gpu_devices[my_index] = device;
+  chpl_gpu_primary_ctx[my_index] = context;
+  dev_pid_to_lid_table[global_index] = my_index; // map device ID to array index
+
+  chpl_gpu_impl_set_globals(my_index, module);
 }
 
 bool chpl_gpu_impl_stream_supported(void) {
@@ -168,156 +239,19 @@ bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
   return true;
 }
 
-static void chpl_gpu_launch_kernel_help(int ln,
-                                        int32_t fn,
-                                        const char* name,
-                                        int grd_dim_x,
-                                        int grd_dim_y,
-                                        int grd_dim_z,
-                                        int blk_dim_x,
-                                        int blk_dim_y,
-                                        int blk_dim_z,
-                                        void* stream,
-                                        int nargs,
-                                        va_list args) {
-  CHPL_GPU_START_TIMER(load_time);
+void chpl_gpu_impl_launch_kernel(void* kernel,
+                                 int grd_dim_x, int grd_dim_y, int grd_dim_z,
+                                 int blk_dim_x, int blk_dim_y, int blk_dim_z,
+                                 void* stream, void** kernel_params) {
+  assert(kernel);
 
-  c_sublocid_t dev_id = chpl_task_getRequestedSubloc();
-  CUmodule cuda_module = chpl_gpu_cuda_modules[dev_id];
-  void* function = chpl_gpu_load_function(cuda_module, name);
-
-  CHPL_GPU_STOP_TIMER(load_time);
-  CHPL_GPU_START_TIMER(prep_time);
-
-  void ***kernel_params = chpl_mem_alloc(
-      (nargs+2) * sizeof(void **), CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
-  //         ^ +2 for the ln and fn arguments that we add to the end of the array
-
-  assert(function);
-  assert(kernel_params);
-
-  CHPL_GPU_DEBUG("Creating kernel parameters\n");
-  CHPL_GPU_DEBUG("\tgridDims=(%d, %d, %d), blockDims(%d, %d, %d)\n",
-                 grd_dim_x, grd_dim_y, grd_dim_z,
-                 blk_dim_x, blk_dim_y, blk_dim_z);
-
-  // Keep track of kernel parameters we dynamically allocate memory for so
-  // later on we know what we need to free.
-  bool *was_memory_dynamically_allocated_for_kernel_param = chpl_mem_alloc(
-      nargs * sizeof(bool), CHPL_RT_MD_GPU_KERNEL_PARAM_META, ln, fn);
-
-  for (int i=0 ; i<nargs ; i++) {
-    void* cur_arg = va_arg(args, void*);
-    size_t cur_arg_size = va_arg(args, size_t);
-
-    if (cur_arg_size > 0) {
-      was_memory_dynamically_allocated_for_kernel_param[i] = true;
-
-      kernel_params[i] = chpl_mem_alloc(1 * sizeof(CUdeviceptr),
-                                        CHPL_RT_MD_GPU_KERNEL_PARAM, ln, fn);
-
-      // TODO this doesn't work on EX, why?
-      // *kernel_params[i] = chpl_gpu_impl_mem_array_alloc(cur_arg_size, stream);
-      *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size,
-                                             CHPL_RT_MD_GPU_KERNEL_ARG,
-                                             ln, fn);
-
-      chpl_gpu_impl_copy_host_to_device(*kernel_params[i], cur_arg,
-                                        cur_arg_size, stream);
-
-      CHPL_GPU_DEBUG("\tKernel parameter %d: %p (device ptr)\n",
-                   i, *kernel_params[i]);
-    }
-    else {
-      was_memory_dynamically_allocated_for_kernel_param[i] = false;
-      kernel_params[i] = cur_arg;
-      CHPL_GPU_DEBUG("\tKernel parameter %d: %p\n",
-                   i, kernel_params[i]);
-    }
-  }
-
-  // add the ln and fn arguments to the end of the array
-  // These arguments only make sense when the kernel lives inside of standard
-  // module code and CHPL_DEVELOPER is not set since the generated kernel function
-  // will have two extra formals to account for the line and file num.
-  // If CHPL_DEVELOPER is set, these arguments are dropped on the floor
-  kernel_params[nargs] = (void**)(&ln);
-  kernel_params[nargs+1] = (void**)(&fn);
-
-  CHPL_GPU_STOP_TIMER(prep_time);
-  CHPL_GPU_START_TIMER(kernel_time);
-
-  CUDA_CALL(cuLaunchKernel((CUfunction)function,
+  CUDA_CALL(cuLaunchKernel((CUfunction)kernel,
                            grd_dim_x, grd_dim_y, grd_dim_z,
                            blk_dim_x, blk_dim_y, blk_dim_z,
                            0,       // shared memory in bytes
                            (CUstream)stream,  // stream ID
-                           (void**)kernel_params,
+                           kernel_params,
                            NULL));  // extra options
-
-  CHPL_GPU_DEBUG("cuLaunchKernel returned %s\n", name);
-
-#ifdef CHPL_GPU_ENABLE_PROFILE
-  chpl_gpu_impl_stream_synchronize(stream);
-#endif
-  CHPL_GPU_STOP_TIMER(kernel_time);
-
-  chpl_task_yield();
-
-  CHPL_GPU_START_TIMER(teardown_time);
-
-  // free GPU memory allocated for kernel parameters
-  for (int i=0 ; i<nargs ; i++) {
-    if (was_memory_dynamically_allocated_for_kernel_param[i]) {
-      chpl_gpu_mem_free(*kernel_params[i], ln, fn);
-      chpl_mem_free(kernel_params[i], ln, fn);
-    }
-  }
-
-  chpl_mem_free(kernel_params, ln, fn);
-  chpl_mem_free(was_memory_dynamically_allocated_for_kernel_param, ln, fn);
-
-  CHPL_GPU_STOP_TIMER(teardown_time);
-  CHPL_GPU_PRINT_TIMERS("<%20s> Load: %Lf, "
-                               "Prep: %Lf, "
-                               "Kernel: %Lf, "
-                               "Teardown: %Lf\n",
-         name, load_time, prep_time, kernel_time, teardown_time);
-}
-
-inline void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
-                                        const char* name,
-                                        int grd_dim_x,
-                                        int grd_dim_y,
-                                        int grd_dim_z,
-                                        int blk_dim_x,
-                                        int blk_dim_y,
-                                        int blk_dim_z,
-                                        void* stream,
-                                        int nargs, va_list args) {
-  chpl_gpu_launch_kernel_help(ln, fn,
-                              name,
-                              grd_dim_x, grd_dim_y, grd_dim_z,
-                              blk_dim_x, blk_dim_y, blk_dim_z,
-                              stream,
-                              nargs, args);
-}
-
-inline void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
-                                             const char* name,
-                                             int64_t num_threads,
-                                             int blk_dim,
-                                             void* stream,
-                                             int nargs,
-                                             va_list args) {
-  int grd_dim = (num_threads+blk_dim-1)/blk_dim;
-
-  chpl_gpu_launch_kernel_help(ln, fn,
-                              name,
-                              grd_dim, 1, 1,
-                              blk_dim, 1, 1,
-                              stream,
-                              nargs, args);
 }
 
 void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n,
@@ -396,6 +330,17 @@ void* chpl_gpu_impl_mem_alloc(size_t size) {
 void chpl_gpu_impl_mem_free(void* memAlloc) {
   if (memAlloc != NULL) {
     assert(chpl_gpu_is_device_ptr(memAlloc));
+
+    // see note in chpl_gpu_mem_free
+    int32_t dev_pid = -1;
+    CUDA_CALL(cuPointerGetAttribute((void*)&dev_pid,
+                                    CU_POINTER_ATTRIBUTE_DEVICE_ORDINAL,
+                                    (CUdeviceptr)memAlloc));
+    if (dev_pid != -1) {
+      int dev_lid = dev_pid_to_lid(dev_pid);
+      switch_context(dev_lid);
+    }
+
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
     if (chpl_gpu_impl_is_host_ptr(memAlloc)) {
       CUDA_CALL(cuMemFreeHost(memAlloc));
@@ -431,19 +376,19 @@ unsigned int chpl_gpu_device_clock_rate(int32_t devNum) {
   return (unsigned int)deviceClockRates[devNum];
 }
 
-bool chpl_gpu_impl_can_access_peer(int dev1, int dev2) {
+bool chpl_gpu_impl_can_access_peer(int dev_lid1, int dev_lid2) {
   int p2p;
-  CUDA_CALL(cuDeviceCanAccessPeer(&p2p, chpl_gpu_devices[dev1],
-    chpl_gpu_devices[dev2]));
+  CUDA_CALL(cuDeviceCanAccessPeer(&p2p, chpl_gpu_devices[dev_lid1],
+    chpl_gpu_devices[dev_lid2]));
   return p2p != 0;
 }
 
-void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable) {
-  switch_context(dev1);
+void chpl_gpu_impl_set_peer_access(int dev_lid1, int dev_lid2, bool enable) {
+  switch_context(dev_lid1);
   if(enable) {
-    CUDA_CALL(cuCtxEnablePeerAccess(chpl_gpu_primary_ctx[dev2], 0));
+    CUDA_CALL(cuCtxEnablePeerAccess(chpl_gpu_primary_ctx[dev_lid2], 0));
   } else {
-    CUDA_CALL(cuCtxDisablePeerAccess(chpl_gpu_primary_ctx[dev2]));
+    CUDA_CALL(cuCtxDisablePeerAccess(chpl_gpu_primary_ctx[dev_lid2]));
   }
 }
 
@@ -480,8 +425,67 @@ void chpl_gpu_impl_stream_synchronize(void* stream) {
   }
 }
 
-bool chpl_gpu_impl_can_reduce(void) {
-  return true;
+void* chpl_gpu_impl_host_register(void* var, size_t size) {
+  CUDA_CALL(cuMemHostRegister(var, size, CU_MEMHOSTREGISTER_PORTABLE));
+  return var;
+}
+
+void chpl_gpu_impl_host_unregister(void* var) {
+  CUDA_CALL(cuMemHostUnregister(var));
+}
+
+void chpl_gpu_impl_name(int dev, char *resultBuffer, int bufferSize) {
+  CUDA_CALL(cuDeviceGetName(resultBuffer, bufferSize, chpl_gpu_devices[dev]));
+}
+
+const int CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_BLOCK = CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK;
+const int CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_X = CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X;
+const int CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Y = CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Y;
+const int CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Z = CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Z;
+const int CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_X = CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_X;
+const int CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Y = CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_Y;
+const int CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Z = CU_DEVICE_ATTRIBUTE_MAX_GRID_DIM_Z;
+const int CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_BLOCK = CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK;
+const int CHPL_GPU_ATTRIBUTE__TOTAL_CONSTANT_MEMORY = CU_DEVICE_ATTRIBUTE_TOTAL_CONSTANT_MEMORY;
+const int CHPL_GPU_ATTRIBUTE__WARP_SIZE = CU_DEVICE_ATTRIBUTE_WARP_SIZE;
+const int CHPL_GPU_ATTRIBUTE__MAX_PITCH = CU_DEVICE_ATTRIBUTE_MAX_PITCH;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE1D_WIDTH = CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE1D_WIDTH;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_WIDTH = CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_WIDTH;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_HEIGHT = CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE2D_HEIGHT;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_WIDTH = CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE3D_WIDTH;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_HEIGHT = CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE3D_HEIGHT;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_DEPTH = CU_DEVICE_ATTRIBUTE_MAXIMUM_TEXTURE3D_DEPTH;
+const int CHPL_GPU_ATTRIBUTE__MAX_REGISTERS_PER_BLOCK = CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_BLOCK;
+const int CHPL_GPU_ATTRIBUTE__CLOCK_RATE = CU_DEVICE_ATTRIBUTE_CLOCK_RATE;
+const int CHPL_GPU_ATTRIBUTE__TEXTURE_ALIGNMENT = CU_DEVICE_ATTRIBUTE_TEXTURE_ALIGNMENT;
+const int CHPL_GPU_ATTRIBUTE__TEXTURE_PITCH_ALIGNMENT = CU_DEVICE_ATTRIBUTE_TEXTURE_PITCH_ALIGNMENT;
+const int CHPL_GPU_ATTRIBUTE__MULTIPROCESSOR_COUNT = CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT;
+const int CHPL_GPU_ATTRIBUTE__KERNEL_EXEC_TIMEOUT = CU_DEVICE_ATTRIBUTE_KERNEL_EXEC_TIMEOUT;
+const int CHPL_GPU_ATTRIBUTE__INTEGRATED = CU_DEVICE_ATTRIBUTE_INTEGRATED;
+const int CHPL_GPU_ATTRIBUTE__CAN_MAP_HOST_MEMORY = CU_DEVICE_ATTRIBUTE_CAN_MAP_HOST_MEMORY;
+const int CHPL_GPU_ATTRIBUTE__COMPUTE_MODE = CU_DEVICE_ATTRIBUTE_COMPUTE_MODE;
+const int CHPL_GPU_ATTRIBUTE__CONCURRENT_KERNELS = CU_DEVICE_ATTRIBUTE_CONCURRENT_KERNELS;
+const int CHPL_GPU_ATTRIBUTE__ECC_ENABLED = CU_DEVICE_ATTRIBUTE_ECC_ENABLED;
+const int CHPL_GPU_ATTRIBUTE__PCI_BUS_ID = CU_DEVICE_ATTRIBUTE_PCI_BUS_ID;
+const int CHPL_GPU_ATTRIBUTE__PCI_DEVICE_ID = CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID;
+const int CHPL_GPU_ATTRIBUTE__MEMORY_CLOCK_RATE = CU_DEVICE_ATTRIBUTE_MEMORY_CLOCK_RATE;
+const int CHPL_GPU_ATTRIBUTE__GLOBAL_MEMORY_BUS_WIDTH = CU_DEVICE_ATTRIBUTE_GLOBAL_MEMORY_BUS_WIDTH;
+const int CHPL_GPU_ATTRIBUTE__L2_CACHE_SIZE = CU_DEVICE_ATTRIBUTE_L2_CACHE_SIZE;
+const int CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_MULTIPROCESSOR = CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_MULTIPROCESSOR;
+const int CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MAJOR = CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR;
+const int CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MINOR = CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR;
+const int CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_MULTIPROCESSOR = CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_MULTIPROCESSOR;
+const int CHPL_GPU_ATTRIBUTE__MANAGED_MEMORY = CU_DEVICE_ATTRIBUTE_MANAGED_MEMORY;
+const int CHPL_GPU_ATTRIBUTE__MULTI_GPU_BOARD = CU_DEVICE_ATTRIBUTE_MULTI_GPU_BOARD;
+const int CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS = CU_DEVICE_ATTRIBUTE_PAGEABLE_MEMORY_ACCESS;
+const int CHPL_GPU_ATTRIBUTE__CONCURRENT_MANAGED_ACCESS = CU_DEVICE_ATTRIBUTE_CONCURRENT_MANAGED_ACCESS;
+const int CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS_USES_HOST_PAGE_TABLES = CU_DEVICE_ATTRIBUTE_PAGEABLE_MEMORY_ACCESS_USES_HOST_PAGE_TABLES;
+const int CHPL_GPU_ATTRIBUTE__DIRECT_MANAGED_MEM_ACCESS_FROM_HOST = CU_DEVICE_ATTRIBUTE_DIRECT_MANAGED_MEM_ACCESS_FROM_HOST;
+
+int chpl_gpu_impl_query_attribute(int dev, int attribute) {
+  int res;
+  CUDA_CALL(cuDeviceGetAttribute(&res, attribute, chpl_gpu_devices[dev]));
+  return res;
 }
 
 #endif // HAS_GPU_LOCALE

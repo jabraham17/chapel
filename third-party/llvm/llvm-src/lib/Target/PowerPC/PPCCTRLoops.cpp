@@ -7,21 +7,21 @@
 //===----------------------------------------------------------------------===//
 //
 // This pass generates machine instructions for the CTR loops related pseudos:
-// 1: MTCTRPseudo/DecreaseCTRPseudo
-// 2: MTCTR8Pseudo/DecreaseCTR8Pseudo
+// 1: MTCTRloop/DecreaseCTRloop
+// 2: MTCTR8loop/DecreaseCTR8loop
 //
 // If a CTR loop can be generated:
-// 1: MTCTRPseudo/MTCTR8Pseudo will be converted to "mtctr"
-// 2: DecreaseCTRPseudo/DecreaseCTR8Pseudo will be converted to "bdnz/bdz" and
+// 1: MTCTRloop/MTCTR8loop will be converted to "mtctr"
+// 2: DecreaseCTRloop/DecreaseCTR8loop will be converted to "bdnz/bdz" and
 //    its user branch instruction can be deleted.
 //
 // If a CTR loop can not be generated due to clobber of CTR:
-// 1: MTCTRPseudo/MTCTR8Pseudo can be deleted.
-// 2: DecreaseCTRPseudo/DecreaseCTR8Pseudo will be converted to "addi -1" and
+// 1: MTCTRloop/MTCTR8loop can be deleted.
+// 2: DecreaseCTRloop/DecreaseCTR8loop will be converted to "addi -1" and
 //    a "cmplwi/cmpldi".
 //
 // This pass runs just before register allocation, because we don't want
-// register allocator to allocate register for DecreaseCTRPseudo if a CTR can be
+// register allocator to allocate register for DecreaseCTRloop if a CTR can be
 // generated or if a CTR loop can not be generated, we don't have any condition
 // register for the new added "cmplwi/cmpldi".
 //
@@ -64,7 +64,7 @@ public:
   }
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {
-    AU.addRequired<MachineLoopInfo>();
+    AU.addRequired<MachineLoopInfoWrapperPass>();
     MachineFunctionPass::getAnalysisUsage(AU);
   }
 
@@ -86,7 +86,7 @@ char PPCCTRLoops::ID = 0;
 
 INITIALIZE_PASS_BEGIN(PPCCTRLoops, DEBUG_TYPE, "PowerPC CTR loops generation",
                       false, false)
-INITIALIZE_PASS_DEPENDENCY(MachineLoopInfo)
+INITIALIZE_PASS_DEPENDENCY(MachineLoopInfoWrapperPass)
 INITIALIZE_PASS_END(PPCCTRLoops, DEBUG_TYPE, "PowerPC CTR loops generation",
                     false, false)
 
@@ -95,14 +95,23 @@ FunctionPass *llvm::createPPCCTRLoopsPass() { return new PPCCTRLoops(); }
 bool PPCCTRLoops::runOnMachineFunction(MachineFunction &MF) {
   bool Changed = false;
 
-  auto &MLI = getAnalysis<MachineLoopInfo>();
+  auto &MLI = getAnalysis<MachineLoopInfoWrapperPass>().getLI();
   TII = static_cast<const PPCInstrInfo *>(MF.getSubtarget().getInstrInfo());
   MRI = &MF.getRegInfo();
 
-  for (auto ML : MLI) {
+  for (auto *ML : MLI) {
     if (ML->isOutermost())
       Changed |= processLoop(ML);
   }
+
+#ifndef NDEBUG
+  for (const MachineBasicBlock &BB : MF) {
+    for (const MachineInstr &I : BB)
+      assert((I.getOpcode() != PPC::DecreaseCTRloop &&
+              I.getOpcode() != PPC::DecreaseCTR8loop) &&
+             "CTR loop pseudo is not expanded!");
+  }
+#endif
 
   return Changed;
 }
@@ -114,14 +123,12 @@ bool PPCCTRLoops::isCTRClobber(MachineInstr *MI, bool CheckReads) const {
     // CTR defination inside the callee of a call instruction will not impact
     // the defination of MTCTRloop, so we can use definesRegister() for the
     // check, no need to check the regmask.
-    return (MI->definesRegister(PPC::CTR) &&
-            !MI->registerDefIsDead(PPC::CTR)) ||
-           (MI->definesRegister(PPC::CTR8) &&
-            !MI->registerDefIsDead(PPC::CTR8));
+    return MI->definesRegister(PPC::CTR, /*TRI=*/nullptr) ||
+           MI->definesRegister(PPC::CTR8, /*TRI=*/nullptr);
   }
 
-  if ((MI->modifiesRegister(PPC::CTR) && !MI->registerDefIsDead(PPC::CTR)) ||
-      (MI->modifiesRegister(PPC::CTR8) && !MI->registerDefIsDead(PPC::CTR8)))
+  if (MI->modifiesRegister(PPC::CTR, /*TRI=*/nullptr) ||
+      MI->modifiesRegister(PPC::CTR8, /*TRI=*/nullptr))
     return true;
 
   if (MI->getDesc().isCall())
@@ -129,7 +136,8 @@ bool PPCCTRLoops::isCTRClobber(MachineInstr *MI, bool CheckReads) const {
 
   // We define the CTR in the loop preheader, so if there is any CTR reader in
   // the loop, we also can not use CTR loop form.
-  if (MI->readsRegister(PPC::CTR) || MI->readsRegister(PPC::CTR8))
+  if (MI->readsRegister(PPC::CTR, /*TRI=*/nullptr) ||
+      MI->readsRegister(PPC::CTR8, /*TRI=*/nullptr))
     return true;
 
   return false;
@@ -139,8 +147,8 @@ bool PPCCTRLoops::processLoop(MachineLoop *ML) {
   bool Changed = false;
 
   // Align with HardwareLoop pass, process inner loops first.
-  for (auto I = ML->begin(), E = ML->end(); I != E; ++I)
-    Changed |= processLoop(*I);
+  for (MachineLoop *I : *ML)
+    Changed |= processLoop(I);
 
   // If any inner loop is changed, outter loop must be without hardware loop
   // intrinsics.
@@ -148,8 +156,8 @@ bool PPCCTRLoops::processLoop(MachineLoop *ML) {
     return true;
 
   auto IsLoopStart = [](MachineInstr &MI) {
-    return MI.getOpcode() == PPC::MTCTRPseudo ||
-           MI.getOpcode() == PPC::MTCTR8Pseudo;
+    return MI.getOpcode() == PPC::MTCTRloop ||
+           MI.getOpcode() == PPC::MTCTR8loop;
   };
 
   auto SearchForStart =
@@ -166,7 +174,7 @@ bool PPCCTRLoops::processLoop(MachineLoop *ML) {
   bool InvalidCTRLoop = false;
 
   MachineBasicBlock *Preheader = ML->getLoopPreheader();
-  // If there is no preheader for this loop, there must be no MTCTRPseudo
+  // If there is no preheader for this loop, there must be no MTCTRloop
   // either.
   if (!Preheader)
     return false;
@@ -205,8 +213,8 @@ bool PPCCTRLoops::processLoop(MachineLoop *ML) {
   // normal loop.
   for (auto *MBB : reverse(ML->getBlocks())) {
     for (auto &MI : *MBB) {
-      if (MI.getOpcode() == PPC::DecreaseCTRPseudo ||
-          MI.getOpcode() == PPC::DecreaseCTR8Pseudo)
+      if (MI.getOpcode() == PPC::DecreaseCTRloop ||
+          MI.getOpcode() == PPC::DecreaseCTR8loop)
         Dec = &MI;
       else if (!InvalidCTRLoop)
         // If any instruction clobber CTR, then we can not generate a CTR loop.
@@ -313,6 +321,8 @@ void PPCCTRLoops::expandCTRLoops(MachineLoop *ML, MachineInstr *Start,
 
   MachineBasicBlock *Preheader = Start->getParent();
   MachineBasicBlock *Exiting = Dec->getParent();
+
+  (void)Preheader;
   assert((Preheader && Exiting) &&
          "Preheader and exiting should exist for CTR loop!");
 
@@ -341,18 +351,11 @@ void PPCCTRLoops::expandCTRLoops(MachineLoop *ML, MachineInstr *Start,
     llvm_unreachable("Unhandled branch user for DecreaseCTRloop.");
   }
 
-  unsigned MTCTROpcode = Is64Bit ? PPC::MTCTR8 : PPC::MTCTR;
-
-  // Generate "mtctr" in the loop preheader.
-  BuildMI(*Preheader, Start, Start->getDebugLoc(), TII->get(MTCTROpcode))
-      .addReg(Start->getOperand(0).getReg());
-
   // Generate "bdnz/bdz" in the exiting block just before the terminator.
   BuildMI(*Exiting, &*BrInstr, BrInstr->getDebugLoc(), TII->get(Opcode))
       .addMBB(BrInstr->getOperand(1).getMBB());
 
   // Remove the pseudo instructions.
-  Start->eraseFromParent();
   BrInstr->eraseFromParent();
   Dec->eraseFromParent();
 }

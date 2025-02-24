@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -148,6 +148,7 @@ module ChapelTuple {
   //
   pragma "compiler generated"
   pragma "last resort"
+  pragma "no array view elision"
   @chpldoc.nodoc
   inline operator =(ref x: _tuple,
                     pragma "intent ref maybe const formal" y: _tuple)
@@ -168,7 +169,9 @@ module ChapelTuple {
       compilerError("invalid access of non-homogeneous tuple by runtime value");
     if boundsChecking then
       if i < 0 || i > size-1 then
-        halt("tuple access out of bounds: ", i);
+        halt("tuple index out of bounds\n",
+             "note: index was ", i, " but the tuple type ", this.type:string,
+             " has bounds 0..", size-1);
     return __primitive("get svec member", this, i);
   }
 
@@ -180,7 +183,10 @@ module ChapelTuple {
       compilerError("invalid access of non-homogeneous tuple by runtime value");
     if boundsChecking then
       if i < 0 || i > size-1 then
-        halt("tuple access out of bounds: ", i);
+        halt("tuple index out of bounds\n",
+             "note: index was ", i, " but the tuple type ", this.type:string,
+             " has bounds 0..", size-1);
+
     return __primitive("get svec member", this, i);
   }
 
@@ -219,7 +225,7 @@ module ChapelTuple {
     if CHPL_WARN_TUPLE_ITERATION == "true" then
       compilerWarning("Iterating over tuples. If you intended to use zippered iteration, add the new keyword 'zip' before the tuple of iteratable expressions.");
 
-    foreach i in 0..#this.size {
+    foreach i in 0..#this.size with (ref this) {
       yield(this(i));
     }
   }
@@ -256,7 +262,7 @@ module ChapelTuple {
 
     var fThis = followThis(0);
 
-    foreach i in fThis {
+    foreach i in fThis with (ref this) {
       yield this(i);
     }
   }
@@ -707,7 +713,6 @@ module ChapelTuple {
   // pairs.
   //
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator +(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -716,7 +721,6 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator +(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
@@ -726,7 +730,6 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator -(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -735,7 +738,6 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator -(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
@@ -745,7 +747,6 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator *(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -754,7 +755,6 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator *(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
@@ -764,7 +764,6 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator /(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -773,7 +772,6 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator /(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
@@ -783,7 +781,6 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator %(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -792,7 +789,6 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator %(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
@@ -802,7 +798,6 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator **(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -811,7 +806,6 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator **(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                              isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
@@ -821,7 +815,6 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator &(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -830,7 +823,6 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator &(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
@@ -840,7 +832,6 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator |(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -849,7 +840,6 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator |(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
@@ -859,7 +849,6 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator ^(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -868,7 +857,6 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator ^(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
@@ -878,7 +866,6 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator <<(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -887,7 +874,6 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator <<(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                              isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
@@ -897,7 +883,6 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator >>(x: _tuple, y: x(0).type) where isHomogeneousTuple(x) {
     var result: x.size * x(0).type;
     for param d in 0..x.size-1 do
@@ -906,7 +891,6 @@ module ChapelTuple {
   }
 
   @chpldoc.nodoc
-  @unstable("tuple-scalar operators are unstable and may be removed in the future")
   inline operator >>(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
                                              isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;

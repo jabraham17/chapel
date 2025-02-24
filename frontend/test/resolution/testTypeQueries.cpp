@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,8 +31,7 @@
 
 static void test1() {
   printf("test1\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto t1 = resolveTypeOfX(context,
                 R""""(
@@ -69,8 +68,7 @@ static void test1() {
 
 static void test2() {
   printf("test2\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
                 R""""(
@@ -92,8 +90,7 @@ static void test2() {
 
 static void test3() {
   printf("test3\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
                 R""""(
@@ -115,8 +112,7 @@ static void test3() {
 
 static void test4() {
   printf("test4\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
                 R""""(
@@ -138,8 +134,7 @@ static void test4() {
 
 static void test5() {
   printf("test5\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
                 R""""(
@@ -156,8 +151,7 @@ static void test5() {
 
 static void test6() {
   printf("test6\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
                 R""""(
@@ -175,8 +169,7 @@ static void test6() {
 
 static void test7() {
   printf("test7\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
                 R""""(
@@ -192,8 +185,7 @@ static void test7() {
 
 static void test8() {
   printf("test8\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
                 R""""(
@@ -209,8 +201,7 @@ static void test8() {
 
 static void test9() {
   printf("test9\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
                 R""""(
@@ -229,8 +220,7 @@ static void test9() {
 
 static void test10() {
   printf("test10\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto path = UniqueString::get(context, "input.chpl");
   std::string contents = R""""(
@@ -292,8 +282,7 @@ static void test10() {
 
 static void test11() {
   printf("test11\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
                 R""""(
@@ -312,8 +301,7 @@ static void test11() {
 
 static void test12a() {
   printf("test12\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
                 R""""(
@@ -341,8 +329,7 @@ static void test12a() {
 
 static void test12b() {
   printf("test12\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
                 R""""(
@@ -374,8 +361,7 @@ static void test12b() {
 
 static void test13a() {
   printf("test13a\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
                 R""""(
@@ -396,8 +382,7 @@ static void test13a() {
 
 static void test13b() {
   printf("test13b\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
                 R""""(
@@ -418,8 +403,7 @@ static void test13b() {
 
 static void test14() {
   printf("test14\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
                 R""""(
@@ -447,8 +431,7 @@ static void test14() {
 
 static void test15() {
   printf("test15\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
                 R""""(
@@ -473,8 +456,7 @@ static void test15() {
 
 static void test16() {
   printf("test16\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   std::string setup =
                 R""""(
@@ -495,7 +477,7 @@ static void test16() {
                 )"""");
   assert(qt.type() && qt.type()->isBoolType());
 
-  context->advanceToNextRevision(false);
+  context = buildStdContext();
   qt = resolveQualifiedTypeOfX(context, setup +
                 R""""(
                   var a: R(bool, string);
@@ -504,7 +486,7 @@ static void test16() {
                 )"""");
   assert(qt.type() && qt.type()->isBoolType());
 
-  context->advanceToNextRevision(false);
+  context = buildStdContext();
   qt = resolveQualifiedTypeOfX(context, setup +
                 R""""(
                   var a: R(bool, string);
@@ -517,8 +499,7 @@ static void test16() {
 
 static void test17() {
   printf("test17\n");
-  Context ctx;
-  Context* context = &ctx;
+  auto context = buildStdContext();
 
   std::string setup =
                 R""""(
@@ -540,7 +521,7 @@ static void test17() {
                 )"""");
   assert(qt.isErroneousType());
 
-  context->advanceToNextRevision(false);
+  context = buildStdContext();
   qt = resolveQualifiedTypeOfX(context, setup+
                 R""""(
                   var a: R(bool, int);
@@ -549,13 +530,105 @@ static void test17() {
                 )"""");
   assert(qt.isErroneousType());
 
-  context->advanceToNextRevision(false);
+  context = buildStdContext();
   qt = resolveQualifiedTypeOfX(context, setup +
                 R""""(
                   var a: R(bool, int);
                   type x = f(a);
                 )"""");
   assert(qt.isErroneousType());
+}
+
+static void test18() {
+  printf("test17\n");
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto qt = resolveQualifiedTypeOfX(context, R"""(
+    proc foo(param val: bool) type {
+      if val then return string;
+      else return int;
+    }
+
+    record R {
+      param val : bool;
+      var data : foo(val);
+    }
+
+    proc helper(arg: R(?val)) {
+      return arg.data;
+    }
+
+    var r : R(true);
+    var x = helper(r);
+    )""");
+
+  assert(qt.type()->isStringType());
+}
+
+static void test19() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto qt = resolveQualifiedTypeOfX(context,
+                R""""(
+                proc helper(param cond : bool) type {
+                  if cond then return int;
+                  else return string;
+                }
+
+                proc func(arg: helper(true)) {
+                  return arg;
+                }
+
+                var x = func(2);
+                )"""");
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type()->isIntType());
+  assert(!guard.realizeErrors());
+}
+
+static void test20() {
+  printf("%s\n", __FUNCTION__);
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto varTypes = resolveTypesOfVariables(context,
+                R""""(
+                class C {
+                  type elementType;
+                  type indexType;
+                  type containerType;
+                }
+                class Container {
+                  type containedType;
+                }
+                proc f(c: C(real,?t,?u)) type {
+                  return t;
+                }
+                proc g(c: C(?t,?u,Container(?))) type {
+                  return t;
+                }
+                proc h(c: C(?t,?u,Container(?v)), x: t, y: u, z: v) {
+                  return z;
+                }
+                var cc = new Container(int);
+                var c = new C(real, int, cc.type);
+                type r1 = f(c);
+                type r2 = g(c);
+                var r3 = h(c, 1.0, 2, 3);
+                var r4 = h(c, 1.0, 1.0, 3);
+                var r5 = h(c, 1.0, 1, 3.0);
+                )"""", {"r1", "r2", "r3", "r4", "r5"});
+
+  assert(!varTypes.at("r1").isUnknownOrErroneous() && varTypes.at("r1").type()->isIntType());
+  assert(!varTypes.at("r2").isUnknownOrErroneous() && varTypes.at("r2").type()->isRealType());
+  assert(!varTypes.at("r3").isUnknownOrErroneous() && varTypes.at("r3").type()->isIntType());
+  assert(varTypes.at("r4").isErroneousType());
+  assert(varTypes.at("r5").isErroneousType());
+
+  assert(guard.realizeErrors() == 2);
 }
 
 int main() {
@@ -578,6 +651,9 @@ int main() {
   test15();
   test16();
   test17();
+  test18();
+  test19();
+  test20();
 
   return 0;
 }

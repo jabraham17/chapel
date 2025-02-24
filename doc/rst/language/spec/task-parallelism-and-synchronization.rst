@@ -1,5 +1,7 @@
 .. default-domain:: chpl
 
+.. index::
+   single: synchronization
 .. _Chapter-Task_Parallelism_and_Synchronization:
 
 ====================================
@@ -39,9 +41,17 @@ details task parallelism as follows:
    way to suppress parallelism.
 
 -  :ref:`Yield_Task_Execution` describes yielding the current tasks
-    execution.
+   execution.
 
 
+.. index::
+   single: task parallelism
+   single: parallelism; task
+   single: task parallelism; task creation
+   single: task creation
+   single: task function
+   single: task parallelism; task function
+   single: tasks
 .. _Task_parallelism:
 
 Tasks and Task Parallelism
@@ -67,7 +77,10 @@ Tasks are considered to be created when execution reaches the start of a
 actually executed depends on the Chapel implementation and run-time
 execution state.
 
-A task is represented as a call to a *task function*, whose body
+Tasks created by ``begin``, ``cobegin``, and ``coforall`` can depend upon
+each other, even if that leads to the program not being serializable.
+
+A task is implemented as a call to a *task function*, whose body
 contains the Chapel code for the task. Variables defined in outer scopes
 are considered to be passed into a task function by default intent,
 unless a different *task intent* is specified explicitly by a
@@ -79,6 +92,9 @@ Memory Consistency Model
 accesses can result from aliasing due to ``ref`` argument intents or
 task intents, among others.
 
+.. index::
+   single: begin
+   single: statements; begin
 .. _Begin:
 
 The Begin Statement
@@ -136,6 +152,12 @@ task function and the role of ``task-intent-clause`` are defined in
 Yield and return statements are not allowed in begin blocks. Break and
 continue statements may not be used to exit a begin block.
 
+.. index::
+   single: sync
+   single: sync variables
+   single: synchronization variables; sync
+   single: synchronization types; formal arguments
+   single: synchronization types; actual arguments
 .. _Synchronization_Variables:
 
 Synchronization Variables
@@ -284,6 +306,8 @@ state is not changed or waited on. The qualifier ``sync`` without the
 value type can be used to specify a generic formal argument that
 requires a ``sync`` actual.
 
+.. index::
+   pair: sync; predefined functions
 .. _Functions_on_Synchronization_Variables:
 
 Predefined Sync Methods
@@ -293,6 +317,10 @@ The following methods are defined for variables of ``sync`` type:
 
 .. include:: /builtins/ChapelSyncvar.rst
 
+.. index::
+   single: atomic variables; atomic
+   single: atomic
+   pair: atomic; predefined functions
 .. _Atomic_Variables:
 .. _Functions_on_Atomic_Variables:
 
@@ -311,6 +339,9 @@ by the following syntax:
 
 .. include:: /builtins/Atomics.rst
 
+.. index::
+   single: cobegin
+   single: statements; cobegin
 .. _Cobegin:
 
 The Cobegin Statement
@@ -372,6 +403,9 @@ statements may not be used to exit a cobegin block.
    continue past the final line above until each of the sync variables
    is written, thereby ensuring that each of the functions has finished.
 
+.. index::
+   single: coforall
+   single: statements; coforall
 .. _Coforall:
 
 The Coforall Loop
@@ -450,6 +484,12 @@ statements may not be used to exit a coforall block.
    tasks have completed. Thus control does not continue past the last
    line until all of the tasks have completed.
 
+.. index::
+   single: keywords; with (task intent)
+   single: with; task intent
+   single: task intents
+   single: task parallelism; task functions
+   single: task parallelism; task intents
 .. _Task_Intents:
 
 Task Intents
@@ -471,13 +511,17 @@ it is passed as an actual argument to the task function and all
 references to the field within the task function implicitly refer to the
 corresponding shadow variable.
 
-Each formal argument of a task function has the default argument intent
-by default. See also :ref:`The_Default_Intent`. Note that the default
-intent usually allows the compiler to assume that the value will not be
-concurrently modified. For variables of primitive and class types, this
-has the effect of capturing the value of the variable at task creation
-time and referencing that value instead of the original variable within
-the lexical scope of the task construct.
+The implicit formals of task functions generally have
+:ref:`the default argument intent <The_Default_Intent>` by default. Note that
+the default intent usually allows the compiler to assume that the value will
+not be concurrently modified. That assumption is useful for the compiler to, for example, make a per-task copy of an outer variable of ``int`` type.
+
+Implicit formals of array types are an exception: they inherit their default
+intent from the array actual. An immutable array has a default intent of
+``const`` and a mutable array has a default intent of ``ref``. This allows
+arrays to be modified inside the body of a task function if it is modifiable
+outside the body of the task function. A mutable array can have an explicit
+``const`` task intent to make it immutable inside the body of a task function.
 
 A formal can be given another argument intent explicitly by listing it
 with that intent in the optional ``task-intent-clause``. For example,
@@ -615,6 +659,9 @@ subject to such treatment within nested task constructs, if any.
       which would apply the intent to all variables. An example of syntax
       for a blanket ``ref`` intent would be ``ref *``.
 
+.. index::
+   single: sync
+   single: statements; sync
 .. _Sync_Statement:
 
 The Sync Statement
@@ -703,10 +750,17 @@ continue statements may not be used to exit a sync statement block.
    wait for these begin statements to complete whereas the latter code
    will not.
 
+.. index::
+   single: serial
+   single: statements; serial
 .. _Serial:
 
 The Serial Statement
 --------------------
+
+.. note::
+
+   The ``serial`` statement is unstable and likely to be deprecated.
 
 The ``serial`` statement can be used to dynamically disable parallelism.
 The syntax is:

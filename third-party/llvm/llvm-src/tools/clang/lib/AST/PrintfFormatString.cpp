@@ -140,19 +140,19 @@ static PrintfSpecifierResult ParsePrintfSpecifier(FormatStringHandler &H,
         // Set the privacy flag if the privacy annotation in the
         // comma-delimited segment is at least as strict as the privacy
         // annotations in previous comma-delimited segments.
-        if (MatchedStr.startswith("mask")) {
+        if (MatchedStr.starts_with("mask")) {
           StringRef MaskType = MatchedStr.substr(sizeof("mask.") - 1);
           unsigned Size = MaskType.size();
           if (Warn && (Size == 0 || Size > 8))
             H.handleInvalidMaskType(MaskType);
           FS.setMaskType(MaskType);
-        } else if (MatchedStr.equals("sensitive"))
+        } else if (MatchedStr == "sensitive")
           PrivacyFlags = clang::analyze_os_log::OSLogBufferItem::IsSensitive;
         else if (PrivacyFlags !=
-                 clang::analyze_os_log::OSLogBufferItem::IsSensitive &&
-                 MatchedStr.equals("private"))
+                     clang::analyze_os_log::OSLogBufferItem::IsSensitive &&
+                 MatchedStr == "private")
           PrivacyFlags = clang::analyze_os_log::OSLogBufferItem::IsPrivate;
-        else if (PrivacyFlags == 0 && MatchedStr.equals("public"))
+        else if (PrivacyFlags == 0 && MatchedStr == "public")
           PrivacyFlags = clang::analyze_os_log::OSLogBufferItem::IsPublic;
       } else {
         size_t CommaOrBracePos =
@@ -326,6 +326,14 @@ static PrintfSpecifierResult ParsePrintfSpecifier(FormatStringHandler &H,
     case 's': k = ConversionSpecifier::sArg; break;
     case 'u': k = ConversionSpecifier::uArg; break;
     case 'x': k = ConversionSpecifier::xArg; break;
+    // C23.
+    case 'b':
+      if (isFreeBSDKPrintf)
+        k = ConversionSpecifier::FreeBSDbArg; // int followed by char *
+      else
+        k = ConversionSpecifier::bArg;
+      break;
+    case 'B': k = ConversionSpecifier::BArg; break;
     // POSIX specific.
     case 'C': k = ConversionSpecifier::CArg; break;
     case 'S': k = ConversionSpecifier::SArg; break;
@@ -337,14 +345,11 @@ static PrintfSpecifierResult ParsePrintfSpecifier(FormatStringHandler &H,
     case '@': k = ConversionSpecifier::ObjCObjArg; break;
     // Glibc specific.
     case 'm': k = ConversionSpecifier::PrintErrno; break;
-    // FreeBSD kernel specific.
-    case 'b':
-      if (isFreeBSDKPrintf)
-        k = ConversionSpecifier::FreeBSDbArg; // int followed by char *
-      break;
     case 'r':
       if (isFreeBSDKPrintf)
         k = ConversionSpecifier::FreeBSDrArg; // int
+      else if (LO.FixedPoint)
+        k = ConversionSpecifier::rArg;
       break;
     case 'y':
       if (isFreeBSDKPrintf)
@@ -369,6 +374,20 @@ static PrintfSpecifierResult ParsePrintfSpecifier(FormatStringHandler &H,
     case 'Z':
       if (Target.getTriple().isOSMSVCRT())
         k = ConversionSpecifier::ZArg;
+      break;
+    // ISO/IEC TR 18037 (fixed-point) specific.
+    // NOTE: 'r' is handled up above since FreeBSD also supports %r.
+    case 'k':
+      if (LO.FixedPoint)
+        k = ConversionSpecifier::kArg;
+      break;
+    case 'K':
+      if (LO.FixedPoint)
+        k = ConversionSpecifier::KArg;
+      break;
+    case 'R':
+      if (LO.FixedPoint)
+        k = ConversionSpecifier::RArg;
       break;
   }
 
@@ -497,7 +516,7 @@ ArgType PrintfSpecifier::getScalarArgType(ASTContext &Ctx,
       case LengthModifier::AsShort:
         if (Ctx.getTargetInfo().getTriple().isOSMSVCRT())
           return Ctx.IntTy;
-        LLVM_FALLTHROUGH;
+        [[fallthrough]];
       default:
         return ArgType::Invalid();
     }
@@ -624,6 +643,9 @@ ArgType PrintfSpecifier::getScalarArgType(ASTContext &Ctx,
     }
   }
 
+  if (CS.isFixedPointArg() && !Ctx.getLangOpts().FixedPoint)
+    return ArgType::Invalid();
+
   switch (CS.getKind()) {
     case ConversionSpecifier::sArg:
       if (LM.getKind() == LengthModifier::AsWideChar) {
@@ -655,6 +677,50 @@ ArgType PrintfSpecifier::getScalarArgType(ASTContext &Ctx,
       return ArgType::CPointerTy;
     case ConversionSpecifier::ObjCObjArg:
       return ArgType::ObjCPointerTy;
+    case ConversionSpecifier::kArg:
+      switch (LM.getKind()) {
+      case LengthModifier::None:
+        return Ctx.AccumTy;
+      case LengthModifier::AsShort:
+        return Ctx.ShortAccumTy;
+      case LengthModifier::AsLong:
+        return Ctx.LongAccumTy;
+      default:
+        return ArgType::Invalid();
+      }
+    case ConversionSpecifier::KArg:
+      switch (LM.getKind()) {
+      case LengthModifier::None:
+        return Ctx.UnsignedAccumTy;
+      case LengthModifier::AsShort:
+        return Ctx.UnsignedShortAccumTy;
+      case LengthModifier::AsLong:
+        return Ctx.UnsignedLongAccumTy;
+      default:
+        return ArgType::Invalid();
+      }
+    case ConversionSpecifier::rArg:
+      switch (LM.getKind()) {
+      case LengthModifier::None:
+        return Ctx.FractTy;
+      case LengthModifier::AsShort:
+        return Ctx.ShortFractTy;
+      case LengthModifier::AsLong:
+        return Ctx.LongFractTy;
+      default:
+        return ArgType::Invalid();
+      }
+    case ConversionSpecifier::RArg:
+      switch (LM.getKind()) {
+      case LengthModifier::None:
+        return Ctx.UnsignedFractTy;
+      case LengthModifier::AsShort:
+        return Ctx.UnsignedShortFractTy;
+      case LengthModifier::AsLong:
+        return Ctx.UnsignedLongFractTy;
+      default:
+        return ArgType::Invalid();
+      }
     default:
       break;
   }
@@ -797,6 +863,10 @@ bool PrintfSpecifier::fixType(QualType QT, const LangOptions &LangOpt,
 #include "clang/Basic/PPCTypes.def"
 #define RVV_TYPE(Name, Id, SingletonId) case BuiltinType::Id:
 #include "clang/Basic/RISCVVTypes.def"
+#define WASM_TYPE(Name, Id, SingletonId) case BuiltinType::Id:
+#include "clang/Basic/WebAssemblyReferenceTypes.def"
+#define AMDGPU_TYPE(Name, Id, SingletonId) case BuiltinType::Id:
+#include "clang/Basic/AMDGPUTypes.def"
 #define SIGNED_TYPE(Id, SingletonId)
 #define UNSIGNED_TYPE(Id, SingletonId)
 #define FLOATING_TYPE(Id, SingletonId)
@@ -844,7 +914,7 @@ bool PrintfSpecifier::fixType(QualType QT, const LangOptions &LangOpt,
   }
 
   // Handle size_t, ptrdiff_t, etc. that have dedicated length modifiers in C99.
-  if (isa<TypedefType>(QT) && (LangOpt.C99 || LangOpt.CPlusPlus11))
+  if (LangOpt.C99 || LangOpt.CPlusPlus11)
     namedTypeToLengthModifier(QT, LM);
 
   // If fixing the length modifier was enough, we might be done.
@@ -874,7 +944,7 @@ bool PrintfSpecifier::fixType(QualType QT, const LangOptions &LangOpt,
 
   // Set conversion specifier and disable any flags which do not apply to it.
   // Let typedefs to char fall through to int, as %c is silly for uint8_t.
-  if (!isa<TypedefType>(QT) && QT->isCharType()) {
+  if (!QT->getAs<TypedefType>() && QT->isCharType()) {
     CS.setKind(ConversionSpecifier::cArg);
     LM.setKind(LengthModifier::None);
     Precision.setHowSpecified(OptionalAmount::NotSpecified);
@@ -885,12 +955,10 @@ bool PrintfSpecifier::fixType(QualType QT, const LangOptions &LangOpt,
   // Test for Floating type first as LongDouble can pass isUnsignedIntegerType
   else if (QT->isRealFloatingType()) {
     CS.setKind(ConversionSpecifier::fArg);
-  }
-  else if (QT->isSignedIntegerType()) {
+  } else if (QT->isSignedIntegerType()) {
     CS.setKind(ConversionSpecifier::dArg);
     HasAlternativeForm = false;
-  }
-  else if (QT->isUnsignedIntegerType()) {
+  } else if (QT->isUnsignedIntegerType()) {
     CS.setKind(ConversionSpecifier::uArg);
     HasAlternativeForm = false;
     HasPlusPrefix = false;
@@ -952,6 +1020,8 @@ bool PrintfSpecifier::hasValidPlusPrefix() const {
   case ConversionSpecifier::AArg:
   case ConversionSpecifier::FreeBSDrArg:
   case ConversionSpecifier::FreeBSDyArg:
+  case ConversionSpecifier::rArg:
+  case ConversionSpecifier::kArg:
     return true;
 
   default:
@@ -963,8 +1033,10 @@ bool PrintfSpecifier::hasValidAlternativeForm() const {
   if (!HasAlternativeForm)
     return true;
 
-  // Alternate form flag only valid with the oxXaAeEfFgG conversions
+  // Alternate form flag only valid with the bBoxXaAeEfFgGrRkK conversions
   switch (CS.getKind()) {
+  case ConversionSpecifier::bArg:
+  case ConversionSpecifier::BArg:
   case ConversionSpecifier::oArg:
   case ConversionSpecifier::OArg:
   case ConversionSpecifier::xArg:
@@ -979,6 +1051,10 @@ bool PrintfSpecifier::hasValidAlternativeForm() const {
   case ConversionSpecifier::GArg:
   case ConversionSpecifier::FreeBSDrArg:
   case ConversionSpecifier::FreeBSDyArg:
+  case ConversionSpecifier::rArg:
+  case ConversionSpecifier::RArg:
+  case ConversionSpecifier::kArg:
+  case ConversionSpecifier::KArg:
     return true;
 
   default:
@@ -990,8 +1066,10 @@ bool PrintfSpecifier::hasValidLeadingZeros() const {
   if (!HasLeadingZeroes)
     return true;
 
-  // Leading zeroes flag only valid with the diouxXaAeEfFgG conversions
+  // Leading zeroes flag only valid with the bBdiouxXaAeEfFgGrRkK conversions
   switch (CS.getKind()) {
+  case ConversionSpecifier::bArg:
+  case ConversionSpecifier::BArg:
   case ConversionSpecifier::dArg:
   case ConversionSpecifier::DArg:
   case ConversionSpecifier::iArg:
@@ -1011,6 +1089,10 @@ bool PrintfSpecifier::hasValidLeadingZeros() const {
   case ConversionSpecifier::GArg:
   case ConversionSpecifier::FreeBSDrArg:
   case ConversionSpecifier::FreeBSDyArg:
+  case ConversionSpecifier::rArg:
+  case ConversionSpecifier::RArg:
+  case ConversionSpecifier::kArg:
+  case ConversionSpecifier::KArg:
     return true;
 
   default:
@@ -1037,6 +1119,8 @@ bool PrintfSpecifier::hasValidSpacePrefix() const {
   case ConversionSpecifier::AArg:
   case ConversionSpecifier::FreeBSDrArg:
   case ConversionSpecifier::FreeBSDyArg:
+  case ConversionSpecifier::rArg:
+  case ConversionSpecifier::kArg:
     return true;
 
   default:
@@ -1082,8 +1166,10 @@ bool PrintfSpecifier::hasValidPrecision() const {
   if (Precision.getHowSpecified() == OptionalAmount::NotSpecified)
     return true;
 
-  // Precision is only valid with the diouxXaAeEfFgGsP conversions
+  // Precision is only valid with the bBdiouxXaAeEfFgGsPrRkK conversions
   switch (CS.getKind()) {
+  case ConversionSpecifier::bArg:
+  case ConversionSpecifier::BArg:
   case ConversionSpecifier::dArg:
   case ConversionSpecifier::DArg:
   case ConversionSpecifier::iArg:
@@ -1105,6 +1191,10 @@ bool PrintfSpecifier::hasValidPrecision() const {
   case ConversionSpecifier::FreeBSDrArg:
   case ConversionSpecifier::FreeBSDyArg:
   case ConversionSpecifier::PArg:
+  case ConversionSpecifier::rArg:
+  case ConversionSpecifier::RArg:
+  case ConversionSpecifier::kArg:
+  case ConversionSpecifier::KArg:
     return true;
 
   default:

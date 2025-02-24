@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,7 +20,7 @@
 
 module MemConsistency {
   pragma "c memory order type"
-  extern type memory_order;
+  extern "chpl_memory_order" type memory_order;
 
   // When I finish removing PRIM_INIT before initialization to a known
   // value, then this method should work.  Until then, my stopgap will be
@@ -48,33 +48,29 @@ module MemConsistency {
     __primitive("=", lhs, rhs);
   }
 
-  proc memory_order.writeThis(ch) throws {
-    if this == memory_order_relaxed then
-      ch.write("memory_order_relaxed");
-    else if this == memory_order_consume then
-      ch.write("memory_order_consume");
-    else if this == memory_order_acquire then
-      ch.write("memory_order_acquire");
-    else if this == memory_order_release then
-      ch.write("memory_order_release");
-    else if this == memory_order_acq_rel then
-      ch.write("memory_order_acq_rel");
-    else if this == memory_order_seq_cst then
-      ch.write("memory_order_seq_cst");
-    else
-      ch.write("memory_order_unknown");
-  }
-
   proc memory_order.serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    if this == memory_order_relaxed then
+      writer.write("memory_order_relaxed");
+    else if this == memory_order_consume then
+      writer.write("memory_order_consume");
+    else if this == memory_order_acquire then
+      writer.write("memory_order_acquire");
+    else if this == memory_order_release then
+      writer.write("memory_order_release");
+    else if this == memory_order_acq_rel then
+      writer.write("memory_order_acq_rel");
+    else if this == memory_order_seq_cst then
+      writer.write("memory_order_seq_cst");
+    else
+      writer.write("memory_order_unknown");
   }
 
-  extern const memory_order_relaxed:memory_order;
-  extern const memory_order_consume:memory_order;
-  extern const memory_order_acquire:memory_order;
-  extern const memory_order_release:memory_order;
-  extern const memory_order_acq_rel:memory_order;
-  extern const memory_order_seq_cst:memory_order;
+  extern "chpl_memory_order_relaxed" const memory_order_relaxed:memory_order;
+  extern "chpl_memory_order_consume" const memory_order_consume:memory_order;
+  extern "chpl_memory_order_acquire" const memory_order_acquire:memory_order;
+  extern "chpl_memory_order_release" const memory_order_release:memory_order;
+  extern "chpl_memory_order_acq_rel" const memory_order_acq_rel:memory_order;
+  extern "chpl_memory_order_seq_cst" const memory_order_seq_cst:memory_order;
 
   pragma "memory order type"
   enum memoryOrder {seqCst, acqRel, release, acquire, relaxed}
@@ -88,6 +84,14 @@ module MemConsistency {
     } else {
       return order;
     }
+  }
+
+  // Given an input memory order, returns 'true' if that
+  // order has a release component
+  proc orderIncludesRelease(param order: memoryOrder) param : bool {
+    return order == memoryOrder.seqCst ||
+           order == memoryOrder.acqRel ||
+           order == memoryOrder.release;
   }
 
   inline proc c_memory_order(param order: memoryOrder) {

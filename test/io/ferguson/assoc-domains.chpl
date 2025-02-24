@@ -1,39 +1,40 @@
+import Sort;
 use IO;
 
 
 proc testText(ref seeds: domain(int)) {
-  writeln("in testText ", seeds.sorted());
+  writeln("in testText ", Sort.sorted(seeds));
   var lf = open('test.log' : string, ioMode.cwr);
   var delta: [seeds] real;
   var po: domain(int);
   var pk: [po] real;
   seeds.add(1);
   delta[1] = 12;
-  var c = lf.writer();
-  var z = lf.reader();
+  var c = lf.writer(locking=false);
+  var z = lf.reader(locking=false);
   c.write(seeds);
   c.flush();
-  writeln("Wrote: ", seeds.sorted());
+  writeln("Wrote: ", Sort.sorted(seeds));
   var ok = z.read(po);
   assert(ok);
-  writeln("Read: ", po.sorted());
+  writeln("Read: ", Sort.sorted(po));
 }
 proc testBinary(ref seeds: domain(int)) {
-  writeln("in testBinary ", seeds.sorted());
+  writeln("in testBinary ", Sort.sorted(seeds));
   var lf = open('test.log' : string, ioMode.cwr);
   var delta: [seeds] real;
   var po: domain(int);
   var pk: [po] real;
   seeds.add(1);
   delta[1] = 12;
-  var c = lf.writer(serializer=new binarySerializer());
-  var z = lf.reader(deserializer=new binaryDeserializer());
+  var c = lf.writer(serializer=new binarySerializer(), locking=false);
+  var z = lf.reader(deserializer=new binaryDeserializer(), locking=false);
   c.write(seeds);
   c.flush();
-  writeln("Wrote: ", seeds.sorted());
+  writeln("Wrote: ", Sort.sorted(seeds));
   var ok = z.read(po);
   assert(ok);
-  writeln("Read: ", po.sorted());
+  writeln("Read: ", Sort.sorted(po));
 }
 
 proc test(in seeds) {

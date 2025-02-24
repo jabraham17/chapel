@@ -1,4 +1,4 @@
-use IO, ChplFormat;
+use IO, ChplFormat, Sort;
 
 proc main() {
   var tmp = openTempFile();
@@ -7,17 +7,17 @@ proc main() {
   var B:[A.domain] int;
 
   {
-    tmp.writer(serializer = new chplSerializer()).writef("%?\n", A);
+    tmp.writer(serializer = new chplSerializer(), locking=false).writef("%?\n", A);
   }
 
   {
-    tmp.reader(deserializer = new chplDeserializer()).readf("%?\n", B);
+    tmp.reader(deserializer = new chplDeserializer(), locking=false).readf("%?\n", B);
   }
 
-  for key in A.domain.sorted() {
+  for key in Sort.sorted(A.domain) {
     writeln("A[", key, "]=", A[key]);
   }
-  for key in B.domain.sorted() {
+  for key in Sort.sorted(B.domain) {
     writeln("B[", key, "]=", B[key]);
   }
 }

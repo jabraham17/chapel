@@ -338,7 +338,7 @@ bool LoopDataPrefetch::runOnLoop(Loop *L) {
       } else continue;
 
       unsigned PtrAddrSpace = PtrValue->getType()->getPointerAddressSpace();
-      if (PtrAddrSpace)
+      if (!TTI->shouldPrefetchAddressSpace(PtrAddrSpace))
         continue;
       NumMemAccesses++;
       if (L->isLoopInvariant(PtrValue))
@@ -391,14 +391,15 @@ bool LoopDataPrefetch::runOnLoop(Loop *L) {
       continue;
 
     BasicBlock *BB = P.InsertPt->getParent();
-    SCEVExpander SCEVE(*SE, BB->getModule()->getDataLayout(), "prefaddr");
+    SCEVExpander SCEVE(*SE, BB->getDataLayout(), "prefaddr");
     const SCEV *NextLSCEV = SE->getAddExpr(P.LSCEVAddRec, SE->getMulExpr(
       SE->getConstant(P.LSCEVAddRec->getType(), ItersAhead),
       P.LSCEVAddRec->getStepRecurrence(*SE)));
     if (!SCEVE.isSafeToExpand(NextLSCEV))
       continue;
 
-    Type *I8Ptr = Type::getInt8PtrTy(BB->getContext(), 0/*PtrAddrSpace*/);
+    unsigned PtrAddrSpace = NextLSCEV->getType()->getPointerAddressSpace();
+    Type *I8Ptr = PointerType::get(BB->getContext(), PtrAddrSpace);
     Value *PrefPtrValue = SCEVE.expandCodeFor(NextLSCEV, I8Ptr, P.InsertPt);
 
     IRBuilder<> Builder(P.InsertPt);

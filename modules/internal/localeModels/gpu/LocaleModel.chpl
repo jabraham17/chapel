@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,6 +32,10 @@ module LocaleModel {
 
   public use LocaleModelHelpGPU;
 
+  use ChapelBase;
+  use ChapelIOSerialize;
+  use ChapelLocale;
+  use ChapelNumLocales;
   use IO, CTypes;
 
   private inline
@@ -148,9 +152,6 @@ module LocaleModel {
     extern proc chpl_gpu_mem_realloc(ptr:c_ptr(void), size:c_size_t, md:chpl_mem_descInt_t) : c_ptr(void);
 
     if addrIsInGPU(ptr) {
-      if !runningOnGPUSublocale() {
-        halt("Trying to realloc a GPU pointer outside a GPU sublocale");
-      }
       return chpl_gpu_mem_realloc(ptr, size.safeCast(c_size_t), md + chpl_memhook_md_num());
     }
     else {
@@ -183,9 +184,6 @@ module LocaleModel {
     extern proc chpl_gpu_mem_free(ptr:c_ptr(void)) : void;
 
     if addrIsInGPU(ptr) {
-      if !runningOnGPUSublocale() {
-        halt("Trying to free a GPU pointer outside a GPU sublocale");
-      }
       chpl_gpu_mem_free(ptr);
     }
     else {
@@ -239,13 +237,9 @@ module LocaleModel {
       sid = _sid;
     }
 
-    override proc writeThis(f) throws {
-      parent.writeThis(f);
-      f.write("-GPU" + sid:string);
-    }
-
     override proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      parent.serialize(writer, serializer);
+      writer.write("-GPU" + sid:string);
     }
 
     override proc _getChildCount(): int { return 0; }
@@ -262,6 +256,10 @@ module LocaleModel {
     }
 
     override proc isGpu() : bool { return true; }
+
+    override proc gpuIdImpl() : int {
+      return sid;
+    }
   }
 
   const chpl_emptyLocaleSpace: domain(1) = {1..0};
@@ -389,6 +387,7 @@ module LocaleModel {
       nPUsLogAcc = 0;
       nPUsLogAll = 0;
       maxTaskPar = 0;
+      numColocales = 0;
     }
 
     // The setup() function must use chpl_initOnLocales() to iterate (in
@@ -409,12 +408,8 @@ module LocaleModel {
     override proc chpl_name() do return local_name();
     proc local_name() do return "rootLocale";
 
-    override proc writeThis(f) throws {
-      f.write(name);
-    }
-
     override proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write(name);
     }
 
     override proc _getChildCount() do return this.myLocaleSpace.size;
@@ -439,7 +434,7 @@ module LocaleModel {
     override proc localeIDtoLocale(id : chpl_localeID_t) {
       const node = chpl_nodeFromLocaleID(id);
       const subloc = chpl_sublocFromLocaleID(id);
-      if (subloc == c_sublocid_none) || (subloc == c_sublocid_any) then
+      if (subloc == c_sublocid_none) || (subloc == c_sublocid_none) then
         return (myLocales[node:int]):locale;
       else
         return (myLocales[node:int]._getChild(subloc:int)):locale;

@@ -93,8 +93,8 @@ namespace {
     }
 
     void getAnalysisUsage(AnalysisUsage &AU) const override {
-      AU.addRequired<MachineDominatorTree>();
-      AU.addPreserved<MachineDominatorTree>();
+      AU.addRequired<MachineDominatorTreeWrapperPass>();
+      AU.addPreserved<MachineDominatorTreeWrapperPass>();
       MachineFunctionPass::getAnalysisUsage(AU);
     }
 
@@ -130,7 +130,7 @@ char HexagonGenPredicate::ID = 0;
 
 INITIALIZE_PASS_BEGIN(HexagonGenPredicate, "hexagon-gen-pred",
   "Hexagon generate predicate operations", false, false)
-INITIALIZE_PASS_DEPENDENCY(MachineDominatorTree)
+INITIALIZE_PASS_DEPENDENCY(MachineDominatorTreeWrapperPass)
 INITIALIZE_PASS_END(HexagonGenPredicate, "hexagon-gen-pred",
   "Hexagon generate predicate operations", false, false)
 
@@ -335,7 +335,7 @@ bool HexagonGenPredicate::isScalarPred(RegisterSubReg PredReg) {
         if (MRI->getRegClass(PR.R) != PredRC)
           return false;
         // If it is a copy between two predicate registers, fall through.
-        LLVM_FALLTHROUGH;
+        [[fallthrough]];
       }
       case Hexagon::C2_and:
       case Hexagon::C2_andn:

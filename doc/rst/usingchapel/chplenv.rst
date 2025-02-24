@@ -37,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-1.33.0
+        export CHPL_HOME=~/chapel-2.3.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -276,8 +276,8 @@ CC and Similar
    The compiler family settings ``CHPL_HOST_COMPILER`` and
    ``CHPL_TARGET_COMPILER`` can be inferred from these ``*CC`` ``*CXX``
    variables in some cases as described in
-   :ref:`readme-chplenv.CHPL_COMPILER`. To infer a compiler family from a
-   a path to a compiler, the configuration looks to recognize an
+   :ref:`readme-chplenv.CHPL_COMPILER`. To infer a compiler family from the
+   path to a compiler, the configuration looks to recognize an
    executable name normally used with that compiler. For example,
    the ``gnu`` family normally uses ``gcc`` for C code and ``g++`` for
    C++ code. This inference process ignores the directory as well as any
@@ -415,14 +415,14 @@ CHPL_LOCALE_MODEL
         Value    Description
         ======== =============================================
         flat     top-level locales are not further subdivided
-        numa     top-level locales are further subdivided into
-                 sublocales, each one a NUMA domain
+        gpu      enable gpu sublocales
         ======== =============================================
 
    If unset, ``CHPL_LOCALE_MODEL`` defaults to ``flat``.
 
-   .. warning:: The NUMA locale model is deprecated and will be removed
-      in a future release.
+   To enable GPU support, the value must be set to ``gpu``. See :ref:`readme-gpu` for more information.
+
+   .. warning:: GPU support is under active development and settings may change.
 
 
 .. _readme-chplenv.CHPL_TASKS:
@@ -488,6 +488,11 @@ CHPL_COMM
 
 CHPL_MEM
 ~~~~~~~~
+
+   .. warning::
+
+      ``CHPL_MEM`` has been deprecated and renamed to :ref:`readme-chplenv.CHPL_TARGET_MEM`
+
    Optionally, the ``CHPL_MEM`` environment variable can be used to select
    a memory management layer.  Current options are:
 
@@ -501,8 +506,30 @@ CHPL_MEM
    If unset, ``CHPL_MEM`` defaults to ``jemalloc`` for most configurations.
    If the target platform is ``cygwin*`` it defaults to ``cstdlib``
 
-   ``CHPL_TARGET_MEM`` will be replacing ``CHPL_MEM`` in the
-   future. ``CHPL_TARGET_MEM`` takes precedence over ``CHPL_MEM``.
+   .. note::
+     Certain ``CHPL_COMM`` settings (e.g. ugni, gasnet segment fast/large,
+     ofi with the gni provider) register the heap to improve communication
+     performance.  Registering the heap requires special allocator support
+     that not all allocators provide.  Currently only ``jemalloc`` is capable
+     of supporting configurations that require a registered heap.
+
+.. _readme-chplenv.CHPL_TARGET_MEM:
+
+CHPL_TARGET_MEM
+~~~~~~~~~~~~~~~
+
+   Optionally, the ``CHPL_TARGET_MEM`` environment variable can be used to select
+   a memory management layer.  Current options are:
+
+        ========= =======================================================
+        Value     Description
+        ========= =======================================================
+        cstdlib   use the standard C malloc/free commands
+        jemalloc  use Jason Evan's memory allocator
+        ========= =======================================================
+
+   If unset, ``CHPL_TARGET_MEM`` defaults to ``jemalloc`` for most configurations.
+   If the target platform is ``cygwin*`` it defaults to ``cstdlib``
 
    .. note::
      Certain ``CHPL_COMM`` settings (e.g. ugni, gasnet segment fast/large,
@@ -510,6 +537,27 @@ CHPL_MEM
      performance.  Registering the heap requires special allocator support
      that not all allocators provide.  Currently only ``jemalloc`` is capable
      of supporting configurations that require a registered heap.
+
+.. _readme-chplenv.CHPL_TARGET_JEMALLOC:
+
+CHPL_TARGET_JEMALLOC
+~~~~~~~~~~~~~~~~~~~~
+   Optionally, the ``CHPL_TARGET_JEMALLOC`` environment variable can select
+   between no jemalloc, using the jemalloc distributed with Chapel in
+   third-party, or using a system jemalloc. This setting is intended to
+   elaborate upon ``CHPL_MEM=jemalloc``.
+
+        ======== ==============================================================
+        Value    Description
+        ======== ==============================================================
+        none     do not build or use jemalloc
+        bundled  use the jemalloc distribution bundled with Chapel in third-party
+        system   use the jemalloc found on the system
+        ======== ==============================================================
+
+   If unset, ``CHPL_TARGET_JEMALLOC`` defaults to ``bundled`` if
+   :ref:`readme-chplenv.CHPL_MEM` is ``jemalloc``.  In all other cases it
+   defaults to ``none``.
 
 .. _readme-chplenv.CHPL_HOST_MEM:
 
@@ -593,6 +641,36 @@ CHPL_ATOMICS
    operations in Chapel or :ref:`readme-atomics` for more information about the
    runtime implementation.
 
+   .. warning::
+
+     Using ``CHPL_ATOMICS=intrinsics`` is a known performance issue. Please consider using ``CHPL_ATOMICS=cstdlib`` for better performance, if possible. If not, please open an issue on GitHub.
+
+
+.. _readme-chplenv.CHPL_NETWORK_ATOMICS:
+
+CHPL_NETWORK_ATOMICS
+~~~~~~~~~~~~~~~~~~~~
+   Optionally, the ``CHPL_NETWORK_ATOMICS`` environment variable can be used
+   to select whether atomic operations are performed by the network or the
+   processor. This is only applicable when ``CHPL_COMM != none`` and only for
+   networks that support atomic operations. If ``CHPL_NETWORK_ATOMICS=none``
+   then atomics are implemented using active messages and processor atomics,
+   otherwise ``CHPL_NETWORK_ATOMICS`` must have the same value as
+   ``CHPL_COMM``. Note that with ``CHPL_NETWORK_ATOMICS=ofi`` support for
+   network atomics is provider-specific, and the provider is selected at
+   runtime. If the selected provider does not support network atomics then
+   atomics will be implemeted using active messages and processor atomics.
+
+   Current options are:
+
+        ======  ==============================================================
+        Value   Description
+        ======  ==============================================================
+        none    implement atomics using active messages and processor atomics
+        ofi     use network atomics if supported by the provider
+        ugni    use network atomics
+        ======  ==============================================================
+
 .. _readme-chplenv.CHPL_TIMERS:
 
 CHPL_TIMERS
@@ -647,14 +725,15 @@ CHPL_GMP
 CHPL_HWLOC
 ~~~~~~~~~~
    Optionally, the ``CHPL_HWLOC`` environment variable can select between
-   no hwloc support or using the hwloc package distributed with Chapel in
-   third-party.
+   no hwloc support, using the hwloc package distributed with Chapel in
+   third-party, or using a system hwloc.
 
        ======== ==============================================================
        Value    Description
        ======== ==============================================================
        none     do not build hwloc support into the Chapel runtime
        bundled  use the hwloc distribution bundled with Chapel in third-party
+       system   use a system install of hwloc (requires version 2.1+)
        ======== ==============================================================
 
    If unset, ``CHPL_HWLOC`` defaults to ``bundled`` if
@@ -664,42 +743,6 @@ CHPL_HWLOC
    to use qthreads.  To do this, manually set ``CHPL_HWLOC`` to ``none``
    and rebuild (and please file a bug with the Chapel team.) Note that
    building without hwloc will have a negative impact on performance.
-
-   .. (comment) CHPL_HWLOC=system is also available but it is only
-       intended to support packaging.
-       Using CHPL_HWLOC=system is not regularly tested and may not work
-       for you. Chapel depends on hwloc features that are not available in
-       all versions. For best results, we recommend using the bundled hwloc
-       if possible.
-
-..  (comment) CHPL_JEMALLOC is not a user-facing feature
-
-   .. _readme-chplenv.CHPL_JEMALLOC:
-
-   CHPL_JEMALLOC
-   ~~~~~~~~~~~~~
-      Optionally, the ``CHPL_JEMALLOC`` environment variable can select
-      between no jemalloc, or using the jemalloc distributed with Chapel in
-      third-party. This setting is intended to elaborate upon
-      ``CHPL_MEM=jemalloc``.
-
-          ======== ==============================================================
-          Value    Description
-          ======== ==============================================================
-          none     do not build or use jemalloc
-          bundled  use the jemalloc distribution bundled with Chapel in third-party
-          ======== ==============================================================
-
-      If unset, ``CHPL_JEMALLOC`` defaults to ``bundled`` if
-      :ref:`readme-chplenv.CHPL_MEM` is ``jemalloc``.  In all other cases it
-      defaults to ``none``.
-
-   .. (comment) CHPL_JEMALLOC=system is also available but it is only
-       intended to support packaging.
-       Using CHPL_JEMALLOC=system is not regularly tested and may not work
-       for you. Chapel depends on jemalloc features that are not available in
-       all versions. For best results, we recommend using the bundled jemalloc
-       if possible.
 
 ..  (comment) CHPL_LIBFABRIC is not a user-facing feature
 
@@ -723,12 +766,7 @@ CHPL_HWLOC
       :ref:`readme-chplenv.CHPL_COMM` is ``ofi``.  In all other cases it
       defaults to ``none``.
 
-   .. (comment) CHPL_LIBFABRIC=system is also available but it is only
-       intended to support packaging.
-       Using CHPL_LIBFABRIC=system is not regularly tested and may not work
-       for you. Chapel depends on libfabric features that are not available in
-       all versions. For best results, we recommend using the bundled libfabric
-       if possible.
+   .. (comment) CHPL_LIBFABRIC=system is also available but it is only intended to support packaging.
 
 .. _readme-chplenv.CHPL_RE2:
 
@@ -874,6 +912,52 @@ CHPL_LLVM_GCC_PREFIX
    can set ``CHPL_LLVM_GCC_PREFIX`` to ``none`` to  disable passing the
    ``--gcc-toolchain`` flag; or you can set it to a particular directory
    to pass to ``clang`` with the ``--gcc-toolchain`` flag.
+
+   Please note that, on some systems, it's possible to install multiple
+   versions of gcc to ``/usr``. In that event, ``CHPL_LLVM_GCC_PREFIX``
+   and ``--gcc-toolchain`` cannot distinguish between these multiple versions.
+   Use the next option, ``CHPL_LLVM_GCC_INSTALL_DIR``, instead for such
+   cases.
+
+.. _readme-chplenv.CHPL_LLVM_GCC_INSTALL_DIR:
+
+CHPL_LLVM_GCC_INSTALL_DIR
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Sometimes it's necessary to request that ``clang`` work with a
+   particular version of GCC. If many versions are installed at the same
+   prefix (e.g. ``/usr``) then ``CHPL_LLVM_GCC_PREFIX`` won't be able to
+   differentiate between them. That is where ``CHPL_LLVM_GCC_INSTALL_DIR``
+   comes in!
+
+   To understand what to set ``CHPL_LLVM_GCC_INSTALL_DIR`` to in such
+   cases, try a test compile:
+
+      * ``echo int main() { return 0; } > hello.cc``
+      * ``clang++ -v hello.cc``
+
+   This will print out lines along these lines::
+
+      Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/11
+      Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/12
+      Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/13
+      Found candidate GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/14
+      Selected GCC installation: /usr/bin/../lib/gcc/x86_64-linux-gnu/14
+
+   The paths printed here are suitable for use with
+   ``CHPL_LLVM_GCC_INSTALL_DIR``. Choose the path that corresponds to the
+   ``g++`` version that you are trying to use. If you are not sure which
+   ``g++`` version to use -- the version that comes with your system is a
+   good starting point. You can use
+   ``/usr/bin/g++ --version`` or just ``g++ --version`` to find that
+   version.
+
+   .. note::
+
+      ``CHPL_LLVM_GCC_INSTALL_DIR`` works with the clang flag
+      ``--gcc-install-dir`` which was added in LLVM / clang 16. As a
+      result, ``CHPL_LLVM_GCC_INSTALL_DIR`` will not work for earlier
+      versions of LLVM / clang.
 
 .. _readme-chplenv.CHPL_UNWIND:
 
@@ -1049,15 +1133,22 @@ Chapel configuration file is found, the definitions of that file are used.
     The ``$CHPL_CONFIG`` variable is the path to the *enclosing*
     directory - not the full path including ``chplconfig`` itself.
 
+.. note::
+
+   In a prefix install, a ``chplconfig`` file is installed in ``$CHPL_HOME``.
+   See :ref:`readme-installing`.
+
 Variable Priority
 ~~~~~~~~~~~~~~~~~
 
 Variable precedence goes in the following order:
 
-1. Explicit compiler flags: ``chpl --env=value``
-2. Environment variables: ``CHPL_ENV=value``
-3. Chapel configuration file: ``~/.chplconfig``
-4. Inferred environment variables: ``printchplenv``
+1. Explicit compiler flags specified as ``chpl --env=value```
+2. Environment variables set by the user (``export CHPL_ENV=value`` or
+   ``CHPL_ENV=value chpl ...``)
+3. Chapel configuration file settings from a ``chplconfig`` file, as described
+   above
+4. Inferred environment variables from ``printchplenv``
 
 
 .. |trade|  unicode:: U+02122 .. TRADE MARK SIGN

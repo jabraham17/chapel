@@ -38,7 +38,7 @@ class WebAssemblyTTIImpl final : public BasicTTIImplBase<WebAssemblyTTIImpl> {
 
 public:
   WebAssemblyTTIImpl(const WebAssemblyTargetMachine *TM, const Function &F)
-      : BaseT(TM, F.getParent()->getDataLayout()), ST(TM->getSubtargetImpl(F)),
+      : BaseT(TM, F.getDataLayout()), ST(TM->getSubtargetImpl(F)),
         TLI(ST->getTargetLowering()) {}
 
   /// \name Scalar TTI Implementations
@@ -61,15 +61,17 @@ public:
   TypeSize getRegisterBitWidth(TargetTransformInfo::RegisterKind K) const;
   InstructionCost getArithmeticInstrCost(
       unsigned Opcode, Type *Ty, TTI::TargetCostKind CostKind,
-      TTI::OperandValueKind Opd1Info = TTI::OK_AnyValue,
-      TTI::OperandValueKind Opd2Info = TTI::OK_AnyValue,
-      TTI::OperandValueProperties Opd1PropInfo = TTI::OP_None,
-      TTI::OperandValueProperties Opd2PropInfo = TTI::OP_None,
-      ArrayRef<const Value *> Args = ArrayRef<const Value *>(),
+      TTI::OperandValueInfo Op1Info = {TTI::OK_AnyValue, TTI::OP_None},
+      TTI::OperandValueInfo Op2Info = {TTI::OK_AnyValue, TTI::OP_None},
+      ArrayRef<const Value *> Args = std::nullopt,
       const Instruction *CxtI = nullptr);
+  using BaseT::getVectorInstrCost;
   InstructionCost getVectorInstrCost(unsigned Opcode, Type *Val,
-                                     unsigned Index);
+                                     TTI::TargetCostKind CostKind,
+                                     unsigned Index, Value *Op0, Value *Op1);
 
+  TTI::ReductionShuffle
+  getPreferredExpandedReductionShuffle(const IntrinsicInst *II) const;
   /// @}
 
   bool areInlineCompatible(const Function *Caller,

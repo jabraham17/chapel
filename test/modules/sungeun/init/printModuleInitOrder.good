@@ -18,6 +18,7 @@ Initializing Modules:
      LocaleModelHelpFlat
       LocaleModelHelpSetup
        ChapelLocale
+        ChapelNumLocales
        DefaultRectangular
         ChapelArray
          ChapelPrivatization
@@ -33,14 +34,18 @@ Initializing Modules:
           MSBRadixSort
            RadixSortHelp
            ShellSort
+            ShallowCopy
+          TwoArrayRadixSort
+           TwoArrayPartitioning
           QuickSort
-           ShallowCopy
            InsertionSort
+          TimSort
         ChapelDistribution
          ChapelHashtable
         ExternalArray
         RangeChunk
-       ChapelNumLocales
+        Search
+         HideDeprecatedReexport
       LocaleModelHelpRuntime
      LocaleModelHelpMem
     LocalesArray
@@ -48,9 +53,8 @@ Initializing Modules:
     MemTracking
     ChapelUtil
     ExportWrappers
-    ChapelGpuSupport
-     Time
     ChapelContext
+    ChapelStaticVars
     AlignedTSupport
     CopyAggregation
      AggregationPrimitives

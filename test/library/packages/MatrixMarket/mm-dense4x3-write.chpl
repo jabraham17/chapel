@@ -23,7 +23,7 @@ writeln(A);
 
 mmwrite("dense-4x3-write.mtx", A);
 
-var r = openReader("dense-4x3-write.mtx");
+var r = openReader("dense-4x3-write.mtx", locking=false);
 var lines = new list(string);
 var i=1;
 for l in r.lines() {
@@ -34,7 +34,7 @@ for l in r.lines() {
     lines.pushBack(l);
   i += 1;
 }
-lines.sort();
+sort(lines);
 for l in lines {
   write(l);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -777,7 +777,7 @@ CallExpr* FnSymbol::singleInvocation() const {
     if (se == parent->baseExpr) {
       retval = parent;
     }
-    else if (parent->isPrimitive(PRIM_GPU_KERNEL_LAUNCH_FLAT)) {
+    else if (parent->isPrimitive(PRIM_GPU_KERNEL_LAUNCH)) {
       if (se == parent->get(1)) {
         retval = parent;
       }

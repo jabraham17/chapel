@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -40,10 +40,19 @@
 
 #include "llvm/ADT/DenseMap.h"
 
+#ifdef HAVE_LLVM
+#include "llvm/IR/LLVMContext.h"
+#endif
+
+namespace llvm {
+  class LLVMContext;
+}
+
 namespace chpl {
   class Context;
 
   class ErrorBase;
+  class IdOrLocation;
 
 namespace uast {
   class AstNode;
@@ -111,6 +120,11 @@ class Context {
       example, comments between actual arguments in a function call
      */
     bool includeComments = true;
+
+    /**
+      Disable breakpoint in Context::report.
+     */
+    bool disableErrorBreakpoints = false;
 
     void swap(Configuration& other);
   };
@@ -189,10 +203,12 @@ class Context {
 
     RecomputeMarker(Context* context, bool isRecomputing) :
       context_(context), oldValue_(isRecomputing) {
-        std::swap(context_->isRecomputing, oldValue_);
+        if (context) std::swap(context_->isRecomputing, oldValue_);
     }
 
    public:
+    RecomputeMarker() : RecomputeMarker(nullptr, false) {}
+
     RecomputeMarker(RecomputeMarker&& other) {
       *this = std::move(other);
     }
@@ -209,6 +225,10 @@ class Context {
         std::swap(context_->isRecomputing, oldValue_);
       }
       context_ = nullptr;
+    }
+
+    bool isCleared() {
+      return context_ == nullptr;
     }
 
     ~RecomputeMarker() {
@@ -324,6 +344,13 @@ class Context {
   querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;
   querydetail::RevisionNumber gcCounter = 1;
 
+#ifdef HAVE_LLVM
+  owned<llvm::LLVMContext> llvmContext_ = nullptr;
+#else
+  // use a dummy pointer to make sure to have the same memory layout
+  owned<unsigned char> llvmContext_ = nullptr;
+#endif
+
   // --------- end all Context fields ---------
 
   void setupGlobalStrings();
@@ -386,7 +413,7 @@ class Context {
   getResult(querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
             const std::tuple<ArgTs...>& tupleOfArgs);
 
-  void haltForRecursiveQuery(const querydetail::QueryMapResultBase* r);
+  void emitErrorForRecursiveQuery(const querydetail::QueryMapResultBase* r);
 
   template<typename ResultType,
            typename... ArgTs>
@@ -436,6 +463,10 @@ class Context {
             const querydetail::QueryMapResultBase* resultEntry);
 
   void doNotCollectUniqueCString(const char *s);
+
+  void gatherRecursionTrace(const querydetail::QueryMapResultBase* root,
+                            const querydetail::QueryMapResultBase* result,
+                            std::vector<TraceElement>& trace) const;
 
   // Future Work: make the context thread-safe
 
@@ -557,6 +588,8 @@ class Context {
     errorCollectionStack.pop_back();
     return result;
   }
+
+  optional<std::vector<TraceElement>> recoverFromSelfRecursion() const;
 
   /**
     Get or create a unique string and return it as a C string. If the passed
@@ -718,7 +751,14 @@ class Context {
 
     Returns the library's path by setting 'pathOut'.
    */
-  bool pathHasLibrary(UniqueString filePath, UniqueString& pathOut);
+  bool pathIsInLibrary(UniqueString filePath, UniqueString& pathOut);
+
+  /**
+    Return 'true' if the given module ID is supported by a library file.
+
+    Returns the library's path by setting 'pathOut'.
+   */
+  bool moduleIsInLibrary(ID moduleId, UniqueString& pathOut);
 
   /**
     Register a module ID and file path to be supported by a library file.
@@ -726,6 +766,13 @@ class Context {
   void registerLibraryForModule(ID moduleId,
                                 UniqueString filePath,
                                 UniqueString libPath);
+
+#ifdef HAVE_LLVM
+  /**
+    Get the LLVMContext associated with this Context
+   */
+  llvm::LLVMContext& llvmContext();
+#endif
 
   /**
     This function increments the current revision number stored
@@ -793,6 +840,20 @@ class Context {
   /**
     Note an error for the currently running query.
     This is a convenience overload.
+    This version takes in an IdOrLocation and a printf-style format string.
+   */
+  void error(const IdOrLocation& loc, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
+  #endif
+  ;
+
+
+  /**
+    Note an error for the currently running query.
+    This is a convenience overload.
     This version takes in an AST node and a printf-style format string.
     The AST node is used to compute a Location by using a parsing::locateAst.
    */
@@ -819,6 +880,47 @@ class Context {
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
     __attribute__ ((format (printf, 4, 5)))
+  #endif
+  ;
+
+  /**
+    Note an warning for the currently running query.
+    This is a convenience overload.
+    This version takes in a Location and a printf-style format string.
+   */
+  void warning(Location loc, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
+  #endif
+  ;
+
+  /**
+    Note an warning for the currently running query.
+    This is a convenience overload.
+    This version takes in an ID and a printf-style format string.
+    The ID is used to compute a Location using parsing::locateId.
+   */
+  void warning(ID id, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
+  #endif
+  ;
+
+  /**
+    Note an warning for the currently running query.
+    This is a convenience overload.
+    This version takes in an AST node and a printf-style format string.
+    The AST node is used to compute a Location by using a parsing::locateAst.
+   */
+  void warning(const uast::AstNode* ast, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
   #endif
   ;
 
@@ -891,6 +993,15 @@ class Context {
        const ResultType& (*queryFunction)(Context* context, ArgTs...),
        const std::tuple<ArgTs...>& tupleOfArgs);
 
+  template<typename ResultType,
+           typename... ArgTs>
+  const typename querydetail::QueryMap<ResultType, ArgTs...>::MapType*
+  querySavedResults(
+       const ResultType& (*queryFunction)(Context* context, ArgTs...));
+
+  bool isResultUpToDate(const querydetail::QueryMapResultBase& resultEntry) const {
+    return resultEntry.lastChanged == this->currentRevisionNumber;
+  }
 
   // the following functions are called by the macros defined in QueryImpl.h
   // and should not be called directly
@@ -952,37 +1063,57 @@ class Context {
    */
   void queryTimingReport(std::ostream& os);
 
+  void finishQueryStopwatch(querydetail::QueryMapBase* base,
+                            size_t depth,
+                            const std::string& args,
+                            querydetail::QueryTimingDuration elapsed);
+
+  template<typename... ArgTs>
+  struct ReportOnExit {
+    using Stopwatch = querydetail::QueryTimingStopwatch<ReportOnExit>;
+    Context* context = nullptr;
+    querydetail::QueryMapBase* base = nullptr;
+    const std::tuple<ArgTs...>* tupleOfArgs = nullptr;
+    bool enableQueryTiming = false;
+    size_t depth = 0;
+    bool enableQueryTimingTrace = false;
+
+    ReportOnExit(const ReportOnExit& rhs) = delete;
+    ReportOnExit(ReportOnExit&& rhs) = default;
+    ReportOnExit& operator=(const ReportOnExit& rhs) = delete;
+    ReportOnExit& operator=(ReportOnExit&& rhs) = default;
+
+    bool enabled() { return enableQueryTiming || enableQueryTimingTrace; }
+
+    void operator()(Stopwatch& stopwatch) {
+      // Return if the map is empty (to allow for default-construction).
+      if (base == nullptr) return;
+      bool enabled = enableQueryTiming || enableQueryTimingTrace;
+      if (enabled) {
+        auto elapsed = stopwatch.elapsed();
+        std::ostringstream oss;
+        if (tupleOfArgs) querydetail::queryArgsPrint(oss, *tupleOfArgs);
+        context->finishQueryStopwatch(base, depth, oss.str(), elapsed);
+      }
+    };
+  };
+
   // Used in the in QUERY_BEGIN_TIMING macro. Creates a stopwatch that starts
   // timing if we are enabled. And then on scope exit we conditionally stop the
   // timing and add it to the total or log it.
   // Semi-public method because we only expect it to be used in the macro
-  auto makeQueryTimingStopwatch(querydetail::QueryMapBase* base) {
-    size_t depth = queryStack.size();
-    bool enabled = enableQueryTiming || enableQueryTimingTrace;
-
-    return querydetail::makeQueryTimingStopwatch(
-        enabled,
-        // This lambda gets called when the stopwatch object (which lives on the
-        // stack of the query function) is destructed
-        [this, base, depth, enabled](auto& stopwatch) {
-          querydetail::QueryTimingDuration elapsed;
-          if (enabled) {
-            elapsed = stopwatch.elapsed();
-          }
-          if (enableQueryTiming) {
-            base->timings.query.update(elapsed);
-          }
-          if (enableQueryTimingTrace) {
-            auto ticks = elapsed.count();
-            auto os = queryTimingTraceOutput.get();
-            CHPL_ASSERT(os != nullptr);
-            *os << depth << ' ' << base->queryName << ' ' << ticks << '\n';
-          }
-        });
+  template<typename... ArgTs>
+  auto makeQueryTimingStopwatch(querydetail::QueryMapBase* base,
+                           const std::tuple<ArgTs...>& tupleOfArgs) {
+    ReportOnExit<ArgTs...> s {
+      this, base, &tupleOfArgs, enableQueryTiming, queryStack.size(),
+      enableQueryTimingTrace
+    };
+    return querydetail::makeQueryTimingStopwatch(s.enabled(), std::move(s));
   }
-
   /// \endcond
 };
+
 
 } // end namespace chpl
 

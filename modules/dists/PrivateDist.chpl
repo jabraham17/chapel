@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -17,6 +17,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/* A distribution for mapping domain/array indices to locales in a 1:1 manner. */
 
 @unstable("PrivateDist is unstable and may change in the future")
 prototype module PrivateDist {
@@ -41,7 +43,7 @@ so user programs do not need to declare their own:
 
   .. code-block:: chapel
 
-    const PrivateSpace: domain(1) dmapped privateDist();
+    const PrivateSpace: domain(1) dmapped new privateDist();
 
 
 **Example**
@@ -122,12 +124,8 @@ record privateDist: writeSerializable {
     return !(d1 == d2);
   }
 
-  proc writeThis(x) {
-    chpl_distHelp.writeThis(x);
-  }
-
   proc serialize(writer, ref serializer) throws {
-    writeThis(writer);
+    chpl_distHelp.serialize(writer, serializer);
   }
 }
 
@@ -165,10 +163,6 @@ class PrivateImpl: BaseDist, writeSerializable {
     return new unmanaged PrivateDom(rank=rank, idxType=idxType,
                                     strides=strides,
                                     dist=_to_unmanaged(this));
-  }
-
-  proc writeThis(x) throws {
-    x.writeln("Private Distribution");
   }
 
   override proc serialize(writer, ref serializer) throws {

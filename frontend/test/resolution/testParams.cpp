@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,26 +26,6 @@
 #include "chpl/types/Param.h"
 #include "chpl/types/RealType.h"
 #include "chpl/uast/Module.h"
-
-static QualifiedType getTypeForFirstStmt(Context* context,
-                                         const std::string& program) {
-  auto path = UniqueString::get(context, "input.chpl");
-  setFileText(context, path, program);
-
-  const ModuleVec& vec = parseToplevel(context, path);
-  assert(vec.size() == 1);
-  const Module* m = vec[0]->toModule();
-  assert(m);
-  assert(m->numStmts() == 1);
-  auto stmt = m->stmt(0);
-  assert(stmt);
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  const auto& resolvedExpr = rr.byAst(stmt);
-
-  return resolvedExpr.type();
-}
 
 static void test1() {
   printf("test1\n");
@@ -90,6 +70,8 @@ static void test4() {
   printf("test4\n");
   Context ctx;
   Context* context = &ctx;
+  ResolutionContext rcval(context);
+  auto rc = &rcval;
   std::string program = R""""(
     enum myEnum {
       blue,
@@ -141,9 +123,9 @@ static void test4() {
   assert(bestFn->formalType(0).isParam());
   assert(bestFn->formalName(0) == UniqueString::get(context, "this"));
   assert(bestFn->formalType(0).param()->isEnumParam());
-  assert(bestFn->formalType(0).param()->toEnumParam()->value() == greenEnum->id());
+  assert(bestFn->formalType(0).param()->toEnumParam()->value().id == greenEnum->id());
   const ResolvedFunction* rfn = scopeResolveFunction(context, isBlueFn->id());
-  const auto tsi = typedSignatureInitial(context, rfn->signature()->untyped());
+  const auto tsi = typedSignatureInitial(rc, rfn->signature()->untyped());
   assert(tsi->formalType(0).isParam());
 }
 
@@ -168,12 +150,57 @@ static void test5() {
   assert(qtBytes.param() == chpl::types::IntParam::get(&ctx, 7));
 }
 
+static void test6() {
+  printf("test6\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    proc foo(param arg: int(32)) param {
+      return arg;
+    }
+    proc bar(param arg) param {
+      return arg;
+    }
+    proc gen(param arg: int(?w)) param {
+      return __primitive("+", arg, w);
+    }
+
+
+    param fooval = foo(0xffff);
+    param barval = bar(0);
+    param genval = gen(36);
+
+    param p : int(32) = 0x1234;
+  )""";
+  std::vector<std::string> names = {"fooval", "barval", "genval", "p"};
+  auto vals = resolveTypesOfVariables(context, program, names);
+
+  auto fooval = vals["fooval"];
+  ensureParamInt(fooval, 0xffff);
+  assert(fooval.type()->toIntType()->bitwidth() == 32);
+
+  auto barval = vals["barval"];
+  ensureParamInt(barval, 0);
+  assert(barval.type()->toIntType()->bitwidth() == 64);
+
+  auto genval = vals["genval"];
+  ensureParamInt(genval, 100);
+  assert(genval.type()->toIntType()->bitwidth() == 64);
+
+  auto pval = vals["p"];
+  ensureParamInt(pval, 0x1234);
+  assert(pval.type()->toIntType()->bitwidth() == 32);
+}
+
 int main() {
   test1();
   test2();
   test3();
   test4();
   test5();
+  test6();
 
   return 0;
 }

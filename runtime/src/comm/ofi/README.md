@@ -509,9 +509,8 @@ capabilities:
 
 and the following message orderings:
 
-    FI_ORDER_ATOMIC_RAW
-    FI_ORDER_ATOMIC_WAR
     FI_ORDER_ATOMIC_WAW
+    FI_ORDER_SAS
 
 Note that there is no explicitly asserted ordering here between RMA and
 atomic operations.  That is achieved by by fenced operations and their
@@ -523,6 +522,16 @@ when that is needed.  With a bound transmit context we can wait to do
 this on an as-needed basis across the same transmit-receive endpoint
 pair, but in any other case we have to do it immediately after the
 operation that may create the dangling store.
+
+The MCM requires that writes by a single task be performed in program order.
+However, satisfying this requirement does not require FI_ORDER_RMA_WAW
+because the compiler does not issue non-blocking PUTs, so there is no
+opportunity for writes by a single task to be performed out of order. The
+remote cache does perform non-blocking writes, but has internal
+synchronization to wait for previous conflicting writes to complete before
+issuing a new write. This ensures writes by a single task are performed in
+program order. FI_ORDER_RMA_WAW has significant performance implications, so
+it should be avoided if possible.
 
 #### Message-order MCM Mode
 

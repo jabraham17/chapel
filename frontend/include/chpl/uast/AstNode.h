@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -137,6 +137,14 @@ class AstNode {
   /** To be called by subclasses to set the tag and
       deserialize the AstNode fields other than the children */
   AstNode(AstTag tag, Deserializer& des);
+
+  AstNode(const AstNode& node) {
+    this->tag_ = node.tag_;
+    this->attributeGroupChildNum_ = node.attributeGroupChildNum_;
+    for (auto child : node.children()) {
+      children_.push_back(child->copy());
+    }
+  }
 
   /** Completes the deserialization process for an AstNode
       by deserializing the children. */
@@ -318,6 +326,8 @@ class AstNode {
   #define AST_LEAF(NAME) AST_IS(NAME)
   #define AST_BEGIN_SUBCLASSES(NAME) AST_IS(NAME)
   #define AST_END_SUBCLASSES(NAME)
+  // Used for macro-based casting
+  bool isAstNode() const { return true; }
   /// \endcond
   // Apply the above macros to uast-classes-list.h
   #include "chpl/uast/uast-classes-list.h"
@@ -343,6 +353,8 @@ class AstNode {
   #define AST_LEAF(NAME) AST_TO(NAME)
   #define AST_BEGIN_SUBCLASSES(NAME) AST_TO(NAME)
   #define AST_END_SUBCLASSES(NAME)
+  // Used for macro-based casting
+  AST_TO(AstNode)
   /// \endcond
   // Apply the above macros to uast-classes-list.h
   #include "chpl/uast/uast-classes-list.h"
@@ -550,6 +562,8 @@ class AstNode {
       #undef CASE_OTHER
     }
   }
+
+  owned<AstNode> copy() const;
 };
 } // end namespace uast
 

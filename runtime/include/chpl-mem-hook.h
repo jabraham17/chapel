@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -74,7 +74,7 @@ void chpl_memhook_malloc_post(void* memAlloc,
                               size_t number, size_t size,
                               chpl_mem_descInt_t description,
                               int32_t lineno, int32_t filename) {
-  if (CHPL_MEMHOOKS_ACTIVE || memAlloc == NULL)
+  if (CHPL_MEMHOOKS_ACTIVE || (memAlloc == NULL && size != 0))
     chpl_memhook_check_post(memAlloc, description, lineno, filename);
   if (CHPL_MEMHOOKS_ACTIVE)
     chpl_track_malloc(memAlloc, number, size, description, lineno, filename);

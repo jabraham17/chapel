@@ -91,8 +91,15 @@ GASNET_CFLAGS += $(SHARED_LIB_CFLAGS)
 MPI_CC += $(SHARED_LIB_CFLAGS)
 endif
 
-# Disable hwloc until https://github.com/chapel-lang/chapel/issues/18050
+ifeq ($(CHPL_MAKE_HWLOC),bundled)
+CHPL_GASNET_CFG_OPTIONS += --with-hwloc-home=$(HWLOC_INSTALL_DIR)
+endif
+ifeq ($(CHPL_MAKE_HWLOC),system)
+CHPL_GASNET_CFG_OPTIONS += --with-hwloc-home=$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_hwloc.py --prefix)
+endif
+ifeq ($(CHPL_MAKE_HWLOC),none)
 CHPL_GASNET_CFG_OPTIONS += --disable-hwloc
+endif
 
 # Disable IBV ODP due to https://upc-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4008
 CHPL_GASNET_CFG_OPTIONS += --disable-ibv-odp
@@ -128,7 +135,7 @@ gasnet-config: FORCE
 	mkdir -p $(GASNET_BUILD_DIR)
 	cd $(GASNET_SUBDIR) && ./Bootstrap -T
 	$(XTRA_CONFIG_COMMAND)
-	$(ENSURE_GASNET_COMPATIBLE_COMPILER) cd $(GASNET_BUILD_DIR) && $(CHPL_GASNET_ENV_VARS) $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT) --prefix=$(GASNET_INSTALL_DIR) $(CHPL_GASNET_CFG_OPTIONS) --disable-seq --enable-par --disable-parsync $(CHPL_GASNET_CFG_OPTIONS)
+	$(ENSURE_GASNET_COMPATIBLE_COMPILER) cd $(GASNET_BUILD_DIR) && $(CHPL_GASNET_ENV_VARS) $(GASNET_SUBDIR)/$(CHPL_GASNET_CFG_SCRIPT) --prefix=$(GASNET_INSTALL_DIR) --disable-seq --enable-par --disable-parsync --with-max-pthreads-per-node=65535 $(CHPL_GASNET_CFG_OPTIONS)
 
 gasnet-build: FORCE
 	$(ENSURE_GASNET_COMPATIBLE_COMPILER) cd $(GASNET_BUILD_DIR) && $(MAKE) all
@@ -150,5 +157,7 @@ post-install: FORCE
 gasnet: gasnet-config gasnet-build gasnet-install
 
 FORCE:
+
+.PHONY: FORCE
 
 .NOTPARALLEL:

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,14 +22,19 @@
 
 #include "chpl/framework/Context.h"
 #include "chpl/framework/update-functions.h"
+#include "chpl/framework/mark-functions.h"
 #include "chpl/types/TypeTag.h"
+#include "chpl/uast/Pragma.h"
+#include "chpl/util/hash.h"
 
 #include <deque>
 
 namespace chpl {
+
 namespace uast {
   class Decl;
 }
+
 namespace types {
 
 
@@ -51,6 +56,21 @@ namespace types {
 #undef TYPE_END_SUBCLASSES
 #undef TYPE_DECL
 
+class Type;
+using PlaceholderMap = std::unordered_map<ID, const Type*>;
+
+namespace detail {
+
+template <typename T>
+const T* typeToConst(const Type* type) = delete;
+
+template <typename T>
+T* typeTo(Type* type) = delete;
+
+template <typename T>
+bool typeIs(const Type* type) = delete;
+
+} // end namespace detail
 
 /**
   This is the base class for classes that represent a type.
@@ -143,7 +163,40 @@ class Type {
 
   bool completeMatch(const Type* other) const;
 
+  /** replaces placeholders (as in PlaceholderType in the type) according
+      to their values in the 'subs' map. */
+  virtual const Type* substitute(Context* context,
+                                 const PlaceholderMap& subs) const {
+    return this;
+  }
+
+  /** For a given subclass of 'Type', replaces placeholders (as in
+      PlaceholderType in the type) according to their values in the 'subs' map,
+      handling the case in which the type is null.
+
+      Since replacing placeholders ought not to change which subclass
+      the type is, asserts and casts the result back to the same subclass. */
+  template <typename TargetType>
+  static const TargetType* substitute(Context* context,
+                                      const TargetType* type,
+                                      const PlaceholderMap& subs) {
+    if (!type) return type;
+    auto substituted = type->substitute(context, subs);
+    CHPL_ASSERT(substituted);
+    auto cast = substituted->template to<TargetType>();
+    CHPL_ASSERT(cast);
+    return cast;
+  }
+
   virtual void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  /** Check if this type is particular subclass. The call someType->is<IntType>()
+      returns whether or not someType is an IntType.
+   */
+  template <typename TargetType>
+  bool is() const {
+    return detail::typeIs<TargetType>(this);
+  }
 
   // define is__ methods for the various Type subclasses
   // using macros and type-classes-list.h
@@ -206,8 +259,8 @@ class Type {
   }
 
   /** returns true for a type that is a kind of pointer */
-  bool isPtrType() const {
-    return isClassType() || isCFnPtrType() || isCVoidPtrType() || isCPtrType();
+  bool isPointerLikeType() const {
+    return isClassType() || isCFnPtrType() || isCVoidPtrType() || isPtrType();
   }
 
   /** returns true for a pointer type that can store nil */
@@ -219,11 +272,30 @@ class Type {
    */
   bool isUserRecordType() const;
 
+  bool isRecordLike() const;
+
+  /** Returns true if the this type has the pragma 'p' attached to it. */
+  bool hasPragma(Context* context, uast::pragmatags::PragmaTag p) const;
+
   /** If 'this' is a CompositeType, return it.
       If 'this' is a ClassType, return the basicClassType.
       Otherwise, returns nullptr.
    */
   const CompositeType* getCompositeType() const;
+
+  /** Try cast to a type known at compile-time. The call someType->to<IntType>()
+      returns nullptr if someType is not an IntType, and cast to IntType
+      if it is.
+   */
+  template <typename TargetType>
+  const TargetType* to() const {
+    return detail::typeToConst<TargetType>(this);
+  }
+
+  template <typename TargetType>
+  TargetType* to() {
+    return detail::typeTo<TargetType>(this);
+  }
 
   // define to__ methods for the various Type subclasses
   // using macros and type-classes-list.h
@@ -250,18 +322,135 @@ class Type {
   #undef TYPE_END_SUBCLASSES
   #undef TYPE_TO
 
+  /** Given a type 't', determine if 't' is "plain-old-data" (POD).
+
+      If 't' is marked with the pragma "plain old data" then it is
+      always considered to be POD, and no further evaluation takes
+      place.
+
+      If 't' is the sync type, the single type, an atomic type, the
+      array type, or the domain type, then 't' is not POD.
+
+      If 't' is a class with 'owned' or 'shared' management, then 't'
+      is not POD.
+
+      If 't' is a record, class, or union type, and any member of 't'
+      is not POD, then 't' is not POD.
+
+      If 't' is a record or union type with a user-defined 'deinit',
+      'init=', or assignment operator, then 't' is not POD.
+
+      If 't' is generic then it is considered to be not POD for the
+      purposes of this evaluation.
+
+      All other cases are considered to be POD.
+  */
+  static bool isPod(Context* context, const Type* t);
+
+  static bool isDefaultInitializable(Context* context, const Type* t);
+
+  static bool needsInitDeinitCall(const Type* t);
+
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
 };
 
+namespace detail {
+
+template <>
+inline bool typeIs<Type>(const Type* type) {
+  return true;
+}
+
+/// \cond DO_NOT_DOCUMENT
+#define TYPE_IS(NAME) \
+  template <> \
+  inline bool typeIs<NAME>(const Type* type) { \
+    return type->is##NAME(); \
+  }
+#define TYPE_NODE(NAME) TYPE_IS(NAME)
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) TYPE_IS(NAME)
+#define TYPE_BEGIN_SUBCLASSES(NAME) TYPE_IS(NAME)
+#define TYPE_END_SUBCLASSES(NAME)
+/// \endcond
+// Apply the above macros to type-classes-list.h
+#include "chpl/types/type-classes-list.h"
+// clear the macros
+#undef TYPE_NODE
+#undef BUILTIN_TYPE_NODE
+#undef TYPE_BEGIN_SUBCLASSES
+#undef TYPE_END_SUBCLASSES
+#undef TYPE_IS
+
+template <>
+inline const Type* typeToConst<Type>(const Type* type) {
+  return type;
+}
+
+template <>
+inline Type* typeTo<Type>(Type* type) {
+  return type;
+}
+
+/// \cond DO_NOT_DOCUMENT
+#define TYPE_TO(NAME) \
+  template <> \
+  inline const NAME * typeToConst<NAME>(const Type* type) { \
+    return type->to##NAME(); \
+  } \
+  template <> \
+  inline NAME * typeTo<NAME>(Type* type) { \
+    return type->to##NAME(); \
+  }
+#define TYPE_NODE(NAME) TYPE_TO(NAME)
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) TYPE_TO(NAME)
+#define TYPE_BEGIN_SUBCLASSES(NAME) TYPE_TO(NAME)
+#define TYPE_END_SUBCLASSES(NAME)
+/// \endcond
+// Apply the above macros to type-classes-list.h
+#include "chpl/types/type-classes-list.h"
+// clear the macros
+#undef TYPE_NODE
+#undef BUILTIN_TYPE_NODE
+#undef TYPE_BEGIN_SUBCLASSES
+#undef TYPE_END_SUBCLASSES
+#undef TYPE_TO
+
+} // end namespace detail
+
 
 } // end namespace types
 
+/// \cond DO_NOT_DOCUMENT
+
+template<> struct update<types::Type::Genericity> {
+  bool operator()(types::Type::Genericity& keep,
+                  types::Type::Genericity& addin) const {
+    return defaultUpdateBasic(keep, addin);
+  }
+};
+
+template<> struct mark<types::Type::Genericity> {
+  void operator()(Context* context,
+                  const types::Type::Genericity& keep) const {
+    // nothing to do for enum
+  }
+};
+
+/// \endcond DO_NOT_DOCUMENT
 
 } // end namespace chpl
 
 // TODO: is there a reasonable way to define std::less on Type*?
 // Comparing pointers would lead to some nondeterministic ordering.
+
+namespace std {
+  template<> struct hash<chpl::types::PlaceholderMap> {
+    inline size_t operator()(const chpl::types::PlaceholderMap& k) const{
+      return chpl::hashUnorderedMap(k);
+    }
+  };
+}
 
 #endif

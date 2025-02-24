@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,6 +38,8 @@
 #define CHPL_NODELIST_FLAG "--nodelist"
 #define CHPL_PARTITION_FLAG "--partition"
 #define CHPL_EXCLUDE_FLAG "--exclude"
+#define CHPL_GPUS_PER_NODE_FLAG "--gpus-per-node"
+
 
 static char* debug = NULL;
 static char* walltime = NULL;
@@ -46,8 +48,9 @@ static char* nodelist = NULL;
 static char* partition = NULL;
 static char* reservation = NULL;
 static char* exclude = NULL;
+static char* gpusPerNode = NULL;
 
-char slurmFilename[FILENAME_MAX];
+char* slurmFilename = NULL;
 
 // /tmp is always available on cray compute nodes (it's a memory mounted dir.)
 // If we ever need this to run on non-cray machines, we should update this to
@@ -60,17 +63,20 @@ static const char* getTmpDir(void) {
 // Returns 0 on success, 1 and prints an error message on failure
 static int checkSlurmVersion(void) {
   const int buflen = 256;
-  char version[buflen];
+  char versionBuf[buflen];
   char *argv[3];
   argv[0] = (char *) "sbatch";
   argv[1] = (char *) "--version";
   argv[2] = NULL;
 
-  memset(version, 0, buflen);
-  if (chpl_run_utility1K("sbatch", argv, version, buflen) <= 0) {
-    chpl_error("Error trying to determine slurm version", 0, 0);
+  char* version = getenv("CHPL_LAUNCHER_SLURM_VERSION");
+  if (version == NULL) {
+    version = versionBuf;
+    memset(version, 0, buflen);
+    if (chpl_run_utility1K("sbatch", argv, version, buflen) <= 0) {
+      chpl_error("Error trying to determine slurm version", 0, 0);
+    }
   }
-
   if (!strstr(version, "slurm")) {
     printf("Error: This launcher is only compatible with native slurm\n");
     printf("Output of \"sbatch --version\" was: %s\n", version);
@@ -97,6 +103,7 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
   int threadsPerCore = -1;
   const int buflen = 1024;
   char buf[buflen];
+  char orig[buflen];
   char partition_arg[128];
   char* argv[7];
   char reservationBuf[128];
@@ -134,24 +141,37 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
     argv[6] = NULL;
   }
 
-  memset(buf, 0, buflen);
-  if (chpl_run_utility1K("sinfo", argv, buf, buflen) <= 0) {
-    chpl_error("Error trying to determine number of cores per node", 0, 0);
-  }
+  // We may have to run sinfo twice -- once with %i and once without
+  for (int i = 0; i < 2; i++) {
+    memset(buf, 0, buflen);
+    int rc = chpl_run_utility1K("sinfo", argv, buf, buflen);
+    if ((rc == 0) && partition) {
+      // if sinfo produced no output it might be because the partition does
+      // not exist.
+      char msg[2048];
+      snprintf(msg, sizeof(msg),
+               "'sinfo' produced no output. Verify that partition "
+               "'%s' exists.", partition);
 
-  if (!strncmp("Invalid node format specification: i", buf,
-               strlen("Invalid node format specification: i"))) {
-    // older versions of sinfo don't support the %i format. Try again
-    // without it. We won't be able to exclude reservations, but there's
-    // not much we can do about that.
-    argv[2] = (char *)  "--format=%c %Z";
-    if (chpl_run_utility1K("sinfo", argv, buf, buflen) <= 0) {
-      chpl_error("Error trying to determine number of cores per node", 0, 0);
+      chpl_error(msg, 0, 0);
+    } else if (rc <= 0) {
+        chpl_error("Error trying to determine number of cores per node", 0, 0);
+    }
+
+    if (strstr(buf, "Invalid node format specification: i")) {
+      // older versions of sinfo don't support the %i format. Try again
+      // without it. We won't be able to exclude reservations, but there's
+      // not much we can do about that.
+      argv[2] = (char *)  "--format=%c %Z";
+    } else {
+      // sinfo produced non-error output
+      break;
     }
   }
 
   char *cursor = buf;
   char *line;
+  strcpy(orig, buf);
   chpl_bool found = false;
   while ((line = strsep(&cursor, "\n")) != NULL) {
     if (*line != '\0') {
@@ -171,8 +191,12 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
     }
   }
   if (!found) {
-    chpl_error("unable to determine number of cores per locale; "
-               "please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
+    char msg[2048];
+    snprintf(msg, sizeof(msg),
+            "unable to determine number of cores per locale; "
+             "please set CHPL_LAUNCHER_CORES_PER_LOCALE\n"
+             "Output of \"sinfo\" was:\n%s", orig);
+    chpl_error(msg, 0, 0);
   }
 
   if (nomultithread) {
@@ -197,7 +221,6 @@ static chpl_bool getSlurmDebug(chpl_bool batch) {
 }
 
 
-#define MAX_COM_LEN (FILENAME_MAX + 128)
 // create the command that will actually launch the program and
 // create any files needed for the launch like the batch script
 static char* chpl_launch_create_command(int argc, char* argv[],
@@ -205,7 +228,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
                                         int32_t numLocalesPerNode) {
   int i;
   int size;
-  char baseCommand[MAX_COM_LEN];
+  char* baseCommand=NULL;
   char* command;
   FILE* slurmFile;
   char* account = getenv("CHPL_LAUNCHER_ACCOUNT");
@@ -241,9 +264,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   // because they haven't been initialized yet
   char* bufferStdout    = getenv("CHPL_LAUNCHER_SLURM_BUFFER_STDOUT");
   const char* tmpDir    = getTmpDir();
-  char stdoutFile         [MAX_COM_LEN];
-  char stdoutFileNoFmt    [MAX_COM_LEN];
-  char tmpStdoutFileNoFmt [MAX_COM_LEN];
+  char* stdoutFile         = NULL;
+  char* stdoutFileNoFmt    = NULL;
+  char* tmpStdoutFileNoFmt = NULL;
 
   // Note: if numLocalesPerNode > numLocales then some cores will go unused. This
   // is by design, as it allows for scalability testing by increasing the
@@ -280,6 +303,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   // command line exclude takes precedence over env var
   if (!exclude) {
     exclude = getenv("CHPL_LAUNCHER_EXCLUDE");
+  }
+
+  // command line gpus per node takes precedence over env var
+  if (!gpusPerNode) {
+    gpusPerNode = getenv("CHPL_LAUNCHER_GPUS_PER_NODE");
   }
 
   reservation = getenv("SLURM_RESERVATION");
@@ -332,8 +360,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
   // if were running a batch job
   if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL || generate_sbatch_script) {
+    slurmFilename = (char*)chpl_mem_allocMany(
+        (strlen(baseSBATCHFilename) + snprintf(NULL, 0, "%d", (int)mypid) + 1),
+        sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
     // set the sbatch filename
-    snprintf(slurmFilename, sizeof(slurmFilename), "%s%d", baseSBATCHFilename,
+    snprintf(slurmFilename, strlen(slurmFilename), "%s%d", baseSBATCHFilename,
              (int)mypid);
 
     // open the batch file and create the header
@@ -385,6 +416,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       fprintf(slurmFile, "#SBATCH --exclude=%s\n", exclude);
     }
 
+    // Set the gpus per node if it was specified
+    if (gpusPerNode) {
+      fprintf(slurmFile, "#SBATCH --gpus-per-node=%s\n", gpusPerNode);
+    }
+
     // If needed a constraint can be specified with the env var CHPL_LAUNCHER_CONSTRAINT
     if (constraint) {
       fprintf(slurmFile, "#SBATCH --constraint=%s\n", constraint);
@@ -398,15 +434,27 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // set the output file name to either the user specified
     // name or to the binaryName.<jobID>.out if none specified
     if (outputfn != NULL) {
-      snprintf(stdoutFile, sizeof(stdoutFile), "%s", outputfn);
-      snprintf(stdoutFileNoFmt, sizeof(stdoutFileNoFmt), "%s", outputfn);
+      int stdoutFileLen = strlen(outputfn) + 1;
+      stdoutFile = (char*)chpl_mem_allocMany(stdoutFileLen, sizeof(char),
+                                             CHPL_RT_MD_FILENAME, -1, 0);
+      snprintf(stdoutFile, stdoutFileLen, "%s", outputfn);
+      stdoutFileNoFmt = (char*)chpl_mem_allocMany(stdoutFileLen, sizeof(char),
+                                                  CHPL_RT_MD_FILENAME, -1, 0);
+      snprintf(stdoutFileNoFmt, stdoutFileLen, "%s", outputfn);
     }
     else {
-      snprintf(stdoutFile, sizeof(stdoutFile), "%s.%s.out", argv[0], "%j");
-      snprintf(stdoutFileNoFmt, sizeof(stdoutFileNoFmt), "%s.%s.out", argv[0],
-              "$SLURM_JOB_ID");
+      const char* format="%s.%s.out";
+      int stdoutFileLen = strlen(format) + strlen(argv[0]) + strlen("%j");
+      stdoutFile = (char*)chpl_mem_allocMany(stdoutFileLen, sizeof(char),
+                                             CHPL_RT_MD_FILENAME, -1, 0);
+      snprintf(stdoutFile, stdoutFileLen, format, argv[0], "%j");
+      const char* tempArg = "$SLURM_JOB_ID";
+      int stdoutFileNoFmtLen =
+          strlen(format) + strlen(argv[0]) + strlen(tempArg);
+      stdoutFileNoFmt = (char*)chpl_mem_allocMany(
+          stdoutFileNoFmtLen, sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
+      snprintf(stdoutFileNoFmt, stdoutFileNoFmtLen, format, argv[0], tempArg);
     }
-
     // We have slurm use the real output file to capture slurm errors/timeouts
     // We only redirect the program output to the tmp file
     fprintf(slurmFile, "#SBATCH --output=%s\n", stdoutFile);
@@ -418,8 +466,14 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // If we're buffering the output, set the temp output file name.
     // It's always <tmpDir>/binaryName.<jobID>.out.
     if (bufferStdout != NULL) {
-      snprintf(tmpStdoutFileNoFmt, sizeof(tmpStdoutFileNoFmt),"%s/%s.%s.out",
-               tmpDir, argv[0], "$SLURM_JOB_ID");
+      const char* format = "%s/%s.%s.out";
+      const char* tempArg = "$SLURM_JOB_ID";
+      int tmpStdoutFileNoFmtLen =
+          strlen(format) + strlen(tmpDir) + strlen(argv[0]) + strlen(tempArg);
+      tmpStdoutFileNoFmt = (char*)chpl_mem_allocMany(
+          tmpStdoutFileNoFmtLen, sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
+      snprintf(tmpStdoutFileNoFmt, tmpStdoutFileNoFmtLen, format, tmpDir,
+               argv[0], tempArg);
     }
 
     // add the srun command
@@ -452,6 +506,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     if (bufferStdout != NULL) {
       fprintf(slurmFile, "cat %s >> %s\n", tmpStdoutFileNoFmt, stdoutFileNoFmt);
       fprintf(slurmFile, "rm  %s &> /dev/null\n", tmpStdoutFileNoFmt);
+      // tmpStdoutFileNoFmt is only allocated memory if bufferStdout!=NULL
+      // Hence free up inside this condition.
+      chpl_mem_free(tmpStdoutFileNoFmt, 0, 0);
     }
 
     // close the batch file and change permissions
@@ -464,20 +521,22 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     // the baseCommand is what will call the batch file
     // that was just created
-    snprintf(baseCommand, sizeof(baseCommand), "sbatch %s\n", slurmFilename);
+    const char* format = "sbatch %s\n";
+    int baseCommandLen = strlen(slurmFilename) + strlen(format);
+    baseCommand = (char*)chpl_mem_allocMany(baseCommandLen, sizeof(char),
+                                            CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+    snprintf(baseCommand, baseCommandLen, format, slurmFilename);
   }
   // else we're running an interactive job
   else {
-    char iCom[1024];
-    int len;
-
-    len = 0;
+    char* iCom = NULL;
+    int len = 0;
 
     // set the job name
-    len += snprintf(iCom+len, sizeof(iCom)-len, "--job-name=%s ", jobName);
+    chpl_append_to_cmd(&iCom, &len, "--job-name=%s ", jobName);
     if (!getSlurmDebug(/*batch=*/false)) {
       // suppress informational messages, will still display errors
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--quiet ");
+      chpl_append_to_cmd(&iCom, &len, "--quiet ");
     }
 
     // request the number of locales, with 1 task per node, and number of cores
@@ -485,77 +544,89 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // since 1 task-per-node with n --tasks implies -n nodes
     int32_t numNodes = (numLocales + numLocalesPerNode - 1) / numLocalesPerNode;
 
-    len += snprintf(iCom+len, sizeof(iCom)-len, "--nodes=%d ",numNodes);
-    len += snprintf(iCom+len, sizeof(iCom)-len, "--ntasks=%d ", numLocales);
+    chpl_append_to_cmd(&iCom, &len, "--nodes=%d ", numNodes);
+    chpl_append_to_cmd(&iCom, &len, "--ntasks=%d ", numLocales);
     int localesOnNode = (numLocales < numLocalesPerNode) ?
                         numLocales : numLocalesPerNode;
     int cpusPerTask = getCoresPerLocale(nomultithread(false), localesOnNode);
-    len += snprintf(iCom+len, sizeof(iCom)-len, "--cpus-per-task=%d ",
-                    cpusPerTask);
+    chpl_append_to_cmd(&iCom, &len, "--cpus-per-task=%d ", cpusPerTask);
 
     if (numLocalesPerNode > 1) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--cpu-bind=none ");
+      chpl_append_to_cmd(&iCom, &len, "--cpu-bind=none ");
     }
 
     // request specified node access
     if (nodeAccessStr != NULL)
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--%s ", nodeAccessStr);
+      chpl_append_to_cmd(&iCom, &len, "--%s ", nodeAccessStr);
 
     // request specified amount of memory
     if (memStr != NULL)
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--mem=%s ", memStr);
+      chpl_append_to_cmd(&iCom, &len, "--mem=%s ", memStr);
 
     // kill the job if any program instance halts with non-zero exit status
-    len += snprintf(iCom+len, sizeof(iCom)-len, "--kill-on-bad-exit ");
+    chpl_append_to_cmd(&iCom, &len, "--kill-on-bad-exit ");
 
     // Set the walltime if it was specified
     if (walltime) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--time=%s ",walltime);
+      chpl_append_to_cmd(&iCom, &len, "--time=%s ", walltime);
     }
 
     // Set the nodelist if it was specified
     if (nodelist) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--nodelist=%s ", nodelist);
+      chpl_append_to_cmd(&iCom, &len, "--nodelist=%s ", nodelist);
     }
 
     // Set the partition if it was specified
     if (partition) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--partition=%s ",
-                      partition);
+      chpl_append_to_cmd(&iCom, &len, "--partition=%s ", partition);
     }
 
     // Set the exclude list if it was specified
     if (exclude) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--exclude=%s ", exclude);
+      chpl_append_to_cmd(&iCom, &len, "--exclude=%s ", exclude);
+    }
+
+    // Set the gpus per node if it was specified
+    if (gpusPerNode) {
+      chpl_append_to_cmd(&iCom, &len, "--gpus-per-node=%s ", gpusPerNode);
     }
 
     // set any constraints
     if (constraint) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--constraint=%s ", constraint);
+      chpl_append_to_cmd(&iCom, &len, "--constraint=%s ", constraint);
     }
 
     // set the account name if one was provided
     if (account && strlen(account) > 0) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--account=%s ", account);
+      chpl_append_to_cmd(&iCom, &len, "--account=%s ", account);
     }
 
     // add the (possibly wrapped) binary name
-    len += snprintf(iCom+len, sizeof(iCom)-len, "%s %s",
+    chpl_append_to_cmd(&iCom, &len, "%s %s ",
         chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
 
     // add any arguments passed to the launcher to the binary
     for (i=1; i<argc; i++) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, " %s", argv[i]);
+      chpl_append_to_cmd(&iCom, &len, " '%s'", argv[i]);
     }
 
     // launch the job using srun
-    snprintf(baseCommand, sizeof(baseCommand), "srun %s", iCom);
+    const char* format = "srun %s";
+    int baseCommandLen = strlen(format) + len + 1;
+    baseCommand = (char*)chpl_mem_allocMany(baseCommandLen, sizeof(char),
+                                            CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+    snprintf(baseCommand, baseCommandLen, format, iCom);
+    chpl_mem_free(iCom, 0,  0);
   }
 
   // copy baseCommand into command and return it
   size = strlen(baseCommand) + 1;
   command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  snprintf(command, size * sizeof(char), "%s", baseCommand);
+  snprintf(command, size, "%s", baseCommand);
+  // free dynamically allocated memory
+  chpl_mem_free(baseCommand, 0, 0);
+  chpl_mem_free(stdoutFile, 0, 0);
+  chpl_mem_free(stdoutFileNoFmt, 0, 0);
   if (strlen(command)+1 > size) {
     chpl_internal_error("buffer overflow");
   }
@@ -577,10 +648,13 @@ static void chpl_launch_cleanup(void) {
     // remove sbatch file unless it was explicitly generated by the user
     if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL && !generate_sbatch_script) {
       if (unlink(slurmFilename)) {
-        char msg[FILENAME_MAX + 128];
-        snprintf(msg, sizeof(msg), "Error removing temporary file '%s': %s",
+        char* msg = (char*)chpl_mem_allocMany(
+            (strlen(slurmFilename) + strlen(strerror(errno)) + 36),
+            sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
+        snprintf(msg, strlen(msg), "Error removing temporary file '%s': %s",
                  slurmFilename, strerror(errno));
         chpl_warning(msg, 0, 0);
+        chpl_mem_free(msg, 0, 0);
       }
     }
   }
@@ -590,7 +664,6 @@ static void chpl_launch_cleanup(void) {
 int chpl_launch(int argc, char* argv[], int32_t numLocales,
                 int32_t numLocalesPerNode) {
   int retcode;
-
   // check the slurm version before continuing
   if (checkSlurmVersion()) {
     return 1;
@@ -611,6 +684,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales,
 
     chpl_launch_cleanup();
   }
+  chpl_mem_free(slurmFilename, 0, 0);
   return retcode;
 }
 
@@ -651,6 +725,15 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
     return 2;
   } else if (!strncmp(argv[argNum], CHPL_EXCLUDE_FLAG"=", strlen(CHPL_EXCLUDE_FLAG))) {
     exclude = &(argv[argNum][strlen(CHPL_EXCLUDE_FLAG)+1]);
+    return 1;
+  }
+
+  // handle --gpus-per-node <gpus> or --gpus-per-node=<gpus>
+  if (!strcmp(argv[argNum], CHPL_GPUS_PER_NODE_FLAG)) {
+    gpusPerNode = argv[argNum+1];
+    return 2;
+  } else if (!strncmp(argv[argNum], CHPL_GPUS_PER_NODE_FLAG"=", strlen(CHPL_GPUS_PER_NODE_FLAG))) {
+    gpusPerNode = &(argv[argNum][strlen(CHPL_GPUS_PER_NODE_FLAG)+1]);
     return 1;
   }
 
@@ -697,6 +780,12 @@ const argDescTuple_t* chpl_launch_get_help(void) {
       },
       { "",
         "(or use $CHPL_LAUNCHER_EXCLUDE)"
+      },
+      { CHPL_GPUS_PER_NODE_FLAG " <gpus>",
+        "specify number of gpus per node"
+      },
+      { "",
+        "(or use $CHPL_LAUNCHER_GPUS_PER_NODE)"
       },
       { NULL, NULL },
     };

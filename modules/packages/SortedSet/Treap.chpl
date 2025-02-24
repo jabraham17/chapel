@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -71,7 +71,7 @@ module Treap {
   */
   @chpldoc.nodoc
   proc _random(): int {
-    return _treapRandomStream.getNext();
+    return _treapRandomStream.next();
   }
 
   @chpldoc.nodoc
@@ -193,7 +193,8 @@ module Treap {
       :arg parSafe: If `true`, this sortedSet will use parallel safe operations.
       :arg comparator: The comparator used to compare elements.
     */
-    proc init(type eltType, param parSafe = false, comparator: record = defaultComparator) {
+    proc init(type eltType, param parSafe = false,
+              comparator: record = new defaultComparator()) {
       _checkType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
@@ -210,7 +211,8 @@ module Treap {
       :arg parSafe: If `true`, this sortedSet will use parallel safe operations.
       :arg comparator: The comparator used to compare elements.
     */
-    proc init(type eltType, iterable, param parSafe = false, comparator: record = defaultComparator)
+    proc init(type eltType, iterable, param parSafe = false,
+              comparator: record = new defaultComparator())
     where canResolveMethod(iterable, "these") lifetime this < iterable {
       _checkType(eltType);
 
@@ -814,18 +816,11 @@ module Treap {
 
     /*
       Write the contents of this sortedSet to a fileWriter.
-
-      :arg ch: A fileWriter to write to.
     */
-    proc const writeThis(ch: fileWriter) throws {
-      _enter();
-      _visit(ch);
-      _leave();
-    }
-
-    @chpldoc.nodoc
     proc const serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      _enter();
+      _visit(writer);
+      _leave();
     }
 
     /*

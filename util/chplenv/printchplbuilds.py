@@ -14,6 +14,7 @@ from pprint import pprint
 import datetime
 from enum import Enum, unique
 from collections import defaultdict
+import chpl_home_utils
 
 # Parsing the build directory path is implemented as a state machine. Some
 # of the components start with a prefix, some do not. The state machine
@@ -31,9 +32,10 @@ class State(Enum):
     HWLOC =             4
     RE2 =               5
     LIBFABRIC =         6
-    TARGET_ARCH =       7
-    COMM_SUBSTRATE =    8
-    GASNET_SEGMENT =    9
+    OFI_OOB =           7
+    TARGET_ARCH =       8
+    COMM_SUBSTRATE =    9
+    GASNET_SEGMENT =    10
 
 # Maps component prefix to corresponding environment variable.
 
@@ -42,13 +44,14 @@ prefixes = {
     'cpu':          'CHPL_TARGET_CPU',
     'loc':          'CHPL_LOCALE_MODEL',
     'gpu':          'CHPL_GPU',
+    'gpu_vers':     'CHPL_GPU_SDK_VERSION',
     'gpu_mem':      'CHPL_GPU_MEM_STRATEGY',
     'comm':         'CHPL_COMM',
     'tasks':        'CHPL_TASKS',
     'launch':       'CHPL_LAUNCHER',
     'tmr':          'CHPL_TIMERS',
     'unwind':       'CHPL_UNWIND',
-    'mem':          'CHPL_MEM',
+    'mem':          'CHPL_TARGET_MEM',
     'atomics':      'CHPL_ATOMICS',
     'gmp':          'CHPL_GMP',
     'llvm':         'CHPL_LLVM',
@@ -57,6 +60,7 @@ prefixes = {
     'san':          'CHPL_SANITIZE_EXE',
     'lib_pic':      'CHPL_LIB_PIC',
     'hwloc':        'CHPL_HWLOC',
+    'pci':          'CHPL_HWLOC_PCI',
     're2':          'CHPL_RE2'
 }
 
@@ -68,10 +72,11 @@ varNames = {
     State.HWLOC:            'CHPL_HWLOC',
     State.RE2:              'CHPL_RE2',
     State.LIBFABRIC:        'CHPL_LIBFABRIC',
+    State.OFI_OOB:          'CHPL_COMM_OFI_OOB',
     State.PREFIX:           None,
     State.TARGET_ARCH:      'CHPL_TARGET_ARCH',
     State.COMM_SUBSTRATE:   'CHPL_COMM_SUBSTRATE',
-    State.GASNET_SEGMENT:   'CHPL_GASNET_SEGMENT'
+    State.GASNET_SEGMENT:   'CHPL_GASNET_SEGMENT',
 }
 
 # State transitions. This isn't a true state machine because some of the transitions are
@@ -82,7 +87,8 @@ nextStates = {
     State.TARGET_COMPILER:  State.TARGET_ARCH,
     State.TARGET_ARCH:      State.PREFIX,
     State.PREFIX:           State.PREFIX,
-    State.LIBFABRIC:        State.PREFIX,
+    State.LIBFABRIC:        State.OFI_OOB,
+    State.OFI_OOB:          State.PREFIX,
     State.HWLOC:            State.RE2,
     State.RE2:              State.PREFIX,
     State.COMM_SUBSTRATE:   State.GASNET_SEGMENT,
@@ -339,12 +345,8 @@ def main(argv):
         builds = [Parse(args.path.split(os.sep))]
     else:
         # gather the paths for all builds
-        home = os.getenv('CHPL_HOME')
-        if home is None:
-            print("Error: CHPL_HOME is not set", file=sys.stderr)
-            sys.exit(1)
+        base = chpl_home_utils.get_chpl_runtime_lib()
 
-        base = os.path.join(home, "lib")
         # "targets" is a list of all paths that contain a "libchpl.a" file
         targets = []
         for root, dirs, files in os.walk(base):

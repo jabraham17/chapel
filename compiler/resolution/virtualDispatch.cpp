@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -450,7 +450,8 @@ static void resolveOverrideAndAdjustMaps(FnSymbol* pfn, FnSymbol* cfn) {
 
   if (signaturesMatch(pfn, cfn) &&
       evaluateWhereClause(cfn) &&
-      evaluateWhereClause(pfn)) {
+      evaluateWhereClause(pfn) &&
+      !pfn->isPostInitializer()) {  // postinits don't override
 
     resolveSpecifiedReturnType(cfn);
     resolveFunction(cfn);
@@ -1016,13 +1017,6 @@ static AggregateType* getReceiverClassType(FnSymbol* fn) {
   return nullptr;
 }
 
-static bool isDsiNewRectangularDom(FnSymbol* fn) {
-  if (!strcmp(fn->name, "dsiNewRectangularDom"))
-    if (AggregateType* recv = getReceiverClassType(fn))
-      return isDistImplType(recv);
-  return false;
-}
-
 static void findFunctionsProbablyMatching(TypeToNameToFns & map,
                                           FnSymbol* theFn,
                                           AggregateType* ct,
@@ -1276,17 +1270,6 @@ static void checkMethodsOverride() {
             FnSymbol* eFn = getOverrideCandidateGenericFn(fn);
             if (erroredFunctions.count(eFn) == 0) {
               if (fn->hasFlag(FLAG_OVERRIDE)) {
-               if (isDsiNewRectangularDom(fn)) {
-                // Allow, for deprecation by Vass in 1.31 to implement #17131.
-                // To support this deprecation, #22441 comments out
-                // BaseDist.dsiNewRectangularDom(), see an explanation in
-                // ChapelDistribution.chpl. However existing code overrides
-                // these methods and we expect to reinstate them once
-                // the deprecated features have been removed completely.
-                // To avoid forcing existing code to remove 'override'
-                // annotations then add them back, accept them for now
-                // despite that being technically incorrect.
-               } else {
                 USR_FATAL_CONT(fn, "%s.%s override keyword present but "
                                     "no superclass method matches signature "
                                     "to override",
@@ -1298,7 +1281,6 @@ static void checkMethodsOverride() {
                   FnSymbol* pfn = matches[0];
                   printMismatchNote(pfn, fn);
                 }
-               }
               } else {
                 USR_FATAL_CONT(fn, "%s.%s override keyword required for method "
                                    "matching signature of superclass method",

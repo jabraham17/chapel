@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -66,6 +66,7 @@ void Context::Configuration::swap(Context::Configuration& other) {
   std::swap(keepTmpDir, other.keepTmpDir);
   std::swap(toolName, other.toolName);
   std::swap(includeComments, other.includeComments);
+  std::swap(disableErrorBreakpoints, other.disableErrorBreakpoints);
 }
 
 void Context::setupGlobalStrings() {
@@ -267,6 +268,14 @@ llvm::ErrorOr<const ChplEnvMap&> Context::getChplEnv() {
 }
 
 void Context::defaultReportError(Context* context, const ErrorBase* err) {
+  if (err->type() == ErrorType::UserDiagnosticEncounterError ||
+      err->type() == ErrorType::UserDiagnosticEncounterWarning) {
+    // by default, don't print errors for encounters. The error will get
+    // printed (via UserDiagnosticEmitError etc.) when the desired call stack
+    // depth is reached.
+    return;
+  }
+
   ErrorWriter ew(context, std::cerr,
                  context->detailedErrors ?
                    ErrorWriter::DETAILED :
@@ -285,6 +294,16 @@ void Context::defaultReportError(Context* context, const ErrorBase* err) {
 #define UNIQUED_STRING_METADATA_LEN 4
 
 Context::~Context() {
+  // free all of the queries to make sure that the query results
+  // are destroyed before things that they might depend on
+  // (e.g. LLVMContext).
+  queryDB.clear();
+
+  // free other structures
+  modNameToFilepath.clear();
+  queryStack.clear();
+  errorCollectionStack.clear();
+
   // free all the unique'd strings
   for (auto& item: uniqueStringsTable) {
     char* buf = (char*) item.str;
@@ -373,6 +392,18 @@ const char* Context::getOrCreateUniqueString(const char* str, size_t len) {
   chpl::detail::StringAndLength ret = {s, len};
   this->uniqueStringsTable.insert(search, ret);
   return s;
+}
+
+optional<std::vector<TraceElement>> Context::recoverFromSelfRecursion() const {
+  CHPL_ASSERT(!queryStack.empty());
+  auto topQuery = queryStack.back();
+  bool hadRecursion = topQuery->recursionErrors.count(topQuery);
+  if (!hadRecursion) return {};
+
+  std::vector<TraceElement> trace;
+  gatherRecursionTrace(topQuery, topQuery, trace);
+  topQuery->recursionErrors.erase(topQuery);
+  return trace;
 }
 
 const char* Context::uniqueCString(const char* str, size_t len) {
@@ -533,6 +564,36 @@ void Context::doNotCollectUniqueCString(const char* s) {
   *buf = 1;                             // set doNotCollectMark
 }
 
+
+void Context::gatherRecursionTrace(const querydetail::QueryMapResultBase* root,
+                                   const querydetail::QueryMapResultBase* result,
+                                   std::vector<TraceElement>& trace) const {
+  // Note: do not collect the result, but only its dependency. The reason
+  // is that this is initially called with result=root, and including
+  // the root in the trace seems unhelpful since it will issue a proper error
+  // message.
+
+  CHPL_ASSERT(result->recursionErrors.count(root) > 0);
+  for (auto& dep : result->dependencies) {
+    if (dep.query->recursionErrors.count(root) > 0) {
+      if (auto te = dep.query->tryTrace()) {
+        trace.emplace_back(*te);
+      }
+
+      gatherRecursionTrace(root, dep.query, trace);
+      return;
+    }
+  }
+
+  // No dependency had a recursion error, which means the root must've been
+  // a dependency of result (but recursion-triggering queries aren't added
+  // as dependencies, so we didn't encounter it). Add it to the trace
+  // for completeness.
+  if (auto te = root->tryTrace()) {
+    trace.emplace_back(*te);
+  }
+}
+
 size_t Context::lengthForUniqueString(const char* s) {
   const char* buf = (char*) s;
   buf -= UNIQUED_STRING_METADATA_BYTES; // find start of metadata
@@ -684,8 +745,8 @@ const UniqueString& pathHasLibraryQuery(Context* context,
   return QUERY_END(result);
 }
 
-bool Context::pathHasLibrary(UniqueString filePath,
-                             UniqueString& pathOut) {
+bool Context::pathIsInLibrary(UniqueString filePath,
+                              UniqueString& pathOut) {
   auto tupleOfArgs = std::make_tuple(filePath);
 
   bool got = hasCurrentResultForQuery(pathHasLibraryQuery,
@@ -697,6 +758,19 @@ bool Context::pathHasLibrary(UniqueString filePath,
   }
 
   pathOut = UniqueString::get(this, "<unknown library path>");
+  return false;
+}
+
+bool Context::moduleIsInLibrary(ID moduleId, UniqueString& pathOut) {
+  UniqueString filePath;
+  if (filePathForId(moduleId, filePath)) {
+    UniqueString libraryPath;
+    if (pathIsInLibrary(filePath, libraryPath)) {
+      pathOut = libraryPath;
+      return true;
+    }
+  }
+
   return false;
 }
 
@@ -714,6 +788,16 @@ void Context::registerLibraryForModule(ID moduleId,
   // also update the lookup by module ID
   setFilePathForModuleId(moduleId, filePath);
 }
+
+#ifdef HAVE_LLVM
+llvm::LLVMContext& Context::llvmContext() {
+  if (llvmContext_.get() == nullptr) {
+    llvmContext_ = toOwned(new llvm::LLVMContext());
+  }
+
+  return *llvmContext_;
+}
+#endif
 
 void Context::advanceToNextRevision(bool prepareToGC) {
   this->currentRevisionNumber++;
@@ -800,7 +884,9 @@ void Context::collectGarbage() {
 }
 
 void Context::report(owned<ErrorBase> error) {
-  gdbShouldBreakHere();
+  if (!config_.disableErrorBreakpoints) {
+    gdbShouldBreakHere();
+  }
 
   // If errorCollectionStack is not empty, errors are being collected, and
   // thus not reported to the handler. Stash the error in the top (back) of the
@@ -814,10 +900,12 @@ void Context::report(owned<ErrorBase> error) {
 
     errorCollectionStack.back().storeError(error->clone());
     queryStack.back()->errors.push_back(std::make_pair(std::move(error), isSilencing));
+    queryStack.back()->errorsPresentInSelfOrDependencies = true;
   } else if (queryStack.size() > 0) {
     bool isSilencing = false;
 
     queryStack.back()->errors.push_back(std::make_pair(std::move(error), isSilencing));
+    queryStack.back()->errorsPresentInSelfOrDependencies = true;
     reportError(this, queryStack.back()->errors.back().first.get());
   } else if (errorCollectionStack.size() > 0) {
     errorCollectionStack.back().storeError(std::move(error));
@@ -846,12 +934,24 @@ static void logErrorInContext(Context* context,
 
 static void logErrorInContext(Context* context,
                               ErrorBase::Kind kind,
+                              const IdOrLocation& loc,
+                              const char* fmt,
+                              va_list vl) {
+  auto err = GeneralError::vbuild(kind, loc, fmt, vl);
+  context->report(std::move(err));
+}
+
+static void logErrorInContext(Context* context,
+                              ErrorBase::Kind kind,
                               const uast::AstNode* ast,
                               const char* fmt,
                               va_list vl) {
-  auto err = GeneralError::vbuild(kind, ast->id(), fmt, vl);
+  ID useId;
+  if (ast) useId = ast->id();
+  auto err = GeneralError::vbuild(kind, useId, fmt, vl);
   context->report(std::move(err));
 }
+
 
 #define CHPL_CONTEXT_LOG_ERROR_HELPER(context__, kind__, pin__, fmt__) \
   do { \
@@ -870,6 +970,10 @@ void Context::error(ID id, const char* fmt, ...) {
   CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::ERROR, id, fmt);
 }
 
+void Context::error(const IdOrLocation& loc, const char* fmt, ...) {
+  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::ERROR, loc, fmt);
+}
+
 void Context::error(const uast::AstNode* ast, const char* fmt, ...) {
   CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::ERROR, ast, fmt);
 }
@@ -879,6 +983,18 @@ void Context::error(const resolution::TypedFnSignature* inFn,
                     const char* fmt, ...) {
   CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::ERROR, ast, fmt);
   // TODO: add note about instantiation & POI stack
+}
+
+void Context::warning(Location loc, const char* fmt, ...) {
+  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::WARNING, loc, fmt);
+}
+
+void Context::warning(ID id, const char* fmt, ...) {
+  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::WARNING, id, fmt);
+}
+
+void Context::warning(const uast::AstNode* ast, const char* fmt, ...) {
+  CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::WARNING, ast, fmt);
 }
 
 #undef CHPL_CONTEXT_LOG_ERROR_HELPER
@@ -910,6 +1026,7 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
   // changed since the last revision in which we computed this?
   // If so, compute it again.
   bool useSaved = true;
+  resultEntry->beingTestedForReuse = true;
   for (auto& dependency : resultEntry->dependencies) {
     const QueryMapResultBase* dependencyQuery = dependency.query;
     if (dependencyQuery->lastChanged > resultEntry->lastChanged) {
@@ -934,6 +1051,7 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
       }
     }
   }
+  resultEntry->beingTestedForReuse = false;
 
   if (useSaved == false) {
     auto marker = markRecomputing(true);
@@ -994,11 +1112,29 @@ bool Context::queryCanUseSavedResult(
   } else if (this->currentRevisionNumber == resultEntry->lastChecked) {
     // the query was already checked/run in this revision
     useSaved = true;
+  } else if (resultEntry->recursionErrors.size()) {
+    // If the query had recursion, don't re-use its result
+    // in subsequent generations.
+    //
+    // Largely, this is to avoid the (possibly complicated) logic for figuring
+    // out if recursion will re-occur again. A potential complication is that
+    // a (non-recursive) query returning a default result ought to be treated
+    // differently from a (recursive) query being forced to return a default
+    // value. Their outputs are the same, but calling queries would behave
+    // differently:
+    //
+    //   * runAndTrackErrors will return a different result in parent queries
+    //   * parent queries will / will not be poisoned with recursion errors.
+    //
+    // In the future, we might consider being more intelligent about
+    // this to improve re-use.
+    useSaved = false;
   } else if (resultEntry->parentQueryMap->isInputQuery) {
     // be sure to re-run input queries
     useSaved = false;
   } else {
     useSaved = true;
+    resultEntry->beingTestedForReuse = true;
     for (auto& dependency: resultEntry->dependencies) {
       const QueryMapResultBase* dependencyQuery = dependency.query;
 
@@ -1017,6 +1153,7 @@ bool Context::queryCanUseSavedResult(
         break;
       }
     }
+    resultEntry->beingTestedForReuse = false;
     if (useSaved == true) {
       updateForReuse(resultEntry);
     }
@@ -1042,6 +1179,8 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
     // by evaluating the query.
     resultEntry->dependencies.clear();
     resultEntry->errors.clear();
+    resultEntry->oldResultForErrorContents = -1;
+    resultEntry->recursionErrors.clear();
     // increment the number of queries run in this revision
     numQueriesRunThisRevision_++;
   }
@@ -1071,7 +1210,8 @@ static void storeErrorsForHelp(const querydetail::QueryMapResultBase* result,
     into.storeError(error.first->clone());
   }
   for (auto& dependency : result->dependencies) {
-    if (!dependency.errorCollectionRoot) {
+    if (!dependency.errorCollectionRoot &&
+        dependency.query->errorsPresentInSelfOrDependencies) {
       storeErrorsForHelp(dependency.query, visited, into);
     }
   }
@@ -1094,10 +1234,24 @@ void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {
     // canUsedSavedResult or recomputeIfNeeded.
   } else if (queryStack.size() > 0) {
     auto parentQuery = queryStack.back();
-    CHPL_ASSERT(parentQuery != resultEntry); // should be parent query
-    bool errorCollectionRoot = !errorCollectionStack.empty() &&
-                               errorCollectionStack.back().collectingQuery() == parentQuery;
-    parentQuery->dependencies.push_back(QueryDependency(resultEntry, errorCollectionRoot));
+    if (parentQuery == resultEntry) {
+      // Should only happen if recursion occurred, in which case do not add it
+      // to dependencies, in which case code below will skip it.
+      CHPL_ASSERT(resultEntry->recursionErrors.count(resultEntry) > 0);
+    } else if (resultEntry->recursionErrors.count(resultEntry) > 0) {
+      // Skip adding recursion error triggers to the dependency graph
+      // to avoid creating cycles.
+    } else {
+      bool errorCollectionRoot = !errorCollectionStack.empty() &&
+                                 errorCollectionStack.back().collectingQuery() == parentQuery;
+      parentQuery->dependencies.push_back(QueryDependency(resultEntry, errorCollectionRoot));
+      parentQuery->errorsPresentInSelfOrDependencies |=
+        resultEntry->errorsPresentInSelfOrDependencies;
+    }
+
+    // Propagate query errors that occurred in the child query to the parent
+    parentQuery->recursionErrors.insert(resultEntry->recursionErrors.begin(),
+                                        resultEntry->recursionErrors.end());
   }
 
   // The resultEntry might have been a query that silences errors. However,
@@ -1119,18 +1273,9 @@ void Context::endQueryHandleDependency(const QueryMapResultBase* resultEntry) {
   saveDependencyInParent(resultEntry);
 }
 
-void Context::haltForRecursiveQuery(const querydetail::QueryMapResultBase* r) {
-  // If an old element present has lastChecked == -1, that means that
-  // we are trying to compute it when a recursive call was made. In that event
-  // it is a severe error with the compiler implementation.
-  // This is a severe internal error and compilation cannot proceed.
-  // This uses 'exit' so that it can be tested but in the future we could
-  // make it call an internal error function that also exits.
-  // If this happens, the solution is to fix the query not to recurse.
-  gdbShouldBreakHere();
-  fprintf(stderr, "Error: recursion encountered in query %s\n",
-          r->parentQueryMap->queryName);
-  exit(-1);
+void Context::emitErrorForRecursiveQuery(const querydetail::QueryMapResultBase* r) {
+  CHPL_REPORT(this, Recursion,
+              UniqueString::get(this, r->parentQueryMap->queryName));
 }
 
 void Context::queryTimingReport(std::ostream& os) {
@@ -1143,7 +1288,7 @@ void Context::queryTimingReport(std::ostream& os) {
   os << "query timings\n";
 
   auto w1 = 40;
-  auto w2 = 14;
+  auto w2 = 15;
 
   os << std::setw(w1) << "name"  << std::setw(w2) << "query (ms)"
      << std::setw(w2) << "calls" << std::setw(w2) << "getMap (ms)"
@@ -1167,6 +1312,26 @@ void Context::queryTimingReport(std::ostream& os) {
     }
 }
 
+void Context::finishQueryStopwatch(querydetail::QueryMapBase* base,
+                                   size_t depth,
+                                   const std::string& args,
+                                   querydetail::QueryTimingDuration elapsed) {
+  if (enableQueryTiming) {
+    base->timings.query.update(elapsed);
+  }
+  if (enableQueryTimingTrace) {
+    auto asMicros =
+      std::chrono::duration_cast<std::chrono::microseconds>(elapsed);
+    auto nMicroseconds = asMicros.count();
+    auto os = queryTimingTraceOutput.get();
+    CHPL_ASSERT(os != nullptr);
+    *os << depth << ' '
+        << base->queryName << ' '
+        << nMicroseconds << ' '
+        << args << '\n';
+  }
+}
+
 // TODO should these be ifdef'd away if !QUERY_TIMING_ENABLED? Or just warn?
 void Context::beginQueryTimingTrace(const std::string& outname) {
   queryTimingTraceOutput = std::make_unique<std::ofstream>(outname);
@@ -1181,23 +1346,43 @@ void Context::endQueryTimingTrace() {
 namespace querydetail {
 
 
-void queryArgsPrintSep() {
-  printf(", ");
+void queryArgsPrintSep(std::ostream& s) {
+  s << ", ";
 }
 
 QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,
                    RevisionNumber lastChanged,
+                   bool beingTestedForReuse,
                    bool emittedErrors,
+                   bool errorsPresentInSelfOrDependencies,
+                   size_t oldResultForErrorContents,
+                   std::set<const QueryMapResultBase*> recursionErrors,
                    QueryMapBase* parentQueryMap)
   : lastChecked(lastChecked),
     lastChanged(lastChanged),
-    dependencies(),
+    beingTestedForReuse(beingTestedForReuse),
     emittedErrors(emittedErrors),
+    errorsPresentInSelfOrDependencies(errorsPresentInSelfOrDependencies),
+    oldResultForErrorContents(oldResultForErrorContents),
+    dependencies(),
+    recursionErrors(std::move(recursionErrors)),
     errors(),
     parentQueryMap(parentQueryMap) {
 }
 
 QueryMapResultBase::~QueryMapResultBase() {
+}
+
+optional<TraceElement> QueryMapResultBase::tryTrace() const {
+  if (auto& tracer = parentQueryMap->tracer) {
+    auto traceRef = tracer->traceElementFrom(this);
+    return TraceElement(traceRef.first, traceRef.second);
+  }
+
+  return {};
+}
+
+QueryTracerBase::~QueryTracerBase() {
 }
 
 QueryMapBase::~QueryMapBase() {

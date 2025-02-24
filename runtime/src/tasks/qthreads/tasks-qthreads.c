@@ -8,7 +8,7 @@
 //
 
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -154,33 +154,37 @@ static aligned_t next_task_id = 1;
 static pthread_t initer;
 
 pthread_t chpl_qthread_process_pthread;
-pthread_t chpl_qthread_comm_pthread;
+
+int chpl_qthread_comm_num_pthreads = 0;
+int chpl_qthread_comm_max_pthreads = 0;
+pthread_t *chpl_qthread_comm_pthreads = NULL;
 
 chpl_task_bundle_t chpl_qthread_process_bundle = {
                                    .kind = CHPL_ARG_BUNDLE_KIND_TASK,
                                    .is_executeOn = false,
                                    .lineno = 0,
                                    .filename = CHPL_FILE_IDX_MAIN_TASK,
-                                   .requestedSubloc = c_sublocid_any_val,
+                                   .requestedSubloc = c_sublocid_none_val,
                                    .requested_fid = FID_NONE,
                                    .requested_fn = NULL,
                                    .id = chpl_nullTaskID };
 
-chpl_task_bundle_t chpl_qthread_comm_task_bundle = {
+chpl_task_bundle_t chpl_qthread_comm_task_bundle_template = {
                                    .kind = CHPL_ARG_BUNDLE_KIND_TASK,
                                    .is_executeOn = false,
                                    .lineno = 0,
                                    .filename = CHPL_FILE_IDX_COMM_TASK,
-                                   .requestedSubloc = c_sublocid_any_val,
+                                   .requestedSubloc = c_sublocid_none_val,
                                    .requested_fid = FID_NONE,
                                    .requested_fn = NULL,
                                    .id = chpl_nullTaskID };
 
+chpl_task_bundle_t *chpl_qthread_comm_task_bundles = NULL;
+
 chpl_qthread_tls_t chpl_qthread_process_tls = {
                                .bundle = &chpl_qthread_process_bundle };
 
-chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
-                               .bundle = &chpl_qthread_comm_task_bundle };
+chpl_qthread_tls_t *chpl_qthread_comm_task_tls = NULL;
 
 //
 // chpl_qthread_get_tasklocal() is in chpl-tasks-impl.h
@@ -498,7 +502,18 @@ static void setupAvailableParallelism(int32_t maxThreads) {
     if (hwpar > 0) {
         // Limit the parallelism to the maximum imposed by the comm layer.
         if (0 < maxThreads && maxThreads < hwpar) {
-            hwpar = maxThreads;
+          if (chpl_nodeID == 0) {
+            char msg[1024];
+            snprintf(msg, sizeof(msg),
+                     "The CHPL_COMM setting is limiting the number of threads "
+                     "to %d, rather than the hardware's preference of %d.%s",
+                     maxThreads, hwpar,
+                     (strcmp(CHPL_COMM, "gasnet") ? "" :
+                      "  To increase this limit, set 'GASNET_MAX_THREADS' to "
+                      "a larger value in your environment."));
+            chpl_warning(msg, 0, 0);
+          }
+          hwpar = maxThreads;
         }
 
         //
@@ -729,6 +744,43 @@ static void setupAffinity(void) {
   }
 }
 
+static pthread_t *allocate_comm_task(void) {
+    int newMax;
+    int oldMax = chpl_qthread_comm_max_pthreads;
+
+    if (chpl_qthread_comm_num_pthreads ==
+        chpl_qthread_comm_max_pthreads) {
+        newMax = (oldMax == 0) ? 1 : oldMax * 2;
+        size_t newSize = newMax * sizeof(*chpl_qthread_comm_pthreads);
+        chpl_qthread_comm_pthreads = chpl_realloc(chpl_qthread_comm_pthreads,
+                                                  newSize);
+
+        newSize = newMax * sizeof(*chpl_qthread_comm_task_bundles);
+        chpl_qthread_comm_task_bundles =
+            chpl_realloc(chpl_qthread_comm_task_bundles, newSize);
+
+        newSize = newMax * sizeof(*chpl_qthread_comm_task_tls);
+        chpl_free(chpl_qthread_comm_task_tls);
+        chpl_qthread_comm_task_tls = (chpl_qthread_tls_t *)
+                                        chpl_malloc(newSize);
+        for(int i = 0; i < chpl_qthread_comm_num_pthreads; i++) {
+            chpl_qthread_comm_task_tls[i].bundle =
+                    &chpl_qthread_comm_task_bundles[i];
+        }
+        chpl_qthread_comm_max_pthreads = newMax;
+    }
+    int i = chpl_qthread_comm_num_pthreads++;
+    assert(i < chpl_qthread_comm_max_pthreads);
+    chpl_qthread_comm_task_bundles[i] =
+            chpl_qthread_comm_task_bundle_template;
+    chpl_qthread_comm_task_tls[i].bundle =
+                    &chpl_qthread_comm_task_bundles[i];
+    return &chpl_qthread_comm_pthreads[i];
+}
+
+
+
+
 void chpl_task_init(void)
 {
     int32_t   commMaxThreads;
@@ -827,11 +879,34 @@ typedef struct {
     chpl_fn_p fn;
     void *arg;
     int cpu;
+    pthread_t *thread;
 } comm_task_wrapper_info_t;
 
 static void *comm_task_wrapper(void *arg)
 {
     comm_task_wrapper_info_t *rarg = arg;
+
+    void *targ = rarg->arg;
+    chpl_fn_p fn = rarg->fn;
+    chpl_free(rarg);
+    (*(chpl_fn_p)(fn))(targ);
+    return NULL;
+}
+
+// Communication threads indirect through this function to set CPU and
+// memory affinity properly. chpl_task_createCommTask creates a thread
+// running this function. This thread binds itself to the proper CPU(s),
+// but before it does that it has been using its stack and as a result its
+// stack may be in a NUMA domain not associated with the CPU(s). So this
+// thread creates another thread which inherits this thread's CPU affinity
+// so its stack is in the proper NUMA domain(s). This thread then exits
+// and the new thread calls comm_task_wrapper to invoke communication
+// function.
+
+static void *comm_task_trampoline(void *arg)
+{
+    comm_task_wrapper_info_t *rarg = arg;
+
     if (rarg->cpu >= 0) {
         int rc = chpl_topo_bindCPU(rarg->cpu);
         if (rc) {
@@ -840,10 +915,26 @@ static void *comm_task_wrapper(void *arg)
                      "binding comm task to CPU %d failed", rarg->cpu);
             chpl_warning(msg, 0, 0);
         }
-        _DBG_P("comm task bound to CPU %d", rarg->cpu);
+        if (verbosity >= 2) {
+            // TODO: it would be better if only locales on node 0 printed this
+            printf("comm task bound to CPU %d\n", rarg->cpu);
+        }
+    } else {
+        int rc = chpl_topo_bindLogAccCPUs();
+        if (rc) {
+            chpl_warning(
+                "binding comm task to accessible PUs failed",
+                0, 0);
+        }
+        if ((verbosity >= 2) && (chpl_nodeID == 0)) {
+            printf("comm task bound to accessible PUs\n");
+        }
     }
-    (*(chpl_fn_p)(rarg->fn))(rarg->arg);
-    return 0;
+    int rc = pthread_create(rarg->thread, NULL, comm_task_wrapper, rarg);
+    if (rc) {
+        chpl_error("pthread_create of comm_task_wrapper failed", 0, 0);
+    }
+    return NULL;
 }
 
 // Start the main task.
@@ -857,7 +948,7 @@ void chpl_task_callMain(void (*chpl_main)(void))
         (chpl_task_bundle_t)
         { .kind            = CHPL_ARG_BUNDLE_KIND_TASK,
           .is_executeOn    = false,
-          .requestedSubloc = c_sublocid_any_val,
+          .requestedSubloc = c_sublocid_none_val,
           .requested_fid   = FID_NONE,
           .requested_fn    = (void(*)(void*)) chpl_main,
           .lineno          = 0,
@@ -878,18 +969,21 @@ int chpl_task_createCommTask(chpl_fn_p fn,
                              void     *arg,
                              int      cpu)
 {
-    //
-    // The wrapper info must be static because it won't be referred to
-    // until the new pthread calls comm_task_wrapper().  And, it is
-    // safe for it to be static because we will be called at most once
-    // on each node.
-    //
-    static comm_task_wrapper_info_t wrapper_info;
-    wrapper_info.fn = fn;
-    wrapper_info.arg = arg;
-    wrapper_info.cpu = cpu;
-    return pthread_create(&chpl_qthread_comm_pthread,
-                          NULL, comm_task_wrapper, &wrapper_info);
+    comm_task_wrapper_info_t *wrapper_info;
+    wrapper_info = chpl_malloc(sizeof(*wrapper_info));
+    wrapper_info->fn = fn;
+    wrapper_info->arg = arg;
+    wrapper_info->cpu = cpu;
+    wrapper_info->thread = allocate_comm_task();
+    pthread_t dummy;
+    int rc = pthread_create(&dummy, NULL, comm_task_trampoline, wrapper_info);
+    if (rc == 0) {
+        rc = pthread_detach(dummy);
+        if (rc) {
+            chpl_error("pthread_detach of comm_task_trampoline failed", 0, 0);
+        }
+    }
+    return rc;
 }
 
 void chpl_task_addTask(chpl_fn_int_t       fid,
@@ -903,7 +997,7 @@ void chpl_task_addTask(chpl_fn_int_t       fid,
 
     // We allow using c_sublocid_none to represent the CPU in the gpu locale
     // model. This isn't currently used by the numa (or other locale) models.
-    assert(isActualSublocID(full_subloc) || full_subloc == c_sublocid_any ||
+    assert(isActualSublocID(full_subloc) || full_subloc == c_sublocid_none ||
         !strcmp(CHPL_LOCALE_MODEL, "gpu"));
 
     PROFILE_INCR(profile_task_addTask,1);
@@ -925,7 +1019,7 @@ void chpl_task_addTask(chpl_fn_int_t       fid,
 
     wrap_callbacks(chpl_task_cb_event_kind_create, arg);
 
-    if (execution_subloc == c_sublocid_any) {
+    if (execution_subloc == c_sublocid_none) {
         qthread_fork_copyargs(chapel_wrapper, arg, arg_size, NULL);
     } else {
         qthread_fork_copyargs_to(chapel_wrapper, arg, arg_size, NULL,

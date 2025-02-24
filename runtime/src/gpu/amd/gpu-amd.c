@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,7 @@
 
 #include "sys_basic.h"
 #include "chplrt.h"
+#include "chplsys.h"
 #include "chpl-mem.h"
 #include "chpl-gpu.h"
 #include "chpl-gpu-impl.h"
@@ -29,9 +30,8 @@
 #include "chplcgfns.h"
 #include "chpl-env-gen.h"
 #include "chpl-linefile-support.h"
-#include "../common/rocm-utils.h"
-#include "../common/rocm-version.h"
-
+#include "gpu/amd/rocm-utils.h"
+#include "chpl-topo.h"
 
 #include <assert.h>
 
@@ -42,99 +42,220 @@
 #include <hip/hip_runtime_api.h>
 #include <hip/hip_common.h>
 
-
-static inline
-void* chpl_gpu_load_module(const char* fatbin_data) {
-  hipModule_t rocm_module;
-
-  ROCM_CALL(hipModuleLoadData(&rocm_module, fatbin_data));
-  assert(rocm_module);
-
-  return (void*)rocm_module;
-}
-
-static inline
-void* chpl_gpu_load_function(hipModule_t rocm_module, const char* kernel_name) {
-  hipFunction_t function;
-
-  ROCM_CALL(hipModuleGetFunction(&function, rocm_module, kernel_name));
-  assert(function);
-
-  return (void*)function;
-}
-
 // this is compiler-generated
 extern const char* chpl_gpuBinary;
+extern const uint64_t chpl_gpuBinarySize;
+
+static int numAllDevices = -1;
+static int numDevices = -1;
+static int *dev_pid_to_lid_table = NULL;
+static hipDevice_t *dev_lid_to_pid_table = NULL;
 
 // array indexed by device ID (we load the same module once for each GPU).
 static hipModule_t *chpl_gpu_rocm_modules;
 
 static int *deviceClockRates;
 
+static inline
+void* chpl_gpu_load_module(const char* fatbin_data, const uint64_t fatbin_size) {
+  hipModule_t rocm_module;
 
-static void switch_context(int dev_id) {
-  ROCM_CALL(hipSetDevice(dev_id));
+  const char* buffer = fatbin_data;
+  chpl_bool has_huge_pages = chpl_getHeapPageSize() > chpl_getSysPageSize();
+  if (has_huge_pages) {
+    // ROCm and huge pages don't play well together.
+    // Make a temporary copy of the fatbin
+    buffer = chpl_malloc(fatbin_size);
+    memcpy((void*)buffer, fatbin_data, fatbin_size);
+  }
+
+  ROCM_CALL(hipModuleLoadData(&rocm_module, buffer));
+  assert(rocm_module);
+
+  if (has_huge_pages) chpl_free((void*)buffer);
+
+  return (void*)rocm_module;
 }
 
-void chpl_gpu_impl_use_device(c_sublocid_t dev_id) {
-  switch_context(dev_id);
+// Maps the "physical" device ID used by the HIP library to the "logical"
+// device ID used by this locale. The two may differ due to co-locales.
+// Logical device IDs start with zero in each co-locale and are equal to the
+// sublocale ID. Physical device IDs are the same for all co-locales on the
+// machine.
+
+static int dev_pid_to_lid(int32_t dev_pid) {
+  assert((dev_pid >= 0) && (dev_pid < numAllDevices));
+  int dev_lid = dev_pid_to_lid_table[dev_pid];
+  assert((dev_lid >= 0) && (dev_lid < numDevices));
+  return dev_lid;
+}
+
+// Maps a logical device ID to physical device ID.
+
+static int dev_lid_to_pid(int dev_lid) {
+  assert((dev_lid >= 0) && (dev_lid < numDevices));
+  int dev_pid = dev_lid_to_pid_table[dev_lid];
+  assert((dev_pid >= 0) && (dev_pid < numAllDevices));
+  return dev_pid;
+}
+
+static void switch_context(int dev_lid) {
+  int dev_pid = dev_lid_to_pid(dev_lid);
+  ROCM_CALL(hipSetDevice(dev_pid));
+}
+
+void chpl_gpu_impl_use_device(c_sublocid_t dev_lid) {
+  switch_context(dev_lid);
+}
+
+static hipModule_t get_module(void) {
+  hipDevice_t device;
+  hipModule_t module;
+
+  ROCM_CALL(hipGetDevice(&device));
+  int dev_lid = dev_pid_to_lid((int32_t) device);
+  module = chpl_gpu_rocm_modules[dev_lid];
+  return module;
 }
 
 extern c_nodeid_t chpl_nodeID;
 
-static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, hipModule_t module) {
-  hipDeviceptr_t ptr;
+static void chpl_gpu_impl_set_globals(c_sublocid_t dev_lid, hipModule_t module) {
+  hipDeviceptr_t ptr = NULL;;
   size_t glob_size;
 
-  // Engin: The AMDGPU backend seems to optimize chpl_nodeID away when it is not
+  chpl_gpu_impl_load_global("chpl_nodeID", (void**)&ptr, &glob_size);
+
+  if (ptr) {
+    assert(glob_size == sizeof(c_nodeid_t));
+
+    // chpl_gpu_impl_copy_host_to_device performs a validation using
+    // hipPointerGetAttributes. However, apparently, that's not something you
+    // should call on pointers returned from hipModuleGetGlobal. Just perform
+    // the copy directly.
+    //
+    // The validation only happens when built with assertions (commonly
+    // enabled by CHPL_DEVELOPER), and chpl_gpu_impl_copy_host_to_device
+    // only causes issues in that case.
+    ROCM_CALL(hipMemcpyHtoD(ptr, (void*)&chpl_nodeID, glob_size));
+  }
+}
+
+
+void chpl_gpu_impl_load_global(const char* global_name, void** ptr,
+                               size_t* size) {
+  hipModule_t module = get_module();
+
+  //
+  // Engin: The AMDGPU backend seems to optimize globals away when they are not
   // used.  So, we should not error out if we can't find its definition. We can
   // look into making sure that it remains in the module, which feels a bit
   // safer, admittedly. Note also that this is the only diff between nvidia and
   // amd implementations in terms of adjusting chpl_nodeID.
-  int err = hipModuleGetGlobal(&ptr, &glob_size, module, "chpl_nodeID");
+  int err = hipModuleGetGlobal((hipDeviceptr_t*)ptr, size, module, global_name);
   if (err == hipErrorNotFound) {
     return;
   }
   ROCM_CALL(err);
-
-  assert(glob_size == sizeof(c_nodeid_t));
-  // chpl_gpu_impl_copy_host_to_device performs a validation using
-  // hipPointerGetAttributes. However, apparently, that's not something you
-  // should call on pointers returned from hipModuleGetGlobal. Just perform
-  // the copy directly.
-  ROCM_CALL(hipMemcpyHtoD(ptr, (void*)&chpl_nodeID, glob_size));
 }
 
+void* chpl_gpu_impl_load_function(const char* kernel_name) {
+  hipFunction_t function;
+  hipModule_t module = get_module();
 
-void chpl_gpu_impl_init(int* num_devices) {
+  ROCM_CALL(hipModuleGetFunction(&function, module, kernel_name));
+  assert(function);
+
+  return (void*)function;
+}
+
+void chpl_gpu_impl_begin_init(int* num_all_devices) {
   ROCM_CALL(hipInit(0));
+  ROCM_CALL(hipGetDeviceCount(&numAllDevices));
+  *num_all_devices = numAllDevices;
+}
 
-  ROCM_CALL(hipGetDeviceCount(num_devices));
+static hipDevice_t ith_device(int i) {
+#if ROCM_VERSION_MAJOR >= 6
+  return i;
+#else
+  hipDevice_t device;
+  ROCM_CALL(hipDeviceGet(&device, i));
+  return device;
+#endif
+}
 
-  const int loc_num_devices = *num_devices;
-  chpl_gpu_rocm_modules = chpl_malloc(sizeof(hipModule_t)*loc_num_devices);
-  deviceClockRates = chpl_malloc(sizeof(int)*loc_num_devices);
+void chpl_gpu_impl_collect_topo_addr_info(chpl_topo_pci_addr_t* into,
+                                          int device_num) {
+  hipDevice_t hipDevice = ith_device(device_num);
+  int domain, bus, device;
+  int rc = hipDeviceGetAttribute(&domain, hipDeviceAttributePciDomainID,
+                                 hipDevice);
+  if (rc == hipErrorInvalidValue) {
+    // hipDeviceGetAttribute for hipDeviceAttributePciDomainID fails
+    // on some (all?) platforms. Assume the domain is 0 and carry on.
+    domain = 0;
+  } else {
+    ROCM_CALL(rc);
+  }
+  ROCM_CALL(hipDeviceGetAttribute(&bus, hipDeviceAttributePciBusId,
+                                  hipDevice));
+  ROCM_CALL(hipDeviceGetAttribute(&device, hipDeviceAttributePciDeviceId,
+                                  hipDevice));
+  into->domain = (uint8_t) domain;
+  into->bus = (uint8_t) bus;
+  into->device = (uint8_t) device;
+  into->function = 0;
+}
 
-  int i;
-  for (i=0 ; i<loc_num_devices ; i++) {
-    hipDevice_t device;
-    hipCtx_t context;
+void chpl_gpu_impl_setup_with_device_count(int num_my_devices) {
+  // Allocate the GPU data structures. Note that the HIP API, specifically
+  // hipGetDevice, returns the global device ID so we need
+  // dev_pid_to_lid_table to map from the global device ID to the logical
+  // device ID.
 
-    ROCM_CALL(hipDeviceGet(&device, i));
-    ROCM_CALL(hipDevicePrimaryCtxSetFlags(device, hipDeviceScheduleBlockingSync));
-    ROCM_CALL(hipDevicePrimaryCtxRetain(&context, device));
+  numDevices = num_my_devices;
+  chpl_gpu_rocm_modules = chpl_malloc(sizeof(hipModule_t)*numDevices);
+  deviceClockRates = chpl_malloc(sizeof(int)*numDevices);
+  dev_lid_to_pid_table = chpl_malloc(sizeof(int) * numDevices);
+  dev_pid_to_lid_table = chpl_malloc(sizeof(int) * numAllDevices);
 
-    ROCM_CALL(hipSetDevice(device));
-    hipModule_t module = chpl_gpu_load_module(chpl_gpuBinary);
-    chpl_gpu_rocm_modules[i] = module;
+  for (int i = 0; i < numDevices; i++) {
+    chpl_gpu_rocm_modules[i] = NULL;
+    dev_lid_to_pid_table[i] = -1;
+  }
 
-    hipDeviceGetAttribute(&deviceClockRates[i], hipDeviceAttributeClockRate, device);
-
-    chpl_gpu_impl_set_globals(i, module);
+  for (int i = 0; i < numAllDevices; i++) {
+    dev_pid_to_lid_table[i] = -1;
   }
 }
 
+void chpl_gpu_impl_setup_device(int my_index, int global_index) {
+  hipDevice_t device = ith_device(global_index);
+#if ROCM_VERSION_MAJOR >= 6
+  ROCM_CALL(hipSetDevice(device));
+  ROCM_CALL(hipSetDeviceFlags(hipDeviceScheduleBlockingSync))
+#else
+  hipCtx_t context;
+  ROCM_CALL(hipDevicePrimaryCtxSetFlags(device, hipDeviceScheduleBlockingSync));
+  ROCM_CALL(hipDevicePrimaryCtxRetain(&context, device));
+
+  ROCM_CALL(hipSetDevice(device));
+#endif
+  hipModule_t module = chpl_gpu_load_module(chpl_gpuBinary, chpl_gpuBinarySize);
+  chpl_gpu_rocm_modules[my_index] = module;
+
+  hipDeviceGetAttribute(&deviceClockRates[my_index],
+                        hipDeviceAttributeClockRate, device);
+
+  // map array indices (relative device numbers) to global device IDs
+  dev_lid_to_pid_table[my_index] = device;
+  dev_pid_to_lid_table[device] = my_index;
+  chpl_gpu_impl_set_globals(my_index, module);
+}
+
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
+  if (!ptr) return false;
   hipPointerAttribute_t res;
   hipError_t ret_val = hipPointerGetAttributes(&res, (hipDeviceptr_t)ptr);
 
@@ -149,10 +270,16 @@ bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
     }
   }
 
+#if ROCM_VERSION_MAJOR >= 6
+  // TODO: is this right?
+  return res.type != hipMemoryTypeUnregistered;
+#else
   return true;
+#endif
 }
 
 bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
+  if (!ptr) return false;
   hipPointerAttribute_t res;
   hipError_t ret_val = hipPointerGetAttributes(&res, (hipDeviceptr_t)ptr);
 
@@ -167,156 +294,29 @@ bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
     }
   }
   else {
+#if ROCM_VERSION_MAJOR >= 6
+    return res.type == hipMemoryTypeHost || res.type == hipMemoryTypeUnregistered;
+#else
     return res.memoryType == hipMemoryTypeHost;
+#endif
   }
 
   return true;
 }
 
-static void chpl_gpu_launch_kernel_help(int ln,
-                                        int32_t fn,
-                                        const char* name,
-                                        int grd_dim_x,
-                                        int grd_dim_y,
-                                        int grd_dim_z,
-                                        int blk_dim_x,
-                                        int blk_dim_y,
-                                        int blk_dim_z,
-                                        void* stream,
-                                        int nargs,
-                                        va_list args) {
-  CHPL_GPU_START_TIMER(load_time);
+void chpl_gpu_impl_launch_kernel(void* kernel,
+                                 int grd_dim_x, int grd_dim_y, int grd_dim_z,
+                                 int blk_dim_x, int blk_dim_y, int blk_dim_z,
+                                 void* stream, void** kernel_params) {
+  assert(kernel);
 
-  c_sublocid_t dev_id = chpl_task_getRequestedSubloc();
-  hipDeviceptr_t rocm_module = chpl_gpu_rocm_modules[dev_id];
-  void* function = chpl_gpu_load_function(rocm_module, name);
-
-  CHPL_GPU_STOP_TIMER(load_time);
-  CHPL_GPU_START_TIMER(prep_time);
-
-  void ***kernel_params = chpl_mem_alloc(
-     (nargs+2) * sizeof(void **), CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
-  //         ^ +2 for the ln and fn arguments that we add to the end of the array
-
-  assert(function);
-  assert(kernel_params);
-
-  CHPL_GPU_DEBUG("Creating kernel parameters\n");
-  CHPL_GPU_DEBUG("\tgridDims=(%d, %d, %d), blockDims(%d, %d, %d)\n",
-                 grd_dim_x, grd_dim_y, grd_dim_z,
-                 blk_dim_x, blk_dim_y, blk_dim_z);
-
-  // Keep track of kernel parameters we dynamically allocate memory for so
-  // later on we know what we need to free.
-  bool *was_memory_dynamically_allocated_for_kernel_param = chpl_mem_alloc(
-      nargs * sizeof(bool), CHPL_RT_MD_GPU_KERNEL_PARAM_META, ln, fn);
-
-  for (int i=0 ; i<nargs ; i++) {
-    void* cur_arg = va_arg(args, void*);
-    size_t cur_arg_size = va_arg(args, size_t);
-
-    if (cur_arg_size > 0) {
-      was_memory_dynamically_allocated_for_kernel_param[i] = true;
-
-      kernel_params[i] = chpl_mem_alloc(1 * sizeof(hipDeviceptr_t),
-                                        CHPL_RT_MD_GPU_KERNEL_PARAM, ln, fn);
-
-      *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size,
-                                             CHPL_RT_MD_GPU_KERNEL_ARG,
-                                             ln, fn);
-
-      chpl_gpu_impl_copy_host_to_device(*kernel_params[i], cur_arg,
-                                        cur_arg_size, stream);
-
-      CHPL_GPU_DEBUG("\tKernel parameter %d: %p (device ptr)\n",
-                   i, *kernel_params[i]);
-    }
-    else {
-      was_memory_dynamically_allocated_for_kernel_param[i] = false;
-      kernel_params[i] = cur_arg;
-      CHPL_GPU_DEBUG("\tKernel parameter %d: %p\n",
-                   i, kernel_params[i]);
-    }
-  }
-
-  // add the ln and fn arguments to the end of the array
-  // These arguments only make sense when the kernel lives inside of standard
-  // module code and CHPL_DEVELOPER is not set since the generated kernel function
-  // will have two extra formals to account for the line and file num.
-  // If CHPL_DEVELOPER is set, these arguments are dropped on the floor
-  kernel_params[nargs] = (void**)(&ln);
-  kernel_params[nargs+1] = (void**)(&fn);
-
-  CHPL_GPU_STOP_TIMER(prep_time);
-  CHPL_GPU_START_TIMER(kernel_time);
-
-  ROCM_CALL(hipModuleLaunchKernel((hipFunction_t)function,
-                           grd_dim_x, grd_dim_y, grd_dim_z,
-                           blk_dim_x, blk_dim_y, blk_dim_z,
-                           0,  // shared memory in bytes
-                           stream,  // stream ID
-                           (void**)kernel_params,
-                           NULL));  // extra options
-
-  CHPL_GPU_DEBUG("cuLaunchKernel returned %s\n", name);
-
-  chpl_task_yield();
-
-  CHPL_GPU_STOP_TIMER(kernel_time);
-  CHPL_GPU_START_TIMER(teardown_time);
-
-  // free GPU memory allocated for kernel parameters
-  for (int i=0 ; i<nargs ; i++) {
-    if (was_memory_dynamically_allocated_for_kernel_param[i]) {
-      chpl_gpu_mem_free(*kernel_params[i], ln, fn);
-      chpl_mem_free(kernel_params[i], ln, fn);
-    }
-  }
-
-  chpl_mem_free(kernel_params, ln, fn);
-  chpl_mem_free(was_memory_dynamically_allocated_for_kernel_param, ln, fn);
-
-  CHPL_GPU_STOP_TIMER(teardown_time);
-  CHPL_GPU_PRINT_TIMERS("<%20s> Load: %Lf, "
-                               "Prep: %Lf, "
-                               "Kernel: %Lf, "
-                               "Teardown: %Lf\n",
-         name, load_time, prep_time, kernel_time, teardown_time);
-}
-
-inline void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
-                                        const char* name,
-                                        int grd_dim_x,
-                                        int grd_dim_y,
-                                        int grd_dim_z,
-                                        int blk_dim_x,
-                                        int blk_dim_y,
-                                        int blk_dim_z,
-                                        void* stream,
-                                        int nargs, va_list args) {
-  chpl_gpu_launch_kernel_help(ln, fn,
-                              name,
-                              grd_dim_x, grd_dim_y, grd_dim_z,
-                              blk_dim_x, blk_dim_y, blk_dim_z,
-                              stream,
-                              nargs, args);
-}
-
-inline void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
-                                             const char* name,
-                                             int64_t num_threads,
-                                             int blk_dim,
-                                             void* stream,
-                                             int nargs,
-                                             va_list args) {
-  int grd_dim = (num_threads+blk_dim-1)/blk_dim;
-
-  chpl_gpu_launch_kernel_help(ln, fn,
-                              name,
-                              grd_dim, 1, 1,
-                              blk_dim, 1, 1,
-                              stream,
-                              nargs, args);
+  ROCM_CALL(hipModuleLaunchKernel((hipFunction_t)kernel,
+                                  grd_dim_x, grd_dim_y, grd_dim_z,
+                                  blk_dim_x, blk_dim_y, blk_dim_z,
+                                  0,  // shared memory in bytes
+                                  stream,  // stream ID
+                                  (void**)kernel_params,
+                                  NULL));  // extra options
 }
 
 void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n,
@@ -397,6 +397,12 @@ void* chpl_gpu_impl_mem_alloc(size_t size) {
 
 void chpl_gpu_impl_mem_free(void* memAlloc) {
   if (memAlloc != NULL) {
+    // see note in chpl_gpu_mem_free
+    hipPointerAttribute_t res;
+    ROCM_CALL(hipPointerGetAttributes(&res, memAlloc));
+    int dev_lid = dev_pid_to_lid(res.device);
+    switch_context(dev_lid);
+
     assert(chpl_gpu_is_device_ptr(memAlloc));
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
     if (chpl_gpu_impl_is_host_ptr(memAlloc)) {
@@ -418,7 +424,7 @@ void chpl_gpu_impl_hostmem_register(void *memAlloc, size_t size) {
   // buffer, which degrades performance. So in the array_on_device mode we
   // choose to page-lock such memory even if it's on the host-side.
   #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
-  hipHostRegister(memAlloc, size, hipHostRegisterPortable);
+  ROCM_CALL(hipHostRegister(memAlloc, size, hipHostRegisterPortable));
   #endif
 }
 
@@ -435,18 +441,22 @@ unsigned int chpl_gpu_device_clock_rate(int32_t devNum) {
   return (unsigned int)deviceClockRates[devNum];
 }
 
-bool chpl_gpu_impl_can_access_peer(int dev1, int dev2) {
+bool chpl_gpu_impl_can_access_peer(int dev_lid1, int dev_lid2) {
   int p2p;
-  ROCM_CALL(hipDeviceCanAccessPeer(&p2p, dev1, dev2));
+  int dev_pid1 = dev_lid_to_pid(dev_lid1);
+  int dev_pid2 = dev_lid_to_pid(dev_lid2);
+  ROCM_CALL(hipDeviceCanAccessPeer(&p2p, dev_pid1, dev_pid2));
   return p2p != 0;
 }
 
-void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable) {
-  ROCM_CALL(hipSetDevice(dev1));
+void chpl_gpu_impl_set_peer_access(int dev_lid1, int dev_lid2, bool enable) {
+  int dev_pid1 = dev_lid_to_pid(dev_lid1);
+  int dev_pid2 = dev_lid_to_pid(dev_lid2);
+  ROCM_CALL(hipSetDevice(dev_pid1));
   if(enable) {
-    ROCM_CALL(hipDeviceEnablePeerAccess(dev2, 0));
+    ROCM_CALL(hipDeviceEnablePeerAccess(dev_pid2, 0));
   } else {
-    ROCM_CALL(hipDeviceDisablePeerAccess(dev2));
+    ROCM_CALL(hipDeviceDisablePeerAccess(dev_pid2));
   }
 }
 
@@ -487,8 +497,71 @@ void chpl_gpu_impl_stream_synchronize(void* stream) {
   }
 }
 
-bool chpl_gpu_impl_can_reduce(void) {
-  return ROCM_VERSION_MAJOR>=5;
+void* chpl_gpu_impl_host_register(void* var, size_t size) {
+  ROCM_CALL(hipHostRegister(var, size, hipHostRegisterPortable));
+  void *dev_var;
+  ROCM_CALL(hipHostGetDevicePointer(&dev_var, var, 0));
+  return dev_var;
+}
+
+void chpl_gpu_impl_host_unregister(void* var) {
+  ROCM_CALL(hipHostUnregister(var));
+}
+
+void chpl_gpu_impl_name(int dev_lid, char *resultBuffer, int bufferSize) {
+  int dev_pid = dev_lid_to_pid(dev_lid);
+  ROCM_CALL(hipDeviceGetName(resultBuffer, bufferSize, dev_pid));
+}
+
+const int CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_BLOCK = hipDeviceAttributeMaxThreadsPerBlock;
+const int CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_X = hipDeviceAttributeMaxBlockDimX;
+const int CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Y = hipDeviceAttributeMaxBlockDimY;
+const int CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Z = hipDeviceAttributeMaxBlockDimZ;
+const int CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_X = hipDeviceAttributeMaxGridDimX;
+const int CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Y = hipDeviceAttributeMaxGridDimY;
+const int CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Z = hipDeviceAttributeMaxGridDimZ;
+const int CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_BLOCK = hipDeviceAttributeMaxSharedMemoryPerBlock;
+const int CHPL_GPU_ATTRIBUTE__TOTAL_CONSTANT_MEMORY = hipDeviceAttributeTotalConstantMemory;
+const int CHPL_GPU_ATTRIBUTE__WARP_SIZE = hipDeviceAttributeWarpSize;
+const int CHPL_GPU_ATTRIBUTE__MAX_PITCH = hipDeviceAttributeMaxPitch;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE1D_WIDTH = hipDeviceAttributeMaxTexture1DWidth;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_WIDTH = hipDeviceAttributeMaxTexture2DWidth;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_HEIGHT = hipDeviceAttributeMaxTexture2DHeight;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_WIDTH = hipDeviceAttributeMaxTexture3DWidth;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_HEIGHT = hipDeviceAttributeMaxTexture3DHeight;
+const int CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_DEPTH = hipDeviceAttributeMaxTexture3DDepth;
+const int CHPL_GPU_ATTRIBUTE__MAX_REGISTERS_PER_BLOCK = hipDeviceAttributeMaxRegistersPerBlock;
+const int CHPL_GPU_ATTRIBUTE__CLOCK_RATE = hipDeviceAttributeClockRate;
+const int CHPL_GPU_ATTRIBUTE__TEXTURE_ALIGNMENT = hipDeviceAttributeTextureAlignment;
+const int CHPL_GPU_ATTRIBUTE__TEXTURE_PITCH_ALIGNMENT = hipDeviceAttributeTexturePitchAlignment;
+const int CHPL_GPU_ATTRIBUTE__MULTIPROCESSOR_COUNT = hipDeviceAttributeMultiprocessorCount;
+const int CHPL_GPU_ATTRIBUTE__KERNEL_EXEC_TIMEOUT = hipDeviceAttributeKernelExecTimeout;
+const int CHPL_GPU_ATTRIBUTE__INTEGRATED = hipDeviceAttributeIntegrated;
+const int CHPL_GPU_ATTRIBUTE__CAN_MAP_HOST_MEMORY = hipDeviceAttributeCanMapHostMemory;
+const int CHPL_GPU_ATTRIBUTE__COMPUTE_MODE = hipDeviceAttributeComputeMode;
+const int CHPL_GPU_ATTRIBUTE__CONCURRENT_KERNELS = hipDeviceAttributeConcurrentKernels;
+const int CHPL_GPU_ATTRIBUTE__ECC_ENABLED = hipDeviceAttributeEccEnabled;
+const int CHPL_GPU_ATTRIBUTE__PCI_BUS_ID = hipDeviceAttributePciBusId;
+const int CHPL_GPU_ATTRIBUTE__PCI_DEVICE_ID = hipDeviceAttributePciDeviceId;
+const int CHPL_GPU_ATTRIBUTE__MEMORY_CLOCK_RATE = hipDeviceAttributeMemoryClockRate;
+const int CHPL_GPU_ATTRIBUTE__GLOBAL_MEMORY_BUS_WIDTH = hipDeviceAttributeMemoryBusWidth;
+const int CHPL_GPU_ATTRIBUTE__L2_CACHE_SIZE = hipDeviceAttributeL2CacheSize;
+const int CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_MULTIPROCESSOR = hipDeviceAttributeMaxThreadsPerMultiProcessor;
+const int CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MAJOR = hipDeviceAttributeComputeCapabilityMajor;
+const int CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MINOR = hipDeviceAttributeComputeCapabilityMinor;
+const int CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_MULTIPROCESSOR = hipDeviceAttributeMaxSharedMemoryPerMultiprocessor;
+const int CHPL_GPU_ATTRIBUTE__MANAGED_MEMORY = hipDeviceAttributeManagedMemory;
+const int CHPL_GPU_ATTRIBUTE__MULTI_GPU_BOARD = hipDeviceAttributeIsMultiGpuBoard;
+const int CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS = hipDeviceAttributePageableMemoryAccess;
+const int CHPL_GPU_ATTRIBUTE__CONCURRENT_MANAGED_ACCESS = hipDeviceAttributeConcurrentManagedAccess;
+const int CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS_USES_HOST_PAGE_TABLES = hipDeviceAttributePageableMemoryAccessUsesHostPageTables;
+const int CHPL_GPU_ATTRIBUTE__DIRECT_MANAGED_MEM_ACCESS_FROM_HOST = hipDeviceAttributeDirectManagedMemAccessFromHost;
+
+int chpl_gpu_impl_query_attribute(int dev_lid, int attribute) {
+  int res;
+  int dev_pid = dev_lid_to_pid(dev_lid);
+  ROCM_CALL(hipDeviceGetAttribute(&res, attribute, dev_pid));
+  return res;
 }
 
 #endif // HAS_GPU_LOCALE

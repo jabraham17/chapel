@@ -40,6 +40,17 @@ bool SPIRVInstrInfo::isConstantInstr(const MachineInstr &MI) const {
   case SPIRV::OpSpecConstantComposite:
   case SPIRV::OpSpecConstantOp:
   case SPIRV::OpUndef:
+  case SPIRV::OpConstantFunctionPointerINTEL:
+    return true;
+  default:
+    return false;
+  }
+}
+
+bool SPIRVInstrInfo::isInlineAsmDefInstr(const MachineInstr &MI) const {
+  switch (MI.getOpcode()) {
+  case SPIRV::OpAsmTargetINTEL:
+  case SPIRV::OpAsmINTEL:
     return true;
   default:
     return false;
@@ -88,6 +99,56 @@ bool SPIRVInstrInfo::isHeaderInstr(const MachineInstr &MI) const {
     return true;
   default:
     return isTypeDeclInstr(MI) || isConstantInstr(MI) || isDecorationInstr(MI);
+  }
+}
+
+bool SPIRVInstrInfo::canUseFastMathFlags(const MachineInstr &MI) const {
+  switch (MI.getOpcode()) {
+  case SPIRV::OpFAddS:
+  case SPIRV::OpFSubS:
+  case SPIRV::OpFMulS:
+  case SPIRV::OpFDivS:
+  case SPIRV::OpFRemS:
+  case SPIRV::OpFAddV:
+  case SPIRV::OpFSubV:
+  case SPIRV::OpFMulV:
+  case SPIRV::OpFDivV:
+  case SPIRV::OpFRemV:
+  case SPIRV::OpFMod:
+    return true;
+  default:
+    return false;
+  }
+}
+
+bool SPIRVInstrInfo::canUseNSW(const MachineInstr &MI) const {
+  switch (MI.getOpcode()) {
+  case SPIRV::OpIAddS:
+  case SPIRV::OpIAddV:
+  case SPIRV::OpISubS:
+  case SPIRV::OpISubV:
+  case SPIRV::OpIMulS:
+  case SPIRV::OpIMulV:
+  case SPIRV::OpShiftLeftLogicalS:
+  case SPIRV::OpShiftLeftLogicalV:
+  case SPIRV::OpSNegate:
+    return true;
+  default:
+    return false;
+  }
+}
+
+bool SPIRVInstrInfo::canUseNUW(const MachineInstr &MI) const {
+  switch (MI.getOpcode()) {
+  case SPIRV::OpIAddS:
+  case SPIRV::OpIAddV:
+  case SPIRV::OpISubS:
+  case SPIRV::OpISubV:
+  case SPIRV::OpIMulS:
+  case SPIRV::OpIMulV:
+    return true;
+  default:
+    return false;
   }
 }
 
@@ -195,9 +256,12 @@ void SPIRVInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
 }
 
 bool SPIRVInstrInfo::expandPostRAPseudo(MachineInstr &MI) const {
-  if (MI.getOpcode() == SPIRV::GET_ID || MI.getOpcode() == SPIRV::GET_fID ||
-      MI.getOpcode() == SPIRV::GET_pID || MI.getOpcode() == SPIRV::GET_vfID ||
-      MI.getOpcode() == SPIRV::GET_vID) {
+  if (MI.getOpcode() == SPIRV::GET_ID || MI.getOpcode() == SPIRV::GET_ID64 ||
+      MI.getOpcode() == SPIRV::GET_fID || MI.getOpcode() == SPIRV::GET_fID64 ||
+      MI.getOpcode() == SPIRV::GET_pID32 ||
+      MI.getOpcode() == SPIRV::GET_pID64 || MI.getOpcode() == SPIRV::GET_vfID ||
+      MI.getOpcode() == SPIRV::GET_vID || MI.getOpcode() == SPIRV::GET_vpID32 ||
+      MI.getOpcode() == SPIRV::GET_vpID64) {
     auto &MRI = MI.getMF()->getRegInfo();
     MRI.replaceRegWith(MI.getOperand(0).getReg(), MI.getOperand(1).getReg());
     MI.eraseFromParent();

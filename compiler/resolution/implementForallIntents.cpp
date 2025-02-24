@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -568,6 +568,7 @@ static ShadowVarSymbol* create_IN_Parentvar(LoopWithShadowVarsInterface* fs,
     CallExpr*  cast    = createCast(userOuterVar, SI->type->symbol);
     VarSymbol* inptemp = newTempConst("INPtemp", SI->type);
     inptemp->qual      = QUAL_CONST_VAL;
+    inptemp->addFlag(FLAG_TFI_BORROW_TEMP);
 
     fs->asExpr()->insertBefore(holder);
     holder->insertAtTail(new DefExpr(inptemp));
@@ -591,7 +592,8 @@ static ShadowVarSymbol* create_IN_Parentvar(LoopWithShadowVarsInterface* fs,
 }
 
 static void constDueToTFI(ShadowVarSymbol* svar, Symbol* ovar) {
-  if (!ovar->isConstant())
+  if (!ovar->isConstant() ||
+      ovar->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT))
     svar->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
 }
 
@@ -709,7 +711,6 @@ Potential culprits:
 - others?
 */
 
-std::map<ForallStmt*, std::set<Symbol*>> refMaybeConstForallPairs;
 
 //
 // * If 'intent' is abstract, convert it to a concrete intent.
@@ -721,10 +722,8 @@ static void resolveShadowVarTypeIntent(LoopWithShadowVarsInterface* fs,
                                        Symbol* sym,
                                        Type*& type,
                                        ForallIntentTag& intent,
-                                       bool& prune,
-                                       bool& implicitRefMaybeConst)
+                                       bool& prune)
 {
-  implicitRefMaybeConst = false;
   switch (intent) {
     case TFI_DEFAULT:
     case TFI_CONST:
@@ -743,47 +742,15 @@ static void resolveShadowVarTypeIntent(LoopWithShadowVarsInterface* fs,
       argInt = concreteIntent(argInt, valType);
       intent = forallIntentForArgIntent(argInt);
 
-      // We gather ref maybe const symbols for 'forall' loops for a later
-      // check that. This is not necessary on 'foreach' loops since (as of the
-      // time of this comment) 'foreach' is itself considered unstable.
-      if (fs->isForallStmt()) {
-        // mark all ref-maybe-const shadow variables
-        if (argInt == INTENT_REF_MAYBE_CONST && intent == TFI_REF) {
-          auto it = refMaybeConstForallPairs.find(fs->forallStmt());
-          if (it == refMaybeConstForallPairs.end())
-            it = refMaybeConstForallPairs.insert(it, {fs->forallStmt(), {}});
-          it->second.insert(sym);
-          implicitRefMaybeConst = true;
-        }
-      }
-
       break;
     }
 
     case TFI_IN:               // Nothing to do for now.
     case TFI_CONST_IN:
+    case TFI_REF:
     case TFI_CONST_REF:
     case TFI_REDUCE:
     case TFI_TASK_PRIVATE:      break;
-
-    case TFI_REF: {
-      // if there is an explicit ref shadow variable
-      // we need to remove the symbol from the list
-      // this list is used for an unstable warning that's only applicable to 'forall' loops
-      if(fs->isForallStmt()) {
-        auto it = refMaybeConstForallPairs.find(fs->forallStmt());
-        if (it != refMaybeConstForallPairs.end()) {
-          auto& listOfSyms = it->second;
-          listOfSyms.erase(sym);
-          if (ShadowVarSymbol* svar = toShadowVarSymbol(sym)) {
-            if(Symbol* outerSym = svar->outerVarSym()) {
-              listOfSyms.erase(outerSym);
-            }
-          }
-        }
-      }
-      break;
-    }
 
     case TFI_IN_PARENT:         // These have not been created yet.
     case TFI_REDUCE_OP:
@@ -811,8 +778,15 @@ static void resolveShadowVarTypeIntent(LoopWithShadowVarsInterface* fs,
   }
 
   // Prune, as discussed in the above comment.
-  if (intent == TFI_REF)
+  //
+  // However, for scalars passed to foreach, we do not want to prune (replace a
+  // ref intent'd shadow variable with its definition outside the loop) because
+  // if the loop is gpuized we need to pass that variable by pointer. We do
+  // special processing to handle this case in iterator lowering and gpu
+  // transforms and as such do not want to prematurely prune it.
+  if (intent == TFI_REF && (fs->isForallStmt() || !isPrimitiveScalar(type))) {
     prune = true;
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -889,10 +863,9 @@ static void doImplicitShadowVars(LoopWithShadowVarsInterface* fs, BlockStmt* blo
     ForallIntentTag intent = TFI_DEFAULT;
     Type* type  = sym->type;
     bool  prune = false;
-    bool  implicitRMC = false;
     if (sym->type == dtUnknown)
       USR_FATAL(se, "'%s' appears to be used before it is defined", sym->name);
-    resolveShadowVarTypeIntent(fs, sym, type, intent, prune, implicitRMC); // updates the args
+    resolveShadowVarTypeIntent(fs, sym, type, intent, prune); // updates the args
 
     if (prune) {                      // do not convert to shadow var
       assertNotRecordReceiver(sym, se);
@@ -961,8 +934,7 @@ static void resolveAndPruneExplicitShadowVars(LoopWithShadowVarsInterface* fs,
   {
     Type* type  = ovarOrSvarType(svar);
     bool  prune = false;
-    bool  implicitRMC = false;
-    resolveShadowVarTypeIntent(fs, svar, type, svar->intent, prune, implicitRMC); // updates the args
+    resolveShadowVarTypeIntent(fs, svar, type, svar->intent, prune); // updates the args
 
     // Ensure the svar is retained for a `this` with an explicit intent,
     // see convertFieldsOfRecordThis().
@@ -1031,14 +1003,29 @@ static ShadowVarSymbol* createSVforFieldAccess(LoopWithShadowVarsInterface* fs, 
                                                Symbol* field)
 {
   bool isConst = ovar->isConstant() || field->isConstant();
-  VarSymbol* fieldRef = createFieldRef(fs->asExpr(), ovar, field, isConst);
+
+  // with --baseline, we have to be careful where we insert the initialization of
+  // the new ref we are creating. With foreach loops that accesses a field of a
+  // symbol that has implicit ref intent, the initialization has to be in the
+  // loop body.
+  Expr* anchor = nullptr;
+  const bool insertIntoBody = fNoInlineIterators &&
+                              isAggregateType(field->type);
+  if (!insertIntoBody || fs->isForallStmt()) {
+    anchor = fs->asExpr();
+  }
+  else {
+    CallExpr* noop = new CallExpr(PRIM_NOOP);
+    fs->loopBody()->insertAtHead(noop);
+    anchor = noop;
+  }
+  VarSymbol* fieldRef = createFieldRef(anchor, ovar, field, isConst);
 
   // Now create the shadow variable.
   Type*           svarType   = field->type;
   ForallIntentTag svarIntent = isConst ? TFI_CONST : TFI_DEFAULT;
   bool            pruneDummy = false;
-  bool            wasImplicitRef = false;
-  resolveShadowVarTypeIntent(fs, field, svarType, svarIntent, pruneDummy, wasImplicitRef);
+  resolveShadowVarTypeIntent(fs, field, svarType, svarIntent, pruneDummy);
 
   ShadowVarSymbol* svar = new ShadowVarSymbol(svarIntent,
                                               astr(field->name, "_svar"),
@@ -1046,17 +1033,6 @@ static ShadowVarSymbol* createSVforFieldAccess(LoopWithShadowVarsInterface* fs, 
   svar->type = svarType;
   fs->shadowVariables().insertAtTail(new DefExpr(svar));
   handleOneShadowVar(fs, svar);
-
-  // because field implicit ref intents do NOT get pruned like the other
-  // implicit ref intents, this check ensures that later on
-  // refMaybeConstForallPairs checks the right symbols
-  if (wasImplicitRef) {
-    if(fs->isForallStmt()) {
-      auto fsIt = refMaybeConstForallPairs.find(fs->forallStmt());
-      CHPL_ASSERT(fsIt != refMaybeConstForallPairs.end());
-      fsIt->second.insert(svar);
-    }
-  }
 
   return svar;
 }

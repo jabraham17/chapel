@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,6 +19,8 @@
 
 #ifndef CHPL_UTIL_FILESYSTEM_H
 #define CHPL_UTIL_FILESYSTEM_H
+
+#include "chpl/framework/UniqueString.h"
 
 #include "llvm/Config/llvm-config.h"
 
@@ -116,9 +118,40 @@ std::string getExecutablePath(const char* argv0, void* MainExecAddr);
 /**
   Compare two paths to see if they point to the same filesystem object.
   Utilizes llvm::sys::fs:equivalent to do the comparison.
-*/
-bool isSameFile(const llvm::Twine& path1, const llvm::Twine& path2);
 
+  Returns false if either path is "" and both paths are not "".
+*/
+bool isSameFile(llvm::StringRef path1, llvm::StringRef path2);
+
+/**
+  Remove duplicate files/directories from a vector of paths.
+  Checks if the files/directories are the same, even if they
+  have different names.
+
+  Returns a de-duplicated vector of paths.
+ */
+std::vector<std::string>
+deduplicateSamePaths(const std::vector<std::string>& paths);
+
+/**
+  Removes any number of leading ./ from 'path'.
+ */
+std::string cleanLocalPath(std::string path);
+
+/**
+  Returns 'true' if 'filepath' refers to a file contained in 'dir'.
+  This is an operation on the paths & does not check if the file exists.
+
+  If dirPath is "", returns false. Use "." for the current dir.
+ */
+bool filePathInDirPath(llvm::StringRef filePath, llvm::StringRef dirPath);
+/**
+  Returns 'true' if 'filepath' refers to a file contained in 'dir'
+  This is an operation on the paths & does not check if the file exists.
+
+  If dirPath is "", returns false. Use "." for the current dir.
+ */
+bool filePathInDirPath(UniqueString filePath, UniqueString dirPath);
 
 #if LLVM_VERSION_MAJOR >= 13
 /**

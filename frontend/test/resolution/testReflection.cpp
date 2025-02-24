@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,42 +28,10 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 
-static void ensureParamInt(const QualifiedType& type, int64_t expectedValue) {
-  assert(type.kind() == QualifiedType::PARAM);
-  assert(type.type() != nullptr);
-  assert(type.type()->isIntType());
-  assert(type.param() != nullptr);
-  assert(type.param()->isIntParam());
-  assert(type.param()->toIntParam()->value() == expectedValue);
-}
-
-static void ensureParamBool(const QualifiedType& type, bool expectedValue) {
-  assert(type.kind() == QualifiedType::PARAM);
-  assert(type.type() != nullptr);
-  assert(type.type()->isBoolType());
-  assert(type.param() != nullptr);
-  assert(type.param()->isBoolParam());
-  assert(type.param()->toBoolParam()->value() == expectedValue);
-}
-
-static void ensureParamString(const QualifiedType& type, const std::string& expectedValue) {
-  assert(type.kind() == QualifiedType::PARAM);
-  assert(type.type() != nullptr);
-  assert(type.type()->isStringType());
-  assert(type.param() != nullptr);
-  assert(type.param()->isStringParam());
-  assert(type.param()->toStringParam()->value() == expectedValue);
-}
-
-static void ensureErroneousType(const QualifiedType& type) {
-  assert(type.type() != nullptr);
-  assert(type.type()->isErroneousType());
-}
-
 // test num fields and field num to name
 static void test1() {
-  Context context;
-  auto variables = resolveTypesOfVariables(&context,
+  auto context = buildStdContext();
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       record R {
          var a, b: int;
@@ -90,8 +58,8 @@ static void test1() {
 //
 // test field num to name
 static void test2() {
-  Context context;
-  auto variables = resolveTypesOfVariables(&context,
+  auto context = buildStdContext();
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       record R {
          var a, b: int;
@@ -108,7 +76,7 @@ static void test2() {
   ensureParamInt(variables.at("r1"), 1);
   ensureParamInt(variables.at("r2"), 2);
   ensureParamInt(variables.at("r3"), 3);
-  ensureErroneousType(variables.at("r4"));
+  ensureParamInt(variables.at("r4"), -1);
   ensureErroneousType(variables.at("r5"));
   ensureErroneousType(variables.at("r6"));
   ensureErroneousType(variables.at("r7"));
@@ -116,8 +84,8 @@ static void test2() {
 
 // Test field by num
 static void test3() {
-  Context context;
-  auto variables = resolveTypesOfVariables(&context,
+  auto context = buildStdContext();
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       record R {
          var a, b: int;
@@ -143,8 +111,8 @@ static void test3() {
 
 // Test is bound
 static void test4() {
-  Context context;
-  auto variables = resolveTypesOfVariables(&context,
+  auto context = buildStdContext();
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       record R {
          var a, b: int;
@@ -178,8 +146,8 @@ static void test4() {
 
 // Test call resolves
 static void test5() {
-  Context context;
-  auto variables = resolveTypesOfVariables(&context,
+  auto context = buildStdContext();
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       proc f(x: int) {}
       proc f(x: bool) {}
@@ -209,10 +177,10 @@ static void test5() {
 
 // Test call resolves
 static void test6() {
-  Context context;
+  auto context = buildStdContext();
   // Make sure no errors make it to the user, even though we will get errors.
-  ErrorGuard guard(&context);
-  auto variables = resolveTypesOfVariables(&context,
+  ErrorGuard guard(context);
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       proc f(x: int) {}
       proc f(x: bool) {}
@@ -242,8 +210,8 @@ static void test6() {
 //
 // Test call resolves
 static void test7() {
-  Context context;
-  auto variables = resolveTypesOfVariables(&context,
+  auto context = buildStdContext();
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       record R {
         proc f(x: int) {}
@@ -276,10 +244,10 @@ static void test7() {
 
 // Test call resolves
 static void test8() {
-  Context context;
+  auto context = buildStdContext();
   // Make sure no errors make it to the user, even though we will get errors.
-  ErrorGuard guard(&context);
-  auto variables = resolveTypesOfVariables(&context,
+  ErrorGuard guard(context);
+  auto variables = resolveTypesOfVariables(context,
       R"""(
       record R {
         proc f(x: int) {}
@@ -310,6 +278,70 @@ static void test8() {
   ensureParamBool(variables.at("r8"), false);
 }
 
+static void test9() {
+  auto context = buildStdContext();
+  // Make sure no errors make it to the user, even though we will get errors.
+  ErrorGuard guard(context);
+  auto variables = resolveTypesOfVariables(context,
+      R"""(
+      record R {
+          proc f() {}
+          proc g(x: int) {}
+      }
+
+      proc h(x: string) {}
+
+      operator +(lhs: int, rhs: int) do return __primitive("+", lhs, rhs);
+
+      var r: R;
+
+      param r1 = __primitive("resolves", r.f());
+      param r2 = __primitive("resolves", r.g(42));
+      param r3 = __primitive("resolves", r.g("hello"));
+      param r4 = __primitive("resolves", h(42));
+      param r5 = __primitive("resolves", h("hello"));
+      param r6 = __primitive("resolves", 1+1);
+      param r7 = __primitive("resolves", 1+"hello");
+      )""", { "r1", "r2", "r3", "r4", "r5", "r6", "r7" });
+  ensureParamBool(variables.at("r1"), true);
+  ensureParamBool(variables.at("r2"), true);
+  ensureParamBool(variables.at("r3"), false);
+  ensureParamBool(variables.at("r4"), false);
+  ensureParamBool(variables.at("r5"), true);
+  ensureParamBool(variables.at("r6"), true);
+  ensureParamBool(variables.at("r7"), false);
+}
+
+static void test10() {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  auto variables = resolveTypesOfVariables(context,
+      R"""(
+      module M {
+        use Reflection;
+
+        param lineno = getLineNumber();
+
+        param toplevelFn = getRoutineName();
+
+        proc bar() param {
+          return getRoutineName();
+        }
+        param fn = bar();
+
+        param filename = getFileName();
+
+        param modname = getModuleName();
+      }
+      )""", {"lineno", "filename", "toplevelFn", "fn", "modname"});
+  ensureParamInt(variables["lineno"], 5);
+  ensureParamString(variables["filename"], "input.chpl");
+  ensureParamString(variables["toplevelFn"], "chpl__init_M");
+  ensureParamString(variables["fn"], "bar");
+  ensureParamString(variables["modname"], "M");
+}
+
 int main() {
   test1();
   test2();
@@ -319,5 +351,7 @@ int main() {
   test6();
   test7();
   test8();
+  test9();
+  test10();
   return 0;
 }

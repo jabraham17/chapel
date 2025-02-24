@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,7 +34,6 @@
   constructor. When constructed from another ``sortedSet``, the new
   ``sortedSet`` will inherit the parallel safety mode of its originating
   ``sortedSet``.
-
 */
 module SortedSet {
   include module Treap;
@@ -43,6 +42,15 @@ module SortedSet {
   private use IO;
   public use Sort only defaultComparator;
 
+  // TODO: remove this module and its public use when the deprecations have been
+  // removed
+  pragma "ignore deprecated use"
+  private module HideDeprecatedReexport {
+    public use Sort only DefaultComparator;
+  }
+
+  public use HideDeprecatedReexport;
+
   record sortedSet : writeSerializable {
     /* The type of the elements contained in this sortedSet. */
     type eltType;
@@ -50,7 +58,7 @@ module SortedSet {
     /* If `true`, this sortedSet will perform parallel safe operations. */
     param parSafe = false;
 
-    type comparatorType = defaultComparator.type;
+    type comparatorType = defaultComparator;
 
     /* The underlying implementation */
     @chpldoc.nodoc
@@ -64,7 +72,7 @@ module SortedSet {
       :arg comparatorType: The comparator type
     */
     proc init(type eltType, param parSafe = false,
-              type comparatorType = defaultComparator.type) {
+              type comparatorType = defaultComparator) {
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.comparatorType = comparatorType;
@@ -94,12 +102,13 @@ module SortedSet {
       sortedSet, it will not be added again. The formal `iterable` must be a type
       with an iterator named "these" defined for it.
 
+      :arg eltType: The type of the elements of this sortedSet.
       :arg iterable: A collection of elements to add to this sortedSet.
       :arg parSafe: If `true`, this sortedSet will use parallel safe operations.
       :arg comparator: The comparator used to compare elements.
     */
     proc init(type eltType, iterable, param parSafe=false,
-              comparator: record = defaultComparator)
+              comparator: record = new defaultComparator())
     where canResolveMethod(iterable, "these") lifetime this < iterable {
       this.eltType = eltType;
       this.parSafe = parSafe;
@@ -135,16 +144,9 @@ module SortedSet {
 
     /*
       Write the contents of this sortedSet to a fileWriter.
-
-      :arg ch: A fileWriter to write to.
     */
-    inline proc const writeThis(ch: fileWriter) throws {
-      instance.writeThis(ch);
-    }
-
-    @chpldoc.nodoc
     inline proc const serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      instance.serialize(writer, serializer);
     }
 
     /*

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -62,7 +62,7 @@ to access to the following TOML file's project name,
      name = "example"
      version = "1.0.0"
 
-Use the following code in chapel.
+Use the following code in Chapel.
 
 .. code-block:: chapel
 
@@ -87,7 +87,7 @@ Use the following code in chapel.
 */
 proc parseToml(input: file) : shared Toml {
   var tomlStr: string;
-  var tomlFile = input.reader();
+  var tomlFile = input.reader(locking=false);
   tomlFile.readAll(tomlStr);
   tomlFile.close();
   return parseToml(tomlStr);
@@ -326,13 +326,11 @@ module TomlParser {
           skipNext(source);
           var array: list(shared Toml);
           while top(source) != ']' {
-            if comma.match(top(source)) {
+            if comment.match(top(source)) {
               skipNext(source);
-            }
-            else if comment.match(top(source)) {
+            } else if comma.match(top(source)) {
               skipNext(source);
-            }
-            else {
+            } else {
               var toParse = parseValue();
               array.pushBack(toParse);
             }
@@ -458,7 +456,7 @@ module TomlParser {
    fieldEmpty,
    fieldDate,
    fieldTime,
-   fieldDateTime };
+   fieldDateTime }
  private use fieldtag;
 
  @chpldoc.nodoc
@@ -841,12 +839,8 @@ used to recursively hold tables and respective values
 
 
     /* Write a Table to channel f in TOML format */
-    override proc writeThis(f) throws {
-      writeTOML(f);
-    }
-    @chpldoc.nodoc
     override proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writeTOML(writer);
     }
 
     /* Write a Table to channel f in TOML format */
@@ -1354,10 +1348,6 @@ module TomlReader {
     }
 
     @chpldoc.nodoc
-    proc readThis(f) throws {
-      compilerError("Reading a Tokens type is not supported");
-    }
-    @chpldoc.nodoc
     proc deserialize(reader, ref deserializer) throws {
       compilerError("Reading a Tokens type is not supported");
     }
@@ -1368,12 +1358,9 @@ module TomlReader {
       compilerError("Reading a Tokens type is not supported");
     }
 
-    override proc writeThis(f) throws {
-      f.write(this.A.toArray());
-    }
     @chpldoc.nodoc
     override proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write(this.A.toArray());
     }
   }
 }

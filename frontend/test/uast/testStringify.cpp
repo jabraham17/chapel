@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -312,7 +312,6 @@ static void test1(Parser* parser) {
    }
    type t;
    var Array:[1..1] t;
-   forwarding Array[1]!;
    const A: [1..10] int = [i in 1..10] if (i < 3) then 100 else i;
    writeln(A);
    var Cs = [i in nums] if i then new C[i] else nil: owned C?;
@@ -418,8 +417,8 @@ static void test3(Parser* parser) {
   TEST_USER_STRING("proc ref C.setClt2(rhs: borrowed C) {\n}\n",
                    "ref C.setClt2(rhs: borrowed C)")
   TEST_USER_STRING("proc main(args: [] string) {\n}", "main(args: [] string)")
-  TEST_USER_STRING("proc MYPROC(FORMAL: single int) { }",
-                   "MYPROC(FORMAL: single int)")
+  TEST_USER_STRING("proc MYPROC(FORMAL: sync int) { }",
+                   "MYPROC(FORMAL: sync int)")
   TEST_USER_STRING("inline operator ==(a: _nilType, b: _nilType) param do return true;",
                    "==(a: _nilType, b: _nilType)")
   TEST_USER_STRING("private proc param R.prm2(arg) param : string { }",
@@ -445,7 +444,14 @@ static void test3(Parser* parser) {
                    "multiDimension(arg2: 3*(4*complex))")
   TEST_USER_STRING("proc multiDimension(): [1..3, 2..8] string {}",
                    "multiDimension()")
-
+  TEST_USER_STRING("proc cPtrConstProc(x: c_ptrConst(int)) {}",
+                   "cPtrConstProc(x: c_ptrConst(int))")
+  TEST_USER_STRING("proc cPtrProc(x: c_ptrConst(int)) {}",
+                   "cPtrProc(x: c_ptrConst(int))")
+  TEST_USER_STRING("proc cPtrVoidProc(x: c_ptr(void)) {}",
+                   "cPtrVoidProc(x: c_ptr(void))")
+  TEST_USER_STRING("operator ==(a: c_ptrConst(uint), b: c_ptrConst(uint)) {}",
+                   "==(a: c_ptrConst(uint), b: c_ptrConst(uint))")
 }
 
 static void test4(Parser* parser) {
@@ -524,7 +530,13 @@ static void testDecl(Parser* parser) {
                    "var domain1: domain(keyType, parSafe = true);")
   TEST_CHPL_SYNTAX("var lSrcVals: [myLocaleSpace] [0..#bufferSize] elemType;",
                    "var lSrcVals: [myLocaleSpace] [0..#bufferSize] elemType;")
+  TEST_CHPL_SYNTAX("var x:c_ptrConst(int);", "var x: c_ptrConst(int);")
+  TEST_CHPL_SYNTAX("var x:c_ptr(uint);", "var x: c_ptr(uint);")
+  TEST_CHPL_SYNTAX("var x:  c_ptrConst(c_ptrConst(int));",
+                   "var x: c_ptrConst(c_ptrConst(int));")
+  TEST_CHPL_SYNTAX("var x:  c_ptr(void); ", "var x: c_ptr(void);")
 }
+
 
 //TODO: Write many more specific tests for the format of different node types
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,6 +32,7 @@
 #include <iostream>
 
 static void test0(Parser* parser) {
+  printf("test0\n");
   ErrorGuard guard(parser->context());
   auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
       "/* c1 */\n"
@@ -43,6 +44,7 @@ static void test0(Parser* parser) {
       "  otherwise /* c10 */ { f5(); }\n"
       "}\n"
       "/* c11 */\n");
+  guard.printErrors();
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -105,6 +107,7 @@ static void test0(Parser* parser) {
 
 // Should be parse error.
 static void test1(Parser* parser) {
+  printf("test1\n");
   ErrorGuard guard(parser->context());
   auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
       "/* c1 */\n"
@@ -115,6 +118,7 @@ static void test1(Parser* parser) {
       "  otherwise do { f4(); }\n"
       "}\n"
       "/* c2 */\n");
+  guard.printErrors();
   assert(guard.numErrors() == 1);
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -129,6 +133,7 @@ static void test1(Parser* parser) {
 }
 
 static void test2(Parser* parser) {
+  printf("test2\n");
   ErrorGuard guard(parser->context());
   auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
       "/* c1 */\n"
@@ -137,6 +142,7 @@ static void test2(Parser* parser) {
       "  otherwise do f2();\n"
       "}\n"
       "/* c2 */\n");
+  guard.printErrors();
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -157,6 +163,7 @@ static void test2(Parser* parser) {
 }
 
 static void test3(Parser* parser) {
+  printf("test3\n");
   ErrorGuard guard(parser->context());
   auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
       "/* c1 */\n"
@@ -164,6 +171,7 @@ static void test3(Parser* parser) {
       "  otherwise do { f1(); }\n"
       "}\n"
       "/* c2 */\n");
+  guard.printErrors();
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -180,6 +188,29 @@ static void test3(Parser* parser) {
   assert(w0->body()->numStmts() == 1);
 }
 
+static void test4(Parser* parser) {
+  printf("test4\n");
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
+      "/* c1 */\n"
+      "select foo {\n"
+      "  when x do f1();\n"
+      "  otherwise do f2();\n"
+      "  when y { f3(); }\n"
+      "}\n"
+      "/* c2 */\n");
+  guard.printErrors();
+  assert(guard.numErrors() == 1);
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isSelect());
+  assert(mod->stmt(2)->isComment());
+  auto& error = guard.error(0);
+  assert(error->type() == ErrorType::WhenAfterOtherwise);
+  guard.clearErrors();
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -191,6 +222,6 @@ int main() {
   test1(p);
   test2(p);
   test3(p);
-
+  test4(p);
   return 0;
 }

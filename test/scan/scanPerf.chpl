@@ -5,14 +5,15 @@ config const memFraction = 0;
 const totMem = here.physicalMemory(unit = MemUnits.Bytes);
 const defaultN = if memFraction == 0
                    then 30
-                   else numLocales * ((totMem / numBytes(int)) / memFraction);
+                   else numLocales * ((totMem / numBytes(int)) / memFraction /
+                   here.numColocales);
 
 config const n = defaultN,
              printTiming = false,
              printArray = true;
 
 var D = if CHPL_COMM=='none' then {1..n}
-                             else {1..n} dmapped blockDist({1..n});
+                             else {1..n} dmapped new blockDist({1..n});
 
 var A: [D] int = 1;
 

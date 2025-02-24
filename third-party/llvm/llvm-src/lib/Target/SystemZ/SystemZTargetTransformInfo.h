@@ -28,15 +28,17 @@ class SystemZTTIImpl : public BasicTTIImplBase<SystemZTTIImpl> {
 
   unsigned const LIBCALL_COST = 30;
 
+  bool isInt128InVR(Type *Ty) { return Ty->isIntegerTy(128) && ST->hasVector(); }
+
 public:
   explicit SystemZTTIImpl(const SystemZTargetMachine *TM, const Function &F)
-      : BaseT(TM, F.getParent()->getDataLayout()), ST(TM->getSubtargetImpl(F)),
+      : BaseT(TM, F.getDataLayout()), ST(TM->getSubtargetImpl(F)),
         TLI(ST->getTargetLowering()) {}
 
   /// \name Scalar TTI Implementations
   /// @{
 
-  unsigned getInliningThresholdMultiplier() { return 3; }
+  unsigned getInliningThresholdMultiplier() const { return 3; }
   unsigned adjustInliningThreshold(const CallBase *CB) const;
 
   InstructionCost getIntImmCost(const APInt &Imm, Type *Ty,
@@ -85,16 +87,16 @@ public:
 
   InstructionCost getArithmeticInstrCost(
       unsigned Opcode, Type *Ty, TTI::TargetCostKind CostKind,
-      TTI::OperandValueKind Opd1Info = TTI::OK_AnyValue,
-      TTI::OperandValueKind Opd2Info = TTI::OK_AnyValue,
-      TTI::OperandValueProperties Opd1PropInfo = TTI::OP_None,
-      TTI::OperandValueProperties Opd2PropInfo = TTI::OP_None,
-      ArrayRef<const Value *> Args = ArrayRef<const Value *>(),
+      TTI::OperandValueInfo Op1Info = {TTI::OK_AnyValue, TTI::OP_None},
+      TTI::OperandValueInfo Op2Info = {TTI::OK_AnyValue, TTI::OP_None},
+      ArrayRef<const Value *> Args = std::nullopt,
       const Instruction *CxtI = nullptr);
   InstructionCost getShuffleCost(TTI::ShuffleKind Kind, VectorType *Tp,
-                                 ArrayRef<int> Mask, int Index,
+                                 ArrayRef<int> Mask,
+                                 TTI::TargetCostKind CostKind, int Index,
                                  VectorType *SubTp,
-                                 ArrayRef<const Value *> Args = None);
+                                 ArrayRef<const Value *> Args = std::nullopt,
+                                 const Instruction *CxtI = nullptr);
   unsigned getVectorTruncCost(Type *SrcTy, Type *DstTy);
   unsigned getVectorBitmaskConversionCost(Type *SrcTy, Type *DstTy);
   unsigned getBoolVecToIntConversionCost(unsigned Opcode, Type *Dst,
@@ -107,13 +109,16 @@ public:
                                      CmpInst::Predicate VecPred,
                                      TTI::TargetCostKind CostKind,
                                      const Instruction *I = nullptr);
+  using BaseT::getVectorInstrCost;
   InstructionCost getVectorInstrCost(unsigned Opcode, Type *Val,
-                                     unsigned Index);
+                                     TTI::TargetCostKind CostKind,
+                                     unsigned Index, Value *Op0, Value *Op1);
   bool isFoldableLoad(const LoadInst *Ld, const Instruction *&FoldedValue);
-  InstructionCost getMemoryOpCost(unsigned Opcode, Type *Src,
-                                  MaybeAlign Alignment, unsigned AddressSpace,
-                                  TTI::TargetCostKind CostKind,
-                                  const Instruction *I = nullptr);
+  InstructionCost
+  getMemoryOpCost(unsigned Opcode, Type *Src, MaybeAlign Alignment,
+                  unsigned AddressSpace, TTI::TargetCostKind CostKind,
+                  TTI::OperandValueInfo OpInfo = {TTI::OK_AnyValue, TTI::OP_None},
+                  const Instruction *I = nullptr);
 
   InstructionCost getInterleavedMemoryOpCost(
       unsigned Opcode, Type *VecTy, unsigned Factor, ArrayRef<unsigned> Indices,
@@ -122,6 +127,8 @@ public:
 
   InstructionCost getIntrinsicInstrCost(const IntrinsicCostAttributes &ICA,
                                         TTI::TargetCostKind CostKind);
+
+  bool shouldExpandReduction(const IntrinsicInst *II) const;
   /// @}
 };
 

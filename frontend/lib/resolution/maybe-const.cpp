@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,16 +37,8 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
-
 struct AdjustMaybeRefs {
   using RV = MutatingResolvedVisitor<AdjustMaybeRefs>;
-
-  typedef enum {
-    REF = 1,
-    CONST_REF = 2,
-    VALUE = 3,
-    REF_MAYBE_CONST = 4, // used temporarily for recursive cases
-  } Access;
 
   struct ExprStackEntry {
     const AstNode* ast = nullptr;
@@ -66,7 +58,8 @@ struct AdjustMaybeRefs {
   };
 
   // inputs to the process
-  Context* context = nullptr;
+  ResolutionContext* rc = nullptr;
+  Context* context = rc ? rc->context() : nullptr;
   Resolver& resolver;
 
   // state
@@ -75,14 +68,13 @@ struct AdjustMaybeRefs {
   std::vector<ExprStackEntry> exprStack;
 
   // methods
-  AdjustMaybeRefs(Context* context, Resolver& resolver)
-    : context(context), resolver(resolver)
+  AdjustMaybeRefs(ResolutionContext* rc, Resolver& resolver)
+    : rc(rc), resolver(resolver)
   { }
 
   void process(const uast::AstNode* symbol,
                ResolutionResultByPostorderID& byPostorder);
 
-  static Access accessForQualifier(Qualifier q);
   Access currentAccess();
 
   void constCheckAssociatedActions(const AstNode* ast, RV& rv);
@@ -96,13 +88,16 @@ struct AdjustMaybeRefs {
   bool enter(const Call* ast, RV& rv);
   void exit(const Call* ast, RV& rv);
 
+  bool enter(const NamedDecl* ast, RV& rv);
+  void exit(const NamedDecl* ast, RV& rv);
+
   bool enter(const uast::AstNode* node, RV& rv);
   void exit(const uast::AstNode* node, RV& rv);
 };
 
 void AdjustMaybeRefs::process(const uast::AstNode* symbol,
                               ResolutionResultByPostorderID& byPostorder) {
-  MutatingResolvedVisitor<AdjustMaybeRefs> rv(context,
+  MutatingResolvedVisitor<AdjustMaybeRefs> rv(rc,
                                               symbol,
                                               *this,
                                               byPostorder);
@@ -145,25 +140,7 @@ void AdjustMaybeRefs::process(const uast::AstNode* symbol,
   }
 }
 
-AdjustMaybeRefs::Access AdjustMaybeRefs::accessForQualifier(Qualifier q) {
-  if (q == Qualifier::REF ||
-      q == Qualifier::OUT ||
-      q == Qualifier::INOUT) {
-    return REF;
-  }
-
-  if (q == Qualifier::CONST_REF) {
-    return CONST_REF;
-  }
-
-  if (q == Qualifier::REF_MAYBE_CONST) {
-    return REF_MAYBE_CONST;
-  }
-
-  return VALUE; // including IN at least
-}
-
-AdjustMaybeRefs::Access AdjustMaybeRefs::currentAccess() {
+Access AdjustMaybeRefs::currentAccess() {
   Access access = VALUE;
   if (exprStack.size() > 0) {
     access = exprStack.back().access;
@@ -254,35 +231,18 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
   // is it return intent overloading? resolve that
   if (candidates.numBest() > 1) {
     Access access = currentAccess();
-    MostSpecificCandidate bestRef = candidates.bestRef();
-    MostSpecificCandidate bestConstRef = candidates.bestConstRef();
-    MostSpecificCandidate bestValue = candidates.bestValue();
-    MostSpecificCandidate best = {};
-    if (access == REF) {
-      if (bestRef) best = bestRef;
-      else if (bestConstRef) best = bestConstRef;
-      else best = bestValue;
-    } else if (access == CONST_REF) {
-      if (bestConstRef) best = bestConstRef;
-      else if (bestValue) best = bestValue;
-      else best = bestRef;
-    } else if (access == REF_MAYBE_CONST) {
-      // raise an error
+    bool ambiguity;
+    auto best = determineBestReturnIntentOverload(candidates, access, ambiguity);
+    if (ambiguity)
       context->error(ast, "Too much recursion to infer return intent overload");
-      if (bestConstRef) best = bestConstRef;
-      else if (bestValue) best = bestValue;
-      else best = bestRef;
-    } else { // access == VALUE
-      if (bestValue) best = bestValue;
-      else if (bestConstRef) best = bestConstRef;
-      else best = bestRef;
-    }
 
-    resolver.validateAndSetMostSpecific(re, ast, MostSpecificCandidates::getOnly(best));
+    CHPL_ASSERT(best);
+    auto fn = best->fn();
+    resolver.validateAndSetMostSpecific(re, ast, MostSpecificCandidates::getOnly(*best));
 
     // recompute the return type
     // (all that actually needs to change is the return intent)
-    re.setType(returnType(context, best.fn(), resolver.poiScope));
+    re.setType(returnType(rc, fn, re.poiScope()));
   }
 
   // there should be only one candidate at this point
@@ -291,7 +251,13 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
   // then, traverse nested call-expressions
   if (auto msc = candidates.only()) {
     auto fn = msc.fn();
-    auto resolvedFn = inferRefMaybeConstFormals(context, fn, resolver.poiScope);
+
+    // Recompute the instantiation scope that was used when resolving the call.
+    auto inScope = scopeForId(context, ast->id());
+    auto inPoiScope = resolver.poiScope;
+    auto poiScope = Resolver::poiScopeOrNull(context, fn, inScope, inPoiScope);
+
+    auto resolvedFn = inferRefMaybeConstFormals(rc, fn, poiScope);
     if (resolvedFn) {
       fn = resolvedFn;
       // use the version with ref-maybe-const formals, but
@@ -302,14 +268,28 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
                                /* raiseErrors */ false,
                                &actualAsts);
 
+    // If this call was inferred to have a receiver, then CallInfo::create will
+    // not have added a 'this' formal. Instead, grab the receiver type from
+    // this visitor's resolver and create a new CallInfo.
+    bool inferredReceiver = false;
+    if (ci.isMethodCall() == false &&
+        fn->untyped()->isMethod()) {
+      ci = CallInfo::createWithReceiver(ci, resolver.methodReceiverType());
+      inferredReceiver = true;
+    }
+
     auto formalActualMap = FormalActualMap(fn, ci);
     int nActuals = ci.numActuals();
-    for (int actualIdx = 0; actualIdx < nActuals; actualIdx++) {
+    int startingActual = ci.isMethodCall() ? 1 : 0;
+    for (int actualIdx = startingActual; actualIdx < nActuals; actualIdx++) {
       const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);
       int formalIdx = fa->formalIdx();
 
       if (fa->hasActual()) {
-        const AstNode* actualAst = actualAsts[actualIdx];
+        // actualAsts might not include an entry for the method receiver if
+        // it was inferred, so we need to offset by one.
+        const AstNode* actualAst = inferredReceiver ? actualAsts[actualIdx-1] :
+                                                      actualAsts[actualIdx];
         Access access = accessForQualifier(fa->formalType().kind());
 
         exprStack.push_back(ExprStackEntry(actualAst, access,
@@ -337,6 +317,18 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
 void AdjustMaybeRefs::exit(const Call* ast, RV& rv) {
 }
 
+bool AdjustMaybeRefs::enter(const uast::NamedDecl* node, RV& rv) {
+  if (node->id().isSymbolDefiningScope()) {
+    // It's a symbol with a different path, e.g. a Function.
+    // Don't try to resolve it now in this
+    // traversal. Instead, resolve it e.g. when the function is called.
+    return false;
+  }
+  return true;
+}
+void AdjustMaybeRefs::exit(const uast::NamedDecl* node, RV& rv) {
+}
+
 bool AdjustMaybeRefs::enter(const uast::AstNode* node, RV& rv) {
   return true;
 }
@@ -344,7 +336,7 @@ void AdjustMaybeRefs::exit(const uast::AstNode* node, RV& rv) {
 }
 
 void adjustReturnIntentOverloadsAndMaybeConstRefs(Resolver& resolver) {
-  AdjustMaybeRefs uv(resolver.context, resolver);
+  AdjustMaybeRefs uv(resolver.rc, resolver);
   uv.process(resolver.symbol, resolver.byPostorder);
 }
 

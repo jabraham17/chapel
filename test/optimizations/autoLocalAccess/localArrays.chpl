@@ -4,7 +4,7 @@
 // 
 // See: https://github.com/Cray/chapel-private/issues/1897
 
-use LayoutCS;
+use CompressedSparseLayout;
 
 var baseDom1D = {1..10};
 var baseDom2D = {1..10, 1..10};
@@ -31,20 +31,20 @@ if case == "2D COO" {
 }
 
 if case == "CSR" {
-  var csrDom: sparse subdomain(baseDom2D) dmapped CS();
+  var csrDom: sparse subdomain(baseDom2D) dmapped new csrLayout();
   csrDom += [(1,1),(2,2)];
   test(csrDom, "CSR");
 }
 
 if case == "CSC" {
-  var cscDom: sparse subdomain(baseDom2D) dmapped CS(compressRows=false);
+  var cscDom: sparse subdomain(baseDom2D) dmapped new cscLayout();
   cscDom += [(1,1),(2,2)];
   test(cscDom, "CSC");
 }
 
 if case == "associative domain with string keys" {
-  var assocDom: domain(string);
-  assocDom += ["foo", "bar"];
+  var assocDom: domain(string) = {"foo", "bar"};
+
   test(assocDom, "associative domain with string keys");
 }
 

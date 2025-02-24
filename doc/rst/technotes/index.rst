@@ -25,6 +25,8 @@ Base Language Features
    The 'manage' Statement <manage>
    Attributes <attributes>
    Interfaces <interfaces>
+   Function-static Variables <static>
+   Remote Variables <remote>
 
 Initializers and Generic Programming
 ------------------------------------

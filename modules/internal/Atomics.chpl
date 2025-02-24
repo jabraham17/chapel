@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -57,7 +57,7 @@
    in order for record assignment to work, the read() functions
    need to be able to work with a const RHS.
 
-   To enable that, the read/waitFor/writeThis functions take in `this`
+   To enable that, the read/waitFor functions take in `this`
    with const intent. That is reasonable even if the atomic is
    implemented with a lock because the programmer can view it
    as constant, and on good hardware it really will be. If we change
@@ -142,6 +142,7 @@ module Atomics {
 
   use ChapelBase;
   public use MemConsistency;  // OK: to get and propagate memoryOrder
+  import AutoMath;
 
   pragma "local fn" pragma "fast-on safe extern function"
   extern proc chpl_atomic_thread_fence(order:memory_order);
@@ -167,20 +168,20 @@ module Atomics {
   // Compute the C/Runtime type from the Chapel type
   // TODO support extern type renaming?
   private proc externT(type valType) type {
-    extern type atomic_bool;
+    extern "chpl_atomic_bool" type atomic_bool;
 
-    extern type atomic_int_least8_t;
-    extern type atomic_int_least16_t;
-    extern type atomic_int_least32_t;
-    extern type atomic_int_least64_t;
+    extern "chpl_atomic_int_least8_t" type atomic_int_least8_t;
+    extern "chpl_atomic_int_least16_t" type atomic_int_least16_t;
+    extern "chpl_atomic_int_least32_t" type atomic_int_least32_t;
+    extern "chpl_atomic_int_least64_t" type atomic_int_least64_t;
 
-    extern type atomic_uint_least8_t;
-    extern type atomic_uint_least16_t;
-    extern type atomic_uint_least32_t;
-    extern type atomic_uint_least64_t;
+    extern "chpl_atomic_uint_least8_t" type atomic_uint_least8_t;
+    extern "chpl_atomic_uint_least16_t" type atomic_uint_least16_t;
+    extern "chpl_atomic_uint_least32_t" type atomic_uint_least32_t;
+    extern "chpl_atomic_uint_least64_t" type atomic_uint_least64_t;
 
-    extern type atomic__real64;
-    extern type atomic__real32;
+    extern "chpl_atomic__real64" type atomic__real64;
+    extern "chpl_atomic__real32" type atomic__real32;
 
     select valType {
       when bool     do return atomic_bool;
@@ -227,6 +228,8 @@ module Atomics {
       return chpl__networkAtomicType(valType);
     }
   }
+
+  extern proc chpl_comm_ensure_progress(): void;
 
   pragma "atomic type"
   pragma "ignore noinit"
@@ -405,6 +408,7 @@ module Atomics {
     inline proc const waitFor(val:bool, param order: memoryOrder = memoryOrder.seqCst): void {
       on this {
         while (this.read(order=memoryOrder.relaxed) != val) {
+          chpl_comm_ensure_progress();
           currentTask.yieldExecution();
         }
         chpl_atomic_thread_fence(c_memory_order(order));
@@ -412,10 +416,6 @@ module Atomics {
     }
 
     @chpldoc.nodoc
-    proc const writeThis(x) throws {
-      x.write(read());
-    }
-
     proc const serialize(writer, ref serializer) throws {
       writer.write(read());
     }
@@ -423,6 +423,7 @@ module Atomics {
   }
 
   // TODO: should this be an operator method AtomicBool.: ?
+  pragma "do not resolve unless called"
   @chpldoc.nodoc
   operator :(rhs: bool, type t:AtomicBool) {
     var lhs: AtomicBool = rhs; // use init=
@@ -742,6 +743,42 @@ module Atomics {
       on this do atomic_fetch_xor(_v, val, c_memory_order(order));
     }
 
+    @unstable("'fetchMin' on an atomic is unstable")
+    inline proc ref fetchMin(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
+      var t = if orderIncludesRelease(order)
+              then fetchAdd(0, order)
+              else read(readableOrder(order));
+      while AutoMath.min(val, t) != t {
+        if compareExchangeWeak(t, val, order) {
+          return t;
+        }
+      }
+      return t;
+    }
+
+    @unstable("'min' on an atomic is unstable")
+    inline proc ref min(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
+      fetchMin(val, order=order);
+    }
+
+    @unstable("'fetchMax' on an atomic is unstable")
+    inline proc ref fetchMax(val:valType, param order: memoryOrder = memoryOrder.seqCst): valType {
+      var t = if orderIncludesRelease(order)
+              then fetchAdd(0, order)
+              else read(readableOrder(order));
+      while AutoMath.max(val, t) != t {
+        if compareExchangeWeak(t, val, order) {
+          return t;
+        }
+      }
+      return t;
+    }
+
+    @unstable("'max' on an atomic is unstable")
+    inline proc ref max(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
+      fetchMax(val, order=order);
+    }
+
     /*
        Waits until the stored value is equal to `val`. The implementation may
        yield the running task while waiting.
@@ -749,6 +786,7 @@ module Atomics {
     inline proc const waitFor(val:valType, param order: memoryOrder = memoryOrder.seqCst): void {
       on this {
         while (this.read(order=memoryOrder.relaxed) != val) {
+          chpl_comm_ensure_progress();
           currentTask.yieldExecution();
         }
         chpl_atomic_thread_fence(c_memory_order(order));
@@ -756,10 +794,6 @@ module Atomics {
     }
 
     @chpldoc.nodoc
-    proc const writeThis(x) throws {
-      x.write(read());
-    }
-
     proc const serialize(writer, ref serializer) throws {
       writer.write(read());
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -65,11 +65,11 @@ namespace llvm {
     }
 
     static const chpl::ID getEmptyKey() {
-      return chpl::ID(USTR("<empty>"), -1, 0);
+      return chpl::ID(USTR("<empty>"));
     }
 
     static const chpl::ID getTombstoneKey() {
-      return chpl::ID(USTR("<tombstone>"), -1, 0);
+      return chpl::ID(USTR("<tombstone>"));
     }
   };
 }
@@ -159,8 +159,10 @@ class BuilderResult final {
  public:
   /** Construct an empty BuilderResult */
   BuilderResult();
-  /** Construct a BuilderResult that records a particular file path,
-      and optionally refers to a LibraryFile. */
+  /** Construct a BuilderResult that records a particular file path.
+      Optional arguments include:
+        - a LibraryFile to refer to in place of a file
+      */
   BuilderResult(UniqueString filePath,
                 const libraries::LibraryFile* lib = nullptr);
 
@@ -232,6 +234,7 @@ class BuilderResult final {
 
   static bool update(BuilderResult& keep, BuilderResult& addin);
   void mark(Context* context) const;
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   // these two should only be called by the parser
   static void updateFilePaths(Context* context, const BuilderResult& keep);

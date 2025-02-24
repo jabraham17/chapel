@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -569,6 +569,21 @@ static void test12(Parser* parser) {
   assert(mod);
 }
 
+static void test13(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  std::string base = " foo /*comment*/ {}\n";
+  for (auto keyword : {"class", "record", "union"}) {
+    auto parseResult = parseStringAndReportErrors(parser, "test13.chpl",
+          (std::string(keyword) + base).c_str());
+    assert(guard.realizeErrors() == 0);
+    auto mod = parseResult.singleModule();
+    assert(mod);
+    assert(mod->numStmts() == 1);
+    assert(mod->stmt(0)->isAggregateDecl());
+    assert(mod->stmt(0)->toAggregateDecl()->numDeclOrComments() == 1);
+  }
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -589,6 +604,7 @@ int main() {
   test10(p);
   test11(p);
   test12(p);
+  test13(p);
 
   return 0;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-/*
- The Json module provides a ``jsonSerializer`` and ``jsonDeserializer`` that
- allow for reading and writing data in the JSON format.
+/* Provides serialization in the JSON format.
+
+Intended for use with :ref:`IO support for serializers and deserializers <serialize-deserialize>`.
  */
 module JSON {
   private use IO;
@@ -61,7 +61,7 @@ module JSON {
       st.array_style = QIO_ARRAY_FORMAT_JSON:uint(8);
       st.tuple_style = QIO_TUPLE_FORMAT_JSON:uint(8);
       dc._set_styleInternal(st);
-      dc._writeOne(dc._kind, val, here);
+      dc._writeOne(_iokind.dynamic, val, here);
     }
 
     /* Serialize a value into a :record:`~IO.fileWriter` in JSON format */
@@ -524,10 +524,10 @@ module JSON {
           // it as a proper key for the map.
           var f = openMemFile();
           {
-            f.writer().withSerializer(jsonSerializer).write(key);
+            f.writer(locking=false).withSerializer(jsonSerializer).write(key);
           }
           var tmp : string;
-          f.reader().readAll(tmp);
+          f.reader(locking=false).readAll(tmp);
           writer.write(tmp);
         }
       }
@@ -584,9 +584,6 @@ module JSON {
     return (m, lastPos);
   }
 
-  @deprecated(notes="'JsonSerializer' is deprecated; please use 'jsonSerializer' instead")
-  type JsonSerializer = jsonSerializer;
-
   /*
     A JSON format deserializer to be used by :record:`~IO.fileReader`.
 
@@ -627,7 +624,7 @@ module JSON {
       st.array_style = QIO_ARRAY_FORMAT_JSON:uint(8);
       st.tuple_style = QIO_TUPLE_FORMAT_JSON:uint(8);
       dc._set_styleInternal(st);
-      dc._readOne(dc._kind, val, here);
+      dc._readOne(_iokind.dynamic, val, here);
     }
 
     /*
@@ -657,7 +654,7 @@ module JSON {
       // - escaped strings
       if isNumericType(readType) || isBoolType(readType) {
         var x : readType;
-        reader._readOne(reader._kind, x, here);
+        reader._readOne(_iokind.dynamic, x, here);
         return x;
       } else if isStringType(readType) || isBytesType(readType) {
         // TODO: Ideally something like:
@@ -1109,9 +1106,9 @@ module JSON {
           var f = openMemFile();
           var s = reader.read(string);
           {
-            f.writer().withSerializer(defaultSerializer).write(s);
+            f.writer(locking=false).withSerializer(defaultSerializer).write(s);
           }
-          return f.reader().withDeserializer(jsonDeserializer).read(keyType);
+          return f.reader(locking=false).withDeserializer(jsonDeserializer).read(keyType);
         }
       }
 
@@ -1130,9 +1127,9 @@ module JSON {
           var f = openMemFile();
           var s = reader.read(string);
           {
-            f.writer().withSerializer(defaultSerializer).write(s);
+            f.writer(locking=false).withSerializer(defaultSerializer).write(s);
           }
-          return f.reader().withDeserializer(jsonDeserializer).read(key);
+          return f.reader(locking=false).withDeserializer(jsonDeserializer).read(key);
         }
       }
 
@@ -1175,6 +1172,37 @@ module JSON {
     }
   }
 
-  @deprecated(notes="'JsonDeserializer' is deprecated; please use 'jsonDeserializer' instead")
-  type JsonDeserializer = jsonDeserializer;
+  /* Given a JSON string, use the :type:`jsonDeserializer` to deserialize it
+     into a value of type ``loadAs``. The type must support deserialization
+     using the ``readDeserializable`` interface.
+
+     :arg jsonString: The JSON string to parse into a Chapel value
+     :arg loadAs: The type to deserialize the JSON string into
+
+     :returns: A value of type ``loadAs``.
+   */
+  @unstable
+  proc fromJson(jsonString: string, type loadAs): loadAs throws {
+    var fileReader = openStringReader(jsonString,
+                                      deserializer=new jsonDeserializer());
+    return fileReader.read(loadAs);
+  }
+
+  /* Given a Chapel value, serialize it into a JSON string using the
+     :type:`jsonSerializer`. The type must support serialization using the
+     ``writeSerializable`` interface.
+
+     :arg arg: The value to serialize into a JSON string
+
+     :returns: A JSON string representing the Chapel value
+   */
+  @unstable
+  proc toJson(arg): string throws {
+    var memWriter = openMemFile();
+    var writer = memWriter.writer(locking=false).withSerializer(jsonSerializer);
+    writer.write(arg);
+    writer.close();
+
+    return memWriter.reader(locking=false).readAll(string);
+  }
 }

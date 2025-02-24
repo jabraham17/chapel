@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -127,21 +127,14 @@ other task is consuming it.
   locale. In this circumstance, the program will halt with an error message.
   These scenarios do work when using GASNet instead of the ugni layer.
 
-The Deprecated 'kind' Field
----------------------------
+Reading or Writing in Binary Format
+-----------------------------------
 
-Prior to the 1.32 release, configuring a :type:`subprocess` record to use
-binary IO required using the ``kind`` field (of type ``iokind``) to enable
-binary IO and set the desired endianness. The 1.32 release introduced
-:ref:`serializers<ioSerializers>`, and deprecated use of the ``iokind`` type in
-favor of using Serializers and Deserializers to configure a given
-:type:`~IO.fileWriter` or :type:`~IO.fileReader` for a desired format.
-
-Users may now create aliases of ``stdin`` and ``stdout`` with different
-serialization formatting by using the :proc:`~IO.fileWriter.withSerializer` and
-:proc:`~IO.fileReader.withDeserializer` methods. For example, consider the
-following program that writes the numbers ``1`` through ``10`` in binary to the
-``hexdump`` utility:
+To read or write from ``stdin`` or ``stdout`` in binary format, use the
+:proc:`~IO.fileWriter.withSerializer` and :proc:`~IO.fileReader.withDeserializer`
+methods to create binary-serializing aliases of ``stdin`` and ``stdout``. For
+example, consider the following program that writes the numbers ``1`` through
+``10`` in binary to the ``hexdump`` utility:
 
 .. code-block:: chapel
 
@@ -170,7 +163,7 @@ This program prints:
 Please refer to :type:`~IO.binarySerializer` and :type:`~IO.binaryDeserializer`
 for more information on their supported format.
 
- */
+*/
 module Subprocess {
   public use IO;
   use OS;
@@ -206,8 +199,8 @@ module Subprocess {
   /*
      This record represents a subprocess.
 
-     Note that the subprocess will not be waited for if this record
-     goes out of scope. Channels opened to communicate with the subprocess
+     Note that the subprocess will not be waited for if this record goes out of
+     scope. FileReaders/fileWriters opened to communicate with the subprocess
      will be closed if the record goes out of scope, however.
 
      Generally, it is important to call :proc:`subprocess.wait` to wait for the
@@ -217,14 +210,9 @@ module Subprocess {
      generally not needed since the channels will be closed when the
      subprocess record is automatically destroyed.
    */
-  pragma "ignore deprecated use"
   record subprocess {
-    /* The kind of a subprocess is used to create the types
-       for stdin, stdout, or stderr. */
-    @deprecated("the 'kind' field is deprecated, please use Serializers or Deserializers with stdin, stdout, and stderr channels instead. Channels can be configured with the 'fileWriter.withSerializer' or 'fileReader.withDeserializer' methods.")
-    param kind:iokind = iokind.dynamic;
-    /* As with kind, this value is used to create the types
-       for any channels that are necessary. */
+    /* used to create the types for any fileReaders/fileWriters that are
+       necessary. */
     param locking:bool;
 
     @chpldoc.nodoc
@@ -256,7 +244,7 @@ module Subprocess {
     /* `false` if this library knows that the subprocess is not running */
     var running:bool;
     /* The exit status from the subprocess, or possibly a value >= 256
-       if there was en error when creating the subprocess */
+       if there was an error when creating the subprocess */
     var exitCode:int;
 
     // the channels
@@ -268,19 +256,19 @@ module Subprocess {
     @chpldoc.nodoc
     var stdin_buffering:bool;
     @chpldoc.nodoc
-    var stdin_channel:fileWriter(kind, locking=locking);
+    var stdin_channel:fileWriter(locking=locking);
     @chpldoc.nodoc
     var stdout_pipe:bool;
     @chpldoc.nodoc
     var stdout_file:file;
     @chpldoc.nodoc
-    var stdout_channel:fileReader(kind, locking=locking);
+    var stdout_channel:fileReader(locking=locking);
     @chpldoc.nodoc
     var stderr_pipe:bool;
     @chpldoc.nodoc
     var stderr_file:file;
     @chpldoc.nodoc
-    var stderr_channel:fileReader(kind, locking=locking);
+    var stderr_channel:fileReader(locking=locking);
 
     // Ideally we don't have the _file versions, but they
     // are there now because of issues with when the reference counts
@@ -484,33 +472,36 @@ module Subprocess {
                    This argument is used to set :attr:`subprocess.locking`
                    in the resulting subprocess. Defaults to `true`.
 
-     :returns: a :record:`subprocess` with kind and locking set according
-               to the arguments.
+     :returns: a :record:`subprocess` with locking set according to the
+               arguments.
 
      :throws IllegalArgumentError: Thrown when ``args`` is an empty array.
+
+     Some errors at process creation may be deferred until later method calls
+     are made.  These include:
+
+     - :class:`~OS.BlockingIoError`: If there weren't enough system resources
+       when the subprocess was created to create it.
+
+     - :class:`~OS.PermissionError`: If there were permission issues when
+       setting up the subprocess.
+
+     - :class:`~OS.SystemError`: If there were other problems when initially
+       setting up the subprocess.
+
      */
   proc spawn(args:[] string, env:[] string=Subprocess.empty_env, executable="",
              stdin:?t = pipeStyle.forward, stdout:?u = pipeStyle.forward,
              stderr:?v = pipeStyle.forward,
              param locking=true) throws
   {
-    return spawnHelper(args, env, executable, stdin, stdout, stderr, _iokind.dynamic, locking);
-  }
-
-  pragma "last resort"
-  @deprecated("'spawn' with a 'kind' is deprecated")
-  proc spawn(args:[] string, env:[] string=Subprocess.empty_env, executable="",
-             stdin:?t = pipeStyle.forward, stdout:?u = pipeStyle.forward,
-             stderr:?v = pipeStyle.forward,
-             param kind=iokind.dynamic, param locking=true) throws
-  {
-    return spawnHelper(args, env, executable, stdin, stdout, stderr, kind, locking);
+    return spawnHelper(args, env, executable, stdin, stdout, stderr, locking);
   }
 
   private proc spawnHelper(args:[] string, env:[] string=Subprocess.empty_env, executable="",
              stdin:?t = pipeStyle.forward, stdout:?u = pipeStyle.forward,
              stderr:?v = pipeStyle.forward,
-             param kind=_iokind.dynamic, param locking=true) throws
+            param locking=true) throws
   {
     use ChplConfig;
     extern proc sys_getenv(name:c_ptrConst(c_char), ref string_out:c_ptrConst(c_char)):c_int;
@@ -600,7 +591,7 @@ module Subprocess {
     qio_spawn_free_ptrvec(use_args);
     qio_spawn_free_ptrvec(use_env);
 
-    var ret = new subprocess(kind=kind, locking=locking,
+    var ret = new subprocess(locking=locking,
                              home=here,
                              pid=pid,
                              inputfd=stdin_fd,
@@ -628,7 +619,7 @@ module Subprocess {
       // the file alive by referring to it.
       try {
         var stdin_file = new file(stdin_fd, own=true);
-        ret.stdin_channel = stdin_file.writer();
+        ret.stdin_channel = stdin_file.writer(locking=true);
       } catch e: SystemError {
         ret.spawn_error = e.err;
         return ret;
@@ -653,7 +644,7 @@ module Subprocess {
       ret.stdout_pipe = true;
       try {
         var stdout_file = new file(stdout_fd, own=true);
-        ret.stdout_channel = stdout_file.reader();
+        ret.stdout_channel = stdout_file.reader(locking=true);
       } catch e: SystemError {
         ret.spawn_error = e.err;
         return ret;
@@ -667,7 +658,7 @@ module Subprocess {
       ret.stderr_pipe = true;
       try {
         ret.stderr_file = new file(stderr_fd, own=true);
-        ret.stderr_channel = ret.stderr_file.reader();
+        ret.stderr_channel = ret.stderr_file.reader(locking=true);
       } catch e: SystemError {
         ret.spawn_error = e.err;
         return ret;
@@ -730,10 +721,12 @@ module Subprocess {
                    This argument is used to set :attr:`subprocess.locking`
                    in the resulting subprocess. Defaults to `true`.
 
-     :returns: a :record:`subprocess` with kind and locking set according
-               to the arguments.
+     :returns: a :record:`subprocess` locking set according to the arguments.
 
      :throws IllegalArgumentError: Thrown when ``command`` is an empty string.
+
+     Some errors at process creation may be deferred until later method calls
+     are made, see :proc:`spawn` for these errors.
   */
   proc spawnshell(command:string, env:[] string=Subprocess.empty_env,
                   stdin:?t = pipeStyle.forward, stdout:?u = pipeStyle.forward,
@@ -741,25 +734,14 @@ module Subprocess {
                   executable="/bin/sh", shellarg="-c",
                   param locking=true) throws
   {
-    return spawnshellHelper(command, env, stdin, stdout, stderr, executable, shellarg, _iokind.dynamic, locking);
-  }
-
-  pragma "last resort"
-  @deprecated("'spawnshell' with a 'kind' argument is deprecated")
-  proc spawnshell(command:string, env:[] string=Subprocess.empty_env,
-                  stdin:?t = pipeStyle.forward, stdout:?u = pipeStyle.forward,
-                  stderr:?v = pipeStyle.forward,
-                  executable="/bin/sh", shellarg="-c",
-                  param kind=iokind.dynamic, param locking=true) throws
-  {
-    return spawnshellHelper(command, env, stdin, stdout, stderr, executable, shellarg, _iokind.dynamic, locking);
+    return spawnshellHelper(command, env, stdin, stdout, stderr, executable, shellarg, locking);
   }
 
   private proc spawnshellHelper(command:string, env:[] string=Subprocess.empty_env,
                   stdin:?t = pipeStyle.forward, stdout:?u = pipeStyle.forward,
                   stderr:?v = pipeStyle.forward,
                   executable="/bin/sh", shellarg="-c",
-                  param kind=_iokind.dynamic, param locking=true) throws
+                  param locking=true) throws
   {
     if command.isEmpty() then
       throw new owned IllegalArgumentError('command cannot be an empty string');
@@ -769,7 +751,7 @@ module Subprocess {
 
     return spawnHelper(args, env, executable,
                  stdin=stdin, stdout=stdout, stderr=stderr,
-                 kind=kind, locking=locking);
+                 locking=locking);
   }
 
   /*
@@ -999,6 +981,9 @@ module Subprocess {
     function does not wait for the subprocess to complete.  Note that it is
     generally not necessary to call this function since these channels will be
     closed when the subprocess record goes out of scope.
+
+    :throws SystemError: If the subprocess's stdin, stdout, or stderr were not
+                         successfully closed.
    */
   proc ref subprocess.close() throws {
     // TODO: see subprocess.wait() for more on this error handling approach
@@ -1065,6 +1050,18 @@ module Subprocess {
 
 
     :arg signal: the signal to send
+
+    :throws PermissionError: If the program did not have permission to send that
+                             signal to the target subprocess.
+    :throws IllegalArgumentError: If an invalid signal was specified.
+    :throws ProcessLookupError: If the subprocess's pid or process group does
+                                not exist.  This can also happen if the
+                                subprocess is a zombie (a process that has
+                                already committed termination but has not yet
+                                been waited for).
+
+    In addition, some errors that occurred when the process was created may be
+    thrown when this method is called, see the documentation for :proc:`spawn`.
    */
   proc subprocess.sendPosixSignal(signal:int) throws {
     try _throw_on_launch_error();
@@ -1073,13 +1070,20 @@ module Subprocess {
     on home {
       err = qio_send_signal(pid, signal:c_int);
     }
-    if err then try ioerror(err, "in subprocess.sendPosixSignal, with signal " + signal:string);
+    if (err == EINVAL) {
+      throw new IllegalArgumentError("Signal " + signal: string +
+                                     " is not a valid POSIX signal");
+    } else if err {
+      try ioerror(err, "in subprocess.sendPosixSignal, with signal " +
+                  signal:string);
+    }
   }
 
   /*
     Request an abnormal termination of the child process.  The
     associated signal, `SIGABRT`, may be caught and handled by
-    the child process. See :proc:`subprocess.sendPosixSignal`.
+    the child process. See :proc:`subprocess.sendPosixSignal` for details,
+    including what errors can be thrown.
    */
   proc subprocess.abort() throws {
     try _throw_on_launch_error();
@@ -1088,7 +1092,8 @@ module Subprocess {
 
   /* Send the child process an alarm signal. The associated signal,
      `SIGALRM`, may be caught and handled by the child process. See
-     :proc:`subprocess.sendPosixSignal`.
+     :proc:`subprocess.sendPosixSignal` for details, including what errors can
+     be thrown.
    */
   proc subprocess.alarm() throws {
     try _throw_on_launch_error();
@@ -1098,7 +1103,8 @@ module Subprocess {
   /*
     Unconditionally kill the child process.  The associated signal,
     `SIGKILL`, cannot be caught by the child process. See
-    :proc:`subprocess.sendPosixSignal`.
+    :proc:`subprocess.sendPosixSignal` for details, including what errors can be
+    thrown.
    */
   proc subprocess.kill() throws {
     try _throw_on_launch_error();
@@ -1108,7 +1114,8 @@ module Subprocess {
   /*
     Request termination of the child process.  The associated signal,
     `SIGTERM`, may be caught and handled by the child process. See
-    :proc:`subprocess.sendPosixSignal`.
+    :proc:`subprocess.sendPosixSignal` for details, including what errors can be
+    thrown.
    */
   proc subprocess.terminate() throws {
     try _throw_on_launch_error();

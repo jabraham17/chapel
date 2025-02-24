@@ -61,7 +61,26 @@ class ParentMapContext::ParentMap {
   template <typename, typename...> friend struct ::MatchParents;
 
   /// Contains parents of a node.
-  using ParentVector = llvm::SmallVector<DynTypedNode, 2>;
+  class ParentVector {
+  public:
+    ParentVector() = default;
+    explicit ParentVector(size_t N, const DynTypedNode &Value) {
+      Items.reserve(N);
+      for (; N > 0; --N)
+        push_back(Value);
+    }
+    bool contains(const DynTypedNode &Value) {
+      return Seen.contains(Value);
+    }
+    void push_back(const DynTypedNode &Value) {
+      if (!Value.getMemoizationData() || Seen.insert(Value).second)
+        Items.push_back(Value);
+    }
+    llvm::ArrayRef<DynTypedNode> view() const { return Items; }
+  private:
+    llvm::SmallVector<DynTypedNode, 2> Items;
+    llvm::SmallDenseSet<DynTypedNode, 2> Seen;
+  };
 
   /// Maps from a node to its parents. This is used for nodes that have
   /// pointer identity only, which are more common and we can save space by
@@ -99,7 +118,7 @@ class ParentMapContext::ParentMap {
       return llvm::ArrayRef<DynTypedNode>();
     }
     if (const auto *V = I->second.template dyn_cast<ParentVector *>()) {
-      return llvm::makeArrayRef(*V);
+      return V->view();
     }
     return getSingleDynTypedNodeFromParentMap(I->second);
   }
@@ -252,7 +271,7 @@ public:
       const auto *S = It->second.dyn_cast<const Stmt *>();
       if (!S) {
         if (auto *Vec = It->second.dyn_cast<ParentVector *>())
-          return llvm::makeArrayRef(*Vec);
+          return Vec->view();
         return getSingleDynTypedNodeFromParentMap(It->second);
       }
       const auto *P = dyn_cast<Expr>(S);
@@ -265,16 +284,6 @@ public:
   }
 };
 
-template <typename Tuple, std::size_t... Is>
-auto tuple_pop_front_impl(const Tuple &tuple, std::index_sequence<Is...>) {
-  return std::make_tuple(std::get<1 + Is>(tuple)...);
-}
-
-template <typename Tuple> auto tuple_pop_front(const Tuple &tuple) {
-  return tuple_pop_front_impl(
-      tuple, std::make_index_sequence<std::tuple_size<Tuple>::value - 1>());
-}
-
 template <typename T, typename... U> struct MatchParents {
   static std::tuple<bool, DynTypedNodeList, const T *, const U *...>
   match(const DynTypedNodeList &NodeList,
@@ -285,10 +294,11 @@ template <typename T, typename... U> struct MatchParents {
       if (NextParentList.size() == 1) {
         auto TailTuple = MatchParents<U...>::match(NextParentList, ParentMap);
         if (std::get<bool>(TailTuple)) {
-          return std::tuple_cat(
-              std::make_tuple(true, std::get<DynTypedNodeList>(TailTuple),
-                              TypedNode),
-              tuple_pop_front(tuple_pop_front(TailTuple)));
+          return std::apply(
+              [TypedNode](bool, DynTypedNodeList NodeList, auto... TupleTail) {
+                return std::make_tuple(true, NodeList, TypedNode, TupleTail...);
+              },
+              TailTuple);
         }
       }
     }

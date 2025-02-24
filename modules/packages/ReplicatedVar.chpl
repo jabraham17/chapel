@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -43,7 +43,7 @@ Limitations:
 
 .. code-block:: chapel
 
-   var replArray: [MyDomain dmapped replicatedDist()] real;
+   var replArray: [MyDomain dmapped new replicatedDist()] real;
 
 .. _ReplicatedVar_basic-usage:
 
@@ -84,7 +84,7 @@ modify the above variable declarations as follows:
 
 .. code-block:: chapel
 
-    var myRepVar: [rcDomainBase dmapped replicatedDist(myLocales,
+    var myRepVar: [rcDomainBase dmapped new replicatedDist(myLocales,
                      "over which to replicate 'myRepVar'")] MyType;
     var collected: [myLocales.domain] MyType;
 
@@ -146,7 +146,8 @@ proc rcCollect(replicatedVar: [?D] ?MYTYPE, ref collected: [?CD] MYTYPE): void
   var targetLocales = _rcTargetLocalesHelper(replicatedVar);
   assert(replicatedVar.domain == rcDomainBase);
   for idx in collected.domain do assert(targetLocales.domain.contains(idx));
-  coforall (idx, col) in zip(targetLocales.domain.sorted(), collected) do
+  import Sort;
+  coforall (idx, col) in zip(Sort.sorted(targetLocales.domain), collected) do
     on targetLocales[idx] do
       col = replicatedVar[rcDomainIx];
 }
@@ -236,7 +237,7 @@ proc rcExampleOverLocales(initVal: ?MyType, newVal: MyType, newLocale: locale,
 
   // declare a replicated variable
   // DIFFERENT from rcExample(): the domain in myRepVar's type
-  var myRepVar: [rcDomainBase dmapped replicatedDist(localesToReplicateOver,
+  var myRepVar: [rcDomainBase dmapped new replicatedDist(localesToReplicateOver,
    "over which to replicate 'myRepVar' in rcExampleOverLocales()")] MyType;
 
   // initialize all copies to 'initVal'

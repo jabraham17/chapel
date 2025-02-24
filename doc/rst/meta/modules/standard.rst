@@ -18,9 +18,16 @@ default:
 
    Errors <standard/Errors>
    Types <standard/Types>
-   A subset of the IO symbols <standard/ChapelIO>
+   A subset of the IO symbols <standard/IO>
    A subset of the Math symbols <standard/Math>
 
+
+Algorithms
+----------
+.. toctree::
+   :maxdepth: 1
+
+   Sort <standard/Sort>
 
 Data Structures
 ---------------
@@ -91,7 +98,6 @@ Parallelism/Distributed Computing
    Communication <standard/Communication>
    DynamicIters <standard/DynamicIters>
    GPU <standard/GPU>
-   VectorizingIterator <standard/VectorizingIterator>
 
 System/Interoperability
 -----------------------
@@ -99,6 +105,7 @@ System/Interoperability
 .. toctree::
    :maxdepth: 1
 
+   Allocators <standard/Allocators>
    CTypes <standard/CTypes>
    OS <standard/OS>
    Subprocess <standard/Subprocess>

@@ -593,7 +593,7 @@ void HexagonCommonGEP::common() {
   using ProjMap = std::map<const NodeSet *, GepNode *>;
   ProjMap PM;
   for (const NodeSet &S : EqRel) {
-    GepNode *Min = *std::min_element(S.begin(), S.end(), NodeOrder);
+    GepNode *Min = *llvm::min_element(S, NodeOrder);
     std::pair<ProjMap::iterator,bool> Ins = PM.insert(std::make_pair(&S, Min));
     (void)Ins;
     assert(Ins.second && "Cannot add minimal element");
@@ -1109,7 +1109,7 @@ Value *HexagonCommonGEP::fabricateGEP(NodeVect &NA, BasicBlock::iterator At,
           break;
       }
     }
-    NewInst = GetElementPtrInst::Create(InpTy, Input, IdxList, "cgep", &*At);
+    NewInst = GetElementPtrInst::Create(InpTy, Input, IdxList, "cgep", At);
     NewInst->setIsInBounds(RN->Flags & GepNode::InBounds);
     LLVM_DEBUG(dbgs() << "new GEP: " << *NewInst << '\n');
     if (Idx < Num) {
@@ -1230,7 +1230,7 @@ void HexagonCommonGEP::removeDeadCode() {
 
   for (unsigned i = 0; i < BO.size(); ++i) {
     BasicBlock *B = cast<BasicBlock>(BO[i]);
-    for (auto DTN : children<DomTreeNode*>(DT->getNode(B)))
+    for (auto *DTN : children<DomTreeNode *>(DT->getNode(B)))
       BO.push_back(DTN->getBlock());
   }
 

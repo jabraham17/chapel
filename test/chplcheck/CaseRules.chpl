@@ -42,17 +42,46 @@ module CaseRules {
   var snake_CapVar: real;
   const snake_Var: string;
 
-  record R {};
+  record R {}
 
   var _privateVar: int;
 
   extern proc proc_from_another_lang();
-  extern proc Proc_with_Bad_consistenty();
+  extern proc Proc_with_Bad_consistency();
   extern var c_var: int(32);
   extern const c_const: int(32);
+  extern type type_from_another_lang;
+  extern record record_from_another_lang {}
+
+  extern "externName" proc proc_from_another_lang2();
+  extern "externName" proc Proc_with_Bad_consistency2();
+  extern "externName" var c_var2: int(32);
+  extern "externName" const c_const2: int(32);
+  extern "externName" type type_from_another_lang2;
+  extern "externName" record record_from_another_lang2 {}
 
   var justOneCapitalLetterAtTheE: string;
   const justO: real;
 
-  operator +(a: int, b: string) {}
+  operator +(a: int, b: string) {
+    // assign the variables to a temporary to make them not unused anymore.
+    var temp1 = a,
+        temp2 = b;
+  }
+
+  record testRecord {
+    proc init=(other: testRecord) {
+      var temp = other;
+    }
+  }
+
+  class ParentClassWithBadMethod {
+    proc badly_capitalized() {}
+  }
+
+  class ChildThatOverridesBadMethod : ParentClassWithBadMethod {
+    // shouldn't warn: override procs are exempt from capitalization rules,
+    // because the parent controls the name.
+    override proc badly_capitalized() {}
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -30,6 +30,10 @@
 
     For the most up-to-date information about GPU support see the
     :ref:`technical note <readme-gpu>` about it.
+
+  .. include:: AutoGpu.rst
+     :start-line: 7
+     :start-after: Automatically included GPU symbols
 */
 @unstable("The GPU module is unstable and its interface is subject to change in the future.")
 module GPU
@@ -41,6 +45,25 @@ module GPU
   extern proc chpl_gpu_write(const str : c_ptrConst(c_char)) : void;
 
   pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_printf0(fmt) : void;
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_printf1(fmt, x1) : void;
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_printf2(fmt, x1, x2) : void;
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_printf3(fmt, x1, x2, x3) : void;
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_printf4(fmt, x1, x2, x3, x4) : void;
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_printf5(fmt, x1, x2, x3, x4, x5) : void;
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_printf6(fmt, x1, x2, x3, x4, x5, x6) : void;
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_printf7(fmt, x1, x2, x3, x4, x5, x6, x7) : void;
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_printf8(fmt, x1, x2, x3, x4, x5, x6, x7, x8) : void;
+
+  pragma "codegen for CPU and GPU"
   extern proc chpl_gpu_clock() : uint;
 
   pragma "codegen for CPU and GPU"
@@ -50,11 +73,30 @@ module GPU
   pragma "codegen for CPU and GPU"
   extern proc chpl_gpu_device_clock_rate(devNum : int(32)) : uint;
 
+  @chpldoc.nodoc
+  proc gpuWritef(fmt) do  chpl_gpu_printf0(fmt);
+  @chpldoc.nodoc
+  proc gpuWritef(fmt, x1) do chpl_gpu_printf1(fmt,x1);
+  @chpldoc.nodoc
+  proc gpuWritef(fmt, x1, x2) do chpl_gpu_printf2(fmt.c_str(),x1,x2);
+  @chpldoc.nodoc
+  proc gpuWritef(fmt, x1, x2, x3) do chpl_gpu_printf3(fmt.c_str(),x1,x2,x3);
+  @chpldoc.nodoc
+  proc gpuWritef(fmt, x1, x2, x3, x4) do chpl_gpu_printf4(fmt.c_str(),x1,x2,x3,x4);
+  @chpldoc.nodoc
+  proc gpuWritef(fmt, x1, x2, x3, x4, x5) do chpl_gpu_printf5(fmt.c_str(),x1,x2,x3,x4,x5);
+  @chpldoc.nodoc
+  proc gpuWritef(fmt, x1, x2, x3, x4, x5, x6) do chpl_gpu_printf6(fmt.c_str(),x1,x2,x3,x4,x5,x6);
+  @chpldoc.nodoc
+  proc gpuWritef(fmt, x1, x2, x3, x4, x5, x6, x7) do chpl_gpu_printf7(fmt.c_str(),x1,x2,x3,x4,x5,x6,x7);
+  @chpldoc.nodoc
+  proc gpuWritef(fmt, x1, x2, x3, x4, x5, x6, x7, x8) do chpl_gpu_printf8(fmt.c_str(),x1,x2,x3,x4,x5,x6,x7,x8);
+
   /*
      This function is intended to be called from within a GPU kernel and is
      useful for debugging purposes.
 
-     Currently using :proc:`~ChapelIO.write` to send output to ``stdout`` will
+     Currently using :proc:`~IO.write` to send output to ``stdout`` will
      make a loop ineligible for GPU execution; use :proc:`gpuWrite` instead.
 
      Currently this function will only work if values of type
@@ -93,18 +135,6 @@ module GPU
   */
   proc gpuWriteln(const args ...?k) {
     gpuWrite((...args), "\n":c_ptrConst(c_char));
-  }
-
-  /*
-    Will halt execution at runtime if called from outside a GPU.  If used on
-    first line in ``foreach`` or ``forall`` loop will also do a compile time
-    check that the loop is eligible for execution on a GPU.
-  */
-  pragma "insert line file info"
-  pragma "always propagate line file info"
-  @deprecated(notes="the functional form of assertOnGpu() is deprecated. Please use the @assertOnGpu loop attribute instead.")
-  inline proc assertOnGpu() {
-    __primitive("chpl_assert_on_gpu", false);
   }
 
   /*
@@ -178,6 +208,22 @@ module GPU
   }
 
   /*
+    Causes the executing thread to wait until all warp lanes named in mask
+    have executed a ``syncWarp()`` (with the same mask) before resuming
+    execution.
+    Each calling thread must have its own bit set in the mask and all
+    non-exited threads named in mask must execute a corresponding
+    ``syncWarp()`` with the same mask, or the result is undefined.
+  */
+  inline proc syncWarp(mask : uint(32) = 0xffffffff) {
+    pragma "codegen for GPU"
+    extern "chpl_gpu_force_warp_sync" proc chpl_syncWarp(mask);
+
+    __primitive("chpl_assert_on_gpu");
+    chpl_syncWarp(mask);
+  }
+
+  /*
     Allocate block shared memory, enough to store ``size`` elements of
     ``eltType``. Returns a :type:`CTypes.c_ptr` to the allocated array. Note that
     although every thread in a block calls this procedure, the same shared array
@@ -206,36 +252,21 @@ module GPU
     }
   }
 
-  /*
-    Set the block size for kernels launched on the GPU.
-   */
-  inline proc setBlockSize(blockSize: integral) {
-    __primitive("gpu set blockSize", blockSize);
+  @chpldoc.nodoc
+  inline proc createSharedCArray(type theType : c_array(?t, ?k)) ref {
+    var voidPtr = __primitive("gpu allocShared", numBytes(t) * k);
+    var arrayPtr = voidPtr : c_ptr(theType);
+    return arrayPtr.deref();
   }
 
   @chpldoc.nodoc
   proc canAccessPeer(loc1 : locale, loc2 : locale) : bool {
-    extern proc chpl_gpu_can_access_peer(i : c_int, j : c_int) : bool;
-
-    if(!loc1.isGpu() || !loc2.isGpu()) then
-      halt("Non GPU locale passed to 'canAccessPeer'");
-    const loc1Sid = chpl_sublocFromLocaleID(loc1.chpl_localeid());
-    const loc2Sid = chpl_sublocFromLocaleID(loc2.chpl_localeid());
-
-    return chpl_gpu_can_access_peer(loc1Sid, loc2Sid);
+    return chpl_canAccessPeer(loc1, loc2);
   }
 
   @chpldoc.nodoc
   proc setPeerAccess(loc1 : locale, loc2 : locale, shouldEnable : bool) {
-    extern proc chpl_gpu_set_peer_access(
-      i : c_int, j : c_int, shouldEnable : bool) : void;
-
-    if(!loc1.isGpu() || !loc2.isGpu()) then
-      halt("Non GPU locale passed to 'canAccessPeer'");
-    const loc1Sid = chpl_sublocFromLocaleID(loc1.chpl_localeid());
-    const loc2Sid = chpl_sublocFromLocaleID(loc2.chpl_localeid());
-
-    chpl_gpu_set_peer_access(loc1Sid, loc2Sid, shouldEnable);
+    chpl_setPeerAccess(loc1, loc2, shouldEnable);
   }
 
   // ============================
@@ -338,7 +369,7 @@ module GPU
     pragma "codegen for GPU"
     extern rtName proc chpl_atomicBinOp(x, val) : T;
 
-    __primitive("chpl_assert_on_gpu", false);
+    __primitive("chpl_assert_on_gpu");
     return chpl_atomicBinOp(c_ptrTo(x), val);
   }
 
@@ -349,7 +380,7 @@ module GPU
     pragma "codegen for GPU"
     extern rtName proc chpl_atomicTernOp(x, cmp, val) : T;
 
-    __primitive("chpl_assert_on_gpu", false);
+    __primitive("chpl_assert_on_gpu");
     return chpl_atomicTernOp(c_ptrTo(x), cmp, val);
   }
 
@@ -397,6 +428,9 @@ module GPU
   @chpldoc.nodoc
   config param gpuDebugReduce = false;
 
+  @chpldoc.nodoc
+  config param gpuAlwaysFallBackToCpuReduce = false;
+
   private inline proc doGpuReduce(param op: string, const ref A: [] ?t) {
     if op != "sum" && op != "min" && op != "max" &&
        op != "minloc" && op != "maxloc" {
@@ -404,7 +438,8 @@ module GPU
       compilerError("Unexpected reduction kind in doGpuReduce: ", op);
     }
 
-    param cTypeName = if      t==int(8)   then "int8_t"
+    param cTypeName = if      t==bool     then "chpl_bool"
+                      else if t==int(8)   then "int8_t"
                       else if t==int(16)  then "int16_t"
                       else if t==int(32)  then "int32_t"
                       else if t==int(64)  then "int64_t"
@@ -412,8 +447,8 @@ module GPU
                       else if t==uint(16) then "uint16_t"
                       else if t==uint(32) then "uint32_t"
                       else if t==uint(64) then "uint64_t"
-                      else if t==real(32) then "float"
-                      else if t==real(64) then "double"
+                      else if t==real(32) then "_real32"
+                      else if t==real(64) then "_real64"
                       else                     "unknown";
 
     if cTypeName == "unknown" {
@@ -421,9 +456,14 @@ module GPU
                     " elements cannot be reduced with gpu*Reduce functions");
     }
 
+    proc valType(param op: string, const ref A: [] ?t) type {
+      if t==bool && op == "sum" then return int;
+      else return t;
+    }
+
     proc retType(param op: string, const ref A: [] ?t) type {
-      if isValReduce(op) then return A.eltType;
-      if isValIdxReduce(op) then return (A.eltType, int);
+      if isValReduce(op) then return valType(op, A);
+      if isValIdxReduce(op) then return (valType(op, A), int);
       compilerError("Unknown reduction operation: ", op);
     }
 
@@ -440,17 +480,23 @@ module GPU
     }
 
     proc doCpuReduce(param op: string, const ref A: [] ?t) {
+      var res: retType(op, A);
       if CHPL_GPU=="cpu" {
-        return doCpuReduceHelp(op, A);
+        res = doCpuReduceHelp(op, A): res.type;
       }
       else {
-        var res: retType(op, A);
-        on here.parent {
-          var HostArr = A;
-          res = doCpuReduceHelp(op, HostArr);
-        }
-        return res;
+        // I want to do on here.parent but that doesn't work. Note that this
+        // caused some issues with `--gpu-specialization`.
+        // test/gpu/native/reduction/basic.skipif is a skipif that's added
+        // because of this hack.
+        extern proc chpl_task_getRequestedSubloc(): int(32);
+        const curSubloc = chpl_task_getRequestedSubloc();
+        chpl_task_setSubloc(c_sublocid_none);
+        var HostArr = A;
+        res = doCpuReduceHelp(op, HostArr): res.type;
+        chpl_task_setSubloc(curSubloc);
       }
+      return res;
     }
 
     proc getExternFuncName(param op: string, type t) param: string {
@@ -517,9 +563,7 @@ module GPU
       }
     }
 
-    use CTypes;
-    extern proc chpl_gpu_can_reduce(): bool;
-    if !chpl_gpu_can_reduce() {
+    if CHPL_GPU=="cpu" || gpuAlwaysFallBackToCpuReduce {
       return doCpuReduce(op, A);
     }
 
@@ -528,18 +572,14 @@ module GPU
     extern externFunc proc reduce_fn(data, size, ref val, ref idx);
 
     // initialize the return value
-    var ret;
+    var ret: retType(op, A);;
     if isValReduce(op) {
-      var retTmp: t;
-      if op == "min" then retTmp = max(t);
-      else if op == "max" then retTmp = min(t);
-      ret = retTmp;
+      if op == "min" then ret = max(t);
+      else if op == "max" then ret = min(t);
     }
     else if isValIdxReduce(op) {
-      var retTmp: (t, int);
-      if op == "minloc" then retTmp[0] = max(t);
-      else if op == "maxloc" then retTmp[0] = min(t);
-      ret = retTmp;
+      if op == "minloc" then ret[0] = max(t);
+      else if op == "maxloc" then ret[0] = min(t);
     }
     else {
       compilerError("Unknown reduction operation: ", op);
@@ -550,11 +590,12 @@ module GPU
     const basePtr = c_ptrToConst(A);
     for (offset,size) in offsetsThatCanFitIn32Bits(A.size) {
       var curIdx: int(32) = -1; // should remain -1 for sum, min, max
-      var curVal: t;
+      var curVal: valType(op, A);
       reduce_fn(basePtr+offset, size, curVal, curIdx);
       subReduceValIdx(op, offset, ret, (curVal, curIdx));
       if gpuDebugReduce then
-        writef(" (curVal=%i curIdx=%i ret=%?)\n", curVal, curIdx, ret);
+        writef(" (%s curVal=%i curIdx=%i ret=%?)\n", externFunc, curVal, curIdx,
+               ret);
     }
 
     if isValIdxReduce(op) then
@@ -864,11 +905,60 @@ module GPU
 
   private import Time;
 
+  // We no doc it so we can test this independently
+  @chpldoc.nodoc
+  proc gpuExternSort(ref gpuInputArr : [] ?t) {
+    param cTypeName = if      t==int(8)   then "int8_t"
+                      else if t==int(16)  then "int16_t"
+                      else if t==int(32)  then "int32_t"
+                      else if t==int(64)  then "int64_t"
+                      else if t==uint(8)  then "uint8_t"
+                      else if t==uint(16) then "uint16_t"
+                      else if t==uint(32) then "uint32_t"
+                      else if t==uint(64) then "uint64_t"
+                      else if t==real(32) then "float"
+                      else if t==real(64) then "double"
+                      else                     "unknown";
+
+    if cTypeName == "unknown" {
+      compilerError("Arrays with ", t:string,
+                    " elements cannot be sorted with gpuExternSort functions");
+    }
+
+    // Only useful when calling gpuExternSort directly
+    if CHPL_GPU=="cpu" {
+      gpuSort(gpuInputArr);
+      return;
+    }
+
+    proc getExternFuncName(param op: string) param: string {
+      return "chpl_gpu_sort_"+op+"_"+cTypeName;
+    }
+
+    // find the extern function we'll use
+    // (there's only one right now, the infrastructure allows more)
+    param externFunc = getExternFuncName("keys");
+    extern externFunc proc sort_fn(data, temp, size);
+
+    // Make another array which is needed for the sort
+    var temp : gpuInputArr.type;
+
+    const basePtr = c_ptrToConst(gpuInputArr);
+    const tempPtr = c_ptrTo(temp);
+    // Do the sort
+    sort_fn(basePtr, tempPtr, gpuInputArr.size);
+
+    // The sorted values are in temp, so we need to copy them back
+    // to the original array
+    // TODO: Maybe change this to a  <=> to just swap pointers
+    gpuInputArr = temp;
+  }
+
   /*
     Sort an array on the GPU.
     The array must be in GPU-accessible memory and the function must
     be called from outside a GPU-eligible loop.
-    Only arrays with uint eltType are supported.
+    Only arrays of numeric types are supported.
     A simple example is the following:
 
      .. code-block:: chapel
@@ -879,21 +969,38 @@ module GPU
          writeln(Arr); // [1, 2, 3, 4, 5]
        }
   */
-  proc gpuSort(ref gpuInputArr : [] uint) {
+  proc gpuSort(ref gpuInputArr : [] ?t) {
     if !here.isGpu() then halt("gpuSort must be run on a gpu locale");
-
+    // Since we don't have distributed arrays for GPU
+    // targetLocales will only return one locale so we just index into that
+    // Change this when we add support for sorting distributed GPU arrays
+    const loc = gpuInputArr.targetLocales()[0];
+    if loc != here then
+      halt("gpuSort must be run on the gpu where its argument array lives (array is on ",  loc ,", gpuSort was called on " , here, ")");
     if gpuInputArr.size == 0 then return;
-    // Based on the inputArr size, get a chunkSize such that numChunks is on the order of thousands
-    // TODO better heuristic here?
-    var chunkSize = Math.divCeil(gpuInputArr.size, 2000);
-    parallelRadixSort(gpuInputArr, bitsAtATime=8, chunkSize, noisy=false, distributed=false);
+
+    if CHPL_GPU=="cpu" {
+      use Sort only sort;
+      sort(gpuInputArr);
+    } else {
+      gpuExternSort(gpuInputArr);
+    }
   }
 
   // We no doc it so we can test this independently to simulate all cases that can happen with sort
   @chpldoc.nodoc
-  proc parallelRadixSort(ref gpuInputArr : [] uint, const bitsAtATime : int = 8, const chunkSize : int = 512, const noisy : bool = false,
-                         const distributed : bool = false) { // The last argument is for multi GPU sort that is pending a patch before it can work
-
+  proc parallelRadixSort(ref gpuInputArr : [] ?t, const bitsAtATime : int = 8,
+                         const chunkSize : int = 512, const noisy : bool = false,
+                         const distributed : bool = false) where isCoercible(t, uint){
+    // The last argument (distributed) is for multi GPU sort that is pending a
+    // patch before it can work
+    if !here.isGpu() then halt("parallelRadixSort must be run on a gpu locale");
+    if gpuInputArr.size == 0 then return;
+    if CHPL_GPU=="cpu" {
+      use Sort only sort;
+      sort(gpuInputArr);
+      return;
+    }
     // How many bits we sort at once based on the bitsAtATime
     const buckets = 1 << bitsAtATime; // 2^bitsAtATime, ex: 2^4 = 16 = 0b10000
     const bitMask = buckets - 1; // 2^bitsAtATime - 1, ex: 2^4 - 1 = 15 = 0b1111
@@ -917,12 +1024,12 @@ module GPU
     // we create the prefixSum arrays, one for each chunk
     // And we only create it once
     // This was we can reuse it for each iteration of radix Sort
-    var prefixSums : [0..<numChunks*buckets] uint;
+    var prefixSums : [0..<numChunks*buckets] t;
 
     var timer : Time.stopwatch;
     // Ceiling on number of iterations based on max element in array
     timer.start();
-    var maxVal = max(uint);
+    var maxVal = max(t);
     // Reduce can be used to do this faster
     // We do this because the preferred ways below either don't work or take too long
     // But I'm leaving this as is due to https://github.com/chapel-lang/chapel/issues/22736
@@ -989,11 +1096,11 @@ module GPU
     }
   }
 
-  private proc parallelCount(ref gpuCounts : [], ref gpuInputArr : [] uint, const exp : int,
+  private proc parallelCount(ref gpuCounts : [], ref gpuInputArr : [] ?t, const exp : int,
                     const bitMask : int, const chunkSize : int,
                     const numChunks : int,  const numChunksThisGpu : int = numChunks,
                     const startChunk : int = 0,
-                    const gpuId : int = 0, const resetCountsArray = true) {
+                    const gpuId : int = 0, const resetCountsArray = true) where isCoercible(t, uint){
 
     // Instead of using a nested array of arrays, use a simple 1D array of
     // size numChunks*buckets which is a column major representation
@@ -1024,8 +1131,8 @@ module GPU
 
   // Multi GPU Experimental function
   // This won't work for now since it wasn't updated with the modularization of radix sort
-  private proc distributedCount(ref counts : [], ref gpuInputArr : [] uint, const exp : int, const bitMask : int,
-                        const numChunks : int, const numGpus : int ) {
+  private proc distributedCount(ref counts : [], ref gpuInputArr : [] ?t, const exp : int, const bitMask : int,
+                        const numChunks : int, const numGpus : int ) where isCoercible(t, uint){
     // Counts should be all 0s
     // counts = 0;
 
@@ -1062,9 +1169,9 @@ module GPU
     }
   }
 
-  private proc parallelScatter(ref gpuOffsets : [], ref gpuInputArr : [] uint,
+  private proc parallelScatter(ref gpuOffsets : [], ref gpuInputArr : [] ?t,
                        const exp : int, const bitMask : int,
-                       const chunkSize : int, const numChunks : int) {
+                       const chunkSize : int, const numChunks : int) where isCoercible(t, uint){
 
     var gpuOutputArr : gpuInputArr.type;
     const arrSize = gpuInputArr.size;
@@ -1089,4 +1196,185 @@ module GPU
     gpuInputArr = gpuOutputArr;
   }
 
+  /*
+    Returns a :record:`DeviceAttributes` record containing various properties describing
+    the GPU associated with a sublocale.  The available properties reflect a subset
+    of those available in both the `CUDA API documentation
+    <https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html#structcudaDeviceProp>`_
+    and `HIP API documentation
+    <https://rocm.docs.amd.com/projects/HIP/en/docs-6.0.0/doxygen/html/group___global_defs.html#gacc0acd7b9bda126c6bb3dfd6e2796d7c>`_.
+
+    :arg loc: GPU sublocale to get device attributes on.
+   */
+  proc deviceAttributes(loc) {
+    return new DeviceAttributes(loc);
+  }
+
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_BLOCK : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_X : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Y : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Z : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_X : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Y : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Z : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_BLOCK : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__TOTAL_CONSTANT_MEMORY : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__WARP_SIZE : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_PITCH : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE1D_WIDTH : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_WIDTH : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_HEIGHT : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_WIDTH : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_HEIGHT : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_DEPTH : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_REGISTERS_PER_BLOCK : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__CLOCK_RATE : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__TEXTURE_ALIGNMENT : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__TEXTURE_PITCH_ALIGNMENT : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MULTIPROCESSOR_COUNT : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__KERNEL_EXEC_TIMEOUT : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__INTEGRATED : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__CAN_MAP_HOST_MEMORY : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__COMPUTE_MODE : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__PROCESS : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__CONCURRENT_KERNELS : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__ECC_ENABLED : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__PCI_BUS_ID : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__PCI_DEVICE_ID : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MEMORY_CLOCK_RATE : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__GLOBAL_MEMORY_BUS_WIDTH : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__L2_CACHE_SIZE : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_MULTIPROCESSOR : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MAJOR : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MINOR : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_MULTIPROCESSOR : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MANAGED_MEMORY : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__MULTI_GPU_BOARD : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__CONCURRENT_MANAGED_ACCESS : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS_USES_HOST_PAGE_TABLES : c_int;
+  @chpldoc.nodoc
+  extern const CHPL_GPU_ATTRIBUTE__DIRECT_MANAGED_MEM_ACCESS_FROM_HOST : c_int;
+
+  @chpldoc.nodoc
+  extern proc chpl_gpu_query_attribute(dev : c_int, attribute : c_int) : c_int;
+
+  /*
+    Record returned by :proc:`deviceAttributes` that properties reflect a
+    subset of device properties available in both the `CUDA API documentation
+    <https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html#structcudaDeviceProp>`_
+    and `HIP API documentation
+    <https://rocm.docs.amd.com/projects/HIP/en/docs-6.0.0/doxygen/html/group___global_defs.html#gacc0acd7b9bda126c6bb3dfd6e2796d7c>`_.
+   */
+  record DeviceAttributes {
+    @chpldoc.nodoc
+    var gpuId : int;
+
+    @chpldoc.nodoc
+    proc init(loc) {
+      if !loc.isGpu() then halt("gpuDeviceInfo must be passed gpu locale");
+      this.gpuId = 0; // TODO: Should be loc.gpuId
+    }
+
+    proc name : string {
+      extern proc chpl_gpu_name(dev : c_int, ref result : c_ptrConst(c_char));
+      var ret : string;
+      var tmp : c_ptrConst(c_char);
+
+      chpl_gpu_name(this.gpuId : c_int, tmp);
+      try! {
+        ret = string.createCopyingBuffer(tmp, policy=decodePolicy.escape);
+      }
+      deallocate(tmp);
+
+      return ret;
+    }
+
+    proc maxThreadsPerBlock : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_BLOCK);
+    proc maxBlockDimX : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_X);
+    proc maxBlockDimY : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Y);
+    proc maxBlockDimZ : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_BLOCK_DIM_Z);
+    proc MaxGridDimX : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_X);
+    proc maxGridDimY : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Y);
+    proc maxGridDimZ : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_GRID_DIM_Z);
+    proc maxSharedMemoryPerBlock : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_BLOCK);
+    proc totalConstantMemory : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__TOTAL_CONSTANT_MEMORY);
+    proc warpSize : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__WARP_SIZE);
+    proc maxPitch : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_PITCH);
+    proc maximumTexture1dWidth : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE1D_WIDTH);
+    proc maximumTexture2dWidth : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_WIDTH);
+    proc maximumTexture2dHeight : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE2D_HEIGHT);
+    proc maximumTexture3dWidth : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_WIDTH);
+    proc maximumTexture3dHeight : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_HEIGHT);
+    proc maximumTexture3dDepth : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAXIMUM_TEXTURE3D_DEPTH);
+    proc maxRegistersPerBlock : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_REGISTERS_PER_BLOCK);
+    proc clockRate : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__CLOCK_RATE);
+    proc textureAlignment : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__TEXTURE_ALIGNMENT);
+    proc texturePitch_alignment : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__TEXTURE_PITCH_ALIGNMENT);
+    proc multiprocessorCount : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MULTIPROCESSOR_COUNT);
+    proc kernelExecTimeout : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__KERNEL_EXEC_TIMEOUT);
+    proc integrated : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__INTEGRATED);
+    proc canMapHostMemory : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__CAN_MAP_HOST_MEMORY);
+    proc computeMode : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__COMPUTE_MODE);
+    proc concurrentKernels : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__CONCURRENT_KERNELS);
+    proc eccEnabled : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__ECC_ENABLED);
+    proc pciBusId : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__PCI_BUS_ID);
+    proc pciDeviceId : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__PCI_DEVICE_ID);
+    proc memoryClockRate : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MEMORY_CLOCK_RATE);
+    proc globalMemoryBusWidth : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__GLOBAL_MEMORY_BUS_WIDTH);
+    proc l2CacheSize : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__L2_CACHE_SIZE);
+    proc maxThreadsPerMultiprocessor : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_THREADS_PER_MULTIPROCESSOR);
+    proc computeCapabilityMajor : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MAJOR);
+    proc computeCapabilityMinor : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__COMPUTE_CAPABILITY_MINOR);
+    proc maxSharedMemoryPerMultiprocessor : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MAX_SHARED_MEMORY_PER_MULTIPROCESSOR);
+    proc managedMemory : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MANAGED_MEMORY);
+    proc multiGpuBoard : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__MULTI_GPU_BOARD);
+    proc pageableMemoryAccess : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS);
+    proc concurrentManagedAccess : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__CONCURRENT_MANAGED_ACCESS);
+    proc pageableMemoryAccessUsesHostPageTables : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__PAGEABLE_MEMORY_ACCESS_USES_HOST_PAGE_TABLES);
+    proc directManagedMemAccessFromHost : int do return chpl_gpu_query_attribute(this.gpuId : c_int, CHPL_GPU_ATTRIBUTE__DIRECT_MANAGED_MEM_ACCESS_FROM_HOST);
+  }
 }

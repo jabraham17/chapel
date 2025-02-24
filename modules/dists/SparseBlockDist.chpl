@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -37,7 +37,8 @@ private use ChapelUtil;
 private use BlockDist;
 private use RangeChunk;
 private use HaltWrappers;
-private use LayoutCS;
+private use CompressedSparseLayout;
+import Sort.{keyComparator};
 
 //
 // These flags are used to output debug information and run extra
@@ -52,14 +53,15 @@ config param debugSparseBlockDistBulkTransfer = false;
 // just use Block.
 
 // Helper type for sorting locales
-record TargetLocaleComparator {
+record targetLocaleComparator: keyComparator {
   param rank;
   type idxType;
   type sparseLayoutType;
   var dist: unmanaged BlockImpl(rank, idxType, sparseLayoutType);
   proc key(a: index(rank, idxType)) {
     if rank == 2 { // take special care for CSC/CSR
-      if sparseLayoutType == unmanaged CS(compressRows=false) then
+      if sparseLayoutType == cscLayout(true) ||
+         sparseLayoutType == cscLayout(false) then
         return (dist.targetLocsIdx(a), a[1], a[0]);
       else
         return (dist.targetLocsIdx(a), a[0], a[1]);
@@ -97,8 +99,8 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
     //    writeln("In setup");
     var thisid = this.locale.id;
     if locDoms(dist.targetLocDom.lowBound) == nil {
-      coforall localeIdx in dist.targetLocDom do {
-        on dist.targetLocales(localeIdx) do {
+      coforall localeIdx in dist.targetLocDom {
+        on dist.targetLocales(localeIdx) {
           //                    writeln("Setting up on ", here.id);
           //                    writeln("setting up on ", localeIdx, ", whole is: ", whole, ", chunk is: ", dist.getChunk(whole,localeIdx));
          locDoms(localeIdx) = new unmanaged LocSparseBlockDom(rank, idxType,
@@ -122,7 +124,7 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
   }
 
   override proc dsiDestroyDom() {
-    coforall localeIdx in dist.targetLocDom do {
+    coforall localeIdx in dist.targetLocDom {
       on locDoms(localeIdx) do
         delete locDoms(localeIdx);
     }
@@ -165,19 +167,19 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
       var retval = 0;
       on addOn {
         if inds.locale == here {
-          retval = bulkAddHere_help(inds, dataSorted, isUnique);
+          retval = _bulkAddHere_help(inds, dataSorted, isUnique);
         }
         else {
           var _local_inds: [indsDom] index(rank, idxType);
           _local_inds = inds;
-          retval = bulkAddHere_help(_local_inds, dataSorted, isUnique);
+          retval = _bulkAddHere_help(_local_inds, dataSorted, isUnique);
         }
       }
       return retval;
     }
 
     // without _new_, record functions throw null deref
-    var comp = new TargetLocaleComparator(rank=rank, idxType=idxType,
+    var comp = new targetLocaleComparator(rank=rank, idxType=idxType,
                                           sparseLayoutType=sparseLayoutType,
                                           dist=dist);
 
@@ -217,7 +219,7 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
     return _retval;
   }
 
-  proc bulkAddHere_help(inds: [] index(rank,idxType),
+  proc _bulkAddHere_help(inds: [] index(rank,idxType),
       dataSorted=false, isUnique=false) {
 
     const _retval = myLocDom!.mySparseBlock.bulkAdd(inds, dataSorted=true,
@@ -231,7 +233,7 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
   proc dsiSerialWrite(f) {
     if (rank == 1) {
       f.write("{");
-      for locdom in locDoms do {
+      for locdom in locDoms {
         // on locdom do {
         if (locdom!.dsiNumIndices) {
             f.write(" ");
@@ -327,11 +329,23 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
       dsiAdd(i);
   }
 
+  proc setLocalSubdomain(locIndices, loc: locale = here) {
+    if loc != here then
+      halt("setLocalSubdomain() doesn't currently support remote updates");
+    ref myBlock = this.myLocDom!.mySparseBlock;
+    if myBlock.type != locIndices.type then
+      compilerError("setLocalSubdomain() expects its argument to be of type ",
+                    myBlock.type:string);
+    else
+      myBlock = locIndices;
+  }
 }
 
 private proc getDefaultSparseDist(type sparseLayoutType) {
   if isSubtype(_to_nonnil(sparseLayoutType), DefaultDist) {
     return defaultDist;
+  } else if isRecord(sparseLayoutType) {
+    return new sparseLayoutType();
   } else {
     return new dmap(new sparseLayoutType());
   }
@@ -539,6 +553,56 @@ class SparseBlockArr: BaseSparseArr(?) {
     return true;
   }
 
+  proc getLocalSubarray(localeRow, localeCol) ref {
+    return this.locArr[localeRow, localeCol]!.myElems;
+  }
+
+  proc getLocalSubarray(localeRow, localeCol) const ref {
+    return this.locArr[localeRow, localeCol]!.myElems;
+  }
+
+  proc getLocalSubarray(localeIdx) ref {
+    return this.locArr[localeIdx]!.myElems;
+  }
+
+  proc getLocalSubarray(localeIdx) const ref {
+    return this.locArr[localeIdx]!.myElems;
+  }
+
+  proc getLocalSubarray() ref {
+    return myLocArr!.myElems;
+  }
+
+  proc getLocalSubarray() const ref {
+    return myLocArr!.myElems;
+  }
+
+  proc setLocalSubarray(locNonzeroes, loc: locale = here) {
+    if loc != here then
+      halt("setLocalSubarray() doesn't currently support remote updates");
+    ref myBlock = this.myLocArr!.myElems;
+    if myBlock.type != locNonzeroes.type then
+      compilerError("setLocalSubarray() expects its argument to be of type ",
+                    myBlock.type:string);
+    else
+      myBlock.data = locNonzeroes.data;
+  }
+
+  iter localSubarrays() ref {
+    for locIdx in dom.dist.targetLocDom {
+      on locArr[locIdx] {
+        yield getLocalSubarray(locIdx);
+      }
+    }
+  }
+
+  iter localSubarrays(param tag: iterKind) ref where tag == iterKind.standalone {
+    coforall locIdx in dom.dist.targetLocDom {
+      on locArr[locIdx] {
+        yield getLocalSubarray(locIdx);
+      }
+    }
+  }
 }
 
 //
@@ -598,10 +662,6 @@ class LocSparseBlockArr : writeSerializable {
   // guard against dynamic dispatch resolution trying to resolve
   // write()ing out an array of sync vars and hitting the sync var
   // type's compilerError()
-  override proc writeThis(f) throws {
-    halt("LocSparseBlockArr.writeThis() is not implemented / should not be needed");
-  }
-
   override proc serialize(writer, ref serializer) throws {
     halt("LocSparseBlockArr.serialize() is not implemented / should not be needed");
   }
@@ -803,7 +863,7 @@ proc LocSparseBlockArr.this(i) ref {
 proc SparseBlockArr.dsiSerialWrite(f) {
   if (rank == 1) {
     f.write("[");
-    for locarr in locArr do {
+    for locarr in locArr {
       // on locdom do {
       if (locarr!.locDom.dsiNumIndices) {
         f.write(" ");
@@ -850,6 +910,10 @@ proc SparseBlockDom.dsiReprivatize(other, reprivatizeData) {
   whole = {(...reprivatizeData)};
 }
 
+proc SparseBlockDom.dsiTargetLocales() const ref {
+  return dist.targetLocales;
+}
+
 override proc SparseBlockArr.dsiSupportsPrivatization() param do return true;
 
 proc SparseBlockArr.dsiGetPrivatizeData() do return dom.pid;
@@ -866,6 +930,12 @@ proc SparseBlockArr.dsiPrivatize(privatizeData) {
   }
   return c;
 }
+
+proc SparseBlockArr.dsiTargetLocales() const ref {
+  return dom.dsiTargetLocales();
+}
+
+
 
 proc SparseBlockDom.numRemoteElems(rlo,rid){
   var blo,bhi:dist.idxType;

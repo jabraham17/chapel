@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,6 +22,7 @@
 
 /* A helper file of utilities for Mason */
 private use CTypes;
+private use ChplConfig;
 public use FileSystem;
 private use List;
 private use Map;
@@ -115,8 +116,14 @@ proc runCommand(cmd, quiet=false) : string throws {
       while process.stderr.readLine(line) do write(line);
     }
     process.wait();
-  }
-  catch {
+    if process.exitCode != 0 {
+      throw new owned MasonError("Command failed: '" + cmd + "'");
+    }
+  } catch e: FileNotFoundError {
+    throw new owned MasonError("Command not found: '" + cmd + "'");
+  } catch e: MasonError {
+    throw e;
+  } catch {
     throw new owned MasonError("Internal mason error");
   }
   return ret;
@@ -164,6 +171,41 @@ proc SPACK_ROOT : string {
 
   return spackRoot;
 }
+
+/*
+  Returns the current CHPL_HOME. Tries the following in order:
+  1. The CHPL_HOME environment variable
+  2. Using the `chpl` in PATH to print CHPL_HOME
+  3. The CHPL_HOME of the chpl that built this mason (`ChplConfig.CHPL_HOME`)
+*/
+proc CHPL_HOME : string {
+
+  proc CHPL_HOME_inner() : string {
+    proc getChplHomeFromChpl(): string {
+      var chplHome = "";
+      try {
+        var process = spawn(["chpl", "--print-chpl-home"],
+                             stdout=pipeStyle.pipe);
+        for line in process.stdout.lines() {
+          chplHome = line.strip();
+        }
+      } catch {
+        chplHome = "";
+      }
+      return chplHome;
+    }
+
+    const env = getEnv("CHPL_HOME");
+    const chplHome = if !env.isEmpty() then env else getChplHomeFromChpl();
+    return if !chplHome.isEmpty() then chplHome else ChplConfig.CHPL_HOME;
+  }
+
+  @functionStatic
+  ref chplHome = CHPL_HOME_inner();
+  return chplHome;
+}
+
+
 /*
 This fetches the mason-installed spack registry only.
 Users that define SPACK_ROOT to their own spack installation will use
@@ -389,9 +431,8 @@ proc gitC(newDir, command, quiet=false) throws {
   var ret : string;
   const oldDir = here.cwd();
   here.chdir(newDir);
+  defer here.chdir(oldDir);
   ret = runCommand(command, quiet);
-
-  here.chdir(oldDir);
 
   return ret;
 }
@@ -569,7 +610,7 @@ proc getDepToml(depName: string, depVersion: string) throws {
 
   if results.size > 0 {
     const brickPath = '/'.join(registries[0], 'Bricks', packages[0], versions[0]) + '.toml';
-    const openFile = openReader(brickPath);
+    const openFile = openReader(brickPath, locking=false);
     const toml = parseToml(openFile);
 
     return toml;
@@ -599,7 +640,7 @@ proc findLatest(packageDir: string): VersionInfo {
     // Skip packages that are out of version bounds
     const chplVersion = getChapelVersionInfo();
 
-    const manifestReader = openReader(packageDir + '/' + manifest);
+    const manifestReader = openReader(packageDir + '/' + manifest, locking=false);
     const manifestToml = parseToml(manifestReader);
     const brick = manifestToml['brick'];
     var (low, high) = parseChplVersion(brick);
@@ -723,7 +764,7 @@ proc splitNameVersion(ref package: string, original: bool) {
 
 /* Print a TOML file. Expects full path. */
 proc showToml(tomlFile : string) {
-  const openFile = openReader(tomlFile);
+  const openFile = openReader(tomlFile, locking=false);
   const toml = parseToml(openFile);
   writeln(toml);
   openFile.close();

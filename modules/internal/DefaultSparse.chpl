@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -48,10 +48,6 @@ module DefaultSparse {
 
       this.dist = dist;
     }
-
-    // deprecated by Vass in 1.31 to implement #17131
-    @deprecated("domain.stridable is deprecated; use domain.strides instead")
-    proc stridable param do return parentDom.strides.toStridable();
 
     override proc getNNZ(): int{
       return _nnz;
@@ -277,7 +273,8 @@ module DefaultSparse {
         }
       }
 
-      bulkAdd_prepareInds(inds, dataSorted, isUnique, Sort.defaultComparator);
+      bulkAdd_prepareInds(inds, dataSorted, isUnique,
+                          new Sort.defaultComparator());
 
       if _nnz == 0 {
 
@@ -410,6 +407,16 @@ module DefaultSparse {
     override proc dsiSupportsAutoLocalAccess() param {
       return defaultSparseSupportsAutoLocalAccess;
     }
+
+    proc getCoordinates() const ref : [] rank*idxType {
+      _fit(_nnz);  // shrink the coordinate array to be "just the right size"
+      return _indices;
+    }
+
+    proc getCoordinates() ref : [] rank*idxType {
+      _fit(_nnz);  // shrink the coordinate array to be "just the right size"
+      return _indices;
+    }
   }
 
 
@@ -529,6 +536,24 @@ module DefaultSparse {
         return _getDomain(dom);
       } else {
         return dom.dsiLocalSubdomain(loc);
+      }
+    }
+
+    proc doiBulkTransferToKnown(srcDom, destClass: this.type, destDom) {
+      if !boundsChecking || srcDom == destDom {
+        destClass.data = this.data;
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    proc doiBulkTransferFromKnown(destDom, srcClass: this.type, srcDom): bool {
+      if !boundsChecking || srcDom == destDom {
+        this.data = srcClass.data;
+        return true;
+      } else {
+        return false;
       }
     }
   }

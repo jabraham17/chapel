@@ -6,7 +6,7 @@
 **************************************************************************/
 
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -76,10 +76,11 @@ typedef struct chpl_qthread_tls_s {
 } chpl_qthread_tls_t;
 
 extern pthread_t chpl_qthread_process_pthread;
-extern pthread_t chpl_qthread_comm_pthread;
+extern int chpl_qthread_comm_num_pthreads;
+extern pthread_t *chpl_qthread_comm_pthreads;
 
 extern chpl_qthread_tls_t chpl_qthread_process_tls;
-extern chpl_qthread_tls_t chpl_qthread_comm_task_tls;
+extern chpl_qthread_tls_t *chpl_qthread_comm_task_tls;
 
 // Wrap qthread_get_tasklocal().
 static inline chpl_qthread_tls_t* chpl_qthread_get_tasklocal(void)
@@ -91,10 +92,18 @@ static inline chpl_qthread_tls_t* chpl_qthread_get_tasklocal(void)
                qthread_get_tasklocal(sizeof(chpl_qthread_tls_t));
         if (tls == NULL) {
             pthread_t me = pthread_self();
-            if (pthread_equal(me, chpl_qthread_comm_pthread))
-                tls = &chpl_qthread_comm_task_tls;
-            else if (pthread_equal(me, chpl_qthread_process_pthread))
+            // if not process or comm thread, ok to return NULL
+            if (pthread_equal(me, chpl_qthread_process_pthread)) {
                 tls = &chpl_qthread_process_tls;
+            } else {
+                for (int i = 0; i < chpl_qthread_comm_num_pthreads; i++) {
+                    assert(chpl_qthread_comm_pthreads != NULL);
+                    if (pthread_equal(me, chpl_qthread_comm_pthreads[i])) {
+                        tls = &chpl_qthread_comm_task_tls[i];
+                        break;
+                    }
+                }
+            }
         }
     }
     else
@@ -148,7 +157,7 @@ c_sublocid_t chpl_task_getRequestedSubloc(void)
     if (data && data->bundle) {
         return data->bundle->requestedSubloc;
     }
-    return c_sublocid_any;
+    return c_sublocid_none;
 }
 
 #ifdef CHPL_TASK_GETSUBLOC_IMPL_DECL
@@ -175,7 +184,7 @@ void chpl_task_setSubloc(c_sublocid_t full_subloc)
 
     // We allow using c_sublocid_none to represent the CPU in the gpu locale
     // model. This isn't currently used by the numa (or other locale) models.
-    assert(isActualSublocID(full_subloc) || full_subloc == c_sublocid_any ||
+    assert(isActualSublocID(full_subloc) || full_subloc == c_sublocid_none ||
         !strcmp(CHPL_LOCALE_MODEL, "gpu"));
 
     // Only change sublocales if the caller asked for a particular one,
@@ -197,7 +206,7 @@ void chpl_task_setSubloc(c_sublocid_t full_subloc)
             data->bundle->requestedSubloc = full_subloc;
         }
 
-        if (execution_subloc != c_sublocid_any &&
+        if (execution_subloc != c_sublocid_none &&
             (qthread_shepherd_id_t) execution_subloc != curr_shep) {
             qthread_migrate_to((qthread_shepherd_id_t) execution_subloc);
         }

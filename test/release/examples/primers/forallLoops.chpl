@@ -29,18 +29,20 @@ As with for-loops, the body of a forall statement is a statement
 or a block statement, whereas the body of a forall expression is
 an expression. Both kinds are shown in the following sections.
 
+.. index::
+   single: forall (statement)
+
 "Must-parallel" forall statement
 --------------------------------
 
 In the following example, the forall loop iterates over the array indices in
-parallel. Since the loop iterates over ``1..n`` and not ``A``, an explicit
-``ref`` intent must be used to allow modification of ``A``.
+parallel.
 */
 
 config const n = 5;
 var A: [1..n] real;
 
-forall i in 1..n with (ref A) {
+forall i in 1..n {
   A[i] = i;
 }
 
@@ -52,6 +54,9 @@ writeln();
 If ``A`` were a distributed array (:ref:`primers-distributions`),
 each loop iteration would typically be executed on the locale where
 the corresponding array element resides.
+
+.. index::
+   single: forall (expression)
 
 "Must-parallel" forall expression
 ---------------------------------
@@ -67,6 +72,10 @@ writeln(B);
 writeln();
 
 /*
+
+.. index::
+    single: forall; zip
+
 .. _primers-forallLoops-must-parallel-zippered:
 
 Zippered "must-parallel" forall statement
@@ -82,12 +91,11 @@ provide a "leader" iterator and all iterables provide "follower" iterators.
 These are described in the :ref:`parallel iterators primer
 <primers-parIters-leader-follower>`.
 
-Here we illustrate zippering arrays and domains. In this example, we must
-explicitly mark ``C`` as modified with a ``ref`` intent.
+Here we illustrate zippering arrays and domains.
 */
 
 var C: [1..n] real;
-forall (a, b, i) in zip(A, B, C.domain) with (ref C) do
+forall (a, b, i) in zip(A, B, C.domain) do
   C[i] = a * 10 + b / 10 + i * 0.001;
 
 writeln("After a zippered loop, C is:");
@@ -97,6 +105,10 @@ writeln();
 /*
 The leader iterable in this example is ``A``. Since this array is not
 distributed, all loop iterations will be executed on the current locale.
+
+.. index::
+    single: [] loop
+    single: bracket loop
 
 .. _primers-forallLoops-may-parallel:
 
@@ -130,6 +142,11 @@ if onlySerial() does not have any parallel overloads:
       forall i in onlySerial(n) { // error: a parallel iterator is not found
         writeln("in iteration #", i);
       }
+
+
+.. index::
+    single: [] loop expression
+    single: bracket loop expression
 
 "May-parallel" forall expression
 --------------------------------
@@ -186,12 +203,16 @@ of shadow variables, one per outer variable.
 
  - Each shadow variable is deallocated at the end of its task.
 
-The default argument intent (:ref:`The_Default_Intent`) is used by default.
-For numeric types, this implies capturing the value of the outer
-variable by the time the task starts executing. Arrays are passed by
-constant reference, so to modify them we must use an explicit intent.
-Sync and atomic variables are passed by reference
-(:ref:`primers-syncs`, :ref:`primers-atomics`).
+For most types, forall intents use the default argument intent
+(:ref:`The_Default_Intent`). For numeric types, this implies capturing the
+value of the outer variable by the time the task starts executing. Sync and
+atomic variables are passed by reference (:ref:`primers-syncs`,
+:ref:`primers-atomics`). Arrays infer their default intent based upon the
+declaration of the array. Mutable arrays (e.g. declared with ``var`` or passed
+by ``ref`` intent) have a default intent of ``ref``, while immutable arrays
+(e.g. declared with ``const`` or passed by ``const`` intent) have a default
+intent of ``const``. These defaults are described in :ref:`the language spec
+<Forall_Intents>`.
 */
 
 var outerIntVariable = 0;
@@ -200,7 +221,7 @@ proc updateOuterVariable() {
 }
 var outerAtomicVariable: atomic int;
 
-forall i in 1..n with (ref D) {
+forall i in 1..n {
 
   D[i] += 0.5; // if multiple iterations of the loop update the same
                // array element, it could lead to a data race
@@ -224,6 +245,11 @@ writeln("outerAtomicVariable is: ", outerAtomicVariable.read());
 writeln();
 
 /*
+
+.. index::
+    single: forall; with
+.. _primers-forallLoops-with:
+
 The task intents ``in``, ``const in``, ``ref``, ``const ref``,
 and ``reduce`` can be specified explicitly using a ``with`` clause.
 
@@ -251,6 +277,11 @@ writeln("outerRealVariable is: ", outerRealVariable);
 writeln();
 
 /*
+
+.. index::
+    single: forall; reduce
+.. _primers-forallLoops-reduce:
+
 A reduce intent can be used to compute reductions.
 The value of each reduce-intent shadow variable at the end of its task
 is combined into its outer variable according to the specified reduction
@@ -348,7 +379,7 @@ proc ref MyRecord.myMethod() {
     // intField += 1;     // would cause "illegal assignment" error
   }
   forall i in 1..n with (ref this) {
-    arrField[i] = i * 2;  
+    arrField[i] = i * 2;
     if i == 1 then
       intField += 1;      // beware of potential for data races
   }

@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -57,6 +57,7 @@ set(SRCS
     stmt.cpp
     symbol.cpp
     TemporaryConversionThunk.cpp
+    thunks.cpp
     TransformLogicalShortCircuit.cpp
     TryStmt.cpp
     type.cpp

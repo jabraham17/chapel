@@ -59,6 +59,7 @@ use HashedDist;
 use LinkedLists;
 use BlockDist;
 use JSON;
+use Sort;
 
 // packing twitter user IDs to numbers
 var total_tweets_processed : atomic int;
@@ -84,10 +85,10 @@ proc main(args:[] string) {
   // domain assignment in Hashed
   // Pairs is for collecting twitter  user ID to user ID mentions
   if distributed {
-    var Pairs: domain( (int, int) ) dmapped hashedDist(idxType=(int, int));
+    var Pairs: domain( (int, int), parSafe=false) dmapped new hashedDist(idxType=(int, int));
     run(todo, Pairs);
   } else {
-    var Pairs: domain( (int, int) );
+    var Pairs: domain( (int, int), parSafe=false);
     run(todo, Pairs);
   }
 }
@@ -100,7 +101,7 @@ proc run(ref todo:LinkedList(string), ref Pairs) {
 
   const FilesSpace = {1..todo.size};
   const BlockSpace = if distributed then
-                       FilesSpace dmapped blockDist(boundingBox=FilesSpace)
+                       FilesSpace dmapped new blockDist(boundingBox=FilesSpace)
                      else
                        FilesSpace;
   var allfiles:[BlockSpace] string;
@@ -263,7 +264,7 @@ proc process_json(fname: string, ref Pairs)
     var sub = spawn(["gunzip", "-c", fname], stdout=pipeStyle.pipe);
     process_json(sub.stdout, fname, Pairs);
   } else {
-    var logfile = openReader(fname);
+    var logfile = openReader(fname, locking=false);
     process_json(logfile, fname, Pairs);
   }
 }
@@ -292,7 +293,7 @@ proc create_and_analyze_graph(ref Pairs)
   var nmutual = 0;
 
   // Build idToNode
-  var userIds:domain(int);
+  var userIds:domain(int, parSafe=true);
 
   forall (id, other_id) in Pairs with (ref userIds) {
     if Pairs.contains( (other_id, id) ) {
@@ -319,7 +320,7 @@ proc create_and_analyze_graph(ref Pairs)
 
   // reduction intent would help here to compute max node id
   // TODO -- bug: this loop is not working with a forall (compile error)
-  for (node, id) in zip(1..userIds.size, userIds.sorted()) {
+  for (node, id) in zip(1..userIds.size, Sort.sorted(userIds)) {
     idToNode[id] = node:int(32);
     nodeToId[node] = id;
   }
@@ -426,7 +427,7 @@ proc create_and_analyze_graph(ref Pairs)
 
   // re-seed the RNG if seed is 0.
   if seed == 0 {
-    seed = NPBRandom.oddTimeSeed();
+    seed = (new randomStream(int(32))).seed;
   }
 
 
@@ -439,8 +440,7 @@ proc create_and_analyze_graph(ref Pairs)
   //      with as much internal state as the yielded values)
   //   - yield values only within the requested range
   //     (in order to yield once, keep statistics)
-  var reorder:[G.vertices] int(32);
-  permutation(reorder, seed=seed);
+  var reorder = permute(G.vertices, seed);
   // Or we could just do it in the normal order...
 
   var go: atomic bool;
@@ -475,7 +475,7 @@ proc create_and_analyze_graph(ref Pairs)
         writeln("on node ", vid, " currently in group ", labels[vid]);
 
       // label -> count
-      var foundLabels:domain(int(32));
+      var foundLabels:domain(int(32), parSafe=false);
       var counts:[foundLabels] int;
 
       for nid in G.Neighbors(vid) {
@@ -504,7 +504,7 @@ proc create_and_analyze_graph(ref Pairs)
       var tiebreaker = new randomStream(seed+vid, eltType=bool);
 
       for (count,lab) in zip(counts, counts.domain) {
-        if count > maxcount || (count == maxcount && tiebreaker.getNext()) {
+        if count > maxcount || (count == maxcount && tiebreaker.next()) {
           maxcount = count;
           maxlabel = lab;
         }

@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2025 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -66,7 +66,7 @@ endif()
 
 # Don't pass through jemalloc for the time being.
 string(REPLACE "-ljemalloc" "" CHPL_LLVM_LINK_ARGS "${CHPL_LLVM_LINK_ARGS}")
-
+string(STRIP "${CHPL_LLVM_LINK_ARGS}" CHPL_LLVM_LINK_ARGS)
 
 set(CHPL_MAIN_SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
 set(CHPL_MAIN_INCLUDE_DIR ${CHPL_MAIN_SRC_DIR}/include)
@@ -77,12 +77,8 @@ configure_file(${CHPL_MAIN_INCLUDE_DIR}/chpl/config/config.h.cmake
                ${CHPL_INCLUDE_DIR}/chpl/config/config.h)
 
 
-# request C++14 -- or C++17 if using LLVM 16
-if (CHPL_LLVM_VERSION VERSION_LESS 16.0)
-  set(CMAKE_CXX_STANDARD 14)
-else()
-  set(CMAKE_CXX_STANDARD 17)
-endif()
+# request C++17
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # request C11

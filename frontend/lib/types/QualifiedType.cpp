@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,7 @@
 #include "chpl/types/QualifiedType.h"
 
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/types/all-types.h"
 #include "chpl/types/Param.h"
 #include "chpl/types/Type.h"
 #include "chpl/types/TupleType.h"
@@ -30,22 +31,14 @@ namespace types {
 
 bool QualifiedType::isParamTrue() const {
   if (kind_ == Kind::PARAM && param_ != nullptr) {
-    if (auto bp = param_->toBoolParam()) {
-      if (bp->value() == true) {
-        return true;
-      }
-    }
+    return param_->isNonZero();
   }
 
   return false;
 }
 bool QualifiedType::isParamFalse() const {
   if (kind_ == Kind::PARAM && param_ != nullptr) {
-    if (auto bp = param_->toBoolParam()) {
-      if (bp->value() == false) {
-        return true;
-      }
-    }
+    return param_->isZero();
   }
 
   return false;
@@ -58,6 +51,31 @@ bool QualifiedType::isParamKnownTuple() const {
     }
   }
   return false;
+}
+
+QualifiedType QualifiedType::makeParamBool(Context* context, bool b) {
+  return {QualifiedType::PARAM, BoolType::get(context),
+          BoolParam::get(context, b)};
+}
+
+QualifiedType QualifiedType::makeParamInt(Context* context, int64_t i) {
+  return {QualifiedType::PARAM, IntType::get(context, 0),
+          IntParam::get(context, i)};
+}
+
+QualifiedType QualifiedType::makeParamString(Context* context, UniqueString s) {
+  return {QualifiedType::PARAM, RecordType::getStringType(context),
+          StringParam::get(context, s)};
+}
+
+QualifiedType QualifiedType::makeParamString(Context* context, std::string s) {
+  return makeParamString(context, UniqueString::get(context, s));
+}
+
+bool QualifiedType::needsSplitInitTypeInfo(Context* context) const {
+  return (isParam() && !hasParamPtr()) ||
+    isUnknownKindOrType() ||
+    resolution::getTypeGenericity(context, type()) == Type::GENERIC;
 }
 
 bool QualifiedType::update(QualifiedType& keep, QualifiedType& addin) {

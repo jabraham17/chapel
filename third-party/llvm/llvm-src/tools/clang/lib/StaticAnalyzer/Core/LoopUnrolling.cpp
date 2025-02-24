@@ -17,6 +17,7 @@
 #include "clang/StaticAnalyzer/Core/PathSensitive/CallEvent.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/CheckerContext.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/LoopUnrolling.h"
+#include <optional>
 
 using namespace clang;
 using namespace ento;
@@ -24,6 +25,7 @@ using namespace clang::ast_matchers;
 
 static const int MAXIMUM_STEP_UNROLLED = 128;
 
+namespace {
 struct LoopState {
 private:
   enum Kind { Normal, Unrolled } K;
@@ -56,6 +58,7 @@ public:
     ID.AddInteger(maxStep);
   }
 };
+} // namespace
 
 // The tracked stack of loops. The stack indicates that which loops the
 // simulated element contained by. The loops are marked depending if we decided
@@ -175,7 +178,7 @@ static bool isCapturedByReference(ExplodedNode *N, const DeclRefExpr *DR) {
   const CXXRecordDecl *LambdaCXXRec = MD->getParent();
 
   // Lookup the fields of the lambda
-  llvm::DenseMap<const VarDecl *, FieldDecl *> LambdaCaptureFields;
+  llvm::DenseMap<const ValueDecl *, FieldDecl *> LambdaCaptureFields;
   FieldDecl *LambdaThisCaptureField;
   LambdaCXXRec->getCaptureFields(LambdaCaptureFields, LambdaThisCaptureField);
 
@@ -185,6 +188,17 @@ static bool isCapturedByReference(ExplodedNode *N, const DeclRefExpr *DR) {
   const FieldDecl *FD = LambdaCaptureFields[VD];
   assert(FD && "Captured variable without a corresponding field");
   return FD->getType()->isReferenceType();
+}
+
+static bool isFoundInStmt(const Stmt *S, const VarDecl *VD) {
+  if (const DeclStmt *DS = dyn_cast<DeclStmt>(S)) {
+    for (const Decl *D : DS->decls()) {
+      // Once we reach the declaration of the VD we can return.
+      if (D->getCanonicalDecl() == VD)
+        return true;
+    }
+  }
+  return false;
 }
 
 // A loop counter is considered escaped if:
@@ -216,13 +230,19 @@ static bool isPossiblyEscaped(ExplodedNode *N, const DeclRefExpr *DR) {
       continue;
     }
 
-    if (const DeclStmt *DS = dyn_cast<DeclStmt>(S)) {
-      for (const Decl *D : DS->decls()) {
-        // Once we reach the declaration of the VD we can return.
-        if (D->getCanonicalDecl() == VD)
-          return false;
+    if (isFoundInStmt(S, VD)) {
+      return false;
+    }
+
+    if (const auto *SS = dyn_cast<SwitchStmt>(S)) {
+      if (const auto *CST = dyn_cast<CompoundStmt>(SS->getBody())) {
+        for (const Stmt *CB : CST->body()) {
+          if (isFoundInStmt(CB, VD))
+            return false;
+        }
       }
     }
+
     // Check the usage of the pass-by-ref function calls and adress-of operator
     // on VD and reference initialized by VD.
     ASTContext &ASTCtx =
@@ -284,7 +304,7 @@ bool madeNewBranch(ExplodedNode *N, const Stmt *LoopStmt) {
       return true;
 
     ProgramPoint P = N->getLocation();
-    if (Optional<BlockEntrance> BE = P.getAs<BlockEntrance>())
+    if (std::optional<BlockEntrance> BE = P.getAs<BlockEntrance>())
       S = BE->getBlock()->getTerminatorStmt();
 
     if (S == LoopStmt)

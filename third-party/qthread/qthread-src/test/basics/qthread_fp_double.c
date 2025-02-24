@@ -2,17 +2,17 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
+#include <math.h>
+#include <qthread/qthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
-#include <qthread/qthread.h>
 
 // https://www.geeksforgeeks.org/comparison-float-value-c/
 // https://dotnettutorials.net/lesson/taylor-series-using-recursion-in-c/
 // https://www.studytonight.com/c/programs/important-concepts/sum-of-taylor-series
 
-struct parts
-{
+struct parts {
   int length;
   double exp;
   double ans;
@@ -20,36 +20,29 @@ struct parts
 };
 
 // https://www.w3resource.com/c-programming-exercises/math/c-math-exercise-24.php
-static double taylor_exponential_core(int n, double x)
-{
+static double taylor_exponential_core(int n, double x, int yield) {
   double exp_sum = 1;
-  for (int i = n - 1; i > 0; --i)
-  {
+  for (int i = n - 1; i > 0; --i) {
     exp_sum = 1 + x * exp_sum / i;
-    qthread_yield();
+    if (yield) qthread_yield();
   }
   return exp_sum;
 }
 
-static aligned_t taylor_exponential(void *arg)
-{
+static aligned_t taylor_exponential(void *arg) {
   struct parts *te = (struct parts *)arg;
-  double exp = te->exp;
-  double length = te->length;
-  te->ans = taylor_exponential_core(te->length, te->exp);
+  te->ans = taylor_exponential_core(te->length, te->exp, 1);
   return 0;
 }
 
-static void startQthread(struct parts *teParts)
-{
+static void startQthread(struct parts *teParts) {
   qthread_empty(&teParts->cond);
 
   int ret = qthread_fork(taylor_exponential, teParts, &teParts->cond);
   assert(ret == QTHREAD_SUCCESS);
 }
 
-static aligned_t checkDoubleAsQthreads()
-{
+static aligned_t checkDoubleAsQthreads(void) {
   struct parts teParts1 = {250, 9.0, 0.0};
   struct parts teParts2 = {50, 3.0, 0.0};
   struct parts teParts3 = {150, 11.0, 0.0};
@@ -67,17 +60,24 @@ static aligned_t checkDoubleAsQthreads()
   ret = qthread_readFF(NULL, &teParts3.cond);
   assert(ret == QTHREAD_SUCCESS);
 
-  assert(teParts1.ans == 8103.0839275753824);
+  double threshold = 1E-15;
 
-  assert(teParts2.ans == 20.085536923187668);
+  double expected_1 = 8103.0839275753824;
+  double rel_error_1 = fabs(expected_1 - teParts1.ans) / fabs(expected_1);
+  assert(rel_error_1 < threshold);
 
-  assert(teParts3.ans == 59874.141715197809);
+  double expected_2 = 20.085536923187668;
+  double rel_error_2 = fabs(expected_2 - teParts2.ans) / fabs(expected_2);
+  assert(rel_error_2 < threshold);
+
+  double expected_3 = 59874.141715197809;
+  double rel_error_3 = fabs(expected_3 - teParts3.ans) / fabs(expected_3);
+  assert(rel_error_3 < threshold);
 
   return 0;
 }
 
-static void checkDoubleAsQthread()
-{
+static void checkDoubleAsQthread(void) {
   int ret = -1;
   struct parts teParts = {250, 9.0, 0.0};
   qthread_empty(&teParts.cond);
@@ -88,17 +88,19 @@ static void checkDoubleAsQthread()
   ret = qthread_readFF(NULL, &teParts.cond);
   assert(ret == QTHREAD_SUCCESS);
 
-  assert(teParts.ans == 8103.0839275753824);
+  double expected = 8103.0839275753824;
+  double rel_error = fabs(expected - teParts.ans) / fabs(expected);
+  assert(rel_error < 1E-15);
 }
 
-static void checkDouble()
-{
-  double ans = taylor_exponential_core(250, 9.0);
-  assert(ans == 8103.0839275753824);
+static void checkDouble(void) {
+  double ans = taylor_exponential_core(250, 9.0, 0);
+  double expected = 8103.0839275753824;
+  double rel_error = fabs(expected - ans) / fabs(expected);
+  assert(rel_error < 1E-15);
 }
 
-int main(void)
-{
+int main(void) {
   checkDouble();
 
   int status = qthread_initialize();

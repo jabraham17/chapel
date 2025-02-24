@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2023-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -181,15 +181,15 @@ static void superTest6() {
               }
 
               class Child : Parent {
-                proc foo(super: owned Other) {
+                proc foo() {
                   return super.bar();
                 }
               }
             }
          )"""",
          "M.Child.foo",
-         "M.Child.foo@7",
-         "M.Other.bar");
+         "M.Child.foo@3",
+         "M.Parent.bar");
 }
 
 int main() {

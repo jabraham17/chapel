@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,6 +40,12 @@
       - clear
       - sort
 
+      .. warning::
+
+        :proc:`list.sort<List.list.sort>` is deprecated - please use the
+        :proc:`sort(x: list)<Sort.sort>` procedure from the
+        :mod:`Sort` module instead
+
   Additionally, all references to list elements are invalidated when the list
   is deinitialized.
 
@@ -57,8 +63,13 @@
 module List {
   import ChapelLocks;
   private use HaltWrappers;
-  private use Sort;
   private use Math;
+  private import Reflection.getRoutineName;
+
+  //
+  // TODO: remove me when `list.sort` is removed
+  //
+  private use Sort;
 
   @chpldoc.nodoc
   private const _initialCapacity = 8;
@@ -68,6 +79,7 @@ module List {
 
   @chpldoc.nodoc
   private param _sanityChecks = false;
+
 
   //
   // Some asserts are useful while developing, but can be turned off when the
@@ -109,12 +121,18 @@ module List {
   proc _checkType(type eltType) param {
     if isGenericType(eltType) {
       compilerWarning("creating a list with element type " +
-                      eltType:string);
+                      eltType:string, 2);
       if isClassType(eltType) && !isGenericType(eltType:borrowed) {
-        compilerWarning("which is a class type with generic management");
+        compilerWarning("which is a class type with generic management", 2);
       }
-      compilerError("list element type cannot currently be generic");
+      compilerError("list element type cannot currently be generic", 2);
       // In the future we might support it if the list is not default-inited
+    }
+    if eltType == void {
+      compilerError("list element type cannot be 'void'", 2);
+    }
+    if eltType == nothing {
+      compilerError("list element type cannot be 'nothing'", 2);
     }
   }
 
@@ -128,6 +146,15 @@ module List {
   }
 
   private use IO;
+
+  /* Impacts whether the copy initializer that takes a list will generate a
+     warning when the other list has a different ``parSafe`` setting than the
+     destination.  Compile with ``-swarnForListParsafeMismatch=false`` to turn
+     off this warning.
+
+     Defaults to ``true``
+  */
+  config param warnForListParsafeMismatch = true;
 
   /*
     A list is a lightweight container suitable for building up and iterating
@@ -148,7 +175,7 @@ module List {
     type eltType;
 
     /*If `true`, this list will perform parallel safe operations.*/
-    @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future");
+    @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future")
     param parSafe = false;
 
     @chpldoc.nodoc
@@ -407,8 +434,6 @@ module List {
       Initializes a list containing elements that are copy initialized from
       the elements contained in another list.
 
-      ``this.parSafe`` will default to ``false`` if it is not yet set.
-
       :arg other: The list to initialize from.
     */
     proc init=(other: list) {
@@ -420,11 +445,16 @@ module List {
       this.eltType = if this.type.eltType != ?
                      then this.type.eltType
                      else other.eltType;
-      // set parSafe to false if it was not already provided in lhs type
+      // set parSafe to other.parSafe if it was not already provided in lhs type
       this.parSafe = if this.type.parSafe != ?
                      then this.type.parSafe
-                     else false;
+                     else other.parSafe;
 
+      if (this.parSafe != other.parSafe && warnForListParsafeMismatch) {
+        compilerWarning("initializing between two lists with different " +
+                        "parSafe settings\n" + "Note: this warning can be " +
+                        "silenced with '-swarnForListParsafeMismatch=false'");
+      }
       init this;
       _commonInitFromIterable(other);
     }
@@ -518,8 +548,16 @@ module List {
     @chpldoc.nodoc
     proc ref _commonInitFromIterable(iterable) lifetime this < iterable {
       this._firstTimeInitializeArrays();
-      for x in iterable do
-        pushBack(x);
+      if isSubtype(this.eltType, list) || isArrayType(this.eltType) {
+        for x in iterable {
+          var tmp: this.eltType = x;
+          pushBack(tmp);
+        }
+      } else {
+        for x in iterable {
+          pushBack(x);
+        }
+      }
     }
 
     @chpldoc.nodoc
@@ -1255,7 +1293,7 @@ module List {
     // call this from `pop`, but I added `unlockBeforeHalt` all the same.
     //
     @chpldoc.nodoc
-    proc ref _popAtIndex(idx: int, unlockBeforeHalt=true): eltType {
+    proc ref _popAtIndex(idx: int, param caller: string, unlockBeforeHalt=true): eltType {
 
       //
       // TODO: We would like to put this in an on statement, but we can't yet
@@ -1268,13 +1306,13 @@ module List {
       if boundsChecking && _size <= 0 {
         if unlockBeforeHalt then
           _leave();
-        boundsCheckHalt("Called \"list.getAndRemove\" on an empty list.");
+        boundsCheckHalt("Called \"list."+ caller + "\" on an empty list.");
       }
 
       if boundsChecking && !_withinBounds(idx) {
         if unlockBeforeHalt then
           _leave();
-        const msg = "Index for \"list.getAndRemove\" out of bounds: " + idx:string;
+        const msg = "Index for \"list." + caller + "\" out of bounds: " + idx:string;
         boundsCheckHalt(msg);
       }
 
@@ -1310,7 +1348,7 @@ module List {
     */
     proc ref popBack(): eltType {
       _enter();
-      var result = _popAtIndex(_size-1);
+      var result = _popAtIndex(_size-1, getRoutineName());
       _leave();
       return result;
     }
@@ -1339,7 +1377,7 @@ module List {
     */
     proc ref getAndRemove(idx: int): eltType {
       _enter();
-      var result = _popAtIndex(idx);
+      var result = _popAtIndex(idx, getRoutineName());
       _leave();
       return result;
     }
@@ -1510,6 +1548,7 @@ module List {
       return result;
     }
 
+    //TODO: When this is removed make sure to remove the `use Sort` from this module
     /*
       Sort the items of this list in place using a comparator. If no comparator
       is provided, sort this list using the default sort order of its elements.
@@ -1521,35 +1560,9 @@ module List {
 
       :arg comparator: A comparator used to sort this list.
     */
-    @unstable("'list.sort' is unstable and may be replaced or modified in a future release")
-    proc ref sort(comparator: ?rec=Sort.defaultComparator) {
-      on this {
-        _enter();
-
-        //
-        // TODO: This is not ideal, but the Sort API needs to be adjusted
-        // before we can sort over lists directly.
-        //
-        if _size > 1 {
-
-          // Copy current list contents into an array.
-          var arr: [0..#_size] eltType;
-          for i in 0..#_size do
-            arr[i] = _getRef(i);
-
-          Sort.sort(arr, comparator);
-
-          // This is equivalent to the clear routine.
-          _fireAllDestructors();
-          _freeAllArrays();
-          _firstTimeInitializeArrays();
-          _appendGeneric(arr);
-        }
-
-        _leave();
-      }
-      return;
-    }
+    @deprecated("'list.sort' is deprecated - please use the :proc:`sort(x: list)<Sort.sort>` procedure from the :mod:`Sort` module instead")
+    proc ref sort(comparator: ?rec= new Sort.DefaultComparator()) do
+      Sort.sort(this, comparator);
 
     /*
       Return a copy of the element at a given index in this list.
@@ -1803,65 +1816,8 @@ module List {
     }
 
     /*
-      Write the contents of this list to a channel.
-
-      :arg ch: A channel to write to.
+      Write the contents of this list to a ``fileWriter``.
     */
-    proc writeThis(ch: fileWriter) throws {
-      var isBinary = ch._binary();
-      const isJson = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE) == QIO_AGGREGATE_FORMAT_JSON;
-
-      if isJson {
-        _writeJson(ch);
-        return;
-      }
-
-      _enter();
-
-      if isBinary {
-        // Write the number of elements
-        ch.write(_size);
-      } else {
-        ch.writeLiteral("[");
-      }
-
-      for i in 0..(_size - 2) {
-        ch.write(_getRef(i));
-        if !isBinary {
-          ch.writeLiteral(", ");
-        }
-      }
-
-      if _size > 0 then
-        ch.write(_getRef(_size-1));
-
-      if !isBinary {
-        ch.writeLiteral("]");
-      }
-
-      _leave();
-    }
-
-    @chpldoc.nodoc
-    proc _writeJson(ch: fileWriter) throws {
-      _enter();
-
-      ch.writeLiteral("[");
-
-      for i in 0..(_size - 2) {
-        ch.writef("%jt", _getRef(i));
-        ch.writeLiteral(", ");
-      }
-
-      if _size > 0 then
-        ch.writef("%jt", _getRef(_size-1));
-
-      ch.writeLiteral("]");
-
-      _leave();
-    }
-
-    @chpldoc.nodoc
     proc serialize(writer: fileWriter(?), ref serializer) throws {
       _enter();
 
@@ -1869,104 +1825,6 @@ module List {
       for i in 0..<this._size do
         ser.writeElement(_getRef(i));
       ser.endList();
-
-      _leave();
-    }
-
-    /*
-     Read the contents of this list from a channel.
-
-     :arg ch: A channel to read from.
-     */
-    proc ref readThis(ch: fileReader) throws {
-      //
-      // Special handling for reading in order to handle reading an arbitrary
-      // size.
-      //
-      const isBinary = ch._binary();
-      const isJson = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE) == QIO_AGGREGATE_FORMAT_JSON;
-      if isJson then {
-        _readJson(ch);
-        return;
-      }
-
-      _enter();
-
-      _clearLocked();
-
-      if isBinary {
-        // How many elements should we read (for binary mode)?
-        const num = ch.read(int);
-        for i in 0..#num {
-          pragma "no auto destroy"
-          var elt: eltType = ch.read(eltType);
-          _appendByRef(elt);
-        }
-      } else {
-        var isFirst = true;
-        var hasReadEnd = false;
-
-        ch.readLiteral("[");
-
-        while !hasReadEnd {
-          if isFirst {
-            isFirst = false;
-
-            // Try reading an end bracket. If we don't, then continue on.
-            try {
-              ch.readLiteral("]");
-              hasReadEnd = true;
-              break;
-            } catch err: BadFormatError {
-              // Continue on if we didn't read an end bracket.
-            }
-          } else {
-
-            // Try to read a comma. Break if we don't.
-            try {
-              ch.readLiteral(",");
-            } catch err: BadFormatError {
-              break;
-            }
-          }
-
-          // read an element
-          pragma "no auto destroy"
-          var elt: eltType = ch.read(eltType);
-          _appendByRef(elt);
-        }
-
-        if !hasReadEnd {
-          ch.readLiteral("]");
-        }
-      }
-
-      _leave();
-    }
-
-    @chpldoc.nodoc
-    proc ref _readJson(ch: fileReader) throws {
-      var isFirst = true;
-      var hasReadEnd = false;
-
-      _enter();
-      _clearLocked();
-
-      ch.readLiteral("[");
-
-      while !ch.matchLiteral("]") {
-        if isFirst {
-          isFirst = false;
-        } else {
-          ch.readLiteral(",");
-        }
-
-        // read an element
-        pragma "no auto destroy"
-        var elt: eltType;
-        ch.readf("%jt", elt);
-        _appendByRef(elt);
-      }
 
       _leave();
     }
@@ -2001,7 +1859,9 @@ module List {
       _leave();
     }
 
-    @chpldoc.nodoc
+    /*
+     Read the contents of this list from a ``fileReader``.
+     */
     proc ref deserialize(reader: fileReader, ref deserializer) throws {
       _readHelper(reader, deserializer);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -56,7 +56,7 @@ module GpuDiagnostics
     var host_to_device: uint(64);
     var device_to_host: uint(64);
     var device_to_device: uint(64);
-  };
+  }
 
   /*
     The Chapel record type inherits the runtime definition of it.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -48,6 +48,7 @@
 #include "global-ast-vecs.h"
 
 #include "chpl/framework/compiler-configuration.h"
+#include "chpl/types/QualifiedType.h"
 
 #include <cmath>
 
@@ -187,7 +188,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
 
   if (type == NULL ||
       type == dtUnknown ||
-      type == dtSplitInitType) {
+      type->getValType() == dtSplitInitType) {
     retval = "<type unknown>";
   } else if (type == dtAny) {
     retval = "<any type>";
@@ -292,6 +293,15 @@ const char* toString(Type* type, bool decorateAllClasses) {
 
     if (retval == NULL)
       retval = vt->symbol->name;
+
+    // If the type is generic with defaults, insert a question mark to
+    // differentiate it from the concrete instance.
+    if (auto at = toAggregateType(vt)) {
+      if (at == at->getRootInstantiation() &&
+          at->isGenericWithDefaults()) {
+        retval = astr(retval, "(?)");
+      }
+    }
 
   }
 
@@ -1016,6 +1026,50 @@ bool FunctionType::isGeneric() const {
 *                                                                             *
 ************************************** | *************************************/
 
+TemporaryConversionType::TemporaryConversionType(chpl::types::QualifiedType qt)
+  : Type(E_TemporaryConversionType, nullptr), qt(qt)
+{
+  this->symbol = dtUnknown->symbol;
+  gTemporaryConversionTypes.add(this);
+}
+
+TemporaryConversionType::TemporaryConversionType(const chpl::types::Type* t)
+  : Type(E_TemporaryConversionType, nullptr),
+    qt(chpl::types::QualifiedType(chpl::types::QualifiedType::TYPE, t))
+{
+  this->symbol = dtUnknown->symbol;
+  gTemporaryConversionTypes.add(this);
+}
+
+
+TemporaryConversionType*
+TemporaryConversionType::copyInner(SymbolMap* map) {
+  INT_FATAL(this, "unexpected call to TemporaryConversionType::copyInner");
+  return nullptr;
+}
+
+void TemporaryConversionType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  INT_FATAL(this, "Unexpected case in TemporaryConversionType::replaceChild");
+}
+
+void TemporaryConversionType::verify() {
+  Type::verify();
+  if (astTag != E_TemporaryConversionType) {
+    INT_FATAL(this, "Bad TemporaryConversionType::astTag");
+  }
+}
+
+void TemporaryConversionType::accept(AstVisitor* visitor) {
+  INT_FATAL(this, "Unexpected case in TemporaryConversionType::accept");
+}
+
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname);
 static PrimitiveType* createInternalType (const char* name, const char* cname);
 
@@ -1067,7 +1121,9 @@ static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
 void initPrimitiveTypes() {
   dtVoid                               = createInternalType("void", "void");
   dtVoid->symbol->addFlag(FLAG_NO_RENAME);
+  dtVoid->symbol->addFlag(FLAG_NO_CODEGEN);
   dtNothing                            = createInternalType ("nothing",  "nothing");
+  dtNothing->symbol->addFlag(FLAG_NO_CODEGEN);
 
   dtInt[INT_SIZE_64]                   = createPrimitiveType("int",      "int64_t");
   dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real",     "_real64");
@@ -1082,39 +1138,16 @@ void initPrimitiveTypes() {
   dtStringC                            = createPrimitiveType("chpl_c_string", "c_string_rehook");
   dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
-  dtObject                             = new AggregateType(AGGREGATE_CLASS);
-  dtObject->symbol                     = new TypeSymbol("RootClass", dtObject);
-
-  dtBytes                              = new AggregateType(AGGREGATE_RECORD);
-  dtBytes->symbol                      = new TypeSymbol("bytes", dtBytes);
-
-  dtString                             = new AggregateType(AGGREGATE_RECORD);
-  dtString->symbol                     = new TypeSymbol("string", dtString);
-
-  dtLocale                             = new AggregateType(AGGREGATE_RECORD);
-  dtLocale->symbol                     = new TypeSymbol("locale", dtLocale);
-
-  dtRange                              = new AggregateType(AGGREGATE_RECORD);
-  dtRange->symbol                      = new TypeSymbol("range", dtRange);
-
-  dtOwned                              = new AggregateType(AGGREGATE_RECORD);
-  dtOwned->symbol                      = new TypeSymbol("_owned", dtOwned);
-
-  dtShared                             = new AggregateType(AGGREGATE_RECORD);
-  dtShared->symbol                     = new TypeSymbol("_shared", dtShared);
-
   dtBool                               = createPrimitiveType("bool", "chpl_bool");
 
   gFalse                               = createSymbol(dtBool, "false");
   gTrue                                = createSymbol(dtBool, "true");
 
-  gFalse->addFlag(FLAG_PARAM);
   gFalse->immediate                    = new Immediate;
   gFalse->immediate->v_bool            = false;
   gFalse->immediate->const_kind        = NUM_KIND_BOOL;
   gFalse->immediate->num_index         = BOOL_SIZE_SYS;
 
-  gTrue->addFlag(FLAG_PARAM);
   gTrue->immediate                     = new Immediate;
   gTrue->immediate->v_bool             = true;
   gTrue->immediate->const_kind         = NUM_KIND_BOOL;
@@ -1123,7 +1156,6 @@ void initPrimitiveTypes() {
   dtBool->defaultValue = gFalse;
   dtInt[INT_SIZE_64]->defaultValue     = new_IntSymbol(0, INT_SIZE_64);
   dtReal[FLOAT_SIZE_64]->defaultValue  = new_RealSymbol("0.0", FLOAT_SIZE_64);
-
 
   uniqueConstantsHash.put(gFalse->immediate, gFalse);
   uniqueConstantsHash.put(gTrue->immediate,  gTrue);
@@ -1153,6 +1185,9 @@ void initPrimitiveTypes() {
   dtAnyRecord = createInternalType("record", "_anyRecord");
   dtAnyRecord->symbol->addFlag(FLAG_GENERIC);
 
+  gCpuVsGpuToken = createSymbol(dtBool, "chpl_cpuVsGpuToken");
+  gCpuVsGpuToken->addFlag(FLAG_NO_CODEGEN);
+
   gIteratorBreakToken = createSymbol(dtBool, "_iteratorBreakToken");
   gIteratorBreakToken->addFlag(FLAG_NO_CODEGEN);
 
@@ -1175,20 +1210,16 @@ void initPrimitiveTypes() {
 
   // Set up INFINITY and NAN params
   gInfinity = createSymbol(dtReal[FLOAT_SIZE_DEFAULT], "chpl_INFINITY");
-  gInfinity->addFlag(FLAG_PARAM);
   gInfinity->immediate = new Immediate;
   gInfinity->immediate->v_float64 = INFINITY;
   gInfinity->immediate->const_kind = NUM_KIND_REAL;
   gInfinity->immediate->num_index = FLOAT_SIZE_DEFAULT;
 
   gNan = createSymbol(dtReal[FLOAT_SIZE_DEFAULT], "chpl_NAN");
-  gNan->addFlag(FLAG_PARAM);
   gNan->immediate = new Immediate;
   gNan->immediate->v_float64 = NAN;
   gNan->immediate->const_kind = NUM_KIND_REAL;
   gNan->immediate->num_index = FLOAT_SIZE_DEFAULT;
-
-
 
   // Could be == c_ptr(int(8)) e.g.
   // used in some runtime interfaces
@@ -1218,11 +1249,6 @@ void initPrimitiveTypes() {
 
   CREATE_DEFAULT_SYMBOL (dtSyncVarAuxFields, gSyncVarAuxFields, "_nullSyncVarAuxFields");
   gSyncVarAuxFields->cname = astr("NULL");
-
-  dtSingleVarAuxFields = createPrimitiveType( "_single_aux_t", "chpl_single_aux_t");
-
-  CREATE_DEFAULT_SYMBOL (dtSingleVarAuxFields, gSingleVarAuxFields, "_nullSingleVarAuxFields");
-  gSingleVarAuxFields->cname = astr("NULL");
 
   dtAny = createInternalType ("_any", "_any");
   dtAny->symbol->addFlag(FLAG_GENERIC);
@@ -1255,6 +1281,9 @@ void initPrimitiveTypes() {
 
   dtIteratorClass = createInternalType("_iteratorClass", "_iteratorClass");
   dtIteratorClass->symbol->addFlag(FLAG_GENERIC);
+
+  dtThunkRecord = createInternalType("_thunkRecord", "_thunkRecord");
+  dtThunkRecord->symbol->addFlag(FLAG_GENERIC);
 
   dtBorrowed = createInternalType("borrowed", "borrowed");
   dtBorrowed->symbol->addFlag(FLAG_GENERIC);
@@ -1303,6 +1332,12 @@ void initPrimitiveTypes() {
 
   CREATE_DEFAULT_SYMBOL(dtUninstantiated, gUninstantiated, "?");
   gUninstantiated->addFlag(FLAG_PARAM);
+
+  CREATE_DEFAULT_SYMBOL(dtVoid, gIgnoredPromotionToken, "_ignoredPromotionToken");
+
+  // set up the well-known types, including setting up dummy types
+  // for dtString / _string and a few others
+  initializeWellKnown();
 }
 
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname) {
@@ -1368,19 +1403,9 @@ VarSymbol* createCompilerGlobalParam(const char* name, T value);
 template <>
 VarSymbol* createCompilerGlobalParam<bool>(const char* name, bool value) {
   auto globalVar = new VarSymbol(name, dtBool);
-  globalVar->addFlag(FLAG_PARAM);
   rootModule->block->insertAtTail(new DefExpr(globalVar));
-
-  if (value) {
-     globalVar->immediate = new Immediate;
-    *globalVar->immediate = *gTrue->immediate;
-    paramMap.put(globalVar, gTrue);
-
-  } else {
-     globalVar->immediate = new Immediate;
-    *globalVar->immediate = *gFalse->immediate;
-    paramMap.put(globalVar, gFalse);
-  }
+  globalVar->immediate = new Immediate;
+ *globalVar->immediate = *(value ? gTrue : gFalse)->immediate;
 
   return globalVar;
 }
@@ -1396,6 +1421,12 @@ void initCompilerGlobals() {
   gNodeID = new VarSymbol("chpl_nodeID", dtInt[INT_SIZE_32]);
   gNodeID->addFlag(FLAG_EXTERN);
   rootModule->block->insertAtTail(new DefExpr(gNodeID));
+
+  if (! usingGpuLocaleModel()) {
+    // gCpuVsGpuToken is param true for non-gpu compiles
+    gCpuVsGpuToken->immediate = new Immediate;
+   *gCpuVsGpuToken->immediate = *gTrue->immediate;
+  }
 
   initForTaskIntents();
 }
@@ -1500,6 +1531,13 @@ int get_width(Type *t) {
     return 128;
   INT_FATAL(t, "Unknown bit width");
   return 0;
+}
+
+int get_component_width(Type *t) {
+  if (is_complex_type(t)) {
+    return get_width(t) / 2;
+  }
+  return get_width(t);
 }
 
 // numbers between -2**width .. 2**width
@@ -1618,10 +1656,10 @@ bool isBuiltinGenericType(Type* t) {
          t == dtAnyEnumerated ||
          t == dtNumeric || t == dtIntegral ||
          t == dtIteratorRecord || t == dtIteratorClass ||
+         t == dtThunkRecord ||
          t == dtAnyPOD ||
          t == dtOwned || t == dtShared ||
          t == dtAnyRecord || t == dtTuple ||
-         t->symbol->hasFlag(FLAG_SINGLE) || // _singlevar
          t->symbol->hasFlag(FLAG_SYNC);  // _syncvar
 }
 
@@ -1686,7 +1724,6 @@ bool isUserRecord(Type* t) {
       t->symbol->hasFlag(FLAG_RANGE) ||
       t->symbol->hasFlag(FLAG_TUPLE) ||
       t->symbol->hasFlag(FLAG_SYNC) ||
-      t->symbol->hasFlag(FLAG_SINGLE) ||
       t->symbol->hasFlag(FLAG_ATOMIC_TYPE) ||
       t->symbol->hasFlag(FLAG_MANAGED_POINTER))
     return false;
@@ -1835,43 +1872,8 @@ bool isSyncType(const Type* t) {
   return t->symbol->hasFlag(FLAG_SYNC);
 }
 
-bool isSingleType(const Type* t) {
-  return t->symbol->hasFlag(FLAG_SINGLE);
-}
-
 bool isAtomicType(const Type* t) {
   return t->symbol->hasFlag(FLAG_ATOMIC_TYPE);
-}
-
-// Returns the element type, given an array type.
-static Type* arrayElementType(AggregateType* arrayType) {
-  Type* eltType = nullptr;
-  INT_ASSERT(arrayType->symbol->hasFlag(FLAG_ARRAY));
-  Type* instType = arrayType->getField("_instance")->type;
-  AggregateType* instClass = toAggregateType(canonicalClassType(instType));
-  TypeSymbol* ts = getDataClassType(instClass->symbol);
-  // if no eltType here, go to the super class
-  while (ts == nullptr) {
-    if (Symbol* super = instClass->getSubstitutionWithName(astr("super"))) {
-        instClass = toAggregateType(canonicalClassType(super->type));
-        ts = getDataClassType(instClass->symbol);
-    } else break;
-  }
-  if (ts != NULL) eltType = ts->type;
-
-  return eltType;
-}
-
-// Returns the element type, given an array type.
-// Recurse into it if it is still an array.
-static Type* finalArrayElementType(AggregateType* arrayType) {
-  Type* eltType = nullptr;
-  do {
-    eltType = arrayElementType(arrayType);
-    arrayType = toAggregateType(eltType);
-  } while (arrayType != nullptr && arrayType->symbol->hasFlag(FLAG_ARRAY));
-
-  return eltType;
 }
 
 static bool isOrContains(Type *type, Flag flag, bool checkRefs = true) {
@@ -1889,7 +1891,7 @@ static bool isOrContains(Type *type, Flag flag, bool checkRefs = true) {
     if (AggregateType* at = toAggregateType(vt)) {
       // get backing array instance and recurse
       if (at->symbol->hasFlag(FLAG_ARRAY)) {
-        Type* eltType = finalArrayElementType(at);
+        Type* eltType = at->finalArrayElementType();
         if (isOrContains(eltType, flag, checkRefs)) return true;
       } else if (at->symbol->hasFlag(FLAG_TUPLE)) {
         // if its a tuple, search the tuple type substitutions
@@ -1904,9 +1906,6 @@ static bool isOrContains(Type *type, Flag flag, bool checkRefs = true) {
 }
 bool isOrContainsSyncType(Type* t, bool checkRefs) {
   return isOrContains(t, FLAG_SYNC, checkRefs);
-}
-bool isOrContainsSingleType(Type* t, bool checkRefs) {
-  return isOrContains(t, FLAG_SINGLE, checkRefs);
 }
 bool isOrContainsAtomicType(Type* t, bool checkRefs) {
   return isOrContains(t, FLAG_ATOMIC_TYPE, checkRefs);
@@ -2060,7 +2059,6 @@ bool needsCapture(Type* t) {
     // Ensure we have covered all types.
     INT_ASSERT(isRecordWrappedType(t) ||
                isSyncType(t)          ||
-               isSingleType(t)        ||
                isAtomicType(t));
     return false;
   }
@@ -2335,6 +2333,33 @@ const Immediate& getDefaultImmediate(Type* t) {
     INT_FATAL(t->symbol, "does not have a default of the same type");
 
   return *defaultVar->immediate;
+}
+
+llvm::SmallVector<std::string, 2> explainGeneric(Type* t) {
+  if (auto clsType = toDecoratedClassType(t)) {
+    if (isDecoratorUnknownManagement(clsType->getDecorator())) {
+      return {"'" + std::string(t->name()) + "' is a class with unknown management"};
+    }
+  }
+  if (t->symbol->hasFlag(FLAG_ARRAY)) {
+    return {"it is an array with runtime type information"};
+  }
+  if (auto at = toAggregateType(t)) {
+    if (at->isGeneric()) {
+    llvm::SmallVector<std::string, 2> reasons;
+      for (auto i = 1; i <= at->numFields(); i++) {
+        auto fieldType = at->getField(i)->type;
+        if (fieldType->symbol && fieldType->symbol->hasFlag(FLAG_GENERIC)) {
+          auto moreReasons = explainGeneric(fieldType);
+          reasons.append(moreReasons.begin(), moreReasons.end());
+        }
+      }
+      if (!reasons.empty()) {
+        return reasons;
+      }
+    }
+  }
+  return {};
 }
 
 // Returns 'true' for types that are the type of numeric literals.

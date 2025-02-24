@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -390,7 +390,7 @@ module Curl {
   private extern const CURLOPT_READDATA: CURLoption;
 
   // Other Curl constants
-  private extern const CURLINFO_CONTENT_LENGTH_DOWNLOAD: c_int;
+  private extern const CURLINFO_CONTENT_LENGTH_DOWNLOAD_T: CURLINFO;
 
   private extern const CURL_READFUNC_PAUSE:c_size_t;
   private extern const CURL_READFUNC_ABORT:c_size_t;
@@ -533,7 +533,7 @@ module Curl {
                           end:int(64),
                           qioChannelPtr:qio_channel_ptr_t):errorCode {
         var curlch = new unmanaged CurlChannel();
-        curlch.curlf = _to_unmanaged(this);
+        curlch.curlf = this:unmanaged;
         curlch.qio_ch = qioChannelPtr;
         pluginChannel = curlch;
         return start_channel(curlch, start, end);
@@ -611,7 +611,7 @@ module Curl {
       var offset:c_size_t;       // offset that we want to skip to
                                // (in the case where we cannot request byteranges)
       var curr:c_int;          // the index of the current buffer
-    };
+    }
 
     // userdata, is a curl_iovec_t. This is set to be passed into this function,
     // when we
@@ -779,11 +779,8 @@ module Curl {
 
         deallocate(buf.mem);
 
-        var lengthDouble: real(64);
         // Get the content length (for HTTP only)
-        curl_easy_getinfo_ptr(curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD, c_ptrTo(lengthDouble));
-        length = lengthDouble: int(64);
-        // One day, use CURLINFO_CONTENT_LENGTH_DOWNLOAD_T
+        curl_easy_getinfo_ptr(curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, c_ptrTo(length));
 
         curl_easy_cleanup(curl);
       }
@@ -1137,8 +1134,7 @@ module Curl {
     }
 
     proc openCurlFile(url:string,
-                     mode:ioMode = ioMode.r,
-                     style:iostyleInternal = defaultIOStyleInternal()) throws {
+                     mode:ioMode = ioMode.r) throws {
 
       var err_out: errorCode = 0;
       var rc = 0;
@@ -1174,7 +1170,7 @@ module Curl {
       var ret: file;
 
       try {
-        ret = openplugin(fl, mode, fl.seekable, style);
+        ret = openplugin(fl, mode, fl.seekable, defaultIOStyleInternal());
       } catch e {
         fl.close();
         delete fl;

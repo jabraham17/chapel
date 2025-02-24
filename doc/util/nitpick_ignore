@@ -25,7 +25,10 @@ chpl:chplref valueType
 cpp:identifier chpl
 cpp:identifier querydetail
 cpp:identifier querydetail::QueryMapResultBase
+cpp:identifier querydetail::QueryMap<ResultType, ArgTs...>
+cpp:identifier querydetail::QueryMap<ResultType, ArgTs...>::MapType
 cpp:identifier UniqueString
+cpp:identifier Resolver
 cpp:identifier ID
 cpp:identifier Location
 cpp:identifier AstTag
@@ -34,6 +37,7 @@ cpp:identifier AstList::const_iterator
 cpp:identifier size_t
 cpp:identifier detail
 cpp:identifier detail::PODUniqueString
+cpp:identifier TraceElement
 cpp:identifier AstList::const_iterator::difference_type
 cpp:identifier uint64_t
 cpp:identifier uint32_t
@@ -44,12 +48,16 @@ cpp:identifier int32_t
 cpp:identifier int16_t
 cpp:identifier int8_t
 cpp:identifier va_list
+cpp:identifier ErrorNote
+cpp:identifier ErrorCodeSnippet
+cpp:identifier RetByVal
 # TODO: Expand macros before generating docs to remove these.
 cpp:identifier ErrorParseErr
 cpp:identifier ParamTag
 cpp:identifier PragmaTag
 cpp:identifier TypeTag
 cpp:identifier PrimitiveTag
+cpp:identifier EnumParam
 cpp:identifier chpl::uast::PrimitiveTag
 cpp:identifier types::RealParam
 cpp:identifier types::IntParam
@@ -59,9 +67,24 @@ cpp:identifier types::UintParam
 cpp:identifier WHERE_TBD
 cpp:identifier ZERO
 cpp:identifier SYMBOL_ONLY
+cpp:identifier DK_NO_DEFAULT
 cpp:identifier uast::asttags::NUM_AST_TAGS
 cpp:identifier uast::Function::DEFAULT_RETURN_INTENT
+cpp:identifier VisibilitySymbols::REGULAR_SCOPE
+cpp:identifier VIS_USE
 # Common symbols used as template typenames.
 cpp:identifier T
 cpp:identifier Deserializer
 cpp:identifier Serializer
+# For some reason, 'LOOKUP_' symbols in headers are not found.
+cpp:identifier LOOKUP_DECLS
+cpp:identifier LOOKUP_IMPORT_AND_USE
+cpp:identifier LOOKUP_PARENTS
+cpp:identifier LOOKUP_EXTERN_BLOCKS
+
+
+# python types
+py:data typing.Optional
+py:data typing.Tuple
+py:class lsprotocol.types.Diagnostic
+py:class lsprotocol.types.Range

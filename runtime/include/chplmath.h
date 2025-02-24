@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,6 +33,56 @@ MAYBE_GPU static inline int chpl_macro_double_isnan(double x) { return isnan(x);
 MAYBE_GPU static inline int chpl_macro_float_isnan(float x) { return isnan(x); }
 MAYBE_GPU static inline int chpl_macro_double_signbit(double x) { return signbit(x); }
 MAYBE_GPU static inline int chpl_macro_float_signbit(float x) { return signbit(x); }
+
+
+#define chpl_COMPLEX_RETURN_REAL(V) V(creal) V(cimag) V(cabs) V(carg)
+#define chpl_COMPLEX_RETURN_COMPLEX(V)                    \
+  V(conj) V(cproj) V(csqrt) V(cexp) V(clog)               \
+  V(ccos) V(ccosh) V(csin) V(csinh) V(ctan) V(ctanh)      \
+  V(cacos) V(cacosh) V(casin) V(casinh) V(catan) V(catanh)
+
+
+#ifdef __cplusplus
+// workaround for C++ lacking C99 complex support
+#define chpl_complex_wrapper(basename)                                     \
+  MAYBE_GPU static ___always_inline double                                           \
+    chpl_##basename(_complex128 x) { return __builtin_##basename(x); }     \
+  MAYBE_GPU static ___always_inline float                                            \
+    chpl_##basename##f(_complex64 x) { return __builtin_##basename##f(x); }
+chpl_COMPLEX_RETURN_REAL(chpl_complex_wrapper)
+#undef chpl_complex_wrapper
+
+#define chpl_complex_wrapper(basename)                                     \
+  MAYBE_GPU static ___always_inline _complex128                                      \
+    chpl_##basename(_complex128 x) { return __builtin_##basename(x); }     \
+  MAYBE_GPU static ___always_inline _complex64                                       \
+    chpl_##basename##f(_complex64 x) { return __builtin_##basename##f(x); }
+chpl_COMPLEX_RETURN_COMPLEX(chpl_complex_wrapper)
+#undef chpl_complex_wrapper
+#else
+#define chpl_complex_wrapper(basename)                         \
+  MAYBE_GPU static ___always_inline double                               \
+    chpl_##basename(_complex128 x) { return basename(x); }     \
+  MAYBE_GPU static ___always_inline float                                \
+    chpl_##basename##f(_complex64 x) { return basename##f(x); }
+chpl_COMPLEX_RETURN_REAL(chpl_complex_wrapper)
+#undef chpl_complex_wrapper
+
+#define chpl_complex_wrapper(basename)                         \
+  MAYBE_GPU static ___always_inline _complex128                          \
+    chpl_##basename(_complex128 x) { return basename(x); }     \
+  MAYBE_GPU static ___always_inline _complex64                           \
+    chpl_##basename##f(_complex64 x) { return basename##f(x); }
+chpl_COMPLEX_RETURN_COMPLEX(chpl_complex_wrapper)
+#undef chpl_complex_wrapper
+#endif
+#undef chpl_COMPLEX_RETURN_COMPLEX
+
+
+MAYBE_GPU static inline double chpl_sqrt64(double x) { return sqrt(x);  }
+MAYBE_GPU static inline float  chpl_sqrt32(float x)  { return sqrtf(x); }
+MAYBE_GPU static inline double chpl_fabs64(double x) { return fabs(x);  }
+MAYBE_GPU static inline float  chpl_fabs32(float x)  { return fabsf(x); }
 
 // 32-bit Bessel functions aren't available on all platforms. For cases where
 // we know they're available use them since they should be faster, but in other

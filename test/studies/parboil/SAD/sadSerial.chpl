@@ -64,7 +64,7 @@ proc main(args:[] string) {
 
 proc loadImage(filename: string) {
   var f = open(filename, ioMode.r);
-  var r = f.reader(deserializer=new binaryDeserializer());
+  var r = f.reader(deserializer=new binaryDeserializer(), locking=false);
   var width, height: uint(16);
 
   r.read(width);
@@ -154,7 +154,7 @@ proc write_subblocks(w, subblockArray: [] uint(16),
 
 proc writeSads(filename: string, width: int, height: int, sads: [] uint(16)) {
   var f = open(filename, ioMode.cw);
-  var w = f.writer(serializer=new binarySerializer());
+  var w = f.writer(serializer=new binarySerializer(), locking=false);
   const mbs = width*height;
   const rowInds = [0, 1, height/2 - 1, height/2, height - 2, height - 1];
   write32u(w, (width*6):uint(32));
@@ -199,7 +199,7 @@ proc sad4OneMacroblock(ref macroblockSad: [] uint(16), frame: [] uint(16), refer
               var refy = min(height - 1, max(0, framey + posy + blky*4 + y));
               var b = reference[rlow + refy*width + refx];
               var a = frame[flow + (blky*4 + y) * width + (blkx*4 + x)];
-              sad += abs(a:int - b:int):uint(16); // danger, need these casts
+              sad += if a > b then a - b else b - a;
             }
           }
           macroblockSad[mlow + MAX_POS_PADDED*(4*blky + blkx) + pos] = sad;

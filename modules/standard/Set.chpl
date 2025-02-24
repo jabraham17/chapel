@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -111,6 +111,16 @@ module Set {
     return canResolveMethod(x, "chpl__serialize");
   }
 
+  /* Impacts whether the copy initializer that takes a set will generate a
+     warning when the other set has a different ``parSafe`` setting than the
+     destination.  Compile with ``-swarnForSetParsafeMismatch=false`` to turn
+     off this warning.
+
+     Defaults to ``true``
+  */
+  config param warnForSetParsafeMismatch = true;
+
+
   /*
     A set is a collection of unique elements. Attempting to add a duplicate
     element to a set has no effect.
@@ -139,6 +149,22 @@ module Set {
 
     /* The type of the elements contained in this set. */
     type eltType;
+
+    // NOTE: the compiler has some special handling for unstable warnings
+    // associated with set's parSafe field:
+    // * AggregateType::generateType -> ensures that specifying 'parSafe' in a type
+    //    expression for 'set' will generate a warning
+    // * functionResolution.createGenericRecordVarDefaultInitCall -> ensures that
+    //    the stable initializer is called when the compiler generates initializer
+    //     calls for variable declarations that don't specify 'parSafe' (or set it to false)
+    //
+    // This results in the following behavior:
+    //  - 'var m: set(int)' doesn't generate an unstable warning
+    //  - 'type t = set(int, false)' generates an unstable warning
+    //  - 'var m: set(int, parSafe=true)' generates two unstable warnings (one
+    //    for the type expression and one for the initializer call)
+    //  - 'var m: set(int, parSafe=false)' generates one unstable warning for
+    //    the type expression
 
     /* If `true`, this set will perform parallel safe operations. */
     @unstable("'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future")
@@ -216,8 +242,8 @@ module Set {
       set, it will not be added again. The formal `iterable` must be a type
       with an iterator named "these" defined for it.
 
+      :arg eltType: The type of the elements of this set.
       :arg iterable: A collection of elements to add to this set.
-      :arg parSafe: If `true`, this set will use parallel safe operations.
       :arg resizeThreshold: Fractional value that specifies how full this map
                             can be before requesting additional memory.
       :arg initialCapacity: Integer value that specifies starting map size. The
@@ -284,6 +310,13 @@ module Set {
       this.resizeThreshold = other.resizeThreshold;
       this._htb = new chpl__hashtable(eltType, nothing,
                                       resizeThreshold);
+
+      if (this.parSafe != other.parSafe && warnForSetParsafeMismatch) {
+        compilerWarning("initializing between two sets with different " +
+                        "parSafe settings\n" + "Note: this warning can be " +
+                        "silenced with '-swarnForSetParsafeMismatch=false'");
+      }
+
       init this;
 
       // TODO: Relax this to allow if 'isCoercible(t, this.eltType)'?
@@ -516,8 +549,9 @@ module Set {
       :yields: A constant reference to an element in this set.
     */
     iter const these() const ref {
-      foreach idx in 0..#_htb.tableSize do
+      foreach idx in 0..#_htb.tableSize {
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
+      }
     }
 
     @chpldoc.nodoc
@@ -529,8 +563,7 @@ module Set {
 
     @chpldoc.nodoc
     iter const these(param tag) where tag == iterKind.leader {
-      var space = 0..#_htb.tableSize;
-      for followThis in space.these(tag) {
+      for followThis in _htb._evenSlots(tag) {
         yield followThis;
       }
     }
@@ -538,12 +571,13 @@ module Set {
     @chpldoc.nodoc
     iter const these(param tag, followThis) const ref
     where tag == iterKind.follower {
-      foreach idx in followThis(0) do
-        if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
+      foreach val in _htb._evenSlots(followThis, tag) {
+        yield val.key;
+      }
     }
 
     @chpldoc.nodoc
-    proc const writeThis(ch: fileWriter) throws {
+    proc const _defaultWriteHelper(ch: fileWriter) throws {
       on this {
         _enter(); defer _leave();
 
@@ -570,8 +604,8 @@ module Set {
       :arg serializer: The serializer to use when writing.
     */
     proc const serialize(writer:fileWriter(?), ref serializer) throws {
-      if serializer.type == IO.defaultSerializer {
-        writeThis(writer);
+      if isDefaultSerializerType(serializer.type) {
+        _defaultWriteHelper(writer);
       } else {
         on this {
           _enter(); defer _leave();

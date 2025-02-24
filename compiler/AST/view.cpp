@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -416,7 +416,7 @@ static const char* aidNotFoundError(const char* callerMsg, int id) {
 }
 static const char* aidIgnoreError(const char* callerMsg, int id) {
   return aidErrorMessage(callerMsg, id,
-                         " is small, use aid09(id) to examine it");
+                         "is small, use aid09(id) to examine it");
 }
 
 // This version of aid*() does not exclude any id.

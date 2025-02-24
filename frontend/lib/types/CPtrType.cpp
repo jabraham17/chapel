@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,7 @@
 #include "chpl/types/CPtrType.h"
 
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/intents.h"
 #include "chpl/types/Param.h"
 #include "chpl/types/VoidType.h"
@@ -30,30 +31,41 @@ namespace types {
 
 const owned<CPtrType>& CPtrType::getCPtrType(Context* context,
                                              const CPtrType* instantiatedFrom,
-                                             const Type* eltType) {
-  QUERY_BEGIN(getCPtrType, context, instantiatedFrom, eltType);
-  auto result = toOwned(new CPtrType(instantiatedFrom, eltType));
+                                             const Type* eltType,
+                                             bool isConst) {
+  QUERY_BEGIN(getCPtrType, context, instantiatedFrom, eltType, isConst);
+  auto result = toOwned(new CPtrType(instantiatedFrom, eltType, isConst));
   return QUERY_END(result);
-}
-
-bool CPtrType::isEltTypeInstantiationOf(Context* context, const CPtrType* other) const {
-  auto r = resolution::canPass(context,
-                               QualifiedType(QualifiedType::TYPE, eltType_),
-                               QualifiedType(QualifiedType::TYPE, other->eltType_));
-  // instantiation and same-type passing are allowed here
-  return r.passes() && !r.promotes() && !r.converts();
 }
 
 const CPtrType* CPtrType::get(Context* context) {
   return CPtrType::getCPtrType(context,
                                /* instantiatedFrom */ nullptr,
-                               /* eltType */ nullptr).get();
+                               /* eltType */ nullptr,
+                               /* isConst */ false).get();
 }
 
 const CPtrType* CPtrType::get(Context* context, const Type* eltType) {
   return CPtrType::getCPtrType(context,
                                /* instantiatedFrom */ CPtrType::get(context),
-                               eltType).get();
+                               eltType,
+                               /* isConst */ false).get();
+}
+
+// TODO: need to treat the elttype kind as const
+const CPtrType* CPtrType::getConst(Context* context) {
+  return CPtrType::getCPtrType(context,
+                               /* instantiatedFrom */ nullptr,
+                               /* eltType */ nullptr,
+                               /* isConst */ true).get();
+}
+
+// TODO: need to treat the elt type kind as const
+const CPtrType* CPtrType::getConst(Context* context, const Type* eltType) {
+  return CPtrType::getCPtrType(context,
+                               /* instantiatedFrom */ CPtrType::getConst(context),
+                               eltType,
+                               /*isConst*/ true).get();
 }
 
 const CPtrType* CPtrType::getCVoidPtrType(Context* context) {
@@ -62,14 +74,34 @@ const CPtrType* CPtrType::getCVoidPtrType(Context* context) {
 
 const ID& CPtrType::getId(Context* context) {
   QUERY_BEGIN(getId, context);
-  UniqueString path = UniqueString::get(context, "CTypes.c_ptr");
-  ID result { path, -1, 0 };
+  ID result =
+      parsing::getSymbolIdFromTopLevelModule(context, "CTypes", "c_ptr");
+  return QUERY_END(result);
+}
+
+const CPtrType* CPtrType::withoutConst(Context* context) const {
+  const CPtrType* instFrom = nullptr;
+  if (instantiatedFrom_) {
+    instFrom = instantiatedFrom_->toCPtrType()->withoutConst(context);
+  }
+
+  return CPtrType::getCPtrType(context, instFrom, eltType_, /* isConst */ false).get();
+}
+
+const ID& CPtrType::getConstId(Context* context) {
+  QUERY_BEGIN(getConstId, context);
+  ID result =
+      parsing::getSymbolIdFromTopLevelModule(context, "CTypes", "c_ptrConst");
   return QUERY_END(result);
 }
 
 void CPtrType::stringify(std::ostream& ss,
                          chpl::StringifyKind stringKind) const {
-  USTR("c_ptr").stringify(ss, stringKind);
+  if (isConst_) {
+    ss << "c_ptrConst";
+  } else {
+    ss << "c_ptr";
+  }
 
   if (eltType_) {
     ss << "(";

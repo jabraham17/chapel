@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,6 +26,7 @@
 
 #include "baseAST.h"
 #include "chpl/framework/Context.h"
+#include "chpl/util/string-utils.h"
 #include "driver.h"
 #include "map.h"
 #include "misc.h"
@@ -54,6 +55,11 @@ const char* astr(const char* s1)
 const char* astr(const std::string& s)
 {
   return astr(s.c_str());
+}
+const char* astr(std::string_view s)
+{
+  // Make a std::string copy of the string_view to guarantee null termination.
+  return astr(std::string(s));
 }
 const char* astr(UniqueString s)
 {
@@ -96,8 +102,8 @@ const char* asubstr(const char* s, const char* e) {
     }                                                             \
     type##_t val;                                                 \
     int numitems = sscanf(str, format, &val);                     \
-    char checkStr[len+1];                                         \
-    snprintf(checkStr, len+1, format, val);                       \
+    auto checkStr = std::make_unique<char[]>(len+1);              \
+    snprintf(checkStr.get(), len+1, format, val);                 \
     if (numitems != 1) {                                          \
       INT_FATAL("Illegal string passed to strTo_" #type "()");    \
     }                                                             \
@@ -106,7 +112,7 @@ const char* asubstr(const char* s, const char* e) {
     while (str[startPos] == '0' && startPos < len-1) {            \
       startPos++;                                                 \
     }                                                             \
-    if (strcmp(str+startPos, checkStr) != 0) {                    \
+    if (strcmp(str+startPos, checkStr.get()) != 0) {              \
       if (userSupplied) {                                         \
         astlocT astloc(line, filename);                           \
         USR_FATAL(astloc, "Integer literal overflow: '%s' is too" \
@@ -403,5 +409,5 @@ void removeTrailingNewlines(std::string& str) {
 }
 
 bool startsWith(const char* str, const char* prefix) {
-  return (0 == strncmp(str, prefix, strlen(prefix)));
+  return chpl::startsWith(str, prefix);
 }

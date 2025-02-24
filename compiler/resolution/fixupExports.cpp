@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -224,6 +224,14 @@ static void attemptFixups(FnSymbol* fn) {
 
   // If a wrapper hasn't been made yet, there's nothing to do.
   if (wrapper == NULL) { return; }
+
+  // Ensure we didn't break our exported formal default value tracking
+  for (int i = 1; i <= fn->numFormals(); i++) {
+    std::string storedDefault = exportedDefaultValues[fn->getFormal(i)];
+    if (storedDefault != "") {
+      exportedDefaultValues[wrapper->getFormal(i)] = storedDefault;
+    }
+  }
 
   insertUnwrappedCall(wrapper, fn, tmps);
 

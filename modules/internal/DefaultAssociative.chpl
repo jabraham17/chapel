@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -40,7 +40,7 @@ module DefaultAssociative {
   }
 
   private proc _isDefaultDeser(f) param : bool {
-    if f._writing then return f.serializerType == IO.defaultSerializer;
+    if f._writing then return isDefaultSerializerType(f.serializerType);
     else return f.deserializerType == IO.defaultDeserializer;
   }
 
@@ -98,7 +98,11 @@ module DefaultAssociative {
 
       // set the rehash helpers
       this.table.rehashHelpers =
-        new DefaultAssociativeDomRehashHelper(_to_unmanaged(this));
+        new DefaultAssociativeDomRehashHelper(this:unmanaged);
+
+      if isOwnedClassType(idxType) {
+        compilerError("Associative domains do not currently work with 'owned' classes as the index type");
+      }
     }
     proc deinit() {
       // chpl__hashtable.deinit does all we need here
@@ -111,7 +115,7 @@ module DefaultAssociative {
       return new unmanaged DefaultAssociativeArr(eltType=eltType,
                                                  idxType=idxType,
                                                  parSafeDom=parSafe,
-                                                 dom=_to_unmanaged(this),
+                                                 dom=this:unmanaged,
                                                  initElts=initElts);
     }
 
@@ -317,26 +321,15 @@ module DefaultAssociative {
     }
 
     // returns the number of indices added
+    // todo: when is it better to have a ref or const ref intent for 'idx'?
+    // Ideally, we would like to restrict `idx: idxType`. If we do, however,
+    // then the compiler will choose BaseAssociativeDom.dsiAdd(), undesirably,
+    // when the actual is not of idxType, however is coercible to it. Ex:
+    //   test/domains/sungeun/assoc/parSafeMember.chpl
     override proc dsiAdd(in idx) {
-      // add helpers will return a tuple like (slotNum, numIndicesAdded);
+      // domain.add(idx) ensures the following:
+      compilerAssert(isCoercible(idx.type, idxType));
 
-      // these two seemingly redundant lines were necessary to work around a
-      // compiler bug. I was unable to create a smaller case that has the same
-      // issue.
-      // More: `return _addWrapper(idx)[2]` Call to _addWrapper seems to
-      // have no effect when `idx` is a range and the line is promoted. My
-      // understanding of promotion makes me believe that things might go haywire
-      // since return type of the method becomes an array(?). However, it seemed
-      // that _addWrapper is never called when the return statement is promoted.
-      // I checked the C code and couldn't see any call to _addWrapper.
-      // I tried to replicate the issue with generic classes but it always
-      // worked smoothly.
-      const numInds = _addWrapper(idx)[1];
-      return numInds;
-    }
-
-    proc _addWrapper(in idx: idxType) {
-      var slotNum = -1;
       var retVal = 0;
 
       on this {
@@ -345,10 +338,11 @@ module DefaultAssociative {
           unlockTable();
         }
 
-        (slotNum, retVal) = _add(idx);
+        const (slotNum, addCount) = _add(idx);
+        retVal = addCount;
       }
 
-      return (slotNum, retVal);
+      return retVal;
     }
 
     proc _add(in idx: idxType) {
@@ -448,7 +442,7 @@ module DefaultAssociative {
 
     proc dsiLocalSubdomain(loc: locale) {
       if this.locale == loc {
-        return _getDomain(_to_unmanaged(this));
+        return _getDomain(this:unmanaged);
       } else {
         var a: domain(idxType, parSafe=parSafe);
         return a;

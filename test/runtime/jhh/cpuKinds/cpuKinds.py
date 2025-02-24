@@ -55,7 +55,7 @@ def skipif():
 class SrunTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        pass;
+        pass
 
     def setUp(self):
         if skipReason is not None:
@@ -63,7 +63,7 @@ class SrunTests(unittest.TestCase):
         self.env = os.environ.copy()
         self.env['HWLOC_XMLFILE'] = 'alderLake.xml'
     def runCmd(self, cmd):
-        output = runCmd(cmd, env=self.env, check=False);
+        output = runCmd(cmd, env=self.env, check=False)
         return output
 
     def test_00_base(self):
@@ -158,7 +158,10 @@ def main(argv):
 
     compiler = argv[1]
     del argv[1]
-    localDir = sub_test.get_local_dir(sub_test.get_chpl_base(compiler))
+    baseDir = sub_test.get_chpl_base(compiler)
+    homeDir = sub_test.get_chpl_home(baseDir)
+    testDir = sub_test.get_test_dir(homeDir)
+    localDir = sub_test.get_local_dir(testDir)
     name = os.path.join(localDir, argv[0])
     base = os.path.splitext(os.path.basename(argv[0]))[0]
 

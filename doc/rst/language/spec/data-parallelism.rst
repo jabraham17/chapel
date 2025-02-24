@@ -1,5 +1,8 @@
 .. default-domain:: chpl
 
+.. index::
+   single: data parallelism
+   single: parallelism; data
 .. _Chapter-Data_Parallelism:
 
 ================
@@ -34,6 +37,11 @@ intents or forall intents, among others. Such accesses are subject to
 the Memory Consistency Model
 (:ref:`Chapter-Memory_Consistency_Model`).
 
+.. index::
+   single: forall
+   pair: forall; statements
+   single: loops; forall
+   single: data parallelism; forall
 .. _Forall:
 
 The Forall Statement
@@ -42,6 +50,8 @@ The Forall Statement
 The forall statement is a concurrent variant of the for statement
 described in :ref:`The_For_Loop`.
 
+.. index::
+   single: forall; syntax
 .. _forall_syntax:
 
 Syntax
@@ -72,6 +82,11 @@ The handling of the outer variables within the forall statement and the
 role of ``task-intent-clause`` are defined in
 :ref:`Forall_Intents`.
 
+.. index::
+   single: forall; semantics
+   single: forall; leader iterator
+   single: forall; follower iterator
+   single: data parallelism; leader iterator
 .. _forall_semantics:
 
 Execution and Serializability
@@ -153,6 +168,8 @@ the current iteration of the forall loop.
 
       1 2 3 4 5
 
+.. index::
+   single: forall; zippered iteration
 .. _forall_zipper:
 
 Zippered Iteration
@@ -162,6 +179,9 @@ Zippered iteration has the same semantics as described
 in :ref:`Zippered_Iteration`
 and :ref:`Parallel_Iterators` for parallel iteration.
 
+.. index::
+   single: data parallelism; forall expressions
+   pair: forall; expressions
 .. _Forall_Expressions:
 
 The Forall Expression
@@ -170,6 +190,8 @@ The Forall Expression
 The forall expression is a concurrent variant of the for expression
 described in :ref:`For_Expressions`.
 
+.. index::
+   single: forall; syntax
 .. _forall_expr_syntax:
 
 Syntax
@@ -199,6 +221,8 @@ The handling of the outer variables within the forall expression and the
 role of ``task-intent-clause`` are defined in
 :ref:`Forall_Intents`.
 
+.. index::
+   single: forall; semantics
 .. _Forall_Expression_Execution:
 
 Execution
@@ -240,6 +264,9 @@ the zippered case :ref:`Zippered_Promotion`.
 The forall expression follows the semantics of the forall statement as
 described in :ref:`forall_semantics`.
 
+.. index::
+   single: forall; zippered iteration
+
 Zippered Iteration
 ~~~~~~~~~~~~~~~~~~
 
@@ -247,6 +274,9 @@ Forall expression also support zippered iteration semantics as described
 in :ref:`Zippered_Iteration`
 and :ref:`Parallel_Iterators` for parallel iteration.
 
+.. index::
+   single: forall; forall expressions and conditional expressions
+   single: forall; filtering
 .. _Filtering_Predicates_Forall:
 
 Filtering Predicates in Forall Expressions
@@ -292,6 +322,14 @@ variable, the resulting array has a 0-based one-dimensional domain.
       1 3 5 7 9
       {0..4}
 
+.. index::
+   single: keywords; with (forall intent)
+   single: with; forall intent
+   single: forall intents
+   single: shadow variables
+   single: data parallelism; forall intents
+   single: data parallelism; shadow variables
+
 .. _Forall_Intents:
 
 Forall Intents
@@ -318,10 +356,17 @@ it is subject to forall intents and all references to this field within
 the forall construct implicitly refer to the corresponding shadow
 variable.
 
-Each formal argument of a task function or iterator has the default
-intent by default.  See also :ref:`The_Default_Intent`. Note that the
-default intent allows the compiler to assume that the value will not be
+The implicit formals of task functions and iterators generally have
+:ref:`the default argument intent <The_Default_Intent>` by default. Note that
+the default intent allows the compiler to assume that the value will not be
 concurrently modified, except for values of ``sync`` or ``atomic`` type.
+
+Implicit formals of array types are an exception: they inherit their default
+intent from the array actual. An immutable array has a default intent of
+``const`` and a mutable array has a default intent of ``ref``. This allows
+arrays to be modified inside the body of a forall if it is modifiable outside
+the body of the forall. A mutable array can have an explicit ``const`` forall
+intent to make it immutable inside the body of a forall.
 
 For variables of primitive, enum, and class types,
 this has the effect of capturing the value of the variable at task
@@ -354,6 +399,13 @@ shadow variable for that task.
    that task intents :ref:`Task_Intents` affect the behavior of
    a task construct such as a ``coforall`` loop.
 
+.. index::
+   single: task-private variables
+   single: shadow variables
+   single: data parallelism; task-private variables
+   single: data parallelism; shadow variables
+   single: forall; task-private variables
+   single: forall; shadow variables
 .. _Task_Private_Variables:
 
 Task-Private Variables
@@ -456,6 +508,9 @@ destroyed.
       shadow var: 3  yield: inside coforall
       shadow var: 3  yield: inside coforall
 
+.. index::
+   single: promotion
+   single: data parallelism; promotion
 .. _Promotion:
 
 Promotion
@@ -583,6 +638,8 @@ iterator         0-based one-dimensional domain
       1.0 2.0 3.0 4.0 5.0
       (x = 1.0, y = 1.0) (x = 2.0, y = 1.0) (x = 3.0, y = 1.0) (x = 4.0, y = 1.0) (x = 5.0, y = 1.0)
 
+.. index::
+   single: promotion; default arguments
 .. _Promotion_Default_Arguments:
 
 Default Arguments
@@ -638,6 +695,8 @@ expression can be evaluated many times. For example:
 
       0 1 2 3 4
 
+.. index::
+   single: promotion; zippered iteration
 .. _Zippered_Promotion:
 
 Zippered Promotion
@@ -649,7 +708,7 @@ and :ref:`Parallel_Iterators` for parallel iteration.
 
 Consider a function ``f`` with formal arguments ``s1``, ``s2``, ... that
 are promoted and formal arguments ``a1``, ``a2``, ... that are not
-promoted. The call 
+promoted. The call
 
 .. code-block:: chapel
 
@@ -709,6 +768,12 @@ causes promotion. The rules are the same as in the non-zippered case.
 
       (1, 4) (2, 5) (3, 6)
 
+.. index::
+   single: whole array assignment
+   single: whole array operations
+   single: arrays; assignment
+   single: assignment; whole array
+   single: data parallelism; evaluation order
 .. _Whole_Array_Operations:
 
 Whole Array Operations and Evaluation Order
@@ -756,6 +821,8 @@ side array expressions alias the left-hand side expression.
    are assigned to ``A`` may be read to compute the sum depending on the
    number of tasks used to implement the data parallel statement.
 
+.. index::
+   single: promotion; array indexing
 .. _Promoted_Array_Indexing:
 
 Promoted Array Indexing
@@ -775,26 +842,27 @@ which results in the promoted expression:
 
    [b in B] A[b]
 
-However, it is an error to modify promoted expressions like this one.
-For example, the following is an error:
+Modifying promoted expressions may introduce undesirable race conditions in
+code. For example, the following code will potentially result in an incorrect
+result:
 
 .. code-block:: chapel
 
+   B = [1, 2, 1];
    A[B] += 3;
 
-If this was promoted, it would become the following:
+To avoid this race, the above code could be written using an explicit loop
+statement and the proper intents, for example:
 
 .. code-block:: chapel
 
-   [b in B] A[b] += 3;
+   [b in B with (+ reduce A)] A[b] += 3;
 
-This is illegal, as ``A`` cannot be modified without an explicit ``ref`` intent.
-An explicit loop statement must be used, for example:
-
-.. code-block:: chapel
-
-   [b in B with (ref A)] A[b] += 3;
-
+.. index::
+   single: reductions
+   single: scans
+   single: data parallelism; reductions
+   single: data parallelism; scans
 .. _Reductions_and_Scans:
 
 Reductions and Scans
@@ -810,6 +878,9 @@ operators, and also supports a mechanism for the user to define
 additional reductions and scans
 (:ref:`Chapter-User_Defined_Reductions_and_Scans`).
 
+.. index::
+   single: reduce
+   single: expressions; reduce
 .. _reduce:
 
 Reduction Expressions
@@ -908,6 +979,9 @@ User-defined reductions are specified by preceding the keyword
 described
 in :ref:`Chapter-User_Defined_Reductions_and_Scans`.
 
+.. index::
+   single: scan
+   single: expressions; scan
 .. _scan:
 
 Scan Expressions
@@ -959,6 +1033,12 @@ User-defined scans are specified by preceding the keyword ``scan`` by
 the class type that implements the scan interface as described
 in :ref:`Chapter-User_Defined_Reductions_and_Scans`.
 
+.. index::
+   single: data parallelism; knobs for default data parallelism
+   single: data parallelism; configuration constants
+   single: dataParTasksPerLocale
+   single: dataParIgnoreRunningTasks
+   single: dataParMinGranularity
 .. _data_parallel_knobs:
 
 Configuration Constants for Default Data Parallelism

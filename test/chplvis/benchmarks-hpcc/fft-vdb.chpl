@@ -11,7 +11,7 @@
 // Use standard modules for Bit operations, Random numbers, Timing, and
 // Block and Cyclic distributions
 //
-use BitOps, Math, NPBRandom, Time, BlockDist, CyclicDist;
+use BitOps, Math, Random, Time, BlockDist, CyclicDist;
 
 use VisualDebug;
 
@@ -44,8 +44,7 @@ config const epsilon = 2.0 ** -51.0,
 // pseudo-random seed (based on the clock) or a fixed seed; and to
 // specify the fixed seed explicitly
 //
-config const useRandomSeed = true,
-             seed = if useRandomSeed then oddTimeSeed() else 314159265;
+config const useRandomSeed = true;
 
 //
 // Configuration constants to control what's printed -- benchmark
@@ -74,7 +73,7 @@ proc main() {
   // to m/4-1 stored using a block distribution.
   // Twiddles is the vector of twiddle values.
   //
-  const TwiddleDom: domain(1) dmapped blockDist(boundingBox={0..m/4-1}) 
+  const TwiddleDom: domain(1) dmapped new blockDist(boundingBox={0..m/4-1}) 
                   = {0..m/4-1};
   var Twiddles: [TwiddleDom] elemType;
 
@@ -89,7 +88,7 @@ proc main() {
   // define the vectors z (used to store the input vector) and ZBlk
   // (used for the first half of the FFT phases).
   //
-  const BlkDom: domain(1) dmapped blockDist(boundingBox=ProblemSpace)
+  const BlkDom: domain(1) dmapped new blockDist(boundingBox=ProblemSpace)
               = ProblemSpace;
   var Zblk, z: [BlkDom] elemType;
 
@@ -98,7 +97,7 @@ proc main() {
   // to define the Zcyc vector, used for the second half of the FFT
   // phases.
   //
-  const CycDom: domain(1) dmapped cyclicDist(startIdx=0) = ProblemSpace;
+  const CycDom: domain(1) dmapped new cyclicDist(startIdx=0) = ProblemSpace;
 
   var Zcyc: [CycDom] elemType;
 
@@ -264,7 +263,9 @@ proc initVectors(ref Twiddles, ref z) {
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
-  fillRandom(z, seed);
+  if useRandomSeed
+    then fillRandom(z);
+    else fillRandom(z, 314159265);
 
   if (printArrays) {
     writeln("After initialization, Twiddles is: ", Twiddles, "\n");

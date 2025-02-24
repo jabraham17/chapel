@@ -1,0 +1,21 @@
+#!/bin/bash
+
+outfile=$2
+
+tmpfile=$outfile.raw.tmp
+
+#
+# some gdbs print out extra stuff.  This filters it out
+#
+mv $outfile $tmpfile
+cat $tmpfile | grep -ivE "Using host libthread_db library|Breakpoint 1 at|no debugging symbols found|Reading symbols" | sed 's@(gdb) quit@(gdb) @' > $outfile
+rm $tmpfile
+
+#
+# some greps don't add a linefeed onto the end; others do
+# this ensures that a linefeed is added
+#
+numlines=`wc -l $outfile`
+if [[ "$numlines" == "0 $outfile" ]]; then
+  echo >> $outfile
+fi

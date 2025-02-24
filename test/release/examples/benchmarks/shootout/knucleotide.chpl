@@ -63,7 +63,7 @@ proc writeFreqs(data, param nclSize) {
 
   // sort by frequencies
 
-  for (f, s) in sorted(arr, comparator=reverseComparator) do
+  for (f, s) in sorted(arr, comparator=new reverseComparator()) do
    writef("%s %.3dr\n", decode(s, nclSize),
            (100.0 * f) / (data.size - nclSize));
   writeln();
@@ -102,7 +102,7 @@ proc calculate(data, param nclSize) {
 const toChar: [0..3] string = ["A", "C", "T", "G"];
 var toNum: [0..127] int;
 
-forall i in toChar.domain with (ref toNum) do
+forall i in toChar.domain do
   toNum[toChar[i].toByte()] = i;
 
 

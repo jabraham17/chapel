@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,6 +47,14 @@ public:
       firstLine_(firstLine), firstColumn_(firstColumn),
       lastLine_(lastLine), lastColumn_(lastColumn) {
   }
+  explicit
+  Location(UniqueString path,
+           std::tuple<int, int> start,
+           std::tuple<int, int> end)
+    : path_(path),
+      firstLine_(std::get<0>(start)), firstColumn_(std::get<1>(start)),
+      lastLine_(std::get<0>(end)), lastColumn_(std::get<1>(end)) {
+  }
 
   bool isEmpty() const {
     return path_.isEmpty();
@@ -67,6 +75,13 @@ public:
   int lastLine() const { return lastLine_; }
   int lastColumn() const { return lastColumn_; }
   int line() const { return firstLine(); }
+
+  std::tuple<int, int> start() const {
+    return std::make_tuple(firstLine(), firstColumn());
+  }
+  std::tuple<int, int> end() const {
+    return std::make_tuple(lastLine(), lastColumn());
+  }
 
   inline bool operator==(const Location& other) const {
     return this->path_ == other.path_ &&

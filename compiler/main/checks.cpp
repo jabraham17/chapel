@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,7 +29,6 @@
 #include "primitive.h"
 #include "resolution.h"
 #include "TryStmt.h"
-#include "ForallStmt.h"
 
 
 #include "global-ast-vecs.h"
@@ -79,7 +78,7 @@ void check_parseAndConvertUast()
   check_afterEveryPass();
 }
 
-void check_checkUast()
+void check_checkGeneratedAst()
 {
   // checkIsIterator() will crash if there were certain USR_FATAL_CONT()
   // e.g. functions/vass/proc-iter/error-yield-in-proc-*
@@ -198,12 +197,13 @@ bool symbolIsUsedAsRef(Symbol* sym) {
 }
 
 static
-void checkForInvalidPromotions() {
+void checkForPromotionsThatMayRace() {
+  // skip check if warning is off
+  if (!fWarnPotentialRaces) return;
+
   // for all CallExprs, if we call a promotion wrapper that is marked no promotion, warn
   // checking here after all ContextCallExpr's have been resolved to plain CallExpr's
   for_alive_in_Vec(CallExpr, ce, gCallExprs) {
-
-    if (!shouldWarnUnstableFor(ce)) continue;
 
     if (FnSymbol* fn = ce->theFnSymbol()) {
       if (fn->hasFlag(FLAG_PROMOTION_WRAPPER) &&
@@ -222,150 +222,13 @@ void checkForInvalidPromotions() {
               if(symbolIsUsedAsRef(lhs->symbol())) {
                 USR_WARN(ce,
                          "modifying the result of a promoted index expression "
-                         "is unstable");
+                         "is a potential race condition");
               }
             }
           }
         }
       }
     }
-  }
-}
-
-static
-bool exprContainsSymbol(Symbol* sym, Expr* expr) {
-  std::vector<SymExpr*> symExprs;
-  collectSymExprs(expr, symExprs);
-  for (auto se: symExprs) {
-    if (se->symbol() == sym) return true;
-  }
-  return false;
-}
-
-static
-bool callSetsSymbol(Symbol* sym, CallExpr* call)
-{
-  // this is a helper used for symExprIsUsedAsRef
-  // its a recursive lambda, so needs to be defined with this split syntax
-  std::function<bool(SymExpr*, CallExpr*)> checkForMove;
-  checkForMove = [&checkForMove](SymExpr* use, CallExpr* call) {
-    SymExpr* lhs = toSymExpr(call->get(1));
-    Symbol* lhsSymbol = lhs->symbol();
-    if (lhs != use) {
-      for_SymbolSymExprs(se, lhsSymbol) {
-        if (symExprIsUsedAsRef(se, false, checkForMove)) return true;
-      }
-    }
-    return false;
-  };
-
-
-  if (isMoveOrAssign(call)) {
-    if (SymExpr* lhs = toSymExpr(call->get(1))) {
-      Expr* rhs = call->get(2);
-      // only check if the symbol is on the rhs
-      if (exprContainsSymbol(sym, rhs)) {
-        // if lhs is a ref
-        if (lhs->isRef() &&
-            !lhs->symbol()->isConstant() &&
-            lhs->symbol()->qualType().getQual() != QUAL_CONST_REF)
-          return true;
-
-        // in some cases, like `localAccess`, the lhs is incorrectly not marked
-        // as a ref so we need to do some more checks
-        for_SymbolSymExprs(se, lhs->symbol()) {
-          if (se != lhs && symExprIsUsedAsRef(se, false, checkForMove))
-            return true;
-        }
-      }
-
-    }
-  }
-  // some calls, like array slicing, will modify the result without an explicit ref
-  // so we need to check for that
-  if (auto fn = call->theFnSymbol()) {
-    if(fn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)) {
-      // if the parent is a move, we need to check to see if that parents
-      // symbol is used like a ref. If it is, return true.
-      if (auto parent = toCallExpr(call->parentExpr)) {
-        if (callSetsSymbol(sym, parent)) return true;
-      }
-    }
-  }
-  if(!call->isPrimitive()) {
-    if(FnSymbol* fn = call->theFnSymbol()) {
-      for(int i = 1; i <= call->numActuals(); i++) {
-        // if actual at index uses the sym we are checking for
-        if(exprContainsSymbol(sym, call->get(i))) {
-          // if the corresponding formal is `ref` or `[in]out`, return true
-          auto formal = fn->getFormal(i);
-          if(formal->intent == INTENT_REF ||
-             formal->intent == INTENT_OUT ||
-             formal->intent == INTENT_INOUT)
-            return true;
-        }
-      }
-    }
-
-  }
-  return false;
-}
-
-static
-void maybeIssueRefMaybeConstWarning(ForallStmt* fs, Symbol* sym, std::vector<CallExpr*> allCalls, std::vector<SymExpr*> allIterandSymExprs) {
-  // need to do some heuristics to determine if arg gets modified
-
-  // check if sym used in iterand
-  bool symInIterand = std::find_if(allIterandSymExprs.begin(),
-                                  allIterandSymExprs.end(), [sym](auto se) {
-                                    return sym == se->symbol();
-                                  }) != allIterandSymExprs.end();
-  if (symInIterand) return;
-
-  for (auto ce: allCalls) {
-    // if a call sets the symbol, warn
-    if (callSetsSymbol(sym, ce)) {
-      // checking for --warn-unstable done in checkForallRefMaybeConst
-
-      const char* argName = sym->name;
-      if (fs->getFunction() && fs->getFunction()->isMethodOnRecord())
-        argName = "this";
-
-      USR_WARN(fs,
-                "inferring a 'ref' intent on an array in a forall is unstable"
-                " - in the future this may require an explicit 'ref' forall intent for '%s'",
-                argName);
-      break;
-    }
-  }
-}
-
-
-static void checkForallRefMaybeConst(ForallStmt* fs, std::set<Symbol*> syms) {
-  // bail out here if we shouldn't be warning for this forall
-  if (!shouldWarnUnstableFor(fs)) return;
-
-  // collect all SymExpr used in the iterand of the forall so we dont warn for them
-  std::vector<SymExpr*> allIterandSymExprs;
-  for_alist(expr, fs->iteratedExpressions()) {
-    collectSymExprs(expr, allIterandSymExprs);
-  }
-  if (CallExpr* zipCall = fs->zipCall()) {
-    collectSymExprs(zipCall, allIterandSymExprs);
-  }
-
-  // should I be checking loopBodies?
-  std::vector<CallExpr*> allCallsInForall;
-  collectCallExprs(fs->loopBody(), allCallsInForall);
-
-  for (auto s: syms) {
-    maybeIssueRefMaybeConstWarning(fs, s, allCallsInForall, allIterandSymExprs);
-  }
-}
-
-static void checkForallRefMaybeConst() {
-  for (auto fsSyms: refMaybeConstForallPairs) {
-    checkForallRefMaybeConst(fsSyms.first, fsSyms.second);
   }
 }
 
@@ -381,8 +244,7 @@ void check_cullOverReferences()
     INT_FATAL("ContextCallExpr should no longer be in AST");
   }
 
-  checkForallRefMaybeConst();
-  checkForInvalidPromotions();
+  checkForPromotionsThatMayRace();
 }
 
 void check_lowerErrorHandling()
@@ -776,6 +638,8 @@ static void check_afterInlineFunctions() {
           def->parentSymbol->hasFlag(FLAG_WIDE_REF) == false) {
         if (sym->type->symbol->hasFlag(FLAG_REF) ||
             sym->type->symbol->hasFlag(FLAG_WIDE_REF)) {
+         // "_interim" args added in gpuTransforms.cpp have ref types
+         if (! def->parentSymbol->hasFlag(FLAG_GPU_CODEGEN))
           INT_FATAL("Found reference type: %s[%d]\n", sym->cname, sym->id);
         }
       }
@@ -787,7 +651,7 @@ static void checkIsIterator() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_YIELD)) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
-      // Violations should have caused USR_FATAL_CONT in checkUast().
+      // Violations should have caused USR_FATAL_CONT in checkGeneratedAst().
       INT_ASSERT(fn && fn->isIterator());
     }
   }
@@ -1100,9 +964,10 @@ checkRetTypeMatchesRetVarType() {
     // The return value type is the type of the index the iterator returns.
     if (fn->isIterator()) continue;
 
-    // auto ii functions break this rule, but only during the time that
+    // auto ii and thunk invoke functions break this rule, but only during the time that
     // they are prototypes.  After the body is filled in, they should obey it.
-    if (fn->hasFlag(FLAG_AUTO_II)) continue;
+    // But, for some of them, the body is never filled in.
+    if (fn->hasFlag(FLAG_AUTO_II) || fn->hasFlag(FLAG_THUNK_INVOKE)) continue;
 
     // No body, so no return symbol.
     if (fn->hasFlag(FLAG_NO_FN_BODY)) continue;

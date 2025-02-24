@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -55,6 +55,10 @@ module OwnedObject {
   pragma "leaves this nil"
   @chpldoc.nodoc // hide init/record impl details
   proc _owned.init(type chpl_t) {
+    // TODO: today (06/15/2024), the compiler has a special check for a non-class type
+    // being used to instantiate _owned, so this check is likely redundant and
+    // should be removed. See other _shared.init methods for similar checks that
+    // are likely also redundant.
     if !isClass(chpl_t) then
       compilerError("owned only works with classes");
 
@@ -186,38 +190,6 @@ module OwnedObject {
               else _to_unmanaged(oldPtr!);
   }
 
-  // Issue a compiler error for illegal uses.
-  @chpldoc.nodoc
-  proc type _owned.create(source) {
-    compilerError("cannot create an 'owned' from ", source.type:string);
-  }
-
-  /*
-    Creates a new `owned` class reference, taking over the ownership
-    of the argument. The result has the same type as the argument.
-    If the argument is non-nilable, it must be recognized by the compiler
-    as an expiring value.
-  */
-  @deprecated(notes="owned.create from an owned is deprecated - please use assignment instead")
-  inline proc type _owned.create(pragma "nil from arg" in take: owned) {
-    return take;
-  }
-
-  /* Starts managing the argument class instance `p`
-      using the `owned` memory management strategy.
-      The result type preserves nilability of the argument type.
-
-      It is an error to directly delete the class instance
-      after passing it to `owned.create()`. */
-  pragma "unsafe"
-  @deprecated(notes="owned.create from an unmanaged is deprecated - please use :proc:`owned.adopt` instead")
-  inline proc type _owned.create(pragma "nil from arg" p : unmanaged) {
-    // 'result' may have a non-nilable type
-    var result: (p.type : owned);
-    result.retain(p);
-    return result;
-  }
-
   /*
     The deinitializer for :type:`owned` will destroy the class
     instance it manages when the :type:`owned` goes out of scope.
@@ -226,54 +198,6 @@ module OwnedObject {
     if isClass(chpl_p) { // otherwise, let error happen on init call
       if chpl_p != nil then
         delete _to_unmanaged(chpl_p);
-    }
-  }
-
-  /*
-    Empty this :type:`owned` so that it stores `nil`.
-    Deletes the previously managed object, if any.
-  */
-  pragma "leaves this nil"
-  @deprecated(notes="owned.clear is deprecated - please assign `nil` to the owned object instead")
-  proc ref _owned.clear() {
-    if chpl_p != nil {
-      delete _to_unmanaged(chpl_p);
-      chpl_p = nil;
-    }
-  }
-
-
-  /*
-    Change the instance managed by this class to `newPtr`. If this record was
-    already managing a non-nil instance, that instance will be deleted.
-  */
-  @deprecated(notes="owned.retain is deprecated - please use :proc:`owned.adopt` instead")
-  proc ref _owned.retain(pragma "nil from arg" newPtr:unmanaged) {
-    if !isCoercible(newPtr.type, chpl_t) then
-      compilerError("cannot retain '" + newPtr.type:string + "' " +
-                    "(expected '" + _to_unmanaged(chpl_t):string + "')");
-
-    var oldPtr = chpl_p;
-    chpl_p = newPtr;
-    if oldPtr then
-      delete _to_unmanaged(oldPtr);
-  }
-
-  /*
-    Empty this :type:`owned` so that it manages `nil`.
-    Returns the instance previously managed by this :type:`owned`.
-  */
-  pragma "leaves this nil"
-  pragma "nil from this"
-  @deprecated(notes="owned.release is deprecated - please use the :proc:`owned.release` type method instead")
-  proc ref _owned.release() {
-    var oldPtr = chpl_p;
-    chpl_p = nil;
-
-    if _to_nilable(chpl_t) == chpl_t {
-      return _to_unmanaged(oldPtr);
-    } else {
-      return _to_unmanaged(oldPtr!);
     }
   }
 
@@ -292,16 +216,6 @@ module OwnedObject {
       return chpl_p!;
     }
   }
-
-  @deprecated("calling `.borrow()` on an `owned` type is deprecated - please use a cast to `borrowed` instead")
-  proc type _owned.borrow() type {
-    if _to_nilable(chpl_t) == chpl_t {
-      return chpl_t;
-    } else {
-      return _to_nonnil(chpl_t);
-    }
-  }
-
 
   /*
     Assignment between two :type:`owned` transfers ownership of the object
@@ -375,18 +289,8 @@ module OwnedObject {
   // This is a workaround - compiler was resolving
   // chpl__autoDestroy(x:object) from internal coercions.
   pragma "auto destroy fn"
-  proc chpl__autoDestroy(ref x: _owned) {
+  proc chpl__autoDestroy(const ref x: _owned) {
     __primitive("call destructor", __primitive("deref", x));
-  }
-
-  @chpldoc.nodoc
-  proc _owned.readThis(f) throws {
-    _readWriteHelper(f);
-  }
-
-  @chpldoc.nodoc
-  proc _owned.writeThis(f) throws {
-    _readWriteHelper(f);
   }
 
   @chpldoc.nodoc
@@ -421,7 +325,7 @@ module OwnedObject {
   @chpldoc.nodoc
   inline operator :(pragma "nil from arg" in x:owned class, type t:owned class?)    where isSubtype(x.chpl_t,_to_nonnil(t.chpl_t))
   {
-    var castPtr = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
+    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
     // t stores a nilable type
     return new _owned(castPtr);
@@ -432,7 +336,7 @@ module OwnedObject {
   inline operator :(pragma "nil from arg" in x:owned class?, type t:owned class?)
     where isSubtype(x.chpl_t,t.chpl_t)
   {
-    var castPtr = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
+    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
     // t stores a nilable type
     return new _owned(castPtr);
@@ -443,7 +347,7 @@ module OwnedObject {
   inline operator :(pragma "nil from arg" in x:owned class, type t:owned class)
     where isSubtype(x.chpl_t,t.chpl_t)
   {
-    var castPtr = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
+    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
     // t stores a non-nilable type
     return new _owned(castPtr!);
@@ -454,7 +358,7 @@ module OwnedObject {
   inline operator :(in x:owned class?, type t:owned class) throws
     where isSubtype(_to_nonnil(x.chpl_t),t.chpl_t)
   {
-    var castPtr = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
+    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     if castPtr == nil {
       throw new owned NilClassError();
     }
@@ -472,7 +376,7 @@ module OwnedObject {
       throw new owned NilClassError();
     }
     // the following line can throw ClassCastError
-    var castPtr = try _to_unmanaged(x.chpl_p):_to_nonnil(_to_unmanaged(t.chpl_t));
+    var castPtr = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
     return new _owned(castPtr);
   }
@@ -481,7 +385,7 @@ module OwnedObject {
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
     // the following line can throw ClassCastError
-    var castPtr = try _to_unmanaged(x.chpl_p):_to_nonnil(_to_unmanaged(t.chpl_t));
+    var castPtr = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
     return new _owned(castPtr);
   }
@@ -493,7 +397,7 @@ module OwnedObject {
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
     // this cast returns nil if the dynamic type is not compatible
-    var castPtr = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
+    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     if castPtr != nil {
       x.chpl_p = nil;
     }
@@ -505,7 +409,7 @@ module OwnedObject {
     where isProperSubtype(_to_nonnil(t.chpl_t),x.chpl_t)
   {
     // this cast returns nil if the dynamic type is not compatible
-    var castPtr = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
+    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
     if castPtr != nil {
       x.chpl_p = nil;
     }

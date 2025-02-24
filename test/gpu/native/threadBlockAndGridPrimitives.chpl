@@ -5,8 +5,7 @@ use CTypes;
 
 param VALS_PER_THREAD=13;
 
-pragma "codegen for GPU"
-pragma "always resolve function"
+pragma "GPU kernel"
 export proc add_nums(dst_ptr: c_ptr(real(32))){
   var tid_x = __primitive("gpu threadIdx x");
   var tid_y = __primitive("gpu threadIdx y");
@@ -50,9 +49,23 @@ proc runExample(gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ) {
   const N = gdimX * gdimY * gdimZ * bdimX * bdimY * bdimZ * VALS_PER_THREAD;
 
   var X : [0..<N] real(32);
-  __primitive("gpu kernel launch", "add_nums":chpl_c_string,
-              gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ,
-              c_ptrTo(X));
+
+  var cfg = __primitive("gpu init kernel cfg 3d",
+                        /*fn*/ "add_nums":chpl_c_string,
+                        /*grd_dims*/ gdimX, gdimY, gdimZ,
+                        /*blk_dims*/ bdimX, bdimY, bdimZ,
+                        /*args*/1,
+                        /*pids*/0,
+                        /*reductions*/0,
+                        /*hostRegVars*/0);
+
+
+  // 1 is an enum value that says: "pass the address of this to the
+  //   kernel_params, while not offloading anything". I am not entirely sure why
+  //   we need to do that for C pointers
+  __primitive("gpu arg", cfg, c_ptrTo(X), 1);
+
+  __primitive("gpu kernel launch", cfg);
 
   writef("     |--- thread idx --|--- block idx ---|--- block size --|--- grid size --|\n");
   writef("  idx tid_x tid_y tid_z bid_x bid_y bid_z bdm_x bdm_y bdm_z gdm_x gdm_y gdm_z\n");

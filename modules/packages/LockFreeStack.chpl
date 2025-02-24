@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,13 +28,10 @@
 
       - It relies on Chapel ``extern`` code blocks and so requires that
         the Chapel compiler is built with LLVM enabled.
-      - Currently only ``CHPL_TARGET_ARCH=x86_64`` is supported as it uses
-        the x86-64 instruction: CMPXCHG16B_.
-      - The implementation relies on ``GCC`` style inline assembly, and so
-        is restricted to a ``CHPL_TARGET_COMPILER`` value of ``gnu``,
-        ``clang``, or ``llvm``.
-
-    .. _CMPXCHG16B: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
+      - The implementation relies on using either ``GCC`` style inline assembly
+        (for x86-64) or a GCC/clang builtin, and so is restricted to a
+        ``CHPL_TARGET_COMPILER`` value of ``gnu``, ``clang``, or ``llvm``.
+      - The implementation does not work with ``CHPL_ATOMICS=locks``.
 
   An implementation of the Treiber Stack [#]_, a lock-free stack. Concurrent safe
   memory reclamation is handled by an internal :record:`EpochManager`. Usage of the
@@ -137,6 +134,12 @@ module LockFreeStack {
     proc init(type objType) {
       this.objType = objType;
     }
+    proc deinit() {
+      drain();
+      if var top = _top.read() {
+        delete top;
+      }
+    }
 
     proc getToken() : owned TokenWrapper {
       return _manager.register();
@@ -151,7 +154,7 @@ module LockFreeStack {
         n.next = oldTop;
         if shouldYield then currentTask.yieldExecution();
         shouldYield = true;
-      } while (!_top.compareAndSwap(oldTop, n));
+      } while !_top.compareAndSwap(oldTop, n);
       tok.unpin();
     }
 
@@ -161,7 +164,7 @@ module LockFreeStack {
       var shouldYield = false;
       do {
         oldTop = _top.read();
-        if (oldTop == nil) {
+        if oldTop == nil {
           tok.unpin();
           var retval : objType;
           return (false, retval);
@@ -169,7 +172,7 @@ module LockFreeStack {
         var newTop = oldTop!.next;
         if shouldYield then currentTask.yieldExecution();
         shouldYield = true;
-      } while (!_top.compareAndSwap(oldTop, newTop));
+      } while !_top.compareAndSwap(oldTop, newTop);
       var retval = oldTop!.val;
       tok.deferDelete(oldTop);
       tok.unpin();
@@ -187,7 +190,7 @@ module LockFreeStack {
     }
 
     iter drain(param tag : iterKind) : objTypeOpt where tag == iterKind.standalone {
-      coforall tid in 1..here.maxTaskPar {
+      coforall 1..here.maxTaskPar {
         var tok = getToken();
         var (hasElt, elt) = pop(tok);
         while hasElt {

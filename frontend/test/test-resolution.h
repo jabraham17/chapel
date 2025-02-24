@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,7 +23,12 @@
 #include "test-parsing.h"
 
 #include "chpl/resolution/resolution-types.h"
-#include "chpl/types/QualifiedType.h"
+
+#define ADVANCE_PRESERVING_STANDARD_MODULES_(ctx__) \
+  do { \
+    ctx__->advanceToNextRevision(false); \
+    setupModuleSearchPaths(ctx__, false, false, {}, {}); \
+  } while (0)
 
 // forward declare classes and namespaces
 namespace chpl {
@@ -65,6 +70,51 @@ const Variable* findVariable(const AstNode* ast, const char* name);
 const Variable* findVariable(const ModuleVec& vec, const char* name);
 
 std::unordered_map<std::string, QualifiedType>
+resolveTypesOfVariables(Context* context,
+                        const Module* mod,
+                        const std::vector<std::string>& variables);
+
+std::unordered_map<std::string, QualifiedType>
 resolveTypesOfVariables(Context* context, std::string program, const std::vector<std::string>& variables);
+
+std::unordered_map<std::string, QualifiedType>
+resolveTypesOfVariablesInit(Context* context, std::string program, const std::vector<std::string>& variables);
+
+void ensureParamInt(const QualifiedType& type, int64_t expectedValue);
+void ensureParamUint(const QualifiedType& type, uint64_t expectedValue);
+void ensureParamBool(const QualifiedType& type, bool expectedValue);
+void ensureParamString(const QualifiedType& type, const std::string& expectedValue);
+void ensureParamEnumStr(const QualifiedType& type, const std::string& expectedName);
+void ensureErroneousType(const QualifiedType& type);
+
+QualifiedType getTypeForFirstStmt(Context* context, const std::string& program);
+
+Context::Configuration getConfigWithHome();
+
+/**
+  Returns the ResolvedFunction called by a particular
+  ResolvedExpression, if there was exactly one candidate.
+  Otherwise, it returns nullptr.
+
+  This function does not handle return intent overloading.
+ */
+const ResolvedFunction* resolveOnlyCandidate(Context* context,
+                                             const ResolvedExpression& r);
+
+QualifiedType findVarType(const Module* m,
+                          const ResolutionResultByPostorderID& rr,
+                          std::string name);
+
+/**
+  Test resolution of a domain literal.
+ */
+void testDomainLiteral(Context* context, std::string domainLiteral,
+                       DomainType::Kind domainKind);
+
+void testDomainIndex(Context* context, std::string domainType,
+                     std::string expectedType);
+
+void testDomainBadPass(Context* context, std::string argType,
+                       std::string actualType);
 
 #endif

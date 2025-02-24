@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -101,8 +101,7 @@ static std::vector<QualifiedType> extractDefinedTypes(Context* context,
 template <typename F>
 void testProgram(const std::vector<ReturnVariant>& variants, F func,
                  QualifiedType::Kind kind = QualifiedType::DEFAULT_INTENT) {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   auto program = buildProgram(variants);
   std::cout << "--- test program ---" << std::endl;
   std::cout << program.c_str() << std::endl;
@@ -142,8 +141,7 @@ enum class ControlFlowResult {
 };
 
 static void testControlFlow(std::string controlFlow, ControlFlowResult expectedResult) {
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
   auto program = buildControlFlowProgram(controlFlow);
   std::cout << "--- test program ---" << std::endl;
@@ -204,8 +202,8 @@ static void test3() {
 }
 
 static void test4() {
-  // test returning a param from an ambigous param-returning function
-  // non-ambigous tests are in testParamIf.
+  // test returning a param from an ambiguous param-returning function
+  // non-ambiguous tests are in testParamIf.
   testProgram({
       lit("1"),
       lit("2")
@@ -615,8 +613,7 @@ static void testControlFlowYield1() {
     }
     )""";
 
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto mod = parseModule(context, program);
@@ -644,8 +641,7 @@ static void testControlFlowYield2() {
     }
     )""";
 
-  Context ctx;
-  auto context = &ctx;
+  auto context = buildStdContext();
   ErrorGuard guard(context);
 
   auto mod = parseModule(context, program);
@@ -715,19 +711,13 @@ static void testControlFlowYield4() {
   guard.realizeErrors();
 }
 
-std::string ops = R"""(
-  operator ==(x:int, y:int) { return __primitive("==", x, y); }
-  operator ==(param x:int, param y:int) param { return __primitive("==", x, y); }
-)""";
-
 static void testSelectVals() {
   {
     // Basic test case
-    Context ctx;
-    Context* context = &ctx;
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
 
-    std::string program = ops + R"""(
+    std::string program = R"""(
     proc foo(arg:int) {
       select arg {
         when 1 do return 1;
@@ -745,11 +735,10 @@ static void testSelectVals() {
   }
   {
     // Recognize that cases do not all return the same type
-    Context ctx;
-    Context* context = &ctx;
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
 
-    std::string program = ops + R"""(
+    std::string program = R"""(
     proc foo(arg:int) {
       select arg {
         when 1 do return 1;
@@ -770,11 +759,10 @@ static void testSelectVals() {
   }
   {
     // Recognize that all cases return, so the final 'return' isn't considered.
-    Context ctx;
-    Context* context = &ctx;
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
 
-    std::string program = ops + R"""(
+    std::string program = R"""(
     proc foo(arg:int) {
       select arg {
         when 1 do return 1;
@@ -794,11 +782,10 @@ static void testSelectVals() {
   }
   {
     // Without an 'otherwise', we should consider the final 'return'.
-    Context ctx;
-    Context* context = &ctx;
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
 
-    std::string program = ops + R"""(
+    std::string program = R"""(
     proc foo(arg:int) {
       select arg {
         when 1 do return 1;
@@ -829,8 +816,7 @@ static void testSelectCases(std::string base,
     std::string kind = isType ? "type" : "var";
     std::string program = base + kind + " x = foo(" + pair.first + ");";
 
-    Context ctx;
-    Context* context = &ctx;
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
     QualifiedType qt = resolveTypeOfXInit(context, program);
     std::stringstream ss;
@@ -845,7 +831,7 @@ static void testSelectCases(std::string base,
 static void testSelectTypes() {
   {
     // basic type usage
-    std::string fooFunc = ops + R"""(
+    std::string fooFunc = R"""(
     proc foo(type T) type {
       select T {
         when int do return int;
@@ -864,8 +850,8 @@ static void testSelectTypes() {
     testSelectCases(fooFunc, vals);
   }
   {
-    // mutiple cases in a single 'when'
-    std::string fooFunc = ops + R"""(
+    // multiple cases in a single 'when'
+    std::string fooFunc = R"""(
     proc foo(type T) type {
       select T {
         when int, uint, real do return int;
@@ -886,7 +872,7 @@ static void testSelectTypes() {
   }
   {
     // demonstrate that cases are ignored after first param-true
-    std::string program = ops + R"""(
+    std::string program = R"""(
     proc foo(type T) type {
       select T {
         when int do return int;
@@ -903,15 +889,14 @@ static void testSelectTypes() {
     type x = foo(int);
     )""";
 
-    Context ctx;
-    Context* context = &ctx;
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
     auto qt = resolveTypeOfXInit(context, program);
     assert(qt.type()->isIntType());
   }
   {
     // demonstrate that in the case of duplicates, the first is always chosen.
-    std::string program = ops + R"""(
+    std::string program = R"""(
     proc foo(type T) type {
       select T {
         when int do return int;
@@ -923,14 +908,13 @@ static void testSelectTypes() {
     type x = foo(int);
     )""";
 
-    Context ctx;
-    Context* context = &ctx;
+    auto context = buildStdContext();
     ErrorGuard guard(context);
     auto qt = resolveTypeOfXInit(context, program);
     assert(qt.type()->isIntType());
   }
   {
-    std::string fooFunc = ops + R"""(
+    std::string fooFunc = R"""(
     proc foo(type T) {
       select T {
         when int do return 5;
@@ -953,7 +937,7 @@ static void testSelectTypes() {
   {
     // demonstrate that when blocks can have multiple 
     // statements without otherwise
-    std::string fooFunc = ops + R"""(
+    std::string fooFunc = R"""(
     proc foo(type T) {
       var x : int;
       select T {
@@ -968,7 +952,7 @@ static void testSelectTypes() {
     }
     )""";
     stringMap vals = {{"int", "int(64)"},
-                      //{"string", "string"} //future test for init resolution DCE
+                      {"string", "string"}
                       };
 
     testSelectCases(fooFunc, vals, /*isType=*/false);
@@ -976,7 +960,7 @@ static void testSelectTypes() {
   {
     // demonstrate that when blocks can have multiple 
     // statements with otherwise
-    std::string fooFunc = ops + R"""(
+    std::string fooFunc = R"""(
     proc foo(type T) {
       var x : int;
       select T {
@@ -991,7 +975,7 @@ static void testSelectTypes() {
     }
     )""";
     stringMap vals = {{"int", "int(64)"},
-                      //{"string", "real(64)"} //future test for init resolution DCE
+                      {"string", "real(64)"}
                       };
 
     testSelectCases(fooFunc, vals, /*isType=*/false);
@@ -1001,7 +985,7 @@ static void testSelectTypes() {
 static void testSelectParams() {
   {
     // basic param usage
-    std::string fooFunc = ops + R"""(
+    std::string fooFunc = R"""(
     proc foo(param p) type {
       select p {
         when 1 do return int;
@@ -1021,8 +1005,8 @@ static void testSelectParams() {
     testSelectCases(fooFunc, vals);
   }
   {
-    // mutiple cases in a single 'when'
-    std::string fooFunc = ops + R"""(
+    // multiple cases in a single 'when'
+    std::string fooFunc = R"""(
     proc foo(param p) type {
       select p {
         when 1, 2, 3 do return int;
@@ -1045,7 +1029,7 @@ static void testSelectParams() {
   {
     // Show that 'otherwise' should still resolve when a param-true case is
     // not present.
-    std::string program = ops + R"""(
+    std::string program = R"""(
     var myGlobal = 100;
     proc foo(param p) type {
       select p {
@@ -1057,8 +1041,7 @@ static void testSelectParams() {
     type x = foo(5);
     )""";
 
-    Context ctx;
-    Context* context = &ctx;
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
     auto qt = resolveTypeOfXInit(context, program);
 
@@ -1070,7 +1053,7 @@ static void testSelectParams() {
   {
     // Show that non-param cases *preceding* param-true cases should still
     // resolve, in case their value matches at execution time.
-    std::string program = ops + R"""(
+    std::string program = R"""(
     var myGlobal = 100;
     proc foo(param p) type {
       select p {
@@ -1082,8 +1065,7 @@ static void testSelectParams() {
     type x = foo(1);
     )""";
 
-    Context ctx;
-    Context* context = &ctx;
+    Context* context = buildStdContext();
     ErrorGuard guard(context);
     auto qt = resolveTypeOfXInit(context, program);
 
@@ -1092,6 +1074,352 @@ static void testSelectParams() {
     assert(guard.error(0)->message() == "could not determine return type for function");
     guard.realizeErrors();
   }
+}
+
+// Assumes loop body will return param string "asdf"
+static void paramLoopTestHelper(const char* loopBody,
+                                const char* loopRange, bool returnedFromLoop,
+                                bool useEmptyLoop = false) {
+  auto context = buildStdContext();
+  ErrorGuard guard(context);
+
+  // Construct test program
+  std::ostringstream oss;
+  oss << "proc foo() param {\n";
+  oss << "  for param i in " << loopRange << " {\n";
+  oss << loopBody;
+  oss << "  }\n";
+  oss << "  return true;\n";
+  oss << "}\n";
+  oss << "param x = foo();\n";
+  std::string program = oss.str();
+
+  std::cout << "Param loop test program:\n";
+  std::cout << program.c_str() << "\n";
+
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                       program);
+  assert(!qt.isUnknownOrErroneous());
+  if (returnedFromLoop) {
+    ensureParamString(qt, "asdf");
+  } else {
+    ensureParamBool(qt, true);
+  }
+
+  assert(guard.realizeErrors() == 0);
+
+  std::cout << "success\n";
+}
+
+// Test returns from within param for loops
+static void testParamLoop() {
+  // Basic case
+  paramLoopTestHelper(R"""(
+                      return "asdf";
+                      )""",
+                      "0..2",
+                      true);
+
+  // Return statement in else branch taken
+  paramLoopTestHelper(R"""(
+                      if i == 1 {
+                        return true;
+                      } else {
+                        return "asdf";
+                      }
+                      )""",
+                      "0..2",
+                      true);
+
+  // Return statement in param TRUE if
+  paramLoopTestHelper(R"""(
+                      if i == 1 {
+                        return "asdf";
+                      }
+                      )""",
+                      "0..2",
+                      true);
+
+  // Return statement in param FALSE if
+  paramLoopTestHelper(R"""(
+                      if i == 3 {
+                        return "asdf";
+                      }
+                      )""",
+                      "0..2",
+                      false);
+
+  // Return statement in a param loop with no iterations
+  paramLoopTestHelper(R"""(
+                      return "asdf";
+                      )""",
+                      "1..0",
+                      false,
+                      /* useEmptyLoop */ true);
+
+  // Return statement in iteration after break
+  paramLoopTestHelper(R"""(
+                      break;
+                      return "asdf";
+                      )""",
+                      "0..2",
+                      false);
+
+  // Return statement in iteration after continue
+  paramLoopTestHelper(R"""(
+                      continue;
+                      return "asdf";
+                      )""",
+                      "0..2",
+                      false);
+
+  // Return statement in iteration after a conditional break, only after return
+  paramLoopTestHelper(R"""(
+                      if i == 1 {
+                        break;
+                      }
+                      return "asdf";
+                      )""",
+                      "0..2",
+                      true);
+
+  // Return statement in iteration after a conditional break, before any return
+  paramLoopTestHelper(R"""(
+                      if i == 0 {
+                        break;
+                      }
+                      return "asdf";
+                      )""",
+                      "0..2",
+                      false);
+
+  // Return statement in iteration after a conditional continue, in only some
+  // iterations
+  paramLoopTestHelper(R"""(
+                      if i == 0 {
+                        continue;
+                      }
+                      return "asdf";
+                      )""",
+                      "0..2",
+                      true);
+
+  // Return statement in iteration after a conditional continue, in all iterations
+  paramLoopTestHelper(R"""(
+                      if i != 3 {
+                        continue;
+                      }
+                      return "asdf";
+                      )""",
+                      "0..2",
+                      false);
+}
+
+// Test return from within non-param loop (shouldn't work)
+static void testNonParamLoop() {
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+  proc foo() {
+    for i in 0..2 {
+      return "asdf";
+    }
+    return true;
+  }
+  var x = foo();
+  )""";
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                       program);
+
+  assert(qt.isErroneousType());
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->message() == "could not determine return type for function");
+  guard.realizeErrors();
+}
+
+static void testCPtrEltType() {
+  { 
+    //works for c_ptr
+    std::string program = R"""(
+    use CTypes;
+    var y: c_ptr(uint(8));
+    type x = y.eltType;
+    )""";
+
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+    auto qt = resolveTypeOfXInit(context, program);
+    assert(qt.type()->isUintType());
+    assert(qt.type()->toUintType()->bitwidth() == 8);
+  }
+  return;
+  { 
+    //works for user-defined class 
+    std::string program = R"""(
+    use CTypes;
+    class c_ptr2 {
+      type eltType;
+    }
+    var y: c_ptr2(uint(8));
+    type x = y.eltType;
+    )""";
+
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+    auto qt = resolveTypeOfXInit(context, program);
+    assert(qt.type()->isUintType());
+    assert(qt.type()->toUintType()->bitwidth() == 8);
+  }
+}
+
+static void testChildClassesHelper(const char* decls,
+                                   const std::vector<const char*>& classTypes,
+                                   const char* commonParent,
+                                   bool withNilable = false,
+                                   const char* intent = "",
+                                   int checkParam = -1) {
+  // Construct test program
+  std::ostringstream oss;
+  oss << decls << "\n";
+  oss << "proc test(x : int = 0) " << intent << " {\n";
+  oss << "select x {\n";
+  for (size_t i = 0; i < classTypes.size(); i++) {
+    const char* classType = classTypes[i];
+    // Skip adding parens to 'new' call if already present
+    const char* parensPart = strchr(classType, '(') ? "" : "()";
+    if (i < classTypes.size() - 1) {
+      oss << "\twhen " << i << " do return new " << classType << parensPart
+          << ";\n";
+    } else {
+      oss << "\totherwise do return new " << classType << parensPart
+          << (withNilable ? "?" : "") << ";\n";
+    }
+  }
+  oss << R"""(
+  }
+}
+var x = test();
+        )""";
+  std::string program = oss.str();
+
+  // Print test program for debugging purposes
+  std::cout << "\nTest program:\n";
+  std::cout << program << "\n";
+  if (commonParent)
+    std::cout << "Expecting common parent '" << commonParent << "'\n";
+  else
+    std::cout << "Expecting no common parent (error)\n";
+
+  // Setup to test
+  Context* context = buildStdContext();
+  ErrorGuard guard(context);
+
+  // Resolve program and test expected results
+  auto qt = resolveTypeOfXInit(context, program);
+  if (commonParent) {
+    auto ct = qt.type()->toClassType();
+    assert(ct);
+    assert(ct->manager() && ct->manager()->isAnyOwnedType());
+    if (withNilable) {
+      assert(ct->decorator().isNilable());
+    } else {
+      assert(ct->decorator().isNonNilable());
+    }
+    auto mt = ct->manageableType();
+    assert(mt);
+    auto bct = mt->toBasicClassType();
+    assert(bct);
+    assert(bct->name() == commonParent);
+    if (checkParam >= 0)
+      ensureParamInt(bct->sortedSubstitutions().front().second, checkParam);
+
+    assert(guard.realizeErrors() == 0);
+  } else {
+    assert(qt.isErroneousType());
+
+    assert(guard.realizeErrors() == 1);
+  }
+
+  std::cout << "success\n";
+}
+
+static void testChildClasses() {
+  // Shared direct parent
+  testChildClassesHelper(R"""(
+                         class Parent {}
+                         class A : Parent {}
+                         class B : Parent {}
+                         )""",
+                         {"A", "B"}, "Parent");
+
+  // No shared parent
+  testChildClassesHelper(R"""(
+                         class A {}
+                         class B {}
+                         )""",
+                         {"A", "B"}, nullptr);
+
+  // Some but not all shared parent
+  testChildClassesHelper(R"""(
+                         class Parent {}
+                         class A : Parent {}
+                         class B : Parent {}
+                         class C {}
+                         )""",
+                         {"A", "B", "C"}, nullptr);
+
+  // Shared ancestor at different depths in inheritance tree
+  testChildClassesHelper(R"""(
+                         class Grandparent {}
+                         class Parent : Grandparent {}
+                         class A : Parent {}
+                         class B : Parent {}
+                         class C : Grandparent {}
+                         )""",
+                         {"A", "B", "C"}, "Grandparent");
+
+  // Multiple shared ancestors (should pick closest relation)
+  testChildClassesHelper(R"""(
+                         class Grandparent {}
+                         class Parent : Grandparent {}
+                         class A : Parent {}
+                         class B : Parent {}
+                         class C : Parent {}
+                         )""",
+                         {"A", "B", "C"}, "Parent");
+
+  // Shared ancestor, but ref intent
+  testChildClassesHelper(R"""(
+                         class Parent {}
+                         class A : Parent {}
+                         class B : Parent {}
+                         )""",
+                         {"A", "B"}, nullptr, false, "ref");
+
+  // Shared parent, need nilability
+  testChildClassesHelper(R"""(
+                         class Parent {}
+                         class A : Parent {}
+                         class B : Parent {}
+                         )""",
+                         {"A", "B"}, "Parent", true);
+
+  // Shared generic parent, matching type
+  testChildClassesHelper(R"""(
+                         class Parent { param x : int; }
+                         class A : Parent(?) {}
+                         class B : Parent(?) {}
+                         )""",
+                         {"A(1)", "B(1)"}, "Parent", false, "", 1);
+
+  // Shared generic parent, non matching type
+  testChildClassesHelper(R"""(
+                         class Parent { param x : int; }
+                         class A : Parent(?) {}
+                         class B : Parent(?) {}
+                         )""",
+                         {"A(1)", "B(2)"}, nullptr);
 }
 
 // TODO: test param coercion (param int(32) = 1 and param int(64) = 2)
@@ -1143,6 +1471,13 @@ int main() {
   testSelectVals();
   testSelectTypes();
   testSelectParams();
+
+  testParamLoop();
+  testNonParamLoop();
+
+  testCPtrEltType();
+
+  testChildClasses();
 
   return 0;
 }

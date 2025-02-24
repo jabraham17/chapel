@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,6 +25,10 @@
 
 #include "chpltypes.h"
 #include "chpl-comm.h"
+#include <string.h>
+
+// device code for reduction support
+#include "chpl-gpu-dev-reduce.h"
 
 __device__ static inline c_sublocid_t chpl_task_getRequestedSubloc(void)
 {
@@ -37,8 +41,8 @@ __device__ static inline c_sublocid_t chpl_task_getRequestedSubloc(void)
 }
 
 __device__ static inline void* c_pointer_return(void* x) { return x; }
-__device__ static inline void* c_pointer_return_const(const void* x) {
-  return (void*)x;
+__device__ static inline const void* c_pointer_return_const(const void* x) {
+  return x;
 }
 
 __device__ static inline chpl_localeID_t chpl_rt_buildLocaleID(c_nodeid_t node,  c_sublocid_t subloc) {
@@ -61,6 +65,16 @@ __device__ static inline void chpl_gen_comm_get(void *addr, c_nodeid_t node,
   // TODO
 }
 
+__device__ static inline void chpl_gen_comm_get_unordered(void *addr,
+                                                          c_nodeid_t node,
+                                                          void* raddr, size_t
+                                                          size, int32_t commID,
+                                                          int ln, int32_t fn)
+{
+  printf("Warning: chpl_gen_comm_get_unordered called inside a GPU kernel. This shouldn't have happened.\n");
+  // TODO
+}
+
 __device__ static inline void chpl_gen_comm_put(void* addr, c_nodeid_t node,
   void* raddr, size_t size, int32_t commID, int ln, int32_t fn)
 {
@@ -68,7 +82,72 @@ __device__ static inline void chpl_gen_comm_put(void* addr, c_nodeid_t node,
   // TODO
 }
 
+__device__ static inline void chpl_gen_comm_put_unordered(void *addr,
+                                                          c_nodeid_t node,
+                                                          void* raddr, size_t
+                                                          size, int32_t commID,
+                                                          int ln, int32_t fn)
+{
+  printf("Warning: chpl_gen_comm_put_unordered called inside a GPU kernel. This shouldn't have happened.\n");
+  // TODO
+}
+
+__device__ static inline void chpl_gen_comm_getput_unordered(
+                                            c_nodeid_t dstnode, void* dstaddr,
+                                            c_nodeid_t srcnode, void* srcaddr,
+                                            size_t size, int32_t commID,
+                                            int ln, int32_t fn)
+{
+  printf("Warning: chpl_gen_comm_getput_unordered called inside a GPU kernel. This shouldn't have happened.\n");
+  // TODO
+}
+
 MAYBE_GPU static inline void chpl_gpu_write(const char *str) { printf("%s", str); }
+
+MAYBE_GPU static inline void chpl_gpu_printf0(const char *fmt) {
+  printf("%s", fmt);
+}
+MAYBE_GPU static inline void chpl_gpu_printf1(const char *fmt,
+ void *x1)
+{
+  printf(fmt, x1);
+}
+MAYBE_GPU static inline void chpl_gpu_printf2(const char *fmt,
+  void *x1, void *x2)
+{
+  printf(fmt, x1, x2);
+}
+MAYBE_GPU static inline void chpl_gpu_printf3(const char *fmt,
+  void *x1, void *x2, void *x3)
+{
+  printf(fmt, x1, x2, x3);
+}
+MAYBE_GPU static inline void chpl_gpu_printf4(const char *fmt,
+  void *x1, void *x2, void *x3, void *x4)
+{
+  printf(fmt, x1, x2, x3, x4);
+}
+MAYBE_GPU static inline void chpl_gpu_printf5(const char *fmt,
+  void *x1, void *x2, void *x3, void *x4, void *x5)
+{
+  printf(fmt, x1, x2, x3, x4, x5);
+}
+MAYBE_GPU static inline void chpl_gpu_printf6(const char *fmt,
+  void *x1, void *x2, void *x3, void *x4, void *x5, void *x6)
+{
+  printf(fmt, x1, x2, x3, x4, x5, x6);
+}
+MAYBE_GPU static inline void chpl_gpu_printf7(const char *fmt,
+  void *x1, void *x2, void *x3, void *x4, void *x5, void *x6, void *x7)
+{
+  printf(fmt, x1, x2, x3, x4, x5, x6, x7);
+}
+MAYBE_GPU static inline void chpl_gpu_printf8(const char *fmt,
+  void *x1, void *x2, void *x3, void *x4, void *x5, void *x6, void *x7,
+  void *x8)
+{
+  printf(fmt, x1, x2, x3, x4, x5, x6, x7, x8);
+}
 
 __device__ static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameIdx) { /* no op */ }
 __host__ static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameIdx) {
@@ -92,6 +171,11 @@ __host__ static inline void chpl_gpu_force_sync() {
   chpl_internal_error("chpl_gpu_force_sync called from host");
 }
 
+__host__ static inline void chpl_gpu_force_warp_sync(unsigned mask) {
+  chpl_internal_error("chpl_gpu_force_warp_sync called from host");
+}
+
+
 __device__ static inline
 void chpl_gen_comm_get_from_subloc(void *addr, c_nodeid_t src_node,
                                    c_sublocid_t src_subloc, void* raddr,
@@ -111,9 +195,18 @@ void chpl_gen_comm_put_to_subloc(void* addr,
 
 }
 
+__device__ static inline
+void chpl_internal_error(const char* message) {
+  printf("%s\n", message);
+  // TODO actually error
+}
 
+__device__ extern int chpl_haltFlag;
 
-
+__device__ static inline
+void chpl_gpu_halt(int lineno, int32_t filenameIdx) {
+  chpl_haltFlag = 1;
+}
 
 #endif // HAS_GPU_LOCALE
 

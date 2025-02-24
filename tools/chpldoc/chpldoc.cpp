@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -36,6 +36,8 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/Context.h"
+#include "chpl/framework/ErrorBase.h"
+#include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/UniqueString.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/framework/stringify-functions.h"
@@ -202,6 +204,10 @@ ArgumentDescription docs_arg_desc[] = {
  DRIVER_ARG_LAST
 };
 
+static
+std::string runCommand(std::string& command);
+static
+std::string getChplDepsApp();
 
 static void printStuff(const char* argv0, void* mainAddr) {
   bool shouldExit       = false;
@@ -210,6 +216,16 @@ static void printStuff(const char* argv0, void* mainAddr) {
   if (fPrintVersion) {
     std::string version = chpl::getVersion();
     fprintf(stdout, "%s version %s\n", sArgState.program_name, version.c_str());
+
+    std::string getVersion = "python3 " + getChplDepsApp() + " version";
+
+    std::string getVersionSphinx = getVersion + " Sphinx";
+    std::string sphinxVersion = runCommand(getVersionSphinx);
+    fprintf(stdout, "\tSphinx version %s", sphinxVersion.c_str());
+
+    std::string getVersionChplDomain = getVersion + " sphinxcontrib-chapeldomain";
+    std::string chplDomainVersion = runCommand(getVersionChplDomain);
+    fprintf(stdout, "\tsphinxcontrib-chapeldomain version %s", chplDomainVersion.c_str());
 
     fPrintCopyright  = true;
     printedSomething = true;
@@ -278,8 +294,11 @@ static void checkKnownAttributes(const AttributeGroup* attrs) {
   // any tool, in one go. That will allow us to check for any unrecognized
   // attributes.
   for (auto attr : attrs->children()) {
-    if (attr->toAttribute()->name().startsWith(USTR("chpldoc."))) {
-      if (attr->toAttribute()->name() == UniqueString::get(gContext, "chpldoc.nodoc")) {
+    auto name = attr->toAttribute()->name();
+    if (name.startsWith(USTR("chpldoc."))) {
+      if (name == UniqueString::get(gContext, "chpldoc.nodoc")) {
+        // ignore, it's a known attribute
+      } else if (name == UniqueString::get(gContext, "chpldoc.attributeSignature")) {
         // ignore, it's a known attribute
       } else {
         // process the Error about unknown Attribute
@@ -321,6 +340,27 @@ static bool symbolNameBeginsWithChpl(const Decl* node) {
   return false;
 }
 
+/*
+ Attributes can be documented with the (plain) functions that provide
+ their implementation. This has the advantage of being able to explicitly
+ specify the types of the parameters, and generally use the existing chpldoc
+ functionality in that area. Functions that document attributes are marked
+ with @chpldoc.attributeSignature("attributeName"); check for this attribute
+ on the given node.
+*/
+static UniqueString nameOfAttributeSignature(const AstNode* node) {
+  if (auto attrs = parsing::astToAttributeGroup(gContext, node)) {
+    auto attr = attrs->getAttributeNamed(
+        UniqueString::get(gContext, "chpldoc.attributeSignature"));
+    if (attr && attr->numActuals() == 1) {
+      if (auto name = attr->actual(0)->toStringLiteral()) {
+        return name->value();
+      }
+    }
+  }
+  return UniqueString();
+}
+
 static bool isNoDoc(const Decl* e) {
   auto attrs = parsing::astToAttributeGroup(gContext, e);
   if (attrs) {
@@ -330,7 +370,7 @@ static bool isNoDoc(const Decl* e) {
       return true;
     }
   }
-  if (symbolNameBeginsWithChpl(e)) {
+  if (symbolNameBeginsWithChpl(e) && nameOfAttributeSignature(e).isEmpty()) {
     // TODO: Remove this check and the pragma once we have an attribute that
     // can be used to document chpl_ symbols or otherwise remove the
     // chpl_ prefix from symbols we want documented
@@ -755,7 +795,6 @@ static bool isCalleReservedWord(const AstNode* callee) {
        || callee->toIdentifier()->name() == USTR("unmanaged")
        || callee->toIdentifier()->name() == USTR("shared")
        || callee->toIdentifier()->name() == USTR("sync")
-       || callee->toIdentifier()->name() == USTR("single")
        || callee->toIdentifier()->name() == USTR("atomic")))
       return true;
     return false;
@@ -980,11 +1019,6 @@ struct RstSignatureVisitor {
     return false;
   }
 
-  bool enter(const CStringLiteral* l) {
-    os_ << "c\"" << escapeStringC(l->value().str()) << '"';
-    return false;
-  }
-
   bool enter(const Domain* dom) {
     if (dom->usedCurlyBraces()) {
       interpose(dom->exprs(), ", ", "{", "}");
@@ -997,6 +1031,14 @@ struct RstSignatureVisitor {
   bool enter(const Dot* d) {
     d->receiver()->traverse(*this);
     os_ << "." << d->field().c_str();
+    return false;
+  }
+
+  bool enter(const Interface* i) {
+    os_ << "interface " << i->name().c_str();
+    if (i->isFormalListExplicit() && i->numFormals() > 0) {
+      interpose(i->formals(), ", ", "(", ")");
+    }
     return false;
   }
 
@@ -1084,7 +1126,8 @@ struct RstSignatureVisitor {
     }
 
     // Function Name
-    os_ << kindToString(f->kind());
+    auto attrName = nameOfAttributeSignature(f);
+    os_ << (attrName.isEmpty() ? kindToString(f->kind()) : "attribute");
     os_ << " ";
 
     // storage kind
@@ -1119,6 +1162,8 @@ struct RstSignatureVisitor {
       // Function Name
       os_ << f->name().str();
       os_ << " ";
+    } else if (!attrName.isEmpty()) {
+      os_ << "@" << attrName.str();
     } else {
       // Function Name
       os_ << f->name().str();
@@ -1127,7 +1172,7 @@ struct RstSignatureVisitor {
     // Formals
     int numThisFormal = f->thisFormal() ? 1 : 0;
     int nFormals = f->numFormals() - numThisFormal;
-    if (nFormals == 0 && f->isParenless()) {
+    if (nFormals == 0 && (f->isParenless() || !attrName.isEmpty())) {
       // pass
     } else if (nFormals == 0) {
       os_ << "()";
@@ -1577,6 +1622,14 @@ struct RstResultBuilder {
     return getResult(true);
   }
 
+  owned<RstResult> visit(const Interface* i) {
+    if (isNoDoc(i)) return {};
+    show("interface", i);
+    visitChildren(i);
+    return getResult(true);
+  }
+
+
   owned<RstResult> visit(const Enum* e) {
     if (isNoDoc(e)) return {};
     show("enum", e);
@@ -1596,7 +1649,19 @@ struct RstResultBuilder {
       return {};
     bool doIndent = f->isMethod() && f->isPrimaryMethod();
     if (doIndent) indentDepth_ ++;
-    show(kindToRstString(f->isMethod(), f->kind()), f);
+
+    // Attributes are documented as functions using @chpldoc.attributeSignature
+    // Instead of using "method" or "function" etc. for the sphinx directive
+    // we use "annotation" to indicate that this is an attribute.
+    auto attrName = nameOfAttributeSignature(f);
+    std::string directive;
+    if (attrName.isEmpty()) {
+      directive = kindToRstString(f->isMethod(), f->kind());
+    } else {
+      directive = "annotation";
+    }
+    show(directive, f);
+
     if (doIndent) indentDepth_ --;
     return getResult();
   }
@@ -1853,16 +1918,19 @@ struct GatherModulesVisitor {
   void handleUseOrImport(const AstNode* node) {
     if (processUsedModules_) {
       auto scope = resolution::scopeForId(context_, node->id());
-      auto used = resolution::findUsedImportedModules(context_, scope);
-      for (auto id: used) {
-        if (idIsInBundledModule(context_, id)) {
-          continue;
-        }
-        // only add it and visit its children if we haven't seen it already
-        if (modules.find(id) == modules.end()) {
-          modules.insert(id);
-          auto ast = idToAst(context_, id);
-          ast->traverse(*this);
+      if (scope != nullptr && scope->containsUseImport()) {
+        if (auto r = resolveVisibilityStmts(context_, scope)) {
+          for (auto id: r->modulesNamedInUseOrImport()) {
+            if (idIsInBundledModule(context_, id)) {
+              continue;
+            }
+            // only add it and visit its children if we haven't seen it already
+            if (modules.find(id) == modules.end()) {
+              modules.insert(id);
+              auto ast = idToAst(context_, id);
+              ast->traverse(*this);
+            }
+          }
         }
       }
     }
@@ -1956,6 +2024,7 @@ struct CommentVisitor {
   DEF_ENTER(EnumElement, false)
   DEF_ENTER(Function, false)
   DEF_ENTER(Variable, false)
+  DEF_ENTER(Interface, true)
 
 #undef DEF_ENTER
 
@@ -2269,13 +2338,13 @@ class ChpldocErrorHandler : public Context::ErrorHandler {
 
 int main(int argc, char** argv) {
   Args args = parseArgs(argc, argv, (void*)main);
-  std::string warningMsg;
+  std::string diagnosticMsg;
   bool foundEnv = false;
   bool installed = false;
   // if user overrides CHPL_HOME from command line, don't go looking for trouble
   if (CHPL_HOME.empty()) {
     std::error_code err = findChplHome(argv[0], (void*)main, CHPL_HOME,
-                                       installed, foundEnv, warningMsg);
+                                       installed, foundEnv, diagnosticMsg);
     if (installed) {
       // need to determine and update third-party location before calling
       // getChplDepsApp to make sure we get an updated path in the case
@@ -2285,20 +2354,36 @@ int main(int argc, char** argv) {
       CHPL_THIRD_PARTY += getMajorMinorVersion();
       CHPL_THIRD_PARTY += "/third-party";
     }
-    if (!warningMsg.empty()) {
-      fprintf(stderr, "%s\n", warningMsg.c_str());
-    }
-    if (err) {
+
+    // When error code is set, diagnosticMsg contains the error.
+    if (!diagnosticMsg.empty()) {
+      fprintf(stderr, "%s\n", diagnosticMsg.c_str());
+    } else if (err) {
       fprintf(stderr, "CHPL_HOME not set to a valid value. Please set CHPL_HOME or pass a value "
                       "using the --home option\n" );
+    }
+
+    if (err) {
       clean_exit(1);
     }
   }
 
-  // TODO: there is a future for this, asking for a better error message and I
-  // think we can provide it by checking here.
-  // see test/chpldoc/compflags/folder/save-sphinx/saveSphinxInDocs.doc.future
-  // if (args.saveSphinx == "docs") { }
+  if (args.noHTML == false) {
+    if (args.outputDir.length() == 0 && args.saveSphinx == "docs") {
+      std::cerr << "error: using same directory for '--save-sphinx' as default "
+                << "output directory, please either use a different directory "
+                << "for '--save-sphinx' or override the default output "
+                << "directory with '--output-dir'" << std::endl;
+      return 1;
+
+    } else if (args.saveSphinx == args.outputDir &&
+               args.saveSphinx.length() != 0) {
+      std::cerr << "error: using same directory for '--save-sphinx' and "
+                << "'--output-dir' causes issues, please use a different "
+                << "location for one of these flags" << std::endl;
+      return 1;
+    }
+  }
 
   textOnly_ = args.textOnly;
   if (args.commentStyle.substr(0,2) != "/*") {

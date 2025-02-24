@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,7 +19,7 @@
  */
 
 //
-// Launch assistance for the uGNI communication interface.
+// Launch assistance for the OFI communication interface.
 //
 
 #include <inttypes.h>

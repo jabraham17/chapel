@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -123,12 +123,11 @@ static void test4(Context* context) {
 }
 
 int main() {
-  Context::Configuration config;
-  config.chplHome = getenv("CHPL_HOME");
-  Context context(config);
+  // Use a single context instance to avoid re-resolving internal modules.
+  auto context = buildStdContext();
 
-  test1(&context);
-  test2(&context);
-  test3(&context);
-  test4(&context);
+  test1(context);
+  test2(context);
+  test3(context);
+  test4(context);
 }

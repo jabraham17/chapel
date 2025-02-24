@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,39 +31,43 @@ using namespace uast;
 template <typename ResolvedVisitorImpl>
 static bool resolvedVisitorEnterFor(ResolvedVisitorImpl& v,
                                     const uast::For* loop) {
-  if (loop->isParam()) {
-    // Enter the param for-loop with the current resolution results, so that
-    // the user-defined visitor can choose to do something custom if it
-    // wants.
-    bool goInto = v.userVisitor().enter(loop, v);
+  bool goInto = v.userVisitor().enter(loop, v);
+  if (!goInto) return false;
 
-    if (goInto) {
-      const ResolvedExpression& rr = v.byAst(loop);
-      const ResolvedParamLoop* resolvedLoop = rr.paramLoop();
+  // don't return 'true' if it's a param loop, we'll enter it below if able.
+  if (loop->isParam()) goInto = false;
 
-      const AstNode* iterand = loop->iterand();
-      iterand->traverse(v);
+  // some loops have 'paramLoop' info (param loops, loops over heterogeneous tuples)
+  // but most don't, so check hasAst and bail if it's not there.
+  if (!v.hasAst(loop)) {
+    return goInto;
+  }
 
-      // TODO: Should there be some kind of function the UserVisitor can
-      // implement to observe a new iteration of the loop body?
-      for (const auto& loopBody : resolvedLoop->loopBodies()) {
-        ResolvedVisitorImpl loopVis(v.context(), loop,
-                                    v.userVisitor(), loopBody);
+  const ResolvedExpression& rr = v.byAst(loop);
+  const ResolvedParamLoop* resolvedLoop = rr.paramLoop();
 
-        for (const AstNode* child : loop->children()) {
-          // Written to visit "all but the iterand" in case we add more
-          // fields/children to the For class later.
-          if (child != iterand) {
-            child->traverse(loopVis);
-          }
-        }
+  // no param resolution results, act like a normal loop
+  if (resolvedLoop == nullptr) return goInto;
+
+  const AstNode* iterand = loop->iterand();
+  iterand->traverse(v);
+
+  // TODO: Should there be some kind of function the UserVisitor can
+  // implement to observe a new iteration of the loop body?
+  for (const auto& loopBody : resolvedLoop->loopBodies()) {
+    ResolvedVisitorImpl loopVis(v.rc(), loop,
+                                v.userVisitor(), loopBody);
+
+    for (const AstNode* child : loop->children()) {
+      // Written to visit "all but the iterand" in case we add more
+      // fields/children to the For class later.
+      if (child != iterand) {
+        child->traverse(loopVis);
       }
     }
-
-    return false;
-  } else {
-    return v.userVisitor().enter(loop, v);
   }
+
+  return false;
 }
 
 template <typename ResolvedVisitorImpl>
@@ -157,7 +161,7 @@ static bool resolvedVisitorEnterAst(ResolvedVisitorImpl& v,
 template <typename UV>
 class ResolvedVisitor {
   using UserVisitorType = UV;
-  Context* context_ = nullptr;
+  ResolutionContext* rc_ = nullptr;
   const uast::AstNode* ast_ = nullptr;
   UV& userVisitor_;
 
@@ -165,19 +169,22 @@ class ResolvedVisitor {
   const ResolutionResultByPostorderID& byPostorder_;
 
 public:
-  ResolvedVisitor(Context* context,
+  ResolvedVisitor(ResolutionContext* rc,
            const uast::AstNode* ast,
            UV& userVisitor,
            const ResolutionResultByPostorderID& byPostorder)
-    : context_(context),
+    : rc_(rc),
       ast_(ast),
       userVisitor_(userVisitor),
       byPostorder_(byPostorder) {
   }
 
+  /** Return the ResolutionContext used by this ResolvedVisitor */
+  ResolutionContext* rc() const { return rc_; }
+
   /** Return the context used by this ResolvedVisitor */
   Context* context() const {
-    return context_;
+    return rc_->context();
   }
   /** Return the uAST node being visited by this ResolvedVisitor */
   const uast::AstNode* ast() const {
@@ -204,6 +211,11 @@ public:
   /** Return the ResolvedExpression for a particular uAST node */
   const ResolvedExpression& byAst(const uast::AstNode* ast) const {
     return byPostorder_.byAst(ast);
+  }
+  /** Return the ResolvedExpression for a particular uAST node,
+      or nullptr if none is present*/
+  const ResolvedExpression* byAstOrNull(const uast::AstNode* ast) const {
+    return byPostorder_.byAstOrNull(ast);
   }
   /** Returns if the ResolutionResultByPostorderID has a result for
       a particular ID */
@@ -248,7 +260,7 @@ public:
 template <typename UV>
 class MutatingResolvedVisitor {
   using UserVisitorType = UV;
-  Context* context_ = nullptr;
+  ResolutionContext* rc_ = nullptr;
   const uast::AstNode* ast_ = nullptr;
   UV& userVisitor_;
 
@@ -256,19 +268,22 @@ class MutatingResolvedVisitor {
   ResolutionResultByPostorderID& byPostorder_;
 
 public:
-  MutatingResolvedVisitor(Context* context,
-           const uast::AstNode* ast,
-           UV& userVisitor,
-           const ResolutionResultByPostorderID& byPostorder)
-    : context_(context),
+  MutatingResolvedVisitor(ResolutionContext* rc,
+                          const uast::AstNode* ast,
+                          UV& userVisitor,
+                          const ResolutionResultByPostorderID& byPostorder)
+    : rc_(rc),
       ast_(ast),
       userVisitor_(userVisitor),
       byPostorder_(const_cast<ResolutionResultByPostorderID&>(byPostorder)) {
   }
 
+  /** Return the ResolutionContext used by this ResolvedVisitor */
+  ResolutionContext* rc() const { return rc_; }
+
   /** Return the context used by this ResolvedVisitor */
   Context* context() const {
-    return context_;
+    return rc_->context();;
   }
   /** Return the uAST node being visited by this ResolvedVisitor */
   const uast::AstNode* ast() const {

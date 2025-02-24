@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -78,7 +78,14 @@ class ErrorGuard {
   }
 
   /** Get the number of errors contained in the guard. */
-  inline size_t numErrors() const { return this->errors().size(); }
+  inline size_t numErrors(bool countWarnings = true) const {
+    size_t ret = handler_->errors().size();
+    if (!countWarnings) {
+      for (auto& err : handler_->errors())
+        if (err->kind() == chpl::ErrorBase::WARNING) --ret;
+    }
+    return ret;
+  }
 
   const chpl::owned<chpl::ErrorBase>& error(size_t idx) const {
     assert(idx < numErrors());
@@ -92,11 +99,17 @@ class ErrorGuard {
 
   /** Print the errors contained in this guard and then clear the guard
       of errors. Returns the number of errors. */
-  int realizeErrors() {
+  int realizeErrors(bool countWarnings = true) {
     assert(handler_);
     if (!handler_->errors().size()) return false;
     this->printErrors();
     int ret = (int) handler_->errors().size();
+
+    if (!countWarnings) {
+      for (auto& err : handler_->errors())
+        if (err->kind() == chpl::ErrorBase::WARNING) --ret;
+    }
+
     handler_->clear();
     return ret;
   }
@@ -112,6 +125,7 @@ class ErrorGuard {
                          chpl::ErrorWriter::DETAILED,
                          false);
     for (auto& err : this->errors()) err->write(ew);
+    std::cout.flush();
   }
 
   /** The guard destructor will assert that no errors have occurred. */

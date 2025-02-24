@@ -5,30 +5,17 @@
 #
 # The tarball is left in root of repo in tar/ directory.
 
-CWD=$(cd $(dirname $0) ; pwd)
-source $CWD/common.bash
-source $CWD/functions.bash
+UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+
+source $UTIL_CRON_DIR/common-tarball.bash
 
 # Tell gen_release to use existing repo instead of creating a new one with
 # git-archive.
 export CHPL_GEN_RELEASE_NO_CLONE=true
 
-export CHPL_HOME=$(cd $CWD/../.. ; pwd)
+export CHPL_HOME=$(cd $UTIL_CRON_DIR/../.. ; pwd)
 log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 
 export CHPL_LLVM=none
 
-source ${CHPL_HOME}/util/build_configs/functions.bash
-major=$(get_src_major_version ${CHPL_HOME})
-minor=$(get_src_minor_version ${CHPL_HOME})
-patch=$(get_src_patch_version ${CHPL_HOME})
-sha=$(git rev-parse --short HEAD)
-
-short_version="${major}.${minor}"
-version="${short_version}.${patch}.${sha}"
-
-log_info "Moving to ${CHPL_HOME}"
-cd $CHPL_HOME
-
-log_info "Building tarball with version: ${version}"
-./util/buildRelease/gen_release ${version}
+gen_release $version

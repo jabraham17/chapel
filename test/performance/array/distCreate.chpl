@@ -20,7 +20,7 @@ config const dist = distType.block;
 config const mode = diagMode.performance;
 
 // assume homogeneity
-const totMem = here.physicalMemory(unit = MemUnits.Bytes);
+const totMem = here.physicalMemory(unit = MemUnits.Bytes) / here.numColocales;
 config const memFraction = 4;
 
 config const createArrays = true;
@@ -117,13 +117,13 @@ const localDom = {1..nElems};
 inline proc getDom(param dType: distType) {
   select dType {
     when distType.block do
-      return localDom dmapped blockDist(boundingBox=localDom);
+      return localDom dmapped new blockDist(boundingBox=localDom);
     when distType.cyclic do
-      return localDom dmapped cyclicDist(startIdx=localDom.first);
+      return localDom dmapped new cyclicDist(startIdx=localDom.first);
     when distType.blockCyc do
-      return localDom dmapped blockCycDist(startIdx=localDom.first, blocksize=5);
+      return localDom dmapped new blockCycDist(startIdx=localDom.first, blocksize=5);
     when distType.stencil do
-      return localDom dmapped stencilDist(boundingBox=localDom, fluff=(1,));
+      return localDom dmapped new stencilDist(boundingBox=localDom, fluff=(1,));
   }
 }
 

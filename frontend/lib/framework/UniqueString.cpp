@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -184,6 +184,25 @@ UniqueString UniqueString::get(Context* context,
   }
 }
 
+int UniqueString::compare(const UniqueString other) const {
+  if (*this == other) return 0;
+  size_t lenThis = this->length();
+  size_t lenOther = other.length();
+  size_t minsize = (lenThis < lenOther) ? lenThis : lenOther;
+  int cmp = memcmp(this->c_str(), other.c_str(), minsize);
+  if (cmp == 0) {
+    if (lenThis == lenOther) return 0;
+    return (lenThis < lenOther) ? -1 : 1;
+  }
+  return (cmp < 0) ? -1 : 1;
+}
+
+int UniqueString::compare(const char* other) const {
+  int cmp = strcmp(this->c_str(), other);
+  if (cmp == 0) return 0;
+  return (cmp < 0) ? -1 : 1;
+}
+
 bool UniqueString::update(UniqueString& keep, UniqueString& addin) {
   return defaultUpdate(keep, addin);
 }
@@ -191,7 +210,21 @@ bool UniqueString::update(UniqueString& keep, UniqueString& addin) {
 
 void UniqueString::stringify(std::ostream& ss,
                              chpl::StringifyKind stringKind) const {
-  ss.write(c_str(),length());
+  if (stringKind != StringifyKind::DEBUG_SUMMARY) {
+    ss.write(c_str(),length());
+  } else {
+    size_t len = length();
+    const char* ptr = c_str();
+    const char* period = ".";
+    for (size_t i = 0; i < len; i++) {
+      int c = ptr[i];
+      if (isprint(c) && (c == ' ' || !isspace(c))) {
+        ss.write(ptr+i, 1);
+      } else {
+        ss.write(period, 1);
+      }
+    }
+  }
 }
 IMPLEMENT_DUMP(UniqueString);
 
@@ -227,8 +260,9 @@ UniqueString UniqueString::deserialize(Deserializer& des) {
   if ((byte & 0x80) == 0) {
     // string is inline here, byte is the length
     uint64_t len = byte;
-    char buf[128];
+    char buf[128]; // max size is 127, plus room for null terminating
     des.readData(buf, len);
+    buf[len] = '\0';
     return get(des.context(), buf, len);
   } else {
     // compute the index to look up in the strings table

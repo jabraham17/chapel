@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -87,11 +87,8 @@ module String {
     proc init=(other: byteIndex) { _bindex = other._bindex; }
     proc init=(i: int) { _bindex = i; }
 
-    proc writeThis(f) throws {
-      f.write(_bindex);
-    }
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write(_bindex);
     }
 
     operator :(val: byteIndex, type t:string) {
@@ -113,12 +110,8 @@ module String {
     proc init=(i: int) { _cpindex = i; }
     proc init=(cpi: codepointIndex) { _cpindex = cpi._cpindex; }
 
-    proc writeThis(f) throws {
-      f.write(_cpindex);
-    }
-
     proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write(_cpindex);
     }
 
     operator :(val: codepointIndex, type t:string) {
@@ -399,7 +392,7 @@ module String {
     :arg x: The buffer to borrow from
     :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
-    :arg length: Length of the string stored in `x` in bytes, excluding the
+    :arg length: Length of the string stored in `x` in bytes, excluding the optional
                  terminating null byte.
     :type length: `int`
 
@@ -424,7 +417,7 @@ module String {
     :arg x: The buffer to borrow from
     :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
 
-    :arg length: Length of the string stored in `x` in bytes, excluding the
+    :arg length: Length of the string stored in `x` in bytes, excluding the optional
                  terminating null byte.
     :type length: `int`
 
@@ -473,7 +466,7 @@ module String {
      :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
-                  terminating null byte.
+                  optional terminating null byte.
      :type length: `int`
 
      :arg size: Size of memory allocated for `x` in bytes
@@ -497,15 +490,6 @@ module String {
     return ret;
   }
 
-  @chpldoc.nodoc
-  @deprecated("the type 'c_string' is deprecated; please use the variant of 'string.createBorrowingBuffer' that takes a 'c_ptrConst(c_char)' instead")
-  inline proc type string.createBorrowingBuffer(x: chpl_c_string,
-                                                length=x.size) : string throws {
-    return string.createBorrowingBuffer(x:bufferType,
-                                        length=length,
-                                        size=length+1);
-  }
-
   /*
     Creates a new :type:`string` which takes ownership of the memory allocated for a
     :class:`~CTypes.c_ptr`. The buffer will be freed when the :type:`string` is deinitialized.
@@ -513,26 +497,18 @@ module String {
     :arg x: The buffer to take ownership of
     :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
-    :arg length: Length of the string stored in `x` in bytes, excluding the
+    :arg length: Length of the string stored in `x` in bytes, excluding the optional
                  terminating null byte.
     :type length: `int`
 
     :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
-     characters.`DecodeError` if `x` contains non-UTF-8 characters.
+     characters. In that event, this function does not free `x`; that is
+     the caller's responsibility.
 
     :returns: A new :type:`string`
   */
   proc type string.createAdoptingBuffer(x: c_ptr(?t),
                                         length=strLen(x)) : string throws {
-    return string.createAdoptingBuffer(x:bufferType,
-                                       length=length,
-                                       size=length+1);
-  }
-
-  @chpldoc.nodoc
-  @deprecated("the type 'c_string' is deprecated; please use the variant of 'string.createAdoptingBuffer' that takes a 'c_ptrConst(c_char)' instead")
-  inline proc type string.createAdoptingBuffer(x: chpl_c_string,
-                                               length=x.size) : string throws {
     return string.createAdoptingBuffer(x:bufferType,
                                        length=length,
                                        size=length+1);
@@ -546,12 +522,13 @@ module String {
     :arg x: The buffer to take ownership of
     :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
 
-    :arg length: Length of the string stored in `x` in bytes, excluding the
+    :arg length: Length of the string stored in `x` in bytes, excluding the optional
                  terminating null byte.
     :type length: `int`
 
     :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
-     characters.
+     characters. In that event, this function does not free `x`; that is the
+     caller's responsibility.
 
     :returns: A new :type:`string`
   */
@@ -570,14 +547,15 @@ module String {
      :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
-                  terminating null byte.
+                  optional terminating null byte.
      :type length: `int`
 
      :arg size: Size of memory allocated for `x` in bytes
      :type length: `int`
 
      :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
-      characters.
+      characters. In that event, this function does not free `x`; that is the
+      caller's responsibility.
 
      :returns: A new :type:`string`
   */
@@ -599,7 +577,7 @@ module String {
     :arg x: The buffer to copy
     :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
 
-    :arg length: Length of `x` in bytes, excluding the terminating null byte.
+    :arg length: Length of `x` in bytes, excluding the optional terminating null byte.
     :type length: `int`
 
     :arg policy: - `decodePolicy.strict` raises an error
@@ -631,7 +609,7 @@ module String {
      :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
-                  terminating null byte.
+                  optional terminating null byte.
      :type length: `int`
 
      :arg size: Size of memory allocated for `x` in bytes. This argument is
@@ -662,22 +640,11 @@ module String {
     return decodeByteBuffer(x:bufferType, length, policy);
   }
 
-  @chpldoc.nodoc
-  @deprecated("the type 'c_string' is deprecated; please use the variant of 'string.createCopyingBuffer' that takes a 'c_ptrConst(c_char)' instead")
-  inline proc type string.createCopyingBuffer(x: chpl_c_string,
-                                              length=x.size,
-                                              policy=decodePolicy.strict
-                                              ) : string throws {
-    return string.createCopyingBuffer(x:bufferType,
-                                      length=length,
-                                      size=length+1,
-                                      policy);
-  }
-
   // non-validating string factory functions are in this submodule. This
   // submodule can be `private use`d from other String-supporting modules.
   @chpldoc.nodoc
   module NVStringFactory {
+    use ChapelStandard; // For '=' operators between ints
     use BytesStringCommon;
     use ByteBufferHelpers only bufferType;
 
@@ -700,6 +667,21 @@ module String {
       // same names, because "wellknown" implementation in the compiler does not
       // allow overloads.
       var ret: string;
+
+      // 2024/02/15 Lydia NOTE: This avoids a valgrind warning when performing
+      // checks about arguments passed by default/const intent when they could
+      // be implicitly modified.  The string type has boolean fields, which C
+      // inserts padding for but we can't actually initialize the padding
+      // without a memset
+      if (chpl_warnUnstable && chpl_constArgChecking) {
+        var origIsOwned = ret.isOwned;
+        var origLocaleID = ret.locale_id;
+
+        __primitive("zero variable", ret);
+        ret.isOwned = origIsOwned;
+        ret.locale_id = origLocaleID;
+      }
+
       initWithBorrowedBuffer(ret, x, length, size);
       ret.cachedNumCodepoints = numCodepoints;
       return ret;
@@ -752,7 +734,7 @@ module String {
       // a null-terminator.
       if isOwned && this.buff != nil {
         on __primitive("chpl_on_locale_num",
-                       chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                       chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
           chpl_here_free(this.buff);
         }
       }
@@ -874,17 +856,8 @@ module String {
     }
 
     // These should never be called (but are default functions for records)
-    proc writeThis(f) throws {
-      compilerError("not implemented: writeThis");
-    }
-
-    // These should never be called (but are default functions for records)
     proc serialize(writer, ref serializer) throws {
       compilerError("not implemented: serialize");
-    }
-
-    proc readThis(f) throws {
-      compilerError("not implemented: readThis");
     }
 
     // assumes that 'this' is already local
@@ -998,7 +971,7 @@ module String {
       // pattern.len is <= than this.buffLen, so go to the home locale
       var ret: int = -1;
       on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                     chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
         // any value >= 0 means we have a solution
         // used because we cant break out of an on-clause early
         var localRet: int = -2;
@@ -1162,38 +1135,6 @@ module String {
       const x:string = this; // assignment makes it local
       return x;
     }
-  }
-
-  /*
-    Get a `c_ptrConst(c_char)` from a :type:`string`. The returned
-    :class:`~CTypes.c_ptrConst` shares the buffer with the :type:`string`.
-
-    .. warning::
-
-        This can only be called safely on a :type:`string` whose home is
-        the current locale.  This property can be enforced by calling
-        :proc:`string.localize()` before :proc:`string.c_str()`. If the
-        string is remote, the program will halt.
-
-    For example:
-
-    .. code-block:: chapel
-
-      var my_string = "Hello!";
-      on different_locale {
-        printf("%s", my_string.localize().c_str());
-      }
-
-    :returns:
-        A `c_ptrConst(c_char)` that points to the underlying buffer used by this
-        :type:`string`. The returned `c_ptrConst(c_char)` is only valid when used
-        on the same locale as the string.
-   */
-  pragma "last resort"
-  @deprecated("'string.c_str()' has moved to 'CTypes'. Please 'use CTypes' to access ':proc:`~CTypes.string.c_str`'")
-  inline proc string.c_str() : c_ptrConst(c_char) {
-    use CTypes only c_str;
-    return this.c_str();
   }
 
   /*
@@ -1815,7 +1756,7 @@ module String {
 
     var result: bool;
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       var locale_result = false;
       for cp in this.codepoints() {
         if codepoint_isLower(cp) {
@@ -1842,7 +1783,7 @@ module String {
 
     var result: bool;
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       var locale_result = false;
       for cp in this.codepoints() {
         if codepoint_isUpper(cp) {
@@ -1869,7 +1810,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for cp in this.codepoints() {
         if !(codepoint_isWhitespace(cp)) {
           result = false;
@@ -1891,7 +1832,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for cp in this.codepoints() {
         if !codepoint_isAlpha(cp) {
           result = false;
@@ -1913,7 +1854,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for cp in this.codepoints() {
         if !codepoint_isDigit(cp) {
           result = false;
@@ -1935,7 +1876,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for cp in this.codepoints() {
         if !(codepoint_isAlpha(cp) || codepoint_isDigit(cp)) {
           result = false;
@@ -1957,7 +1898,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       for cp in this.codepoints() {
         if !codepoint_isPrintable(cp) {
           result = false;
@@ -1980,7 +1921,7 @@ module String {
     var result: bool = true;
 
     on __primitive("chpl_on_locale_num",
-                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_none)) {
       param UN = 0, UPPER = 1, LOWER = 2;
       var last = UN;
       for cp in this.codepoints() {
@@ -2263,6 +2204,36 @@ module String {
     doAppend(lhs, rhs);
   }
 
+  /*
+     Appends the codepoint values passed to the :type:`string` `this`.
+
+     Any argument not in 0..0x10FFFF is not valid Unicode codepoint.
+     This function will append the replacement character 0xFFFD instead of
+     such invalid arguments.
+   */
+  @unstable("'string.appendCodepointValues' is unstable and may change in the future")
+  proc ref string.appendCodepointValues(codepoints: int ...) : void {
+    var nbytesTotal = 0;
+    var buf: c_array(uint(8), 4*codepoints.size);
+    // TODO: make c_ptrTo(myCArray) work
+    for param i in 0..<codepoints.size {
+      var cp = codepoints(i);
+      if 0 <= cp && cp <= 0x10FFFF {
+        // it is a valid Unicode codepoint
+      } else {
+        // it is invalid. Use the replacement character.
+        cp = 0xFFFD;
+      }
+      var nbytes = qio_nbytes_char(cp: int(32));
+      if boundsChecking {
+        assert(0 <= nbytes && nbytes <= 4);
+      }
+      qio_encode_char_buf(c_ptrTo(buf[nbytesTotal]), cp: int(32));
+      nbytesTotal += nbytes;
+    }
+    doAppendSomeBytes(this, nbytesTotal, buf, nCodepoints=codepoints.size);
+  }
+
   //
   // Relational operators
   // TODO: all relational ops other than == and != are broken for unicode
@@ -2290,7 +2261,7 @@ module String {
     /* if a.locale_id == b.locale_id {
       var ret: bool = false;
       on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(a.locale_id, c_sublocid_any)) {
+                     chpl_buildLocaleID(a.locale_id, c_sublocid_none)) {
         ret = doEq(a, b);
       }
       return ret;
@@ -2400,18 +2371,6 @@ module String {
   //
   // Casts (casts to & from other primitive types are in StringCasts)
   //
-
-  // Cast from c_string to string
-  @chpldoc.nodoc
-  @deprecated("the type 'c_string' is deprecated; please use one of the 'string.create*ingBuffer' methods that takes a 'c_ptrConst(c_char)' instead")
-  operator :(cs: c_string, type t: string)  {
-    try {
-      return string.createCopyingBuffer(cs:c_ptrConst(c_char));
-    }
-    catch {
-      halt("Casting a non-UTF-8 c_string to string");
-    }
-  }
 
   // Cast from byteIndex to int
   @chpldoc.nodoc

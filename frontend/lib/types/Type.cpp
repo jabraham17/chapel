@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,8 +19,10 @@
 
 #include "chpl/types/Type.h"
 
+#include "chpl/framework/query-impl.h"
 #include "chpl/types/AnyClassType.h"
 #include "chpl/types/AnyType.h"
+#include "chpl/types/ArrayType.h"
 #include "chpl/types/BoolType.h"
 #include "chpl/types/BuiltinType.h"
 #include "chpl/types/CStringType.h"
@@ -28,17 +30,22 @@
 #include "chpl/types/ComplexType.h"
 #include "chpl/types/CPtrType.h"
 #include "chpl/types/DomainType.h"
+#include "chpl/types/HeapBufferType.h"
 #include "chpl/types/ImagType.h"
 #include "chpl/types/IntType.h"
 #include "chpl/types/NilType.h"
 #include "chpl/types/NothingType.h"
 #include "chpl/types/PrimitiveType.h"
+#include "chpl/types/PtrType.h"
 #include "chpl/types/RealType.h"
 #include "chpl/types/RecordType.h"
 #include "chpl/types/UintType.h"
 #include "chpl/types/UnknownType.h"
 #include "chpl/types/TupleType.h"
 #include "chpl/types/VoidType.h"
+#include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/resolution-queries.h"
+#include "../resolution/default-functions.h"
 
 namespace chpl {
 namespace types {
@@ -102,6 +109,7 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "chpl_c_string", CStringType::get(context));
   gatherType(context, map, "nothing", NothingType::get(context));
   gatherType(context, map, "void", VoidType::get(context));
+  gatherType(context, map, "_ddata", HeapBufferType::get(context));
 
   gatherType(context, map, "RootClass", BasicClassType::getRootClassType(context));
 
@@ -116,6 +124,7 @@ void Type::gatherBuiltins(Context* context,
   auto localeType = CompositeType::getLocaleType(context);
   gatherType(context, map, "locale", localeType);
   gatherType(context, map, "_locale", localeType);
+  gatherType(context, map, "chpl_localeID_t", CompositeType::getLocaleIDType(context));
 
   auto rangeType = CompositeType::getRangeType(context);
   gatherType(context, map, "range", rangeType);
@@ -126,8 +135,10 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "domain", DomainType::getGenericDomainType(context));
 
   gatherType(context, map, "class", AnyClassType::get(context));
-
-  gatherType(context, map, "c_ptr", CPtrType::get(context));
+  auto genericBorrowed = ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::BORROWED));
+  gatherType(context, map, "borrowed", genericBorrowed);
+  auto genericUnmanaged = ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::UNMANAGED));
+  gatherType(context, map, "unmanaged", genericUnmanaged);
 
   BuiltinType::gatherBuiltins(context, map);
 }
@@ -149,7 +160,9 @@ void Type::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
   for (int i = 0; i < leadingSpaces; i++) {
     ss << "  ";
   }
-  ss << "type ";
+  if (stringKind != chpl::StringifyKind::CHPL_SYNTAX) {
+    ss << "type ";
+  }
   ss << typetags::tagToString(this->tag());
 }
 
@@ -157,7 +170,7 @@ IMPLEMENT_DUMP(Type);
 
 bool Type::isStringType() const {
   if (auto rec = toRecordType()) {
-    if (rec->name() == USTR("string"))
+    if (rec->id().symbolPath() == USTR("String._string"))
       return true;
   }
   return false;
@@ -165,7 +178,7 @@ bool Type::isStringType() const {
 
 bool Type::isBytesType() const {
   if (auto rec = toRecordType()) {
-    if (rec->name() == USTR("bytes"))
+    if (rec->id().symbolPath() == USTR("Bytes._bytes"))
       return true;
   }
   return false;
@@ -173,14 +186,14 @@ bool Type::isBytesType() const {
 
 bool Type::isLocaleType() const {
   if (auto rec = toRecordType()) {
-    if (rec->name() == USTR("locale"))
+    if (rec->id().symbolPath() == USTR("ChapelLocale._locale"))
       return true;
   }
   return false;
 }
 
 bool Type::isNilablePtrType() const {
-  if (isPtrType()) {
+  if (isPointerLikeType()) {
 
     if (auto ct = toClassType()) {
       if (!ct->decorator().isNilable())
@@ -194,7 +207,9 @@ bool Type::isNilablePtrType() const {
 }
 
 bool Type::isUserRecordType() const {
-  if (!isRecordType())
+  // iterator types in Dyno are "iterator records" in production and so are
+  // records.
+  if (!isRecordType() && !isIteratorType())
     return false;
 
   // TODO: add exceptions in here
@@ -206,17 +221,215 @@ bool Type::isUserRecordType() const {
   return true;
 }
 
+bool Type::hasPragma(Context* context, uast::pragmatags::PragmaTag p) const {
+  if (auto ct = this->toCompositeType()) {
+    if (auto id = ct->id()) {
+      if (auto ag = parsing::idToAttributeGroup(context, id)) {
+        return ag->hasPragma(p);
+      }
+    }
+  }
+  return false;
+}
+
+bool Type::isRecordLike() const {
+  if (auto ct = this->toClassType()) {
+    auto decorator = ct->decorator();
+    // no action needed for 'borrowed' or 'unmanaged'
+    // (these should just default initialized to 'nil',
+    //  so nothing else needs to be resolved)
+    if (!(decorator.isBorrowed() || decorator.isUnmanaged() ||
+          decorator.isUnknownManagement())) {
+      return true;
+    }
+  } else if (this->isRecordType() || this->isUnionType()) {
+    return true;
+  }
+  // TODO: tuples?
+
+  return false;
+}
 
 const CompositeType* Type::getCompositeType() const {
   if (auto at = toCompositeType())
     return at;
 
   if (auto ct = toClassType())
-    return ct->basicClassType();
+    return ct->manageableType();
 
   return nullptr;
 }
 
+template <typename F>
+static bool checkFieldsWithPredicate(Context* context, const Type* t, F&& pred) {
+  using namespace resolution;
+
+  auto ct = t->getCompositeType();
+  CHPL_ASSERT(ct);
+
+  if (auto tt = t->toTupleType()) {
+    for (int i = 0; i < tt->numElements(); i++) {
+      auto& eltType = tt->elementType(i);
+      if (!eltType.type()) return false;
+      if (!pred(context, eltType.type())) return false;
+    }
+
+    return true;
+  }
+
+  auto& rf = fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
+  for (int i = 0; i < rf.numFields(); i++) {
+    auto qt = rf.fieldType(i);
+    if (auto ft = qt.type()) {
+      if (qt.kind() == QualifiedType::PARAM ||
+          qt.kind() == QualifiedType::TYPE) continue;
+      if (!pred(context, ft)) return false;
+    } else {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+static bool
+compositeTypeIsPod(Context* context, const Type* t) {
+  using namespace resolution;
+
+  if (auto cls = t->toClassType()) {
+    return !cls->decorator().isManaged();
+  }
+
+  auto ct = t->getCompositeType();
+  if (!ct) return false;
+
+  bool fieldsArePod = checkFieldsWithPredicate(context, t, Type::isPod);
+  if (!fieldsArePod) return false;
+
+  // for tuple, this is enough; for other composite types, see if any user-defined
+  // methods are present.
+  if (t->isTupleType()) return true;
+
+  const uast::AstNode* ast = nullptr;
+  if (auto id = ct->id()) ast = parsing::idToAst(context, std::move(id));
+
+  if (auto tfs = tryResolveDeinit(context, ast, t)) {
+    if (!tfs->isCompilerGenerated()) return false;
+  }
+  if (auto tfs = tryResolveInitEq(context, ast, t, t)) {
+    if (!tfs->isCompilerGenerated()) return false;
+  }
+  if (auto tfs = tryResolveAssign(context, ast, t, t)) {
+    if (!tfs->isCompilerGenerated()) return false;
+  }
+
+  return true;
+}
+
+static const bool&
+compositeTypeIsPodQuery(Context* context, const Type* t) {
+  QUERY_BEGIN(compositeTypeIsPodQuery, context, t);
+  bool ret = compositeTypeIsPod(context, t);
+  return QUERY_END(ret);
+}
+
+bool Type::isPod(Context* context, const Type* t) {
+  if (t->isUnknownType() || t->isErroneousType() ||
+      t->isAnyType()) return false;
+  if (t->hasPragma(context, uast::PRAGMA_POD)) return true;
+  if (t->hasPragma(context, uast::PRAGMA_IGNORE_NOINIT)) return false;
+  if (t->hasPragma(context, uast::PRAGMA_ATOMIC_TYPE)) return false;
+  if (t->hasPragma(context, uast::PRAGMA_SYNC)) return false;
+  if (t->isDomainType()) return false;
+  if (t->isArrayType()) return false;
+  if (auto cls = t->toClassType()) {
+    if (cls->decorator().isManaged()) return false;
+  }
+  // TODO: We might like to be able to mark something as POD if it contains
+  // all marked-as-POD members (e.g., all ranges) even if it is generic.
+  // Currently, we can't do that, because call resolution can't get far
+  // when given a generic actual.
+  auto g = resolution::getTypeGenericity(context, t);
+  if (g != Type::CONCRETE) return false;
+  if (t->getCompositeType()) return compositeTypeIsPodQuery(context, t);
+  return true;
+}
+
+static bool const& isDefaultInitializableQuery(Context* context, const Type* t) {
+  QUERY_BEGIN(isDefaultInitializableQuery, context, t);
+
+  bool result = true;
+  if (!t || t->isUnknownType() || t->isErroneousType()) {
+    result = false;
+  } else if (t->isBuiltinType()) {
+    result = t->genericity() == Type::CONCRETE;
+  } else if (auto at = t->toArrayType()) {
+    result = isDefaultInitializableQuery(context, at->eltType().type());
+  } else if (t->isDomainType()) {
+    result = true; // production always returns true for domains.
+  } else if (t->isExternType()) {
+    // Currently extern records aren't initialized at all by default.
+    // But it's not necessarily reasonable to expect them to have
+    // initializers. See issue #7992 and preFold.cpp's setRecordDefaultValueFlags
+    // for FLAG_EXTERN.
+    result = true;
+  } else if (auto ct = t->toClassType()) {
+    result = ct->decorator().isNilable();
+  } else if (t->isTupleType()) {
+    result = checkFieldsWithPredicate(context, t, Type::isDefaultInitializable);
+  } else if (t->isRecordLike()) {
+    // If the type doesn't have a user-defined initializer or is a tuple, check
+    // its fields.
+    auto fieldsDefaultInitializable = true;
+    if (resolution::needCompilerGeneratedMethod(context, t, USTR("init"), /* parenless */ false)) {
+      fieldsDefaultInitializable = checkFieldsWithPredicate(context, t, Type::isDefaultInitializable);
+    }
+
+    if (!fieldsDefaultInitializable) {
+      result = false;
+    } else {
+      const uast::AstNode* ast = nullptr;
+      if (auto ct = t->getCompositeType()) {
+        if (auto id = ct->id()) {
+          ast = parsing::idToAst(context, std::move(id));
+        }
+      }
+
+      // note: production disallows default-init for generic fields like `var x;`,
+      // even if they are instantiated with a type that is default-initializable.
+      // But why? Seems like this is an implementation detail. Allow it in Dyno.
+
+      result = resolution::tryResolveZeroArgInit(context, ast, t) != nullptr;
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool Type::isDefaultInitializable(Context* context, const Type* t) {
+  return isDefaultInitializableQuery(context, t);
+}
+
+bool Type::needsInitDeinitCall(const Type* t) {
+  if (t == nullptr || t->isUnknownType() || t->isErroneousType()) {
+    // can't do anything with these
+    return false;
+  } else if (t->isPrimitiveType() || t->isBuiltinType() || t->isCStringType() ||
+             t->isNilType() || t->isNothingType() || t->isVoidType()) {
+    // OK, we can always default initialize primitive numeric types,
+    // and as well we assume that for the non-generic builtin types
+    // e.g. TaskIdType.
+    // No need to resolve anything additional now.
+    return false;
+  } else if (t->isEnumType()) {
+    // OK, can default-initialize enums to first element
+    return false;
+  } else if (t->isFunctionType()) {
+    return false;
+  }
+
+  return t->isRecordLike();
+}
 
 } // end namespace types
 } // end namespace chpl

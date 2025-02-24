@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -63,9 +63,9 @@ static const char* errorExactMatch = R"""(
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
     4 | proc f(ref x: owned Parent) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  The formal 'x' expects a value of type 'owned Parent()', but the actual was a value of type 'owned Child()'.
+  The formal 'x' expects a value of type 'owned Parent', but the actual was a value of type 'owned Child'.
       |
     7 | f(x);
       |   ⎺
@@ -89,7 +89,7 @@ static const char* errorExpectedSubType = R"""(
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
     1 | proc f(type x: string) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   The formal 'x' expects the type 'string', but the actual was the type 'int(64)'.
       |
@@ -118,9 +118,9 @@ static const char* errorIncompatibleMgr = R"""(
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
     3 | proc f(x: owned C) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  The formal 'x' expects a value of type 'owned C()', but the actual was a value of type 'shared C()'.
+  The formal 'x' expects a value of type 'owned C', but the actual was a value of type 'shared C'.
       |
     6 | f(x);
       |   ⎺
@@ -147,9 +147,9 @@ static const char* errorIncompatibleNilability = R"""(
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
     3 | proc f(x: owned C) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  The formal 'x' expects a value of type 'owned C()', but the actual was a value of type 'owned C()?'.
+  The formal 'x' expects a value of type 'owned C', but the actual was a value of type 'owned C?'.
       |
     6 | f(arg);
       |   ⎺⎺⎺
@@ -174,7 +174,7 @@ static const char* errorTupleSize = R"""(
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
     1 | proc f(x: (?, ?, ?)) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   The formal 'x' expects a value of type '(?, ?, ?)', but the actual was a value of type '(int(64), int(64))'.
       |
@@ -200,14 +200,14 @@ static const char* errorStarVsNotStar = R"""(
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
     1 | proc f(in x: 3*real) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   The formal 'x' expects a value of type '(real(64), real(64), real(64))', but the actual was a value of type '(real(64), real(64), bool)'.
       |
     3 | f((1.0, 1.0, true));
       |   ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  A formal that is a star tuple cannot accept an actual actual that is not.
+  A formal that is a star tuple cannot accept an actual that is not.
 )""";
 
 static const char* progVarArgMismatch = R"""(
@@ -264,7 +264,7 @@ static const char* errorBasic = R"""(
     3 | f(a=42);
       |
   
-  The following candidate didn't match:
+  The following candidate didn't match because actual 1 was named 'a', but no formal with that name was found.
       |
     1 | proc f(x: int) {}
       |
@@ -281,14 +281,9 @@ r.x("hello");
 
 static const char* errorOther = R"""(
 ─── error in file.chpl:6 [NoMatchingCandidates] ───
-  Unable to resolve call to 'x': no matching candidates.
+  Unable to resolve call to 'this': no matching candidates.
       |
     6 | r.x("hello");
-      |
-  
-  The following candidate didn't match:
-      |
-    2 |     var x: int;
       |
 )""";
 
@@ -314,10 +309,10 @@ static const char* errorManyCandidates = R"""(
   
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
-    1 | proc f(x: int(8)) {}
-      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+    8 | proc f(x: uint(64)) {}
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  The formal 'x' expects a value of type 'int(8)', but the actual was a param of type 'string'.
+  The formal 'x' expects a value of type 'uint(64)', but the actual was a param of type 'string'.
        |
     10 | f("hello");
        |   ⎺⎺⎺⎺⎺⎺⎺
@@ -325,10 +320,10 @@ static const char* errorManyCandidates = R"""(
   
   The following candidate didn't match because an actual couldn't be passed to a formal:
       |
-    2 | proc f(x: int(16)) {}
+    7 | proc f(x: uint(32)) {}
       |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  The formal 'x' expects a value of type 'int(16)', but the actual was a param of type 'string'.
+  The formal 'x' expects a value of type 'uint(32)', but the actual was a param of type 'string'.
        |
     10 | f("hello");
        |   ⎺⎺⎺⎺⎺⎺⎺
@@ -337,9 +332,15 @@ static const char* errorManyCandidates = R"""(
   Omitting 6 more candidates that didn't match.
 )""";
 
-static void testResolverError(const char* program, const char* error) {
+static void testResolverError(const char* program, const char* error,
+                              bool standard = true) {
+  Context* context = nullptr;
   Context ctx;
-  Context* context = &ctx;
+  if (standard) {
+    context = buildStdContext();
+  } else {
+    context = &ctx;
+  }
   ErrorGuard guard(context);
 
   while (*error == '\n') error++;
@@ -375,7 +376,8 @@ int main() {
   testResolverError(progVarArgMismatch, errorVarArgMismatch);
   testResolverError(progWhereClauseFalse, errorWhereClauseFalse);
   testResolverError(progBasic, errorBasic);
-  testResolverError(progOther, errorOther);
+  // Avoid standard modules for now to prevent very long list of candidates
+  testResolverError(progOther, errorOther, false);
   testResolverError(progManyCandidates, errorManyCandidates);
 
   return 0;

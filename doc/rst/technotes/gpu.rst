@@ -5,8 +5,16 @@
 GPU Programming
 ===============
 
-Chapel can be used to program GPUs. Currently  NVIDIA and AMD GPUs are
-supported. Support for Intel GPUs is planned but not implemented, yet.
+Chapel enables developers to use parallelism at different levels: from
+intra-node multicore parallelism, to cross-node distributed parallelism, to
+GPUs. This technote serves as a reference on how to use Chapel to program GPUs.
+Specifically, it gives a quick overview of GPU programming, includes a handful
+of examples, discusses system requirements and current limitations for GPU
+support, and delves into more details on some specific GPU-related features.
+
+Readers preferring a more tutorial-like introduction to Chapel's GPU support,
+may also wish to look at our `GPU Programming in Chapel
+<https://chapel-lang.org/blog/series/gpu-programming-in-chapel/>`_ blog series.
 
 .. warning::
 
@@ -18,27 +26,38 @@ supported. Support for Intel GPUs is planned but not implemented, yet.
 Overview
 --------
 
-The Chapel compiler will generate GPU kernels for certain ``forall`` and
-``foreach`` loops and launch these onto a GPU when the current locale (e.g.
-``here``) is assigned to a special (sub)locale representing a GPU. To deploy
-code to a GPU, put the relevant code in an ``on`` statement targeting a GPU
-sublocale (i.e. ``here.gpus[0]``).
+The Chapel compiler will generate GPU kernels for certain parallel operations
+such as ``forall``/``foreach`` loops, ``reduce`` expressions and promoted
+expressions. These will be launched onto a GPU when the current locale (e.g.
+``here``) is the sublocale representing that particular GPU. To deploy code to a
+GPU, put the relevant code in an ``on`` statement targeting a GPU sublocale
+(i.e. ``here.gpus[0]``).
 
 Any arrays that are declared by tasks executing on a GPU sublocale will, by
 default, be accessible on the GPU (see the `Memory Strategies`_ subsection for
 more information about alternate memory strategies).
 
-Chapel will launch kernels for all eligible loops that are encountered by tasks
-executing on a GPU sublocale.  Loops are eligible when:
+Chapel will launch kernels for all eligible data-parallel operations that are
+encountered by tasks executing on a GPU sublocale. Expressions are eligible
+when:
 
-* They are order-independent. i.e., `forall
-  <../users-guide/datapar/forall.html>`_ or `foreach <foreach.html>`_ loops over
-  iterators that are also order-independent.
-* They only make use of known compiler primitives that are fast and local. Here
-  "fast" means "safe to run in a signal handler" and "local" means "doesn't
-  cause any network communication".
+* They are order-independent, such as:
+
+  * `forall <../users-guide/datapar/forall.html>`_ or `foreach <foreach.html>`_
+    loops over iterators that are also order-independent (i.e. the yielding loop
+    uses ``foreach`` loops instead of ``for``. All Chapel iterators of ranges,
+    domains and arrays are order-independent),
+
+  * ``reduce`` expressions over order-independent iterators,
+
+  * Promoted expressions over order-independent iterators.
+
 * They do not call out to ``extern`` functions (aside from those in an exempted
   set of Chapel runtime functions).
+
+* They do not allocate memory dynamically (i.e. no class instances or Chapel
+  arrays are created within).
+
 * They are free of any call to a function that fails to meet the above
   criteria or accesses outer variables.
 
@@ -95,7 +114,7 @@ Benchmark examples
 
 Test examples
 ~~~~~~~~~~~~~
-* `assertOnFailToGpuize <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/assertOnFailToGpuize.chpl>`_ -- various examples of loops that are not eligible for GPU execution
+* `assertOnFailToGpuizeAttr <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/assertOnFailToGpuizeAttr.chpl>`_ -- various examples of loops that are not eligible for GPU execution
 * `mathOps <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/mathOps.chpl>`_ -- calls to various math functions within kernels that call out to the CUDA Math library
 * `measureGpuCycles <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/measureGpuCycles.chpl>`_ -- measuring time within a GPU kernel
 * `promotion2 <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/promotion2.chpl>`_ -- GPU kernels from promoted expressions
@@ -113,42 +132,62 @@ Setup
 Requirements
 ~~~~~~~~~~~~
 
-* ``LLVM`` must be used as Chapel's backend compiler (i.e.
-  ``CHPL_LLVM`` must be set to ``system`` or ``bundled``). For more information
-  about these settings see :ref:`Optional Settings <readme-chplenv>`.
+First, please make sure you are using Chapel's `preferred configuration
+<../usingchapel/QUICKSTART.html#using-chapel-in-its-preferred-configuration>`_
+as the starting point. Specifically, the "quickstart" configuration can not be
+used with GPU support.
 
-  * If using a ``system`` LLVM:
+The following are further requirements for GPU support:
 
-    * it must have been built with support for the relevant target of GPU you
-      wish to generate code for (e.g.  NVPTX to target NVIDIA GPUs and AMDGPU to
-      target AMD GPUs).
+* For targeting NVIDIA or AMD GPUs, the default ``LLVM`` backend must be used as
+  Chapel's backend compiler (i.e.  ``CHPL_LLVM`` must be set to ``system`` or
+  ``bundled``).
 
-    * we expect it to be the same version as the bundled version (currently 15).
-      Older versions may work; however, we only make efforts to test GPU support
-      with this version.
+  * Note that ``CHPL_TARGET_COMPILER`` must be ``llvm``. This is the default
+    when ``CHPL_LLVM`` is set to ``system`` or ``bundled``.
 
-* Either the CUDA toolkit (for NVIDIA), or ROCm (for AMD) must be installed
-  (unless using `CPU-as-Device mode`_)
+* The environment variable ``CHPL_LOCALE_MODEL`` must be set to ``gpu``.
 
-  * For targeting NVIDIA GPUs, we support CUDA versions from 11.x to 12.x
-    (inclusive).
+* Specifically for targeting NVIDIA GPUs:
 
-    * If using version 12.x you must use the bundled LLVM
-      (``CHPL_LLVM=bundled``).
+  * CUDA toolkit version 11.7+ or 12.x must be installed.
 
-  * If targeting AMD GPUs, we require ROCm version 4.x or <5.5. ROCm versions
-    greater than 5.4 are not supported, yet.
+  * We test with system LLVM 19. Older versions may work.
 
-    * You can check the current status of ROCm 5.x support `here
-      <https://github.com/chapel-lang/chapel/issues/23480>`_.
+    * Note that LLVM versions older than 16 do not support CUDA 12.
+
+  * If using ``CHPL_LLVM=system``, it must have been built with support for
+    NVPTX target. You can check supported targets of your LLVM installation by
+    running ``llvm-config --targets-built``.
+
+* Specifically for targeting AMD GPUs:
+
+  * ROCm version between 5.0 and 5.4 or between ROCm 6.0 and 6.2 must be
+    installed.
+
+  * For ROCm 5.x, ``CHPL_LLVM`` must be set to ``system``. Note that, ROCm
+    installations come with LLVM. Setting ``CHPL_LLVM=system`` will allow you to
+    use that LLVM. Note that ROCm 5.x is not actively tested and we recommend
+    using ROCm 6.x.
+
+  * For ROCm 6.x, only ``CHPL_LLVM=bundled`` is supported.
+
+* Specifically for using the `CPU-as-Device mode`_:
+
+  * ``CHPL_GPU=cpu`` must be explicitly set. In other words, Chapel will not
+    automatically fall back to this mode simply because it can't detect GPUs.
 
 
 GPU-Related Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To enable GPU support, set the environment variable ``CHPL_LOCALE_MODEL=gpu``
-before building Chapel. Several other variables affect how Chapel generates
-code for and interacts with GPUs. These variables include:
+
+Several variables affect how Chapel generates code for and interacts with GPUs.
+These variables include:
+
+* ``CHPL_LOCALE_MODEL`` --- must be set to ``gpu`` to enable GPU support.
+  Chapel will need to be rebuilt if this value is changed.  For more information,
+  see :ref:`readme-chplenv.CHPL_LOCALE_MODEL`.
 
 * ``CHPL_GPU`` --- may be set to ``nvidia``, ``amd``, or ``cpu``. If unset, as
   part of its build process, Chapel will attempt to automatically determine what
@@ -184,11 +223,11 @@ code for and interacts with GPUs. These variables include:
   defaults to ``array_on_device``. Changing this variable requires rebuilding
   Chapel. For more information, see the `Memory Strategies`_ section.
 
-* ``CHPL_GPU_BLOCK_SIZE`` --- specifies default block size when launching
+* ``CHPL_GPU_BLOCK_SIZE`` --- specifies the default block size when launching
   kernels. If unset, defaults to 512. This variable may also be set by passing
   the ``chpl`` compiler ``--gpu-block-size=<block_size>``. It can also be
-  overwritten on a per-kernel basis by using the :proc:`~GPU.setBlockSize`
-  function.
+  overwritten on a per-kernel basis by using the ``@gpu.blockSize(n)`` loop
+  attribute (described in more detail in `GPU-Related Attributes`_).
 
 * ``CHPL_GPU_SPECIALIZATION`` --- if set, outlines bodies of 'on' statements
   and clones all functions reachable from that block. The 'on' statement is
@@ -231,8 +270,8 @@ architecture to compile for. The default value is ``sm_60`` for
 ``CHPL_GPU=nvidia``. You may also use the ``--gpu-arch`` compiler flag to
 set GPU architecture.  If using AMD, this variable must be set. `This table in
 the ROCm documentation
-<https://rocm.docs.amd.com/en/latest/release/gpu_os_support.html#linux-supported-gpus>`_
-has possible architecture values (see the "LLVM Target" column). For NVIDIA, see
+<https://rocm.docs.amd.com/en/latest/reference/gpu-arch-specs.html>`_
+has possible architecture values (see the "LLVM target name" column). For NVIDIA, see
 the `CUDA Compute Capability <https://developer.nvidia.com/cuda-gpus>`_ table.
 
 For NVIDIA, the ``CHPL_GPU_ARCH`` variable can also be set to a comma-separated
@@ -241,6 +280,68 @@ given compute capabilities, and to bundle the different versions in a single
 executable. When the program is executed, the compute capability best suited
 for the available GPU will be loaded by the CUDA runtime. Support for this
 feature for AMD GPUs is planned, but not currently available.
+
+GPU-Related Attributes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Chapel's GPU support makes use of attributes (see `Attributes in Chapel <./attributes.html>`_)
+to control various aspects of how code is compiled or executed on the GPU.
+Currently the following GPU-specific attributes are available:
+``@assertOnGpu`` and ``@gpu.assertEligible`` (described in `Diagnostics and Utilities`_),
+``@gpu.blockSize``,
+``@gpu.itersPerThread``.
+Because
+Chapel's GPU support primarily works by converting eligible loops into GPU
+kernels, GPU-specific attributes primarily apply to loops. For example:
+
+.. code-block:: chapel
+
+   config const myBlockSize = 128;
+
+   on here.gpus[0] {
+     @assertOnGpu
+     @gpu.blockSize(myBlockSize)
+     foreach i in 1..1024 { /* ... your code here ... */ }
+   }
+
+In the above code, ``@assertOnGpu`` ensures that the ``foreach`` loop is
+GPU-eligible, and ``@gpu.blockSize`` sets the block size for the kernel to
+``myBlockSize``.
+
+``@gpu.assertEligible`` reports a compile-time error when compiling with
+``CHPL_LOCALE_MODEL==gpu`` and the annotated loop is not GPU-eligible.
+No runtime checks are performed.
+
+The attribute ``@gpu.itersPerThread(numIters)`` requests that the kernel
+executes each consecutive ``numIters`` iterations of the affected loop
+sequentially within the same GPU thread. Users must ensure that
+the arguments to the "blockSize" and "itersPerThread" attributes
+are positive and non-zero.
+
+To apply attributes to expression-level loops such as
+:ref:`promoted function calls <Promotion>` or ``foreach`` expressions, Chapel
+also (experimentally) supports decorating variable declarations with GPU
+attributes. In the following example, an array ``A`` is initialized from a
+``foreach`` expression, where two GPU attributes are used to control the
+execution of the expression on the GPU:
+
+.. code-block:: chapel
+
+   @gpu.blockSize(128)
+   @gpu.itersPerThread(4)
+   var A = foreach i in 1..1000000 do i * i;
+
+This integrates with Chapel's support for `Remote Variable Declarations <./remote.html>`_;
+the following piece of code demonstrates declaring a (GPU-allocated) array
+``A`` in code that otherwise runs on a CPU locale:
+
+.. code-block:: chapel
+
+   @assertOnGpu
+   on here.gpus[0] var A = foreach i in 1..1000000 do i * i;
+
+The ``@assertOnGpu`` attribute applies and checks the GPU eligibility of the
+``foreach`` expression. The expression is then executed on the GPU locale,
+which ensures the runtime GPU assertion is satisfied.
 
 CPU-as-Device Mode
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -314,14 +415,21 @@ will actually run on a GPU or not) pass ``chpl`` the ``--report-gpu`` flag.
 
 Since not all Chapel loops are eligible for conversion into GPU kernels, it
 is helpful to be able to ensure that a particular loop is being executed
-on the GPU. This can be achieved by marking the loop with the ``@assertOnGpu``
-attribute. When a ``forall`` or ``foreach`` loop is marked with this attribute,
-the compiler will perform a compile-time check and produce an error if one of
-the aforementioned requirements is not met. Loops marked with the
-``@assertOnGpu`` attribute will also conduct a runtime assertion that will halt
-execution when not being performed on a GPU. This can happen when the loop
-is eligible for GPU execution, but is being executed outside of a GPU locale.
-The :mod:`GPU` module contains additional utility functions.
+on the GPU. This can be achieved by marking the loop with the
+:annotation:`~GPU.@assertOnGpu` attribute. When a ``forall`` or ``foreach``
+loop is marked with this attribute, the compiler will perform a compile-time
+check and produce an error if one of the aforementioned requirements is not met.
+Loops marked with the ``@assertOnGpu`` attribute will also conduct a runtime
+assertion that will halt execution when not being performed on a GPU. This can
+happen when the loop is eligible for GPU execution, but is being executed
+outside of a GPU locale. The :mod:`GPU` module contains additional utility
+functions.
+
+In some cases, it is desirable to write code that can execute on the GPU, but is
+not required to do so. In this case, ``@assertOnGpu``'s runtime component
+is unnecessary. The :annotation:`@gpu.assertEligible <GPU.@gpu.assertEligible>` attribute has the
+same compile-time behavior as ``@assertOnGpu``, but does not perform this
+execution-time check.
 
 Utilities in the :mod:`MemDiagnostics` module can be used to monitor GPU memory
 allocations and detect memory leaks. For example, :proc:`startVerboseMem()
@@ -361,11 +469,15 @@ For more examples see the tests under |multi_locale_dir|_ available from our
 
 Reductions and Scans
 ~~~~~~~~~~~~~~~~~~~~
-``reduce`` and ``scan`` expressions are not supported on GPU-allocated data,
-yet. However, as an interim solution, the :mod:`GPU` module has standalone
-functions for basic reductions (e.g. :proc:`~GPU.gpuSumReduce`) and scans (e.g.
-:proc:`~GPU.gpuScan`). We expect these functions to be deprecated in favor of
-``reduce`` and ``scan`` expressions in a future release.
+``+``, ``min`` and ``max`` reductions are supported via ``reduce`` expressions
+and intents. We are working towards expanding this to other kinds of reductions
+and ``scan`` expressions and deprecating the mentioned functions in the
+:mod:`GPU` module.
+
+The :mod:`GPU` module has standalone functions for basic reductions (e.g.
+:proc:`~GPU.gpuSumReduce`) and scans (e.g.  :proc:`~GPU.gpuScan`). We expect
+these functions to be deprecated in favor of ``reduce`` and ``scan`` expressions
+in a future release.
 
 Device-to-Device Communication Support
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -401,7 +513,7 @@ its own.
 
 For AMD
 ^^^^^^^
-The ROCm versions we currently support (<=5.4) do not support enabling
+The ROCm 5.x versions we support do not support enabling
 peer-to-peer communication in the way above. However, for optimum bandwidth
 between two devices ``export HSA_ENABLE_SDMA=0`` can be used. This will enable
 using multiple Infinity Fabric links between GPUs/GCDs. However, note that it
@@ -463,7 +575,10 @@ In the generated assembly, kernels are named
 ``chpl_gpu_kernel_<fileName>_line_<num>_`` (with ``filename`` replaced with the
 file containing the outlined loop and ``num`` as the line number of the loop
 header. For example, a kernel on line 3 of ``chpl.foo`` will be named
-``chpl_gpu_kernel_foo_line_3_``).
+``chpl_gpu_kernel_foo_line_3_``). The kernel name may have a number as a suffix
+if the same line of code required multiple kernels to be generated. Typically,
+this can happen if the loop in question was in a generic function with multiple
+instantiations.
 
 Chapel Tasks and GPU Execution
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -471,8 +586,8 @@ Chapel runtime will use a GPU stream per-task, per-device by default. While
 individual streams are synchronized with the host after each operation (e.g.,
 whole array operations and kernel launches will return only when the operation
 is completed), this allows efficiently oversubscribing GPUs by running multiple
-tasks on them to gain more performance by allowing CUDA to overlap data movement
-with computation.
+tasks on them to gain more performance by allowing the device runtime to overlap
+data movement with computation.
 
 * This behavior is disabled for ``CHPL_GPU_MEM_STRATEGY=unified_memory``.
 
@@ -485,6 +600,43 @@ See the `asyncTaskComm
 benchmark for a full example of a pattern that benefits from oversubscribing
 GPUs.
 
+GPU-based Halting
+~~~~~~~~~~~~~~~~~
+
+Standard Chapel has a number of features that can cause a program to exit,
+or "halt". The 2.3 release of Chapel introduced the ability to execute halting
+functions on the GPU, allowing Chapel-generated GPU kernels to halt the
+execution of the whole program. This makes it possible to both invoke halts
+directly via Chapel's :proc:`~Errors.halt`, and to invoke functions that
+themselves halt. In prior releases, doing so made code ineligible for GPU
+execution.
+
+The following program demonstrates this feature, printing "halt reached in
+GPU kernel".
+
+.. code-block:: chapel
+
+  on here.gpus[0] {
+    @assertOnGpu
+    foreach i in 1..10 {
+      halt();
+    }
+  }
+
+There are some caveats to the current implementation:
+
+* String manipulation for printing halt messages requires a number of features
+  ill-suited for the GPU. As a result, at this time, functions that use
+  the string-enabled overloads of ``halt()`` will still not work on the GPU.
+  This will be improved in future releases.
+* Presently, halting is implemented by setting a flag from the kernel that
+  is later accessed by the host program. As a consequence, kernel execution
+  proceeds past the ``halt()`` call; however, once the kernel
+  is executed, the program exits.
+* There is a race condition between several Chapel tasks using the same
+  device to launch kernels, which can interfere with the behavior of ``halt()``.
+  This will be fixed in future releases.
+
 Known Limitations
 -----------------
 
@@ -492,11 +644,6 @@ We are aware of the following limitations and plan to work on them among other
 improvements in the future.
 
 * Intel GPUs are not supported, yet.
-
-* For AMD GPUs:
-
-    * It's not currently possible to compile for multiple AMD GPU architectures
-      at the same time.
 
 * Distributed arrays cannot be used within GPU kernels.
 
@@ -512,12 +659,18 @@ improvements in the future.
   supported (a limited set of functions used by Chapel's runtime library are
   supported).
 
+* It's not currently possible to compile for multiple AMD GPU architectures
+  at the same time.
+
 * Associative arrays cannot be used on GPU sublocales with
   ``CHPL_GPU_MEM_STRATEGY=array_on_device``.
 
 * ``CHPL_TASKS=fifo`` is not supported. Note that `fifo tasking layer
   <../usingchapel/tasks.html#chpl-tasks-fifo>`_ is the
   default in only Cygwin and NetBSD.
+
+* The compiler assumes without complete checking that the loop indices
+  of the loops executed on GPUs are incremented by ``1``.
 
 Using C Interoperability
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -535,30 +688,51 @@ Performance Tips
   program when NVIDIA's kernel mode driver is not already loaded and running.
   If you are using Linux and not running an X server on the target GPU, then
   you may wish to install `NVIDIA's `driver persistence daemon
-  <https://docs.nvidia.com/deploy/driver-persistence/index.html#persistence-daemon>`_
+  <https://docs.nvidia.com/deploy/driver-persistence/#persistence-daemon>`_
   to alleviate this issue.
-  
+
 Tested Configurations
 ---------------------
 
 We have experience with the following hardware and software versions. The ones
-marked with * are covered in our nightly testing configuration.
+marked with * are covered in our nightly testing configurations.
 
 * NVIDIA
 
-  * Hardware: RTX A2000, P100*, V100*, A100* and H100
+  * Hardware: RTX A2000, P100*, V100*, A100*, H100, GH200
 
-  * Software: CUDA 11.3*, 11.6, 11.8*, 12.0*
+  * Software: CUDA 11.7, 11.8*, 12.0, 12.2, 12.4*
 
 * AMD
 
-  * Hardware: MI60*, MI100 and MI250X
+  * Hardware: MI60, MI100 and MI250X*
 
-  * Software:ROCm 4.2*, 4.4, 5.4
+  * Software:ROCm 5.4, 6.0, 6.1, 6.2*
 
+
+GPU Support on Windows Subsystem for Linux
+------------------------------------------------
+
+NVIDIA GPUs can be used on Windows through through WSL. To enable GPU support on
+WSL we require the CUDA Toolkit to be installed in the WSL environment and the
+NVIDIA driver to be installed on the Windows host. See the `NVIDIA documentation
+<https://docs.nvidia.com/cuda/wsl-user-guide/#getting-started-with-cuda-on-wsl-2>`_
+for more information on setting up CUDA on WSL.
+See `Using Chapel on WSL <../platforms/windows.html#using-chapel-on-wsl>`_
+for more information on using Chapel with WSL.
+
+  .. note::
+
+    This configuration is not currently tested nightly. Please report any issues
+    you encounter when using Chapel on WSL by `filing a bug report
+    <https://github.com/chapel-lang/chapel/issues/new>`_
 
 Further Information
 -------------------
+* The `GPU Programming in Chapel series
+  <https://chapel-lang.org/blog/series/gpu-programming-in-chapel/>`_ is a good
+  resource for getting started with GPU programming in Chapel.
+
 * Please refer to issues with `GPU Support label
   <https://github.com/chapel-lang/chapel/labels/area%3A%20GPU%20Support>`_ for
   other known limitations and issues.

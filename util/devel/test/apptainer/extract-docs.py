@@ -57,6 +57,10 @@ def title(name):
         name = '23.04 "Lunar Lobster"'
     if name == "Mantic":
         name = '23.10 "Mantic Minotaur"'
+    if name == "Noble":
+        name = '24.04 "Noble Numbat"'
+    if name == "Oracular":
+        name = '24.10 "Oracular Oriole"'
     return name
 
 def fixname(subdir):
@@ -84,7 +88,7 @@ def fixname(subdir):
             tmp = part[:part.find("linux")]
             adj.append(title(tmp))
             adj.append("Linux")
-        elif re.search('\d$', part):
+        elif re.search('\\d$', part):
             sections = re.split('([0-9.]+)', part)
             for s in sections:
                 s = s.strip()
@@ -204,7 +208,7 @@ for subpath in subdirs:
 
 tab = { }
 
-i = 0;
+i = 0
 while i < len(subdirs):
   subpath = subdirs[i]
   names = [ ]

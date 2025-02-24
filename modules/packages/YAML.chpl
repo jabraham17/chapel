@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -37,10 +37,10 @@ IO module's serialization/deserialization API. For example:
     var b: string;
   }
 
-  var myFile = open("r.yaml", ioMode.cwr),
+  var writer = openWriter("r.yaml", serializer = new yamlSerializer()),
       r1 = new R(1, "hello");
 
-  myFile.writer().withSerializer(new yamlSerializer()).write(r1);
+  writer.write(r1);
 
   /* r.yaml:
     --- R!
@@ -49,7 +49,7 @@ IO module's serialization/deserialization API. For example:
     ...
   */
 
-  var r2 = myFile.reader().withDeserializer(new yamlDeserializer()).read(R);
+  var r2 = myFile.reader(locking=false).withDeserializer(new yamlDeserializer()).read(R);
   assert(r1 == r2);
 
 Yaml files can also be written and parsed directly using the :type:`YamlValue`
@@ -88,7 +88,7 @@ module YAML {
   type yamlReader = fileReader(deserializerType=yamlDeserializer, ?);
 
   /*
-  A YAML-format serializer for emitting chapel values in Yaml format
+  A YAML-format serializer for emitting Chapel values in Yaml format
   via the IO module's :record:`~IO.fileWriter` interface
 */
   record yamlSerializer {
@@ -761,66 +761,98 @@ module YAML {
   // ----------------------------------------------------
 
   /*
-    The style of a YAML sequence
-
-    - Default: let the emitter choose the style.
-    - Any: let the ``libyaml`` implementation choose the style.
-    - Block: use the block sequence style. I.e., line breaks and indentation.
-    - Flow: use the flow sequence style. I.e., comma separated values and square brackets.
+    The style of a YAML sequence.
   */
   enum YamlSequenceStyle {
+    /*
+      Let the emitter choose the style.
+    */
     Default,
+    /*
+      Let the ``libyaml`` implementation choose the style.
+    */
     Any,
+    /*
+      Use the block sequence style. I.e., line breaks and indentation.
+    */
     Block,
+    /*
+      Use the flow sequence style. I.e., comma separated values and square brackets.
+    */
     Flow
   }
 
   /*
-    The style of a YAML mapping
-
-    - Default: let the emitter choose the style.
-    - Any: let the ``libyaml`` implementation choose the style.
-    - Block: use the block mapping style. I.e., line breaks and indentation.
-    - Flow: use the flow mapping style. I.e., comma separated ``key: value`` pairs and curly braces.
+    The style of a YAML mapping.
   */
   enum YamlMappingStyle {
+    /*
+      Let the emitter choose the style.
+    */
     Default,
+    /*
+      Let the ``libyaml`` implementation choose the style.
+    */
     Any,
+    /*
+      Use the block mapping style. I.e., line breaks and indentation.
+    */
     Block,
+    /*
+      Use the flow mapping style. I.e., comma separated ``key: value`` pairs and curly braces.
+    */
     Flow
   }
 
   /*
-    The style of a YAML scalar
-
-    - Default: let the emitter choose the style.
-    - Any: let the ``libyaml`` implementation choose the style.
-    - Plain: no quotes around scalars
-    - SingleQuoted: single quotes around scalars
-    - DoubleQuoted: double quotes around scalars
-    - Literal: literal style - maintain newlines
-    - Folded: folded style - newlines are removed and replaced with spaces when parsed
+    The style of a YAML scalar.
   */
   enum YamlScalarStyle {
+    /*
+      Let the emitter choose the style.
+    */
     Default,
+    /*
+      Let the ``libyaml`` implementation choose the style.
+    */
     Any,
+    /*
+      No quotes around scalars
+    */
     Plain,
+    /*
+      Single quotes around scalars
+    */
     SingleQuoted,
+    /*
+      Double quotes around scalars
+    */
     DoubleQuoted,
+    /*
+      Literal style - maintain newlines
+    */
     Literal,
+    /*
+      Folded style - newlines are removed and replaced with spaces when parsed
+    */
     Folded
   }
 
   /*
-    The style of a YAML document
-
-    - Default: let the emitter choose the style.
-    - Implicit: the document is implicitly started. I.e., header and footer are omitted.
-    - Explicit: the document is explicitly started. I.e., header and footer are included.
+    The style of a YAML document.
   */
   enum YamlDocumentStyle {
+    /*
+      Let the emitter choose the style.
+    */
     Default,
+    /*
+      The document is implicitly started. I.e., header and footer are omitted.
+    */
     Implicit,
+    /*
+      The document is explicitly started. I.e., header and footer are included.
+    */
     Explicit
   }
 
@@ -911,12 +943,8 @@ module YAML {
     }
 
     @chpldoc.nodoc
-    proc writeThis(fw) throws {
-      fw.write("Empty YamlValue");
-    }
-    @chpldoc.nodoc
     override proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write("Empty YamlValue");
     }
 
     @chpldoc.nodoc
@@ -990,21 +1018,18 @@ module YAML {
       }
     }
 
-    override proc writeThis(fw) throws {
-      var first = true;
-      fw.writeLiteral("{");
-      for k in this._map.keys() {
-        if first then first = false;
-                 else fw.writeLiteral(", ");
-        fw.write(k);
-        fw.writeLiteral(": ");
-        fw.write(this._map[k]);
-      }
-      fw.writeLiteral("}");
-    }
     @chpldoc.nodoc
     override proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      var first = true;
+      writer.writeLiteral("{");
+      for k in this._map.keys() {
+        if first then first = false;
+                 else writer.writeLiteral(", ");
+        writer.write(k);
+        writer.writeLiteral(": ");
+        writer.write(this._map[k]);
+      }
+      writer.writeLiteral("}");
     }
 
     @chpldoc.nodoc
@@ -1063,19 +1088,16 @@ module YAML {
       return l;
     }
 
-    override proc writeThis(fw) throws {
-      var first = true;
-      fw.writeLiteral("[");
-      for v in this._seq {
-        if first then first = false;
-                 else fw.writeLiteral(", ");
-        fw.write(v);
-      }
-      fw.writeLiteral("]");
-    }
     @chpldoc.nodoc
     override proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      var first = true;
+      writer.writeLiteral("[");
+      for v in this._seq {
+        if first then first = false;
+                 else writer.writeLiteral(", ");
+        writer.write(v);
+      }
+      writer.writeLiteral("]");
     }
 
     @chpldoc.nodoc
@@ -1191,14 +1213,11 @@ module YAML {
         return "";
     }
 
-    override proc writeThis(fw) throws {
-      if this.yamlType == YamlScalarType.UserDefined
-        then fw.write(this.tag, " ", this.value);
-        else fw.write(this.value);
-    }
     @chpldoc.nodoc
     override proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      if this.yamlType == YamlScalarType.UserDefined
+        then writer.write(this.tag, " ", this.value);
+        else writer.write(this.value);
     }
 
     @chpldoc.nodoc
@@ -1227,12 +1246,9 @@ module YAML {
       return this._alias : bytes;
     }
 
-    override proc writeThis(fw) throws {
-      fw.write("*", this._alias);
-    }
     @chpldoc.nodoc
     override proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write("*", this._alias);
     }
 
     @chpldoc.nodoc
@@ -1896,13 +1912,8 @@ module YAML {
 
     // -------- meta --------
     @chpldoc.nodoc
-    proc LibYamlEmitter.serialize(fw, serializer) throws {
-      fw.write("---LimYamlEmitter---");
-    }
-
-    @chpldoc.nodoc
-    proc LibYamlEmitter.writeThis(fw) throws {
-      fw.write("---LimYamlEmitter---");
+    proc LibYamlEmitter.serialize(writer, serializer) throws {
+      writer.write("---LimYamlEmitter---");
     }
 
     // ----------------------------------------------------
@@ -2015,13 +2026,8 @@ module YAML {
 
     // -------- meta --------
     @chpldoc.nodoc
-    proc LibYamlParser.serialize(fw, serializer) throws {
-      fw.write("---LimYamlParser---");
-    }
-
-    @chpldoc.nodoc
-    proc LibYamlParser.writeThis(fw) throws {
-      fw.write("---LimYamlParser---");
+    proc LibYamlParser.serialize(writer, serializer) throws {
+      writer.write("---LimYamlParser---");
     }
 
     // ----------------------------------------------------

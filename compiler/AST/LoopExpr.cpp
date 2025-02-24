@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,6 +38,7 @@
 #include "symbol.h"
 #include "TransformLogicalShortCircuit.h"
 #include "wellknown.h"
+#include "TryStmt.h"
 
 #include "global-ast-vecs.h"
 
@@ -68,7 +69,7 @@ LoopExpr::LoopExpr(Expr* indices,
                    Expr* iteratorExpr,
                    Expr* cond,
                    Expr* loopBody,
-                   bool forall,
+                   LoopExprType type,
                    bool zippered,
                    bool maybeArrayType) :
   Expr(E_LoopExpr),
@@ -76,13 +77,13 @@ LoopExpr::LoopExpr(Expr* indices,
   iteratorExpr(iteratorExpr),
   cond(cond),
   loopBody(NULL),
-  forall(forall),
+  type(type),
   zippered(zippered),
   maybeArrayType(maybeArrayType)
 {
 
-  if (forall == false && maybeArrayType) {
-    INT_FATAL("For-exprs cannot possibly result in an array type");
+  if (type != LoopExprType::FORALL_EXPR && maybeArrayType) {
+    INT_FATAL("For-exprs and foreach-exprs cannot possibly result in an array type");
   }
 
   // 'expr' should be a BlockStmt so that any nested functions remain within
@@ -100,13 +101,13 @@ LoopExpr::LoopExpr(Expr* indices,
   gLoopExprs.add(this);
 }
 
-LoopExpr::LoopExpr(bool forall, bool zippered, bool maybeArrayType) :
+LoopExpr::LoopExpr(LoopExprType type, bool zippered, bool maybeArrayType) :
   Expr(E_LoopExpr),
   indices(NULL),
   iteratorExpr(NULL),
   cond(NULL),
   loopBody(NULL),
-  forall(forall),
+  type(type),
   zippered(zippered),
   maybeArrayType(maybeArrayType)
 {
@@ -114,7 +115,7 @@ LoopExpr::LoopExpr(bool forall, bool zippered, bool maybeArrayType) :
 }
 
 LoopExpr* LoopExpr::copyInner(SymbolMap* map) {
-  LoopExpr* ret = new LoopExpr(forall, zippered, maybeArrayType);
+  LoopExpr* ret = new LoopExpr(type, zippered, maybeArrayType);
 
   ret->indices        = COPY_INT(indices);
   ret->iteratorExpr   = COPY_INT(iteratorExpr);
@@ -174,7 +175,7 @@ static int loopexpr_uid = 1;
 
 static CallExpr* buildLoopExprFunctions(LoopExpr* faExpr);
 static void addIterRecShape(CallExpr* forallExprCall,
-                            bool parallel, bool zippered);
+                            LoopExprType type, bool zippered);
 
 class LowerLoopExprVisitor final : public AstVisitorTraverse
 {
@@ -219,7 +220,7 @@ bool LowerLoopExprVisitor::enterLoopExpr(LoopExpr* node) {
     // Do not preserve the shape if there is a filtering predicate.
     if (noFilter) {
       normalize(replacement); // for addIterRecShape()
-      addIterRecShape(replacement, node->forall, node->zippered);
+      addIterRecShape(replacement, node->type, node->zippered);
     }
   }
 
@@ -243,7 +244,7 @@ static Expr* getShapeForZippered(Expr* tupleRef) {
 // 'forallExprCall', during resolution, returns an iterator record
 // for the forall expression. Ensure it will get a shape.
 static void addIterRecShape(CallExpr* forallExprCall,
-                            bool parallel, bool zippered) {
+                            LoopExprType type, bool zippered) {
   if (CallExpr* move = toCallExpr(forallExprCall->parentExpr)) {
     if (move->isPrimitive(PRIM_MOVE)) {
       Expr* dest = move->get(1)->copy();
@@ -251,7 +252,8 @@ static void addIterRecShape(CallExpr* forallExprCall,
       if (zippered) shape = getShapeForZippered(shape);
       move->getStmtExpr()->insertAfter(
         new CallExpr(PRIM_ITERATOR_RECORD_SET_SHAPE, dest,
-                     shape->copy(), parallel ? gFalse : gTrue));
+                     shape->copy(),
+                     new_IntSymbol(type)));
     }
   }
 }
@@ -303,6 +305,7 @@ handleArrayTypeCase(LoopExpr* loopExpr, FnSymbol* fn, Expr* indices,
   // removed
   //
   FnSymbol* isArrayTypeFn = new FnSymbol("_isArrayTypeFn");
+  isArrayTypeFn->addFlag(FLAG_COMPILER_GENERATED);
   isArrayTypeFn->addFlag(FLAG_INLINE);
   isArrayTypeFn->setGeneric(false);
   fn->insertAtTail(new DefExpr(isArrayTypeFn));
@@ -342,7 +345,7 @@ handleArrayTypeCase(LoopExpr* loopExpr, FnSymbol* fn, Expr* indices,
   BlockStmt* exprCopy = expr->copy(&indicesMap);
   Expr* lastExpr = exprCopy->body.tail->remove();
   exprCopy->insertAtTail(new CallExpr(PRIM_MOVE, isTypeResult, new CallExpr("isType", lastExpr)));
-  isArrayTypeFn->insertAtTail(exprCopy);
+  isArrayTypeFn->insertAtTail(TryStmt::build(/* isTryBang */ true, exprCopy));
   isArrayTypeFn->insertAtTail(new CondStmt(
                                 new SymExpr(isTypeResult),
                                 new CallExpr(PRIM_MOVE, isArrayType, gTrue),
@@ -402,6 +405,7 @@ static FnSymbol* buildSerialIteratorFn(const char* iteratorName,
   FnSymbol* sifn = new FnSymbol(iteratorName);
   sifn->addFlag(FLAG_ITERATOR_FN);
   sifn->addFlag(FLAG_DONT_UNREF_FOR_YIELDS);
+  sifn->addFlag(FLAG_COMPILER_GENERATED);
   sifn->setGeneric(true);
 
   ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
@@ -451,6 +455,7 @@ static FnSymbol* buildLeaderIteratorFn(const char* iteratorName,
 {
   FnSymbol* lifn = new FnSymbol(iteratorName);
   lifn->addFlag(FLAG_FN_RETURNS_ITERATOR);
+  lifn->addFlag(FLAG_COMPILER_GENERATED);
   lifn->setGeneric(true);
 
   Expr* tag = new SymExpr(gLeaderTag);
@@ -487,6 +492,7 @@ static FnSymbol* buildFollowerIteratorFn(const char* iteratorName,
   FnSymbol* fifn = new FnSymbol(iteratorName);
   fifn->addFlag(FLAG_ITERATOR_FN);
   fifn->addFlag(FLAG_DONT_UNREF_FOR_YIELDS);
+  fifn->addFlag(FLAG_COMPILER_GENERATED);
   fifn->setGeneric(true);
 
   Expr* tag = new SymExpr(gFollowerTag);
@@ -576,7 +582,7 @@ bool isOuterVarLoop(Symbol* sym, Expr* enclosingExpr) {
   }
 }
 
-static bool considerForOuter(Symbol* sym) {
+bool considerForOuter(Symbol* sym) {
   if (isTypeSymbol(sym->defPoint->parentSymbol)) {
     // Fields are considered 'outer'
     return true;
@@ -605,11 +611,14 @@ static bool considerForOuter(Symbol* sym) {
 
 // TODO: There's some logic in flattenFunctions that creates/threads formals for
 // outer variables for iterator-functions, can we leverage that?
-static void findOuterVars(LoopExpr* loopExpr, std::set<Symbol*>& outerVars) {
+static void findOuterVars(LoopExpr* loopExpr,
+                          BlockStmt* primsFromAttrs,
+                          std::set<Symbol*>& outerVars) {
   std::vector<SymExpr*> uses;
 
   collectSymExprs(loopExpr->loopBody, uses);
   if (loopExpr->cond) collectSymExprs(loopExpr->cond, uses);
+  if (primsFromAttrs) collectSymExprs(primsFromAttrs, uses);
 
   for_vector(SymExpr, se, uses) {
     Symbol* sym = se->symbol();
@@ -618,7 +627,7 @@ static void findOuterVars(LoopExpr* loopExpr, std::set<Symbol*>& outerVars) {
   }
 }
 
-static ArgSymbol* newOuterVarArg(Symbol* ovar) {
+ArgSymbol* newOuterVarArg(Symbol* ovar) {
   Type* argType = ovar->type;
   if (argType == dtUnknown)
     argType = dtAny;
@@ -710,9 +719,8 @@ static void adjustIndexDefPoints(FnSymbol* xifn, AList* indexDefs) {
     forLoop->insertAtHead(expr->remove());
 }*/
 
-static void scopeResolveAndNormalize(FnSymbol* fn) {
+void normalizeGeneratedLoweringFn(FnSymbol* fn) {
   TransformLogicalShortCircuit vis;
-  addToSymbolTable(fn);
   fn->accept(&vis);
   resolveUnresolvedSymExprs(fn);
   normalize(fn);
@@ -731,8 +739,19 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   bool insideArgSymbol = isArgSymbol(loopExpr->parentSymbol) ||
                          isTypeSymbol(loopExpr->parentSymbol);
 
+  // The loop expression may receive additional vars via attributes applied
+  // to its variable. This is represented by enclosing the LoopExpr inside
+  // a "gpu attribute block". See if we need to handle that, as well.
+  BlockStmt* attrBlock = nullptr;
+  BlockStmt* primsFromAttrs = nullptr;
+  if ((attrBlock = findEnclosingGpuAttributeBlock(loopExpr))) {
+    // The primitives might be applied to several expressions at the same
+    // time, so we can't steal them, and need to copy.
+    primsFromAttrs = attrBlock->getPrimitivesBlock()->copy();
+  }
+
   std::set<Symbol*> outerVars;
-  findOuterVars(loopExpr, outerVars);
+  findOuterVars(loopExpr, primsFromAttrs, outerVars);
 
   // We need the individual pieces of loopExpr. We want to keep loopExpr itself
   // in the tree - that way we know where to put the replacement.
@@ -742,7 +761,7 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   Expr* cond           = removeOrNull(loopExpr->cond);
   bool  maybeArrayType = loopExpr->maybeArrayType;
   bool  zippered       = loopExpr->zippered;
-  bool  forall         = loopExpr->forall;
+  bool  forall         = loopExpr->type == FORALL_EXPR;
 
   const char* wrapperName = forall ? astr_forallexpr : astr_forexpr;
   FnSymbol* fn = new FnSymbol(astr(wrapperName, istr(loopexpr_uid++)));
@@ -751,6 +770,7 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->setGeneric(true);
   if (forall) fn->addFlag(FLAG_MAYBE_ARRAY_TYPE);
+  if (attrBlock) attrBlock->noteUseOfGpuAttributeBlock(fn);
 
   if (insideArgSymbol) {
     loopExpr->getModule()->block->insertAtHead(new DefExpr(fn));
@@ -792,6 +812,21 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
     INT_ASSERT(!cond);
     block = handleArrayTypeCase(loopExpr, fn, indices,
                                 iteratorExprArg, loopBody);
+  }
+
+  if (primsFromAttrs) {
+    loopBody->insertAtHead(primsFromAttrs);
+
+    // Keep the primitives in a block. This will help later during GPUization,
+    // to have a handle on all the temps etc. introduced when computing
+    // the arguments to the primitive. e.g.:
+    //
+    // { scopeless
+    //   const-var tmp = computeBlockSize(...);
+    //   __primitive("set blockSize", tmp);
+    // }
+    //
+    // We don't want to move the primitive without moving the temp.
   }
 
   VarSymbol* iterator = newTemp("_iterator");
@@ -855,20 +890,20 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
       fn->insertAtHead(new DefExpr(fifn));
     }
 
-    scopeResolveAndNormalize(fn);
+    normalizeGeneratedLoweringFn(fn);
   } else {
     fn->defPoint->insertBefore(new DefExpr(sifn));
-    scopeResolveAndNormalize(sifn);
+    normalizeGeneratedLoweringFn(sifn);
 
     if (forall) {
       fn->defPoint->insertBefore(new DefExpr(lifn));
-      scopeResolveAndNormalize(lifn);
+      normalizeGeneratedLoweringFn(lifn);
 
       fn->defPoint->insertBefore(new DefExpr(fifn));
-      scopeResolveAndNormalize(fifn);
+      normalizeGeneratedLoweringFn(fifn);
     }
 
-    scopeResolveAndNormalize(fn);
+    normalizeGeneratedLoweringFn(fn);
   }
 
 

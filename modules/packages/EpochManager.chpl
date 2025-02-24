@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,13 +27,10 @@
 
       - It relies on Chapel ``extern`` code blocks and so requires that
         the Chapel compiler is built with LLVM enabled.
-      - Currently only ``CHPL_TARGET_ARCH=x86_64`` is supported as it uses
-        the x86-64 instruction: CMPXCHG16B_.
-      - The implementation relies on ``GCC`` style inline assembly, and so
-        is restricted to a ``CHPL_TARGET_COMPILER`` value of ``gnu``,
-        ``clang``, or ``llvm``.
-
-    .. _CMPXCHG16B: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
+      - The implementation relies on using either ``GCC`` style inline assembly
+        (for x86-64) or a GCC/clang builtin, and so is restricted to a
+        ``CHPL_TARGET_COMPILER`` value of ``gnu``, ``clang``, or ``llvm``.
+      - The implementation does not work with ``CHPL_ATOMICS=locks``.
 
   Epoch-Based Memory Reclamation
   ------------------------------
@@ -108,7 +105,7 @@
 
   .. code-block:: chpl
 
-    var dom = {1..N} dmapped cyclicDist(startIdx=1);
+    var dom = {1..N} dmapped new cyclicDist(startIdx=1);
     var manager = new EpochManager();
     forall i in dom with (var token = manager.register(), var numOps : int) {
       token.pin();
@@ -162,12 +159,12 @@ module EpochManager {
         do {
           var oldHead = _head.readABA();
           _node.next = oldHead.getObject();
-        } while(!_head.compareAndSwapABA(oldHead, _node));
+        } while !_head.compareAndSwapABA(oldHead, _node);
       }
 
       iter these() : objType {
         var ptr = _head.read();
-        while (ptr != nil) {
+        while ptr != nil {
           yield ptr!.val!;
           ptr = ptr!.next;
         }
@@ -175,7 +172,7 @@ module EpochManager {
 
       proc deinit() {
         var ptr = _head.read();
-        while (ptr != nil) {
+        while ptr != nil {
           var next = ptr!.next;
           delete ptr;
           ptr = next;
@@ -231,11 +228,11 @@ module EpochManager {
         do {
           oldTop = _freeListHead.readABA();
           n = oldTop.getObject();
-          if (n == nil) {
+          if n == nil {
             return new unmanaged Node(objType);
           }
           var newTop = n!.freeListNext;
-        } while (!_freeListHead.compareAndSwapABA(oldTop, newTop));
+        } while !_freeListHead.compareAndSwapABA(oldTop, newTop);
         n!.next.write(nil);
         n!.freeListNext = nil;
         return n!;
@@ -246,16 +243,16 @@ module EpochManager {
         n.val = newObj;
 
         // Now enqueue
-        while (true) {
+        while true {
           var tail = _tail.readABA();
           var next = tail.next.readABA();
           var next_node = next.getObject();
           var curr_tail = _tail.readABA();
 
           // Check if tail and next are consistent
-          if (tail == curr_tail) {
-            if (next_node == nil) {
-              if (curr_tail.next.compareAndSwapABA(next, n)) {
+          if tail == curr_tail {
+            if next_node == nil {
+              if curr_tail.next.compareAndSwapABA(next, n) {
 
                 // Enqueue is done. Try to swing Tail to the inserted node
                 _tail.compareAndSwapABA(curr_tail, n);
@@ -270,7 +267,7 @@ module EpochManager {
       }
 
       proc dequeue() : objType? {
-        while (true) {
+        while true {
           var head = _head.readABA();
           var head_node = head.getObject();
           var curr_tail = _tail.readABA();
@@ -279,15 +276,15 @@ module EpochManager {
           var next_node = next.getObject();
           var curr_head = _head.readABA();
 
-          if (head == curr_head) {
-            if (head_node == tail_node) {
-              if (next_node == nil) then
+          if head == curr_head {
+            if head_node == tail_node {
+              if next_node == nil then
                 return nil;
               _tail.compareAndSwapABA(curr_tail, next_node);
             }
             else {
               var ret_val = next_node!.val;
-              if (_head.compareAndSwapABA(curr_head, next_node)) {
+              if _head.compareAndSwapABA(curr_head, next_node) {
                 retireNode(head_node!);
                 return ret_val;
               }
@@ -317,14 +314,14 @@ module EpochManager {
 
       proc peek() : objType {
         var actual_head = _head.read().next.read();
-        if (actual_head != nil) then
+        if actual_head != nil then
           return actual_head.val;
         return nil;
       }
 
       proc deinit() {
         var ptr = _head.read();
-        while (ptr != nil) {
+        while ptr != nil {
           var tmp = ptr!.next.read();
           if delete_val then delete ptr!.val;
           delete ptr;
@@ -332,7 +329,7 @@ module EpochManager {
         }
 
         ptr = _freeListHead.read();
-        while (ptr != nil) {
+        while ptr != nil {
           var head = ptr!.freeListNext;
           delete ptr;
           ptr = head;
@@ -377,11 +374,11 @@ module EpochManager {
         do {
           oldTop = _freeListHead.readABA();
           n = oldTop.getObject();
-          if (n == nil) {
+          if n == nil {
             return new unmanaged Node(obj);
           }
           var newTop = n!.next;
-        } while (!_freeListHead.compareAndSwapABA(oldTop, newTop));
+        } while !_freeListHead.compareAndSwapABA(oldTop, newTop);
         n!.val = obj;
         return n!;
       }
@@ -391,7 +388,7 @@ module EpochManager {
         do {
           var oldTop = _freeListHead.readABA();
           nextObj.next = oldTop.getObject();
-        } while (!_freeListHead.compareAndSwapABA(oldTop, nextObj));
+        } while !_freeListHead.compareAndSwapABA(oldTop, nextObj);
       }
 
       proc pop() {
@@ -400,7 +397,14 @@ module EpochManager {
 
       proc deinit() {
         var ptr = _head.read();
-        while (ptr != nil) {
+        while ptr != nil {
+          var next = ptr!.next;
+          delete ptr!.val;
+          delete ptr;
+          ptr = next;
+        }
+        ptr = _freeListHead.read();
+        while ptr != nil {
           var next = ptr!.next;
           delete ptr!.val;
           delete ptr;
@@ -513,10 +517,6 @@ module EpochManager {
       }
 
       @chpldoc.nodoc
-      proc readThis(f) throws {
-        compilerError("Reading a Vector is not supported");
-      }
-      @chpldoc.nodoc
       proc deserialize(reader, ref deserializer) throws {
         compilerError("Reading a Vector is not supported");
       }
@@ -527,12 +527,9 @@ module EpochManager {
         compilerError("Deserializing a Vector is not yet supported");
       }
 
-      proc writeThis(f) throws {
-        f.write("(Vector) {", this.toArray(), "}");
-      }
       @chpldoc.nodoc
       override proc serialize(writer, ref serializer) throws {
-        writeThis(writer);
+        writer.write("(Vector) {", this.toArray(), "}");
       }
     }
 
@@ -574,7 +571,7 @@ module EpochManager {
 
     //  Collection of objects marked deleted
     @chpldoc.nodoc
-    var limbo_list : [1..EBR_EPOCHS] unmanaged LimboList();
+    var limbo_list : [1..EBR_EPOCHS] unmanaged LimboList;
 
     /*
       Default initialize the manager.
@@ -582,12 +579,12 @@ module EpochManager {
     proc init() {
       allocated_list = new unmanaged LockFreeLinkedList(unmanaged _token);
       free_list = new unmanaged LockFreeQueue(unmanaged _token, false);
-      limbo_list = for i in 1..EBR_EPOCHS do new unmanaged LimboList();
+      limbo_list = for 1..EBR_EPOCHS do new unmanaged LimboList();
       init this;
 
       // Initialise the free list pool with here.maxTaskPar tokens
       // Do we want this to be a 'coforall' ?
-      forall i in 0..#here.maxTaskPar {
+      forall 0..#here.maxTaskPar {
         var tok = new unmanaged _token();
         allocated_list.append(tok);
         free_list.enqueue(tok);
@@ -608,7 +605,7 @@ module EpochManager {
       }
       tok!.is_registered.write(true);
       // return tok;
-      return new owned TokenWrapper(tok!, _to_unmanaged(this));
+      return new owned TokenWrapper(tok!, this:unmanaged);
     }
 
     @chpldoc.nodoc
@@ -710,6 +707,7 @@ module EpochManager {
       Reclaim all objects
     */
     proc deinit() {
+      [tok in allocated_list] delete tok;
       delete allocated_list;
       delete free_list;
       delete limbo_list;
@@ -861,7 +859,7 @@ module EpochManager {
 
     //  Collection of objects marked deleted on current locale
     @chpldoc.nodoc
-    var limbo_list : [1..EBR_EPOCHS] unmanaged LimboList();
+    var limbo_list : [1..EBR_EPOCHS] unmanaged LimboList;
 
     //  Vector for bulk transfer of remote objects marked deleted on current
     //  locale
@@ -901,7 +899,7 @@ module EpochManager {
     // Initialise the free list pool with here.maxTaskPar tokens and other members
     @chpldoc.nodoc
     proc initializeMembers() {
-      forall i in 0..#here.maxTaskPar {
+      forall 0..#here.maxTaskPar {
         var tok = new unmanaged _token();
         this.allocated_list.append(tok);
         this.free_list.enqueue(tok);
@@ -914,6 +912,7 @@ module EpochManager {
       // Delete locale-private data
       delete limbo_list;
       delete free_list;
+      [tok in allocated_list] delete tok;
       delete allocated_list;
       delete objsToDelete;
 
@@ -936,7 +935,7 @@ module EpochManager {
       }
       tok!.is_registered.write(true);
       // return tok;
-      return new owned DistTokenWrapper(tok!, _to_unmanaged(this));
+      return new owned DistTokenWrapper(tok!, this:unmanaged);
     }
 
     @chpldoc.nodoc
@@ -988,7 +987,7 @@ module EpochManager {
       if (global_epoch.is_setting_epoch.testAndSet()) {
         is_setting_epoch.clear();
         return;
-      };
+      }
 
       // TODO: Right now we do not utilize all 3 epochs; in the future,
       // I need to check how crossbeam does it and go from there.
@@ -1059,7 +1058,7 @@ module EpochManager {
           var head = limbo.pop();
 
           // Prepare work to be scattered by locale it is intended for.
-          while (head != nil) {
+          while head != nil {
             var obj = head!.val;
             var next = head!.next;
             _this.objsToDelete[obj.locale.id].append(obj!);

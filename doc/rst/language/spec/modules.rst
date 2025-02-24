@@ -1,5 +1,7 @@
 .. default-domain:: chpl
 
+.. index::
+   single: modules
 .. _Chapter-Modules:
 
 =======
@@ -19,6 +21,10 @@ in :ref:`Visibility_Of_Symbols`. The execution of a program
 and module initialization/deinitialization are described
 in :ref:`Program_Execution`.
 
+.. index::
+   single: module
+   single: modules; definitions
+   single: modules; top-level
 .. _Module_Definitions:
 
 Module Definitions
@@ -55,6 +61,8 @@ Any module declaration that is not contained within another module
 creates a *top-level module*. Module declarations within other modules
 create nested modules (:ref:`Nested_Modules`).
 
+.. index::
+   single: modules; prototype
 .. _Prototype_Modules:
 
 Prototype Modules
@@ -70,6 +78,10 @@ errors that are not handled will terminate the program
 Implicit modules (:ref:`Implicit_Modules`) are implicitly considered
 ``prototype`` modules as well.
 
+.. index::
+   single: modules; and files
+   single: implicit modules
+   single: modules; implicit
 .. _Implicit_Modules:
 
 Files and Implicit Modules
@@ -166,6 +178,30 @@ identifier, it cannot be referenced in a use statement.
    Module implicit defines the module-scope symbols x, y, printX, and
    printY.
 
+.. _Finding_Toplevel_Module_Files:
+
+Finding Toplevel Module Files
+-----------------------------
+
+When a top-level module is named in a ``use`` or ``import`` statement,
+the compiler will find an appropriately named module in the module search
+path and use that module for the ``use`` or ``import``.
+
+For example, if the module is named ``MyLib``, the compiler will search
+for a file named ``MyLib.chpl`` in the module search path. This exact
+filename must match even on case-insensitive filesystems.
+
+The module search path is a list of directories in which the compiler will
+search for a such file names.
+
+   *Implementation Notes*.
+
+   The *––M* flag can be used to add to the module search path.
+   See :ref:`the chpl manual page <man-chpl>`.
+
+.. index::
+   single: modules; nested
+   single: modules; sub-modules
 .. _Nested_Modules:
 
 Nested Modules
@@ -254,10 +290,11 @@ nested modules.
 
    .. BLOCK-test-chapeloutput
 
-      nested.chpl:9: warning: an implicit module named 'nested' is being introduced to contain file-scope code
       0
       0
 
+.. index::
+   single: modules; access
 .. _Access_Of_Module_Contents:
 
 Access of Module Contents
@@ -270,15 +307,17 @@ done via the use statement (:ref:`Using_Modules`), the import
 statement (:ref:`Importing_Modules`) or qualified
 naming (:ref:`Explicit_Naming`).
 
+.. index::
+   single: modules; access
 .. _Visibility_Of_A_Module:
 
 Visibility Of A Module
 ~~~~~~~~~~~~~~~~~~~~~~
 
 A top-level module is available for use (:ref:`Using_Modules`) or import
-(:ref:`Importing_Modules`) anywhere.  A module name is not accessible in other
-statements or expressions unless an ``import`` or ``use`` statement has brought
-the name into scope.
+(:ref:`Importing_Modules`) anywhere.  A top-level module name is not
+accessible in other statements or expressions unless an ``import`` or
+``use`` statement has brought the name into scope.
 
 Additionally, ``use`` and ``import`` can both name a module with a relative
 path; for example, ``this.Submodule`` or ``super.Siblingmodule``.  ``use`` and
@@ -302,6 +341,8 @@ imported with just its name, even from the scope in which the module is defined,
 unless it has already been brought into scope by another ``use`` or ``import``
 statement.
 
+.. index::
+   single: modules; symbol visibility
 .. _Visibility_Of_Symbols:
 
 Visibility Of A Module’s Symbols
@@ -317,6 +358,9 @@ it contains are accessible via the use statement (:ref:`Using_Modules`), import
 statement (:ref:`Importing_Modules`), or qualified
 naming (:ref:`Explicit_Naming`).
 
+.. index::
+   single: modules; using
+   single: modules; importing
 .. _Using_And_Importing:
 
 Using and Importing
@@ -814,6 +858,8 @@ in the second example of re-exporting, if module A's import of B only allowed
 access to certain symbols, that list will also limit which of the symbols from
 C1, C2, and C3 will be available to A.
 
+.. index::
+   single: modules; qualified naming
 .. _Explicit_Naming:
 
 Qualified Naming of Module Symbols
@@ -1102,6 +1148,8 @@ modules.
       3
 
 
+.. index::
+   pair: modules; initialization
 .. _Module_Initialization:
 
 Module Initialization
@@ -1147,6 +1195,8 @@ module, other than function and type declarations, are executed.
 Module initialization order is discussed
 in :ref:`Module_Initialization_Order`.
 
+.. index::
+   pair: modules; deinitialization
 .. _Module_Deinitialization:
 
 Module Deinitialization
@@ -1164,6 +1214,9 @@ deinitialization:
 Module deinitialization order is discussed
 in :ref:`Module_Deinitialization_Order`.
 
+.. index::
+   single: program execution
+   single: program initialization
 .. _Program_Execution:
 
 Program Execution
@@ -1193,7 +1246,7 @@ the following situations in order:
 
    The *––main-module* flag can be used to specify the main module. This
    is particularly useful in the event that multiple modules define a
-   ``main`` procedure.
+   ``main`` procedure. See :ref:`the chpl manual page <man-chpl>`.
 
    *Example (main-module.chpl)*.
 
@@ -1252,6 +1305,10 @@ the following situations in order:
    Notice that ``main`` is treated like just another procedure if it is not
    in the main module and can be called as such.
 
+.. index::
+   single: main
+   single: functions; main
+   single: exploratory programming
 .. _The_main_Procedure:
 
 The *main* Procedure
@@ -1295,14 +1352,21 @@ procedure. The default main function is equivalent to:
    The compiler adds an empty default ``main`` which runs after that
    module is initialized.
 
+.. index::
+   single: modules; initialization order
 .. _Module_Initialization_Order:
 
 Module Initialization Order
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Module initialization is performed using the following algorithm.
+Module initialization is performed at program start-up and initializes
+modules in an order determined by the ``use`` and ``import`` statements.
+Not all modules need to be initialized (see :ref:`Module_Initialization`
+for details).
 
-Starting from the module that defines the main procedure, the modules named in
+The following describes the module initialization order.
+
+Starting from :ref:`The_main_Module`, the modules named in
 its use and import statements are visited depth-first and initialized in
 post-order. If a use or import statement names a module that has already been
 visited, it is not visited a second time. Thus, infinite recursion is avoided.
@@ -1353,6 +1417,8 @@ uses are initialized before the nested module and its uses or imports.
    M2) must be initialized first. M2 itself is initialized, followed by
    M2.M3. Finally M1 is initialized, and the main procedure is run.
 
+.. index::
+   single: modules; deinitialization order
 .. _Module_Deinitialization_Order:
 
 Module Deinitialization Order

@@ -16,7 +16,7 @@ use Random;
 use IO;
 
 config const printTime: bool = true; // print timer
-config const globalSeed = NPBRandom.oddTimeSeed();
+config const globalSeed = (new randomStream(int(32))).seed;
 config const problemSize = 100000;
 config const T = 1000; // number of time steps
 config const verify: bool;
@@ -55,7 +55,7 @@ proc main(){
   }
 
   for i in computationSpaceRange do
-     space[0, i] = generator.getNext();
+     space[0, i] = generator.next();
 
   // because the serial method does not give us read and write buffers
   // we must make our own
@@ -104,7 +104,7 @@ proc verifyResult(ref space: [] Cell, lowerBound: int, upperBound: int,
   var generator = new randomStream( real, globalSeed );
 
   for i in computationSpaceRange do
-     space[0, i] = generator.getNext();
+     space[0, i] = generator.next();
 
   var read = 0;
   var write = 1;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -67,118 +67,12 @@ void cleanup() {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool areMultiDefExprsInAList(AList& list) {
-   int numStmts = 0;
-
-    for_alist(stmt, list){
-      if (isDefExpr(stmt)) numStmts++;
-    }
-
-    return numStmts > 1;
-}
-
 static void setAstHelp(Expr* parent, Expr*& lhs, Expr* rhs) {
   if(lhs){
     lhs->remove();
   }
   lhs = rhs;
   parent_insert_help(parent, lhs);
-}
-
-static void backPropagateInFunction(BlockStmt* block) {
-
-  Expr* init = NULL;
-  DefExpr* prev = NULL;
-
-  if (!areMultiDefExprsInAList(block->body)) return;
-
-  SET_LINENO(block);
-
-  VarSymbol* typeTmp = NULL;
-  BlockStmt* tmpBlock = new BlockStmt();
-
-  for_alist_backward(stmt, block->body) {
-    if (DefExpr* def = toDefExpr(stmt)) {
-
-      //1. set local variables -- analysis
-      if (def->init || def->exprType) {
-
-        if(def->init != NULL) {
-          init = def->init;
-        } else {
-          init = NULL;
-        }
-
-        typeTmp = NULL;
-
-      }
-
-      //2. update prev if necessary. Since the defExprs in a block statement are
-      //iterated in a reverse order, we use prev for cases like var x, y = 1.0, so
-      //that x can be initialized with 1.0 and y is initialized with the x symbol.
-      if (prev != NULL && def->init == NULL && def->exprType == NULL) {
-        SET_LINENO(prev);
-        if(prev->exprType != NULL && typeTmp == NULL){
-          typeTmp = newTemp("type_tmp");
-          typeTmp->addFlag(FLAG_TYPE_VARIABLE);
-          DefExpr* tmpDef = new DefExpr(typeTmp, prev->exprType->copy());
-          prev->exprType->replace(new SymExpr(typeTmp));
-          tmpBlock->insertAtTail(tmpDef);
-        }
-
-        if(prev->init != NULL && init != NULL){
-          if (init->isNoInitExpr()){
-            setAstHelp(prev, prev->init, init->copy());
-          } else if (typeTmp) {
-            setAstHelp(prev, prev->init, new CallExpr("chpl__readXX", new SymExpr(def->sym)));
-          } else {
-            setAstHelp(prev, prev->init, new SymExpr(def->sym));
-          }
-        }
-      }
-
-      //3. update def, type then init
-      {
-        SET_LINENO(def);
-        if(typeTmp != NULL && def->exprType == NULL) {
-          setAstHelp(def, def->exprType, prev->exprType->copy());
-        }
-
-        if(init != NULL && def->init == NULL){
-          setAstHelp(def, def->init, init->copy());
-        }
-      }
-      prev = def;
-    }
-  }
-
-  if(tmpBlock) {
-    block->insertAtHead(tmpBlock);
-    tmpBlock->flattenAndRemove();
-  }
-}
-
-static void backPropagate(BaseAST* ast) {
-  if (BlockStmt* block = toBlockStmt(ast)) {
-    //Looking for scopeless blocks containing only DefExprs
-    //and end of statement markers since these are how
-    //multivariable declarations are represented after parsing
-    if (block->blockTag == BLOCK_SCOPELESS){
-      for_alist(stmt, block->body){
-        if(DefExpr* def = toDefExpr(stmt)){
-          if(isVarSymbol(def->sym)) {
-          } else {
-            return;
-          }
-        } else if(isEndOfStatementMarker(stmt)){
-
-        } else {
-          return;
-        }
-      }
-      backPropagateInFunction(block);
-    }
-  }
 }
 
 static void handleNonTypedAndNonInitedVar(DefExpr* def) {
@@ -201,8 +95,17 @@ static void handleNonTypedAndNonInitedVar(DefExpr* def) {
                        "Variable '%s' is not initialized and has no type",
                        def->sym->name);
       } else {
-        SET_LINENO(def);
-        setAstHelp(def, def->init, new SymExpr(gSplitInit));
+        bool skip = false;
+        if (FnSymbol* inFn = toFnSymbol(def->parentSymbol)) {
+          if (inFn->isNormalized()) {
+            skip = true;
+          }
+        }
+
+        if (!skip) {
+          SET_LINENO(def);
+          setAstHelp(def, def->init, new SymExpr(gSplitInit));
+        }
       }
     }
   }
@@ -214,7 +117,6 @@ static void cleanup(ModuleSymbol* module) {
   collect_asts(module, asts);
 
   for_vector(BaseAST, ast, asts) {
-    backPropagate(ast);
     if (DefExpr* def = toDefExpr(ast)) {
       if (def->sym->hasFlag(FLAG_DOCS_ONLY) == true) {
         // Delete functions/variables that are for docs only
@@ -253,7 +155,12 @@ static void cleanup(ModuleSymbol* module) {
 
     if (BlockStmt* block = toBlockStmt(ast)) {
       if (block->blockTag == BLOCK_SCOPELESS && block->list != NULL) {
-        block->flattenAndRemove();
+        // If the scopeless block is for applying GPU attributes to promoted
+        // expressions, do not flatten it. The bounds of the block denote
+        // where the GPU attribute is applied.
+        if (!block->isGpuMetadata()) {
+          block->flattenAndRemove();
+        }
       }
 
     } else if (CallExpr* call = toCallExpr(ast)) {

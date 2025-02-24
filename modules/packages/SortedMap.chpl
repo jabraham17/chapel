@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,14 +25,24 @@
   constructed from another sortedMap, the new sortedMap will inherit
   the parallel safety mode of its originating sortedMap.
 
-  SortedSet supports searching for a certain key, insertion and deletion in O(logN).
+  SortedMap supports searching for a certain key, insertion and deletion in O(logN).
 */
 module SortedMap {
   import ChapelLocks;
   private use HaltWrappers;
   private use SortedSet;
   private use IO;
+  import Sort.{relativeComparator};
   public use Sort only defaultComparator;
+
+  // TODO: remove this module and its public use when the deprecations have been
+  // removed
+  pragma "ignore deprecated use"
+  private module HideDeprecatedReexport {
+    public use Sort only DefaultComparator;
+  }
+
+  public use HideDeprecatedReexport;
 
   // Lock code lifted from modules/standard/List.chpl.
   @chpldoc.nodoc
@@ -96,7 +106,7 @@ module SortedMap {
     param parSafe = false;
 
     /* The comparator used to compare keys */
-    var comparator: record = defaultComparator;
+    var comparator: record = new defaultComparator();
 
     // TODO: Maybe we want something like record optional for this?
     @chpldoc.nodoc
@@ -124,7 +134,7 @@ module SortedMap {
     }
 
     @chpldoc.nodoc
-    record _keyComparator {
+    record _keyComparator: relativeComparator {
       var comparator: record;
       proc compare(a, b) {
         return comparator.compare(a[0], b[0]);
@@ -141,7 +151,7 @@ module SortedMap {
       :arg comparator: The comparator used to compare keys.
     */
     proc init(type keyType, type valType, param parSafe = false,
-              comparator: record = defaultComparator) {
+              comparator: record = new defaultComparator()) {
       _checkKeyType(keyType);
       _checkValType(valType);
 
@@ -409,39 +419,34 @@ module SortedMap {
     }
 
     @chpldoc.nodoc
-    proc writeThis(ch: fileWriter) throws {
+    proc serialize(writer, ref serializer) throws {
       _enter(); defer _leave();
       var first = true;
-      ch.write("{");
+      writer.write("{");
       for kv in _set {
         if first {
           first = false;
         } else {
-          ch.write(", ");
+          writer.write(", ");
         }
-        ch.write(kv[0], ": ", kv[1]!.val);
+        writer.write(kv[0], ": ", kv[1]!.val);
       }
-      ch.write("}");
-    }
-
-    @chpldoc.nodoc
-    proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
+      writer.write("}");
     }
 
     /*
       Adds a key-value pair to the sortedMap. Method returns `false` if the key
       already exists in the sortedMap.
 
-     :arg k: The key to add to the sortedMap
-     :type k: keyType
+      :arg k: The key to add to the sortedMap
+      :type k: keyType
 
-     :arg v: The value that maps to ``k``
-     :type v: valueType
+      :arg v: The value that maps to ``k``
+      :type v: valueType
 
-     :returns: `true` if `k` was not in the sortedMap and added with value `v`.
+      :returns: `true` if `k` was not in the sortedMap and added with value `v`.
                `false` otherwise.
-     :rtype: bool
+      :rtype: bool
     */
     proc ref add(in k: keyType, in v: valType): bool lifetime this < v {
       _enter(); defer _leave();
@@ -459,15 +464,15 @@ module SortedMap {
       Sets the value associated with a key. Method returns `false` if the key
       does not exist in the sortedMap.
 
-     :arg k: The key whose value needs to change
-     :type k: keyType
+      :arg k: The key whose value needs to change
+      :type k: keyType
 
-     :arg v: The desired value to the key ``k``
-     :type v: valueType
+      :arg v: The desired value to the key ``k``
+      :type v: valueType
 
-     :returns: `true` if `k` was in the sortedMap and its value is updated with `v`.
+      :returns: `true` if `k` was in the sortedMap and its value is updated with `v`.
                `false` otherwise.
-     :rtype: bool
+      :rtype: bool
     */
     proc ref set(k: keyType, in v: valType): bool {
       _enter(); defer _leave();
@@ -495,10 +500,10 @@ module SortedMap {
     /*
       Removes a key-value pair from the sortedMap, with the given key.
 
-     :arg k: The key to remove from the sortedMap
+      :arg k: The key to remove from the sortedMap
 
-     :returns: `false` if `k` was not in the sortedMap.  `true` if it was and removed.
-     :rtype: bool
+      :returns: `false` if `k` was not in the sortedMap.  `true` if it was and removed.
+      :rtype: bool
     */
     proc ref remove(k: keyType): bool {
       _enter(); defer _leave();

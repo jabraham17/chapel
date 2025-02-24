@@ -3,7 +3,7 @@ use utilFunctions;
 
 
 
-var m = new sortedMap(string, real, false, defaultComparator);
+var m = new sortedMap(string, real, false, new defaultComparator());
 
 writeln(m.isEmpty());
 writeln(m.size);

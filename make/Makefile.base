@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2025 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -24,7 +24,7 @@
 #
 # utilities
 #
-isTrue = $(filter yes Yes YES y Y true True TRUE t T, $(1))
+include $(CHPL_MAKE_HOME)/make/Makefile.isTrue
 
 MAKEFLAGS = --no-print-directory
 
@@ -105,6 +105,9 @@ $(eval $(CHPL_MAKE_SETTINGS))
 ifndef CHPL_MAKE_HOST_PLATFORM
   $(error error running util/printchplenv -- please see error above)
 endif
+
+# set CHPL_DEVELOPER if its not set
+CHPL_DEVELOPER ?= 0
 
 # Try this to debug issues with CHPL_MAKE_* variables
 # $(info $(CHPL_MAKE_CHPLENV_CACHE))
@@ -194,13 +197,12 @@ include $(THIRD_PARTY_DIR)/jemalloc/Makefile.common.include
 ifeq ($(strip $(CHPL_MAKE_HOST_TARGET)),--host)
 include $(THIRD_PARTY_DIR)/jemalloc/Makefile.host.include-$(CHPL_MAKE_HOST_JEMALLOC)
 else
-include $(THIRD_PARTY_DIR)/jemalloc/Makefile.target.include
+include $(THIRD_PARTY_DIR)/jemalloc/Makefile.target.include-$(CHPL_MAKE_TARGET_JEMALLOC)
 endif
 include $(THIRD_PARTY_DIR)/gmp/Makefile.include
 include $(THIRD_PARTY_DIR)/hwloc/Makefile.include
 include $(THIRD_PARTY_DIR)/re2/Makefile.include
 include $(THIRD_PARTY_DIR)/llvm/Makefile.include-$(CHPL_MAKE_LLVM)
-include $(THIRD_PARTY_DIR)/fltk/Makefile.include
 include $(THIRD_PARTY_DIR)/libunwind/Makefile.include
 include $(THIRD_PARTY_DIR)/libfabric/Makefile.include
 
@@ -277,7 +279,6 @@ CHPL_OLD_BIN_DIR = $(CHPL_MAKE_HOME)/bin/$(CHPL_MAKE_HOST_PLATFORM)
 CHPL = $(CHPL_BIN_DIR)/chpl$(EXE_SUFFIX)
 CHPL_OLD = $(CHPL_OLD_BIN_DIR)/chpl
 CHPLDOC = $(CHPL_BIN_DIR)/chpldoc$(EXE_SUFFIX)
-CHPLDEF = $(CHPL_BIN_DIR)/chpldef$(EXE_SUFFIX)
 
 
 #

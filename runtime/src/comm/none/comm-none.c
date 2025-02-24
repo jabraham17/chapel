@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2025 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -63,7 +63,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
                                        int ln, int32_t fn)
 {
   assert(node == 0);
-  chpl_memmove(raddr, addr, size);
+  memmove(raddr, addr, size);
   return NULL;
 }
 
@@ -72,7 +72,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
                                        int ln, int32_t fn)
 {
   assert(node == 0);
-  chpl_memmove(addr, raddr, size);
+  memmove(addr, raddr, size);
   return NULL;
 }
 
@@ -96,6 +96,10 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
     assert(h[i] == NULL);
   }
   return 0;
+}
+
+void chpl_comm_free_nb_handle(chpl_comm_nb_handle_t h) {
+  assert(h == NULL);
 }
 
 int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
@@ -262,3 +266,5 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
 
   chpl_ftable_call(fid, arg);
 }
+
+void chpl_comm_ensure_progress(void) { }

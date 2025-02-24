@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2025 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +21,7 @@
 #define CHPL_TYPES_TUPLE_TYPE_H
 
 #include "chpl/types/CompositeType.h"
+#include "chpl/resolution/resolution-types.h"
 
 namespace chpl {
 namespace types {
@@ -47,6 +48,8 @@ class TupleType final : public CompositeType {
                     instantiatedFrom, std::move(subs)),
       isVarArgTuple_(isVarArgTuple)
   {
+    assert(!id.isEmpty());
+    assert(!name.isEmpty());
     // Let a single entry in the SubstitutionsMap with a postOrderId of '-1'
     // represent the star-type of a tuple with an unknown size. This is a
     // useful representation for VarArgs.
@@ -74,19 +77,21 @@ class TupleType final : public CompositeType {
   }
 
   static const owned<TupleType>&
-  getTupleType(Context* context, ID id, UniqueString name,
+  getTupleType(Context* context,
                const TupleType* instantiatedFrom,
                SubstitutionsMap subs,
                bool isVarArgTuple = false);
 
  public:
-  /** Return a value tuple type based on the vector of actual types. */
+  /** Return a value tuple type based on the vector of actual types. The types
+      are made const if `makeConst` is set to true. */
   static const TupleType*
-  getValueTuple(Context* context, std::vector<const Type*> eltTypes);
+  getValueTuple(Context* context, std::vector<const Type*> eltTypes, bool makeConst=false);
 
-  /** Return a referential tuple type based on the vector of actual types. */
+  /** Return a referential tuple type based on the vector of actual types. The
+      types are made const if `makeConst` is set to true. */
   static const TupleType*
-  getReferentialTuple(Context* context, std::vector<const Type*> eltTypes);
+  getReferentialTuple(Context* context, std::vector<const Type*> eltTypes, bool makeConst=false);
 
   static const TupleType*
   getQualifiedTuple(Context* context, std::vector<QualifiedType> eltTypes);
@@ -95,6 +100,14 @@ class TupleType final : public CompositeType {
   getStarTuple(Context* context,
                QualifiedType paramSize,
                QualifiedType starEltType);
+
+  const Type* substitute(Context* context,
+                         const PlaceholderMap& subs) const override {
+    return getTupleType(context,
+                        Type::substitute(context, (const TupleType*) instantiatedFrom_, subs),
+                        resolution::substituteInMap(context, subs_, subs),
+                        isVarArgTuple_).get();
+  }
 
   /** Return the generic tuple type `_tuple` */
   static const TupleType* getGenericTupleType(Context* context);
@@ -115,7 +128,7 @@ class TupleType final : public CompositeType {
   }
 
   /** Return the type of the i'th element */
-  QualifiedType elementType(int i) const;
+  const QualifiedType& elementType(int i) const;
 
   /** Return true if this is a *star tuple* - that is, all of the
       element types are the same. */
@@ -131,11 +144,13 @@ class TupleType final : public CompositeType {
 
   QualifiedType starType() const;
 
-  /** Return the value tuple variant of this tuple type */
-  const TupleType* toValueTuple(Context* context) const;
+  /** Return the value tuple variant of this tuple type. Element types are
+      made const if `makeConst` is set to true. */
+  const TupleType* toValueTuple(Context* context, bool makeConst=false) const;
 
-  /** Return the referential tuple variant of this tuple type */
-  const TupleType* toReferentialTuple(Context* context) const;
+  /** Return the referential tuple variant of this tuple type. Element types
+      are made const if `makeConst` is set to true. */
+  const TupleType* toReferentialTuple(Context* context, bool makeConst=false) const;
 };
 
 
