@@ -24,12 +24,10 @@
 #include "chplexit.h"
 #include "config.h"
 
-void fixArgs(int * argc, char* argv[], char * newargv[]){
+static void fixArgs(int * argc, char* argv[], char * newargv[]){
 
   int nonenviro = 0;
   int enviro = 0;
-  int newargc = 0;
-
 
   char arg_buffer[2048];
   char * arg_buffer_ptr = &arg_buffer[0];
@@ -52,7 +50,7 @@ void fixArgs(int * argc, char* argv[], char * newargv[]){
     enviro += 2; // 2 args for each (flag + arg)
 
     arg_buffer_ptr = &arg_buffer[0];
-    
+
     //find each part of the original argument
     i++;
     currentarg = argv[i]; // this should be KEY=value part. The rest may be orphaned values.
@@ -61,7 +59,7 @@ void fixArgs(int * argc, char* argv[], char * newargv[]){
     i++;
     currentarg = argv[i];
     while (currentarg != NULL && !(currentarg[0] == '-' && currentarg[1] == 'E') ){
-      
+
       sprintf(arg_buffer_ptr, " %s", argv[i]);
       arg_buffer_ptr += strlen(arg_buffer_ptr);
       i++;
