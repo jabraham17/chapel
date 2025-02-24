@@ -29,7 +29,7 @@ backend:
 	cd cdb && $(MAKE)
 
 chpldbg_make: $(OFILES) backend 
-	g++ -o chpldbg $(OFILES) cdb/libmigdb.a
+	g++ -o chpldbg -pthread $(OFILES) cdb/libmigdb.a
 	cp chpldbg $(CHPL_HOME)/bin/$(CHPL_HOST_PLATFORM)
 	cp chpldbg $(CHPL_HOME)/bin/linux64-x86_64
 
