@@ -181,7 +181,6 @@ chplvis: FORCE
 
 chpldbg: compiler FORCE
 	cd tools/chpldbg && $(MAKE)
-	cd tools/chpldbg && $(MAKE)
 
 mason: compiler chpldoc notcompiler FORCE
 	cd tools/mason && $(MAKE) && $(MAKE) install
