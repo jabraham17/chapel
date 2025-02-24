@@ -1,10 +1,10 @@
-/* 
+/*
  * Albert Furlong, Ciaran Sanders, Jagannath Natarajan, Ben Johnson
  * Date Started: 7 April 2020
  * Last updated: 27 May 2020
  */
 
-#include <wait.h>
+#include <sys/wait.h>
 #include <thread>
 #include <csignal>
 #include "chpldbg.h"
@@ -30,8 +30,8 @@ void usage(){
 Chpldbg::Chpldbg(int num_locales, int _out_fd, int _in_fd, char** chpl_argv)
 {
 	main_argv = chpl_argv;
-	
-	out_fd = _out_fd; // fd for writing to frontend 
+
+	out_fd = _out_fd; // fd for writing to frontend
 	in_fd = _in_fd; // fd for reading from frontend
 
 	b_set_callback_console(backend_callback);
@@ -101,23 +101,23 @@ void backend_callback(b_locale* l, char* msg) {
 	if (l != NULL){
 	  message = std::to_string(l->id) + data_pass_delimiter+ message;
 	  if (l->id == output_target_locale->id && msg[0] != '$') { //second part is sloppy fix to sending the chpldbg print statement to gdb and having it return $1 = null
-			printf(msg);
+			printf("%s", msg);
 			fflush(stdout);
 	  }
-	  
+
 	} else {
 	  message = data_pass_delimiter + message;
 	}
-	
+
 }
 
 // If msg comes from a locale equal to locale_output_target (defined in chpldbg.h),
-// output to console. Otherwise do nothing for now. 
+// output to console. Otherwise do nothing for now.
 // void backend_callback(b_locale* l, char* msg) {
 // 	if (l->id == locale_output_target) {
 // 		write(STDOUT_FILENO, msg, MSG_SIZE);
 // 	}
-	
+
 // }
 
 void backend_callback_log(b_locale* l, char* msg){
@@ -205,7 +205,7 @@ int Chpldbg::run()
 
 /**
  * 	Reads messages from the back buffer and writes them to
- * 	the pipe that the gui is reading from. 
+ * 	the pipe that the gui is reading from.
  * 	Assumes that the backend is writing to the back buffer.
  * 	A potential major improvement would be to include a metric for the
  * 	rate at which messages are coming in, and spawning threads on demand
@@ -224,7 +224,7 @@ void Chpldbg::write_to_front()
 			//write(out_fd, message.c_str(), MSG_SIZE);
 			//back_buffer.erase(back_buffer.begin());
 		}
-		
+
 	}
 }
 
@@ -247,7 +247,7 @@ void Chpldbg::read_from_front()
 			std::string pipe_msg(buf);
 			which_locales = pipe_msg.substr(0, pipe_msg.find(data_pass_delimiter));
 			if (which_locales.compare("0")==0){
-				size_t ix = pipe_msg.find(data_pass_delimiter) + 
+				size_t ix = pipe_msg.find(data_pass_delimiter) +
 					data_pass_delimiter.length();
 				command = pipe_msg.substr(ix, std::string::npos);
 				// fprintf(stderr, "call run_all...\n");
@@ -255,7 +255,7 @@ void Chpldbg::read_from_front()
 			} else if (which_locales.compare(pipe_msg) == 0) {
 				command = pipe_msg;
 				// fprintf(stderr, "call run_all.....\n");
-				b_run_all(strdup(command.c_str()));	
+				b_run_all(strdup(command.c_str()));
 
 			} else{
 				size_t ix = pipe_msg.find(data_pass_delimiter) +
