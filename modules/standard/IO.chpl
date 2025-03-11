@@ -10369,6 +10369,8 @@ General Conversion
         // read into an 'R' from JSON format
         f.reader(deserializer = new jsonDeserializer()).readf("%?", r);
 
+  Specifying any flags or width/precision to ``%?`` is not supported.
+
 Note About Whitespace
 +++++++++++++++++++++
 
@@ -10544,10 +10546,6 @@ Going through each section for text conversions:
     means octal
    ``b``
     means binary
-   ``j``
-    means JSON-style strings, numbers, and structures
-   ``h``
-    means Chapel-style strings, numbers, and structures
    ``'``
     means single-quoted string (with \\ and \')
    ``"``
