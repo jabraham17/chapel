@@ -4884,7 +4884,7 @@ qioerr qio_conv_parse(c_string fmt,
 
 
     // Read a base flag
-    if( istype(fmt[i], "bdxXjho'\"") ) {
+    if( istype(fmt[i], "bdxXo'\"") ) {
       base_flag = fmt[i];
       i++;
     }
