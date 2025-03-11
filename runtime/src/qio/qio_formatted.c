@@ -5145,8 +5145,17 @@ qioerr qio_conv_parse(c_string fmt,
       style_out->tuple_style = QIO_TUPLE_FORMAT_CHPL;
       style_out->showpointzero = 1;
 
-      if (precision != WIDTH_NOT_SET || width != WIDTH_NOT_SET ) {
-        QIO_GET_CONSTANT_ERROR(err, EINVAL, "'%?' does not support width or precision arguments");
+      if (at_flag != 0 ||
+          zero_flag != 0 ||
+          left_alignment_flag != 0 ||
+          cent_alignment_flag != 0 ||
+          space_flag != 0 ||
+          plus_flag != 0 ||
+          base_flag != 0 ||
+          exponential != 0 ||
+          precision != WIDTH_NOT_SET ||
+          width != WIDTH_NOT_SET) {
+        QIO_GET_CONSTANT_ERROR(err, EINVAL, "'%?' does not support flags");
       }
 
       spec_out->argType = QIO_CONV_ARG_TYPE_SERDE;
