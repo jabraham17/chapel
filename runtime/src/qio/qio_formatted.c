@@ -4722,9 +4722,11 @@ qioerr qio_conv_parse(c_string fmt,
   int at_flag = 0;
   int zero_flag = 0;
   int left_alignment_flag = 0;
+  int right_alignment_flag = 0;
   int cent_alignment_flag = 0;
   int space_flag = 0;
   int plus_flag = 0;
+  int tilde_flag = 0;
   char base_flag = 0;
   char specifier = 0;
   char exponential = 0;
@@ -4827,6 +4829,7 @@ qioerr qio_conv_parse(c_string fmt,
         cent_alignment_flag = 1;
       } else if( fmt[i] == '>' ) {
         // do nothing, right justification is on by default
+        right_alignment_flag = 1;
       } else if( fmt[i] == ' ' ) {
         space_flag = 1;
       } else if( fmt[i] == '+' ) {
@@ -4834,6 +4837,7 @@ qioerr qio_conv_parse(c_string fmt,
       } else if( fmt[i] == '~' ) {
         // ~ might one day mean allow non-quoted JSON field names
         // but it also means to skip JSON fields not in use.
+        tilde_flag = 1;
       } else {
         break;
       }
@@ -5148,9 +5152,11 @@ qioerr qio_conv_parse(c_string fmt,
       if (at_flag != 0 ||
           zero_flag != 0 ||
           left_alignment_flag != 0 ||
+          right_alignment_flag != 0 ||
           cent_alignment_flag != 0 ||
           space_flag != 0 ||
           plus_flag != 0 ||
+          tilde_flag != 0 ||
           base_flag != 0 ||
           exponential != 0 ||
           precision != WIDTH_NOT_SET ||
