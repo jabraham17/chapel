@@ -4896,7 +4896,7 @@ qioerr qio_conv_parse(c_string fmt,
     }
 
     // Read a specifier character
-    if( istype(fmt[i], "ntiurmzs?/cS") ) {
+    if( istype(fmt[i], "niurmzs?/cS") ) {
       specifier = fmt[i];
       if( fmt[i] == 'S' ) {
         // handle numbers parsed as width for e.g. %|0S
