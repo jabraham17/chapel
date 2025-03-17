@@ -1540,7 +1540,7 @@ def main():
                                              numlocales, maxLocalesAvailable))
                     continue
             if os.getenv('CHPL_TEST_MULTILOCALE_ONLY') and (numlocales <= 1) and not is_ml_c_or_cpp_test:
-                sys.stdout.write('[Skipping {0} because it does not '
+                sys.stdout.write('[Skipping test {0} because it does not '
                                  'use more than one locale]\n'
                                  .format(os.path.join(localdir, test_filename)))
                 continue
@@ -2488,6 +2488,8 @@ def main():
                         # only notify for a failed execution if launching the test was successful
                         elif (not launcher_error):
                             sys.stdout.write('%s[Error execution failed for %s]\n'%(futuretest,test_name))
+                            sys.stdout.write('[Execution output was as follows:]\n')
+                            sys.stdout.write(trim_output(output))
 
                         if exectimeout or status != 0 or exec_status != 0:
                             break

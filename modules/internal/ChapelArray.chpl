@@ -259,7 +259,13 @@ module ChapelArray {
   config param capturedIteratorLowBound = defaultLowBound;
 
   pragma "ignore transfer errors"
-  proc chpl__buildArrayExpr( pragma "no auto destroy" in elems ...?k ) {
+  proc chpl__buildArrayExpr( in elems ...?k ) {
+    return chpl__buildNDArrayExpr((k,), (...elems));
+  }
+
+
+  pragma "ignore transfer errors"
+  proc chpl__buildNDArrayExpr(shape, pragma "no auto destroy" in elems ...?k ) {
 
     if CHPL_WARN_DOMAIN_LITERAL == "true" && isRange(elems(0)) {
       compilerWarning("Encountered an array literal with range element(s).",
@@ -273,18 +279,25 @@ module ChapelArray {
     type eltType = if homog then elems(0).type
                             else chpl_computeUnifiedType(elems);
 
-    var dom = {arrayLiteralLowBound..#k};
+    var ranges: shape.size * range(int);
+    for param i in 0..<shape.size {
+      ranges(i) = arrayLiteralLowBound..#shape(i);
+    }
+    var dom = chpl__buildDomainExpr((...ranges), true);
     var arr = dom.buildArray(eltType, initElts=false);
 
     if homog {
       for i in 0..<k {
-        ref dst = arr(i+arrayLiteralLowBound);
+        const idx = dom.orderToIndex(i);
+        ref dst = arr(idx);
         ref src = elems(i);
         __primitive("=", dst, src);
       }
+
     } else {
       for param i in 0..k-1 {
-        ref dst = arr(i+arrayLiteralLowBound);
+        const idx = dom.orderToIndex(i);
+        ref dst = arr(idx);
         ref src = elems(i);
         type currType = src.type;
 
@@ -1942,6 +1955,29 @@ module ChapelArray {
     }
   }
 
+  @unstable("casting an array to an array type is unstable due to being a new feature — please share any feedback you might have")
+  operator :(arg: [], type t: []) {
+    var res: t;
+
+    if !arg.isRectangular() || !res.isRectangular() {
+      compilerError("Casts between arrays only support rectangular arrays");
+    } else if arg.rank != res.rank {
+      compilerError("Casts between arrays require matching ranks");
+    } else {
+      if boundsChecking then
+        checkArrayShapesUponAssignment(arg, res, forCast=true);
+
+      // factor this capture of the type out of the loop since it may
+      // involve a runtime type for arrays of arrays
+      type resType = res.eltType;
+      forall (i,j) in zip(res.domain, arg.domain) {
+        res[i] = arg[j]:resType;
+      }
+    }
+
+    return res;
+  }
+
   // The same as the built-in _cast, except accepts a param arg.
   @chpldoc.nodoc
   operator :(param arg, type t:_array) {
@@ -2142,7 +2178,7 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x) param do return true;
 
   @chpldoc.nodoc
-  proc checkArrayShapesUponAssignment(a, b, forSwap = false) {
+  proc checkArrayShapesUponAssignment(a, b, forSwap=false, forCast=false) {
     if a.isRectangular() && b.isRectangular() {
       const aDims = if isProtoSlice(a) then a.dims()
                                        else a._value.dom.dsiDims();
@@ -2151,7 +2187,9 @@ module ChapelArray {
       compilerAssert(aDims.size == bDims.size);
       for param i in 0..aDims.size-1 {
         if aDims(i).sizeAs(uint) != bDims(i).sizeAs(uint) then
-          halt(if forSwap then "swapping" else "assigning",
+          halt(if forSwap then "swapping"
+                          else if forCast then "casting"
+                          else "assigning",
                " between arrays of different shapes in dimension ",
                i, ": ", aDims(i).sizeAs(uint), " vs. ", bDims(i).sizeAs(uint));
       }

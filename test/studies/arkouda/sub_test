@@ -16,8 +16,10 @@ subtest_start
 DFLT_TIMEOUT=${CHPL_TEST_TIMEOUT:-300}
 export ARKOUDA_CLIENT_TIMEOUT=${ARKOUDA_CLIENT_TIMEOUT:-$DFLT_TIMEOUT}
 
+ARKOUDA_ALLOC_TIMEOUT=10:00:00
+
 if [ -n "${CHPL_TEST_LAUNCHCMD}" ] ; then
-  export ARKOUDA_SERVER_LAUNCH_PREFIX=$(echo "$CHPL_TEST_LAUNCHCMD --walltime=$ARKOUDA_CLIENT_TIMEOUT" | envsubst)
+  export ARKOUDA_SERVER_LAUNCH_PREFIX=$(echo "$CHPL_TEST_LAUNCHCMD --walltime=$ARKOUDA_ALLOC_TIMEOUT" | envsubst)
 fi
 
 # Arkouda needs chpl in PATH
@@ -38,6 +40,12 @@ if [ -z "${CHPL_TEST_ARKOUDA_SKIP_RM_CLONE}" ] ; then
 fi
 
 cd ${ARKOUDA_HOME}
+
+# report the current git hash
+git_hash=$(git rev-parse HEAD)
+# strip .git from the end of ARKOUDA_URL, if it's there
+git_url=$(echo $ARKOUDA_URL | sed 's/\.git$//')
+log "Current Arkouda commit is $git_hash, see $git_url/commit/$git_hash"
 
 if [ -z "${ARKOUDA_SKIP_CHECK_DEPS}" ] ; then
   # Install dependencies if needed

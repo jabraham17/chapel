@@ -343,7 +343,17 @@ class UntypedFnSignature {
     return isMethod_;
   }
 
-  /** Returns true if this is an iterator */
+  /** Returns true if this is a procedure. */
+  bool isProcedure() const {
+    return kind_ == uast::Function::PROC;
+  }
+
+  /** Returns true if this is an operator. */
+  bool isOperator() const {
+    return kind_ == uast::Function::OPERATOR;
+  }
+
+  /** Returns true if this is an iterator. */
   bool isIterator() const {
     return kind_ == uast::Function::ITER;
   }
@@ -367,6 +377,11 @@ class UntypedFnSignature {
   bool formalMightHaveDefault(int i) const {
     CHPL_ASSERT(0 <= i && (size_t) i < formals_.size());
     return formals_[i].defaultKind != DK_NO_DEFAULT;
+  }
+
+  DefaultKind formalDefaultKind(int i) const {
+    CHPL_ASSERT(0 <= i && (size_t) i < formals_.size());
+    return formals_[i].defaultKind;
   }
 
   /** Returns the Decl for the i'th formal / field.
@@ -1120,6 +1135,10 @@ class TypedFnSignature {
     return formalTypes_[i];
   }
 
+  bool isOperator() const {
+    return untypedSignature_->isOperator();
+  }
+
   bool isIterator() const {
     return untypedSignature_->isIterator();
   }
@@ -1597,6 +1616,13 @@ class FormalActualMap {
     CHPL_ASSERT(byFormalIdx_[0].formal()->toNamedDecl()->name() == USTR("this"));
     byFormalIdx_[0].formalType_ = initializer->formalType(0);
   }
+
+  /** Return the number of formals in this mapping. The number of actuals
+      may be more (e.g., for a 'varargs') or less (e.g., default-argument
+      values) than the number of formals, but there will always be as many
+      entries in this mapping as are needed to invoke the given call. This
+      quantity may be useful for consumers of this 'FormalActualMap'. */
+  int numFormalsMapped() const { return byFormalIdx_.size(); }
 
  private:
   bool computeAlignment(const UntypedFnSignature* untyped,
@@ -2805,67 +2831,74 @@ class ResolvedFunction {
   }
 };
 
+/// \cond DO_NOT_DOCUMENT
+struct FieldDetail {
+  UniqueString name;
+  bool hasDefaultValue = false;
+  ID declId;
+  types::QualifiedType type;
+
+  FieldDetail(UniqueString name,
+              bool hasDefaultValue,
+              ID declId,
+              types::QualifiedType type)
+    : name(name), hasDefaultValue(hasDefaultValue), declId(declId), type(type) {
+  }
+  bool operator==(const FieldDetail& other) const {
+    return name == other.name &&
+           hasDefaultValue == other.hasDefaultValue &&
+           declId == other.declId &&
+           type == other.type;
+  }
+  bool operator!=(const FieldDetail& other) const {
+    return !(*this == other);
+  }
+  void mark(Context* context) const {
+    name.mark(context);
+    declId.mark(context);
+    type.mark(context);
+  }
+  size_t hash() const {
+    return chpl::hash(name, hasDefaultValue, declId, type);
+  }
+};
+/// \endcond DO_NOT_DOCUMENT
+
+/// \cond DO_NOT_DOCUMENT
+struct ForwardingDetail {
+  ID forwardingStmt;
+  types::QualifiedType receiverType;
+  ForwardingDetail(ID forwardingStmt, types::QualifiedType receiverType)
+   : forwardingStmt(std::move(forwardingStmt)),
+     receiverType(std::move(receiverType)) {
+  }
+  bool operator==(const ForwardingDetail& other) const {
+    return forwardingStmt == other.forwardingStmt &&
+           receiverType == other.receiverType;
+  }
+  bool operator!=(const ForwardingDetail& other) const {
+    return !(*this == other);
+  }
+  void swap(ForwardingDetail& other) {
+    forwardingStmt.swap(other.forwardingStmt);
+    receiverType.swap(other.receiverType);
+  }
+  void mark(Context* context) const {
+    forwardingStmt.mark(context);
+    receiverType.mark(context);
+  }
+  size_t hash() const {
+    return chpl::hash(forwardingStmt, receiverType);
+  }
+};
+/// \endcond DO_NOT_DOCUMENT
+
 /** ResolvedFields represents the fully resolved fields for a
     class/record/union/tuple type.
 
     It also stores the result of computing the types of 'forwarding' statements.
  */
 class ResolvedFields {
-  struct FieldDetail {
-    UniqueString name;
-    bool hasDefaultValue = false;
-    ID declId;
-    types::QualifiedType type;
-
-    FieldDetail(UniqueString name,
-                bool hasDefaultValue,
-                ID declId,
-                types::QualifiedType type)
-      : name(name), hasDefaultValue(hasDefaultValue), declId(declId), type(type) {
-    }
-    bool operator==(const FieldDetail& other) const {
-      return name == other.name &&
-             hasDefaultValue == other.hasDefaultValue &&
-             declId == other.declId &&
-             type == other.type;
-    }
-    bool operator!=(const FieldDetail& other) const {
-      return !(*this == other);
-    }
-    size_t hash() const {
-      return chpl::hash(name, hasDefaultValue, declId, type);
-    }
-
-    void mark(Context* context) const {
-      name.mark(context);
-      declId.mark(context);
-      type.mark(context);
-    }
-  };
-  struct ForwardingDetail {
-    ID forwardingStmt;
-    types::QualifiedType receiverType;
-    ForwardingDetail(ID forwardingStmt, types::QualifiedType receiverType)
-     : forwardingStmt(std::move(forwardingStmt)),
-       receiverType(std::move(receiverType)) {
-    }
-    bool operator==(const ForwardingDetail& other) const {
-      return forwardingStmt == other.forwardingStmt &&
-             receiverType == other.receiverType;
-    }
-    bool operator!=(const ForwardingDetail& other) const {
-      return !(*this == other);
-    }
-    void swap(ForwardingDetail& other) {
-      forwardingStmt.swap(other.forwardingStmt);
-      receiverType.swap(other.receiverType);
-    }
-    void mark(Context* context) const {
-      forwardingStmt.mark(context);
-      receiverType.mark(context);
-    }
-  };
-
   const types::CompositeType* type_ = nullptr;
   std::vector<FieldDetail> fields_;
   std::vector<ForwardingDetail> forwarding_;
@@ -2985,6 +3018,10 @@ class ResolvedFields {
     }
     context->markPointer(type_);
   }
+
+  size_t hash() const {
+    return chpl::hash(type_, fields_, forwarding_, isGeneric_, allGenericFieldsHaveDefaultValues_);
+  }
 };
 
 class ResolvedParamLoop {
@@ -3086,6 +3123,9 @@ struct CopyableAssignableInfo {
   }
   void mark(Context* context) const {
   }
+  size_t hash() const {
+    return chpl::hash(fromConst_, fromRef_);
+  }
 };
 
 /* SimpleMethodLookupHelper helps lookupInScope to find matches
@@ -3111,6 +3151,7 @@ class SimpleMethodLookupHelper final : public MethodLookupHelper {
   }
   llvm::ArrayRef<const Scope*> receiverScopes() const override;
   bool isReceiverApplicable(Context* context, const ID& methodId) const override;
+  bool shouldCheckForTertiaryMethods(Context* context, const VisibilitySymbols* toCheck) const override;
 
   bool operator==(const SimpleMethodLookupHelper &other) const {
     return receiverTypeId_ == other.receiverTypeId_ &&
@@ -3174,6 +3215,7 @@ class TypedMethodLookupHelper final : public MethodLookupHelper {
 
   llvm::ArrayRef<const Scope*> receiverScopes() const override;
   bool isReceiverApplicable(Context* context, const ID& methodId) const override;
+  bool shouldCheckForTertiaryMethods(Context* context, const VisibilitySymbols* toCheck) const override;
 
   bool operator==(const TypedMethodLookupHelper &other) const {
     return receiverType_ == other.receiverType_ &&
@@ -3314,6 +3356,10 @@ CHPL_DEFINE_STD_HASH_(MostSpecificCandidate, (key.hash()));
 CHPL_DEFINE_STD_HASH_(MostSpecificCandidates, (key.hash()));
 CHPL_DEFINE_STD_HASH_(CallResolutionResult, (key.hash()));
 CHPL_DEFINE_STD_HASH_(TheseResolutionResult, (key.hash()));
+CHPL_DEFINE_STD_HASH_(ResolvedFields, (key.hash()));
+CHPL_DEFINE_STD_HASH_(FieldDetail, (key.hash()));
+CHPL_DEFINE_STD_HASH_(ForwardingDetail, (key.hash()));
+CHPL_DEFINE_STD_HASH_(CopyableAssignableInfo, (key.hash()));
 #undef CHPL_DEFINE_STD_HASH_
 
 } // end namespace std

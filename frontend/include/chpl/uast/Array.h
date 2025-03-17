@@ -46,11 +46,11 @@ class Array final : public AstNode {
  private:
   bool trailingComma_,
        associative_;
-  
+
   Array(AstList children, bool trailingComma, bool associative)
-    : AstNode(asttags::Array, std::move(children)) {
-    trailingComma_ = trailingComma;
-    associative_ = associative;
+    : AstNode(asttags::Array, std::move(children)),
+      trailingComma_(trailingComma),
+      associative_(associative) {
   }
 
   void serializeInner(Serializer& ser) const override {
@@ -87,7 +87,7 @@ class Array final : public AstNode {
 
   bool hasTrailingComma() const { return this->trailingComma_; }
   bool isAssociative() const { return this->associative_; }
-  
+
   /**
     Return a way to iterate over the expressions of this array.
   */

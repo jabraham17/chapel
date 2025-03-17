@@ -4,9 +4,6 @@
 
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
-export ARKOUDA_URL=https://github.com/e-kayrakli/arkouda.git
-export ARKOUDA_BRANCH=server-util-pbs
-
 export ARKOUDA_DEP_DIR=/hpelustre/chapelu/arkouda-deps
 export ARKOUDA_SKIP_CHECK_DEPS=true
 
@@ -26,6 +23,10 @@ source $UTIL_CRON_DIR/common-perf-hpe-apollo-hdr.bash
 source $UTIL_CRON_DIR/common-arkouda.bash
 export ARKOUDA_NUMLOCALES=16
 
+# on this system, the array_transfer test comes dangerously close to the
+# timeout. So, here we double it for peace of mind.
+export ARKOUDA_CLIENT_TIMEOUT=600
+
 export CHPL_GASNET_SEGMENT=fast
 export GASNET_PHYSMEM_MAX="0.90"
 
@@ -35,5 +36,8 @@ nightly_args="${nightly_args} -no-buildcheck"
 
 module list
 
-test_release_performance
+export CHPL_TEST_PERF_DESCRIPTION=release
+export CHPL_TEST_PERF_CONFIGS="release:v,nightly:v"
+
+test_release
 sync_graphs

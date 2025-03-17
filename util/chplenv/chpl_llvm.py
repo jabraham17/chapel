@@ -929,6 +929,11 @@ def _determine_gcc_flag_to_use():
 
     return flag_to_use
 
+@memoize
+def _get_clang_cfg_args(clang_command):
+    clang_cfg = get_clang_cfg_file(clang_command)
+    return parse_clang_cfg_file(clang_cfg)
+
 # On some systems, we need to give clang some arguments for it to
 # find the correct system headers.
 #  * when PrgEnv-gnu is loaded on an XC, we should provide
@@ -942,11 +947,10 @@ def _determine_gcc_flag_to_use():
 def get_clang_basic_args(clang_command):
     clang_args = [ ]
 
+    clang_cfg_args = _get_clang_cfg_args(clang_command)
     @memoize
     def _get_gcc_prefix_dir():
         # read the args that clang will use by default from the config file
-        clang_cfg = get_clang_cfg_file(clang_command)
-        clang_cfg_args = parse_clang_cfg_file(clang_cfg)
         return get_gcc_prefix_dir(clang_cfg_args)
 
     gcc_prefix_flags = {
@@ -961,10 +965,18 @@ def get_clang_basic_args(clang_command):
             return True
         return False
 
+    skip_sysroot = False
+
     # if the user set one of the flags, use it
     flag_to_use = _determine_gcc_flag_to_use()
     if flag_to_use:
         use_flag(flag_to_use)
+    elif (any(arg.startswith("--sysroot") for arg in clang_cfg_args) or
+          any(arg.startswith("--gcc-install-dir") for arg in clang_cfg_args) or
+          any(arg.startswith("--gcc-toolchain") for arg in clang_cfg_args)):
+        # if the clang configure file supplies sysroot, gcc-install-dir, or
+        #  gcc-toolchain, we shouldn't try to infer anything and override it
+        skip_sysroot = True
     else:
         # we should try and infer them, preferring GCC_INSTALL_DIR
         for try_flag in ['CHPL_LLVM_GCC_INSTALL_DIR', 'CHPL_LLVM_GCC_PREFIX']:
@@ -972,13 +984,14 @@ def get_clang_basic_args(clang_command):
                 break
 
     target_platform = chpl_platform.get('target')
-    sysroot_args = []
-    if target_platform == "darwin":
-        sysroot_args = get_sysroot_resource_dir_args()
-    else:
-        sysroot_args = get_sysroot_linux_args()
-    if sysroot_args:
-        clang_args.extend(sysroot_args)
+    if not skip_sysroot:
+        sysroot_args = []
+        if target_platform == "darwin":
+            sysroot_args = get_sysroot_resource_dir_args()
+        else:
+            sysroot_args = get_sysroot_linux_args()
+        if sysroot_args:
+            clang_args.extend(sysroot_args)
 
     # This is a workaround for problems with Homebrew llvm@11 on 10.14
     # which avoids errors like

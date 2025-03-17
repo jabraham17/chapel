@@ -19,8 +19,7 @@
  */
 
 
-//  TODO: represent python context managers as Chapel context managers
-
+// TODO: represent python context managers as Chapel context managers
 // TODO: implement operators as dunder methods
 
 /* Library for interfacing with Python from Chapel code.
@@ -60,123 +59,19 @@
   Parallel Execution
   ------------------
 
-  Running any Python code in parallel from Chapel requires special care, due
-  to the Global Interpreter Lock (GIL) in the Python interpreter.
-  This module supports two ways of doing this.
+  Running any Python code in parallel from Chapel will likely be no faster than
+  serial execution due to the Global Interpreter Lock (GIL) in the Python
+  interpreter. This module automatically handles the GIL in the public API.
 
   .. note::
 
      Newer Python versions offer a free-threading mode that allows multiple
      threads concurrently. This currently requires a custom build of Python. If
-     you are using a Python like this, you should be able to use this module
-     freely in parallel code.
+     you are using a Python interpreter like this, the GIL handling code in this
+     module will become a no-op.
 
-  Using Multiple Interpreters
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  .. warning::
-
-     Sub-interpreter support in Chapel is highly experimental and currently has
-     undefined behavior.
-
-  The most performant way to run Python code in parallel is to use multiple
-  sub-interpreters. Each sub-interpreter is isolated from the others with its
-  own GIL. This allows multiple threads to run Python code concurrently. Note
-  that communication between sub-interpreters is severely limited and it is
-  strongly recommend to limit the amount of data shared between
-  sub-interpreters.
-
-  .. note::
-
-     This feature is only available in Python 3.12 and later. Attempting to use
-     sub-interpreters with earlier versions of Python will result in a runtime
-     exception.
-
-  The following demonstrates using sub-interpreters in a ``coforall`` loop:
-
-  ..
-     START_TEST
-     FILENAME: CoforallTestSub.chpl
-     NOEXEC
-     START_GOOD
-     END_GOOD
-
-  .. code-block:: chapel
-
-     use Python;
-
-     var code = """
-     import sys
-     def hello():
-       print('Hello from a task')
-       sys.stdout.flush()
-     """;
-
-     proc main() {
-       var interpreter = new Interpreter();
-       coforall 0..#4 {
-         var subInterpreter = new SubInterpreter(interpreter);
-         var m = subInterpreter.importModule('myMod', code);
-         var hello = m.get('hello');
-         hello();
-       }
-     }
-
-  ..
-     END_TEST
-
-  To make use of a sub-interpreter in a ``forall`` loop, the sub-interpreter
-  should be created as a task private variable. It is recommended that users
-  wrap the sub-interpreter in a ``record`` to initialize their Python objects,
-  to prevent duplicated work. For example, the following code creates multiple
-  sub-interpreters in a ``forall`` loop, where each task gets its own copy of
-  the module.
-
-  ..
-     START_TEST
-     FILENAME: TaskPrivateSubInterp.chpl
-     NOEXEC
-     START_GOOD
-     END_GOOD
-
-  .. code-block:: chapel
-
-     use Python;
-
-     record perTaskModule {
-      var i: owned SubInterpreter?;
-      var m: owned Module?;
-      proc init(parent: borrowed Interpreter, code: string) {
-        init this;
-        i = try! (new SubInterpreter(parent));
-        m = try! (i!.importModule("anon", code));
-      }
-     }
-
-     proc main() {
-       var interpreter = new Interpreter();
-       forall i in 1..10
-        with (var mod =
-          new perTaskModule(interpreter, "x = 10")) {
-          writeln(mod.m!.get(int, "x"));
-       }
-     }
-
-  ..
-     END_TEST
-
-  Using A Single Interpreter
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  A single Python interpreter can execute code in parallel, as long as the GIL
-  is properly handled. Before any parallel execution with Python code can occur,
-  the thread state needs to be saved. After the parallel execution, the thread
-  state must to be restored. Then for each thread, the GIL must be acquired and
-  released. This is necessary to prevent segmentation faults and deadlocks in
-  the Python interpreter.
-
-  The following demonstrates this when explicit tasks are introduced with a
-  ``coforall``:
+  The following demonstrates executing multiple Chapel tasks using a `coforall`
+  and a single Python interpreter:
 
   ..
      START_TEST
@@ -194,21 +89,16 @@
      var interp = new Interpreter();
      var func = interp.compileLambda("lambda x,: x * x");
 
-     var ts = new threadState();
-     ts.save(); // save the thread state
      coforall tid in 1..10 {
-       var gil = new GIL(); // acquire the GIL
+       // the call to 'func' automatically acquires and releases the GIL
        Arr[tid] = func(int, tid);
-       // GIL is automatically released at the end of the block
      }
-     ts.restore(); // restore the thread state
      writeln(Arr);
 
   ..
      END_TEST
 
-  When using a data-parallel ``forall``, the GIL should be acquired and released
-  as a task private variable.
+  The code works similarly with a data-parallel ``forall`` loop:
 
   ..
      START_TEST
@@ -226,20 +116,17 @@
      var interp = new Interpreter();
      var func = interp.compileLambda("lambda x,: x * x");
 
-     var ts = new threadState();
-     ts.save(); // save the thread state
-     forall tid in 1..10 with (var gil = new GIL()) {
+     forall tid in 1..10 {
+       // the call to 'func' automatically acquires and releases the GIL
        Arr[tid] = func(int, tid);
      }
-     ts.restore(); // restore the thread state
      writeln(Arr);
 
   ..
      END_TEST
 
-  In the examples above, because the GIL is being acquired and released for the
-  entirety of each task, these examples will be no faster than running the tasks
-  serially.
+  Although these examples use Chapel's task parallelism constructs,
+  they will be no faster than running the tasks serially due to the GIL.
 
   Using Python Modules With Distributed Code
   -------------------------------------------
@@ -272,12 +159,9 @@
           const interp = new Interpreter();
           const func = interp.compileLambda("lambda x,: x + 1");
 
-          var ts = new threadState();
-          ts.save();
           forall i in Arr.localSubdomain() with (var gil = new GIL()) {
             Arr[i] = func(Arr.eltType, Arr[i]);
           }
-          ts.restore();
         }
       }
       writeln(Arr);
@@ -286,7 +170,7 @@
      END_TEST
 
   In this example, ``interp`` and ``func`` only exist for the body of the
-  ``on`` block,Python objects can be made to persist beyond the scope of a
+  ``on`` block, Python objects can be made to persist beyond the scope of a
   given ``on`` block by creating a distributed array of Python objects.
 
   Defining Custom Types
@@ -344,6 +228,100 @@
 */
 @unstable("The Python module's interface is under active development and may change")
 module Python {
+
+  /*
+  =======================
+  Developer Documentation
+  =======================
+
+  This module makes heavy usage of the Python C API. Care should be taken when
+  adding new calls to the C API, especially when it comes to reference counting
+  and the GIL.
+
+  Reference Counting
+  ------------------
+
+  Python objects are reference counted. When a Python object is created, it has
+  a reference count of 1. When the reference count reaches 0 the object is
+  deallocated. Normally, Python code that is interpreted has this handled by
+  the interpreter. Using the C API, requires the programmer to manage the
+  reference counts. This module hides this implementation detail from the user.
+
+  There are two things to keep in mind.
+    1. making sure that when Chapel is done with the object, the reference
+       count is zero.
+    2. making sure that while Chapel is still owning the object, the reference
+       count is greater than zero.
+
+  The `Value` base class has a field, `isOwned`, which determines if the
+  reference count of the Python object will be decremented when the Chapel
+  object is deleted. `toPython` creates new references and `fromPython` steals
+  references (decrements the reference count). Most other functions don't touch
+  the reference count. C API functions generally document if they return/take a
+  new reference ("strong reference"), a borrowed reference (reference count is
+  neither incremented or decremented), or a stolen reference (reference count
+  is decremented). Make sure to check the behavior of new functions.
+
+  Global Interpreter Lock (GIL)
+  -----------------------------
+
+  The Global Interpreter Lock (GIL) is a mutex that protects access to the
+  interpreter state. Some newer builds of Python are "free-threaded" and don't
+  have a GIL. Whether or not the GIL is present, this module will handle the
+  GIL. The `PyGILState_Ensure` and `PyGILState_Release` functions are used to
+  acquire and release the GIL; in free-threaded builds, these functions are
+  no-ops.
+
+  Python and non-python threads require special handling. The
+  `PyGILState_[Ensure|Release]` functions not only acquire/release the GIL, but
+  also automatically handle setting up new Python threads. From Chapel's
+  perspective, `PyGILState_Ensure` must be called before any Python code and
+  `PyGILState_Release` must be called afterwards. Failure to do so will result
+  in undefined behavior, likely a segfault of some kind. You will frequently
+  see the `var g = PyGILState_Ensure(); defer PyGILState_Release(g);` pattern
+  in this module, which acquires the GIL and then releases it at the end of the
+  current scope (or during stack unwinding due to an exception)
+
+  Interacting with Chapel's threading model can also be problematic.
+  `PyGILState_[Ensure|Release]` calls must be matched to each other on the same
+  thread or deadlock will occur. NOTE: this can happen easily and
+  transparently in Chapel, particularly when `on` blocks are used (they
+  introduce new comm threads in multi-locale code). Additionally, the
+  `Py_Initialize`/``Py_Finalize` family of calls must be made on the same
+  thread. This module does additional work to facilitate that.
+
+  As an overview, the interpreter is setup in the following way to properly
+  handle the GIL.
+  1. `new Interpreter()` spawns a new daemon thread which does the following:
+     a. Initializes the Python interpreter b. acquires the gil and enters a
+     state where it can invoke threads (i.e. `Py_BEGIN_ALLOW_THREADS`) c.
+     signals that setup is done and goes to sleep, waiting for a signal to
+     finish
+  2. `Interpreter.deinit()` signals the daemon thread to finish and waits for
+     it to finish a. the daemon thread releases the gil and thread state (i.e
+     `Py_END_ALLOW_THREADS`) b. the daemon thread signals that it is done and
+     exits
+
+  All public API calls in this module should be thread safe, meaning they
+  handle the GIL correctly. So for example, `new Module(interp, "mymod")`
+  should properly acquire/release the GIL. But, internal functions like
+  `importModuleInternal` do not (and should not) acquire/release the GIL. While
+  matching pairs to `PyGILState_[Ensure|Release]` can be nested, there is no
+  reason to and the less we do that, the less overhead. This convention is
+  especially important for `[to|from]Python`. `[to|from]Python` is a part of
+  the public API, and so must acquire/release the GIL. But these functions are
+  so heavily used to implement other parts of the public API that the
+  internal `[to|from]PythonInner` functions are used to avoid the overhead of
+  acquiring/releasing the GIL. Essentially, `[to|from]Python` acquires the GIL,
+  calls `[to|from]PythonInner`, and then releases the GIL.
+
+  Important documentation to read up on Python threading and the GIL
+    - https://docs.python.org/3/c-api/init.html#thread-state-and-the-global-interpreter-lock
+    - https://docs.python.org/3/c-api/init.html#c.Py_Initialize
+    - https://docs.python.org/3/c-api/init.html#c.Py_FinalizeEx
+  */
+
+
   private use CTypes;
   private import List;
   private import Map;
@@ -353,6 +331,7 @@ module Python {
   private import this.ArrayTypes;
   private use CWChar;
   private use OS.POSIX only getenv;
+  private import this.PThread;
 
   /*
     Use 'objgraph' to detect memory leaks in the Python code. Care should be
@@ -398,12 +377,91 @@ module Python {
     var sepPy = PyObject_GetAttrString(os, "pathsep");
     interp.checkException();
 
-    var sep = interp.fromPython(string, sepPy);
+    var sep = interp.fromPythonInner(string, sepPy);
     return sep;
   }
 
   private proc throwChapelException(message: string) throws {
     throw new ChapelException(message);
+  }
+
+  @chpldoc.nodoc
+  record signalPair {
+    var setupDone: c_ptr(PThread.pthreadSignal);
+    var done: c_ptr(PThread.pthreadSignal);
+  }
+  @chpldoc.nodoc
+  var interpreterThreadError: owned Error? = nil;
+  private proc interpreterThread(arg: c_ptr(void)): c_ptr(void) {
+
+    var signals = (arg:c_ptr(signalPair)).deref();
+
+    try {
+      // preinit
+      var preconfig: PyPreConfig;
+      PyPreConfig_InitIsolatedConfig(c_ptrTo(preconfig));
+      preconfig.utf8_mode = 1;
+      checkPyStatus(Py_PreInitialize(c_ptrTo(preconfig)));
+
+      // init
+      var config_: PyConfig;
+      var cfgPtr = c_ptrTo(config_);
+      // we want an isolated config for things like LC_ALL, but we still want
+      // to use things like PYTHONPATH
+      PyConfig_InitIsolatedConfig(cfgPtr);
+      config_.isolated = 0;
+      config_.use_environment = 1;
+      config_.user_site_directory = 1;
+      config_.site_import = 1;
+      defer PyConfig_Clear(cfgPtr);
+
+      // check VIRTUAL_ENV, if it is set, make it the executable
+      var venv = getenv("VIRTUAL_ENV".c_str());
+      if venv != nil {
+        // ideally this just sets config_.home
+        // but by setting executable we can reuse the python logic to
+        // determine the locale (in the string sense, not the chapel sense)
+        const executable = string.createBorrowingBuffer(venv) + "/bin/python";
+        const wideExecutable = executable.c_wstr();
+        defer deallocate(wideExecutable);
+        checkPyStatus(
+          PyConfig_SetString(
+            cfgPtr, c_ptrTo(config_.executable), wideExecutable));
+      }
+
+      // initialize
+      checkPyStatus(Py_InitializeFromConfig(cfgPtr));
+    } catch e {
+      // if any errors occur, signal that setup is done and exit
+      interpreterThreadError = e;
+      signals.setupDone.deref().signal();
+      return nil;
+    }
+
+    //
+    // grab the GIL and enter a state where we can invoke threads
+    //
+    var gil = PyGILState_Ensure();
+    var ts = PyEval_SaveThread();
+
+    //
+    // setup is done
+    //
+    signals.setupDone.deref().signal();
+
+    //
+    // wait for deinit to be called
+    //
+    signals.done.deref().wait();
+
+    //
+    // restore the thread state so we can release the gil and exit
+    //
+    PyEval_RestoreThread(ts);
+    PyGILState_Release(gil);
+    Py_Finalize();
+    return nil;
+
   }
 
   /*
@@ -435,6 +493,13 @@ module Python {
     @chpldoc.nodoc
     var isSubInterpreter: bool;
 
+    // the done signal is a field so it has the same lifetime as the
+    // helper thread
+    @chpldoc.nodoc
+    var done: PThread.pthreadSignal;
+    @chpldoc.nodoc
+    var thread: PThread.pthread_t;
+
     @chpldoc.nodoc
     proc init(isSubInterpreter: bool = false) {
       this.isSubInterpreter = isSubInterpreter;
@@ -444,40 +509,35 @@ module Python {
     proc postinit() throws {
       if this.isSubInterpreter then return;
 
-      // preinit
-      var preconfig: PyPreConfig;
-      PyPreConfig_InitIsolatedConfig(c_ptrTo(preconfig));
-      preconfig.utf8_mode = 1;
-      checkPyStatus(Py_PreInitialize(c_ptrTo(preconfig)));
+      var setupDone = new PThread.pthreadSignal();
+      var signals = new signalPair(c_ptrTo(setupDone), c_ptrTo(this.done));
 
-      // init
-      var config_: PyConfig;
-      var cfgPtr = c_ptrTo(config_);
-      // we want an isolated config for things like LC_ALL, but we still want
-      // to use things like PYTHONPATH
-      PyConfig_InitIsolatedConfig(cfgPtr);
-      config_.isolated = 0;
-      config_.use_environment = 1;
-      config_.user_site_directory = 1;
-      config_.site_import = 1;
-      defer PyConfig_Clear(cfgPtr);
+      //
+      // Do all Python initialization/finalization in a single task.
+      // Initialization will be done, then this thread will block on 'done'.
+      // When the deinit is called, it will unblock this thread and finalize
+      // NOTE: this is done with a manual pthread to work around
+      // https://github.com/chapel-lang/chapel/issues/26855
+      //
+      PThread.pthread_create(c_ptrTo(this.thread),
+                             nil,
+                             c_ptrTo(interpreterThread),
+                             c_ptrTo(signals));
 
-      // check VIRTUAL_ENV, if its set, make it the executable
-      var venv = getenv("VIRTUAL_ENV".c_str());
-      if venv != nil {
-        // ideally this just sets config_.home
-        // but by setting executable we can reuse the python logic to determine
-        // the locale (in the string sense, not the chapel sense)
-        const executable = string.createBorrowingBuffer(venv) + "/bin/python";
-        const wideExecutable = executable.c_wstr();
-        checkPyStatus(
-          PyConfig_SetString(
-            cfgPtr, c_ptrTo(config_.executable), wideExecutable));
-        deallocate(wideExecutable);
+      //
+      // blocks until setup is done, once setup is done we can return
+      //
+      setupDone.wait();
+
+      // check for an error from the pthread
+      if interpreterThreadError != nil {
+        throw interpreterThreadError;
       }
 
-      // initialize
-      checkPyStatus(Py_InitializeFromConfig(cfgPtr));
+
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
 
       var sys = PyImport_ImportModule("sys");
       this.checkException();
@@ -530,12 +590,15 @@ module Python {
           Py_DECREF(growth);
         }
       }
+
     }
     @chpldoc.nodoc
     proc deinit()  {
       if this.isSubInterpreter then return;
 
       if pyMemLeaks && this.objgraph != nil {
+        var g = PyGILState_Ensure();
+        defer PyGILState_Release(g);
         // note: try! is used since we can't have a throwing deinit
 
         // run gc.collect() before showing growth
@@ -560,7 +623,11 @@ module Python {
         Py_DECREF(this.objgraph);
       }
 
-      Py_Finalize();
+      //
+      // we are done, the thread keeping the interpreter alive can finish
+      //
+      this.done.signal();
+      PThread.pthread_join(this.thread, nil);
     }
 
     /*
@@ -630,6 +697,8 @@ module Python {
       return values.
     */
     proc run(code: string) throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
       PyRun_SimpleString(code.c_str());
       this.checkException();
     }
@@ -722,7 +791,7 @@ module Python {
       var loads = PyObject_GetAttrString(pickle, "loads");
       this.checkException();
       defer Py_DECREF(loads);
-      var pyBytes = toPython(b);
+      var pyBytes = toPythonInner(b);
       defer Py_DECREF(pyBytes);
       var obj = PyObject_CallOneArg(loads, pyBytes);
       this.checkException();
@@ -748,7 +817,7 @@ module Python {
       var MAGIC_NUMBER_py =
         PyObject_GetAttrString(importlib_util, "MAGIC_NUMBER");
       this.checkException();
-      var MAGIC_NUMBER = this.fromPython(bytes, MAGIC_NUMBER_py);
+      var MAGIC_NUMBER = this.fromPythonInner(bytes, MAGIC_NUMBER_py);
       if magic != MAGIC_NUMBER {
         throw new ChapelException("Invalid magic number in '.pyc' file");
       }
@@ -767,6 +836,9 @@ module Python {
     /*
       Query to see if an Python exception has occurred. If there is an
       exception, the Python exception will be thrown as a :type:`Exception`.
+
+      This method requires the GIL to be held, calling it without doing so will
+      result in undefined behavior. See :type:`GIL`.
 
       .. note::
 
@@ -787,10 +859,13 @@ module Python {
       displayed in the correct order.
     */
     inline proc flush(flushStderr: bool = false) throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       var stdout = PySys_GetObject("stdout");
       if stdout == nil then throw new ChapelException("stdout not found");
 
-      var flushStr = this.toPython("flush");
+      var flushStr = this.toPythonInner("flush");
       defer Py_DECREF(flushStr);
 
       PyObject_CallMethodNoArgs(stdout, flushStr);
@@ -822,9 +897,16 @@ module Python {
          Most users should not need to call this directly, except when writing
          a :type:`TypeConverter`.
     */
-    proc toPython(const val: ?t): PyObjectPtr throws {
+    proc toPython(const val): PyObjectPtr throws {
+      var gil = PyGILState_Ensure();
+      defer PyGILState_Release(gil);
+      return toPythonInner(val);
+    }
+    @chpldoc.nodoc
+    proc toPythonInner(const val: ?t): PyObjectPtr throws {
       for converter in this.converters {
         if converter.handlesType(t) {
+          // make sure to handle the gil for users
           return converter.toPython(this, t, val);
         }
       }
@@ -891,6 +973,12 @@ module Python {
          a :type:`TypeConverter`.
     */
     proc fromPython(type t, obj: PyObjectPtr): t throws {
+      var gil = PyGILState_Ensure();
+      defer PyGILState_Release(gil);
+      return fromPythonInner(t, obj);
+    }
+    @chpldoc.nodoc
+    proc fromPythonInner(type t, obj: PyObjectPtr): t throws {
       if isClassType(t) &&
          (!isSharedClassType(t) &&
           !isOwnedClassType(t) &&
@@ -909,6 +997,7 @@ module Python {
 
       for converter in this.converters {
         if converter.handlesType(t) {
+          // make sure to handle the gil for users
           return converter.fromPython(this, t, obj);
         }
       }
@@ -981,7 +1070,7 @@ module Python {
       this.checkException();
       for i in 0..<arr.size {
         const idx = arr.domain.orderToIndex(i);
-        PyList_SetItem(pyList, i.safeCast(Py_ssize_t), toPython(arr[idx]));
+        PyList_SetItem(pyList, i.safeCast(Py_ssize_t), toPythonInner(arr[idx]));
         this.checkException();
       }
       return pyList;
@@ -995,7 +1084,7 @@ module Python {
       var pyList = PyList_New(l.size.safeCast(Py_ssize_t));
       this.checkException();
       for i in 0..<l.size {
-        PyList_SetItem(pyList, i.safeCast(Py_ssize_t), toPython(l(i)));
+        PyList_SetItem(pyList, i.safeCast(Py_ssize_t), toPythonInner(l(i)));
         this.checkException();
       }
       return pyList;
@@ -1020,7 +1109,7 @@ module Python {
         const idx = res.domain.orderToIndex(i);
         var elm = PySequence_GetItem(obj, i.safeCast(Py_ssize_t));
         this.checkException();
-        res[idx] = fromPython(res.eltType, elm);
+        res[idx] = fromPythonInner(res.eltType, elm);
         this.checkException();
       }
       Py_DECREF(obj);
@@ -1039,7 +1128,7 @@ module Python {
         for i in 0..<PySequence_Size(obj) {
           var item = PySequence_GetItem(obj, i);
           this.checkException();
-          res.pushBack(fromPython(T.eltType, item));
+          res.pushBack(fromPythonInner(T.eltType, item));
         }
         Py_DECREF(obj);
         return res;
@@ -1052,7 +1141,7 @@ module Python {
           if item == nil {
             break;
           }
-          res.pushBack(fromPython(T.eltType, item));
+          res.pushBack(fromPythonInner(T.eltType, item));
         }
         Py_DECREF(obj);
         return res;
@@ -1088,7 +1177,7 @@ module Python {
       var pySet = PySet_New(nil);
       this.checkException();
       for i in s {
-        PySet_Add(pySet, toPython(i));
+        PySet_Add(pySet, toPythonInner(i));
         this.checkException();
       }
       return pySet;
@@ -1136,7 +1225,7 @@ module Python {
       for 0..<PySequence_Size(obj) {
         var elem = PyIter_Next(it);
         this.checkException();
-        res.add(fromPython(T.eltType, elem));
+        res.add(fromPythonInner(T.eltType, elem));
       }
       Py_DECREF(obj);
       return res;
@@ -1153,8 +1242,8 @@ module Python {
       var pyDict = PyDict_New();
       this.checkException();
       for key in arr.domain {
-        var pyKey = toPython(key);
-        var pyValue = toPython(arr[key]);
+        var pyKey = toPythonInner(key);
+        var pyValue = toPythonInner(arr[key]);
         PyDict_SetItem(pyDict, pyKey, pyValue);
         this.checkException();
       }
@@ -1169,8 +1258,8 @@ module Python {
       var pyDict = PyDict_New();
       this.checkException();
       for key in m.keys() {
-        var pyKey = toPython(key);
-        var pyValue = toPython(m[key]);
+        var pyKey = toPythonInner(key);
+        var pyValue = toPythonInner(m[key]);
         PyDict_SetItem(pyDict, pyKey, pyValue);
         Py_DECREF(pyValue);
         this.checkException();
@@ -1202,9 +1291,9 @@ module Python {
         var val = PyDict_GetItem(obj, key);
         this.checkException();
 
-        var keyVal = this.fromPython(keyType, key);
+        var keyVal = this.fromPythonInner(keyType, key);
         dom.add(keyVal);
-        arr[keyVal] = this.fromPython(valType, val);
+        arr[keyVal] = this.fromPythonInner(valType, val);
       }
 
       Py_DECREF(obj);
@@ -1231,9 +1320,9 @@ module Python {
         this.checkException();
 
         Py_INCREF(key);
-        var keyVal = this.fromPython(keyType, key);
+        var keyVal = this.fromPythonInner(keyType, key);
         Py_INCREF(val);
-        m.add(keyVal, this.fromPython(valType, val));
+        m.add(keyVal, this.fromPythonInner(valType, val));
       }
 
       Py_DECREF(obj);
@@ -1299,7 +1388,7 @@ module Python {
                     exc: PyObjectPtr): owned PythonException throws {
       assert(exc != nil);
       var py_str = PyObject_Str(exc);
-      var str = interp.fromPython(string, py_str);
+      var str = interp.fromPythonInner(string, py_str);
       Py_DECREF(exc);
       if PyErr_GivenExceptionMatches(exc, PyExc_ImportError) != 0 {
         return new ImportError(str);
@@ -1420,8 +1509,10 @@ module Python {
   }
 
 
+
   /*
-    Represents a Python value, it handles reference counting and is owned by default.
+    Represents a Python value, it handles reference counting and is owned by
+    default.
   */
   class Value {
     /*
@@ -1433,17 +1524,31 @@ module Python {
     @chpldoc.nodoc
     var isOwned: bool;
 
+    // Developer note: all initializers should acquire the
+    // gil into gilState, then the postinit should release it. subclasses can
+    // and should assume the gil is held
+    // this is because we can only check for exceptions with the gil held, but
+    // if we acquire the gil it will clear the exception from the last call
+    // ideally, this extra field is not needed and the exception checking occurs
+    // in the `init` itself, but throwing inits interact poorly with inheritance
+    @chpldoc.nodoc
+    var gilInitState: PyGILState_STATE;
+
     /*
       Takes ownership of an existing Python object, pointed to by ``obj``
 
       :arg interpreter: The interpreter that this object is associated with.
       :arg obj: The :type:`~CTypes.c_ptr` to the existing object.
-      :arg isOwned: Whether this object owns the Python object. This is true by default.
+      :arg isOwned: Whether this object owns the Python object.
+                    This is true by default.
     */
-    proc init(in interpreter: borrowed Interpreter, obj: PyObjectPtr, isOwned: bool = true) {
+    proc init(in interpreter: borrowed Interpreter,
+              obj: PyObjectPtr,
+              isOwned: bool = true) {
       this.interpreter = interpreter;
       this.obj = obj;
       this.isOwned = isOwned;
+      this.gilInitState = PyGILState_Ensure();
       init this;
     }
 
@@ -1457,6 +1562,7 @@ module Python {
     proc init(in interpreter: borrowed Interpreter, pickleData: bytes) throws {
       this.interpreter = interpreter;
       this.isOwned = true;
+      this.gilInitState = PyGILState_Ensure();
       init this;
       this.obj = this.interpreter.loadPickle(pickleData);
     }
@@ -1469,21 +1575,28 @@ module Python {
     proc init(in interpreter: borrowed Interpreter, value: ?) throws {
       this.interpreter = interpreter;
       this.isOwned = true;
+      this.gilInitState = PyGILState_Ensure();
       init this;
-      this.obj = this.interpreter.toPython(value);
+      this.obj = this.interpreter.toPythonInner(value);
     }
 
     @chpldoc.nodoc
     proc postinit() throws {
-      this.check();
+      defer PyGILState_Release(this.gilInitState);
+      this.interpreter.checkException();
     }
 
     @chpldoc.nodoc
     proc deinit() {
-      if this.isOwned then
+      if this.isOwned {
+        var g = PyGILState_Ensure();
+        defer PyGILState_Release(g);
         Py_DECREF(this.obj);
+      }
     }
 
+    // TODO: this may crash if the gil is not held, should we continue to expose
+    // this to users?
     /*
       Check if an exception has occurred in the interpreter.
 
@@ -1500,9 +1613,11 @@ module Python {
       Equivalent to calling ``str(obj)`` in Python.
     */
     proc str(): string throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
       var pyStr = PyObject_Str(this.obj);
-      this.check();
-      var res = interpreter.fromPython(string, pyStr);
+      this.interpreter.checkException();
+      var res = interpreter.fromPythonInner(string, pyStr);
       return res;
     }
 
@@ -1536,6 +1651,9 @@ module Python {
               const args...,
               kwargs:?=none): retType throws
               where kwargs.isAssociative() {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       var pyArg = this.packTuple((...args));
       defer Py_DECREF(pyArg);
       return callInternal(retType, this.getPyObject(), pyArg, kwargs);
@@ -1545,6 +1663,9 @@ module Python {
     proc this(const args...,
               kwargs:?=none): owned Value throws
               where kwargs.isAssociative() {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       var pyArg = this.packTuple((...args));
       defer Py_DECREF(pyArg);
       return callInternal(owned Value, this.getPyObject(), pyArg, kwargs);
@@ -1553,6 +1674,9 @@ module Python {
     @chpldoc.nodoc
     proc this(type retType,
               kwargs:?=none): retType throws where kwargs.isAssociative() {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       var pyArgs = Py_BuildValue("()");
       defer Py_DECREF(pyArgs);
       return callInternal(retType, this.getPyObject(), pyArgs, kwargs);
@@ -1560,6 +1684,9 @@ module Python {
     pragma "last resort"
     @chpldoc.nodoc
     proc this(kwargs:?=none): owned Value throws where kwargs.isAssociative() {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       var pyArgs = Py_BuildValue("()");
       defer Py_DECREF(pyArgs);
       return callInternal(owned Value, this.getPyObject(), pyArgs, kwargs);
@@ -1567,6 +1694,9 @@ module Python {
 
     @chpldoc.nodoc
     proc this(type retType, const args...): retType throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       var pyArg = this.packTuple((...args));
       defer Py_DECREF(pyArg);
       return callInternal(retType, this.getPyObject(), pyArg, none);
@@ -1576,10 +1706,13 @@ module Python {
       return this(owned Value, (...args));
     @chpldoc.nodoc
     proc this(type retType = owned Value): retType throws {
-      var pyRes = PyObject_CallNoArgs(this.getPyObject());
-      this.check();
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
 
-      var res = interpreter.fromPython(retType, pyRes);
+      var pyRes = PyObject_CallNoArgs(this.getPyObject());
+      this.interpreter.checkException();
+
+      var res = interpreter.fromPythonInner(retType, pyRes);
       return res;
     }
 
@@ -1587,7 +1720,7 @@ module Python {
     proc packTuple(const args...) throws {
       var pyArgs: args.size * PyObjectPtr;
       for param i in 0..#args.size {
-        pyArgs(i) = interpreter.toPython(args(i));
+        pyArgs(i) = interpreter.toPythonInner(args(i));
       }
       defer for pyArg in pyArgs do Py_DECREF(pyArg);
 
@@ -1602,13 +1735,13 @@ module Python {
                       pyArg: PyObjectPtr,
                       kwargs: ?t): retType throws {
       var pyKwargs;
-      if t != nothing then pyKwargs = interpreter.toPython(kwargs);
+      if t != nothing then pyKwargs = interpreter.toPythonInner(kwargs);
                       else pyKwargs = nil;
 
       var pyRes = PyObject_Call(pyFunc, pyArg, pyKwargs);
-      this.check();
+      this.interpreter.checkException();
 
-      var res = interpreter.fromPython(retType, pyRes);
+      var res = interpreter.fromPythonInner(retType, pyRes);
       return res;
     }
 
@@ -1647,10 +1780,13 @@ module Python {
 
     @chpldoc.nodoc
     proc get(type t, attr: string): t throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       var pyAttr = PyObject_GetAttrString(this.getPyObject(), attr.c_str());
       interpreter.checkException();
 
-      var res = interpreter.fromPython(t, pyAttr);
+      var res = interpreter.fromPythonInner(t, pyAttr);
       return res;
     }
     @chpldoc.nodoc
@@ -1665,7 +1801,10 @@ module Python {
       :arg value: The value to set the attribute/field to.
     */
     proc set(attr: string, value) throws {
-      var pyValue = interpreter.toPython(value);
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var pyValue = interpreter.toPythonInner(value);
       defer Py_DECREF(pyValue);
 
       PyObject_SetAttrString(this.getPyObject(), attr.c_str(), pyValue);
@@ -1695,12 +1834,15 @@ module Python {
               const args...,
               kwargs:?=none): retType throws
               where kwargs.isAssociative() {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       var pyArg = this.packTuple((...args));
       defer Py_DECREF(pyArg);
 
       var methodFunc =
         PyObject_GetAttrString(this.getPyObject(), method.c_str());
-      this.check();
+      this.interpreter.checkException();
       defer Py_DECREF(methodFunc);
 
       return callInternal(retType, methodFunc, pyArg, kwargs);
@@ -1710,12 +1852,15 @@ module Python {
     proc call(method: string,const args...,
               kwargs:?=none): owned Value throws
               where kwargs.isAssociative() {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       var pyArg = this.packTuple((...args));
       defer Py_DECREF(pyArg);
 
       var methodFunc =
         PyObject_GetAttrString(this.getPyObject(), method.c_str());
-      this.check();
+      this.interpreter.checkException();
       defer Py_DECREF(methodFunc);
 
       return callInternal(owned Value, methodFunc, pyArg, kwargs);
@@ -1724,20 +1869,23 @@ module Python {
 
     @chpldoc.nodoc
     proc call(type retType, method: string, const args...): retType throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       var pyArgs: args.size * PyObjectPtr;
       for param i in 0..#args.size {
-        pyArgs(i) = interpreter.toPython(args(i));
+        pyArgs(i) = interpreter.toPythonInner(args(i));
       }
       defer for pyArg in pyArgs do Py_DECREF(pyArg);
 
-      var methodName = interpreter.toPython(method);
+      var methodName = interpreter.toPythonInner(method);
       defer Py_DECREF(methodName);
 
       var pyRes = PyObject_CallMethodObjArgs(
         this.getPyObject(), methodName, (...pyArgs), nil);
       interpreter.checkException();
 
-      var res = interpreter.fromPython(retType, pyRes);
+      var res = interpreter.fromPythonInner(retType, pyRes);
       return res;
     }
     @chpldoc.nodoc
@@ -1746,13 +1894,16 @@ module Python {
 
     @chpldoc.nodoc
     proc call(type retType, method: string): retType throws {
-      var methodName = interpreter.toPython(method);
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var methodName = interpreter.toPythonInner(method);
       defer Py_DECREF(methodName);
 
       var pyRes = PyObject_CallMethodNoArgs(this.getPyObject(), methodName);
       interpreter.checkException();
 
-      var res = interpreter.fromPython(retType, pyRes);
+      var res = interpreter.fromPythonInner(retType, pyRes);
       return res;
     }
     @chpldoc.nodoc
@@ -1765,12 +1916,15 @@ module Python {
     proc call(type retType,
               method: string,
               kwargs:?=none): retType throws where kwargs.isAssociative() {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       var pyArgs = Py_BuildValue("()");
       defer Py_DECREF(pyArgs);
 
       var methodFunc =
         PyObject_GetAttrString(this.getPyObject(), method.c_str());
-      this.check();
+      this.interpreter.checkException();
       defer Py_DECREF(methodFunc);
 
       return callInternal(retType, methodFunc, pyArgs, kwargs);
@@ -1790,9 +1944,12 @@ module Python {
       object, however it does not consume the object.
     */
     proc value(type value) throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       // fromPython will decrement the ref count, so we need to increment it
       Py_INCREF(this.obj);
-      return interpreter.fromPython(value, this.obj);
+      return interpreter.fromPythonInner(value, this.obj);
     }
 
     /*
@@ -1853,10 +2010,12 @@ module Python {
       Import a Python module by name. See :proc:`Interpreter.importModule`.
     */
     proc init(interpreter: borrowed Interpreter, in modName: string) {
-      super.init(interpreter,
-                 PyImport_ImportModule(modName.c_str()), isOwned=true);
+      super.init(interpreter, nil: PyObjectPtr, isOwned=true);
       this.modName = modName;
+      init this;
+      this.obj = PyImport_ImportModule(modName.c_str());
     }
+
 
     /*
       Import a Python module from a string using an arbitrary name.
@@ -1896,10 +2055,10 @@ module Python {
       This is equivalent to ``mod.get(className)``. See :proc:`Value.get`.
     */
     proc init(mod: borrowed Value, in fnName: string) {
-      super.init(mod.interpreter,
-                 PyObject_GetAttrString(mod.getPyObject(), fnName.c_str()),
-                 isOwned=true);
+      super.init(mod.interpreter, nil: PyObjectPtr, isOwned=true);
       this.fnName = fnName;
+      init this;
+      this.obj = PyObject_GetAttrString(mod.getPyObject(), fnName.c_str());
     }
     /*
       Takes ownership of an existing Python object, pointed to by ``obj``.
@@ -1960,10 +2119,10 @@ module Python {
       :arg className: The name of the class.
     */
     proc init(mod: borrowed Value, in className: string) {
-      super.init(mod.interpreter,
-                 PyObject_GetAttrString(mod.getPyObject(), className.c_str()),
-                 isOwned=true);
+      super.init(mod.interpreter, nil: PyObjectPtr, isOwned=true);
       this.className = className;
+      init this;
+      this.obj = PyObject_GetAttrString(mod.getPyObject(), className.c_str());
     }
 
     @chpldoc.nodoc
@@ -1992,8 +2151,11 @@ module Python {
       :returns: The size of the list.
     */
     proc size: int throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       var size = PySequence_Size(this.getPyObject());
-      this.check();
+      this.interpreter.checkException();
       return size;
     }
 
@@ -2010,9 +2172,13 @@ module Python {
 
     @chpldoc.nodoc
     proc get(type T, idx: int): T throws {
-      var item = PySequence_GetItem(this.getPyObject(), idx.safeCast(Py_ssize_t));
-      this.check();
-      return interpreter.fromPython(T, item);
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var item = PySequence_GetItem(this.getPyObject(),
+                                    idx.safeCast(Py_ssize_t));
+      this.interpreter.checkException();
+      return interpreter.fromPythonInner(T, item);
     }
     @chpldoc.nodoc
     proc get(idx: int): owned Value throws do
@@ -2026,10 +2192,13 @@ module Python {
       :arg item: The item to set.
     */
     proc set(idx: int, item: ?) throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       PySequence_SetItem(this.getPyObject(),
                      idx.safeCast(Py_ssize_t),
-                     interpreter.toPython(item));
-      this.check();
+                     interpreter.toPythonInner(item));
+      this.interpreter.checkException();
     }
   }
 
@@ -2050,8 +2219,11 @@ module Python {
       :returns: The size of the dict.
     */
     proc size: int throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       var size = PyDict_Size(this.getPyObject());
-      this.check();
+      this.interpreter.checkException();
       return size;
     }
 
@@ -2068,10 +2240,14 @@ module Python {
 
     @chpldoc.nodoc
     proc get(type T, key: ?): T throws {
-      var item = PyDict_GetItem(this.getPyObject(), interpreter.toPython(key));
-      this.check();
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var item = PyDict_GetItem(this.getPyObject(),
+                                interpreter.toPythonInner(key));
+      this.interpreter.checkException();
       Py_INCREF(item);
-      return interpreter.fromPython(T, item);
+      return interpreter.fromPythonInner(T, item);
     }
     @chpldoc.nodoc
     proc get(key: ?): owned Value throws do
@@ -2085,11 +2261,15 @@ module Python {
       :arg item: The item to set.
     */
     proc set(key: ?, item: ?) throws {
-      var val = interpreter.toPython(item);
-      PyDict_SetItem(this.getPyObject(), interpreter.toPython(key),
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var val = interpreter.toPythonInner(item);
+      PyDict_SetItem(this.getPyObject(),
+                     interpreter.toPythonInner(key),
                      val);
       Py_DECREF(val);
-      this.check();
+      this.interpreter.checkException();
     }
 
     /*
@@ -2101,8 +2281,11 @@ module Python {
       :throws KeyError: If the key did not exist in the dict.
     */
     proc del(key: ?) throws {
-      PyDict_DelItem(this.getPyObject(), interpreter.toPython(key));
-      this.check();
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      PyDict_DelItem(this.getPyObject(), interpreter.toPythonInner(key));
+      this.interpreter.checkException();
     }
 
     /*
@@ -2110,8 +2293,11 @@ module Python {
       in Python.
     */
     proc clear() throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       PyDict_Clear(this.getPyObject());
-      this.check();
+      this.interpreter.checkException();
     }
 
     /*
@@ -2119,8 +2305,11 @@ module Python {
       ``obj.copy()`` in Python.
     */
     proc copy(): PyDict throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       var c = PyDict_Copy(this.getPyObject());
-      this.check();
+      this.interpreter.checkException();
       return new PyDict(this.interpreter, c);
     }
 
@@ -2131,9 +2320,12 @@ module Python {
       :arg key: The key to check for membership in the dict.
     */
     proc contains(key: ?): bool throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       var result = PyDict_Contains(this.getPyObject(),
-                                   interpreter.toPython(key));
-      this.check();
+                                   interpreter.toPythonInner(key));
+      this.interpreter.checkException();
       return result: bool;
     }
   }
@@ -2155,8 +2347,11 @@ module Python {
       :returns: The size of the set.
     */
     proc size: int throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       var size = PySequence_Size(this.getPyObject());
-      this.check();
+      this.interpreter.checkException();
       return size;
     }
 
@@ -2167,8 +2362,11 @@ module Python {
       :arg item: The item to add to the set.
      */
     proc add(item: ?) throws {
-      PySet_Add(this.getPyObject(), interpreter.toPython(item));
-      this.check();
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      PySet_Add(this.getPyObject(), interpreter.toPythonInner(item));
+      this.interpreter.checkException();
     }
 
     /*
@@ -2178,9 +2376,12 @@ module Python {
       :arg item: The item to check for membership in the set.
     */
     proc contains(item: ?): bool throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       var result = PySet_Contains(this.getPyObject(),
-                                  interpreter.toPython(item));
-      this.check();
+                                  interpreter.toPythonInner(item));
+      this.interpreter.checkException();
       return result: bool;
     }
 
@@ -2191,8 +2392,12 @@ module Python {
       :arg item: The item to discard from the set.
     */
     proc discard(item: ?) throws {
-      PySet_Discard(this.getPyObject(), interpreter.toPython(item));
-      this.check();
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      PySet_Discard(this.getPyObject(),
+                    interpreter.toPythonInner(item));
+      this.interpreter.checkException();
     }
 
     /*
@@ -2206,9 +2411,12 @@ module Python {
               control which element `pop` will return.
     */
     proc pop(type T = owned Value): T throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       var popped = PySet_Pop(this.getPyObject());
-      this.check();
-      return interpreter.fromPython(T, popped);
+      this.interpreter.checkException();
+      return interpreter.fromPythonInner(T, popped);
     }
 
     /*
@@ -2216,8 +2424,11 @@ module Python {
       in Python
     */
     proc clear() throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       PySet_Clear(this.getPyObject());
-      this.check();
+      this.interpreter.checkException();
     }
   }
 
@@ -2273,13 +2484,16 @@ module Python {
     }
     @chpldoc.nodoc
     proc postinit() throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       if PyObject_CheckBuffer(this.getPyObject()) == 0 {
         throw new ChapelException("Object does not support buffer protocol");
       }
       var flags: c_int =
         PyBUF_SIMPLE | PyBUF_WRITABLE | PyBUF_FORMAT | PyBUF_ND;
       if PyObject_GetBuffer(this.getPyObject(), c_ptrTo(this.view), flags) == -1 {
-        this.check();
+        this.interpreter.checkException();
         // this.check should have raised an exception, if it didn't, raise one
         throw new BufferError("Failed to get buffer");
       }
@@ -2305,6 +2519,9 @@ module Python {
     }
 
     proc deinit() {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       PyBuffer_Release(c_ptrTo(this.view));
     }
 
@@ -2370,8 +2587,10 @@ module Python {
     */
     proc init(in interpreter: borrowed Interpreter, ref arr: []) throws
       where isSupportedArrayType(arr) {
-      super.init(interpreter, ArrayTypes.createArray(arr), isOwned=true);
+      super.init(interpreter, nil: PyObjectPtr, isOwned=true);
       this.eltType = arr.eltType;
+      init this;
+      this.obj = ArrayTypes.createArray(arr);
     }
     @chpldoc.nodoc
     proc init(in interpreter: borrowed Interpreter, ref arr: []) throws
@@ -2393,8 +2612,11 @@ module Python {
       :returns: The size of the array.
     */
     proc size: int throws {
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
       var size = PySequence_Size(this.getPyObject());
-      this.check();
+      this.interpreter.checkException();
       return size;
     }
 
@@ -2406,9 +2628,13 @@ module Python {
       :returns: The item at the given index.
     */
     proc get(idx: int): eltType throws {
-      var pyObj = PySequence_GetItem(this.getPyObject(), idx.safeCast(Py_ssize_t));
-      this.check();
-      return interpreter.fromPython(eltType, pyObj);
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var pyObj = PySequence_GetItem(this.getPyObject(),
+                                     idx.safeCast(Py_ssize_t));
+      this.interpreter.checkException();
+      return interpreter.fromPythonInner(eltType, pyObj);
     }
     /*
       Set an item in the array. Equivalent to calling ``obj[idx] = item`` in
@@ -2418,13 +2644,18 @@ module Python {
       :arg item: The item to set.
     */
     proc set(idx: int, item: eltType) throws {
-      var pyItem = interpreter.toPython(item);
+      var g = PyGILState_Ensure();
+      defer PyGILState_Release(g);
+
+      var pyItem = interpreter.toPythonInner(item);
       PySequence_SetItem(this.getPyObject(), idx.safeCast(Py_ssize_t), pyItem);
-      this.check();
+      this.interpreter.checkException();
     }
   }
 
 
+  // TODO: now that we handle this on every call to the python interpreter,
+  // is this still needed as a user facing type?
   /*
     Represents the Global Interpreter Lock, this is used to ensure that only one
     thread is executing python code at a time. Each thread should have its own
@@ -2477,6 +2708,8 @@ module Python {
     }
   }
 
+  // TODO: now that we handle this on every call to the python interpreter,
+  // is this still needed as a user facing type?
   /*
     Represents the current thread state. This saves and restores the current
     thread state.
@@ -2588,8 +2821,7 @@ module Python {
 
   @chpldoc.nodoc
   module CWChar {
-    require "PythonHelper/chpl_wchar.h";
-    extern "wchar_t" type c_wchar;
+    require "wchar.h";
     private use CTypes;
 
     /*
@@ -2597,12 +2829,12 @@ module Python {
 
       This allocates a new buffer, the caller is responsible for freeing it.
     */
-    proc string.c_wstr(): c_ptr(c_wchar) {
-      extern proc mbstowcs(dest: c_ptr(c_wchar),
+    proc string.c_wstr(): c_ptr(c_wchar_t) {
+      extern proc mbstowcs(dest: c_ptr(c_wchar_t),
                            src: c_ptrConst(c_char),
                            n: c_size_t): c_size_t;
       var len: c_size_t = this.size.safeCast(c_size_t);
-      var buf = allocate(c_wchar, len + 1, clear=true);
+      var buf = allocate(c_wchar_t, len + 1, clear=true);
       mbstowcs(buf, this.c_str(), len);
       return buf;
     }
@@ -2635,6 +2867,8 @@ module Python {
     extern type PyThreadState;
     type PyThreadStatePtr = c_ptr(PyThreadState);
     extern type PyGILState_STATE;
+    extern type PyInterpreterState;
+    type PyInterpreterStatePtr = c_ptr(PyInterpreterState);
 
     /*
       PyConfig
@@ -2642,14 +2876,14 @@ module Python {
     extern record PyConfig {
       var isolated: c_int;
       var use_environment: c_int;
-      var filesystem_encoding: c_ptr(c_wchar);
+      var filesystem_encoding: c_ptr(c_wchar_t);
       var site_import: c_int;
       var user_site_directory: c_int;
-      var program_name: c_ptr(c_wchar);
-      var home: c_ptr(c_wchar);
+      var program_name: c_ptr(c_wchar_t);
+      var home: c_ptr(c_wchar_t);
       var module_search_paths_set: c_int;
       var module_search_paths: PyWideStringList;
-      var executable: c_ptr(c_wchar);
+      var executable: c_ptr(c_wchar_t);
     }
     extern proc PyConfig_Clear(config_: c_ptr(PyConfig));
     extern proc PyConfig_Read(config_: c_ptr(PyConfig)): PyStatus;
@@ -2657,18 +2891,18 @@ module Python {
     extern proc PyConfig_InitPythonConfig(config_: c_ptr(PyConfig));
 
     extern proc PyConfig_SetString(config_: c_ptr(PyConfig),
-                                   config_str: c_ptr(c_ptr(c_wchar)),
-                                   str: c_ptr(c_wchar)): PyStatus;
+                                   config_str: c_ptr(c_ptr(c_wchar_t)),
+                                   str: c_ptr(c_wchar_t)): PyStatus;
     extern proc PyConfig_SetBytesString(config_: c_ptr(PyConfig),
-                                        config_str: c_ptr(c_ptr(c_wchar)),
+                                        config_str: c_ptr(c_ptr(c_wchar_t)),
                                         str: c_ptrConst(c_char)): PyStatus;
 
     extern type PyWideStringList;
     extern proc PyWideStringList_Append(list: c_ptr(PyWideStringList),
-                                        str: c_ptr(c_wchar)): PyStatus;
+                                        str: c_ptr(c_wchar_t)): PyStatus;
     extern proc PyWideStringList_Insert(list: c_ptr(PyWideStringList),
                                         idx: c_int,
-                                        str: c_ptr(c_wchar)): PyStatus;
+                                        str: c_ptr(c_wchar_t)): PyStatus;
 
     /*
       PyPreConfig
@@ -2998,4 +3232,68 @@ module Python {
 
     }
   }
+
+  /*
+    A small subset of the pthread API
+  */
+  @chpldoc.nodoc
+  module PThread {
+    private use CTypes;
+
+    extern type pthread_t;
+    extern type pthread_attr_t;
+    extern type pthread_mutex_t;
+    extern type pthread_mutexattr_t;
+    extern type pthread_cond_t;
+    extern type pthread_condattr_t;
+    extern proc pthread_create(thread: c_ptr(pthread_t),
+                              attr: c_ptr(pthread_attr_t),
+                              start_routine: c_fn_ptr,
+                              arg: c_ptr(void)): c_int;
+
+    extern proc pthread_join(thread: pthread_t,
+                            retval: c_ptr(c_ptr(void))): c_int;
+    extern proc pthread_mutex_init(mutex: c_ptr(pthread_mutex_t),
+                                  attr: c_ptr(pthread_mutexattr_t)): c_int;
+    extern proc pthread_mutex_destroy(mutex: c_ptr(pthread_mutex_t)): c_int;
+    extern proc pthread_mutex_lock(mutex: c_ptr(pthread_mutex_t)): c_int;
+    extern proc pthread_mutex_unlock(mutex: c_ptr(pthread_mutex_t)): c_int;
+    extern proc pthread_cond_init(cond: c_ptr(pthread_cond_t),
+                                  attr: c_ptr(pthread_condattr_t)): c_int;
+    extern proc pthread_cond_destroy(cond: c_ptr(pthread_cond_t)): c_int;
+    extern proc pthread_cond_wait(cond: c_ptr(pthread_cond_t),
+                                  mutex: c_ptr(pthread_mutex_t)): c_int;
+    extern proc pthread_cond_signal(cond: c_ptr(pthread_cond_t)): c_int;
+
+    record pthreadSignal {
+      var mutex: pthread_mutex_t;
+      var cond: pthread_cond_t;
+      var signaled: bool = false;
+      proc init() {
+        init this;
+        pthread_mutex_init(c_ptrTo(mutex), nil);
+        pthread_cond_init(c_ptrTo(cond), nil);
+      }
+      proc ref deinit() {
+        pthread_mutex_destroy(c_ptrTo(mutex));
+        pthread_cond_destroy(c_ptrTo(cond));
+      }
+      proc ref signal() {
+        pthread_mutex_lock(c_ptrTo(mutex));
+        signaled = true;
+        pthread_cond_signal(c_ptrTo(cond));
+        pthread_mutex_unlock(c_ptrTo(mutex));
+      }
+      proc ref wait() {
+        pthread_mutex_lock(c_ptrTo(mutex));
+        while !signaled {
+          pthread_cond_wait(c_ptrTo(cond), c_ptrTo(mutex));
+        }
+        signaled = false;
+        pthread_mutex_unlock(c_ptrTo(mutex));
+      }
+    }
+
+  }
+
 }

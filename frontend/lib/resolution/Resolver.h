@@ -90,6 +90,7 @@ struct Resolver {
   const uast::Decl* ignoreSubstitutionFor = nullptr;
   bool skipTypeQueries = false;
   bool usePlaceholders = false;
+  bool allowLocalSearch = true;
 
   // internal variables
   ResolutionContext emptyResolutionContext;
@@ -245,7 +246,7 @@ struct Resolver {
 
   // set up Resolver to initially resolve field declaration types
   static Resolver
-  createForInitialFieldStmt(Context* context,
+  createForInitialFieldStmt(ResolutionContext* rc,
                             const uast::AggregateDecl* decl,
                             const uast::AstNode* fieldStmt,
                             const types::CompositeType* compositeType,
@@ -607,6 +608,7 @@ struct Resolver {
   void validateAndSetToId(ResolvedExpression& r,
                           const uast::AstNode* exr,
                           const ID& id);
+  void setToBuiltin(ResolvedExpression& r, UniqueString name);
 
   void validateAndSetMostSpecific(ResolvedExpression& r,
                                   const uast::AstNode* exr,
@@ -656,20 +658,8 @@ struct Resolver {
   bool resolveSpecialCall(const uast::Call* call);
 
   /* What is the type for the symbol with a particular ID?
-     localGenericUnknown, if true, indicates that a use of a
-     field/formal with generic type (that is not substituted)
-     should be resolved to unknown. That is important
-     for initial resolution of such functions/types.
    */
-  types::QualifiedType typeForId(const ID& id, bool localGenericToUnknown);
-
-  /* If the receiver is a manager record (owned/shared) returns the manager
-     class type, otherwise returns nullptr
-  */
-  const types::CompositeType*
-  checkIfReceiverIsManagerRecord(Context* context,
-                                 const types::ClassType* nct,
-                                 ID& parentId);
+  types::QualifiedType typeForId(const ID& id);
 
   // prepare the CallInfoActuals by inspecting the actuals of a call
   // includes special handling for operators and tuple literals
@@ -698,6 +688,8 @@ struct Resolver {
 
   void tryResolveParenlessCall(const ParenlessOverloadInfo& info,
                                const uast::Identifier* ident);
+
+  ResolvedExpression resolveNameInModule(const UniqueString name);
 
   void resolveIdentifier(const uast::Identifier* ident);
 
