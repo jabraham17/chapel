@@ -82,12 +82,13 @@ static void fixArgs(int * argc, char* argv[], char * newargv[]){
 
 int main(int argc, char* argv[]) {
 
-  char * newargv[argc];
+  // char * newargv[argc];
 
-  int newargc = argc;
-  fixArgs(&newargc, argv, newargv);
+  // int newargc = argc;
+  // fixArgs(&newargc, argv, newargv); 
   // Initialize the runtime
-  chpl_rt_init(newargc, newargv);
+  // chpl_rt_init(newargc, newargv);
+  chpl_rt_init(argc, argv);
 
   // Run the main function for this node.
   chpl_task_callMain(chpl_executable_init);
