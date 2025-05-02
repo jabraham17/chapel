@@ -50,7 +50,7 @@ substitutions[
     "GET_CHAPEL"
 ] = """
 COPY --chown=user ./tarballs/chapel-$CHAPEL_VERSION.tar.gz /home/user/chapel-$CHAPEL_VERSION.tar.gz
-RUN tar xf chapel-$CHAPEL_VERSION.tar.gz
+RUN mkdir chapel-$CHAPEL_VERSION && tar xf chapel-$CHAPEL_VERSION.tar.gz -C chapel-$CHAPEL_VERSION --strip-components=1
 """
 
 substitutions[
