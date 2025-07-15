@@ -23,8 +23,7 @@ RUNTIME_CFLAGS += -DLAUNCH_PATH="gasnet/$(GASNET_INSTALL_SUBDIR)/bin/"
 
 SRCS = $(LAUNCHER_SRCS)
 
-LAUNCHER_OBJS = \
-	$(LAUNCHER_SRCS:%.c=$(LAUNCH_OBJDIR)/%.o)
+LAUNCHER_OBJS = $(addprefix $(LAUNCH_OBJDIR)/,$(addsuffix .o,$(basename $(LAUNCHER_SRCS))))
 
 $(LAUNCH_OBJDIR)/launch-slurm-gasnetrun_ibv.o: launch-slurm-gasnetrun_ibv.cc $(RUNTIME_OBJ_DIR_STAMP)
 	$(CXX) -c -std=c++17 $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<
