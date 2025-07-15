@@ -32,6 +32,10 @@
 #include "chpltypes.h"
 #include "error.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef GASNETRUN_LAUNCHER
 #error GASNETRUN_LAUNCHER must be defined
 #endif
@@ -490,3 +494,7 @@ const argDescTuple_t* chpl_launch_get_help(void) {
     };
   return args;
 }
+
+#ifdef __cplusplus
+}
+#endif
