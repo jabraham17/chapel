@@ -115,6 +115,8 @@ GpuCodegenType getGpuCodegenType() {
       return GpuCodegenType::GPU_CG_NVIDIA_CUDA;
     } else if (0 == strcmp(CHPL_GPU, "amd")) {
       return GpuCodegenType::GPU_CG_AMD_HIP;
+    } else if(0 == strcmp(CHPL_GPU, "apple")) {
+      return GpuCodegenType::GPU_CG_APPLE_METAL;
     } else if (0 == strcmp(CHPL_GPU, "cpu")) {
       return GpuCodegenType::GPU_CG_CPU;
     } else {

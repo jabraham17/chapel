@@ -2292,6 +2292,7 @@ void setupLLVMCodegenFilenames(void) {
     switch (getGpuCodegenType()) {
       case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
       case GpuCodegenType::GPU_CG_AMD_HIP:
+      case GpuCodegenType::GPU_CG_APPLE_METAL:
         filenames->artifactFilename = genIntermediateFilename("chpl__gpu.s");
         break;
       case GpuCodegenType::GPU_CG_CPU:
@@ -2790,6 +2791,11 @@ static std::string generateClangGpuLangArgs() {
       case GpuCodegenType::GPU_CG_AMD_HIP:
         args += "hip";
         break;
+      case GpuCodegenType::GPU_CG_APPLE_METAL:
+        args += "c++";
+        args += " -lstdc++";
+        args += " --target=spirv64-unknown-unknown";
+        break;
       case GpuCodegenType::GPU_CG_CPU:
         args += "c++";
         args += " -lstdc++";
@@ -3092,8 +3098,10 @@ void runClang(const char* just_parse_filename) {
       }
 
       closefile(fp);
+      if (!gCodegenGPU) {
       clangOtherArgs.push_back("-include");
       clangOtherArgs.push_back(genHeaderFilename);
+      }
     }
 
     // Running clang to compile all runtime and extern blocks
@@ -4712,6 +4720,7 @@ static llvm::CodeGenFileType getCodeGenFileType() {
   switch (getGpuCodegenType()) {
     case GpuCodegenType::GPU_CG_AMD_HIP:
     case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
+    case GpuCodegenType::GPU_CG_APPLE_METAL:
     default:
 #if HAVE_LLVM_VER >= 180
       return llvm::CodeGenFileType::AssemblyFile;
@@ -4914,6 +4923,13 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
                            outputs;
 
   mysystem(bundlerCmd.c_str(), ".out file to fatbin file");
+}
+
+static void makeBinaryLLVMForMetal(const std::string& artifactFilename,
+                                 const std::string& gpuObjFilename,
+                                 const std::string& outFilenamePrefix,
+                                 const std::string& fatbinFilename) {
+  // TODO:
 }
 
 // Save the current state of the LLVM IR to an LLVM bitcode file if needed
@@ -5317,6 +5333,13 @@ static void llvmEmitObjectFile(void) {
           break;
         case GpuCodegenType::GPU_CG_AMD_HIP:
           makeBinaryLLVMForHIP(
+              filenames->artifactFilename,
+              filenames->gpuObjectFilenamePrefix,
+              filenames->outFilenamePrefix,
+              filenames->fatbinFilename);
+          break;
+        case GpuCodegenType::GPU_CG_APPLE_METAL:
+          makeBinaryLLVMForMetal(
               filenames->artifactFilename,
               filenames->gpuObjectFilenamePrefix,
               filenames->outFilenamePrefix,

@@ -83,6 +83,7 @@ class BaseAST;
 enum class GpuCodegenType {
   GPU_CG_NVIDIA_CUDA,
   GPU_CG_AMD_HIP,
+  GPU_CG_APPLE_METAL,
   GPU_CG_CPU,
 };
 

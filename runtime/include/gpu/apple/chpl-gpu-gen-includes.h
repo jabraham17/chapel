@@ -23,8 +23,6 @@
 
 #ifdef HAS_GPU_LOCALE
 
-// TODO:
-
 #include "chpltypes.h"
 #include "chpl-comm.h"
 
@@ -75,9 +73,15 @@ static inline void chpl_gpu_printf8(const char *fmt,
 }
 
 static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameIdx) {
+  if (!chpl_gpu_no_cpu_mode_warning) {
+    chpl_warning("assertOnGpu() is ignored with CHPL_GPU=cpu", lineno, filenameIdx);
+  }
 }
 
 static inline unsigned int chpl_gpu_clock(int32_t lineno, int32_t filenameIdx) {
+  if (!chpl_gpu_no_cpu_mode_warning) {
+    chpl_warning("chpl_gpu_clock was called.", lineno, filenameIdx);
+  }
   return (unsigned int)clock();
 }
 
@@ -88,9 +92,15 @@ static inline void chpl_gpu_printTimeDelta(
 }
 
 static inline void chpl_gpu_force_sync(void) {
+  if (!chpl_gpu_no_cpu_mode_warning) {
+    chpl_warning("chpl_gpu_force_sync was called", 0, 0);
+  }
 }
 
 static inline void chpl_gpu_force_warp_sync(unsigned mask) {
+  if (!chpl_gpu_no_cpu_mode_warning) {
+    chpl_warning("chpl_gpu_force_warp_sync was called", 0, 0);
+  }
 }
 
 

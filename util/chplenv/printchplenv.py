@@ -109,6 +109,7 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_GPU_MEM_STRATEGY', RUNTIME , 'gpu_mem'),
     ChapelEnv('  CHPL_CUDA_PATH', INTERNAL),
     ChapelEnv('  CHPL_ROCM_PATH', INTERNAL),
+    ChapelEnv('  CHPL_METAL_PATH', INTERNAL),
     ChapelEnv('  CHPL_CUDA_LIBDEVICE_PATH', INTERNAL),
     ChapelEnv('  CHPL_ROCM_LLVM_PATH', INTERNAL),
     ChapelEnv('  CHPL_ROCM_AMDGCN_PATH', INTERNAL),
@@ -331,6 +332,7 @@ def compute_internal_values():
     ENV_VALS['  CHPL_GPU_ARCH'] = chpl_gpu.get_arch()
     ENV_VALS['  CHPL_CUDA_PATH'] = chpl_gpu.get_sdk_path("nvidia")
     ENV_VALS['  CHPL_ROCM_PATH'] = chpl_gpu.get_sdk_path("amd")
+    ENV_VALS['  CHPL_METAL_PATH'] = chpl_gpu.get_sdk_path("apple")
 
 
 
@@ -395,8 +397,10 @@ def filter_tidy(chpl_env):
         return gpu == 'amd'
     elif chpl_env.name == '  CHPL_ROCM_PATH':
         return gpu == 'amd'
+    elif chpl_env.name == '  CHPL_METAL_PATH':
+        return gpu == 'apple'
     elif chpl_env.name == '  CHPL_GPU_ARCH':
-        return gpu == 'nvidia' or gpu == 'amd'
+        return gpu == 'nvidia' or gpu == 'amd' or gpu == 'apple'
     elif chpl_env.name == '  CHPL_GPU_SDK_VERSION':
         return gpu != 'none'
     elif chpl_env.name == '  CHPL_HOST_JEMALLOC':

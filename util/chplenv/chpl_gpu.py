@@ -121,7 +121,7 @@ def _find_cuda_version(compiler: str):
     exists, returncode, out, _ = try_run_command([compiler, "--version"])
     if not (exists and returncode == 0):
         return None
-    
+
     match = re.search(regex, out)
     return match.group(1) if match else None
 
@@ -147,6 +147,18 @@ def _find_rocm_version(compiler: str):
             return match.group(1)
     return None
 
+def _find_metal_version(compiler: str):
+    # we can run 'nvcc --version'
+    # 'Cuda compilation tools, release'
+    regex = r"Apple metal version ([\d\.]+)"
+
+    exists, returncode, out, _ = try_run_command([compiler, "--version"])
+    if not (exists and returncode == 0):
+        return None
+
+    match = re.search(regex, out)
+    return match.group(1) if match else None
+
 GPU_TYPES = {
     "nvidia": gpu_type(sdk_path_env="CHPL_CUDA_PATH",
                        compiler="nvcc",
@@ -168,6 +180,16 @@ GPU_TYPES = {
                     version_validator=_validate_rocm_version,
                     llvm_validator=_validate_rocm_llvm_version,
                     real_gpu=True),
+    "apple": gpu_type(sdk_path_env="CHPL_METAL_PATH",
+                     compiler="/Applications/Xcode.app/Contents//Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/metal",
+                     default_arch="apple",
+                     llvm_target="SPIRV",
+                     runtime_impl="metal",
+                     find_sdk_path=lambda compiler: os.path.dirname(compiler),
+                     find_version=_find_metal_version,
+                     version_validator=lambda: True,
+                     llvm_validator=lambda arg: True,
+                     real_gpu=True),
     "cpu": gpu_type(sdk_path_env="",
                     compiler="",
                     default_arch="",
@@ -282,7 +304,7 @@ def get_gpu_compiler():
     sdk_path = get_sdk_path(gpu_type)
     if sdk_path == 'none':
         return 'none'
-    
+
     name = GPU_TYPES[gpu_type].compiler
     bin_dir = os.path.join(sdk_path, 'bin')
     full_path = os.path.join(bin_dir, name)

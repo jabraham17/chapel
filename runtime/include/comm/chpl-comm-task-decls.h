@@ -24,7 +24,7 @@
 #ifndef _chpl_comm_task_decls_h
 #define _chpl_comm_task_decls_h
 
-#include <stdint.h>
+// #include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {

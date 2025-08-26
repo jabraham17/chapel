@@ -37,6 +37,7 @@ chplvars = [
              'CHPL_GPU_MEM_STRATEGY',
              'CHPL_CUDA_PATH',
              'CHPL_ROCM_PATH',
+             'CHPL_METAL_PATH',
              'CHPL_GPU_ARCH',
 
              'CHPL_COMM',
