@@ -31,16 +31,48 @@
 #include "chpltypes.h"
 #include "error.h"
 
-void chpl_mem_layerInit(void) {
-  void* start;
-  size_t size;
+#include <mimalloc.h>
 
-  chpl_comm_regMemHeapInfo(&start, &size);
-  if (start || size) {
-    chpl_error("Your CHPL_MEM setting doesn't support the registered heap "
-               "required by your CHPL_COMM setting. You'll need to change one "
-               "of these configurations.", 0, 0);
+enum heap_type {FIXED, DYNAMIC, NONE};
+
+static struct shared_heap {
+  enum heap_type type;
+  void* base;
+  size_t size;
+  size_t cur_offset;
+  pthread_mutex_t alloc_lock;
+} heap;
+
+void chpl_mem_layerInit(void) {
+  void* heap_base;
+  size_t heap_size;
+
+  chpl_comm_regMemHeapInfo(&heap_base, &heap_size);
+  if (heap_base != NULL && heap_size == 0) {
+    chpl_internal_error("if heap address is specified, size must be also");
   }
+
+  if (heap_base != NULL) {
+    heap.type = FIXED;
+    heap.base = heap_base;
+    heap.size = heap_size;
+    heap.cur_offset = 0;
+    if (pthread_mutex_init(&heap.alloc_lock, NULL) != 0) {
+      chpl_internal_error("cannot init chunk_alloc lock");
+    }
+
+
+    if (!mi_manage_os_memory(heap.base, heap.size, false, false, false, -1)) {
+      chpl_internal_error("mi_manage_os_memory failed");
+    }
+    mi_option_set(mi_option_disallow_os_alloc, 1);
+    mi_option_set(mi_option_limit_os_alloc, 1);
+
+  } else {
+    // assume nothing to do
+  }
+
+
 }
 
 
