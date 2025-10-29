@@ -2116,6 +2116,12 @@ static void checkLLVMCodeGen() {
   }
 }
 
+static void checkPrintPassesMemory() {
+  if (printPassesMemory && !MemoryTracker::platformSupportsMemoryTracking()) {
+    USR_FATAL("--print-passes-memory is not supported on this platform");
+  }
+}
+
 static void checkTargetCpu() {
   if (specializeCCode && (strcmp(CHPL_TARGET_CPU, "unknown") == 0)) {
     USR_WARN("--specialize was set, but CHPL_TARGET_CPU is 'unknown'. If "
@@ -2321,6 +2327,8 @@ static void validateSettings() {
   checkNotLibraryAndMinimalModules();
 
   checkLLVMCodeGen();
+
+  checkPrintPassesMemory();
 
   checkTargetCpu();
 
