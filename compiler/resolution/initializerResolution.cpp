@@ -48,9 +48,9 @@ static void resolveInitCall(CallExpr* call, bool emitCallResolutionErrors,
                             AggregateType* newExprAlias = NULL,
                             bool forNewExpr = false);
 
-static void gatherInitCandidates(CallInfo&                  info,
-                                 Vec<FnSymbol*>&            visibleFns,
-                                 Vec<ResolutionCandidate*>& candidates);
+static void gatherInitCandidates(CallInfo&                       info,
+                                 SmallVec<FnSymbol*>&            visibleFns,
+                                 SmallVec<ResolutionCandidate*>& candidates);
 
 static void resolveInitializerMatch(FnSymbol* fn);
 
@@ -602,9 +602,9 @@ static void resolveInitCall(CallExpr* call, bool emitCallResolutionErrors,
   }
 
   if (info.isWellFormed(call) == true) {
-    Vec<FnSymbol*>            visibleFns, mostApplicable;
-    Vec<ResolutionCandidate*> candidates;
-    ResolutionCandidate*      best        = NULL;
+    SmallVec<FnSymbol*>            visibleFns, mostApplicable;
+    SmallVec<ResolutionCandidate*> candidates;
+    ResolutionCandidate*           best = NULL;
 
     findVisibleFunctionsAllPOIs(info, visibleFns);
 
@@ -647,7 +647,7 @@ static void resolveInitCall(CallExpr* call, bool emitCallResolutionErrors,
           }
         } else {
           if (emitCallResolutionErrors) {
-            if (candidates.n == 0) {
+            if (candidates.size() == 0) {
               printResolutionErrorUnresolved(info, mostApplicable);
 
               USR_STOP();
@@ -678,7 +678,7 @@ static void resolveInitCall(CallExpr* call, bool emitCallResolutionErrors,
       }
     }
 
-    forv_Vec(ResolutionCandidate*, candidate, candidates) {
+    for (auto candidate: candidates) {
       delete candidate;
     }
 
@@ -693,32 +693,32 @@ static void resolveInitCall(CallExpr* call, bool emitCallResolutionErrors,
 *                                                                             *
 ************************************** | *************************************/
 
-static void doGatherInitCandidates(CallInfo&                  info,
-                                   Vec<FnSymbol*>&            visibleFns,
-                                   bool                       generated,
-                                   Vec<ResolutionCandidate*>& candidates);
+static void doGatherInitCandidates(CallInfo&                       info,
+                                   SmallVec<FnSymbol*>&            visibleFns,
+                                   bool                            generated,
+                                   SmallVec<ResolutionCandidate*>& candidates);
 
-static void filterInitCandidate(CallInfo&                  info,
-                                FnSymbol*                  fn,
-                                Vec<ResolutionCandidate*>& candidates);
+static void filterInitCandidate(CallInfo&                       info,
+                                FnSymbol*                       fn,
+                                SmallVec<ResolutionCandidate*>& candidates);
 
-static void gatherInitCandidates(CallInfo&                  info,
-                                 Vec<FnSymbol*>&            visibleFns,
-                                 Vec<ResolutionCandidate*>& candidates) {
+static void gatherInitCandidates(CallInfo&                       info,
+                                 SmallVec<FnSymbol*>&            visibleFns,
+                                 SmallVec<ResolutionCandidate*>& candidates) {
   // Search user-defined (i.e. non-compiler-generated) functions first.
   doGatherInitCandidates(info, visibleFns, false, candidates);
 
   // If no results, try again with any compiler-generated candidates.
-  if (candidates.n == 0) {
+  if (candidates.size() == 0) {
     doGatherInitCandidates(info, visibleFns, true, candidates);
   }
 }
 
-static void doGatherInitCandidates(CallInfo&                  info,
-                                   Vec<FnSymbol*>&            visibleFns,
-                                   bool                       lastResort,
-                                   Vec<ResolutionCandidate*>& candidates) {
-  forv_Vec(FnSymbol, visibleFn, visibleFns) {
+static void doGatherInitCandidates(CallInfo&                       info,
+                                   SmallVec<FnSymbol*>&            visibleFns,
+                                   bool                            lastResort,
+                                   SmallVec<ResolutionCandidate*>& candidates) {
+  for (auto visibleFn: visibleFns) {
     // Only consider functions marked with/without FLAG_LAST_RESORT
     if (visibleFn->hasFlag(FLAG_LAST_RESORT) == lastResort) {
 
@@ -754,14 +754,14 @@ static void doGatherInitCandidates(CallInfo&                  info,
 /** Tests to see if a function is a candidate for resolving a specific call.
  *  If it is a candidate, we add it to the candidate lists.
  */
-static void filterInitCandidate(CallInfo&                  info,
-                                FnSymbol*                  fn,
-                                Vec<ResolutionCandidate*>& candidates) {
+static void filterInitCandidate(CallInfo&                       info,
+                                FnSymbol*                       fn,
+                                SmallVec<ResolutionCandidate*>& candidates) {
   ResolutionCandidate* candidate = new ResolutionCandidate(fn);
   VisibilityInfo visInfo(info);
 
   if (candidate->isApplicable(info, &visInfo) == true) {
-    candidates.add(candidate);
+    candidates.push_back(candidate);
 
   } else {
     delete candidate;

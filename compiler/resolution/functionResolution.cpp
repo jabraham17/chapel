@@ -410,19 +410,19 @@ FnSymbol* getAutoCopyForType(Type* type) {
 }
 
 FnSymbol* getAutoCopy(Type* type) {
-  std::map<Type*, FnSymbol*>::iterator it = autoCopyMap.find(type);
+  auto it = autoCopyMap.find(type);
 
   if (it == autoCopyMap.end())
-    return NULL;
+    return nullptr;
   else
-    return it->second;  // can also be NULL
+    return it->second;  // can also be nullptr
 }
 
 void getAutoCopyTypeKeys(Vec<Type*>& keys) {
-  std::map<Type*, FnSymbol*>::iterator it;
-
-  for (it = autoCopyMap.begin(); it != autoCopyMap.end(); ++it) {
-    keys.add(it->first);
+  // TODO: getAutoCopyTypeKeys is only used to check keys, copying out the
+  // keys seems wasteful.
+  for (auto& ac: autoCopyMap) {
+    keys.add(ac.first);
   }
 }
 
@@ -3532,17 +3532,17 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState);
 static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState);
 
 static BlockStmt* findVisibleFunctionsAndCandidates(
-                                     CallInfo&                  info,
-                                     VisibilityInfo&            visInfo,
-                                     Vec<FnSymbol*>&            visibleFns,
-                                     Vec<ResolutionCandidate*>& candidates);
+                                     CallInfo&                       info,
+                                     VisibilityInfo&                 visInfo,
+                                     SmallVec<FnSymbol*>&            visibleFns,
+                                     SmallVec<ResolutionCandidate*>& candidates);
 
-static int       disambiguateByMatch(CallInfo&                  info,
-                                     BlockStmt*                 searchScope,
-                                     Vec<ResolutionCandidate*>& candidates,
-                                     ResolutionCandidate*&      bestRef,
-                                     ResolutionCandidate*&      bestConstRef,
-                                     ResolutionCandidate*&      bestValue);
+static int       disambiguateByMatch(CallInfo&                       info,
+                                     BlockStmt*                      searchScope,
+                                     SmallVec<ResolutionCandidate*>& candidates,
+                                     ResolutionCandidate*&           bestRef,
+                                     ResolutionCandidate*&           bestConstRef,
+                                     ResolutionCandidate*&           bestValue);
 
 static FnSymbol* resolveNormalCall(CallInfo&            info,
                                    check_state_t        checkState,
@@ -4133,7 +4133,7 @@ static bool isAcceptableArgOverloadSets (CallExpr* call, FnSymbol* bestFn,
 // that method-oblivious checking already rejected.
 static bool isAcceptableMethodChoice(CallExpr* call,
                                  FnSymbol* bestFn, FnSymbol* candFn,
-                                 Vec<ResolutionCandidate*>& candidates)
+                                 SmallVec<ResolutionCandidate*>& candidates)
 {
   if (!bestFn->hasFlag(FLAG_OPERATOR) && !candFn->hasFlag(FLAG_OPERATOR)) {
     if (call->numActuals() < 2 || call->get(1)->getValType() != dtMethodToken)
@@ -4200,7 +4200,7 @@ static void explainCallCandidates(ResolutionCandidate* best,
 static bool overloadSetsOK(CallExpr* call,
                            BlockStmt* searchScope,
                            check_state_t checkState,
-                           Vec<ResolutionCandidate*>& candidates,
+                           SmallVec<ResolutionCandidate*>& candidates,
                            ResolutionCandidate* bestRef,
                            ResolutionCandidate* bestCref,
                            ResolutionCandidate* bestVal)
@@ -4234,7 +4234,7 @@ static bool overloadSetsOK(CallExpr* call,
     // are from internal modules, so they will always be "more visible".
     return true;
 
-  forv_Vec(ResolutionCandidate, candidate, candidates) {
+  for (auto candidate: candidates) {
     if (candidate == bestRef || candidate == bestCref || candidate == bestVal)
       continue; // do not check the "best" candidate against itself
 
@@ -4259,8 +4259,8 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState);
 static bool typeUsesForwarding(Type* t);
 
 static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
-  Vec<FnSymbol*>            mostApplicable;
-  Vec<ResolutionCandidate*> candidates;
+  SmallVec<FnSymbol*>            mostApplicable;
+  SmallVec<ResolutionCandidate*> candidates;
 
   ResolutionCandidate*      bestRef    = NULL;
   ResolutionCandidate*      bestCref   = NULL;
@@ -4284,7 +4284,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
                              bestRef, bestCref, bestVal);
 
   // If no candidates were found and it's a method, try forwarding
-  if (candidates.n                  == 0 &&
+  if (candidates.size()             == 0 &&
       info.call->numActuals()       >= 1 &&
       info.call->get(1)->typeInfo() == dtMethodToken &&
       isUnresolvedSymExpr(info.call->baseExpr)) {
@@ -4309,7 +4309,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
   if (numMatches == 0) {
     if (info.call->partialTag == false) {
       if (checkState == CHECK_NORMAL_CALL) {
-        if (candidates.n == 0) {
+        if (candidates.size() == 0) {
           bool existingErrors = fatalErrorsEncountered();
           printResolutionErrorUnresolved(info, mostApplicable);
 
@@ -4354,7 +4354,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
     retval = resolveNormalCall(info, checkState, bestRef, bestCref, bestVal);
   }
 
-  forv_Vec(ResolutionCandidate*, candidate, candidates) {
+  for (auto candidate: candidates) {
     delete candidate;
   }
 
@@ -4820,15 +4820,15 @@ void resolveNormalCallCompilerWarningStuff(CallExpr* call,
 *                                                                             *
 ************************************** | *************************************/
 
-static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns);
+static void generateUnresolvedMsg(CallInfo& info, SmallVec<FnSymbol*>& visibleFns);
 static bool maybeIssueSplitInitMissingTypeError(CallInfo& info,
-                                                Vec<FnSymbol*>& visibleFns);
+                                                SmallVec<FnSymbol*>& visibleFns);
 static void sortExampleCandidates(CallInfo& info,
-                                  Vec<FnSymbol*>& visibleFns);
+                                  SmallVec<FnSymbol*>& visibleFns);
 static bool defaultValueMismatch(CallInfo& info);
 
 void printResolutionErrorUnresolved(CallInfo&       info,
-                                    Vec<FnSymbol*>& visibleFns) {
+                                    SmallVec<FnSymbol*>& visibleFns) {
   if (info.call == NULL) {
     INT_FATAL("call is NULL");
 
@@ -5007,11 +5007,11 @@ struct ExampleCandidateComparator {
 };
 
 static void sortExampleCandidates(CallInfo& info,
-                                  Vec<FnSymbol*>& visibleFns)
+                                  SmallVec<FnSymbol*>& visibleFns)
 {
   ExampleCandidateComparator cmp(info);
   // Try to sort them so that the more relevant candidates are first.
-  std::stable_sort(&visibleFns.v[0], &visibleFns.v[visibleFns.n], cmp);
+  std::stable_sort(visibleFns.begin(), visibleFns.end(), cmp);
 }
 
 static bool defaultValueMismatch(CallInfo& info) {
@@ -5059,8 +5059,8 @@ static bool defaultValueMismatch(CallInfo& info) {
   return handled;
 }
 
-void printResolutionErrorAmbiguous(CallInfo&                  info,
-                                   Vec<ResolutionCandidate*>& candidates) {
+void printResolutionErrorAmbiguous(CallInfo&                       info,
+                                   SmallVec<ResolutionCandidate*>& candidates) {
   CallExpr* call       = userCall(info.call);
   bool      printedOne = false;
 
@@ -5099,7 +5099,7 @@ void printResolutionErrorAmbiguous(CallInfo&                  info,
   }
 
   int nFnsWithOutIntentFormals = 0;
-  forv_Vec(ResolutionCandidate, cand, candidates) {
+  for (auto cand: candidates) {
     if (printedOne == false) {
       USR_PRINT(cand->fn, "candidates are: %s", toString(cand->fn));
       printedOne = true;
@@ -5120,7 +5120,7 @@ void printResolutionErrorAmbiguous(CallInfo&                  info,
 
   // This condition is not exact
   // (the ambiguity could be due to something other than the out formals).
-  if (nFnsWithOutIntentFormals == candidates.n) {
+  if (nFnsWithOutIntentFormals == candidates.size()) {
     USR_PRINT(call, "out-intent formals do not participate in overload resolution");
   }
 
@@ -5174,7 +5174,7 @@ static bool isSymExprTypeVar(Expr* e) {
 
 // returns true if the error was issued
 static bool maybeIssueSplitInitMissingTypeError(CallInfo& info,
-                                                Vec<FnSymbol*>& visibleFns) {
+                                                SmallVec<FnSymbol*>& visibleFns) {
   // Check for uninitialized values (with type dtSplitInitType)
   bool foundUnknownTypeActual = false;
   for_actuals(actual, info.call) {
@@ -5189,7 +5189,7 @@ static bool maybeIssueSplitInitMissingTypeError(CallInfo& info,
   if (foundUnknownTypeActual) {
     // Are all of the failures due to not having an established type?
     bool anyTypeNotEstablished = false;
-    forv_Vec(FnSymbol, fn, visibleFns) {
+    for (auto fn: visibleFns) {
       ResolutionCandidate* rc = new ResolutionCandidate(fn);
       rc->isApplicable(info, NULL);
 
@@ -5239,7 +5239,7 @@ static bool maybeIssueSplitInitMissingTypeError(CallInfo& info,
   return false;
 }
 
-static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
+static void generateUnresolvedMsg(CallInfo& info, SmallVec<FnSymbol*>& visibleFns) {
   CallExpr*   call = userCall(info.call);
   const char* str  = NULL;
 
@@ -5276,8 +5276,8 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
     USR_FATAL_CONT(call, "unresolved call '%s'", str);
   }
 
-  if (visibleFns.n > 0) {
-    if (developer == true) {
+  if (visibleFns.size() > 0) {
+    if (developer) {
       for (int i = callStack.n - 1; i >= 0; i--) {
         CallExpr* cs = callStack.v[i];
         FnSymbol* f  = cs->getFunction();
@@ -5295,8 +5295,8 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
     int nPrintDetails = 1;
     int nPrint = 3; // unused if fPrintAllCandidates
 
-    Vec<FnSymbol*> filteredFns;
-    if (fPrintAllCandidates || visibleFns.n <= nPrint + 1) {
+    SmallVec<FnSymbol*> filteredFns;
+    if (fPrintAllCandidates || visibleFns.size() <= nPrint + 1) {
       // Don't do any filtering; we're going to print everything
       filteredFns = visibleFns;
     } else {
@@ -5306,10 +5306,10 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
       // mismatches), copying over the first nPrint functions that
       // aren't obvious mismatches.
       int i = 0;
-      forv_Vec(FnSymbol, fn, visibleFns) {
+      for (auto fn: visibleFns) {
         if (!obviousMismatch(call, fn)) {
           i++;
-          filteredFns.add(fn);
+          filteredFns.push_back(fn);
           if (i == nPrint) break;
         }
       }
@@ -5319,9 +5319,9 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
       // nPrint visibleFns as our filtered functions, to avoid
       // suggesting that there are no other candidates.
       //
-      if (filteredFns.n == 0) {
+      if (filteredFns.size() == 0) {
         for (int i = 0; i < nPrint; i++) {
-          filteredFns.add(visibleFns.v[i]);
+          filteredFns.push_back(visibleFns[i]);
         }
       }
     }
@@ -5330,7 +5330,7 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
     // Print our top candidate(s) and why they were rejected
     int nPrinted = 0; // how many candidates have we printed?
     bool printedOne = false;  // have we printed one "other candidate"?
-    forv_Vec(FnSymbol, fn, filteredFns) {
+    for (auto fn: filteredFns) {
       if (nPrinted < nPrintDetails) {
         explainCandidateRejection(info, fn);
       } else {
@@ -5344,7 +5344,7 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
     }
 
     // Print indication of additional candidates, if any
-    int numRemaining = visibleFns.n - nPrinted;
+    int numRemaining = visibleFns.size() - nPrinted;
     if (numRemaining > 0) {
       USR_PRINT("%s %i other candidate%s, use --print-all-candidates to see %s",
                 (printedOne ? "and" : ((numRemaining == 1) ?
@@ -5391,31 +5391,31 @@ static bool haveMoreLRCs(LastResortCandidates& lrc, int numVisited) {
 static void filterCandidate (CallInfo&                  info,
                              VisibilityInfo&            visInfo,
                              FnSymbol*                  fn,
-                             Vec<ResolutionCandidate*>& candidates);
+                             SmallVec<ResolutionCandidate*>& candidates);
 
 static void gatherCandidates(CallInfo&                  info,
                              VisibilityInfo&            visInfo,
                              FnSymbol*                  fn,
-                             Vec<ResolutionCandidate*>& candidates);
+                             SmallVec<ResolutionCandidate*>& candidates);
 
-static void gatherCandidatesAndLastResort(CallInfo&     info,
-                             VisibilityInfo&            visInfo,
-                             Vec<FnSymbol*>&            visibleFns,
-                             int&                       numVisited,
-                             LastResortCandidates&      lrc,
-                             Vec<ResolutionCandidate*>& candidates);
+static void gatherCandidatesAndLastResort(CallInfo&          info,
+                             VisibilityInfo&                 visInfo,
+                             SmallVec<FnSymbol*>&            visibleFns,
+                             int&                            numVisited,
+                             LastResortCandidates&           lrc,
+                             SmallVec<ResolutionCandidate*>& candidates);
 
-static void gatherLastResortCandidates(CallInfo&                  info,
-                                       VisibilityInfo&            visInfo,
-                                       LastResortCandidates&      lrc,
-                                       int&                       numVisited,
-                                       Vec<ResolutionCandidate*>& candidates);
+static void gatherLastResortCandidates(CallInfo&                       info,
+                                       VisibilityInfo&                 visInfo,
+                                       LastResortCandidates&           lrc,
+                                       int&                            numVisited,
+                                       SmallVec<ResolutionCandidate*>& candidates);
 
 static
-void trimVisibleCandidates(CallInfo&       info,
-                           Vec<FnSymbol*>& mostApplicable,
-                           int&            numVisitedVis,
-                           Vec<FnSymbol*>& visibleFns) {
+void trimVisibleCandidates(CallInfo&            info,
+                           SmallVec<FnSymbol*>& mostApplicable,
+                           int&                 numVisitedVis,
+                           SmallVec<FnSymbol*>& visibleFns) {
   CallExpr* call = info.call;
 
   bool isMethod = isMethodPreResolve(call);
@@ -5433,11 +5433,11 @@ void trimVisibleCandidates(CallInfo&       info,
     mostApplicable = visibleFns;
    else
     // copy only new fns since last time
-    for (int i = numVisitedVis; i < visibleFns.n; i++)
-      mostApplicable.add(visibleFns.v[i]);
+    for (int i = numVisitedVis; i < visibleFns.size(); i++)
+      mostApplicable.push_back(visibleFns[i]);
   } else {
-    for (int i = numVisitedVis; i < visibleFns.n; i++) {
-      FnSymbol* fn = visibleFns.v[i];
+    for (int i = numVisitedVis; i < visibleFns.size(); i++) {
+      FnSymbol* fn = visibleFns[i];
       bool shouldKeep = true;
       BaseAST* actual = NULL;
       BaseAST* formal = NULL;
@@ -5487,17 +5487,17 @@ void trimVisibleCandidates(CallInfo&       info,
       }
 
       if (shouldKeep) {
-        mostApplicable.add(fn);
+        mostApplicable.push_back(fn);
       }
     }
   }
 
-  numVisitedVis = visibleFns.n;
+  numVisitedVis = visibleFns.size();
 }
 
-void trimVisibleCandidates(CallInfo&       info,
-                           Vec<FnSymbol*>& mostApplicable,
-                           Vec<FnSymbol*>& visibleFns) {
+void trimVisibleCandidates(CallInfo&            info,
+                           SmallVec<FnSymbol*>& mostApplicable,
+                           SmallVec<FnSymbol*>& visibleFns) {
   int numVisitedVis = 0;
   trimVisibleCandidates(info, mostApplicable, numVisitedVis, visibleFns);
 }
@@ -5513,17 +5513,17 @@ void advanceCurrStart(VisibilityInfo& visInfo) {
 
 // Returns the POI scope used to find the candidates
 static BlockStmt* findVisibleFunctionsAndCandidates(
-                                CallInfo&                  info,
-                                VisibilityInfo&            visInfo,
-                                Vec<FnSymbol*>&            mostApplicable,
-                                Vec<ResolutionCandidate*>& candidates) {
+                                CallInfo&                       info,
+                                VisibilityInfo&                 visInfo,
+                                SmallVec<FnSymbol*>&            mostApplicable,
+                                SmallVec<ResolutionCandidate*>& candidates) {
   CallExpr* call = info.call;
   FnSymbol* fn   = call->resolvedFunction();
-  Vec<FnSymbol*> visibleFns;
+  SmallVec<FnSymbol*> visibleFns;
 
   if (fn != NULL) {
-    visibleFns.add(fn);
-    mostApplicable.add(fn); // for better error reporting
+    visibleFns.push_back(fn);
+    mostApplicable.push_back(fn); // for better error reporting
 
     handleTaskIntentArgs(info, fn);
 
@@ -5572,11 +5572,11 @@ static BlockStmt* findVisibleFunctionsAndCandidates(
     }
   }
   while
-    (candidates.n == 0 && visInfo.currStart != NULL);
+    (candidates.size() == 0 && visInfo.currStart != NULL);
 
   // If we have not found any candidates after traversing all POIs,
   // look at "last resort" candidates, if any.
-  if (candidates.n == 0 && haveAnyLRCs(lrc, visInfo.poiDepth)) {
+  if (candidates.size() == 0 && haveAnyLRCs(lrc, visInfo.poiDepth)) {
     visInfo.poiDepth = -1;
     int numVisitedLRC = 0;
     do {
@@ -5584,7 +5584,7 @@ static BlockStmt* findVisibleFunctionsAndCandidates(
       gatherLastResortCandidates(info, visInfo, lrc, numVisitedLRC, candidates);
     }
     while
-      (candidates.n == 0 && haveMoreLRCs(lrc, numVisitedLRC));
+      (candidates.size() == 0 && haveMoreLRCs(lrc, numVisitedLRC));
   }
 
   explainGatherCandidate(info, candidates);
@@ -5593,10 +5593,10 @@ static BlockStmt* findVisibleFunctionsAndCandidates(
 }
 
 // run filterCandidate() on 'fn' if appropriate
-static void gatherCandidates(CallInfo&                  info,
-                             VisibilityInfo&            visInfo,
-                             FnSymbol*                  fn,
-                             Vec<ResolutionCandidate*>& candidates) {
+static void gatherCandidates(CallInfo&                       info,
+                             VisibilityInfo&                 visInfo,
+                             FnSymbol*                       fn,
+                             SmallVec<ResolutionCandidate*>& candidates) {
       // Consider
       //
       //   c1.foo(10, 20);
@@ -5635,29 +5635,29 @@ static void gatherCandidates(CallInfo&                  info,
 
 // filter non-last-resort fns into 'candidates',
 // store last-resort fns into 'lrc'
-static void gatherCandidatesAndLastResort(CallInfo&     info,
-                             VisibilityInfo&            visInfo,
-                             Vec<FnSymbol*>&            visibleFns,
-                             int&                       numVisited,
-                             LastResortCandidates&      lrc,
-                             Vec<ResolutionCandidate*>& candidates) {
-  for (int i = numVisited; i < visibleFns.n; i++) {
-    FnSymbol* fn = visibleFns.v[i];
+static void gatherCandidatesAndLastResort(CallInfo&          info,
+                             VisibilityInfo&                 visInfo,
+                             SmallVec<FnSymbol*>&            visibleFns,
+                             int&                            numVisited,
+                             LastResortCandidates&           lrc,
+                             SmallVec<ResolutionCandidate*>& candidates) {
+  for (int i = numVisited; i < visibleFns.size(); i++) {
+    FnSymbol* fn = visibleFns[i];
     if (fn->hasFlag(FLAG_LAST_RESORT))
       lrc.push_back(fn);
     else
       gatherCandidates(info, visInfo, fn, candidates);
   }
   markEndOfPOI(lrc);
-  numVisited = visibleFns.n;
+  numVisited = visibleFns.size();
 }
 
 // run filterCandidate() on the next batch of last resort fns
-static void gatherLastResortCandidates(CallInfo&                  info,
-                                       VisibilityInfo&            visInfo,
-                                       LastResortCandidates&      lrc,
-                                       int&                       numVisited,
-                                       Vec<ResolutionCandidate*>& candidates) {
+static void gatherLastResortCandidates(CallInfo&                       info,
+                                       VisibilityInfo&                 visInfo,
+                                       LastResortCandidates&           lrc,
+                                       int&                            numVisited,
+                                       SmallVec<ResolutionCandidate*>& candidates) {
   int idx = numVisited;
 
   for (FnSymbol* fn = lrc[idx]; fn != NULL; fn = lrc[++idx]) {
@@ -5667,10 +5667,10 @@ static void gatherLastResortCandidates(CallInfo&                  info,
   numVisited = ++idx;
 }
 
-static void filterCandidate(CallInfo&                  info,
-                            VisibilityInfo&            visInfo,
-                            FnSymbol*                  fn,
-                            Vec<ResolutionCandidate*>& candidates) {
+static void filterCandidate(CallInfo&                       info,
+                            VisibilityInfo&                 visInfo,
+                            FnSymbol*                       fn,
+                            SmallVec<ResolutionCandidate*>& candidates) {
   ResolutionCandidate* candidate = new ResolutionCandidate(fn);
 
   if (fExplainVerbose &&
@@ -5684,7 +5684,7 @@ static void filterCandidate(CallInfo&                  info,
   }
 
   if (candidate->isApplicable(info, &visInfo)) {
-    candidates.add(candidate);
+    candidates.push_back(candidate);
   } else {
     delete candidate;
   }
@@ -5952,10 +5952,10 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) 
 
 
 static ResolutionCandidate*
-disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
-                    const DisambiguationContext& DC,
-                    bool                         ignoreWhere,
-                    Vec<ResolutionCandidate*>&   ambiguous);
+disambiguateByMatch(SmallVec<ResolutionCandidate*>& candidates,
+                    const DisambiguationContext&    DC,
+                    bool                            ignoreWhere,
+                    SmallVec<ResolutionCandidate*>& ambiguous);
 
 static int compareSpecificity(ResolutionCandidate*         candidate1,
                               ResolutionCandidate*         candidate2,
@@ -5981,30 +5981,29 @@ static int testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
                             DisambiguationState& DS);
 
 ResolutionCandidate*
-disambiguateForInit(CallInfo& info, Vec<ResolutionCandidate*>& candidates) {
+disambiguateForInit(CallInfo& info, SmallVec<ResolutionCandidate*>& candidates) {
   DisambiguationContext     DC(info, getVisibilityScope(info.call));
-  Vec<ResolutionCandidate*> ambiguous;
+  SmallVec<ResolutionCandidate*> ambiguous;
 
   return disambiguateByMatch(candidates, DC, false, ambiguous);
 }
 
 
 // searchScope is the scope used to evaluate is-more-visible
-static int disambiguateByMatch(CallInfo&                  info,
-                               BlockStmt*                 searchScope,
-                               Vec<ResolutionCandidate*>& candidates,
+static int disambiguateByMatch(CallInfo&                       info,
+                               BlockStmt*                      searchScope,
+                               SmallVec<ResolutionCandidate*>& candidates,
+                               ResolutionCandidate*&           bestRef,
+                               ResolutionCandidate*&           bestConstRef,
+                               ResolutionCandidate*&           bestValue) {
+  DisambiguationContext          DC(info, searchScope);
 
-                               ResolutionCandidate*&      bestRef,
-                               ResolutionCandidate*&      bestConstRef,
-                               ResolutionCandidate*&      bestValue) {
-  DisambiguationContext     DC(info, searchScope);
+  SmallVec<ResolutionCandidate*> ambiguous;
 
-  Vec<ResolutionCandidate*> ambiguous;
-
-  ResolutionCandidate*      best   = disambiguateByMatch(candidates,
-                                                         DC,
-                                                         true,
-                                                         ambiguous);
+  ResolutionCandidate*           best = disambiguateByMatch(candidates,
+                                                            DC,
+                                                            true,
+                                                            ambiguous);
 
   int                       retval = 0;
 
@@ -6038,7 +6037,7 @@ static int disambiguateByMatch(CallInfo&                  info,
     ResolutionCandidate* valueCandidate    = NULL;
 
     // Count number of candidates in each category.
-    forv_Vec(ResolutionCandidate*, candidate, ambiguous) {
+    for (auto candidate: ambiguous) {
       RetTag retTag = candidate->fn->retTag;
 
       if (retTag == RET_REF) {
@@ -6081,13 +6080,13 @@ static int disambiguateByMatch(CallInfo&                  info,
     } else {
       if (nRef > 1 || nConstRef > 1 || nValue > 1) {
         // Split candidates into ref, const ref, and value candidates
-        Vec<ResolutionCandidate*> refCandidates;
-        Vec<ResolutionCandidate*> constRefCandidates;
-        Vec<ResolutionCandidate*> valueCandidates;
-        Vec<ResolutionCandidate*> tmpAmbiguous;
+        SmallVec<ResolutionCandidate*> refCandidates;
+        SmallVec<ResolutionCandidate*> constRefCandidates;
+        SmallVec<ResolutionCandidate*> valueCandidates;
+        SmallVec<ResolutionCandidate*> tmpAmbiguous;
 
         // Move candidates to above Vecs according to return intent
-        forv_Vec(ResolutionCandidate*, candidate, candidates) {
+        for (auto candidate: candidates) {
           RetTag retTag = candidate->fn->retTag;
 
           if (retTag == RET_REF) {
@@ -6249,17 +6248,17 @@ static void computeConversionInfo(ResolutionCandidate* candidate,
 
 // If any candidate does not require promotion,
 // eliminate candidates that do require promotion.
-static void discardWorsePromoting(Vec<ResolutionCandidate*>&   candidates,
-                                  const DisambiguationContext& DC,
-                                  std::vector<bool>&           discarded) {
+static void discardWorsePromoting(SmallVec<ResolutionCandidate*>& candidates,
+                                  const DisambiguationContext&    DC,
+                                  std::vector<bool>&              discarded) {
   int nPromoting = 0;
   int nNotPromoting = 0;
-  for (int i = 0; i < candidates.n; ++i) {
+  for (int i = 0; i < candidates.size(); ++i) {
     if (discarded[i]) {
       continue;
     }
 
-    ResolutionCandidate* candidate = candidates.v[i];
+    ResolutionCandidate* candidate = candidates[i];
     if (candidate->anyPromotes) {
       nPromoting++;
     } else {
@@ -6268,12 +6267,12 @@ static void discardWorsePromoting(Vec<ResolutionCandidate*>&   candidates,
   }
 
   if (nPromoting > 0 && nNotPromoting > 0) {
-    for (int i = 0; i < candidates.n; ++i) {
+    for (int i = 0; i < candidates.size(); ++i) {
       if (discarded[i]) {
         continue;
       }
 
-      ResolutionCandidate* candidate = candidates.v[i];
+      ResolutionCandidate* candidate = candidates[i];
       if (candidate->anyPromotes) {
         EXPLAIN("%s\n\n", toString(candidate->fn));
         EXPLAIN("X: Fn %d promotes but others do not\n", i);
@@ -6285,21 +6284,21 @@ static void discardWorsePromoting(Vec<ResolutionCandidate*>&   candidates,
 
 // Discard any candidate that has a worse argument mapping than another
 // candidate.
-static void discardWorseArgs(Vec<ResolutionCandidate*>&   candidates,
-                             const DisambiguationContext& DC,
-                             std::vector<bool>&           discarded) {
+static void discardWorseArgs(SmallVec<ResolutionCandidate*>& candidates,
+                             const DisambiguationContext&    DC,
+                             std::vector<bool>&              discarded) {
 
   // If index i is set then we can skip testing function F_i because
   // we already know it can not be the best match
   // because it is a less good match than another candidate.
-  std::vector<bool> notBest(candidates.n, false);
+  std::vector<bool> notBest(candidates.size(), false);
 
-  for (int i = 0; i < candidates.n; ++i) {
+  for (int i = 0; i < candidates.size(); ++i) {
     if (discarded[i]) {
       continue;
     }
 
-    ResolutionCandidate* candidate1 = candidates.v[i];
+    ResolutionCandidate* candidate1 = candidates[i];
 
     bool forGenericInit = candidate1->fn->isInitializer() ||
                           candidate1->fn->isCopyInit();
@@ -6315,7 +6314,7 @@ static void discardWorseArgs(Vec<ResolutionCandidate*>&   candidates,
       continue;
     }
 
-    for (int j = 0; j < candidates.n; ++j) {
+    for (int j = 0; j < candidates.size(); ++j) {
       if (i == j) {
         continue;
       }
@@ -6326,7 +6325,7 @@ static void discardWorseArgs(Vec<ResolutionCandidate*>&   candidates,
       EXPLAIN("Comparing to function %d\n", j);
       EXPLAIN("-----------------------\n");
 
-      ResolutionCandidate* candidate2 = candidates.v[j];
+      ResolutionCandidate* candidate2 = candidates[j];
 
       EXPLAIN("%s\n", toString(candidate2->fn));
 
@@ -6362,7 +6361,7 @@ static void discardWorseArgs(Vec<ResolutionCandidate*>&   candidates,
   }
 
   // Now, discard any candidates that were worse than another candidate
-  for (int i = 0; i < candidates.n; ++i) {
+  for (int i = 0; i < candidates.size(); ++i) {
     if (notBest[i]) {
       discarded[i] = true;
     }
@@ -6398,18 +6397,18 @@ static void discardWorseArgs(Vec<ResolutionCandidate*>&   candidates,
 //   proc f(x: int,    y: int)
 //   proc f(x: int(8), y: int(8))
 //   f(1, 1:int(8))
-static void discardWorseConversions(Vec<ResolutionCandidate*>&   candidates,
-                                    const DisambiguationContext& DC,
-                                    std::vector<bool>&           discarded) {
+static void discardWorseConversions(SmallVec<ResolutionCandidate*>& candidates,
+                                    const DisambiguationContext&    DC,
+                                    std::vector<bool>&              discarded) {
   int minImpConv = INT_MAX;
   int maxImpConv = INT_MIN;
 
-  for (int i = 0; i < candidates.n; i++) {
+  for (int i = 0; i < candidates.size(); i++) {
     if (discarded[i]) {
       continue;
     }
 
-    ResolutionCandidate* candidate = candidates.v[i];
+    ResolutionCandidate* candidate = candidates[i];
     computeConversionInfo(candidate, DC);
     int impConv = candidate->nImplicitConversions;
     if (impConv < minImpConv) {
@@ -6421,12 +6420,12 @@ static void discardWorseConversions(Vec<ResolutionCandidate*>&   candidates,
   }
 
   if (minImpConv < maxImpConv) {
-    for (int i = 0; i < candidates.n; i++) {
+    for (int i = 0; i < candidates.size(); i++) {
       if (discarded[i]) {
         continue;
       }
 
-      ResolutionCandidate* candidate = candidates.v[i];
+      ResolutionCandidate* candidate = candidates[i];
       int impConv = candidate->nImplicitConversions;
       if (impConv > minImpConv) {
         EXPLAIN("X: Fn %d has more implicit conversions\n", i);
@@ -6437,12 +6436,12 @@ static void discardWorseConversions(Vec<ResolutionCandidate*>&   candidates,
 
   int numWithNegParamToSigned = 0;
   int numNoNegParamToSigned = 0;
-  for (int i = 0; i < candidates.n; i++) {
+  for (int i = 0; i < candidates.size(); i++) {
     if (discarded[i]) {
       continue;
     }
 
-    ResolutionCandidate* candidate = candidates.v[i];
+    ResolutionCandidate* candidate = candidates[i];
     computeConversionInfo(candidate, DC);
     if (candidate->anyNegParamToUnsigned) {
       numWithNegParamToSigned++;
@@ -6452,12 +6451,12 @@ static void discardWorseConversions(Vec<ResolutionCandidate*>&   candidates,
   }
 
   if (numWithNegParamToSigned > 0 && numNoNegParamToSigned > 0) {
-    for (int i = 0; i < candidates.n; i++) {
+    for (int i = 0; i < candidates.size(); i++) {
       if (discarded[i]) {
         continue;
       }
 
-      ResolutionCandidate* candidate = candidates.v[i];
+      ResolutionCandidate* candidate = candidates[i];
       if (candidate->anyNegParamToUnsigned) {
         EXPLAIN("X: Fn %d has negative param to signed and others do not\n", i);
         discarded[i] = true;
@@ -6467,12 +6466,12 @@ static void discardWorseConversions(Vec<ResolutionCandidate*>&   candidates,
 
   int minNarrowing = INT_MAX;
   int maxNarrowing = INT_MIN;
-  for (int i = 0; i < candidates.n; i++) {
+  for (int i = 0; i < candidates.size(); i++) {
     if (discarded[i]) {
       continue;
     }
 
-    ResolutionCandidate* candidate = candidates.v[i];
+    ResolutionCandidate* candidate = candidates[i];
     computeConversionInfo(candidate, DC);
     int narrowing = candidate->nParamNarrowingImplicitConversions;
     if (narrowing < minNarrowing) {
@@ -6484,12 +6483,12 @@ static void discardWorseConversions(Vec<ResolutionCandidate*>&   candidates,
   }
 
   if (minNarrowing < maxNarrowing) {
-    for (int i = 0; i < candidates.n; i++) {
+    for (int i = 0; i < candidates.size(); i++) {
       if (discarded[i]) {
         continue;
       }
 
-      ResolutionCandidate* candidate = candidates.v[i];
+      ResolutionCandidate* candidate = candidates[i];
       int narrowing = candidate->nParamNarrowingImplicitConversions;
       if (narrowing > minNarrowing) {
         EXPLAIN("X: Fn %d has more param narrowing conversions\n", i);
@@ -6501,17 +6500,17 @@ static void discardWorseConversions(Vec<ResolutionCandidate*>&   candidates,
 
 // If some candidates have 'where' clauses and others do not,
 // discard those without 'where' clauses
-static void discardWorseWhereClauses(Vec<ResolutionCandidate*>&   candidates,
-                                     const DisambiguationContext& DC,
-                                     std::vector<bool>&           discarded) {
+static void discardWorseWhereClauses(SmallVec<ResolutionCandidate*>& candidates,
+                                     const DisambiguationContext&    DC,
+                                     std::vector<bool>&              discarded) {
   int nWhere = 0;
   int nNoWhere = 0;
-  for (int i = 0; i < candidates.n; ++i) {
+  for (int i = 0; i < candidates.size(); ++i) {
     if (discarded[i]) {
       continue;
     }
 
-    ResolutionCandidate* candidate = candidates.v[i];
+    ResolutionCandidate* candidate = candidates[i];
     bool where = candidate->fn->where != NULL &&
                  !candidate->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
 
@@ -6523,12 +6522,12 @@ static void discardWorseWhereClauses(Vec<ResolutionCandidate*>&   candidates,
   }
 
   if (nWhere > 0 && nNoWhere > 0) {
-    for (int i = 0; i < candidates.n; ++i) {
+    for (int i = 0; i < candidates.size(); ++i) {
       if (discarded[i]) {
         continue;
       }
 
-      ResolutionCandidate* candidate = candidates.v[i];
+      ResolutionCandidate* candidate = candidates[i];
       bool where = candidate->fn->where != NULL &&
                    !candidate->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
       if (!where) {
@@ -6542,18 +6541,18 @@ static void discardWorseWhereClauses(Vec<ResolutionCandidate*>&   candidates,
 // Returns 'true' if the candidates include both non-operator methods
 // and non-operator non-methods.
 static
-bool mixesNonOpMethodsAndFunctions(Vec<ResolutionCandidate*>&   candidates,
-                                   const DisambiguationContext& DC,
-                                   std::vector<bool>&           discarded) {
+bool mixesNonOpMethodsAndFunctions(SmallVec<ResolutionCandidate*>& candidates,
+                                   const DisambiguationContext&    DC,
+                                   std::vector<bool>&              discarded) {
 
   int nMethodsNotOperators = 0;
   int nFunctionsNotOperators = 0;
-  for (int i = 0; i < candidates.n; i++) {
+  for (int i = 0; i < candidates.size(); i++) {
     if (discarded[i]) {
       continue;
     }
 
-    ResolutionCandidate* candidate = candidates.v[i];
+    ResolutionCandidate* candidate = candidates[i];
     if (!candidate->fn->hasFlag(FLAG_OPERATOR)) {
       if (candidate->fn->hasFlag(FLAG_METHOD)) {
         nMethodsNotOperators++;
@@ -6569,18 +6568,18 @@ bool mixesNonOpMethodsAndFunctions(Vec<ResolutionCandidate*>&   candidates,
 // Discard candidates with further visibility distance
 // than other candidates.
 // This check does not consider methods or operator methods.
-static void discardWorseVisibility(Vec<ResolutionCandidate*>&   candidates,
-                                   const DisambiguationContext& DC,
-                                   std::vector<bool>&           discarded) {
+static void discardWorseVisibility(SmallVec<ResolutionCandidate*>& candidates,
+                                   const DisambiguationContext&    DC,
+                                   std::vector<bool>&              discarded) {
   int minDistance = INT_MAX;
   int maxDistance = INT_MIN;
 
-  for (int i = 0; i < candidates.n; i++) {
+  for (int i = 0; i < candidates.size(); i++) {
     if (discarded[i]) {
       continue;
     }
 
-    ResolutionCandidate* candidate = candidates.v[i];
+    ResolutionCandidate* candidate = candidates[i];
 
     int distance = computeVisibilityDistance(DC.scope, candidate->fn);
     candidate->visibilityDistance = distance;
@@ -6596,12 +6595,12 @@ static void discardWorseVisibility(Vec<ResolutionCandidate*>&   candidates,
   }
 
   if (minDistance < maxDistance) {
-    for (int i = 0; i < candidates.n; i++) {
+    for (int i = 0; i < candidates.size(); i++) {
       if (discarded[i]) {
         continue;
       }
 
-      ResolutionCandidate* candidate = candidates.v[i];
+      ResolutionCandidate* candidate = candidates[i];
       int distance = candidate->visibilityDistance;
       if (distance > 0 && distance > minDistance) {
         EXPLAIN("X: Fn %d has further visibility distance\n", i);
@@ -6614,12 +6613,12 @@ static void discardWorseVisibility(Vec<ResolutionCandidate*>&   candidates,
 struct PartialOrderChecker {
   int n;
   std::vector<bool> results;
-  const Vec<ResolutionCandidate*>& candidates;
+  const SmallVec<ResolutionCandidate*>& candidates;
   DisambiguationContext DC;
 
-  PartialOrderChecker(const Vec<ResolutionCandidate*>& candidates,
+  PartialOrderChecker(const SmallVec<ResolutionCandidate*>& candidates,
                       const DisambiguationContext& DC)
-    : n(candidates.n), candidates(candidates), DC(DC) {
+    : n(candidates.size()), candidates(candidates), DC(DC) {
     results.resize(n*n);
     this->DC.explain = true;
   }
@@ -6654,7 +6653,7 @@ struct PartialOrderChecker {
   }
 
   void explainComparison(int i, int j) {
-    ResolutionCandidate* candidate1         = candidates.v[i];
+    ResolutionCandidate* candidate1         = candidates[i];
     bool forGenericInit = candidate1->fn->isInitializer() || candidate1->fn->isCopyInit();
 
     EXPLAIN("##########################\n");
@@ -6662,7 +6661,7 @@ struct PartialOrderChecker {
     EXPLAIN("##########################\n\n");
     EXPLAIN("%s\n\n", toString(candidate1->fn));
 
-    ResolutionCandidate* candidate2 = candidates.v[j];
+    ResolutionCandidate* candidate2 = candidates[j];
 
     EXPLAIN("Comparing to function %d\n", j);
     EXPLAIN("-----------------------\n");
@@ -6688,7 +6687,7 @@ struct PartialOrderChecker {
     // check irreflexivity
     for (int i = 0; i < n; i++) {
       if (results[idx(i, i)]) {
-        ResolutionCandidate* candidatei = candidates.v[i];
+        ResolutionCandidate* candidatei = candidates[i];
 
         printf("irreflexivity fail : i < i\n");
         printActuals();
@@ -6701,8 +6700,8 @@ struct PartialOrderChecker {
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
         if (results[idx(i, j)] && results[idx(j, i)]) {
-          ResolutionCandidate* candidatei = candidates.v[i];
-          ResolutionCandidate* candidatej = candidates.v[j];
+          ResolutionCandidate* candidatei = candidates[i];
+          ResolutionCandidate* candidatej = candidates[j];
 
           printf("asymmetry fail : i < j and j < i\n");
           printActuals();
@@ -6722,9 +6721,9 @@ struct PartialOrderChecker {
         if (i != j && results[idx(i, j)]) {
           for (int k = 0; k < n; k++) {
             if (j != k && results[idx(j, k)] && !results[idx(i, k)]) {
-              ResolutionCandidate* candidatei = candidates.v[i];
-              ResolutionCandidate* candidatej = candidates.v[j];
-              ResolutionCandidate* candidatek = candidates.v[k];
+              ResolutionCandidate* candidatei = candidates[i];
+              ResolutionCandidate* candidatej = candidates[j];
+              ResolutionCandidate* candidatek = candidates[k];
 
               printf("transitivity fail : i < j and j < k but not i < k\n");
               printActuals();
@@ -6744,10 +6743,10 @@ struct PartialOrderChecker {
   }
 };
 
-static void disambiguateDiscarding(Vec<ResolutionCandidate*>&   candidates,
-                                   const DisambiguationContext& DC,
-                                   bool                         ignoreWhere,
-                                   std::vector<bool>&           discarded) {
+static void disambiguateDiscarding(SmallVec<ResolutionCandidate*>& candidates,
+                                   const DisambiguationContext&    DC,
+                                   bool                            ignoreWhere,
+                                   std::vector<bool>&              discarded) {
 
   if (mixesNonOpMethodsAndFunctions(candidates, DC, discarded)) {
     return;
@@ -6794,17 +6793,17 @@ static void disambiguateDiscarding(Vec<ResolutionCandidate*>&   candidates,
 }
 
 static ResolutionCandidate*
-disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
-                         const DisambiguationContext& DC,
-                         bool                         ignoreWhere,
-                         Vec<ResolutionCandidate*>&   ambiguous) {
+disambiguateByMatchInner(SmallVec<ResolutionCandidate*>& candidates,
+                         const DisambiguationContext&    DC,
+                         bool                            ignoreWhere,
+                         SmallVec<ResolutionCandidate*>& ambiguous) {
 
   // quick exit if there is nothing to do
-  if (candidates.n == 0) {
+  if (candidates.size() == 0) {
     return nullptr;
   }
-  if (candidates.n == 1) {
-    return candidates.v[0];
+  if (candidates.size() == 1) {
+    return candidates[0];
   }
 
   // Disable implicit conversion to remove nilability for disambiguation
@@ -6815,7 +6814,7 @@ disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
   }
 
   // If index i is set we have ruled out that function
-  std::vector<bool> discarded(candidates.n, false);
+  std::vector<bool> discarded(candidates.size(), false);
 
   // use new rules
   disambiguateDiscarding(candidates, DC, ignoreWhere, discarded);
@@ -6824,7 +6823,7 @@ disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
   {
     int only = -1;
     int currentCandidates = 0;
-    for (int i = 0; i < candidates.n; ++i) {
+    for (int i = 0; i < candidates.size(); ++i) {
       if (discarded[i]) {
         continue;
       }
@@ -6838,20 +6837,20 @@ disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
       if (saveGenerousResolutionForErrors > 0)
         generousResolutionForErrors = saveGenerousResolutionForErrors;
 
-      return candidates.v[only];
+      return candidates[only];
     }
   }
 
   // There was more than one best candidate.
   // So, add whatever is left to 'ambiguous'
   // and return NULL.
-  for (int i = 0; i < candidates.n; i++) {
+  for (int i = 0; i < candidates.size(); i++) {
     if (discarded[i]) {
       continue;
     }
 
     EXPLAIN("Z: Fn %d is one of the best matches\n", i);
-    ambiguous.add(candidates.v[i]);
+    ambiguous.push_back(candidates[i]);
   }
 
   if (saveGenerousResolutionForErrors > 0)
@@ -6861,22 +6860,22 @@ disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
 }
 
 static ResolutionCandidate*
-disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
-                    const DisambiguationContext& DC,
-                    bool                         ignoreWhere,
-                    Vec<ResolutionCandidate*>&   ambiguous) {
+disambiguateByMatch(SmallVec<ResolutionCandidate*>& candidates,
+                    const DisambiguationContext&    DC,
+                    bool                            ignoreWhere,
+                    SmallVec<ResolutionCandidate*>& ambiguous) {
   auto ret = disambiguateByMatchInner(candidates, DC, ignoreWhere, ambiguous);
 
   if (fVerify) {
     // check that 'compareSpecificity' creates a partial order
     PartialOrderChecker checker(candidates, DC);
 
-    for (int i = 0; i < candidates.n; ++i) {
-      ResolutionCandidate* candidate1         = candidates.v[i];
+    for (int i = 0; i < candidates.size(); ++i) {
+      ResolutionCandidate* candidate1         = candidates[i];
       bool forGenericInit = candidate1->fn->isInitializer() || candidate1->fn->isCopyInit();
 
-      for (int j = i; j < candidates.n; ++j) {
-        ResolutionCandidate* candidate2 = candidates.v[j];
+      for (int j = i; j < candidates.size(); ++j) {
+        ResolutionCandidate* candidate2 = candidates[j];
 
         int cmp = compareSpecificity(candidate1,
                                      candidate2,

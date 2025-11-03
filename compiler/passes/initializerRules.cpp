@@ -1222,7 +1222,7 @@ static bool buildPostInitChain(AggregateType* at,
 
   // Works around odd case with _ddata
   AggregateType* parent = NULL;
-  if (at->isClass() == true && at->dispatchParents.size() > 0) {
+  if (at->isClass() == true && at->dispatchParents.n > 0) {
     parent = at->dispatchParents.v[0];
   }
 

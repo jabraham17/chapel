@@ -220,6 +220,7 @@ public:
   // isa checking. This is the value we store in chpl__cid_XYZ.
   int                         classId;
 
+  // TODO: this is a good candidate to convert to SmallVec later
   Vec<AggregateType*>         dispatchParents;    // dispatch hierarchy
   Vec<AggregateType*>         dispatchChildren;   // dispatch hierarchy
 
@@ -230,6 +231,7 @@ public:
   const char*                 typeSignature;
   // Indicates whether we have already tried to look for generic fields.
   bool                        foundGenericFields;
+  // TODO: this is a good candidate to convert to SmallVec later
   // A list of the generic fields in this type.
   std::vector<Symbol*>        genericFields;
 

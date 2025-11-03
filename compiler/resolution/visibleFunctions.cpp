@@ -62,15 +62,12 @@
 
 typedef std::pair<bool, std::vector<FnSymbol*> > ReexportEntry;
 
-class VisibleFunctionBlock {
-public:
-                                        VisibleFunctionBlock();
-
-  Map<const char*, Vec<FnSymbol*>*>     visibleFunctions;
-  std::map<const char*, ReexportEntry>  reexports;
+struct VisibleFunctionBlock {
+  std::map<const char*, SmallVec<FnSymbol*>*> visibleFunctions;
+  std::map<const char*, ReexportEntry>        reexports;
 };
 
-static Map<BlockStmt*, VisibleFunctionBlock*> visibleFunctionMap;
+static std::map<BlockStmt*, VisibleFunctionBlock*> visibleFunctionMap;
 
 static int                                    nVisibleFunctions       = 0;
 
@@ -110,15 +107,19 @@ VisibilityInfo::VisibilityInfo(const VisibilityInfo& src) :
 // Such fn has the same name as this CFI's function and
 // is not automatically applicable.
 bool scopeMayDefineHazard(BlockStmt* scope, const char* fnName) {
-  if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(scope))
-    if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(fnName))
-      forv_Vec(FnSymbol, fn, *fns)
-        return true;
+  if (auto vfb_it = visibleFunctionMap.find(scope);
+      vfb_it != visibleFunctionMap.end()) {
+    auto& vfb = vfb_it->second;
+    if (auto fns = vfb->visibleFunctions.find(fnName);
+        fns != vfb->visibleFunctions.end()) {
+      return fns->second->size() > 0;
+    }
+  }
   return false;
 }
 
 bool scopeDefinesVisibleFunctions(BlockStmt* scope) {
-  return visibleFunctionMap.get(scope) != NULL;
+  return visibleFunctionMap.find(scope) != visibleFunctionMap.end();
 }
 
 
@@ -133,46 +134,46 @@ static void buildReexportVec(BlockStmt* scope, const char* name, CallExpr* call,
 static void updateReexportEntry(VisibleFunctionBlock* vfb, const char* name,
                                 BlockStmt* block, CallExpr* call);
 
-static void getVisibleFunctionsVI(const char*         name,
-                                CallExpr*             call,
-                                VisibilityInfo*       visInfo,
-                                PtrSet<BlockStmt*>* visited,
-                                Vec<FnSymbol*>&       visibleFns);
+static void getVisibleFunctionsVI(const char*          name,
+                                  CallExpr*            call,
+                                  VisibilityInfo*      visInfo,
+                                  PtrSet<BlockStmt*>*  visited,
+                                  SmallVec<FnSymbol*>& visibleFns);
 
 static void getVisibleMethods(const char* name, CallExpr* call,
-                              Vec<FnSymbol*>& visibleFns);
+                              SmallVec<FnSymbol*>& visibleFns);
 
-static void getVisibleMethodsVI(const char*           name,
-                                CallExpr*             call,
-                                VisibilityInfo*       visInfo,
-                                PtrSet<BlockStmt*>* visited,
-                                Vec<FnSymbol*>&       visibleFns);
+static void getVisibleMethodsVI(const char*          name,
+                                CallExpr*            call,
+                                VisibilityInfo*      visInfo,
+                                PtrSet<BlockStmt*>*  visited,
+                                SmallVec<FnSymbol*>& visibleFns);
 
 static void  buildVisibleFunctionMap();
 
 static BlockStmt* getVisibilityScopeNoParentModule(Expr* expr);
 
-void getMoreVisibleFunctionsOrMethods(const char*     name,
-                                CallExpr*             call,
-                                VisibilityInfo*       visInfo,
-                                PtrSet<BlockStmt*>* visited,
-                                Vec<FnSymbol*>&       visibleFns) {
+void getMoreVisibleFunctionsOrMethods(const char*          name,
+                                      CallExpr*            call,
+                                      VisibilityInfo*      visInfo,
+                                      PtrSet<BlockStmt*>*  visited,
+                                      SmallVec<FnSymbol*>& visibleFns) {
   if (visInfo->useMethodVisibility)
     getVisibleMethodsVI(name, call, visInfo, visited, visibleFns);
   else
     getVisibleFunctionsVI(name, call, visInfo, visited, visibleFns);
 }
 
-void findVisibleFunctionsAllPOIs(CallInfo&       info,
-                                 Vec<FnSymbol*>& visibleFns) {
+void findVisibleFunctionsAllPOIs(CallInfo&            info,
+                                 SmallVec<FnSymbol*>& visibleFns) {
   findVisibleFunctions(info, NULL, NULL, NULL, visibleFns);
 }
 
 void findVisibleFunctions(CallInfo&             info,
                           VisibilityInfo*       visInfo,
-                          PtrSet<BlockStmt*>* visited,
+                          PtrSet<BlockStmt*>*   visited,
                           int*                  numVisitedP,
-                          Vec<FnSymbol*>&       visibleFns) {
+                          SmallVec<FnSymbol*>&  visibleFns) {
   CallExpr* call = info.call;
 
   //
@@ -183,12 +184,18 @@ void findVisibleFunctions(CallInfo&             info,
   INT_ASSERT(call->isResolved() == false);
 
   if (BlockStmt* block = info.scope) {
-    if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
-      if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name)) {
-        visibleFns.append(*fns);
+    if (auto vfb_it = visibleFunctionMap.find(block);
+        vfb_it != visibleFunctionMap.end()) {
+      auto& vfb = vfb_it->second;
+      if (auto fns = vfb->visibleFunctions.find(info.name);
+          fns != vfb->visibleFunctions.end()) {
+        visibleFns.insert(visibleFns.end(),
+                          fns->second->begin(), fns->second->end());
       }
       updateReexportEntry(vfb, info.name, block, call);
-      visibleFns.append(vfb->reexports[info.name].second);
+      auto& reexports = vfb->reexports[info.name].second;
+      visibleFns.insert(visibleFns.end(),
+                        reexports.begin(), reexports.end());
     }
   } else {
     // Methods, fields, and type helper functions should first look at the scope
@@ -214,7 +221,7 @@ void findVisibleFunctions(CallInfo&             info,
     if (startVisited == 0)
       USR_PRINT(call, "call: %s", info.toString());
 
-    if (visibleFns.n == 0) {
+    if (visibleFns.size() == 0) {
      if (numVisitedP == NULL)
       USR_PRINT(call, "no visible functions found");
 
@@ -250,17 +257,23 @@ static void buildVisibleFunctionMap() {
         // So, ensure we do not add anything there.
         INT_ASSERT(block != rootBlock);
       }
-      VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
-      if (!vfb) {
+      auto vfb_it = visibleFunctionMap.find(block);
+      VisibleFunctionBlock* vfb = nullptr;
+      if (vfb_it == visibleFunctionMap.end()) {
         vfb = new VisibleFunctionBlock();
-        visibleFunctionMap.put(block, vfb);
+        visibleFunctionMap[block] = vfb;
+      } else {
+        vfb = vfb_it->second;
       }
-      Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(fn->name);
-      if (!fns) {
-        fns = new Vec<FnSymbol*>();
-        vfb->visibleFunctions.put(fn->name, fns);
+      auto fns_it = vfb->visibleFunctions.find(fn->name);
+      SmallVec<FnSymbol*>* fns = nullptr;
+      if (fns_it == vfb->visibleFunctions.end()) {
+        fns = new SmallVec<FnSymbol*>();
+        vfb->visibleFunctions[fn->name] = fns;
+      } else {
+        fns = fns_it->second;
       }
-      fns->add(fn);
+      fns->push_back(fn);
     }
   }
   nVisibleFunctions = gFnSymbols.n;
@@ -320,18 +333,19 @@ static void buildReexportVec(VisibilityStmt* visStmt, const char* name,
           nameToUse = visStmt->getRenamedSym(name);
         }
 
-        if (VisibleFunctionBlock* vfb =
-            visibleFunctionMap.get(mod->block)) {
+        if (auto vfb_it = visibleFunctionMap.find(mod->block);
+            vfb_it != visibleFunctionMap.end()) {
+          auto& vfb = vfb_it->second;
           // Does the visStmted module define functions with this name?
-          if (Vec<FnSymbol*>* fns =
-              vfb->visibleFunctions.get(nameToUse)) {
+          if (auto fns = vfb->visibleFunctions.find(nameToUse);
+              fns != vfb->visibleFunctions.end()) {
             // Optimization: only check visibility of one private function
             // per scope searched.  The same answer should hold for all
             // private symbols in the same scope.
             bool privacyChecked = false;
             bool privateOkay = false;
 
-            forv_Vec(FnSymbol, fn, *fns) {
+            for (auto fn: *fns->second) {
               if (fn->hasFlag(FLAG_PRIVATE)) {
                 // Ensure that private functions are not used outside of
                 // their proper scope
@@ -395,7 +409,7 @@ static void updateReexportEntry(VisibleFunctionBlock* vfb, const char* name,
 static void getVisibleMethodsFiltered(const char* name, CallExpr* call,
                                       BlockStmt* block, VisibilityInfo* visInfo,
                                       PtrSet<BlockStmt*>& visited,
-                                      Vec<FnSymbol*>& visibleFns,
+                                      SmallVec<FnSymbol*>& visibleFns,
                                       bool inUseChain,
                                       PtrSet<const char*> typeNames);
 
@@ -403,13 +417,13 @@ static void getVisibleMethodsImpl(const char* name, CallExpr* call,
                                   BlockStmt*            block,
                                   VisibilityInfo*       visInfo,
                                   PtrSet<BlockStmt*>& visited,
-                                  Vec<FnSymbol*>&       visibleFns,
+                                  SmallVec<FnSymbol*>&       visibleFns,
                                   bool inUseChain);
 
 static void lookAtTypeFirst(const char* name, CallExpr* call, BlockStmt* block,
                             VisibilityInfo*       visInfo,
-                            PtrSet<BlockStmt*>& visited,
-                            Vec<FnSymbol*>&       visibleFns);
+                            PtrSet<BlockStmt*>&   visited,
+                            SmallVec<FnSymbol*>&  visibleFns);
 
 static BlockStmt* getVisibleFnsInstantiationPt(BlockStmt* block);
 
@@ -417,9 +431,9 @@ static void getVisibleFnsShowBlock(const char* context, BlockStmt* block,
                                    BlockStmt* instantiationPt);
 
 static void getVisibleMethodsVI(const char* name, CallExpr* call,
-                                VisibilityInfo*       visInfo,
-                                PtrSet<BlockStmt*>* visited,
-                                Vec<FnSymbol*>&       visibleFns)
+                                VisibilityInfo*      visInfo,
+                                PtrSet<BlockStmt*>*  visited,
+                                SmallVec<FnSymbol*>& visibleFns)
 {
   INT_ASSERT(visited->empty() == !visInfo->inPOI()); //fyi
 
@@ -434,7 +448,7 @@ static void getVisibleMethodsVI(const char* name, CallExpr* call,
 }
 
 static void getVisibleMethods(const char* name, CallExpr* call,
-                              Vec<FnSymbol*>& visibleFns) {
+                              SmallVec<FnSymbol*>& visibleFns) {
   BlockStmt*           block    = getVisibilityScope(call);
   PtrSet<BlockStmt*> visited;
 
@@ -447,7 +461,7 @@ static void lookAtTypeFirstHelper(const char* name, CallExpr* call,
                                   BlockStmt* block, Type* curType,
                                   VisibilityInfo* visInfo,
                                   PtrSet<BlockStmt*>& visited,
-                                  Vec<FnSymbol*>& visibleFns) {
+                                  SmallVec<FnSymbol*>& visibleFns) {
   BlockStmt* typeScope = getVisibilityScope(curType->symbol->defPoint);
   // When searching the type scope, don't follow private uses and imports if we
   // aren't already in the scope where the type is defined.
@@ -469,7 +483,7 @@ static void lookAtTypeFirstHelper(const char* name, CallExpr* call,
 static void lookAtTypeFirst(const char* name, CallExpr* call, BlockStmt* block,
                             VisibilityInfo*       visInfo,
                             PtrSet<BlockStmt*>& visited,
-                            Vec<FnSymbol*>&       visibleFns)
+                            SmallVec<FnSymbol*>&       visibleFns)
 {
   INT_ASSERT(call->numActuals() >= 1);
   Expr* typeActual = NULL;
@@ -544,7 +558,7 @@ static void getVisibleMethodsFirstVisit(const char* name, CallExpr* call,
                                         BlockStmt* block,
                                         VisibilityInfo* visInfo,
                                         PtrSet<BlockStmt*>& visited,
-                                        Vec<FnSymbol*>& visibleFns) {
+                                        SmallVec<FnSymbol*>& visibleFns) {
   // The following statement causes this to apply to all blocks,
   // and not just module or function blocks.
   //
@@ -554,11 +568,14 @@ static void getVisibleMethodsFirstVisit(const char* name, CallExpr* call,
   if (visInfo != NULL)
     visInfo->visitedScopes.push_back(block);
 
-  if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
+  if (auto vfb_it = visibleFunctionMap.find(block);
+      vfb_it != visibleFunctionMap.end()) {
+    auto& vfb = vfb_it->second;
     // the block defines functions
 
-    if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
-      forv_Vec(FnSymbol, fn, *fns) {
+    if (auto fns = vfb->visibleFunctions.find(name);
+        fns != vfb->visibleFunctions.end()) {
+      for (auto fn: *fns->second) {
         if (fn->hasFlag(FLAG_HAS_EDITION)) {
           // Only allow functions with a specified edition if that edition
           // matches
@@ -573,14 +590,14 @@ static void getVisibleMethodsFirstVisit(const char* name, CallExpr* call,
         if (fn->hasFlag(FLAG_METHOD) || !fn->hasFlag(FLAG_OPERATOR)) {
           // When private methods and fields are supported, we'll need to extend
           // this
-          visibleFns.add(fn);
+          visibleFns.push_back(fn);
 
         } else if (fn->hasFlag(FLAG_OPERATOR)) {
           // Respect operator function privacy.
           if (fn->hasFlag(FLAG_PRIVATE) && fn->isVisible(call)) {
-            visibleFns.add(fn);
+            visibleFns.push_back(fn);
           } else if (!fn->hasFlag(FLAG_PRIVATE)) {
-            visibleFns.add(fn);
+            visibleFns.push_back(fn);
           }
         }
       }
@@ -593,7 +610,7 @@ static void getVisibleMethodsFirstVisitFiltered(const char* name,
                                                 BlockStmt* block,
                                                 VisibilityInfo* visInfo,
                                                 PtrSet<BlockStmt*>& visited,
-                                                Vec<FnSymbol*>& visibleFns,
+                                                SmallVec<FnSymbol*>& visibleFns,
                                                 PtrSet<const char*> typeNames)
 {
   // Why does the following statement apply to all blocks,
@@ -605,11 +622,14 @@ static void getVisibleMethodsFirstVisitFiltered(const char* name,
   if (visInfo != NULL)
     visInfo->visitedScopes.push_back(block);
 
-  if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
+  if (auto vfb_it = visibleFunctionMap.find(block);
+      vfb_it != visibleFunctionMap.end()) {
+    auto& vfb = vfb_it->second;
     // the block defines functions
 
-    if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
-      forv_Vec(FnSymbol, fn, *fns) {
+    if (auto fns = vfb->visibleFunctions.find(name);
+        fns != vfb->visibleFunctions.end()) {
+      for (auto fn: *fns->second) {
         if (fn->hasFlag(FLAG_HAS_EDITION)) {
           // Only allow functions with a specified edition if that edition
           // matches
@@ -642,10 +662,10 @@ static void getVisibleMethodsFirstVisitFiltered(const char* name,
           if (it != typeNames.end()) {
             // This method is defined on a type that is in the filter list.
             // That means we should consider it a candidate.
-            visibleFns.add(fn);
+            visibleFns.push_back(fn);
           }
         } else {
-          visibleFns.add(fn);
+          visibleFns.push_back(fn);
         }
       }
     }
@@ -658,7 +678,7 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
                                                  BlockStmt* block,
                                                  VisibilityInfo* visInfo,
                                                  PtrSet<BlockStmt*>& visited,
-                                                 Vec<FnSymbol*>& visibleFns,
+                                                 SmallVec<FnSymbol*>& visibleFns,
                                                  bool inUseChain,
                                                  bool firstVisit,
                                                  PtrSet<const char*> filter);
@@ -670,7 +690,7 @@ static void getVisibleMethodsFromUseList(const char* name, CallExpr* call,
                                          BlockStmt* block,
                                          VisibilityInfo* visInfo,
                                          PtrSet<BlockStmt*>& visited,
-                                         Vec<FnSymbol*>& visibleFns,
+                                         SmallVec<FnSymbol*>& visibleFns,
                                          bool inUseChain, bool firstVisit) {
   PtrSet<const char*> filter;
   getVisibleMethodsFromUseListFiltered(name, call, block, visInfo, visited,
@@ -683,7 +703,7 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
                                                  BlockStmt* block,
                                                  VisibilityInfo* visInfo,
                                                  PtrSet<BlockStmt*>& visited,
-                                                 Vec<FnSymbol*>& visibleFns,
+                                                 SmallVec<FnSymbol*>& visibleFns,
                                                  bool inUseChain,
                                                  bool firstVisit,
                                                  PtrSet<const char*> filter) {
@@ -849,7 +869,7 @@ static void mergeFilters(PtrSet<const char*> outer,
 static void getVisibleMethodsFiltered(const char* name, CallExpr* call,
                                       BlockStmt* block, VisibilityInfo* visInfo,
                                       PtrSet<BlockStmt*>& visited,
-                                      Vec<FnSymbol*>& visibleFns,
+                                      SmallVec<FnSymbol*>& visibleFns,
                                       bool inUseChain,
                                       PtrSet<const char*> typeNames) {
   if (block == rootBlock) return; // nothing there
@@ -931,7 +951,7 @@ static void getVisibleMethodsFiltered(const char* name, CallExpr* call,
 static void getVisibleMethodsImpl(const char* name, CallExpr* call,
                                   BlockStmt* block, VisibilityInfo* visInfo,
                                   PtrSet<BlockStmt*>& visited,
-                                  Vec<FnSymbol*>& visibleFns, bool inUseChain) {
+                                  SmallVec<FnSymbol*>& visibleFns, bool inUseChain) {
   if (block == rootBlock) return; // nothing there
   //
   // avoid infinite recursion due to modules with mutual uses
@@ -1016,22 +1036,22 @@ static void getVisibleFunctionsImpl(const char*       name,
                                 BlockStmt*            block,
                                 VisibilityInfo*       visInfo,
                                 PtrSet<BlockStmt*>& visited,
-                                Vec<FnSymbol*>&       visibleFns,
+                                SmallVec<FnSymbol*>&       visibleFns,
                                 bool                  inUseChain);
 
 static void getVisibleFunctionsVI(const char*            name,
                                 CallExpr*                call,
                                 VisibilityInfo*          visInfo,
                                 PtrSet<BlockStmt*>*    visited,
-                                Vec<FnSymbol*>&          visibleFns)
+                                SmallVec<FnSymbol*>&          visibleFns)
 {
   getVisibleFunctionsImpl(name, call, visInfo->currStart, visInfo,
                           *visited, visibleFns, false);
 }
 
-void getVisibleFunctions(const char*      name,
-                         CallExpr*        call,
-                         Vec<FnSymbol*>&  visibleFns) {
+void getVisibleFunctions(const char*           name,
+                         CallExpr*             call,
+                         SmallVec<FnSymbol*>&  visibleFns) {
   BlockStmt*           block    = getVisibilityScope(call);
   PtrSet<BlockStmt*> visited;
 
@@ -1091,7 +1111,7 @@ static void getVisibleFnsFirstVisit(const char*       name,
                                 BlockStmt*            block,
                                 VisibilityInfo*       visInfo,
                                 PtrSet<BlockStmt*>& visited,
-                                Vec<FnSymbol*>&       visibleFns)
+                                SmallVec<FnSymbol*>&       visibleFns)
 {
   // Why does the following statement apply to all blocks,
   // and not just module or function blocks?
@@ -1102,17 +1122,20 @@ static void getVisibleFnsFirstVisit(const char*       name,
   if (visInfo != NULL)
     visInfo->visitedScopes.push_back(block);
 
-  if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
+  if (auto vfb_it = visibleFunctionMap.find(block);
+      vfb_it != visibleFunctionMap.end()) {
+    auto& vfb = vfb_it->second;
     // the block defines functions
 
-    if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
+    if (auto fns = vfb->visibleFunctions.find(name);
+        fns != vfb->visibleFunctions.end()) {
       // Optimization: only check visibility of one private function per scope
       // searched.  The same answer should hold for all private symbols in the
       // same scope.
       bool privacyChecked = false;
       bool privateOkay = false;
 
-      forv_Vec(FnSymbol, fn, *fns) {
+      for(auto fn: *fns->second) {
         if (fn->hasFlag(FLAG_HAS_EDITION)) {
           // Only allow functions with a specified edition if that edition
           // matches
@@ -1132,18 +1155,18 @@ static void getVisibleFnsFirstVisit(const char*       name,
             if (fn->isVisible(call)) {
               // We've determined that this function, even though it is
               // private, can be used
-              visibleFns.add(fn);
+              visibleFns.push_back(fn);
               privateOkay = true;
             }
           } else if (privateOkay) {
             // We've already checked that private symbols are accessible in
-            // this pass and they are, so it's okay to add this function to
+            // this pass and they are, so it's okay to push_back this function to
             // the visible functions list
-            visibleFns.add(fn);
+            visibleFns.push_back(fn);
           }
         } else {
           // This was a public function, so always include it.
-          visibleFns.add(fn);
+          visibleFns.push_back(fn);
         }
       }
     }
@@ -1178,8 +1201,8 @@ static void getVisibleFnsFromUseList(const char*      name,
                                 CallExpr*             call,
                                 BlockStmt*            block,
                                 VisibilityInfo*       visInfo,
-                                PtrSet<BlockStmt*>& visited,
-                                Vec<FnSymbol*>&       visibleFns,
+                                PtrSet<BlockStmt*>&   visited,
+                                SmallVec<FnSymbol*>&  visibleFns,
                                 bool                  inUseChain,
                                 bool                  firstVisit)
 {
@@ -1240,8 +1263,8 @@ static void getVisibleFunctionsImpl(const char*       name,
                                 CallExpr*             call,
                                 BlockStmt*            block,
                                 VisibilityInfo*       visInfo,
-                                PtrSet<BlockStmt*>& visited,
-                                Vec<FnSymbol*>&       visibleFns,
+                                PtrSet<BlockStmt*>&   visited,
+                                SmallVec<FnSymbol*>&  visibleFns,
                                 bool                  inUseChain)
 {
   if (block == rootBlock) return; // nothing there
@@ -1429,36 +1452,18 @@ static BlockStmt* getVisibilityScopeNoParentModule(Expr* expr) {
 ************************************** | *************************************/
 
 void visibleFunctionsClear() {
-  Vec<VisibleFunctionBlock*> vfbs;
 
-  visibleFunctionMap.get_values(vfbs);
-
-  forv_Vec(VisibleFunctionBlock, vfb, vfbs) {
-    Vec<Vec<FnSymbol*>*> vfns;
-
-    vfb->visibleFunctions.get_values(vfns);
-
-    forv_Vec(Vec<FnSymbol*>, vfn, vfns) {
-      delete vfn;
+  for (auto it : visibleFunctionMap) {
+    auto& vfb = it.second;
+    for (auto vfns_it : vfb->visibleFunctions) {
+      auto& vfnVec = vfns_it.second;
+      for (auto re : vfb->reexports) {
+        re.second.second.clear();
+      }
+      delete vfnVec;
     }
-
-    std::map<const char*, ReexportEntry>::iterator it;
-    for (it= vfb->reexports.begin(); it != vfb->reexports.end(); ++it) {
-      it->second.second.clear();
-    }
-
     delete vfb;
   }
 
   visibleFunctionMap.clear();
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-VisibleFunctionBlock::VisibleFunctionBlock() {
-
 }

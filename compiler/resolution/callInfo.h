@@ -42,6 +42,7 @@ public:
 
   const char*      name;        // function name
 
+  // TODO: these are good candidates for SmallVec
   Vec<Symbol*>     actuals;     // actual symbols
   Vec<const char*> actualNames; // named arguments
 };

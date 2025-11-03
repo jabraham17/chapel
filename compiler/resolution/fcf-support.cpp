@@ -1124,7 +1124,7 @@ void checkAndResolveSignatureAndBody(FnSymbol* fn, Expr* use) {
 
 std::vector<FnSymbol*> lookupFunctions(const char* name, Expr* use) {
   std::vector<FnSymbol*> ret;
-  Vec<FnSymbol*> visibleFns;
+  SmallVec<FnSymbol*> visibleFns;
 
   // Recompute manually because this call may be in an instantiation.
   recomputeVisibleFunctions();
@@ -1135,8 +1135,8 @@ std::vector<FnSymbol*> lookupFunctions(const char* name, Expr* use) {
   getVisibleFunctions(name, call, visibleFns);
   call->replace(use);
 
-  for (int i = 0; i < visibleFns.n; i++) {
-    ret.push_back(visibleFns.v[i]);
+  for (int i = 0; i < visibleFns.size(); i++) {
+    ret.push_back(visibleFns[i]);
   }
 
   return ret;

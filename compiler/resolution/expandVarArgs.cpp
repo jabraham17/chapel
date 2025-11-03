@@ -101,14 +101,14 @@ static bool hasVariableArgs(FnSymbol* fn);
 FnSymbol* expandIfVarArgs(FnSymbol* fn, CallInfo& info) {
   FnSymbol* retval = fn;
 
-  if (hasVariableArgs(fn) == true) {
+  if (hasVariableArgs(fn)) {
     retval = cacheLookup(fn, info.actuals.n);
 
     // No substitution found
-    if (retval == NULL) {
+    if (retval == nullptr) {
       retval = expandVarArgs(fn, info);
 
-      if (retval != NULL) {
+      if (retval != nullptr) {
         cacheExtend(fn, retval);
       }
     }
@@ -118,15 +118,12 @@ FnSymbol* expandIfVarArgs(FnSymbol* fn, CallInfo& info) {
 }
 
 static bool hasVariableArgs(FnSymbol* fn) {
-  bool retval = false;
-
   for_formals(formal, fn) {
-    if (formal->variableExpr != NULL) {
-      retval = true;
+    if (formal->variableExpr != nullptr) {
+      return true;
     }
   }
-
-  return retval;
+  return false;
 }
 
 /************************************* | **************************************

@@ -1879,9 +1879,9 @@ static ConstraintSat satisfyingEnclConstraint(InterfaceSymbol*  isym,
   return ConstraintSat(nullptr); // not found
 }
 
-static void gatherVisibleWrapperFns(Expr*         callsite,
-                                    CallExpr*          call2wf,
-                                    Vec<FnSymbol*>& visibleFns) {
+static void gatherVisibleWrapperFns(Expr*                callsite,
+                                    CallExpr*            call2wf,
+                                    SmallVec<FnSymbol*>& visibleFns) {
   callsite->insertBefore(call2wf);
 
   CallInfo info;
@@ -1976,13 +1976,13 @@ class FirstPick { public:
 //   - It cannot be written by the user, so it is always created implicitly.
 //   - We create an istm implicitly only when checking a concrete constraint.
 
-static FirstPick pickMatchingImplementsStmts(InterfaceSymbol*      isym,
-                                             Vec<FnSymbol*> &visibleFns,
-                                             CallExpr*          call2wf) {
+static FirstPick pickMatchingImplementsStmts(InterfaceSymbol*    isym,
+                                             SmallVec<FnSymbol*> &visibleFns,
+                                             CallExpr*           call2wf) {
   ImplementsStmt* firstGenSuccess = nullptr;
   FnSymbol*       firstFailure    = nullptr;
 
-  forv_Vec(FnSymbol, wrapFn, visibleFns) {
+  for (auto wrapFn: visibleFns) {
     MatchResult match = matchingImplStm(isym, wrapFn, call2wf);
     if (match.istm != nullptr) {
       // got a match, what kind?
@@ -2328,7 +2328,7 @@ static ImplementsStmt* findSatisfyingIstm(InterfaceSymbol* isym,
   // If semantically allowed, see #16731, we could optimize by breaking out
   // from gatherVisibleWrapperFns once a successful match is found.
 
-  Vec<FnSymbol*> visibleFns;
+  SmallVec<FnSymbol*> visibleFns;
   gatherVisibleWrapperFns(callsite, call2wf, visibleFns);
 
   FirstPick pick = pickMatchingImplementsStmts(isym, visibleFns, call2wf);

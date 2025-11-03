@@ -35,6 +35,9 @@ class VisibilityInfo;
 class FnSymbol;
 class Symbol;
 
+template <typename T>
+using SmallVec = llvm::SmallVector<T>;
+
 void clearCoercibleCache(void);
 
 typedef enum {
@@ -166,8 +169,8 @@ private:
 
 void explainCandidateRejection(CallInfo& info, FnSymbol* fn);
 
-void explainGatherCandidate(const CallInfo&            info,
-                            Vec<ResolutionCandidate*>& candidates);
+void explainGatherCandidate(const CallInfo&                 info,
+                            SmallVec<ResolutionCandidate*>& candidates);
 
 bool failedCandidateIsBetterMatch(ResolutionCandidate* a,
                                   ResolutionCandidate* b);

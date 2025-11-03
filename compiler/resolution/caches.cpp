@@ -472,7 +472,7 @@ static void visitMorePOIs(std::vector<CalledFunInfo*>& toProcess,
   VisibilityInfo visInfo(visInfoOrig);
   advanceCurrStart(visInfo);
 
-  Vec<FnSymbol*> visibleFns;
+  SmallVec<FnSymbol*> visibleFns;
   PtrSet<BlockStmt*> visited(visInfoOrig.visitedScopes.begin(),
                                visInfoOrig.visitedScopes.end());
   do {

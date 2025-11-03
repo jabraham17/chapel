@@ -32,9 +32,12 @@ class Expr;
 class FnSymbol;
 
 #include "llvm/ADT/SmallPtrSet.h"
+#include "llvm/ADT/SmallVector.h"
 
 template <typename T, size_t N=8>
 using PtrSet = llvm::SmallPtrSet<T, N>;
+template <typename T>
+using SmallVec = llvm::SmallVector<T>;
 
 class VisibilityInfo {
 public:
@@ -58,24 +61,24 @@ public:
 bool       scopeMayDefineHazard(BlockStmt* scope, const char* fnName);
 bool       scopeDefinesVisibleFunctions(BlockStmt* scope);
 
-void       findVisibleFunctionsAllPOIs(CallInfo&       info,
-                                       Vec<FnSymbol*>& visibleFns);
+void       findVisibleFunctionsAllPOIs(CallInfo&            info,
+                                       SmallVec<FnSymbol*>& visibleFns);
 
-void       findVisibleFunctions(CallInfo&             info,
-                                VisibilityInfo*       visInfo,
-                                PtrSet<BlockStmt*>* visited,
-                                int*                  numVisitedP,
-                                Vec<FnSymbol*>&       visibleFns);
+void       findVisibleFunctions(CallInfo&            info,
+                                VisibilityInfo*      visInfo,
+                                PtrSet<BlockStmt*>*  visited,
+                                int*                 numVisitedP,
+                                SmallVec<FnSymbol*>& visibleFns);
 
-void       getMoreVisibleFunctionsOrMethods(const char*  name,
-                                CallExpr*                call,
-                                VisibilityInfo*          visInfo,
-                                PtrSet<BlockStmt*>*    visited,
-                                Vec<FnSymbol*>&          visibleFns);
+void       getMoreVisibleFunctionsOrMethods(const char*          name,
+                                            CallExpr*            call,
+                                            VisibilityInfo*      visInfo,
+                                            PtrSet<BlockStmt*>*  visited,
+                                            SmallVec<FnSymbol*>& visibleFns);
 
-void       getVisibleFunctions(const char*      name,
-                               CallExpr*        call,
-                               Vec<FnSymbol*>&  visibleFns);
+void       getVisibleFunctions(const char*          name,
+                               CallExpr*            call,
+                               SmallVec<FnSymbol*>& visibleFns);
 
 BlockStmt* getVisibilityScope(Expr* expr);
 BlockStmt* getInstantiationPoint(Expr* expr);

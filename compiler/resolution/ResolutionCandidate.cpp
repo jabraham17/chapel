@@ -1324,19 +1324,19 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
   }
 }
 
-void explainGatherCandidate(const CallInfo&            info,
-                            Vec<ResolutionCandidate*>& candidates) {
+void explainGatherCandidate(const CallInfo&                info,
+                            SmallVec<ResolutionCandidate*>& candidates) {
   CallExpr* call = info.call;
 
   if ((explainCallLine != 1 && explainCallMatch(info.call) == true) ||
       call->id == explainCallID) {
-    if (candidates.n == 0) {
+    if (candidates.size() == 0) {
       USR_PRINT(info.call, "no candidates found");
 
     } else {
       bool first = true;
 
-      forv_Vec(ResolutionCandidate*, candidate, candidates) {
+      for (auto candidate: candidates) {
         USR_PRINT(candidate->fn,
                   "%s %s",
                   first ? "candidates are:" : "               ",

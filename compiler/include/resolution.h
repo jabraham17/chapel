@@ -40,6 +40,9 @@ struct Serializers {
   FnSymbol* destroyer;
 };
 
+template <typename T>
+using SmallVec = llvm::SmallVector<T>;
+
 
 extern int                              explainCallLine;
 
@@ -235,6 +238,7 @@ void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn);
 class DisambiguationContext {
 public:
                  DisambiguationContext(CallInfo& info, BlockStmt* searchScope);
+  // TODO: make this a smallvec with 4 elements
   Vec<Symbol*>*  actuals;
   Expr*          scope;
   bool           explain;
@@ -247,8 +251,8 @@ private:
 
 
 ResolutionCandidate*
-disambiguateForInit(CallInfo&                    info,
-                    Vec<ResolutionCandidate*>&   candidates);
+disambiguateForInit(CallInfo&                       info,
+                    SmallVec<ResolutionCandidate*>& candidates);
 
 // Regular resolve functions
 void      resolveCall(CallExpr* call);
@@ -291,11 +295,11 @@ bool recordContainingCopyMutatesField(Type* at);
 // resolution errors and warnings
 
 // This one does not call USR_STOP
-void printResolutionErrorUnresolved(CallInfo&                  info,
-                                    Vec<FnSymbol*>&            visibleFns);
+void printResolutionErrorUnresolved(CallInfo&            info,
+                                    SmallVec<FnSymbol*>& visibleFns);
 
-void printResolutionErrorAmbiguous (CallInfo&                  info,
-                                    Vec<ResolutionCandidate*>& candidates);
+void printResolutionErrorAmbiguous(CallInfo&                       info,
+                                   SmallVec<ResolutionCandidate*>& candidates);
 void printUndecoratedClassTypeNote(Expr* ctx, Type* type);
 
 FnSymbol* resolveNormalCall(CallExpr* call);
@@ -387,8 +391,8 @@ bool isTemporaryFromNoCopyReturn(Symbol* fromSym);
 void resolveIfExprType(CondStmt* stmt);
 
 void trimVisibleCandidates(CallInfo& call,
-                           Vec<FnSymbol*>& mostApplicable,
-                           Vec<FnSymbol*>& visibleFns);
+                           SmallVec<FnSymbol*>& mostApplicable,
+                           SmallVec<FnSymbol*>& visibleFns);
 
 void resolveGenericActuals(CallExpr* call);
 
