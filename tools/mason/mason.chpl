@@ -170,5 +170,5 @@ proc masonClean(args) {
 
 
 proc printVersion() {
-  writeln("mason 0.2.0");
+  writeln("mason " + MASON_VERSION);
 }
