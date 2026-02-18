@@ -82,6 +82,14 @@ def find_cuda_libdevice_path(compiler: str):
     return libdevices[0] if len(libdevices) > 0 else None
 
 
+def _cuda_default_arch():
+    # if using cuda <13, default to sm_60. Otherwise default to sm_75
+    cuda_version_major = get_sdk_version().split('.')[0]
+    if cuda_version_major and int(cuda_version_major) < 13:
+        return "sm_60"
+    else:
+        return "sm_75"
+
 def find_llvm_amd_bin_path(compiler: str):
     out = gpu_compiler_basic_compile(compiler, "hip")
     if not out:
@@ -149,7 +157,7 @@ def _find_rocm_version(compiler: str):
 GPU_TYPES = {
     "nvidia": gpu_type(sdk_path_env="CHPL_CUDA_PATH",
                        compiler="nvcc",
-                       default_arch="sm_60",
+                       default_arch=_cuda_default_arch,
                        llvm_target="NVPTX",
                        runtime_impl="cuda",
                        find_sdk_path=_find_cuda_sdk_path,
@@ -159,7 +167,7 @@ GPU_TYPES = {
                        real_gpu=True),
     "amd": gpu_type(sdk_path_env="CHPL_ROCM_PATH",
                     compiler="hipcc",
-                    default_arch="",
+                    default_arch=lambda: "",
                     llvm_target="AMDGPU",
                     runtime_impl="rocm",
                     find_sdk_path=_find_hip_sdk_path,
@@ -169,7 +177,7 @@ GPU_TYPES = {
                     real_gpu=True),
     "cpu": gpu_type(sdk_path_env="",
                     compiler="",
-                    default_arch="",
+                    default_arch=lambda: "",
                     llvm_target="",
                     runtime_impl="cpu",
                     find_sdk_path=lambda compiler: None,
@@ -179,7 +187,7 @@ GPU_TYPES = {
                     real_gpu=False),
     "none": gpu_type(sdk_path_env="",
                      compiler="",
-                     default_arch="",
+                     default_arch=lambda: "",
                      llvm_target="",
                      runtime_impl="",
                      find_sdk_path=lambda compiler: None,
@@ -265,7 +273,7 @@ def get_arch():
         return arch
 
     # Return vendor-specific default architecture
-    arch = GPU_TYPES[gpu_type].default_arch
+    arch = GPU_TYPES[gpu_type].default_arch()
     if arch != "":
         return arch
     else:
