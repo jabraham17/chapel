@@ -371,10 +371,10 @@ def get_runtime_compile_args():
         gpu = GPU_TYPES[gpu_type]
         includes = _find_cuda_variable(gpu.compiler, "INCLUDES")
         if includes:
-            system.append(shlex.split(includes))
+            system.extend(shlex.split(includes))
         system_includes = _find_cuda_variable(gpu.compiler, "SYSTEM_INCLUDES")
         if system_includes:
-            system.append(shlex.split(system_includes))
+            system.extend(shlex.split(system_includes))
 
     elif gpu_type == "amd":
         # -isystem instead of -I silences warnings from inside these includes.
