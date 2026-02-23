@@ -244,7 +244,7 @@ code:
 
 To enable use of CMake-based projects with the :ref:`language server <readme-chpl-language-server>`,
 the CMake integration provides a special variable ``CMAKE_EXPORT_CHPL_COMMANDS``.
-When set to ``ON``, CMake will generate a file named ``.cls_commands.json`` in
+When set to ``ON``, CMake will generate a file named ``.cls-commands.json`` in
 the build directory. This file can be read by the language server to understand
 the module structure of the project. For example:
 
