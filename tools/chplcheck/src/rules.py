@@ -519,7 +519,7 @@ def rules(driver: LintDriver):
                     len("try") if not node.is_try_bang() else len("try!")
                 )
                 # adjust the location to be just the keyword
-                try_loc = try_loc - try_loc.adjust_start((0, len_of_keyword))
+                try_loc = try_loc - try_loc.modify_start((0, len_of_keyword))
                 res = check_for_unattached(
                     context, body, try_loc, curly_loc, AdvancedRuleResult
                 )
@@ -541,7 +541,7 @@ def rules(driver: LintDriver):
                     catch_loc = node.location()
                     len_of_keyword = len("catch")
                     # adjust the location to be just the keyword
-                    before_loc = catch_loc - catch_loc.adjust_start(
+                    before_loc = catch_loc - catch_loc.modify_start(
                         (0, len_of_keyword)
                     )
                 if before_loc is None:
