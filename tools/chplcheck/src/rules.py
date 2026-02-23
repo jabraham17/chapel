@@ -1146,6 +1146,11 @@ def rules(driver: LintDriver):
                     or intent.init_expression() is not None
                 ):
                     continue
+            if intent.name() == "this":
+                # skip 'this' task intents, they may be used implicitly
+                # TODO: in the future, the resolver may be able to check if
+                # 'this' is actually used implicitly and we can remove this exception
+                continue
             intents[intent.unique_id()] = intent
 
         for use, _ in chapel.each_matching(root, Identifier):
