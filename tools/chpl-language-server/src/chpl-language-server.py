@@ -427,10 +427,12 @@ class ChapelLanguageServer(LanguageServer):
         if not param:
             return []
 
+        val = str(param)
+        val = val.replace("\n", "\\n").replace("\t", "\\t").replace("\r", "\\r")
         return [
             InlayHint(
                 position=decl.rng.end,
-                label="param value is " + str(param),
+                label="param value is " + val,
                 padding_left=True,
             )
         ]
