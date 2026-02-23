@@ -66,6 +66,9 @@ class Test:
             good_file = None
         return cls(source_file, good_file=good_file)
 
+    def _test_dir(self) -> Path:
+        return self.source_file.absolute().parent
+
     def _compute_env(self) -> Dict[str, str]:
         testenv = {}
 
@@ -80,7 +83,7 @@ class Test:
                     env[var.strip()] = val.strip()
             return env
 
-        EXECENV = self.source_file.parent / "EXECENV"
+        EXECENV = self._test_dir() / "EXECENV"
         if EXECENV.exists():
             globalExecenv = sub_test_util.ReadFileWithComments(str(EXECENV))
             testenv.update(parse_env(globalExecenv))
@@ -92,13 +95,13 @@ class Test:
         return sub_test_util.get_process_env(testenv)
 
     def _compute_working_dir(self) -> Optional[Path]:
-        MASONTEST_DIR = self.source_file.parent / "MASONTEST_DIR"
+        MASONTEST_DIR = self._test_dir() / "MASONTEST_DIR"
         if MASONTEST_DIR.exists():
             with open(MASONTEST_DIR, "r") as f:
                 path = Path(f.read().strip())
                 # if its not absolute, make it relative to the test file
                 if not path.is_absolute():
-                    path = self.source_file.parent / path
+                    path = self._test_dir() / path
                 return path
         return None
 
@@ -119,12 +122,13 @@ class Test:
             cmd = ["bash", "-exo", "pipefail"] + cmd
         sys.stdout.write("[Executing program: {}]\n".format(" ".join(cmd)))
         sys.stdout.flush()
+        env = self._compute_env()
         with cd(self._compute_working_dir()):
             retcode, stdout, _ = sub_test_util.run_process(
                 cmd,
                 stdout=sp.PIPE,
                 stderr=sp.STDOUT,
-                env=self._compute_env(),
+                env=env,
             )
         executable_fp.write(stdout)
         executable_fp.close()
@@ -132,7 +136,7 @@ class Test:
         return retcode, executable_output
 
     def _run_prediff(self, output_file: Path):
-        PREDIFF = self.source_file.parent / "PREDIFF"
+        PREDIFF = self._test_dir() / "PREDIFF"
         if PREDIFF.exists():
             sys.stdout.write("[Executing ./PREDIFF]\n")
             sys.stdout.flush()
