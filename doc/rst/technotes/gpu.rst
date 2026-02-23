@@ -173,7 +173,9 @@ The following are further requirements for GPU support:
     use that LLVM. Note that ROCm 5.x is not actively tested and we recommend
     using ROCm 6.x.
 
-  * For ROCm 6.x, only ``CHPL_LLVM=bundled`` is supported. Only with ROCm 6.3 and above, ``CHPL_LLVM=system`` can be used as long as it is at least LLVM 21+.
+  * For ROCm 6.x, only ``CHPL_LLVM=bundled`` is supported. Only with ROCm 6.3
+    and above, ``CHPL_LLVM=system`` can be used as long as it is at least
+    LLVM 21+.
 
   * For ROCm 7.x, only LLVM 21+ is supported.
 
