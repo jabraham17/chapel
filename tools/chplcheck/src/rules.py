@@ -1094,6 +1094,21 @@ def rules(driver: LintDriver):
             if isinstance(parent, FunctionSignature):
                 continue
 
+            # skip the writer/serializer formals for serialize and
+            # the reader/deserializer formals for deserialize since a valid
+            # serialize/deserialize may not reference them
+            if isinstance(parent, Function):
+                if parent.name() == "serialize" and formal.name() in (
+                    "writer",
+                    "serializer",
+                ):
+                    continue
+                if parent.name() == "deserialize" and formal.name() in (
+                    "reader",
+                    "deserializer",
+                ):
+                    continue
+
             formals[formal.unique_id()] = formal
 
         for use, _ in chapel.each_matching(root, Identifier):
