@@ -1370,6 +1370,8 @@ def rules(driver: LintDriver):
         def find_anchor(node: Optional[AstNode]) -> Optional[AstNode]:
             # only loops and NamedDecls can be anchors for indentation
             anchor = node if isinstance(node, (Loop, NamedDecl)) else None
+            if isinstance(node, Module) and node.kind() == "implicit":
+                anchor = None
             return anchor
 
         # If root is something else (e.g., function call), do not
