@@ -435,7 +435,6 @@ class ChapelLanguageServer(LanguageServer):
                 if ty_decl.name() == "_bytes":
                     val = "b" + val
 
-
         return [
             InlayHint(
                 position=decl.rng.end,
