@@ -290,13 +290,15 @@ private proc runExampleBinary(projectHome: string, exampleName: string,
            if release then "release" else "debug",
            " ".join(command.these()));
 
-  const exampleResult = runWithStatus(command.toArray());
-  if exampleResult != 0 {
+  if !isFile(executable) {
     throw new MasonError(
       "Example has not been compiled: " + exampleName + ".chpl\n" +
       "Try running: mason build --example " + exampleName + ".chpl\n" +
       "         or: mason run --example " + exampleName + ".chpl --build");
   }
+
+  // TODO: do we need to expose the error code in some way?
+  const exampleResult = runWithStatus(command.toArray());
 }
 
 private proc getExamples(toml: Toml, projectHome: string) {

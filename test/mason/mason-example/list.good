@@ -6,4 +6,5 @@
  --- nomodule.chpl
  --- examplesubdir/subdirExample.chpl
  --- withOpts.chpl
+ --- badExit.chpl
 --------------------------
