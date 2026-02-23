@@ -1,7 +1,6 @@
 + mason clean
 + mason build --example
 Updating registry
-Downloading dependency: _MasonTest1-0.2.0
 compiled depExample.chpl successfully
 compiled example.chpl successfully
 compiled nomodule.chpl successfully
