@@ -54,10 +54,6 @@ proc masonBuild(args: [] string) throws {
   parser.parseArgs(args);
   log.debugln("Arguments parsed");
 
-  if passArgs.hasValue() && exampleOpts._present {
-    throw new owned MasonError("Examples do not support `--` syntax");
-  }
-
   const projectType = getProjectType();
   if projectType == "light" then
     throw new MasonError("Mason light projects do not " +
@@ -82,9 +78,10 @@ proc masonBuild(args: [] string) throws {
   log.debugf("Is example? %s\n", example);
   if example {
     var examples = new list(exampleOpts.values());
+    var extraCompopts = new list(passArgs.values());
     runExamples(show=show, run=false, build=true, release=release,
                 skipUpdate=skipUpdate, force=force,
-                examplesRequested=examples);
+                examplesRequested=examples, extraCompopts=extraCompopts);
   } else {
     if passArgs.hasValue() {
       for val in passArgs.values() do compopts.pushBack(val);

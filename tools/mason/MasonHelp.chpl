@@ -214,19 +214,18 @@ proc masonRunHelp() {
   Options:
       -h, --help                   Display this message
           --build                  Compile before running binary
+          --release                Run the release version of the binary
           --show                   Increase verbosity
           --example <example>      Run an example
 
   When --example is thrown without an example, all available examples
   will be listed
 
-  When no options are provided, the following will take place:
-     - Execute binary from mason project if target/ is present
-     - If no target directory, build and run if Mason.toml is present
-
   Runtime arguments can be included after mason arguments.
-  To ensure that runtime arguments and mason arguments do not conflict, separate
-  them with a double dash(`--`). For example
+  You must separate runtime arguments and mason arguments with a
+  double dash (`--`). All arguments after the double dash are passed
+  directly to the executable.
+  For example
      mason run --build -- --runtimeArg=true
   """.dedent().strip();
   writeln(s);
@@ -249,13 +248,14 @@ proc masonBuildHelp() {
           --[no-]update            [Do not] update the mason registry before
                                    building
 
-  When --example is thrown without an example, all examples will be built
-  When no options are provided, the following will take place:
-     - Build from mason project if Mason.lock present
+  When --example is thrown without an example, all available examples
+  will be built
 
   Compilation flags and arguments can be included after mason arguments.
-  To ensure compilation flags and mason arguments to not conflict, separate them
-  with a double dash(`--`). For example
+  You must separate compilation flags and mason arguments with a
+  double dash (`--`). All arguments after the double dash are passed
+  directly to the compiler.
+  For example
      mason build --force -- --savec tmpdir
   """.dedent().strip();
   writeln(s);
