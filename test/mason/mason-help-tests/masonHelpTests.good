@@ -83,9 +83,8 @@ Options:
         --[no-]update            [Do not] update the mason registry before
                                  building
 
-When --example is thrown without an example, all examples will be built
-When no options are provided, the following will take place:
-   - Build from mason project if Mason.lock present
+When --example is thrown without an example, all available examples
+will be built
 
 Compilation flags and arguments can be included after mason arguments.
 You must separate compilation flags and mason arguments with a
@@ -108,10 +107,6 @@ Options:
 
 When --example is thrown without an example, all available examples
 will be listed
-
-When no options are provided, the following will take place:
-   - Execute binary from mason project if target/ is present
-   - If no target directory, build and run if Mason.toml is present
 
 Runtime arguments can be included after mason arguments.
 You must separate runtime arguments and mason arguments do not conflict
