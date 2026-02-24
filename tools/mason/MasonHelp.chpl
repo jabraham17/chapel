@@ -222,9 +222,10 @@ proc masonRunHelp() {
   will be listed
 
   Runtime arguments can be included after mason arguments.
-  You must separate runtime arguments and mason arguments do not conflict
-  with a double dash(`--`). All arguments after the double dash are passed
-  directly to the executable. For example
+  You must separate runtime arguments and mason arguments with a
+  double dash (`--`). All arguments after the double dash are passed
+  directly to the executable.
+  For example
      mason run --build -- --runtimeArg=true
   """.dedent().strip();
   writeln(s);
@@ -252,8 +253,9 @@ proc masonBuildHelp() {
 
   Compilation flags and arguments can be included after mason arguments.
   You must separate compilation flags and mason arguments with a
-  double dash(`--`). All arguments after the double dash are passed directly to
-  the compiler. For example
+  double dash (`--`). All arguments after the double dash are passed
+  directly to the compiler.
+  For example
      mason build --force -- --savec tmpdir
   """.dedent().strip();
   writeln(s);
