@@ -38,7 +38,9 @@ private var log = new MasonLogger.logger("mason example");
 
 proc runExamples(show: bool, run: bool, build: bool, release: bool,
                  skipUpdate: bool, force: bool,
-                 examplesRequested: list(string)) throws {
+                 examplesRequested: list(string),
+                 extraCompopts = new list(string),
+                 extraExecopts = new list(string)) throws {
   updateLock(skipUpdate);
 
   const cwd = here.cwd();
@@ -69,11 +71,13 @@ proc runExamples(show: bool, run: bool, build: bool, release: bool,
       const optsFromToml = buildInfo.perExampleOptions[exampleName];
       var exampleCompopts = optsFromToml.compopts;
       var exampleExecopts = optsFromToml.execopts;
+      exampleExecopts.pushBack(extraExecopts);
 
       if release then exampleCompopts.pushBack("--fast");
 
       if build {
-        if force || exampleModified(projectHome, projectName, example) {
+        if force || exampleModified(projectHome, projectName,
+                                    example, extraCompopts) {
 
           // remove old binary
           removeExampleBinary(projectHome, exampleName);
@@ -88,10 +92,10 @@ proc runExamples(show: bool, run: bool, build: bool, release: bool,
           var compCommand = new list(string);
           compCommand.pushBack(["chpl", examplePath, buildInfo.projectPath,
                                 "-o", outputName]);
-          // TODO: prereqs go here, or maybe in getBuildInfo?
           compCommand.pushBack(buildInfo.compopts);
           compCommand.pushBack(masonCompopts);
           compCommand.pushBack(exampleCompopts);
+          compCommand.pushBack(extraCompopts);
           if show then writeln(" ".join(compCommand.these()));
           const compilation = runWithStatus(compCommand.toArray());
 
@@ -212,7 +216,6 @@ private proc getExampleOptions(
   toml: Toml,
   exampleNames: list(string)
 ): map(string, chplOptions) throws {
-  // TODO: handle compopts and execopts as either a list or string
   var exampleOptions = new map(string, chplOptions);
   for example in exampleNames {
     const exampleName = basename(stripExt(example, ".chpl"));
@@ -361,8 +364,10 @@ proc printAvailableExamples() {
 }
 
 // Checks to see if an example, source code, or Mason.toml has been modified
-proc exampleModified(projectHome: string, projectName: string,
-                             exampleName: string) {
+proc exampleModified(projectHome: string,
+                     projectName: string,
+                     exampleName: string,
+                     commandLineCompopts: list(string)) {
   const example = basename(stripExt(exampleName, ".chpl"));
   const exampleBinPath = joinPath(projectHome, "target/example", example);
   const examplePath = joinPath(projectHome, "example");
@@ -371,7 +376,8 @@ proc exampleModified(projectHome: string, projectName: string,
   const fingerprintDir =
     joinPath(projectHome, "target", "example", ".fingerprint");
   const fingerprintChanged =
-    !checkFingerprint(projectName, fingerprintDir, computeFingerprint());
+    !checkFingerprint(projectName, fingerprintDir,
+                      computeFingerprint(commandLineCompopts));
   if projectModified(projectHome, example, "example") || fingerprintChanged {
       return true;
   } else {

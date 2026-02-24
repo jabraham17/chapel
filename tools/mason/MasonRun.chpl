@@ -59,10 +59,6 @@ proc masonRun(args: [] string) throws {
     throw new MasonError(
       "Only mason applications can be run, but this is a Mason " + projectType);
 
-  if exampleOpts._present && passArgs.hasValue() {
-    throw new MasonError("Examples do not support `--` syntax");
-  }
-
   // don't specify build flags unless we are actually building
   if !buildFlag.valueAsBool() {
     if forceFlag._present then
@@ -185,9 +181,10 @@ private proc masonBuildRun(args: [] string) throws {
 
   if example {
     var examples = new list(exampleOpts.values());
+    var extraExecopts = new list(passArgs.values());
     runExamples(show=show, run=true, build=buildExample, release=release,
                 skipUpdate=skipUpdate, force=force,
-                examplesRequested=examples);
+                examplesRequested=examples, extraExecopts=extraExecopts);
   } else {
     var buildArgs: list(string);
     buildArgs.pushBack("build");
