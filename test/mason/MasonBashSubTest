@@ -252,18 +252,21 @@ def main():
 
     d = Path(os.path.dirname(os.path.abspath(__file__)))
 
+    skip = False
     if dirSkipIf(d):
-        return
+        skip = True
 
     if not mason().exists():
         sys.stdout.write("[Skipping test based on missing mason]\n")
+        skip = True
 
-    if onetest := os.environ.get("CHPL_ONETEST"):
-        if t := Test.test_factory(Path(onetest)):
-            t.test()
-    else:
-        for t in Test.find_tests(d):
-            t.test()
+    if not skip:
+        if onetest := os.environ.get("CHPL_ONETEST"):
+            if t := Test.test_factory(Path(onetest)):
+                t.test()
+        else:
+            for t in Test.find_tests(d):
+                t.test()
 
     sys.stdout.write("[Finished subtest {}]\n".format(d))
 
