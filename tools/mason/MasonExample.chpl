@@ -40,7 +40,8 @@ proc runExamples(show: bool, run: bool, build: bool, release: bool,
                  skipUpdate: bool, force: bool,
                  examplesRequested: list(string),
                  extraCompopts = new list(string),
-                 extraExecopts = new list(string)) throws {
+                 extraExecopts = new list(string),
+                 nLocales: int) throws {
   updateLock(skipUpdate);
 
   const cwd = here.cwd();
@@ -106,7 +107,7 @@ proc runExamples(show: bool, run: bool, build: bool, release: bool,
               writeln("compiled ", example, " successfully");
             if run then
               runExampleBinary(projectHome, exampleName,
-                                release, show, exampleExecopts);
+                                release, show, exampleExecopts, nLocales);
           }
         } else {
           // build is skipped but examples still need to be run
@@ -114,12 +115,12 @@ proc runExamples(show: bool, run: bool, build: bool, release: bool,
                   ": no changes made to project or example");
           if run then
             runExampleBinary(projectHome, exampleName,
-                              release, show, exampleExecopts);
+                              release, show, exampleExecopts, nLocales);
         }
       } else {
         // just running the example
         runExampleBinary(projectHome, exampleName,
-                          release, show, exampleExecopts);
+                          release, show, exampleExecopts, nLocales);
       }
     }
   } else {
@@ -283,10 +284,11 @@ private proc determineExamples(exampleNames: list(string),
 
 private proc runExampleBinary(projectHome: string, exampleName: string,
                               release: bool, show: bool,
-                              execopts: list(string)) throws {
+                              execopts: list(string), nLocales: int) throws {
   const executable = joinPath(projectHome, "target", "example", exampleName);
   var command: list(string);
   command.pushBack(executable);
+  command.pushBack("-nl" + nLocales:string);
   command.pushBack(execopts);
   if show then
     writef("Executing [%s] target: %s\n",

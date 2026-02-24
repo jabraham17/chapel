@@ -107,25 +107,23 @@ proc masonTest(args: [] string) throws {
   if otherArgs.hasValue() {
     var flagInArgs = false;
     for arg in otherArgs.values() {
-      try! {
-        // try to get option values meant for compilation
-        if flagInArgs && !arg.startsWith('-') {
-          compopts.pushBack(arg);
-          flagInArgs=false;
-        } else if isFile(arg) && arg.endsWith(".chpl") {
-          // assume this is an individual test file
+      // try to get option values meant for compilation
+      if flagInArgs && !arg.startsWith('-') {
+        compopts.pushBack(arg);
+        flagInArgs=false;
+      } else if isFile(arg) && arg.endsWith(".chpl") {
+        // assume this is an individual test file
 
-          files.pushBack(arg);
-        } else if isDir(arg) {
-          // assume this is a test directory
-          dirs.pushBack(arg);
-        } else if arg.startsWith('-') {
-          // assume a flag for compiler
-          compopts.pushBack(arg);
-          flagInArgs=true;
-        } else {
-          searchSubStrings.pushBack(arg);
-        }
+        files.pushBack(arg);
+      } else if isDir(arg) {
+        // assume this is a test directory
+        dirs.pushBack(arg);
+      } else if arg.startsWith('-') {
+        // assume a flag for compiler
+        compopts.pushBack(arg);
+        flagInArgs=true;
+      } else {
+        searchSubStrings.pushBack(arg);
       }
     }
   }
@@ -513,12 +511,14 @@ proc getRuntimeComm() throws {
     if comm != "none" {
       comm = setComm;
     } else {
-      if setComm == "none" then comm = setComm;
+      if setComm == "none" then
+        comm = setComm;
       else {
-        writeln("Trying to execute in a multiLocale environment when ",
-        "communication mechanism is `none`.");
-        writeln("Try changing the communication mechanism");
-        exit(2);
+        throw new MasonError(
+          "Trying to execute in a multiLocale environment when " +
+          "communication mechanism is `none`.\n"+
+          "Try changing the communication mechanism"
+        );
       }
     }
   }
