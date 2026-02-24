@@ -82,12 +82,12 @@ proc masonRun(args: [] string) throws {
     // --example with value or build flag
     masonBuildRun(args);
   } else {
-    runProjectBinary(show, release, execopts);
+    runProjectBinary(show, release, execopts, nLocales=1);
   }
 }
 
 proc runProjectBinary(show: bool, release: bool,
-                      execopts: list(string)) throws {
+                      execopts: list(string), nLocales: int) throws {
 
   const cwd = here.cwd();
   const projectHome = getProjectHome(cwd);
@@ -100,36 +100,32 @@ proc runProjectBinary(show: bool, release: bool,
     var execs = ' '.join(execopts.these());
 
     // decide which binary(release or debug) to run
-    var command: string;
-    if release {
-      if isDir(joinPath(projectHome, 'target/release')) {
-        command = joinPath(projectHome, "target/release", project);
-      }
-    } else {
-      command = joinPath(projectHome, "target/debug", project);
-    }
+    var command: list(string);
+    const subdir = if release then "release" else "debug";
+    const executable: string = joinPath(projectHome, "target", subdir, project);
+    command.pushBack(executable);
+    command.pushBack("-nl" + nLocales:string);
+    command.pushBack(execopts);
+
 
     var built = false;
-    if isFile(command) then built = true;
+    if isFile(executable) then built = true;
 
-    // add execopts
-    command += " " + execs;
-
-    if show {
-      if release then writeln("Executing [release] target: " + command);
-      else writeln("Executing [debug] target: " + command);
-    }
+    if show then
+      writef("Executing [%s] target: %s\n",
+            if release then "release" else "debug",
+            " ".join(command.these()));
 
     // Build if not built, throwing error if Mason.toml doesnt exist
     if isFile(joinPath(projectHome, "Mason.lock")) && built {
-      const output = runCommand(command, quiet=true);
-      write(output);
+      // TODO: do we need to expose the error code in some way?
+      const runResult = runWithStatus(command.toArray());
     } else if isFile(joinPath(projectHome, "Mason.toml")) {
       const msg = "Mason could not find your Mason.lock.\n";
       const help = "To build and run your project use: mason run --build";
-      throw new owned MasonError(msg + help);
+      throw new MasonError(msg + help);
     } else {
-      throw new owned MasonError("Mason could not find your Mason.toml file");
+      throw new MasonError("Mason could not find your Mason.toml file");
     }
 
     // Close memory
@@ -184,7 +180,8 @@ private proc masonBuildRun(args: [] string) throws {
     var extraExecopts = new list(passArgs.values());
     runExamples(show=show, run=true, build=buildExample, release=release,
                 skipUpdate=skipUpdate, force=force,
-                examplesRequested=examples, extraExecopts=extraExecopts);
+                examplesRequested=examples,
+                extraExecopts=extraExecopts, nLocales=1);
   } else {
     var buildArgs: list(string);
     buildArgs.pushBack("build");
@@ -195,6 +192,6 @@ private proc masonBuildRun(args: [] string) throws {
     if show then buildArgs.pushBack("--show");
     masonBuild(buildArgs.toArray());
     for val in passArgs.values() do execopts.pushBack(val);
-    runProjectBinary(show, release, execopts);
+    runProjectBinary(show, release, execopts, nLocales=1);
   }
 }
