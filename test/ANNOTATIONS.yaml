@@ -2442,6 +2442,10 @@ compilerAndTestingStats: &compiler-perf-base
     - System software change
   11/19/25:
     - Fixed regression due to isDefAndOrUse change (#28082)
+  01/09/26:
+    - Fix uniquifyName failure when compiling with debug flag (#28258)
+  01/13/26:
+    - Revert uniquifyName bug fix (#28297)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2680,6 +2684,13 @@ arkouda: &arkouda-base
     - Resolves Issue 4810, cumSum and cumProd performance (Bears-R-Us/arkouda#4819)
   12/01/25:
     - Fix CSV Parsing of Quoted Fields, Escaped Quotes, Embedded Delimiters, and Multi-Line Records (Bears-R-Us/arkouda#5080)
+  01/13/26:
+    - text: Possible regression in array transfer performance due to bigint perf tweaks (?) (Bears-R-Us/arkouda#5151)
+      config: chapcs
+  02/10/26:
+    - Add runtime warning on divide-by-zero (Bears-R-Us/arkouda#5315)
+  02/19/26:
+    - Fix performance regressions from divide-by-zero check (Bears-R-Us/arkouda#5416)
 
 arkouda-string:
   <<: *arkouda-base
