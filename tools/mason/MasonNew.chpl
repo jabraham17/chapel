@@ -95,22 +95,6 @@ proc masonNew(args: [] string) throws {
               license, packageType);
 }
 
-/* Exit terminal when CTRL + D is pressed */
-proc exitOnEOF(parameter) {
-  if parameter == '' {
-    writeln();
-    exit(1);
-  }
-}
-
-/* Previews the Mason.toml file that is going to be created */
-proc previewMasonFile(packageName, version, chapelVersion, license) {
-  // TODO: update hardcode
-  const baseToml = getBaseTomlString(packageName, version, chapelVersion,
-                                     license, "application");
-  writeln();
-  writeln(baseToml);
-}
 
 // TODO: this function is completely unused - remove or use it?
 /* Perform validation checks on Chapel Version */
