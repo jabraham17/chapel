@@ -52,7 +52,7 @@ public:
   static CatchStmt* build(const char* name, BlockStmt* body);
   static CatchStmt* build(BlockStmt* body);
 
-   CatchStmt(const char* name, Expr* type, BlockStmt* body, bool createdErr = false);
+   CatchStmt(const char* name, Expr* type, BlockStmt* body, bool createdErr = false, bool wasCatchall = false);
   ~CatchStmt() override = default;
 
   const char* name() const;
@@ -66,6 +66,7 @@ public:
   BlockStmt*  body() const;
   BlockStmt*  bodyWithoutTest() const;
 
+  bool        computeIsCatchall();
   bool        isCatchall() const;
 
   void                accept(AstVisitor* visitor) override;
@@ -85,6 +86,7 @@ public:
   Expr*       _type;
   BlockStmt*  _body;
   bool  _createdErr;
+  bool  _wasCatchall;
 
 private:
   CatchStmt();

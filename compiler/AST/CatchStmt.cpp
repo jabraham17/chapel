@@ -46,13 +46,14 @@ CatchStmt* CatchStmt::build(BlockStmt* body) {
   return new CatchStmt(NULL, NULL, body);
 }
 
-CatchStmt::CatchStmt(const char* name, Expr* type, BlockStmt* body, bool createdErr)
+CatchStmt::CatchStmt(const char* name, Expr* type, BlockStmt* body, bool createdErr, bool wasCatchall)
   : Stmt(E_CatchStmt) {
 
   _name = name ? astr(name) : NULL;
   _type = type;
   _body = body;
   _createdErr = createdErr;
+  _wasCatchall = wasCatchall;
 
   gCatchStmts.add(this);
 }
@@ -101,22 +102,26 @@ BlockStmt* CatchStmt::bodyWithoutTest() const {
   }
 }
 
-bool CatchStmt::isCatchall() const {
+bool CatchStmt::computeIsCatchall() {
   if (_name == NULL)
-    return true;
+    return (this->_wasCatchall = true);
 
   if (_type == NULL)
-    return true;
+    return (this->_wasCatchall = true);
 
   if (SymExpr* typeSe = toSymExpr(type()))
     if (canonicalClassType(typeSe->symbol()->type) == dtError)
-      return true;
+      return (this->_wasCatchall = true);
 
   if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(type()))
     if (urse->unresolved == dtError->symbol->name)
-      return true;
+      return (this->_wasCatchall = true);
 
-  return false;
+  return (this->_wasCatchall = false);
+}
+
+bool CatchStmt::isCatchall() const {
+  return _wasCatchall;
 }
 
 void CatchStmt::accept(AstVisitor* visitor) {
@@ -129,7 +134,7 @@ void CatchStmt::accept(AstVisitor* visitor) {
 }
 
 CatchStmt* CatchStmt::copyInner(SymbolMap* map) {
-  return new CatchStmt(_name, COPY_INT(_type), COPY_INT(_body), _createdErr);
+  return new CatchStmt(_name, COPY_INT(_type), COPY_INT(_body), _createdErr, _wasCatchall);
 }
 
 void CatchStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
@@ -219,7 +224,7 @@ void CatchStmt::cleanup()
   createErrSym();
 
   // Check isCatchall before setting _name or _type
-  bool catchall = isCatchall();
+  bool catchall = computeIsCatchall();
   // Below, we will transform even catchall block so that the error will
   // be freed appropriately.
 
