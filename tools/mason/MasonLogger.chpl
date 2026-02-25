@@ -28,23 +28,24 @@ module MasonLogger {
   // values mean lower verbosity.
   enum logLevel { no, error, warn, info, debug }
 
-  var logs = getDefaultLogs();
+  private var logs = getDefaultLogs();
 
   private proc getDefaultLogs() {
+    var ll = logLevel.info;
+
     import OS, OS.POSIX;
-    const envChar = OS.POSIX.getenv("MASON_QUIET");
-    if envChar == nil {
-      // this is in lieu of proper mason log level control
-      // https://github.com/chapel-lang/chapel/issues/28163
-      const logLevelChar = OS.POSIX.getenv("MASON_LOG_LEVEL");
+    // this is in lieu of proper mason log level control
+    // https://github.com/chapel-lang/chapel/issues/28163
+    const logLevelChar = OS.POSIX.getenv("MASON_LOG_LEVEL");
+    if logLevelChar != nil {
       try {
-        const ll = string.createCopyingBuffer(logLevelChar).toLower():logLevel;
-        return ll;
+        const s = string.createCopyingBuffer(logLevelChar).toLower();
+        ll = if s == "none" then logLevel.no else s:logLevel;
       } catch {
-        return logLevel.info;
+        // do nothing
       }
-    } else
-      return logLevel.no;
+    }
+    return ll;
   }
 
   private proc doDebug do return logs>=logLevel.debug;
