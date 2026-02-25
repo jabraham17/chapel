@@ -1,0 +1,22 @@
+
+# use a clean env
+export PKG_CONFIG_LIBDIR=''
+export PKG_CONFIG_PATH=$PWD/myPackages
+
+test() {
+  echo "Testing $@"
+  mason system search $@
+
+  mason system search package $@
+  mason system search myWeirdPackage $@
+  mason system search simple $@
+
+  mason system search 'another|weird' $@
+  echo "==============="
+}
+
+
+test
+test --no-show-desc
+test --desc
+test --no-show-desc --desc

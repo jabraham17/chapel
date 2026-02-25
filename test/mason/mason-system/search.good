@@ -1,0 +1,96 @@
++ export PKG_CONFIG_LIBDIR=
++ PKG_CONFIG_LIBDIR=
++ export PKG_CONFIG_PATH=/Users/jade/Development/chapel-lang/chapel/test/mason/mason-system/myPackages
++ PKG_CONFIG_PATH=/Users/jade/Development/chapel-lang/chapel/test/mason/mason-system/myPackages
++ test
++ echo 'Testing '
+Testing 
++ mason system search
+forGoodMeasure                 forGoodMeasure - One more package that helps test mason
+anotherPackage                 anotherPackage - Another simple package with no real information
+myWeirdPackage                 myWeirdPackage - My weird package which abuses pkg-config to pass Chapel flags
+myOtherPackage                 myOtherPackage - My weird package which abuses pkg-config to pass Chapel flags
+dummy                          dummy - A dummy package to support testing mason
++ mason system search package
+anotherPackage                 anotherPackage - Another simple package with no real information
+myWeirdPackage                 myWeirdPackage - My weird package which abuses pkg-config to pass Chapel flags
+myOtherPackage                 myOtherPackage - My weird package which abuses pkg-config to pass Chapel flags
++ mason system search myWeirdPackage
+myWeirdPackage                 myWeirdPackage - My weird package which abuses pkg-config to pass Chapel flags
++ mason system search simple
++ mason system search 'another|weird'
+anotherPackage                 anotherPackage - Another simple package with no real information
+myWeirdPackage                 myWeirdPackage - My weird package which abuses pkg-config to pass Chapel flags
++ echo ===============
+===============
++ test --no-show-desc
++ echo 'Testing --no-show-desc'
+Testing --no-show-desc
++ mason system search --no-show-desc
+forGoodMeasure
+anotherPackage
+myWeirdPackage
+myOtherPackage
+dummy
++ mason system search package --no-show-desc
+anotherPackage
+myWeirdPackage
+myOtherPackage
++ mason system search myWeirdPackage --no-show-desc
+myWeirdPackage
++ mason system search simple --no-show-desc
++ mason system search 'another|weird' --no-show-desc
+anotherPackage
+myWeirdPackage
++ echo ===============
+===============
++ test --desc
++ echo 'Testing --desc'
+Testing --desc
++ mason system search --desc
+forGoodMeasure                 forGoodMeasure - One more package that helps test mason
+anotherPackage                 anotherPackage - Another simple package with no real information
+myWeirdPackage                 myWeirdPackage - My weird package which abuses pkg-config to pass Chapel flags
+myOtherPackage                 myOtherPackage - My weird package which abuses pkg-config to pass Chapel flags
+dummy                          dummy - A dummy package to support testing mason
++ mason system search package --desc
+forGoodMeasure                 forGoodMeasure - One more package that helps test mason
+anotherPackage                 anotherPackage - Another simple package with no real information
+myWeirdPackage                 myWeirdPackage - My weird package which abuses pkg-config to pass Chapel flags
+myOtherPackage                 myOtherPackage - My weird package which abuses pkg-config to pass Chapel flags
+dummy                          dummy - A dummy package to support testing mason
++ mason system search myWeirdPackage --desc
+myWeirdPackage                 myWeirdPackage - My weird package which abuses pkg-config to pass Chapel flags
++ mason system search simple --desc
+anotherPackage                 anotherPackage - Another simple package with no real information
++ mason system search 'another|weird' --desc
+anotherPackage                 anotherPackage - Another simple package with no real information
+myWeirdPackage                 myWeirdPackage - My weird package which abuses pkg-config to pass Chapel flags
+myOtherPackage                 myOtherPackage - My weird package which abuses pkg-config to pass Chapel flags
++ echo ===============
+===============
++ test --no-show-desc --desc
++ echo 'Testing --no-show-desc' --desc
+Testing --no-show-desc --desc
++ mason system search --no-show-desc --desc
+forGoodMeasure
+anotherPackage
+myWeirdPackage
+myOtherPackage
+dummy
++ mason system search package --no-show-desc --desc
+forGoodMeasure
+anotherPackage
+myWeirdPackage
+myOtherPackage
+dummy
++ mason system search myWeirdPackage --no-show-desc --desc
+myWeirdPackage
++ mason system search simple --no-show-desc --desc
+anotherPackage
++ mason system search 'another|weird' --no-show-desc --desc
+anotherPackage
+myWeirdPackage
+myOtherPackage
++ echo ===============
+===============
