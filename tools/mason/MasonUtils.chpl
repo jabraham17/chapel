@@ -100,18 +100,25 @@ proc stripExt(toStrip: string, ext: string) : string {
 
 
 /* Uses the Subprocess module to create a subprocess */
-proc runCommand(cmd: [] string, quiet=false) : string throws {
-  var ret : string;
+proc runCommand(cmd: [] string, quiet=false,
+                type retType=string): retType throws {
+  if retType != string && !isSubtype(retType, list(string)) {
+    compilerError("Improper usage of runCommand");
+  }
+  var ret: retType;
   try {
     log.debugf("runCommand: %?\n", cmd);
     var process = spawn(cmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
-
     log.debugln("stdout:");
     // use .lines() to avoid https://github.com/chapel-lang/chapel/issues/28211
-    for line in process.stdout.lines() {
-      ret += line;
-      if quiet then log.debug(line); else log.info(line);
+    for line in process.stdout.lines(stripNewline=true) {
+      if retType == string then
+        ret += line + "\n";
+      else
+        ret.pushBack(line);
+
+      if quiet then log.debugln(line); else log.infoln(line);
     }
     log.debugln("end stdout");
 
@@ -143,7 +150,7 @@ proc runCommand(cmd: [] string, quiet=false) : string throws {
 proc runCommand(cmd: string, quiet=false) : string throws {
   // temporary is a workaround for #27504
   const cmds = cmd.split();
-  return runCommand(cmds, quiet=quiet);
+  return runCommand(cmds, quiet=quiet, retType=string);
 }
 
 /* Same as runCommand but for situations where an
@@ -937,7 +944,8 @@ proc parseCompilerOptions(toml: Toml): list(string) throws {
   }
 
   if toml.tomlType == "string" {
-    res.pushBack(toml.s.split(" "));
+    if toml.s != "" then
+      res.pushBack(toml.s.split(" "));
   } else {
     for f in toml.arr {
       res.pushBack(f!.s);
