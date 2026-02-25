@@ -892,7 +892,8 @@ proc initProject(dirName, packageName, vcs, show,
       gitInit(dirName, show);
       addGitIgnore(dirName);
     } else {
-      mkdir(dirName);
+      if !isDir(dirName) then
+        mkdir(dirName);
     }
     // Confirm git init before creating files
     if isDir(dirName) {

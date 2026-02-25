@@ -93,11 +93,10 @@ proc masonInit(args: [] string) throws {
     validatePackageName(dirName=name);
   }
 
-  if dirName != '' then
-    if !isDir(path) then
-      throw new  MasonError("Directory does not exist: " + path +
-                            " Did you mean 'mason new' to create a " +
-                            "new project from scratch?");
+  if dirName != '' && !isDir(path) then
+    throw new  MasonError("Directory does not exist: " + path +
+                          " Did you mean 'mason new' to create a " +
+                          "new project from scratch?");
 
   // If TOML file exists, send message that package is already
   // initialized and give some info on what they might want to
