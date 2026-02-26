@@ -2844,7 +2844,7 @@ static Expr* getCallTempInsertPoint(Expr* expr) {
     // Catch statements are not expected to have anything other than
     // catch statements as siblings, so we can put the call temp before
     // parent try.
-    if (auto tryStmt = toTryStmt(ctch->parentExpr))
+    if (isTryStmt(ctch->parentExpr))
       stmt = ctch->parentExpr;
   }
   return stmt;
