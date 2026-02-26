@@ -106,18 +106,18 @@ proc masonInit(args: [] string) throws {
       "Mason.toml already exists for current project. " +
       "Remove or rename the existing manifest file and rerun " +
       "`mason init` to initialize a new project.");
-  } else if isDir(joinPath(path, 'src')) {
+  } else if isDir(joinPath(path, 'src')) && !isLightweight {
     throw new MasonError(
       "/src/ directory already exists for current project. " +
       "Remove or rename the /src/ directory and rerun " +
       "`mason init` to initialize a new project. " +
-      "Alternatively, run `mason new --light` to add only a " +
+      "Alternatively, run `mason init --light` to add only a " +
       "manifest file.");
   } else {
     // We can create the /src/ dir and Mason.toml
     const pathStr = if dirName == '' then cwd else path;
     initProject(pathStr, name, vcs, show, version, chplVersion,
-                license, packageType);
+                license, packageType, false);
   }
   writeln("Tip: To convert existing code to a mason project, " +
           "move the driver application to the `src/" + name + ".chpl`" +

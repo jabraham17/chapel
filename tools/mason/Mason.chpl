@@ -107,7 +107,7 @@ module Mason {
       return 0;
     }
 
-    MasonLogger.setNoColor(noColorFlag.valueAsBool());
+    MasonLogger.setUseColorOutput(!noColorFlag.valueAsBool());
 
     var usedCmd:string;
     var cmdList:list(string);

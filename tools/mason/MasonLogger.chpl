@@ -53,9 +53,9 @@ module MasonLogger {
   private proc doWarn do return logs>=logLevel.warn;
   private proc doError do return logs>=logLevel.error;
 
-  private var noColor = false;
-  proc setNoColor(flag: bool) throws {
-    noColor = flag;
+  private var colorOutput = true;
+  proc setUseColorOutput(flag: bool) {
+    colorOutput = flag;
   }
 
   private var logWriter = IO.stdout;
@@ -121,7 +121,7 @@ module MasonLogger {
 
     proc addPrefix(f) {
       proc bold(s) {
-        if noColor then return s;
+        if !colorOutput then return s;
 
         param start = "\x1b[1m";
         param reset = "\x1b[0m";

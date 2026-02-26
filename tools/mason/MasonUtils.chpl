@@ -878,22 +878,43 @@ proc showToml(tomlFile : string) {
 */
 proc initProject(dirName, packageName, vcs, show,
                  version: string, chplVersion: string, license: string,
-                 packageType: string) throws {
+                 packageType: string, isNew: bool) throws {
   if packageType == "light" {
     const path = if dirName == "" then here.cwd() else dirName;
     const lightName = if packageName == ""
                         then basename(here.cwd())
                         else packageName;
-    mkdir(dirName);
+  
+    if isNew {
+      mkdir(dirName);
+    } else {
+      // only create the directory if it doesn't exist,
+      if !exists(dirName) then
+        mkdir(dirName);
+    }
     makeBasicToml(dirName=lightName, path=path, version, chplVersion,
                   license, packageType);
   } else {
     if vcs {
+      if !isNew {
+        if isDir(joinPath(dirName, ".git")) {
+          throw new MasonError("'" + dirName +
+                               "' is already a git repository. " +
+                               "Use `--no-vcs` to create a project " +
+                               "without initializing a git repository.");
+        }
+      }
+
       gitInit(dirName, show);
       addGitIgnore(dirName);
     } else {
-      if !isDir(dirName) then
+      if isNew {
         mkdir(dirName);
+      } else {
+        // only create the directory if it doesn't exist,
+        if !exists(dirName) then
+          mkdir(dirName);
+      }
     }
     // Confirm git init before creating files
     if isDir(dirName) {

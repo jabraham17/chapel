@@ -29,7 +29,9 @@ use MasonUpdate;
 use MasonUtils;
 use Path;
 use Subprocess;
+import MasonLogger;
 
+private var log = new MasonLogger.logger("mason new");
 
 /*
   Creates a new library project at a given directory
@@ -92,7 +94,7 @@ proc masonNew(args: [] string) throws {
     }
   }
   initProject(dirName, packageName, vcs, show, version, chplVersion,
-              license, packageType);
+              license, packageType, true);
 }
 
 
@@ -138,11 +140,17 @@ proc addGitIgnore(dirName: string) {
   target/
   Mason.lock
   doc/
-  """.dedent().strip() + "\n";
-  var gitIgnore = open(joinPath(dirName, ".gitignore"), ioMode.cw);
-  var GIwriter = gitIgnore.writer(locking=false);
-  GIwriter.write(toIgnore);
-  GIwriter.close();
+  """.dedent().strip();
+
+  const file = joinPath(dirName, ".gitignore");
+  if isFile(file) {
+    log.warnln(".gitignore already exists, " +
+               "skipping creation of .gitignore file");
+    return;
+  }
+
+  var writer = openWriter(file);
+  writer.writeln(toIgnore);
 }
 
 proc getBaseTomlString(packageName: string, version: string,
