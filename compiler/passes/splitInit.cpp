@@ -875,8 +875,9 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
       }
 
       if (regularReturn || errorReturn) {
-        if (cannotRecover) doElideCopies(map);
-        return { true, cannotRecover };
+        bool elide = !errorReturn || cannotRecover;
+        if (elide) doElideCopies(map);
+        return { true, elide };
       }
 
     // { ... }  (nested block)
