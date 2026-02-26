@@ -1024,8 +1024,9 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
             map[var] = state;
         }
       }
-      return { ifRet.elidedCopies && elseRet.elidedCopies,
-               ifRet.elidedCopies && elseRet.elidedCopies };
+      if (ifRet.returnedUnconditionally && elseRet.returnedUnconditionally) {
+        return { true, ifRet.elidedCopies && elseRet.elidedCopies };
+      }
     } else if (isFunctionOrTypeDeclaration(cur)) {
       // OK: mentions like `proc f() { ... x ... }` don't count
     } else {
