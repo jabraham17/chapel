@@ -263,6 +263,8 @@ proc masonBuildHelp() {
 
 proc masonNewHelp() {
   const s = """
+  Creates a new Mason project in a new directory with the given project name.
+
   Usage:
       mason new [options] <project name>
 

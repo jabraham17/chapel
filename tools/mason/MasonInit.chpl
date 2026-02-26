@@ -72,11 +72,6 @@ proc masonInit(args: [] string) throws {
 
   if nameOpt.hasValue() then packageName = nameOpt.value();
   if dirArg.hasValue() then dirName = dirArg.value();
-  if nameOpt.hasValue() {
-    packageName = nameOpt.value();
-  } else {
-    packageName = dirName;
-  }
   if isApplication then
     packageType = "application";
   else if isLibrary then
@@ -89,9 +84,9 @@ proc masonInit(args: [] string) throws {
   const path = if dirName == '' then '.' else dirName;
   if packageName.size > 0 then name = packageName;
 
-  if !isLightweight {
-    validatePackageName(dirName=name);
-  }
+  const badPkgErr = validatePackageName(dirName=name, cmdName="init");
+  if badPkgErr != "" then
+    throw new MasonError(badPkgErr);
 
   if dirName != '' && !isDir(path) then
     throw new  MasonError("Directory does not exist: " + path +
@@ -119,8 +114,9 @@ proc masonInit(args: [] string) throws {
     initProject(pathStr, name, vcs, show, version, chplVersion,
                 license, packageType, false);
   }
-  writeln("Tip: To convert existing code to a mason project, " +
-          "move the driver application to the `src/" + name + ".chpl`" +
-          " file. For adding other source code, using submodules is the " +
-          "recommended approach to avoid namespace collisions.");
+  if !isLightweight then
+    writeln("Tip: To convert existing code to a mason project, " +
+            "move the driver application to the `src/" + name + ".chpl`" +
+            " file. For adding other source code, using submodules is the " +
+            "recommended approach to avoid namespace collisions.");
 }

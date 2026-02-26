@@ -193,3 +193,67 @@ checklight
 ls | grep placeholder.chpl
 checknogitfiles
 cd ..
+
+
+#
+# test init with a path
+#
+rm -rf testingPkg && mkdir testingPkg && mkdir testingPkg/subdir
+mason init testingPkg/subdir --name myNewPkg --lib
+cd testingPkg/subdir
+checktoml "myNewPkg" "library"
+checklibsrc "myNewPkg"
+checkgitfiles
+mason build
+cd ../..
+
+
+#
+# test init with a path
+#
+rm -rf testingPkg && mkdir testingPkg && mkdir testingPkg/subdir
+mason init testingPkg/subdir
+cd testingPkg/subdir
+checktoml "subdir" "application"
+checkappsrc "subdir"
+checkgitfiles
+mason build
+cd ../..
+
+#
+# test init with a path
+#
+rm -rf testingPkg && mkdir testingPkg && mkdir testingPkg/subdir
+mason init testingPkg/subdir --light
+cd testingPkg/subdir
+checktoml "subdir" "light"
+checklight "subdir"
+checknogitfiles
+cd ../..
+
+
+#
+# test init with a path with dashes
+#
+rm -rf testing-Pkg && mkdir testing-Pkg && mkdir testing-Pkg/sub-dir
+mason init testing-Pkg/sub-dir --name mySubPkg --no-vcs
+cd testing-Pkg/sub-dir
+checktoml "mySubPkg" "application"
+checkappsrc "mySubPkg"
+checknogitfiles
+cd ../..
+rm -rf testing-Pkg
+
+
+#
+# test init with a path with dashes
+#
+rm -rf testing-Pkg && mkdir testing-Pkg && mkdir testing-Pkg/subdir
+mason init testing-Pkg/subdir
+cd testing-Pkg/subdir
+checktoml "subdir" "application"
+checkappsrc "subdir"
+checkgitfiles
+cd ../..
+rm -rf testing-Pkg
+

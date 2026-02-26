@@ -22,6 +22,12 @@ mason init --no-vcs || echo "expected failure for existing mason package"
 cd ..
 
 
+rm -rf testing-pkg/foo-bar && mkdir -p testing-pkg/foo-bar
+mason init testing-pkg/foo-bar || echo "expected failure for invalid package name"
+mason init testing-pkg/foo-bar --name foo-bar || echo "expected failure for invalid package name"
+rm -rf testing-pkg
+
+
 rm -rf testingPkg && mkdir testingPkg && cd testingPkg
 git init -b main
 mason init || echo "expected failure for existing mason package"
