@@ -46,7 +46,8 @@ CatchStmt* CatchStmt::build(BlockStmt* body) {
   return new CatchStmt(NULL, NULL, body);
 }
 
-CatchStmt::CatchStmt(const char* name, Expr* type, BlockStmt* body, bool createdErr, char wasCatchall)
+CatchStmt::CatchStmt(const char* name, Expr* type, BlockStmt* body, bool createdErr,
+                     CatchallState wasCatchall)
   : Stmt(E_CatchStmt) {
 
   _name = name ? astr(name) : NULL;
@@ -104,7 +105,7 @@ BlockStmt* CatchStmt::bodyWithoutTest() {
 
 bool CatchStmt::computeIsCatchall() {
   auto markCatchall = [this](bool isCatchall) {
-    this->_wasCatchall = isCatchall;
+    this->_wasCatchall = isCatchall ? CatchallState::CATCHALL : CatchallState::NOT_CATCHALL;
     return isCatchall;
   };
 
@@ -126,8 +127,8 @@ bool CatchStmt::computeIsCatchall() {
 }
 
 bool CatchStmt::isCatchall() {
-  if (_wasCatchall == 2) return computeIsCatchall();
-  return _wasCatchall;
+  if (_wasCatchall == CatchallState::NOT_YET_COMPUTED) return computeIsCatchall();
+  return _wasCatchall == CatchallState::CATCHALL;
 }
 
 void CatchStmt::accept(AstVisitor* visitor) {

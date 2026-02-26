@@ -52,7 +52,10 @@ public:
   static CatchStmt* build(const char* name, BlockStmt* body);
   static CatchStmt* build(BlockStmt* body);
 
-   CatchStmt(const char* name, Expr* type, BlockStmt* body, bool createdErr = false, char wasCatchall = 2);
+  enum CatchallState { NOT_CATCHALL = 0, CATCHALL = 1, NOT_YET_COMPUTED = 2};
+
+   CatchStmt(const char* name, Expr* type, BlockStmt* body, bool createdErr = false,
+             CatchallState wasCatchall = CatchallState::NOT_YET_COMPUTED);
   ~CatchStmt() override = default;
 
   const char* name() const;
@@ -87,7 +90,7 @@ public:
   BlockStmt*  _body;
   bool  _createdErr;
 
-  char _wasCatchall; /* 0 = not catchall, 1 = catchall, 2 = not yet computed */
+  CatchallState _wasCatchall;
 
 private:
   CatchStmt();
