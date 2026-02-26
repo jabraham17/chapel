@@ -46,7 +46,7 @@ CatchStmt* CatchStmt::build(BlockStmt* body) {
   return new CatchStmt(NULL, NULL, body);
 }
 
-CatchStmt::CatchStmt(const char* name, Expr* type, BlockStmt* body, bool createdErr, bool wasCatchall)
+CatchStmt::CatchStmt(const char* name, Expr* type, BlockStmt* body, bool createdErr, char wasCatchall)
   : Stmt(E_CatchStmt) {
 
   _name = name ? astr(name) : NULL;
@@ -69,7 +69,7 @@ BlockStmt* CatchStmt::body() const {
   return _body;
 }
 
-BlockStmt* CatchStmt::bodyWithoutTest() const {
+BlockStmt* CatchStmt::bodyWithoutTest() {
   if (this->isCatchall()) {
     // if this is a catch-all, there is no test, so just return the body
     return body();
@@ -104,23 +104,24 @@ BlockStmt* CatchStmt::bodyWithoutTest() const {
 
 bool CatchStmt::computeIsCatchall() {
   if (_name == NULL)
-    return (this->_wasCatchall = true);
+    return (this->_wasCatchall = 1);
 
   if (_type == NULL)
-    return (this->_wasCatchall = true);
+    return (this->_wasCatchall = 1);
 
   if (SymExpr* typeSe = toSymExpr(type()))
     if (canonicalClassType(typeSe->symbol()->type) == dtError)
-      return (this->_wasCatchall = true);
+      return (this->_wasCatchall = 1);
 
   if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(type()))
     if (urse->unresolved == dtError->symbol->name)
-      return (this->_wasCatchall = true);
+      return (this->_wasCatchall = 1);
 
-  return (this->_wasCatchall = false);
+  return (this->_wasCatchall = 0);
 }
 
-bool CatchStmt::isCatchall() const {
+bool CatchStmt::isCatchall() {
+  if (_wasCatchall == 2) return computeIsCatchall();
   return _wasCatchall;
 }
 
@@ -224,7 +225,7 @@ void CatchStmt::cleanup()
   createErrSym();
 
   // Check isCatchall before setting _name or _type
-  bool catchall = computeIsCatchall();
+  bool catchall = isCatchall();
   // Below, we will transform even catchall block so that the error will
   // be freed appropriately.
 
