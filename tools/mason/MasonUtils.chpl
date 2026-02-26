@@ -884,7 +884,7 @@ proc initProject(dirName, packageName, vcs, show,
     const lightName = if packageName == ""
                         then basename(here.cwd())
                         else packageName;
-  
+
     if isNew {
       mkdir(dirName);
     } else {

@@ -90,7 +90,7 @@ proc masonNew(args: [] string) throws {
   const badPkgErr = validatePackageName(dirName=packageName, cmdName="new");
   if badPkgErr != "" then
     throw new MasonError(badPkgErr);
-  
+
   if isDir(dirName) {
     throw new MasonError("A directory named '" +
                           dirName + "' already exists");
