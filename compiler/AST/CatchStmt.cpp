@@ -103,21 +103,26 @@ BlockStmt* CatchStmt::bodyWithoutTest() {
 }
 
 bool CatchStmt::computeIsCatchall() {
+  auto markCatchall = [this](bool isCatchall) {
+    this->_wasCatchall = isCatchall;
+    return isCatchall;
+  };
+
   if (_name == NULL)
-    return (this->_wasCatchall = 1);
+    return markCatchall(true);
 
   if (_type == NULL)
-    return (this->_wasCatchall = 1);
+    return markCatchall(true);
 
   if (SymExpr* typeSe = toSymExpr(type()))
     if (canonicalClassType(typeSe->symbol()->type) == dtError)
-      return (this->_wasCatchall = 1);
+      return markCatchall(true);
 
   if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(type()))
     if (urse->unresolved == dtError->symbol->name)
-      return (this->_wasCatchall = 1);
+      return markCatchall(true);
 
-  return (this->_wasCatchall = 0);
+  return markCatchall(false);
 }
 
 bool CatchStmt::isCatchall() {
