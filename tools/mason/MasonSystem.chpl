@@ -80,8 +80,7 @@ proc pkgSearch(args) throws {
 
   if pkgNameArg.hasValue() {
     pkgName = pkgNameArg.value();
-  }
-  else {
+  } else {
     listAllPkgs();
     exit(0);
   }
@@ -223,8 +222,7 @@ proc getPkgInfo(pkgName: string, version: string) throws {
       throw new MasonError("Unable to locate " + pkgName +
                            ": " +version + "\n Found " + pcVersion);
     }
-  }
-  else {
+  } else {
     throw new MasonError("No pkg-config package by the name of: " + pkgName);
   }
   return pkgInfo;

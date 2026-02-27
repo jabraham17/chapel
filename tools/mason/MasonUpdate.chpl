@@ -51,7 +51,7 @@ The current resolution strategy for Mason 0.1.0 is the IVRS as described below:
 private var failedChapelVersion: list(string);
 private var log = new logger("mason update");
 
-proc masonUpdate(args: [] string) {
+proc masonUpdate(args: [] string) throws {
   var tf = "Mason.toml";
   var lf = "Mason.lock";
   var skipUpdate = MASON_OFFLINE;
@@ -72,11 +72,9 @@ proc masonUpdate(args: [] string) {
 
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
-proc updateLock(skipUpdate: bool,
-                tf="Mason.toml",
-                lf="Mason.lock",
-                show=true,
-                force=false) throws {
+proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock",
+                                  show=true, force=false) throws {
+
   const cwd = here.cwd();
   const projectHome = getProjectHome(cwd, tf);
   const tomlPath = projectHome + "/" + Path.relPath(tf);
@@ -95,32 +93,33 @@ proc updateLock(skipUpdate: bool,
       }
     }
     if !updated && show {
-      log.infoln("Skipping registry update since no dependency found in " +
-                 "manifest file.");
+      const reason =
+        if skipUpdate
+          then ""
+          else " since no dependency found in manifest file";
+      log.infoln("Skipping registry update" + reason);
     }
   }
 
   log.infoln("Will do external update");
   if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
     if getSpackVersion() < minSpackVersion then
-      throw new owned MasonError("Mason has been updated. " +
-                  "To install Spack, run: mason external --setup.");
+      throw new MasonError("Mason has been updated. " +
+                            "To install Spack, run: mason external --setup.");
   }
+
 
   log.debugln("Will do createDepTree");
   const lockFile = createDepTree(TomlFile);
   if failedChapelVersion.size > 0 {
     const prefix = if failedChapelVersion.size == 1
-                 then "The following package is"
-                 else "The following packages are";
-
-    stderr.writeln(prefix,
-                 " incompatible with your version of Chapel (",
-                 getChapelVersionStr(),
-                 ")");
+      then "The following package is"
+      else "The following packages are";
+    var err = "%s incompatible with your version of Chapel (%s):\n"
+                .format(prefix, getChapelVersionStr());
     for msg in failedChapelVersion do
-      stderr.writeln("  ", msg);
-    exit(1);
+      err += "  " + msg + "\n";
+    throw new MasonError(err.strip());
   }
   // Generate Lock File
   log.debugln("Generating lock file");
@@ -182,13 +181,15 @@ proc updateRegistry(skipUpdate: bool, show=true) throws {
   for ((name, registry), registryHome) in
       zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
 
+    log.debugf("Updating registry %s (%s) at %s\n",
+                name, registry, registryHome);
+
     if isDir(registryHome) {
       var pullRegistry = 'git pull -q origin';
       if show then writeln("Updating ", name);
       gitC(registryHome, pullRegistry);
-    }
-    // Registry has moved or does not exist
-    else {
+    } else {
+      // Registry has moved or does not exist
       mkdir(MASON_HOME + '/src', parents=true);
       const localRegistry = registryHome;
       mkdir(localRegistry, parents=true);
@@ -316,6 +317,7 @@ private proc createDepTrees(depTree: Toml,
     var version     = brick["version"]!.s;
     var chplVersion = brick["chplVersion"]!.s;
     var source      = brick["source"]!.s;
+    var compopts    = brick.get["compopts"];
 
     if depTree.pathExists(package) {
       var verToUse = IVRS(brick, depTree[package]!);
@@ -334,6 +336,8 @@ private proc createDepTrees(depTree: Toml,
     depTree[package]!.set("version", version);
     depTree[package]!.set("chplVersion", chplVersion);
     depTree[package]!.set("source", source);
+    if compopts then
+      depTree[package]!.set("compopts", compopts!);
 
     if dep!.pathExists("dependencies") {
       var subDeps = getDependencies(dep);
@@ -408,22 +412,18 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
     stderr.writeln("  v", version1);
     stderr.writeln("  v", version2);
     exit(1);
-  }
-  else if vers1(1) != vers2(1) {
+  } else if vers1(1) != vers2(1) {
     v1 = vers1(1): int;
     v2 = vers2(1): int;
     if v1 > v2 {
       return A;
-    }
-    else return B;
-  }
-  else {
+    } else return B;
+  } else {
     v1 = vers1(2): int;
     v2 = vers2(2): int;
     if v1 > v2 {
       return A;
-    }
-    else return B;
+    } else return B;
   }
 }
 
@@ -536,6 +536,8 @@ private proc pullGitDeps(gitDeps, show=false) {
   var baseDir = MASON_HOME +'/git/';
   for val in gitDepMap.keys() {
     var (srcURL, origBranch, revision) = gitDepMap[val];
+    log.debugf("Processing dependency %s: url: '%s', branch: '%s', rev='%s'\n",
+                val, srcURL, origBranch, revision);
 
     // Default to head if branch isn't specified
     var branch = if origBranch == "" then "HEAD" else origBranch;

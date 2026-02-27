@@ -54,10 +54,6 @@ proc masonBuild(args: [] string) throws {
   parser.parseArgs(args);
   log.debugln("Arguments parsed");
 
-  if passArgs.hasValue() && exampleOpts._present {
-    throw new owned MasonError("Examples do not support `--` syntax");
-  }
-
   const projectType = getProjectType();
   if projectType == "light" then
     throw new MasonError("Mason light projects do not " +
@@ -69,11 +65,8 @@ proc masonBuild(args: [] string) throws {
   var release = releaseFlag.valueAsBool();
   var force = forceFlag.valueAsBool();
   var compopts: list(string);
-  var example = false;
+  var example = exampleOpts._present; // --example provided w/wo a value
   var skipUpdate = MASON_OFFLINE;
-
-  // when --example provided with or without a value
-  if exampleOpts._present then example = true;
 
   if updateFlag.hasValue() {
     if updateFlag.valueAsBool() then skipUpdate = false;
@@ -84,19 +77,13 @@ proc masonBuild(args: [] string) throws {
 
   log.debugf("Is example? %s\n", example);
   if example {
-    // compopts become example names. Build never runs examples
-    for val in exampleOpts.values() do compopts.pushBack(val);
-    compopts.pushBack("--no-run");
-    if skipUpdate then compopts.pushBack('--no-update');
-                  else compopts.pushBack('--update');
-    if show then compopts.pushBack("--show");
-    if release then compopts.pushBack("--release");
-    if force then compopts.pushBack("--force");
-    // add expected arguments for masonExample
-    compopts.insert(0,["example", "--example"]);
-    masonExample(compopts.toArray());
-  }
-  else {
+    var examples = new list(exampleOpts.values());
+    var extraCompopts = new list(passArgs.values());
+    runExamples(show=show, run=false, build=true, release=release,
+                skipUpdate=skipUpdate, force=force,
+                examplesRequested=examples,
+                extraCompopts=extraCompopts, nLocales=1);
+  } else {
     if passArgs.hasValue() {
       for val in passArgs.values() do compopts.pushBack(val);
     }
@@ -336,7 +323,7 @@ proc getSrcCode(sourceList: list(srcSource), skipUpdate, show) throws {
 
       // add prerequisites
       for prereq in MasonPrereqs.prereqs(destination) {
-        MasonPrereqs.install(prereq);
+        MasonPrereqs.install(destination, prereq);
       }
     }
   }
@@ -381,6 +368,20 @@ proc getTomlCompopts(lock: borrowed Toml): list(string) throws {
       compopts.pushBack(parseCompilerOptions(cmpFlags));
     } catch {
       throw new MasonError("unable to parse compopts");
+    }
+  }
+
+  // get the dependencies, if they exist
+  for (name, package) in zip(lock.A.keys(), lock.A.values()) {
+    log.debugln("name: "+name);
+    if package!.tag != fieldtag.fieldToml then continue;
+    if name == "root" || name == "system" || name == "external" then continue;
+    if const depFlags = package!.get["compopts"] {
+      try {
+        compopts.pushBack(parseCompilerOptions(depFlags));
+      } catch {
+        throw new MasonError("unable to parse compopts for dependency " + name);
+      }
     }
   }
 

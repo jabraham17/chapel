@@ -186,13 +186,11 @@ proc checkRegistryPath(registryPath : string, trueIfLocal : bool) throws {
     if trueIfLocal {
       if exists(registryPath) && exists(registryPath + "/Bricks/") {
         return true;
-      }
-      else {
+      } else {
         throw new MasonError(registryPath +
                              " is not a valid path to a local mason-registry.");
       }
-    }
-    else {
+    } else {
       var command = ('git ls-remote ' + registryPath).split();
       var checkRemote = spawn(command, stdout=pipeStyle.pipe);
       checkRemote.wait();
@@ -201,8 +199,7 @@ proc checkRegistryPath(registryPath : string, trueIfLocal : bool) throws {
         throw new MasonError(registryPath + " is not a valid remote path");
       }
     }
-  }
-  catch e {
+  } catch e {
     writeln(e.message());
     exit(0);
   }
@@ -253,15 +250,13 @@ proc publishPackage(username: string,
               '----------------------------------');
       writeln('Go to the above link to open up a ' +
               'Pull Request to the mason-registry');
-     }
-    else {
+     } else {
       gitC(safeDir, 'git add Bricks/' + name);
       gitC(safeDir, command);
       writeln('Successfully published package to ' + registryPath);
     }
 
-  }
-  catch e {
+  } catch e {
     writeln(e.message());
   }
 }
@@ -311,8 +306,7 @@ proc dryRun(username: string, registryPath : string, isLocal : bool) throws {
     if checkRegistryPath(registryPath, isLocal) {
       writeln('Package can be published to local registry');
       exit(0);
-    }
-    else {
+    } else {
       throw new MasonError(registryPath +
                            ' is not a valid registryPath to a local registry.');
     }
@@ -330,14 +324,12 @@ proc cloneMasonReg(username: string,
         'git clone --quiet git@github.com:%s/mason-registry mason-registry';
       var ret = gitC(safeDir, gitClone.format(username), false);
       return ret;
-    }
-    else {
+    } else {
       const gitClone = 'git clone --quiet %s mason-registry';
       var gitCall = gitC(safeDir, gitClone.format(registryPath), false);
       return gitCall;
     }
-  }
-  catch {
+  } catch {
     throw new MasonError(
       'Error cloning the fork of mason-registry. ' +
       'Make sure you have forked the mason-registry on GitHub');
@@ -403,8 +395,7 @@ proc branchMasonReg(name: string, safeDir: string) throws {
     const branchCommand = "git checkout --quiet -b  "+ name: string;
     var ret = gitC(safeDir + '/mason-registry', branchCommand, false);
     return ret;
-  }
-  catch {
+  } catch {
     throw new MasonError('Error branching the registry, make sure you have a ' +
                          'remote origin set up');
   }
@@ -418,8 +409,7 @@ proc getPackageName() throws {
     var tomlFile = (parseToml(toParse));
     const name = tomlFile['brick.name']!.s;
     return name;
-  }
-  catch {
+  } catch {
     throw new MasonError('Issue getting the name of your package, ' +
                          'ensure your package is a mason project.');
   }
@@ -431,61 +421,51 @@ proc getPackageName() throws {
  */
 private proc addPackageToBricks(projectLocal: string, safeDir: string,
                                 name: string, isLocal: bool) throws {
-  const bricksDir = joinPath(safeDir, 'mason-registry', 'Bricks');
+  if isLocal && !exists(joinPath(safeDir, '.git')) {
+    throw new MasonError(
+      'Unable to publish your package to the registry, ' +
+      'make sure your package is a git repository.');
+  }
+
+  const bricksDir = if !isLocal
+                      then joinPath(safeDir, 'mason-registry', 'Bricks')
+                      else joinPath(safeDir, 'Bricks');
+
+  if !isLocal && !exists(bricksDir) {
+    throw new MasonError('Registry does not have the expected structure. ' +
+                         'Ensure your registry has a Bricks directory.');
+  }
+
   const projectBrickDir = joinPath(bricksDir, name);
-  try! {
-    const toParse = open(joinPath(projectLocal, "Mason.toml"), ioMode.r);
-    var tomlFile = (parseToml(toParse));
-    const versionNum = tomlFile!['brick.version']!.s;
-    const versionToml = joinPath(projectBrickDir, versionNum + ".toml");
-    if !isLocal {
-      if !exists(bricksDir) {
-        throw new MasonError('Registry does not have the expected structure. ' +
-                             'Ensure your registry has a Bricks directory.');
-      }
-      if !exists(projectBrickDir) {
-        mkdir(projectBrickDir);
-      }
-      if !exists(versionToml) {
-        const baseToml = tomlFile;
-        var newToml = open(versionToml, ioMode.cw);
-        var tomlWriter = newToml.writer(locking=false);
-        const url = gitUrl();
-        baseToml["brick"]!.set("source", url[0..<url.size-1]);
-        tomlWriter.write(baseToml);
-        tomlWriter.close();
-        return name + '@' + versionNum;
-      } else {
-        throw new MasonError('A package with that name and version number ' +
-                             'already exists in the Bricks.');
-        exit(1);
-      }
-    } else {
-      if !exists(joinPath(safeDir, '.git')) {
-        throw new MasonError(
-          'Unable to publish your package to the registry, ' +
-          'make sure your package is a git repository.');
-      }
-      if !exists(projectBrickDir) {
-        mkdir(projectBrickDir);
-      }
-      if !exists(versionToml) {
-        const baseToml = tomlFile;
-        var newToml = open(versionToml, ioMode.cw);
-        var tomlWriter = newToml.writer(locking=false);
-        baseToml["brick"]!.set("source", projectLocal);
-        tomlWriter.write(baseToml);
-        tomlWriter.close();
-        gitC(projectLocal, ['git', 'tag', '-a', 'v' + versionNum, '-m', name]);
-        return name + '@' + versionNum;
-      } else {
-        throw new MasonError('A package with that name and version '+
-                             'already exists in the Bricks.');
-      }
-    }
-  } catch e {
-    writeln(e.message());
-    exit(1);
+  const toParse = open(joinPath(projectLocal, "Mason.toml"), ioMode.r);
+  var tomlFile = (parseToml(toParse));
+  const versionNum = tomlFile!['brick.version']!.s;
+  const versionToml = joinPath(projectBrickDir, versionNum + ".toml");
+
+  if !exists(projectBrickDir) {
+    mkdir(projectBrickDir);
+  }
+  if exists(versionToml) {
+    throw new MasonError('A package with that name and version number ' +
+                         'already exists in the Bricks.');
+  }
+
+  if !isLocal {
+    const baseToml = tomlFile;
+    const url = gitUrl();
+    baseToml["brick"]!.set("source", url[0..<url.size-1]);
+    var tomlWriter = openWriter(versionToml);
+    tomlWriter.write(baseToml);
+    tomlWriter.close();
+    return name + '@' + versionNum;
+  } else {
+    const baseToml = tomlFile;
+    baseToml["brick"]!.set("source", projectLocal);
+    var tomlWriter = openWriter(versionToml);
+    tomlWriter.write(baseToml);
+    tomlWriter.close();
+    gitC(projectLocal, ['git', 'tag', '-a', 'v' + versionNum, '-m', name]);
+    return name + '@' + versionNum;
   }
 }
 
@@ -690,8 +670,7 @@ proc check(path: string, ci: bool) throws {
        gitTagVersionCheck(projectCheckHome)[0] {
       attemptToBuild();
       exit(0);
-    }
-    else {
+    } else {
       writeln('New package does not have the proper structure.');
       exit(1);
     }
@@ -761,8 +740,7 @@ private proc attemptToBuild() throws {
   sub.wait();
   if sub.exitCode == 1 {
     writeln('(FAILED) Please make sure your package builds');
-  }
-  else {
+  } else {
     writeln('(PASSED) Package builds successfully.');
   }
 }
@@ -781,14 +759,12 @@ private proc registryPathCheck(path: string,
       writeln('   The mason-registry is forked under username: ' +
               username + ' (PASSED)');
       return true;
-    }
-    else {
+    } else {
       writeln('   You must have a fork of the mason-registry to ' +
               'publish a package (FAILED)');
       return false;
     }
-  }
-  else {
+  } else {
     if trueIfLocal {
       const isLocalGit = exists(path + '/.git');
       const hasBricks = exists(path + '/Bricks/');
@@ -798,21 +774,18 @@ private proc registryPathCheck(path: string,
         writeln("   Local registries must be git repositories " +
                 "in order to publish");
         return false;
-      }
-      else if !hasBricks {
+      } else if !hasBricks {
         writeln('   The registry with path ' +
                 path + ' does not have proper registry structure (FAILED)');
         writeln("   A registry must have a /Bricks/ " +
                 "directory to be a valid registry");
         return false;
-      }
-      else {
+      } else {
         writeln('   The local registry with path ' +
                 path + ' is a valid registry to be publish too (PASSED)');
         return true;
       }
-    }
-    else {
+    } else {
       return true;
     }
   }

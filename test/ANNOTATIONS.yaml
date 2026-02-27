@@ -1935,6 +1935,12 @@ remote-amos.ml-perf:
   08/25/25:
     - text: Suspected machine changes
       config: 16-node-hpe-cray-ex
+  02/07/26:
+    - Switch this test's throttling to use recursive doubling (#28375)
+
+remote-fastOns.ml-perf:
+  02/07/26:
+    - Switch this test's throttling to use recursive doubling (#28375)
 
 remote-unordered-amos.ml-perf:
   04/17/25:
@@ -1943,20 +1949,32 @@ remote-unordered-amos.ml-perf:
   08/25/25:
     - text: Suspected machine changes
       config: 16-node-hpe-cray-ex
+  02/07/26:
+    - Switch this test's throttling to use recursive doubling (#28375)
+
+remote-gets.ml-perf:
+  02/07/26:
+    - Switch this test's throttling to use recursive doubling (#28375)
 
 remote-puts.ml-perf:
   11/03/20:
     - Do fewer GETs to force PUTs into a visible state, and do them later (#16634)
+  02/07/26:
+    - Switch this test's throttling to use recursive doubling (#28375)
 
 remote-fetchAmos.ml-perf:
   11/03/20:
     - Do fewer GETs to force PUTs into a visible state, and do them later (#16634)
+  02/07/26:
+    - Switch this test's throttling to use recursive doubling (#28375)
 
 remote-ons.ml-perf:
   05/17/19:
     - Avoid comm/compute overlap for short-lived tasks (#12964)
   05/13/20:
     - Reorganize arg bundles in the runtime (#15660)
+  02/07/26:
+    - Switch this test's throttling to use recursive doubling (#28375)
 
 remote-record-read-copy:
   11/15/18:
@@ -1967,6 +1985,8 @@ remote-record-read-copy:
 remote-unordered-gets.ml-perf:
   02/04/20:
     - Add unordered GET/PUT support in comm=ofi. (#14810)
+  02/07/26:
+    - Switch this test's throttling to use recursive doubling (#28375)
 
 return-array-8: &return-array-base
   03/04/17:
@@ -2422,6 +2442,10 @@ compilerAndTestingStats: &compiler-perf-base
     - System software change
   11/19/25:
     - Fixed regression due to isDefAndOrUse change (#28082)
+  01/09/26:
+    - Fix uniquifyName failure when compiling with debug flag (#28258)
+  01/13/26:
+    - Revert uniquifyName bug fix (#28297)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2660,6 +2684,13 @@ arkouda: &arkouda-base
     - Resolves Issue 4810, cumSum and cumProd performance (Bears-R-Us/arkouda#4819)
   12/01/25:
     - Fix CSV Parsing of Quoted Fields, Escaped Quotes, Embedded Delimiters, and Multi-Line Records (Bears-R-Us/arkouda#5080)
+  01/13/26:
+    - text: Possible regression in array transfer performance due to bigint perf tweaks (?) (Bears-R-Us/arkouda#5151)
+      config: chapcs
+  02/10/26:
+    - Add runtime warning on divide-by-zero (Bears-R-Us/arkouda#5315)
+  02/19/26:
+    - Fix performance regressions from divide-by-zero check (Bears-R-Us/arkouda#5416)
 
 arkouda-string:
   <<: *arkouda-base
