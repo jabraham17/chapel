@@ -1,3 +1,6 @@
+config type ErrorType = Error;
+class SimpleError : Error {}
+
 class R {
   type T;
 
@@ -10,5 +13,5 @@ class R {
     }
   }
 }
-var r = new R(owned Error); /* note: added owned */
+var r = new R(owned ErrorType); /* note: added owned */
 r.doit();

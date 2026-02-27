@@ -1,3 +1,6 @@
+config type ErrorType = Error;
+class SimpleError : Error {}
+
 proc foo(type T) {
   try! {
     throw new T();
@@ -5,4 +8,4 @@ proc foo(type T) {
     writeln("caught error of type ", T:string);
   }
 }
-foo(Error);
+foo(ErrorType);
