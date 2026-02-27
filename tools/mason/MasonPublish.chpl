@@ -142,12 +142,10 @@ proc masonPublish(args: [] string) throws {
   if checkRegistryPath(registryPath, isLocal) {
     if dry {
       dryRun(username, registryPath, true);
-    }
-    else {
+    } else {
       publishPackage(username, registryPath, isLocal);
     }
-  }
-  else {
+  } else {
     writeln(badSyntaxMessage);
     writeln('See "mason publish -h" for more details');
     exit(0);

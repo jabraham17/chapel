@@ -41,13 +41,11 @@ proc masonSystem(args: [] string) throws {
     pkgConfigExists();
     var pcArgs = pcCmd.values();
     printPkgPc(pcArgs);
-  }
-  else if searchCmd.hasValue() {
+  } else if searchCmd.hasValue() {
     pkgConfigExists();
     var searchArgs = searchCmd.values();
     pkgSearch(searchArgs);
-  }
-  else { // no valid sub-command given
+  } else { // no valid sub-command given
     masonSystemHelp();
   }
 }
