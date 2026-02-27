@@ -1,9 +1,10 @@
 use FileSystem;
 use MasonNew;
+use MasonUtils;
 
-proc main() {
+proc main() throws {
   var args = ['new', 'Test'];
-  masonNew(args);
+  try! masonNew(args);
 
   // Confirm structure
   var pwd = here.cwd();
@@ -18,7 +19,7 @@ proc main() {
   }
 
   var args2 = ['new', 'Test', '--app'];
-  masonNew(args2);
+  try! masonNew(args2);
 
   // Confirm structure
   if isDir(pwd + '/Test/src') {
@@ -32,7 +33,7 @@ proc main() {
   }
 
   var args3 = ['new', 'Test', '--lib'];
-  masonNew(args3);
+  try! masonNew(args3);
 
   // Confirm structure
   if isDir(pwd + '/Test/src') {
@@ -46,7 +47,7 @@ proc main() {
   }
 
   var args4 = ['new', 'Test', '--light'];
-  masonNew(args4);
+  try! masonNew(args4);
 
   // Confirm structure
   if isDir(pwd + '/Test') {

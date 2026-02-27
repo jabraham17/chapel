@@ -347,22 +347,17 @@ proc getExamplePath(fullPath: string, examplePath = "") : string {
 }
 
 // used when user calls `mason run --example` without argument
-proc printAvailableExamples() {
-  try! {
-    const cwd = here.cwd();
-    const projectHome = getProjectHome(cwd);
-    const toParse = open(projectHome + "/Mason.toml", ioMode.r);
-    const toml = parseToml(toParse);
-    const examples = getExamples(toml, projectHome);
-    writeln("--- available examples ---");
-    for example in examples {
-      writeln(" --- " + example);
-    }
-    writeln("--------------------------");
-  } catch e: MasonError {
-    stderr.writeln(e.message());
-    exit(1);
+proc printAvailableExamples() throws {
+  const cwd = here.cwd();
+  const projectHome = getProjectHome(cwd);
+  const toParse = open(projectHome + "/Mason.toml", ioMode.r);
+  const toml = parseToml(toParse);
+  const examples = getExamples(toml, projectHome);
+  writeln("--- available examples ---");
+  for example in examples {
+    writeln(" --- " + example);
   }
+  writeln("--------------------------");
 }
 
 // Checks to see if an example, source code, or Mason.toml has been modified
