@@ -1,7 +1,7 @@
 + export PKG_CONFIG_LIBDIR=
 + PKG_CONFIG_LIBDIR=
-+ export PKG_CONFIG_PATH=/Users/jade/Development/chapel-lang/chapel/test/mason/mason-system/myPackages
-+ PKG_CONFIG_PATH=/Users/jade/Development/chapel-lang/chapel/test/mason/mason-system/myPackages
++ export PKG_CONFIG_PATH=$CHPL_HOME/test/mason/mason-system/myPackages
++ PKG_CONFIG_PATH=$CHPL_HOME/test/mason/mason-system/myPackages
 + mason system pc dummy
 
 ------- dummy.pc -------

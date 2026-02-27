@@ -1,4 +1,7 @@
 
+# add packages to existing paths
+export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:$PWD/myPackages"
+
 CWD=$(cd $(dirname $0) ; pwd)
 REG="$CWD/local-reg"
 

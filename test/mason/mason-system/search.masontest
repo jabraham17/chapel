@@ -5,13 +5,13 @@ export PKG_CONFIG_PATH=$PWD/myPackages
 
 test() {
   echo "Testing $@"
-  mason system search $@
+  mason system search $@ | sort
 
-  mason system search package $@
-  mason system search myWeirdPackage $@
-  mason system search simple $@
+  mason system search package $@ | sort
+  mason system search myWeirdPackage $@ | sort
+  mason system search simple $@ | sort
 
-  mason system search 'another|weird' $@
+  mason system search 'another|weird' $@ | sort
   echo "==============="
 }
 

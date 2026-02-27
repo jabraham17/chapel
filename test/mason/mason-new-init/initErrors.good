@@ -61,9 +61,9 @@ expected failure for invalid package name
 + mkdir testingPkg
 + cd testingPkg
 + git init -b main
-Initialized empty Git repository in /Users/jade/Development/chapel-lang/chapel/test/mason/mason-new-init/testingPkg/.git/
+Initialized empty Git repository in $CHPL_HOME/test/mason/mason-new-init/testingPkg/.git/
 + mason init
-'/Users/jade/Development/chapel-lang/chapel/test/mason/mason-new-init/testingPkg' is already a git repository. Use `--no-vcs` to create a project without initializing a git repository.
+'$CHPL_HOME/test/mason/mason-new-init/testingPkg' is already a git repository. Use `--no-vcs` to create a project without initializing a git repository.
 + echo 'expected failure for existing mason package'
 expected failure for existing mason package
 + rm -rf .git

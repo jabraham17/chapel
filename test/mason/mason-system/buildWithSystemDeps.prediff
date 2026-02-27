@@ -8,5 +8,5 @@ mv $OUTFILE.tmp $OUTFILE
 sed -e '/initial commit$/d' -e '/insertions/d' -e '/create mode/d' $OUTFILE > $OUTFILE.tmp
 mv $OUTFILE.tmp $OUTFILE
 
-sed -e "s|$CHPL_HOME|\$CHPL_HOME|g" $OUTFILE > $OUTFILE.tmp
+sed -e "/PKG_CONFIG_PATH=/d" $OUTFILE > $OUTFILE.tmp
 mv $OUTFILE.tmp $OUTFILE

@@ -28,7 +28,7 @@ module MasonLogger {
   // values mean lower verbosity.
   enum logLevel { no, error, warn, info, debug }
 
-  private var logs = getDefaultLogs();
+  var logs = getDefaultLogs();
 
   private proc getDefaultLogs() {
     var ll = logLevel.info;

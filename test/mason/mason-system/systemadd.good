@@ -1,5 +1,3 @@
-+ export PKG_CONFIG_PATH=:/Users/jade/Development/chapel-lang/chapel/test/mason/mason-system/myPackages:/Users/jade/Development/chapel-lang/chapel/test/mason/mason-system/myPackages
-+ PKG_CONFIG_PATH=:/Users/jade/Development/chapel-lang/chapel/test/mason/mason-system/myPackages:/Users/jade/Development/chapel-lang/chapel/test/mason/mason-system/myPackages
 + rm -rf tempMasonLib
 + mason new tempMasonLib --lib --no-vcs
 Created new library project: tempMasonLib
