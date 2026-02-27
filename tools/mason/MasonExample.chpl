@@ -196,8 +196,6 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
                          skipUpdate: bool, force: bool,
                          examplesRequested: list(string)) throws {
 
-  try {
-
     const cwd = here.cwd();
     const projectHome = getProjectHome(cwd);
 
@@ -281,10 +279,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
     else {
       throw new MasonError("No examples were found in /example");
     }
-  }
-  catch e: MasonError {
-    throw e;
-  }
+  // ...existing code...
 }
 
 

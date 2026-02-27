@@ -73,7 +73,7 @@ proc masonPublish(args: [] string) throws {
   var createReg = createFlag.valueAsBool();
 
   const badSyntaxMessage =
-  'Arguments do not follow "mason publish [options] <registry>" syntax';
+      'Arguments do not follow "mason publish [options] <registry>" syntax';
 
 
   if refreshLicenses {
@@ -88,29 +88,28 @@ proc masonPublish(args: [] string) throws {
     if !isDir(pathReg) then
       mkdir(pathReg);
     else
-      throw new owned MasonError("Registry already exists at %s"
-                                .format(pathReg));
+      throw new MasonError("Registry already exists at %s".format(pathReg));
     if !isDir(pathReg + '/Bricks') then
       mkdir(pathReg + '/Bricks');
     if !isDir(pathReg + '/README.md') then
       touch(pathReg + '/README.md');
     if !isDir(pathReg + '/.git') {
-      gitC(pathReg, 'git init -q');
-      gitC(pathReg, 'git add .');
-      gitC(pathReg,
-           'git commit -q -m "initialized registry"');
+      gitC(pathReg, ["git", "init", "-q"]);
+      gitC(pathReg, ["git", "add", "."]);
+      gitC(pathReg, ["git", "commit", "-q", "-m", "initialized registry"]);
     }
     const absPathReg = Path.absPath(pathReg);
     writeln("Initialized local registry at %s".format(pathReg));
     writeln("Add this registry to MASON_REGISTRY environment variable "
         + "to include it in search path:");
 
-    writeln('   export MASON_REGISTRY="%s|%s,%s|%s"'
+    writeln("   export MASON_REGISTRY=\"%s|%s,%s|%s\""
         .format("mason-registry",
-                regUrl,
-                basename(pathReg),
-                absPathReg));
+          regUrl,
+          basename(pathReg),
+          absPathReg));
 
+    return;
   }
 
   if registryPath.isEmpty() {

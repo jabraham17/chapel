@@ -19,11 +19,7 @@ proc main() throws {
   }
 
   var args2 = ['new', 'Test', '--app'];
-  try {
-    masonNew(args2);
-  } catch e: MasonError {
-    writeln(e.message());
-  }
+  try! masonNew(args2);
 
   // Confirm structure
   if isDir(pwd + '/Test/src') {
@@ -37,11 +33,7 @@ proc main() throws {
   }
 
   var args3 = ['new', 'Test', '--lib'];
-  try {
-    masonNew(args3);
-  } catch e: MasonError {
-    writeln(e.message());
-  }
+  try! masonNew(args3);
 
   // Confirm structure
   if isDir(pwd + '/Test/src') {
@@ -55,11 +47,7 @@ proc main() throws {
   }
 
   var args4 = ['new', 'Test', '--light'];
-  try {
-    masonNew(args4);
-  } catch e: MasonError {
-    writeln(e.message());
-  }
+  try! masonNew(args4);
 
   // Confirm structure
   if isDir(pwd + '/Test') {
