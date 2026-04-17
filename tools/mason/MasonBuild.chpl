@@ -35,6 +35,7 @@ use Subprocess;
 use TOML;
 
 import ThirdParty.Pathlib.path;
+use ThirdParty.Pathlib.IOHelpers;
 
 import Path;
 import FileSystem;
@@ -113,38 +114,34 @@ private proc checkChplVersion(lockFile: borrowed Toml) throws {
 proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
                   cmdLineCompopts: list(string), tomlName="Mason.toml",
                   lockName="Mason.lock") throws {
-  const cwd = here.cwd();
+  const cwd = path.cwd();
   const projectHome = getProjectHome(cwd, tomlName);
-  const lockPath = joinPath(projectHome, lockName);
-  if !isFile(lockPath) then
-    throw new owned MasonError("Cannot build: no Mason.lock found");
+  const lockPath = projectHome / lockName;
+  if !lockPath.isFile() then
+    throw new MasonError("Cannot build: no Mason.lock found");
 
   const toParse = open(lockPath, ioMode.r);
   defer toParse.close();
   var lockFile = parseToml(toParse);
   const projectName = lockFile["root.name"]!.s;
 
-  var binLoc = 'debug';
-  if release then
-    binLoc = 'release';
+  const binLoc = if release then "release" else "debug";
 
 
   // build on last modification
-  const fingerprintDir =
-    joinPath(projectHome, "target", binLoc, ".fingerprint");
+  const fingerprintDir = projectHome / "target" / binLoc / ".fingerprint";
   const fingerprintChanged =
     !checkFingerprint(projectName, fingerprintDir,
                       computeFingerprint(cmdLineCompopts));
   if force ||
-     projectModified(projectHome, projectName, binLoc) || fingerprintChanged {
+     projectModified(projectHome, projectName, binLoc) ||
+     fingerprintChanged {
 
     // Make build files and check chapel version
     makeTargetFiles(binLoc, projectHome);
     checkChplVersion(lockFile);
 
-    if !isDir(MASON_HOME) {
-      mkdir(MASON_HOME, parents=true);
-    }
+    if !MASON_HOME.isDir() then MASON_HOME.mkdir(parents=true);
 
     // generate list of dependencies and get src code
     var (sourceList, gitList) = genSourceList(lockFile);
@@ -179,29 +176,27 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string,
                 release: bool,
                 cmdLineCompopts: list(string),
                 compopts: list(string),
-                projectHome: string,
+                projectHome: path,
                 sourceList: list(srcSource),
                 gitList: list(gitSource)) : bool throws {
 
-  const depPath = Path.joinPath(MASON_HOME, 'src');
-  const gitDepPath = Path.joinPath(MASON_HOME, 'git');
+  const depPath = MASON_HOME / "src";
+  const gitDepPath = MASON_HOME / "git";
   const project = lockFile["root.name"]!.s;
-  const pathToProj = Path.replaceExt(Path.joinPath(projectHome,
-                                                   'src',
-                                                   project), 'chpl');
+  const pathToProj = (projectHome / "src" / project).withSuffix(".chpl");
 
-  const moveTo = Path.joinPath(projectHome, 'target', binLoc, project);
+  const executable = projectHome / "target" / binLoc / project;
 
-  if !isFile(pathToProj) {
+  if !pathToProj.isFile() {
     throw new MasonError("Mason could not find your project");
   } else {
     log.debug("Starting to create compilation command");
 
     var cmd: list(string);
     cmd.pushBack("chpl");
-    cmd.pushBack(pathToProj);
+    cmd.pushBack(pathToProj:string);
     cmd.pushBack("-o");
-    cmd.pushBack(moveTo);
+    cmd.pushBack(executable:string);
 
     cmd.pushBack(compopts);
 
@@ -225,14 +220,13 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string,
       const nameVer = "%s-%s".format(name, version);
       // version of -1 specifies a git dep
       if version != "-1" {
-        const depDir = Path.joinPath(depPath, nameVer);
-        const depSrc = Path.replaceExt(Path.joinPath(depDir, "src", name),
-                                       "chpl");
+        const depDir = depPath / nameVer;
+        const depSrc = (depDir / "src" / name).withSuffix(".chpl");
 
         log.debugf("Adding source dependency %s's flags", name);
-        cmd.pushBack(depSrc);
+        cmd.pushBack(depSrc:string);
 
-        for flag in MasonPrereqs.chplFlags(depDir:path) {
+        for flag in MasonPrereqs.chplFlags(depDir) {
           log.debug("+compflag ", flag);
           cmd.pushBack(flag);
         }
@@ -243,11 +237,11 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string,
     // see https://github.com/chapel-lang/chapel/issues/25926
     @chplcheck.ignore("UnusedLoopIndex")
     for (_x, name, branch, _y) in gitSource.iterList(gitList) {
-      const depDir = Path.joinPath(gitDepPath, name + "-" + branch);
-      const gitDepSrc = Path.joinPath(depDir, "src", name + ".chpl");
-      cmd.pushBack(gitDepSrc);
+      const depDir = gitDepPath / name + "-" + branch;
+      const gitDepSrc = (depDir / "src" / name).withSuffix(".chpl");
+      cmd.pushBack(gitDepSrc:string);
 
-      for flag in MasonPrereqs.chplFlags(depDir:path) {
+      for flag in MasonPrereqs.chplFlags(depDir) {
         log.debugf("+compflag ", flag);
         cmd.pushBack(flag);
       }
@@ -267,7 +261,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string,
     }
 
     // Confirming File Structure
-    return isFile(Path.joinPath(projectHome, 'target', binLoc, project));
+    return executable.isFile();
   }
   return false;
 }
@@ -556,13 +550,13 @@ proc computeFingerprint(
   project, false otherwise. If no stored fingerprint exists, one is created.
 */
 proc checkFingerprint(projectName:string,
-                      fingerprintDir: string,
+                      fingerprintDir: path,
                       fingerprint: string): bool {
-  const fingerprintFile = joinPath(fingerprintDir,
-                                   "%s-%s".format(projectName, "fingerprint"));
-  if !isFile(fingerprintFile) {
-    if !isDir(fingerprintDir) then
-      mkdir(fingerprintDir, parents=true);
+  const fingerprintFile =
+    fingerprintDir / "%s-%s".format(projectName, "fingerprint");
+  if !fingerprintFile.isFile() {
+    if !fingerprintDir.isDir() then
+      fingerprintDir.mkdir(parents=true);
     log.debug("No previous fingerprint found, creating new fingerprint");
     const writer = openWriter(fingerprintFile);
     writer.write(fingerprint);
@@ -585,11 +579,11 @@ proc checkFingerprint(projectName:string,
   }
 }
 
-proc invalidateFingerprint(projectName:string, fingerprintDir: string) {
-  const fingerprintFile = joinPath(fingerprintDir,
-                                   "%s-%s".format(projectName, "fingerprint"));
-  log.debugf("Invalidating fingerprint '%s'", fingerprintFile);
-  if isFile(fingerprintFile) {
-    FileSystem.remove(fingerprintFile);
+proc invalidateFingerprint(projectName: string, fingerprintDir: path) {
+  const fingerprintFile =
+    fingerprintDir / "%s-%s".format(projectName, "fingerprint");
+  log.debugf("Invalidating fingerprint '%?'", fingerprintFile);
+  if fingerprintFile.isFile() {
+    fingerprintFile.remove();
   }
 }

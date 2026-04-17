@@ -20,7 +20,6 @@
 
 
 use ArgumentParser;
-use FileSystem;
 use List;
 use Map;
 use MasonBuild;
@@ -28,7 +27,6 @@ use MasonEnv;
 use MasonHelp;
 use MasonUpdate;
 use MasonUtils;
-use Path;
 use Subprocess;
 use TOML;
 import MasonLogger;
@@ -47,13 +45,13 @@ proc runExamples(show: bool, run: bool, build: bool, release: bool,
   if build then
     updateLock(skipUpdate);
 
-  const cwd = here.cwd();
+  const cwd = path.cwd();
   const projectHome = getProjectHome(cwd);
 
   // Get buildInfo: dependencies, path to src code, compopts,
   // names of examples, example compopts
   var buildInfo = getBuildInfo(projectHome, skipUpdate, build);
-  const projectName = basename(stripExt(buildInfo.projectPath, ".chpl"));
+  const projectName = buildInfo.projectPath.withSuffix("").name;
   //TODO: This build info is weird and only used here, we should
   //      move away from this
   //      alternatively, should we use this more generally?
@@ -68,8 +66,8 @@ proc runExamples(show: bool, run: bool, build: bool, release: bool,
   if numExamples > 0 {
     for example in examplesToRun {
 
-      const examplePath = "".join(projectHome, '/example/', example);
-      const exampleName = basename(stripExt(example, ".chpl"));
+      const examplePath = projectHome / "example" / example;
+      const exampleName = examplePath.withSuffix("").name;
 
       // retrieves compopts and execopts found per example in the toml file
       const optsFromToml = buildInfo.perExampleOptions[exampleName];
@@ -92,10 +90,11 @@ proc runExamples(show: bool, run: bool, build: bool, release: bool,
                                   buildInfo.gitList,
                                   exampleName);
           const outputName =
-            joinPath(projectHome, "target", "example", exampleName);
+            projectHome / "target" / "example" / exampleName;
           var compCommand = new list(string);
-          compCommand.pushBack(["chpl", examplePath, buildInfo.projectPath,
-                                "-o", outputName]);
+          compCommand.pushBack(["chpl", examplePath:string,
+                                buildInfo.projectPath:string,
+                                "-o", outputName:string]);
           compCommand.pushBack(buildInfo.compopts);
           compCommand.pushBack(masonCompopts);
           compCommand.pushBack(exampleCompopts);
@@ -105,7 +104,7 @@ proc runExamples(show: bool, run: bool, build: bool, release: bool,
 
           if compilation != 0 {
             const fingerprintDir =
-              joinPath(projectHome, "target", "example", ".fingerprint");
+              projectHome / "target" / "example" / ".fingerprint";
             invalidateFingerprint(projectName, fingerprintDir);
             stderr.writeln("compilation failed for " + example);
           } else {
@@ -137,7 +136,7 @@ proc runExamples(show: bool, run: bool, build: bool, release: bool,
 record examplesBuildInfo {
   var sourceList: list(srcSource);
   var gitList: list(gitSource);
-  var projectPath: string;
+  var projectPath: path;
   var compopts: list(string);
   var exampleNames: list(string);
   var perExampleOptions: map(string, chplOptions);
@@ -166,16 +165,16 @@ private proc getBuildInfo(projectHome: string,
   var perExampleOptions = getExampleOptions(tomlFile.borrow(), exampleNames);
 
   const project = tomlFile["brick.name"]!.s;
-  const projectPath = Path.joinPath(projectHome, "src", project + ".chpl");
+  const projectPath = projectHome / "src" / (project + ".chpl");
 
   if build {
-    const lock = open(Path.joinPath(projectHome, "Mason.lock"), ioMode.r);
+    const lock = open(projectHome / "Mason.lock", ioMode.r);
     defer lock.close();
     const lockFile = parseToml(lock);
     // Get project source code and dependencies
     (sourceList, gitList) = genSourceList(lockFile);
-    const depPath = Path.joinPath(MASON_HOME, 'src');
-    const gitDepPath = Path.joinPath(MASON_HOME, 'git');
+    const depPath = MASON_HOME / "src";
+    const gitDepPath = MASON_HOME / "git";
 
 
     getSrcCode(sourceList, skipUpdate, false);
@@ -199,14 +198,13 @@ private proc getBuildInfo(projectHome: string,
       const nameVer = "%s-%s".format(name, version);
       // version of -1 specifies a git dep
       if version != "-1" {
-        const depDir = Path.joinPath(depPath, nameVer);
-        const depSrc = Path.replaceExt(Path.joinPath(depDir, "src", name),
-                                        "chpl");
+        const depDir = depPath / nameVer;
+        const depSrc = (depDir / "src" / name).withSuffix(".chpl");
 
         log.debugf("Adding source dependency %s's flags", name);
         compopts.pushBack(depSrc);
 
-        for flag in MasonPrereqs.chplFlags(depDir:path) {
+        for flag in MasonPrereqs.chplFlags(depDir) {
           log.debug("+compflag ", flag);
           compopts.pushBack(flag);
         }
@@ -217,11 +215,11 @@ private proc getBuildInfo(projectHome: string,
     // see https://github.com/chapel-lang/chapel/issues/25926
     @chplcheck.ignore("UnusedLoopIndex")
     for (_x, name, branch, _y) in gitSource.iterList(gitList) {
-      const depDir = Path.joinPath(gitDepPath, name + "-" + branch);
-      const gitDepSrc = Path.joinPath(depDir, "src", name + ".chpl");
+      const depDir = gitDepPath / (name + "-" + branch);
+      const gitDepSrc = depDir / "src" / (name + ".chpl");
       compopts.pushBack(gitDepSrc);
 
-      for flag in MasonPrereqs.chplFlags(depDir:path) {
+      for flag in MasonPrereqs.chplFlags(depDir) {
         log.debug("+compflag ", flag);
         compopts.pushBack(flag);
       }
@@ -275,31 +273,28 @@ private proc getExampleOptions(
 }
 
 // Cleans out example dir from a previous run
-private proc setupExampleDir(projectHome: string) {
+private proc setupExampleDir(projectHome: path) {
 
-  const exampleDir = joinPath(projectHome, "target/example/");
-  if !isDir(exampleDir) {
+  const exampleDir = projectHome / "target" / "example";
+  if !exampleDir.isDir() {
     makeTargetFiles("debug", projectHome);
   }
 }
 
 // prevent building one example from removing all.
-private proc removeExampleBinary(projectHome: string, exampleName: string) {
+private proc removeExampleBinary(projectHome: path, exampleName: string) {
 
-  const exampleDir = joinPath(projectHome, "target/example/");
-  if isDir(exampleDir) {
-    const exampleBinPath = joinPath(exampleDir, exampleName);
-    if isFile(exampleBinPath) {
-      remove(exampleBinPath);
-    }
-  }
+  const exampleDir = projectHome / "target" / "example" / exampleName;
+  if exampleDir.isFile() then remove(exampleDir);
 }
 
 
 // Takes in examples found by mason and examples requested by user
 // outputs examples that should be built/run
-private proc determineExamples(exampleNames: list(string),
-                               examplesRequested: list(string)) throws {
+private proc determineExamples(
+  exampleNames: list(string),
+  examplesRequested: list(string)
+): list(string) throws {
 
   var examplesToRun: list(string);
 
@@ -316,12 +311,12 @@ private proc determineExamples(exampleNames: list(string),
   } else return exampleNames;
 }
 
-private proc runExampleBinary(projectHome: string, exampleName: string,
+private proc runExampleBinary(projectHome: path, exampleName: string,
                               release: bool, show: bool,
                               execopts: list(string), nLocales: int) throws {
-  const executable = joinPath(projectHome, "target", "example", exampleName);
+  const executable = projectHome / "target" / "example" / exampleName;
   var command: list(string);
-  command.pushBack(executable);
+  command.pushBack(executable:string);
   command.pushBack("-nl" + nLocales:string);
   command.pushBack(execopts);
   if show then
@@ -329,7 +324,7 @@ private proc runExampleBinary(projectHome: string, exampleName: string,
            if release then "release" else "debug",
            " ".join(command.these()));
 
-  if !isFile(executable) {
+  if !executable.isFile() {
     throw new MasonError(
       "Example has not been compiled: " + exampleName + ".chpl\n" +
       "Try running: mason build --example " + exampleName + ".chpl\n" +
@@ -382,7 +377,7 @@ proc getExamplePath(fullPath: string, examplePath = "") : string {
 
 // used when user calls `mason run --example` without argument
 proc printAvailableExamples() throws {
-  const cwd = here.cwd();
+  const cwd = path.cwd();
   const projectHome = getProjectHome(cwd);
   const toParse = open(projectHome + "/Mason.toml", ioMode.r);
   const toml = parseToml(toParse);
@@ -395,17 +390,17 @@ proc printAvailableExamples() throws {
 }
 
 // Checks to see if an example, source code, or Mason.toml has been modified
-proc exampleModified(projectHome: string,
+proc exampleModified(projectHome: path,
                      projectName: string,
                      exampleName: string,
                      commandLineCompopts: list(string)) {
-  const example = basename(stripExt(exampleName, ".chpl"));
-  const exampleBinPath = joinPath(projectHome, "target/example", example);
-  const examplePath = joinPath(projectHome, "example");
+  const exampleBinPath =
+    (projectHome / "target " / "example" / exampleName).withSuffix("");
+  const example = exampleBinPath.name;
+  const examplePath = projectHome / "example";
 
   // check for changes to Mason.toml and src code
-  const fingerprintDir =
-    joinPath(projectHome, "target", "example", ".fingerprint");
+  const fingerprintDir = projectHome / "target" / "example" / ".fingerprint";
   const fingerprintChanged =
     !checkFingerprint(projectName, fingerprintDir,
                       computeFingerprint(commandLineCompopts));
@@ -413,9 +408,9 @@ proc exampleModified(projectHome: string,
       return true;
   } else {
       // check for binary existence
-      if isFile(exampleBinPath) {
+      if exampleBinPath.isFile() {
         // check for changes to example
-        const exModTime = getLastModified(joinPath(examplePath, exampleName));
+        const exModTime = getLastModified(examplePath / exampleName);
         const exBinModTime = getLastModified(exampleBinPath);
         return exModTime > exBinModTime;
       } else

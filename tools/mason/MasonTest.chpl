@@ -20,14 +20,12 @@
 
 
 use ArgumentParser;
-use FileSystem;
 use List;
 use Map;
 use MasonBuild;
 use MasonHelp;
 use MasonUpdate;
 use MasonUtils;
-use Path;
 use Subprocess;
 use OS.POSIX;
 use TestResult;
@@ -90,7 +88,7 @@ proc masonTest(args: [] string) throws {
 
   var isMasonProject = true;
   try {
-    getProjectHome(here.cwd());
+    getProjectHome(path.cwd());
   } catch e: MasonError {
     isMasonProject = false;
   }
@@ -132,8 +130,10 @@ proc masonTest(args: [] string) throws {
 
   getRuntimeComm();
   try! {
-    const cwd = here.cwd();
-    const projectHome = getProjectHome(cwd);
+    // TODO: MasonTest is such a nightmare right now,
+    // turn path into string for now
+    const cwd = path.cwd():string;
+    const projectHome = getProjectHome(cwd):string;
 
     if !searchSubStrings.isEmpty() {
       var testNames: list(string);
@@ -218,9 +218,10 @@ private proc runTests(show: bool, run: bool, parallel: bool, filter: string,
                       skipUpdate: bool, cmdLineCompopts: list(string)) throws {
 
   try! {
-
-    const cwd = here.cwd();
-    const projectHome = getProjectHome(cwd);
+    // TODO: MasonTest is such a nightmare right now,
+    // turn path into string for now
+    const cwd = path.cwd():string;
+    const projectHome = getProjectHome(cwd):string;
 
     // parse lockfile
     const toParse = open(projectHome + "/Mason.lock", ioMode.r);

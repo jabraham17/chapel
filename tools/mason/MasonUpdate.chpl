@@ -18,7 +18,6 @@
  * limitations under the License.
  */
 
-use FileSystem;
 use List;
 use Map;
 use ArgumentParser;
@@ -76,7 +75,7 @@ proc masonUpdate(args: [] string) throws {
 proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock",
                                   show=true, force=false) throws {
 
-  const cwd = here.cwd();
+  const cwd = path.cwd();
   const projectHome = getProjectHome(cwd, tf):path;
   const tomlPath = projectHome / Path.relPath(tf);
   const lockPath = projectHome / Path.relPath(lf);

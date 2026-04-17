@@ -20,7 +20,6 @@
 
 
 use ArgumentParser;
-use FileSystem;
 use List;
 use MasonBuild;
 use MasonEnv;

@@ -25,12 +25,14 @@ public use MasonHelp;
 const regUrl: string = "https://github.com/chapel-lang/mason-registry";
 
 @chplcheck.ignore("CamelCaseFunctions")
-proc MASON_HOME : string {
+proc MASON_HOME: path {
   const envHome = getEnv("MASON_HOME");
-  const default = getEnv('HOME') + "/.mason";
-  const masonHome = if envHome != "" then envHome else default;
-
-  return masonHome;
+  if envHome != "" {
+    return envHome:path;
+  } else {
+    const default = getEnv("HOME"):path / ".mason";
+    return default;
+  }
 }
 
 /*

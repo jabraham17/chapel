@@ -23,69 +23,57 @@
 /* A helper file of utilities for Mason */
 private use CTypes;
 private use ChplConfig;
-public use FileSystem;
 private use List;
 private use Map;
 public use Subprocess;
 public use MasonEnv;
-public use Path;
 public use TOML;
 use Regex;
+
+import FileSystem as FS;
+
 import MasonLogger;
 import ThirdParty.Pathlib.path;
+use ThirdParty.Pathlib.IOHelpers;
 
 private var log = MasonLogger.getLogger("mason utils");
 
 
 /* Gets environment variables for spawn commands */
 proc getEnv(name: string): string {
-  extern proc getenv(name : c_ptrConst(c_char)) : c_ptrConst(c_char);
+  extern proc getenv(name: c_ptrConst(c_char)) : c_ptrConst(c_char);
   var cname = name.c_str();
   var value = getenv(cname);
   return string.createCopyingBuffer(value);
 }
 
 
-class MasonError : Error {
-  var msg:string;
-  proc init(msg:string) {
-    this.msg = msg;
-  }
-  override proc message() {
-    return msg;
+class MasonError: Error {
+  proc init(msg: string) {
+    super.init(msg);
   }
 }
 
 
 /* Creates the rest of the project structure */
-proc makeTargetFiles(binLoc: string, projectHome: string) {
+proc makeTargetFiles(binLoc: string, projectHome: path) {
 
-  const target = joinPath(projectHome, 'target');
-  const srcBin = joinPath(target, binLoc);
-  const example = joinPath(target, 'example');
+  const target = projectHome / "target";
+  const srcBin = target / binLoc;
+  const example = target / "example";
+  const test = target / "test";
 
-  if !isDir(target) {
-    mkdir(target);
-  }
-  if !isDir(srcBin) {
-    mkdir(srcBin);
-  }
-  if !isDir(example) {
-    mkdir(example);
-  }
+  if !target.isDir() then target.mkdir();
+  if !srcBin.isDir() then srcBin.mkdir();
+  if !example.isDir() then example.mkdir();
+  if !test.isDir() then test.mkdir();
 
-  const actualTest = joinPath(projectHome,'test');
-  if isDir(actualTest) {
-    for dir in walkDirs(actualTest) {
-      const internalDir = target+dir.replace(projectHome,"");
-      if !isDir(internalDir) {
-        mkdir(internalDir);
-      }
+  const actualTest = projectHome / "test";
+  if actualTest.isDir() {
+    for dir in FS.walkDirs(actualTest:string) {
+      const internalDir = target / dir.replace(projectHome:string,"");
+      if !internalDir.isDir() then internalDir.mkdir();
     }
-  }
-  const test = joinPath(target, 'test');
-  if !isDir(test) {
-    mkdir(test);
   }
 }
 
@@ -464,12 +452,13 @@ proc gitC(newDir:path, command, quiet=false) throws {
   return ret;
 }
 
-proc getProjectHome(cwd: string, tomlName="Mason.toml") : string throws {
-  var dir = cwd:path;
+proc getProjectHome(cwd: path, tomlName="Mason.toml"): path throws {
+  var dir = cwd;
+  const root = "/":path;
   while true {
     if (dir/tomlName).exists() then
-      return dir:string;
-    if dir:string == "/" then
+      return dir;
+    if dir == root then
       throw new MasonError("Mason could not find your " +
                            "configuration file (Mason.toml)");
     dir = dir.parent;
@@ -479,11 +468,11 @@ proc getProjectHome(cwd: string, tomlName="Mason.toml") : string throws {
   return ""; // should never reach here
 }
 
-proc getLastModified(filename: string) : int {
+proc getLastModified(filename: path): int {
   use CTypes, OS.POSIX;
 
   var file_buf: struct_stat;
-  var file_path = filename.c_str();
+  var file_path = (filename:string).c_str();
 
   if stat(file_path, c_ptrTo(file_buf)) == 0 then
     return file_buf.st_mtim.tv_sec;
@@ -491,14 +480,16 @@ proc getLastModified(filename: string) : int {
     return -1;
 }
 
-proc projectModified(projectHome, projectName, binLocation) : bool {
-  const binaryPath = joinPath(projectHome, "target", binLocation, projectName);
-  const tomlPath = joinPath(projectHome, "Mason.toml");
+proc projectModified(projectHome: path,
+                     projectName: string,
+                     binLocation: string): bool {
+  const binaryPath = projectHome / "target" / binLocation / projectName;
+  const tomlPath = projectHome / "Mason.toml";
 
-  if isFile(binaryPath) {
+  if binaryPath.isFile() {
     const binModTime = getLastModified(binaryPath);
-    for file in findFiles(joinPath(projectHome, "src"), recursive=true) {
-      var srcPath = joinPath(projectHome, "src", file);
+    for file in findFiles(projectHome / "src", recursive=true) {
+      var srcPath = projectHome / "src" / file;
       if getLastModified(srcPath) > binModTime {
         return true;
       }
@@ -693,9 +684,9 @@ proc checkoutSource(repo: path, target: string, quiet=true,
 }
 
 proc getProjectType(): string throws {
-  const cwd = here.cwd();
+  const cwd = path.cwd();
   const projectHome = getProjectHome(cwd);
-  const toParse = open(projectHome + "/Mason.toml", ioMode.r);
+  const toParse = open(projectHome / "Mason.toml", ioMode.r);
   const tomlFile = parseToml(toParse);
   if const type_ = tomlFile.get("brick.type") then
     return type_.s;
@@ -811,7 +802,6 @@ proc getDepToml(depName: string, depVersion: string) throws {
 /* Search TOML files within a package directory to find the latest package
    version number that is supported with current Chapel version */
 proc findLatest(packageDir: string): versionInfo {
-  use Path;
 
   var ret = versionInfo.zero();
   const suffix = ".toml";

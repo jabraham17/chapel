@@ -19,12 +19,14 @@
  */
 
 use ArgumentParser;
-use FileSystem;
 use IO;
 use MasonHelp;
 use MasonUtils;
 import MasonLogger;
 use List only list;
+
+import ThirdParty.Pathlib.path;
+use ThirdParty.Pathlib.IOHelpers;
 
 private var log = MasonLogger.getLogger("mason doc");
 
@@ -35,12 +37,12 @@ proc masonDoc(args: [] string) throws {
   parser.parseArgs(args);
 
   const tomlName = 'Mason.toml';
-  const cwd = here.cwd();
+  const cwd = path.cwd();
 
   const projectHome = getProjectHome(cwd, tomlName);
-  const tomlPath = projectHome + "/" + tomlName;
+  const tomlPath = projectHome / tomlName;
 
-  const toParse = open(projectHome + "/" + tomlName, ioMode.r);
+  const toParse = open(tomlPath, ioMode.r);
   var tomlFile = parseToml(toParse);
 
   const projectName = tomlFile["brick.name"]!.s;
@@ -64,10 +66,10 @@ proc masonDoc(args: [] string) throws {
     copyrightYear = copyrightToml.s;
   }
 
-  if isDir(projectHome + '/src/') &&
-      isFile(projectHome + '/src/' + projectFile) {
+  const srcDir = projectHome / "src";
+  if srcDir.isDir() && (srcDir / projectFile).isFile() {
     // Must use relative paths with chpldoc to prevent baking in abs paths
-    here.chdir(projectHome);
+    projectHome.chdir();
 
     var command = new list([
       "chpldoc",
@@ -80,8 +82,10 @@ proc masonDoc(args: [] string) throws {
     if copyrightYear != "" {
       command.pushBack("--project-copyright-year=" + copyrightYear);
     }
+    const srcLocal = "src":path;
     const srcFiles =
-      [f in listDir("src/")] if f.endsWith(".chpl") then "src/" + f;
+      [f in listDir(srcLocal:string)]
+        if f.endsWith(".chpl") then (srcLocal / f):string;
     command.pushBack(srcFiles);
     command.pushBack([
       "-o",

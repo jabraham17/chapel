@@ -19,11 +19,13 @@
  */
 
 use ArgumentParser;
-use FileSystem;
 use Map;
 use MasonUtils;
 use Regex;
 use TOML;
+
+import ThirdParty.Pathlib.path;
+use ThirdParty.Pathlib.IOHelpers;
 
 
 /* Modify manifest file */
@@ -51,7 +53,7 @@ proc masonModify(args: [] string) throws {
   }
 
   // Modify the manifest file based on arguments
-  const cwd = here.cwd();
+  const cwd = path.cwd();
   const projectHome = getProjectHome(cwd, "Mason.toml");
 
   const result = modifyToml(add, depArg.value(), extFlag.valueAsBool(),
@@ -60,10 +62,12 @@ proc masonModify(args: [] string) throws {
   generateToml(result[0]!, result[1]);
 }
 
-proc modifyToml(add: bool, spec: string, external: bool, system: bool,
-                skipCheck: bool, projectHome: string, tf="Mason.toml") throws {
+proc modifyToml(
+  add: bool, spec: string, external: bool, system: bool,
+  skipCheck: bool, projectHome: path, tf="Mason.toml"
+): (shared Toml?, path) throws {
 
-  const tomlPath = '/'.join(projectHome, tf);
+  const tomlPath = projectHome / tf;
   const openFile = openReader(tomlPath, locking=false);
   const toml = parseToml(openFile);
   var newToml: shared Toml?;
@@ -238,7 +242,7 @@ private proc masonExternalRemove(toml: shared Toml, toRm: string) throws {
 }
 
 /* Generate the modified Mason.toml */
-proc generateToml(toml: borrowed Toml, tomlPath: string) {
+proc generateToml(toml: borrowed Toml, tomlPath: path) {
   const tomlFile = open(tomlPath, ioMode.cw);
   const tomlWriter = tomlFile.writer(locking=false);
   tomlWriter.writeln(toml);

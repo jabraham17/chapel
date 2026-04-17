@@ -19,7 +19,6 @@
  */
 
 use ArgumentParser;
-use FileSystem;
 use IO;
 use List;
 use MasonEnv;

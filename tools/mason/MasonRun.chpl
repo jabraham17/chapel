@@ -19,7 +19,6 @@
  */
 
 use ArgumentParser;
-use FileSystem;
 use List;
 use MasonBuild;
 use MasonExample;
@@ -27,6 +26,9 @@ use MasonHelp;
 use MasonUtils;
 import MasonLogger;
 use TOML;
+
+import ThirdParty.Pathlib.path;
+use ThirdParty.Pathlib.IOHelpers;
 
 private var log = MasonLogger.getLogger("mason run");
 
@@ -89,27 +91,27 @@ proc masonRun(args: [] string) throws {
 proc runProjectBinary(show: bool, release: bool,
                       execopts: list(string), nLocales: int) throws {
 
-  const cwd = here.cwd();
+  const cwd = path.cwd();
   const projectHome = getProjectHome(cwd);
-  const toParse = open(projectHome + "/Mason.toml", ioMode.r);
+  const toParse = open(projectHome / "Mason.toml", ioMode.r);
   const tomlFile = parseToml(toParse);
   const project = tomlFile["brick.name"]!.s;
 
   // Find the Binary and execute
-  if isDir(joinPath(projectHome, 'target')) {
+  if (projectHome / "target").isDir() {
     var execs = ' '.join(execopts.these());
 
     // decide which binary(release or debug) to run
     var command: list(string);
     const subdir = if release then "release" else "debug";
-    const executable: string = joinPath(projectHome, "target", subdir, project);
-    command.pushBack(executable);
+    const executable: string = projectHome / "target" /  subdir / project;
+    command.pushBack(executable:string);
     command.pushBack("-nl" + nLocales:string);
     command.pushBack(execopts);
 
 
     var built = false;
-    if isFile(executable) then built = true;
+    if executable.isFile() then built = true;
 
     if show then
       writef("Executing [%s] target: %s\n",
@@ -117,10 +119,10 @@ proc runProjectBinary(show: bool, release: bool,
             " ".join(command.these()));
 
     // Build if not built, throwing error if Mason.toml doesnt exist
-    if isFile(joinPath(projectHome, "Mason.lock")) && built {
+    if (projectHome / "Mason.lock").isFile() && built {
       // TODO: do we need to expose the error code in some way?
       const runResult = runWithStatus(command.toArray(), capture=false);
-    } else if isFile(joinPath(projectHome, "Mason.toml")) {
+    } else if (projectHome / "Mason.toml").isFile() {
       const msg = "Mason could not find your Mason.lock.\n";
       const help = "To build and run your project use: mason run --build";
       throw new MasonError(msg + help);
@@ -131,7 +133,7 @@ proc runProjectBinary(show: bool, release: bool,
     // Close memory
     toParse.close();
   } else {
-    throw new owned MasonError("Mason could not find the compiled program");
+    throw new MasonError("Mason could not find the compiled program");
   }
 }
 

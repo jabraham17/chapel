@@ -19,14 +19,12 @@
  */
 
 use ArgumentParser;
-use FileSystem;
 use List;
 use Map;
 use MasonEnv;
 use MasonHelp;
 use MasonUtils;
 import MasonLogger;
-use Path;
 use SpecParser;
 use TOML;
 import ThirdParty.Pathlib.path;

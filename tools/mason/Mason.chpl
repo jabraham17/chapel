@@ -52,7 +52,6 @@ $CHPL_HOME/doc/rst/tools/mason/mason.rst
 */
 module Mason {
   use ArgumentParser;
-  use FileSystem;
   use Map;
   use MasonBuild;
   use MasonDoc;
@@ -68,6 +67,7 @@ module Mason {
   use MasonUpdate;
   use MasonUtils;
   use MasonModules;
+  import MasonClean;
   import MasonNewInit;
 
   import MasonLogger;
@@ -130,7 +130,7 @@ module Mason {
       select (usedCmd) {
         when "add" do masonModify(cmdArgs);
         when "build" do masonBuild(cmdArgs);
-        when "clean" do masonClean(cmdArgs);
+        when "clean" do MasonClean.masonClean(cmdArgs);
         when "doc" do masonDoc(cmdArgs);
         when "env" do masonEnv(cmdArgs);
         when "external" do masonExternal(cmdArgs);
@@ -160,18 +160,6 @@ module Mason {
     }
     return retCode;
   }
-
-
-  proc masonClean(args) throws {
-    var parser = new argumentParser(helpHandler=new MasonCleanHelpHandler());
-
-    parser.parseArgs(args);
-    const cwd = here.cwd();
-
-    const projectHome = getProjectHome(cwd);
-    runCommand("rm -rf " + projectHome + "/target");
-  }
-
 
   proc printVersion() {
     writeln("mason " + MASON_VERSION);

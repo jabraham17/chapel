@@ -24,7 +24,6 @@ use List;
 use Map;
 use MasonHelp;
 use MasonUtils;
-use Path;
 use Regex;
 
 /* Entry point for mason system commands */
