@@ -17,7 +17,7 @@ from util.config import CLS_PATH
 
 @pytest_lsp.fixture(
     config=ClientServerConfig(
-        server_command=[sys.executable, CLS_PATH(), "--chplcheck"],
+        server_command=[sys.executable, CLS_PATH(), "--chplcheck", "--chplcheck-setting", "IncorrectIndentation.UnindentedModule=true"],
         client_factory=get_base_client,
     )
 )
@@ -73,3 +73,49 @@ async def test_lint_fixits(client: LanguageClient):
         )
         assert "Ignore" in actions[1].title
         # TODO: check that applying the fixits actually resolves the warning
+
+@pytest.mark.asyncio
+async def test_lint_settings(client: LanguageClient):
+    """
+    Test that lint settings are properly checked
+    """
+    # no lint because of setting UnindentedModule
+    file = """
+            module M {
+            proc foo() { }
+            }
+           """
+    async with source_file(client, file, 0) as doc:
+        pass
+
+@pytest.mark.asyncio
+async def test_lint_change_indent(client: LanguageClient):
+    """
+    Test that writing code with bad indentation and then fixing the indentation works properly
+
+    Regression test for IncorrectIndentation not properly clearing its cache between runs
+    """
+
+    file = """
+            module M {
+              proc foo() {
+              writeln("Hello");
+              }
+            }
+            """
+    fileUpdated = """
+            module M {
+              proc foo() {
+                writeln("Hello");
+              }
+            }
+            """
+    async with source_file(client, file, None) as doc:
+        await save_file(client, doc)
+        assert len(client.diagnostics[doc.uri]) == 2
+
+        # change the file to fix the indentation
+        filepath = doc.uri.removeprefix("file://")
+        SourceFilesContext._create_file_at_path(filepath, fileUpdated)
+        await save_file(client, doc)
+        assert len(client.diagnostics[doc.uri]) == 1
