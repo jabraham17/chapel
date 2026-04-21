@@ -23,7 +23,7 @@ import argparse
 import re
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False, order=False)
 class RuleSetting:
     """
     Settings for an rules, these can optionally be namespaced to a specific rule
@@ -39,6 +39,14 @@ class RuleSetting:
             else self.setting_name
         )
 
+    def __hash__(self):
+        return hash((self.setting_name, self.rule_name))
+
+    def __eq__(self, other):
+        try:
+            return self.setting_name == other.setting_name and self.rule_name == other.rule_name
+        except AttributeError:
+            return NotImplemented
 
 class RuleSettingAction(argparse.Action):
 

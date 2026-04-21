@@ -237,6 +237,14 @@ class ChapelLanguageServer(LanguageServer):
         self.lint_driver.disable_rules(*config.disabled_rules)
         self.lint_driver.enable_rules(*config.enabled_rules)
 
+        invalid_settings = self.lint_driver.validate_rule_settings()
+        if invalid_settings:
+            for s in invalid_settings:
+                self.show_message(
+                    f"Invalid setting '{s}'",
+                    MessageType.Warning,
+                )
+
     def get_deprecation_replacement(
         self, text: str
     ) -> Tuple[Optional[str], Optional[str]]:
@@ -410,12 +418,8 @@ class ChapelLanguageServer(LanguageServer):
 
         # get lint diagnostics if applicable
         if self.lint_driver and chplcheck():
-            # chplcheck caches some rule work between runs. Clear this cache.
-            cache = chplcheck().indentation.build_and_run_indentation_collector
-            cache.cache_clear()
-
             lint_diagnostics = chplcheck().lsp.get_lint_diagnostics(
-                fi.context.context, self.lint_driver, fi.get_asts()
+                fi.context.context, self.lint_driver, fi.get_asts(), clear_cache=True
             )
             diagnostics.extend(lint_diagnostics)
 

@@ -80,14 +80,12 @@ class ChplcheckProxy:
         lsp: ModuleType,
         driver: ModuleType,
         rules: ModuleType,
-        indentation: ModuleType,
     ):
         self.main = main
         self.config = config
         self.lsp = lsp
         self.driver = driver
         self.rules = rules
-        self.indentation = indentation
 
     @classmethod
     def get(cls) -> Optional["ChplcheckProxy"]:
@@ -127,7 +125,6 @@ class ChplcheckProxy:
             "lsp",
             "driver",
             "rules",
-            "indentation",
         ]
         mods = []
         for mod in to_load:

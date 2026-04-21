@@ -50,11 +50,15 @@ def log(*args, **kwargs):
 
 
 def get_lint_diagnostics(
-    context: chapel.Context, driver: LintDriver, asts: List[chapel.AstNode]
+    context: chapel.Context, driver: LintDriver, asts: List[chapel.AstNode], clear_cache: bool = False
 ) -> List[Diagnostic]:
     """
     Run the linter rules on the Chapel ASTs and return them as LSP diagnostics.
     """
+
+    if clear_cache:
+        build_and_run_indentation_collector.cache_clear()
+
     diagnostics = []
     # Silence errors from scope resolution etc., especially since they
     # may be emitted from other files (dependencies).
