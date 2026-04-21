@@ -272,7 +272,7 @@ def match_pattern(ast, pattern):
                 return False
 
             # Can't compare ASTs yet
-            print("Equality constrait:", variables[variable], ast)
+            print("Equality constraint:", variables[variable], ast)
             return True
 
     def match_inner(ast, pat, variables: Dict) -> bool:
