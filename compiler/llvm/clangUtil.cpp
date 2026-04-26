@@ -4008,7 +4008,7 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
   }
   if (ts->hasFlag(FLAG_STAR_TUPLE)) {
     AggregateType* at = toAggregateType(t);
-    Symbol* field = at->getField("x0");
+    Symbol* field = at->getField(astr_x0);
     ::Type* eltType = field->type;
     clang::CanQualType cTy = getClangType(eltType, false);
     cTy = Ctx->getPointerType(cTy);

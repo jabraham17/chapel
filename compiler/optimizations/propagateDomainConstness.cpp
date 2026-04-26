@@ -244,11 +244,11 @@ static void setDefinedConstForDomainSymbol(Symbol *domainSym,
                                            Expr *&insAfterMarker,
                                            Symbol *isConst) {
 
-  VarSymbol *domInstance = addFieldAccess(domainSym, "_instance",
+  VarSymbol *domInstance = addFieldAccess(domainSym, astr__instance,
                                           insBeforeMarker, insAfterMarker,
                                           /*asRef=*/ true);
 
-  VarSymbol *refToDefinedConst = addFieldAccess(domInstance, "definedConst",
+  VarSymbol *refToDefinedConst = addFieldAccess(domInstance, astr("definedConst"),
                                                 insBeforeMarker, insAfterMarker,
                                                 /*asRef=*/ true);
 

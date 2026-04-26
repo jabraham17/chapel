@@ -82,7 +82,7 @@ public:
   virtual void           codegenDef();
   virtual void           codegenPrototype();
 
-  virtual Symbol*        getField(const char* name, bool fatal = true)   const;
+  // virtual Symbol*        getField(const char* name, bool fatal = true)   const;
 
   const char*            name()                                          const;
 

@@ -1219,10 +1219,11 @@ static void insertFieldAccess(FnSymbol*          method,
   expr->replace(dot);
 }
 
+// NOTE: name must be an astr
 static int computeNestedDepth(const char* name, Type* type) {
   int retval = 0;
 
-  if (isMethodName(name, type) == true) {
+  if (isMethodName(name, type)) {
     AggregateType* ct = toAggregateType(type);
 
     // count how many classes out from current depth that
@@ -1236,10 +1237,9 @@ static int computeNestedDepth(const char* name, Type* type) {
     // count how many classes out from current depth that
     // this symbol is first defined in
     AggregateType* ct = toAggregateType(type);
-
     while (ct != NULL) {
       if (ct->getField(name, false) != nullptr ||
-          0 == strcmp(name, ct->symbol->name)) {
+          name == ct->symbol->name) {
         // found it
         break;
       }
@@ -2661,7 +2661,7 @@ static Symbol* inType(const char* name, BaseAST* scope) {
 
   if (TypeSymbol* ts = toTypeSymbol(scope)) {
     if (AggregateType* ct = toAggregateType(canonicalClassType(ts->type))) {
-      if (Symbol* sym = ct->getField(name, false)) {
+      if (Symbol* sym = ct->getField(astr(name), false)) {
         retval = sym;
 
       } else if (Symbol* fn = getMethod(name, ct)) {

@@ -1061,7 +1061,7 @@ bundleLoopBodyFnArgsForIteratorFnCall(CallExpr* iteratorFnCall,
   rts->addFlag(FLAG_NO_OBJECT);
   rts->addFlag(FLAG_REF);
   iteratorFnCall->parentSymbol->defPoint->insertBefore(new DefExpr(rts));
-  rct->fields.insertAtTail(new DefExpr(newTemp("_val", ct)));
+  rct->fields.insertAtTail(new DefExpr(newTemp(astr__val, ct)));
   ct->refType = rct;
 
   // Create the argument bundle.
@@ -2232,7 +2232,7 @@ static void addIteratorBreakBlocksJumptable(Expr* loopRef, Symbol* IC,
   forv_Vec(Symbol, ic, iterators) {
     idx++;
     const char* idxs    = istr(idx);
-    Symbol* moreField   = ic->type->getField("more");
+    Symbol* moreField   = toAggregateType(ic->type)->getField(astr_more);
     Type*   moreType    = moreField->type;
     Type*   moreTypeRef = moreType->getRefType();
     VarSymbol* moreRef  = newTemp(astr("moreRef", idxs), moreTypeRef);
@@ -2980,9 +2980,9 @@ static void handlePolymorphicIterators()
           AggregateType* ct = subTypeAgg;
 
           for_fields(field, ct) {
-            VarSymbol* ftmp = newTemp("ftmp", getIterator->getFormal(1)->type->getField(field->name)->type);
+            VarSymbol* ftmp = newTemp("ftmp", toAggregateType(getIterator->getFormal(1)->type)->getField(field->name)->type);
             thenStmt->insertAtTail(new DefExpr(ftmp));
-            thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ftmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), getIterator->getFormal(1)->type->getField(field->name))));
+            thenStmt->insertAtTail(new CallExpr(PRIM_MOVE, ftmp, new CallExpr(PRIM_GET_MEMBER_VALUE, getIterator->getFormal(1), toAggregateType(getIterator->getFormal(1)->type)->getField(field->name))));
             // Store temp in record field.
             if (ftmp->type == field->type) {
               thenStmt->insertAtTail(new CallExpr(PRIM_SET_MEMBER, recordTmp, field, ftmp));

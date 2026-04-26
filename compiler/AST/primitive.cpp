@@ -243,7 +243,7 @@ returnInfoStaticFieldType(CallExpr* call) {
   VarSymbol* nameSym = toVarSymbol(toSymExpr(call->get(2))->symbol());
   // caller's responsibility
   INT_ASSERT(nameSym->immediate->const_kind == CONST_KIND_STRING);
-  Symbol* field = at->getField(nameSym->immediate->v_string.c_str(), true);
+  Symbol* field = at->getField(astr(nameSym->immediate->v_string.c_str()), true);
   return field->qualType().toVal();
 }
 
@@ -346,7 +346,7 @@ static QualifiedType
 returnInfoArrayIndexValue(CallExpr* call) {
   Type* type = call->get(1)->getValType();
   if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
-    type = type->getField("addr")->type;
+    type = toAggregateType(type)->getField(astr_addr)->type;
   // Is this conditional necessary?  Can just assume condition is true?
   if (type->symbol->hasFlag(FLAG_DATA_CLASS) ||
       type->symbol->hasFlag(FLAG_C_ARRAY)) {
@@ -383,12 +383,9 @@ returnInfoGetMember(CallExpr* call) {
     INT_FATAL(call, "bad member primitive");
   if (Immediate* imm = var->immediate) {
     Symbol* field = NULL;
-    if (imm->const_kind == CONST_KIND_STRING)
-    {
-      field = ct->getField(var->immediate->v_string.c_str());
-    }
-    if (imm->const_kind == NUM_KIND_INT)
-    {
+    if (imm->const_kind == CONST_KIND_STRING) {
+      field = ct->getField(astr(var->immediate->v_string.c_str()));
+    } else if (imm->const_kind == NUM_KIND_INT) {
       int64_t i = imm->int_value();
       field = ct->getField(i);
     }
@@ -408,7 +405,7 @@ returnInfoGetTupleMember(CallExpr* call) {
   if (!ct->symbol->hasFlag(FLAG_STAR_TUPLE)) {
     USR_FATAL(call, "invalid access of non-homogeneous tuple by runtime value");
   }
-  return ct->getField("x0")->qualType();
+  return ct->getField(astr_x0)->qualType();
 }
 
 static QualifiedType
@@ -443,12 +440,9 @@ returnInfoGetMemberRef(CallExpr* call) {
   if (Immediate* imm = var->immediate)
   {
     Symbol* field = NULL;
-    if (imm->const_kind == CONST_KIND_STRING)
-    {
-      field = ct->getField(var->immediate->v_string.c_str());
-    }
-    if (imm->const_kind == NUM_KIND_INT)
-    {
+    if (imm->const_kind == CONST_KIND_STRING) {
+      field = ct->getField(astr(var->immediate->v_string.c_str()));
+    } else if (imm->const_kind == NUM_KIND_INT) {
       int64_t i = imm->int_value();
       if (ct->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
         // Handle a peculiar intra-pass state where we attempt to get the

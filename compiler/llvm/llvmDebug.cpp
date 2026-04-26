@@ -876,7 +876,7 @@ struct ConstructAtomic : public ConstructDIType {
     AggregateType* at = toAggregateType(chplType);
     INT_ASSERT(at);
     Type* valType = nullptr;
-    if (auto valTypeField = at->getSubstitution(astr("valType"))) {
+    if (auto valTypeField = at->getSubstitution(astr_valType)) {
       valType = valTypeField->type;
     } else if (chplType->symbol->name == astr("atomic bool") ||
                chplType->symbol->name == astr("AtomicBool")) {

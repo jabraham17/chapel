@@ -2847,14 +2847,14 @@ Type* arrayElementType(Type* arrayType) {
   AggregateType* at = toAggregateType(arrayType);
   if (at == NULL) return NULL;
 
-  Symbol* instField = at->getField("_instance", false);
+  Symbol* instField = at->getField(astr__instance, false);
   if (instField == NULL) return NULL;
 
   Type* instType = instField->type;
   AggregateType* instClass = toAggregateType(canonicalClassType(instType));
   if (instClass == NULL) return NULL;
 
-  Symbol* eltTypeField = instClass->getField("eltType", false);
+  Symbol* eltTypeField = instClass->getField(astr_eltType, false);
   if (eltTypeField == NULL) return NULL;
 
   Type* eltType = eltTypeField->getValType();

@@ -328,6 +328,8 @@ static inline bool isVarSymbol(const BaseAST* a)
 static inline bool isCallExpr(const BaseAST* a)
 { return a && (a->astTag == E_CallExpr || a->astTag == E_ContextCallExpr); }
 
+static inline bool isAggregateType(const Type* a)
+{ return a && ((const BaseAST*)a)->astTag == E_AggregateType; }
 
 #define def_is_ast(Type)                          \
   static inline bool is##Type(const BaseAST* a)   \
@@ -441,6 +443,12 @@ def_to_ast(DoWhileStmt);
 def_to_ast(ForLoop);
 def_to_ast(CForLoop);
 def_to_ast(ParamForLoop);
+
+// specializations for Type -> AggregateType
+static inline AggregateType* toAggregateType(Type* a)
+{ return isAggregateType(a) ? (AggregateType*)a : NULL; }
+static inline const AggregateType* toConstAggregateType(const Type* a)
+{ return isAggregateType(a) ? (const AggregateType*)a : NULL; }
 
 #undef def_to_ast
 

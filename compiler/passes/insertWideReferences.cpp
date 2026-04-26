@@ -336,7 +336,7 @@ static bool typeCanBeWide(Symbol *sym) {
 static bool isValidLocalFieldType(BaseAST* bs) {
   Type* ty = bs->typeInfo();
   if (ty->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-    ty = ty->getField("addr")->typeInfo();
+    ty = toAggregateType(ty)->getField(astr_addr)->typeInfo();
   }
   return isClass(ty) || ty->symbol->hasFlag(FLAG_ARRAY);
 }
@@ -346,7 +346,7 @@ static Symbol* getTupleField(CallExpr* call) {
 
   // Probably a star tuple
   if (field == NULL) {
-    field = call->get(1)->getValType()->getField("x0");
+    field = toAggregateType(call->get(1)->getValType())->getField(astr_x0);
   }
 
   return field;
@@ -370,7 +370,7 @@ static QualifiedType getNarrowType(BaseAST* bs) {
     }
 
     if (isTypeFullyWide(bs)) {
-      t = t->getField("addr")->typeInfo();
+      t = toAggregateType(t)->getField(astr_addr)->typeInfo();
     }
     retType = t;
   } else {
@@ -391,12 +391,12 @@ static QualifiedType getNarrowType(BaseAST* bs) {
         retType = sym->typeInfo();
       } else {
         INT_ASSERT(isTypeFullyWide(sym));
-        retType = sym->typeInfo()->getField("addr")->typeInfo();
+        retType = toAggregateType(sym->typeInfo())->getField(astr_addr)->typeInfo();
       }
     } else {
       retQ = sym->qualType().getQual();
       if (isTypeFullyWide(bs)) {
-        retType = sym->typeInfo()->getField("addr")->typeInfo();
+        retType = toAggregateType(sym->typeInfo())->getField(astr_addr)->typeInfo();
       } else {
         retType = sym->typeInfo();
       }
@@ -764,7 +764,7 @@ static void buildWideClass(Type* type) {
   wts->addFlag(FLAG_WIDE_CLASS);
   theProgram->block->insertAtTail(new DefExpr(wts));
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtLocaleID)));
-  wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", type)));
+  wide->fields.insertAtTail(new DefExpr(new VarSymbol(astr_addr, type)));
 
   //
   // set reference type of wide class to reference type of class since
@@ -827,7 +827,7 @@ static void buildWideRefMap()
         row->addFlag(FLAG_REF);
         theProgram->block->insertAtTail(new DefExpr(row));
 
-        refToWideClass->fields.insertAtTail(new DefExpr(new VarSymbol("_val", wide)));
+        refToWideClass->fields.insertAtTail(new DefExpr(new VarSymbol(astr__val, wide)));
 
         // _ref_T -> _ref__wide_T
         // Later we'll use this map to widen variables
@@ -856,9 +856,9 @@ static void buildWideRefMap()
 
       VarSymbol* addr;
       if (refToWideClass) {
-        addr = new VarSymbol("addr", refToWideClass);
+        addr = new VarSymbol(astr_addr, refToWideClass);
       } else {
-        addr = new VarSymbol("addr", ts->type);
+        addr = new VarSymbol(astr_addr, ts->type);
       }
       wideRefType->fields.insertAtTail(new DefExpr(addr));
 
@@ -1266,7 +1266,7 @@ static void propagateVar(Symbol* sym) {
         Symbol* base = toSymExpr(call->get(1))->symbol();
         Type* type = base->getValType();
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-          type = type->getField("addr")->type;
+          type = toAggregateType(type)->getField(astr_addr)->type;
         }
         if (canWidenRecord(type)) {
           if (use  == call->get(3)) {
@@ -1358,7 +1358,7 @@ static void propagateVar(Symbol* sym) {
               SymExpr* base = toSymExpr(rhs->get(1));
               Type* type = base->getValType();
               if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-                type = type->getField("addr")->type;
+                type = toAggregateType(type)->getField(astr_addr)->type;
               }
               if (canWidenRecord(type)) {
                 setWide(def, base);
@@ -1515,7 +1515,7 @@ static void insertStringLiteralTemps()
               }
               if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
                 Type* valueType = call->get(1)->getValType();
-                Type* componentType = valueType->getField("x0")->type;
+                Type* componentType = toAggregateType(valueType)->getField(astr_x0)->type;
                 if (componentType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
                   VarSymbol* tmp = newTemp(componentType);
                   call->getStmtExpr()->insertBefore(new DefExpr(tmp));
@@ -1654,7 +1654,7 @@ static void insertWideClassTempsForNil()
         }
       } else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
         Type* valueType = call->get(1)->getValType();
-        Type* componentType = valueType->getField("x0")->type;
+        Type* componentType = toAggregateType(valueType)->getField(astr_x0)->type;
         if (isFullyWide(componentType)) {
           VarSymbol* tmp = newTemp(componentType);
           call->insertBefore(new DefExpr(tmp));
@@ -2410,7 +2410,7 @@ static void fixRecordWrappedTypes() {
 #define fixHelper(TypeName) \
   forv_Vec(TypeName, var, g##TypeName##s) { \
     if (var->type->symbol->hasFlag(FLAG_WIDE_CLASS)) { \
-      Type* inner = var->type->getField("addr")->type; \
+      Type* inner = toAggregateType(var->type)->getField(astr_addr)->type; \
       if (canWidenRecord(inner)) { \
         var->type = inner; \
       } \
@@ -2422,7 +2422,7 @@ static void fixRecordWrappedTypes() {
 #undef fixHelper
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->retType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      Type* inner = fn->retType->getField("addr")->type;
+      Type* inner = toAggregateType(fn->retType)->getField(astr_addr)->type;
       if (canWidenRecord(inner)) {
         fn->retType = inner;
       }
@@ -2432,14 +2432,14 @@ static void fixRecordWrappedTypes() {
     if (ts->hasFlag(FLAG_DATA_CLASS)) {
       if (Type* nt = getDataClassType(ts)->type) {
         if (nt->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-          Type* inner = nt->getField("addr")->type;
+          Type* inner = toAggregateType(nt)->getField(astr_addr)->type;
           if (canWidenRecord(inner)) {
             setDataClassType(ts, inner->symbol);
           }
         }
       }
     } else if (ts->hasFlag(FLAG_WIDE_CLASS)) {
-      Type* addr = ts->type->getField("addr")->type;
+      Type* addr = toAggregateType(ts->type)->getField(astr_addr)->type;
       if (canWidenRecord(addr)) {
         wideClassMap.put(addr, NULL);
       }

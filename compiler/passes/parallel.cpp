@@ -908,7 +908,7 @@ buildHeapType(Type* type) {
   ts->addFlag(FLAG_NO_OBJECT);
   ts->addFlag(FLAG_HEAP);
   theProgram->block->insertAtTail(new DefExpr(ts));
-  heap->fields.insertAtTail(new DefExpr(new VarSymbol("value", type)));
+  heap->fields.insertAtTail(new DefExpr(new VarSymbol(astr_value, type)));
   heapTypeMap.put(type, heap);
   return heap;
 }
@@ -1506,7 +1506,7 @@ Type* getOrMakeRefTypeDuringCodegen(Type* type) {
       refTs->addFlag(FLAG_NO_DEFAULT_FUNCTIONS);
       refTs->addFlag(FLAG_NO_OBJECT);
       theProgram->block->insertAtTail(new DefExpr(refTs));
-      ref->fields.insertAtTail(new DefExpr(new VarSymbol("_val", type)));
+      ref->fields.insertAtTail(new DefExpr(new VarSymbol(astr__val, type)));
       refType = ref;
       type->refType = ref;
       refMap.insert(it, std::make_pair(cname, ref));
@@ -1544,7 +1544,7 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType) {
     wts->addFlag(FLAG_WIDE_CLASS);
   theProgram->block->insertAtTail(new DefExpr(wts));
   wide->fields.insertAtTail(new DefExpr(new VarSymbol("locale", dtLocaleID)));
-  wide->fields.insertAtTail(new DefExpr(new VarSymbol("addr", refType)));
+  wide->fields.insertAtTail(new DefExpr(new VarSymbol(astr_addr, refType)));
 
   if(!isActualRefType && isClass(refType)) {
     wideClassMap.put(refType, wide);

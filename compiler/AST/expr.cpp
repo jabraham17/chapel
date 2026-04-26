@@ -70,12 +70,12 @@ bool Expr::isStmt() const {
 }
 
 const char* DefExpr::name() const {
-  const char* retval = 0;
+  const char* retval = NULL;
 
-  if (isLcnSymbol(sym)    == true ||
-      isTypeSymbol(sym)   == true ||
-      isFnSymbol(sym)     == true ||
-      isModuleSymbol(sym) == true) {
+  if (isLcnSymbol(sym) ||
+      isTypeSymbol(sym) ||
+      isFnSymbol(sym) ||
+      isModuleSymbol(sym)) {
     retval = sym->name;
   }
 

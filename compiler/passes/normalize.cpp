@@ -4137,7 +4137,7 @@ static CondStmt* makeCondToTransformArr(ArgSymbol* formal, VarSymbol* newArr,
   VarSymbol* instanceType = new VarSymbol(astr(formal->name, "_instype"));
   instanceType->addFlag(FLAG_MAYBE_TYPE);
   CallExpr* makeIT = new CallExpr(PRIM_STATIC_FIELD_TYPE, oldTypeExpr,
-                                  new_StringSymbol("_instance"));
+                                  new_StringSymbol(astr__instance));
   elseBody->insertAtTail(new DefExpr(instanceType));
   elseBody->insertAtTail(new CallExpr(PRIM_MOVE, instanceType, makeIT));
   // Make a proper array using the argument and the _instance field's type
@@ -4335,7 +4335,7 @@ static void fixupArrayElementExpr(FnSymbol*                    fn,
       if (se->symbol() == queryEltType->sym) {
         SET_LINENO(se);
 
-        se->replace(new CallExpr(".", formal, new_CStringSymbol("eltType")));
+        se->replace(new CallExpr(".", formal, new_CStringSymbol(astr_eltType)));
       }
     }
 
@@ -4352,7 +4352,7 @@ static void fixupArrayElementExpr(FnSymbol*                    fn,
 
     Expr*     oldWhere   = fn->where->body.tail;
     CallExpr* newWhere   = new CallExpr("&");
-    Symbol*   eltType    = new_CStringSymbol("eltType");
+    Symbol*   eltType    = new_CStringSymbol(astr_eltType);
     CallExpr* getEltType = new CallExpr(".", formal, eltType);
 
     oldWhere->replace(newWhere);

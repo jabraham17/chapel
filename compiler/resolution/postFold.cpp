@@ -426,7 +426,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
         isDistClass(canonicalClassType(pt))) {
       AggregateType* ag = toAggregateType(st);
 
-      st = canonicalDecoratedClassType(ag->getField("_instance")->type);
+      st = canonicalDecoratedClassType(ag->getField(astr__instance)->type);
     } else {
       // Try to work around some resolution order issues
       st = resolveTypeAlias(subExpr);

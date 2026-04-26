@@ -1297,7 +1297,7 @@ static void checkTypesForInstantiation(AggregateType* at, CallExpr* call, const 
 
 static void markManagedPointerIfNonNilable(AggregateType* mp, Symbol* mps) {
   if (! mps->hasFlag(FLAG_GENERIC))
-    if (Symbol* chpl_t = mp->getField("chpl_t", false))
+    if (Symbol* chpl_t = mp->getField(astr_chpl_t, false))
       if (isNonNilableClassType(chpl_t->type))
         mps->addFlag(FLAG_MANAGED_POINTER_NONNILABLE);
 }
@@ -1977,7 +1977,7 @@ int AggregateType::getFieldPosition(const char* name, bool fatal) {
     forv_Vec(Type, t, *current_p) {
       if (AggregateType* ct = toAggregateType(t)) {
         for_fields(sym, ct) {
-          if (!strcmp(sym->name, name)) {
+          if (sym->name ==  name) {
             return fieldPos;
           }
 
@@ -1985,7 +1985,7 @@ int AggregateType::getFieldPosition(const char* name, bool fatal) {
         }
 
         forv_Vec(AggregateType, parent, ct->dispatchParents) {
-          if (parent != NULL) {
+          if (parent != nullptr) {
             next_p->set_add(parent);
           }
         }
@@ -2032,13 +2032,13 @@ Symbol* AggregateType::getField(const char* name, bool fatal) const {
   while (currentP->n != 0) {
     forv_Vec(AggregateType, ct, *currentP) {
       for_fields(sym, ct) {
-        if (strcmp(sym->name, name) == 0) {
+        if (sym->name == name) {
           return sym;
         }
       }
 
       forv_Vec(AggregateType, parent, ct->dispatchParents) {
-        if (parent != NULL) {
+        if (parent != nullptr) {
           nextP->set_add(parent);
         }
       }
@@ -2088,16 +2088,16 @@ QualifiedType AggregateType::getFieldType(Expr* e) {
 
   // Typical case: field is identified by its name
   if (var && var->immediate)
-    name = var->immediate->v_string.c_str();
+    name = astr(var->immediate->v_string.c_str());
 
   // Special case: star tuples can have run-time integer field access
   if (name == NULL && this->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-    name = "x0"; // get the initial field's type; they're all the same
+    name = astr_x0; // get the initial field's type; they're all the same
   }
 
   Symbol* fs = NULL;
   for_fields(field, this) {
-    if (!strcmp(field->name, name)) {
+    if (field->name == name) {
       fs = field;
     }
   }
@@ -3369,7 +3369,7 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecoratorEnum d) {
 
 Type* AggregateType::cArrayElementType() const {
   INT_ASSERT(symbol->hasFlag(FLAG_C_ARRAY));
-  TypeSymbol* eltTS = toTypeSymbol(getSubstitutionWithName(astr("eltType")));
+  TypeSymbol* eltTS = toTypeSymbol(getSubstitutionWithName(astr_eltType));
   INT_ASSERT(eltTS);
   return eltTS->type;
 }
@@ -3389,7 +3389,7 @@ int64_t AggregateType::cArrayLength() const {
 Type* AggregateType::arrayElementType() const {
   if (!symbol->hasFlag(FLAG_ARRAY)) return nullptr;
   Type* ret = nullptr;
-  Type* instType = this->getField("_instance")->type;
+  Type* instType = this->getField(astr(astr__instance))->type;
   AggregateType* instClass = toAggregateType(canonicalClassType(instType));
   if (!instClass) return nullptr;
   TypeSymbol* ts = getDataClassType(instClass->symbol);

@@ -91,9 +91,11 @@ public:
 
   Symbol*                     getField(int i)                            const;
 
+  // NOTE: requires astr
   Symbol*                     getField(const char* name,
-                                       bool        fatal = true) const override;
+                                       bool        fatal = true)         const;
 
+  // NOTE: requires astr
   int                         getFieldPosition(const char* name,
                                                bool        fatal = true);
 

@@ -441,7 +441,7 @@ static bool isSettingShape(SymExpr* se) {
   if (CallExpr* parent = toCallExpr(se->parentExpr))
     if (parent->isPrimitive(PRIM_SET_MEMBER))
       if (SymExpr* field = toSymExpr(parent->get(2)))
-        if (!strcmp(field->symbol()->name, "_shape_"))
+        if (field->symbol()->name == astr__shape_)
           return true;
   return false;
 }

@@ -432,7 +432,7 @@ FnSymbol* getAutoDestroy(Type* t) {
 
 Type* getCopyTypeDuringResolution(Type* t) {
   if (isSyncType(t)) {
-    Type* baseType = t->getField("valType")->type;
+    Type* baseType = toAggregateType(t)->getField(astr_valType)->type;
     return baseType;
   }
   if (isAliasingArrayType(t) || // avoid inf. loop in resolving array functions
@@ -2774,7 +2774,7 @@ static void markArraysOfBorrows(AggregateType* at) {
   AggregateType* nextAt = at;
 
   if (isRecordWrappedType(at)) {
-    Symbol* instanceField = at->getField("_instance", false);
+    Symbol* instanceField = at->getField(astr__instance, false);
 
     if (instanceField) {
       Type* implType = canonicalDecoratedClassType(instanceField->type);
@@ -2786,7 +2786,7 @@ static void markArraysOfBorrows(AggregateType* at) {
   }
 
   if (isArrayClass(nextAt) && !nextAt->symbol->hasFlag(FLAG_BASE_ARRAY)) {
-    Symbol* eltTypeField = nextAt->getField("eltType", false);
+    Symbol* eltTypeField = nextAt->getField(astr_eltType, false);
 
     if (eltTypeField) {
       Type* eltType    = eltTypeField->type;
@@ -7260,7 +7260,7 @@ static int testArgMapping(ResolutionCandidate*         candidate1,
   }
 
   if (isSyncType(actualScalarType)) {
-    actualScalarType = actualScalarType->getField("valType")->getValType();
+    actualScalarType = toAggregateType(actualScalarType)->getField(astr_valType)->getValType();
   }
 
   // consider promotion
@@ -8439,7 +8439,7 @@ static void resolveInitField(CallExpr* call) {
   } else if (developer == false &&
              ct->symbol->hasFlag(FLAG_BASE_ARRAY) == false &&
              isArrayClass(ct) &&
-             strcmp(fs->name, "dom") == 0) {
+             fs->name == astr_dom) {
     fixTypeNames(ct);
   }
 
@@ -9799,7 +9799,7 @@ static void resolveMoveForRhsCallExpr(CallExpr* call, Type* rhsType) {
     if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
       Type* baseType = rhs->get(1)->getValType();
       const char* memberName = get_string(rhs->get(2));
-      Symbol* sym = baseType->getField(memberName);
+      Symbol* sym = toAggregateType(baseType)->getField(memberName);
       if (sym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
         if (SymExpr* se = toSymExpr(call->get(1))) {
           se->symbol()->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
@@ -13521,7 +13521,7 @@ Symbol* getPrimGetRuntimeTypeField_Field(CallExpr* call) {
   Symbol* field = NULL;
   if (Immediate* imm = fieldName->immediate) {
     INT_ASSERT(imm->const_kind == CONST_KIND_STRING);
-    field = rtt->getField(imm->v_string.c_str());
+    field = rtt->getField(astr(imm->v_string.c_str()));
   } else {
     field = fieldName;
   }
@@ -13585,7 +13585,7 @@ static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType)
     if (formal->hasFlag(FLAG_INSTANTIATED_PARAM))
       continue;
 
-    Symbol* field = runtimeType->getField(formal->name);
+    Symbol* field = toAggregateType(runtimeType)->getField(formal->name);
 
     if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
         ! field->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
@@ -14043,7 +14043,7 @@ static Symbol* resolvePrimInitGetField(CallExpr* call) {
 
     if (Immediate* imm = var->immediate) {
       if (imm->const_kind == CONST_KIND_STRING) {
-        retval = ct->getField(var->immediate->v_string.c_str());
+        retval = ct->getField(astr(var->immediate->v_string.c_str()));
 
       } else if (imm->const_kind == NUM_KIND_INT) {
         int64_t i = imm->int_value();

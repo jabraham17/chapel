@@ -723,7 +723,7 @@ Symbol* GpuizableLoop::getPidFieldForPrivatizationOffload(SymExpr* symExpr) {
     AggregateType* aggType = toAggregateType(sym->type);
     INT_ASSERT(aggType);
 
-    return aggType->getField("_pid", /*fatal=*/ false);
+    return aggType->getField(astr("_pid"), /*fatal=*/ false);
   }
   return NULL;
 }
@@ -2232,7 +2232,7 @@ void GpuKernel::generateKernelLaunch() {
     launchBlock_->insertAtTail(new CallExpr(PRIM_MOVE, pid, pidGet->copy()));
 
     AggregateType* privUserType = toAggregateType(pidGet->get(1)->typeInfo());
-    Symbol* instanceSym = privUserType->getField("_instance");
+    Symbol* instanceSym = privUserType->getField(astr__instance);
     Symbol* instanceSize = new VarSymbol("instance_size", dtInt[INT_SIZE_64]);
 
     launchBlock_->insertAtTail(new DefExpr(instanceSize));

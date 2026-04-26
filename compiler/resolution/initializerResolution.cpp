@@ -160,7 +160,7 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn, Expr* allocator = nullptr) {
   BlockStmt* body = fn->body;
   VarSymbol* initTemp = newTemp("initTemp", type);
   CallExpr* innerInit = new CallExpr(initFn, gMethodToken, initTemp);
-  ArgSymbol* chpl_t = new ArgSymbol(INTENT_BLANK, "chpl_t", type);
+  ArgSymbol* chpl_t = new ArgSymbol(INTENT_BLANK, astr_chpl_t, type);
 
   chpl_t->addFlag(FLAG_TYPE_VARIABLE);
 

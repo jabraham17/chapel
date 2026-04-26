@@ -326,7 +326,7 @@ static Symbol* setupRiGlobalOp(LoopWithShadowVarsInterface* fs, Symbol* fiVarSym
 
 
   {
-    NamedExpr* newArg = new NamedExpr("eltType", eltTypeArg);
+    NamedExpr* newArg = new NamedExpr(astr_eltType, eltTypeArg);
     CallExpr* newCall = new CallExpr(PRIM_NEW, new SymExpr(riTypeSym), newArg,
                                      new NamedExpr(astr_chpl_manager,
                                          new SymExpr(dtUnmanaged->symbol)));

@@ -1852,7 +1852,7 @@ static bool isFormalTempConst(FnSymbol *fn, ArgSymbol *formal) {
   // default initializer
 
   if (fn->hasFlag(FLAG_COMPILER_GENERATED) && fn->name == astrInit) {
-    Symbol *fieldSym = fn->getReceiverType()->getField(formal->name);
+    Symbol *fieldSym = toAggregateType(fn->getReceiverType())->getField(formal->name);
     return fieldSym->hasFlag(FLAG_CONST);
   }
 

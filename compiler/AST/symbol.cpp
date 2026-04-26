@@ -2151,6 +2151,18 @@ const char* astr_coerceMove = NULL;
 const char* astr_autoDestroy = NULL;
 const char* astr__ln = NULL;
 const char* astr__fn = NULL;
+const char* astr_more = NULL;
+const char* astr__instance = NULL;
+const char* astr__val = NULL;
+const char* astr_addr = NULL;
+const char* astr__shape_ = NULL;
+const char* astr_x0 = NULL;
+const char* astr_chpl_p = NULL;
+const char* astr_chpl_t = NULL;
+const char* astr_value = NULL;
+const char* astr_dom = NULL;
+const char* astr_eltType = NULL;
+const char* astr_valType = NULL;
 
 void initAstrConsts() {
   astrSassign = astr("=");
@@ -2201,6 +2213,19 @@ void initAstrConsts() {
 
   astr__ln = astr("_ln");
   astr__fn = astr("_fn");
+
+  astr_more = astr("more");
+  astr__instance = astr("_instance");
+  astr__val = astr("_val");
+  astr_addr = astr("addr");
+  astr__shape_ = astr("_shape_");
+  astr_x0 = astr("x0");
+  astr_chpl_p = astr("chpl_p");
+  astr_chpl_t = astr("chpl_t");
+  astr_value = astr("value");
+  astr_dom = astr("dom");
+  astr_eltType = astr("eltType");
+  astr_valType = astr("valType");
 }
 
 bool isAstrOpName(const char* name) {

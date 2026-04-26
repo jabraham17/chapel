@@ -1275,7 +1275,7 @@ buildReduceScanPreface2(BlockStmt* fn, Symbol* eltType, Symbol* globalOp,
 {
   fn->insertAtTail(new DefExpr(globalOp));
 
-  NamedExpr* newArg = new NamedExpr("eltType", new SymExpr(eltType));
+  NamedExpr* newArg = new NamedExpr(astr_eltType, new SymExpr(eltType));
   CallExpr* newCall = makeUnmanagedNew(opExpr, newArg);
   CallExpr* move = new CallExpr(PRIM_MOVE, globalOp, newCall);
   fn->insertAtTail(move);

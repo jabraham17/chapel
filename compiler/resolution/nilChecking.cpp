@@ -294,7 +294,7 @@ static void replaceBangWithCast(CallExpr* call, Type* type, Symbol* arg) {
   Type* argType = arg->getValType();
   if (argType->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
     // Extract the 'chpl_p' field.
-    Symbol* pField = toAggregateType(argType)->getField("chpl_p");
+    Symbol* pField = toAggregateType(argType)->getField(astr_chpl_p);
     VarSymbol* pTemp = newTempConst(pField->type);
     call->getStmtExpr()->insertBefore(new DefExpr(pTemp));
     call->getStmtExpr()->insertBefore("'move'(%S,'.v'(%S,%S))",

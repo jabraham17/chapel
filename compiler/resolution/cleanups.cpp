@@ -197,7 +197,7 @@ static void removeRandomPrimitive(CallExpr* call) {
       Symbol* sym = NULL;  // the member symbol
 
       if (get_string(memberSE, &memberName)) {
-        sym = baseType->getField(memberName);
+        sym = toAggregateType(baseType)->getField(memberName);
         SET_LINENO(memberSE);
         memberSE->replace(new SymExpr(sym));
       } else {
@@ -791,7 +791,7 @@ static bool isNothingType(Type* type) {
     return true;
   }
   if (type->symbol->hasFlag(FLAG_REF)) {
-    if (type->getField("_val", false)) {
+    if (toAggregateType(type)->getField(astr__val, false)) {
       return isNothingType(type->getValType());
     } else {
       // The _val field has already been removed because it is
@@ -800,7 +800,7 @@ static bool isNothingType(Type* type) {
     }
   }
   if (type->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-    Symbol* field = type->getField("x0", false);
+    Symbol* field = toAggregateType(type)->getField(astr_x0, false);
     return field == NULL || isNothingType(field->type);
   }
   return false;

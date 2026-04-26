@@ -2230,11 +2230,11 @@ codegen_config() {
         fprintf(outfile, "installConfigVar(\"%s\", \"", var->name);
         Type* type = var->type;
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
-          type = type->getField("addr")->type;
+          type = toAggregateType(type)->getField(astr_addr)->type;
         if (type->symbol->hasFlag(FLAG_HEAP))
-          type = type->getField("value")->type;
+          type = toAggregateType(type)->getField(astr_value)->type;
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
-          type = type->getField("addr")->type;
+          type = toAggregateType(type)->getField(astr_addr)->type;
         fprintf(outfile, "%s", type->symbol->name);
         if (var->getModule()->modTag == MOD_INTERNAL) {
           fprintf(outfile, "\", \"Built-in\"");
@@ -2305,13 +2305,13 @@ codegen_config() {
 
         Type* type = var->type;
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-          type = type->getField("addr")->type;
+          type = toAggregateType(type)->getField(astr_addr)->type;
         }
         if (type->symbol->hasFlag(FLAG_HEAP)) {
-          type = type->getField("value")->type;
+          type = toAggregateType(type)->getField(astr_value)->type;
         }
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-          type = type->getField("addr")->type;
+          type = toAggregateType(type)->getField(astr_addr)->type;
         }
         args[1] = genStringArg(type->symbol->name);
 

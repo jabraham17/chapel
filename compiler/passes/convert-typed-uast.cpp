@@ -3131,7 +3131,7 @@ Type* TConverter::convertType(const types::Type* t) {
     refTs->addFlag(FLAG_NO_OBJECT);
     refTs->addFlag(FLAG_RESOLVED_EARLY);
     globalInsertionPoint->insertAtTail(new DefExpr(refTs));
-    ref->fields.insertAtTail(new DefExpr(new VarSymbol("_val", ret)));
+    ref->fields.insertAtTail(new DefExpr(new VarSymbol(astr__val, ret)));
     ret->refType = ref;
   }
 
@@ -5061,7 +5061,7 @@ Expr* TConverter::ActualConverter::convertActualWithArg(const FormalActual& fa) 
                                             ct->managerRecordType(context));
             types::QualifiedType qtField;
             borrow = codegenGetFieldImpl(tc_, PRIM_UNKNOWN, temp, mrt,
-                                         "chpl_p",
+                                         astr_chpl_p,
                                          -1,
                                          rv_, &qtField);
             borrow = tc_->storeInTempIfNeeded(borrow, qtField);
@@ -5909,10 +5909,10 @@ Expr* TConverter::convertFieldAccessOrNull(const AstNode* node, RV& rv) {
     // Can always generate an access for 'chpl_p', since we're either accessing
     // that field directly, or forwarding to it.
     auto fwd = codegenGetFieldImpl(this, PRIM_UNKNOWN, recv, mrt,
-                                   "chpl_p",
+                                   astr_chpl_p,
                                    -1,
                                    rv, &qtField);
-    if (fieldName == "chpl_p") {
+    if (fieldName == astr_chpl_p) {
       return storeInTempIfNeeded(fwd, qtField);
     } else {
       recv = storeInTempIfNeeded(fwd, qtField);

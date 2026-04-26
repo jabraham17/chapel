@@ -628,7 +628,7 @@ static const char* getNameFrom(Expr* e) {
   if (UnresolvedSymExpr* uSym = toUnresolvedSymExpr(e)) {
     return uSym->unresolved;
   } else if (SymExpr* se = toSymExpr(e)) {
-    if (get_string(se, &name) == true)
+    if (get_string(se, &name))
       return name;
   }
 
@@ -1077,7 +1077,7 @@ Symbol* ResolveScope::getFieldFromPath(CallExpr* dottedExpr, bool isUse) const {
       if (SymExpr* rhs = toSymExpr(dottedExpr->get(2))) {
         const char* rhsName = NULL;
 
-        if (get_string(rhs, &rhsName) == true) {
+        if (get_string(rhs, &rhsName)) {
           ResolveScope* scope = getScopeFor(module->block);
 
           if (Symbol* symbol = scope->getField(rhsName)) {

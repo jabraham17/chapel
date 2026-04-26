@@ -105,7 +105,7 @@ static
 bool isNonAliasingArrayType(Type* t) {
   if (AggregateType* at = toAggregateType(t)) {
     if (isRecordWrappedType(at)) {
-      Symbol* instanceField = at->getField("_instance", false);
+      Symbol* instanceField = at->getField(astr__instance, false);
 
       if (instanceField)
         return isNonAliasingArrayImplType(instanceField->type);

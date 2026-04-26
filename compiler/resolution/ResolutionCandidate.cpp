@@ -772,7 +772,7 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
   }
 
   if (isSyncType(actualType)) {
-    Type* baseType = actualType->getField("valType")->type;
+    Type* baseType = toAggregateType(actualType)->getField(astr_valType)->type;
     if (canInstantiate(baseType, formalType))
       return baseType;
   }

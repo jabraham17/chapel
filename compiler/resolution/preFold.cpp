@@ -1182,7 +1182,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     if(isManagedPtrType(call->get(1)->getValType())) {
       // Extract the 'chpl_p' field.
-      Symbol* pField = toAggregateType(call->get(1)->getValType())->getField("chpl_p");
+      Symbol* pField = toAggregateType(call->get(1)->getValType())->getField(astr_chpl_p);
       VarSymbol* pTemp = newTempConst(pField->type);
       call->getStmtExpr()->insertBefore(new DefExpr(pTemp));
       call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE,
@@ -1399,7 +1399,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     }
 
     Immediate* imm = toVarSymbol(toSymExpr(call->get(2))->symbol())->immediate;
-    Symbol* field = at->getField(imm->v_string.c_str());
+    Symbol* field = at->getField(astr(imm->v_string.c_str()));
     if (at->symbol->hasFlag(FLAG_GENERIC) &&
         std::find(at->genericFields.begin(), at->genericFields.end(), field) != at->genericFields.end()) {
       retval = new SymExpr(gFalse);
@@ -2803,7 +2803,6 @@ static Expr* preFoldNamed(CallExpr* call) {
     if ((isVarSymbol(sym) || isTypeSymbol(sym)) &&
         sym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       int64_t index    =        0;
-      char    field[8] = { '\0' };
 
       if (call->numActuals() == 2) {
         USR_FATAL(call, "illegal call of type");
@@ -2827,9 +2826,8 @@ static Expr* preFoldNamed(CallExpr* call) {
         USR_FATAL(call, "type index expression '%" PRId64 "' out of bounds (0..%d)", index, at->fields.length-2);
       }
 
-      snprintf(field, sizeof(field), "x%" PRId64, index);
-
-      retval = new SymExpr(sym->type->getField(field)->type->symbol);
+      const char* field = astr("x", istr(index));
+      retval = new SymExpr(toAggregateType(sym->type)->getField(field)->type->symbol);
       call->replace(retval);
 
     } else if (isLcnSymbol(sym) == true) {
@@ -3179,25 +3177,25 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
   AggregateType* baseType = toAggregateType(baseVar->getValType());
   int64_t index;
   uint64_t uindex;
-  char field[8];
+  const char* field = NULL;
   bool zero_error = false;
   bool error = false;
 
   if (get_int(call->get(3), &index)) {
-    snprintf(field, sizeof(field), "x%" PRId64, index);
+    field = astr("x", istr(index));
     if (index < 0 || index >= baseType->fields.length-1) {
       USR_FATAL_CONT(call, "tuple index %" PRId64 " is out of bounds", index);
       if (index < 0) zero_error = true;
       error = true;
     }
   } else if (get_uint(call->get(3), &uindex)) {
-    snprintf(field, sizeof(field), "x%" PRIu64, uindex);
+    field = astr("x", istr(uindex));
     if (uindex >= (unsigned long)baseType->fields.length-1) {
       USR_FATAL_CONT(call, "tuple index %" PRIu64 " is out of bounds", uindex);
       error = true;
     }
   } else if (get_bool(call->get(3), &uindex)) {
-    snprintf(field, sizeof(field), "x%" PRIu64, uindex);
+    field = astr("x", istr(uindex));
     if (uindex >= (unsigned long)baseType->fields.length-1) {
       USR_FATAL_CONT(call, "tuple index %" PRIu64 " is out of bounds", uindex);
       error = true;
@@ -3278,7 +3276,7 @@ static Symbol* determineQueriedField(CallExpr* call) {
   Symbol*        retval = NULL;
 
   if (var->immediate->const_kind == CONST_KIND_STRING) {
-    retval = at->getField(var->immediate->v_string.c_str(), false);
+    retval = at->getField(astr(var->immediate->v_string.c_str()), false);
 
   } else {
     Vec<Symbol*> args;

@@ -881,6 +881,18 @@ extern const char* astr_coerceMove;
 extern const char* astr_autoDestroy;
 extern const char* astr__fn;
 extern const char* astr__ln;
+extern const char* astr_more;
+extern const char* astr__instance;
+extern const char* astr__val;
+extern const char* astr_addr;
+extern const char* astr__shape_;
+extern const char* astr_x0;
+extern const char* astr_chpl_p;
+extern const char* astr_chpl_t;
+extern const char* astr_value;
+extern const char* astr_dom;
+extern const char* astr_eltType;
+extern const char* astr_valType;
 
 bool isAstrOpName(const char* name);
 

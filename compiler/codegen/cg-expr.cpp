@@ -427,7 +427,7 @@ enum WideThingField {
   WIDE_GEP_ADDR=1,
 };
 
-static const char* wide_fields[] = {"locale", "addr", "size", NULL};
+static const char* wide_fields[] = {"locale", astr_addr, "size", NULL};
 
 static GenRet genCommID(GenInfo* info) {
   return baseASTCodegen(new_CommIDSymbol(commIDMap[info->filename]++));
@@ -912,7 +912,7 @@ Type* getRefTypesForWideThing(GenRet wide, Type** wideRefTypeOut)
       // only if they are a wide reference or a wide class.
       // Then the wide type is the current Chapel type.
       if( wide.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS) ) {
-        ret = wide.chplType->getField("addr")->typeInfo();
+        ret = toAggregateType(wide.chplType)->getField(astr_addr)->typeInfo();
         wideRefType = wide.chplType;
       } else {
         INT_ASSERT(0); // Not a wide thing.
@@ -1225,7 +1225,7 @@ GenRet doCodegenFieldPtr(
   } else if ( baseType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
     // Get the local version of the class (because it has the fields)
     base = codegenValue(base);
-    baseType = baseType->getField("addr")->typeInfo();
+    baseType = toAggregateType(baseType)->getField(astr_addr)->typeInfo();
     ct = toAggregateType(baseType);
   } else {
     // Must be a record or union type, and we must have an
@@ -1251,7 +1251,7 @@ GenRet doCodegenFieldPtr(
     // The field might be in a base class, so we
     // cast to the right base class type. If the field
     // is in the class, there is no need to cast.
-    Symbol* fieldSymbol = ct->getField(chpl_field_name);
+    Symbol* fieldSymbol = ct->getField(astr(chpl_field_name));
     if( isClass(ct) ) {
       castType = fieldSymbol->defPoint->parentSymbol->typeInfo();
       if( castType == ct ) castType = NULL;
@@ -1483,11 +1483,11 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
     // with --llvm-wide-opt we can get here e.g. for a wide _ddata
     // and in that case, we need to compute the element type from
     // within the regular (narrow) ddata
-    baseValType = baseValType->getField("addr")->typeInfo();
+    baseValType = toAggregateType(baseValType)->getField(astr_addr)->typeInfo();
   }
 
   if (baseValType->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-    eltType = baseValType->getField("x0")->typeInfo();
+    eltType = toAggregateType(baseValType)->getField(astr_x0)->typeInfo();
     isStarTuple = true;
     // Star tuples should only be passed by reference here...
     INT_ASSERT(base.isLVPtr != GEN_VAL);
@@ -3950,7 +3950,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
   if (from.chplType && to_ptr.chplType){
     AggregateType* ct = toAggregateType(from.chplType);
     if (ct && ct->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS)) {
-      Symbol* valField = ct->getField("addr");
+      Symbol* valField = ct->getField(astr_addr);
       if (valField && valField->getValType() == dtNil) {
          from = codegenAddrOf(
              codegenWideHere(codegenNullPointer(), to_ptr.chplType));
@@ -4503,7 +4503,7 @@ DEFINE_PRIM(WIDE_MAKE) {
     // (type, localeID, addr)
     Type* narrowType = call->get(1)->typeInfo();
     if (narrowType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      narrowType = narrowType->getField("addr")->typeInfo();
+      narrowType = toAggregateType(narrowType)->getField(astr_addr)->typeInfo();
     }
     INT_ASSERT(!narrowType->symbol->hasFlag(FLAG_WIDE_CLASS));
     GenRet locale = call->get(2)->codegen();
@@ -5294,7 +5294,7 @@ DEFINE_PRIM(SETCID) {
       Type* classType;
 
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        classType = call->get(1)->typeInfo()->getField("addr")->type;
+        classType = toAggregateType(call->get(1)->typeInfo())->getField(astr_addr)->type;
       } else {
         classType = call->get(1)->typeInfo();
       }
@@ -5373,7 +5373,7 @@ DEFINE_PRIM(GET_SVEC_MEMBER) {
 
     ret = codegenElementPtr(call->get(1), call->get(2));
 
-    if (tupleType->getField("x0")->type->symbol->hasFlag(FLAG_REF) == false)
+    if (!toAggregateType(tupleType)->getField(astr_x0)->type->symbol->hasFlag(FLAG_REF))
       ret = codegenAddrOf(ret);
 }
 DEFINE_PRIM(SET_MEMBER) {
@@ -5728,7 +5728,7 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
 
     // destination data array
     if (curArg->isWideRef()) {
-      Symbol* sym = curArg->typeInfo()->getField("addr", true);
+      Symbol* sym = toAggregateType(curArg->typeInfo())->getField(astr_addr, true);
 
       INT_ASSERT(sym);
       dt        = sym->typeInfo()->getValType()->symbol;
@@ -5906,7 +5906,7 @@ static void codegenPutGetStrd(CallExpr* call, GenRet &ret) {
 
     // destination data array
     if (destData->isWideRef()) {
-      Symbol* sym = destData->typeInfo()->getField("addr", true);
+      Symbol* sym = toAggregateType(destData->typeInfo())->getField(astr_addr, true);
 
       INT_ASSERT(sym);
       dt        = sym->typeInfo()->getValType()->symbol;
@@ -5924,7 +5924,7 @@ static void codegenPutGetStrd(CallExpr* call, GenRet &ret) {
     GenRet dststr = codegenValuePtr(destStride);
 
     if (destStride->isWideRef()) {
-      Symbol* sym = destStride->typeInfo()->getField("addr", true);
+      Symbol* sym = toAggregateType(destStride->typeInfo())->getField(astr_addr, true);
 
       INT_ASSERT(sym);
 
@@ -5954,7 +5954,7 @@ static void codegenPutGetStrd(CallExpr* call, GenRet &ret) {
     GenRet srcstr = codegenValuePtr(srcStrideExpr);
 
     if (srcStrideExpr->isWideRef()) {
-      Symbol* sym = srcStrideExpr->typeInfo()->getField("addr", true);
+      Symbol* sym = toAggregateType(srcStrideExpr->typeInfo())->getField(astr_addr, true);
 
       INT_ASSERT(sym);
 
@@ -5970,7 +5970,7 @@ static void codegenPutGetStrd(CallExpr* call, GenRet &ret) {
     GenRet count = codegenValuePtr(countExpr);
 
     if (countExpr->isWideRef()) {
-      Symbol* sym = countExpr->typeInfo()->getField("addr", true);
+      Symbol* sym = toAggregateType(countExpr->typeInfo())->getField(astr_addr, true);
 
       INT_ASSERT(sym);
 
@@ -6019,7 +6019,7 @@ DEFINE_PRIM(SIZEOF_BUNDLE) {
       // If wide, get the value type.
     if (type->symbol->hasFlag(FLAG_WIDE_CLASS) ||
         call->get(1)->isWideRef())
-      type = toAggregateType(type)->getField("addr", true)->typeInfo();
+      type = toAggregateType(type)->getField(astr_addr, true)->typeInfo();
 
 
     // If Chapel class or record
@@ -6036,7 +6036,7 @@ DEFINE_PRIM(SIZEOF_DDATA_ELEMENT) {
     Type*  type = call->get(1)->typeInfo();
     GenRet size;
     if (type->symbol->hasFlag(FLAG_WIDE_CLASS) == true) {
-      size = codegenSizeof(getDataClassType(type->getField("addr")->
+      size = codegenSizeof(getDataClassType(toAggregateType(type)->getField(astr_addr)->
                                             type->symbol)->typeInfo());
     } else {
       size = codegenSizeof(getDataClassType(type->symbol)->typeInfo());
@@ -6589,7 +6589,7 @@ DEFINE_PRIM(CONST_ARG_HASH) {
     GenRet tmp = createTempVarWith(val);
     GenRet addr = codegenAddrOf(tmp);
 
-    Symbol* sym = call->get(1)->typeInfo()->getField("addr", true);
+    Symbol* sym = toAggregateType(call->get(1)->typeInfo())->getField(astr_addr, true);
     // Could potentially have the sizeof call inserted at the creation of the
     // primitive
     ret = codegenCallExpr("const_arg_hash", addr,
@@ -6866,7 +6866,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         if (call->get(1)->isWideRef())
           valueType = call->get(1)->getValType();
         else
-          valueType = call->get(1)->typeInfo()->getField("addr")->type;
+          valueType = toAggregateType(call->get(1)->typeInfo())->getField(astr_addr)->type;
 
         if(target) {
           INT_ASSERT(valueType == target->typeInfo());
@@ -6893,7 +6893,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
       if (target && call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         if (se->symbol()->hasFlag(FLAG_SUPER_CLASS)) {
           // We're getting the super class pointer.
-          Type*  addrType = target->typeInfo()->getField("addr")->type;
+          Type*  addrType = toAggregateType(target->typeInfo())->getField(astr_addr)->type;
           GenRet addr     = codegenCast(addrType, codegenRaddr(obj));
           GenRet ref      = codegenWideAddrWithAddr(obj, addr);
 
@@ -7113,7 +7113,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 
     case PRIM_DYNAMIC_CAST: {
       if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-        Type*  type         = call->typeInfo()->getField("addr")->type;
+        Type*  type         = toAggregateType(call->typeInfo())->getField(astr_addr)->type;
         GenRet wideFrom     = codegenValue(call->get(2));
         GenRet wideFromAddr = codegenRaddr(wideFrom);
         GenRet value        = codegenValue(codegenFieldCidPtr(wideFrom));

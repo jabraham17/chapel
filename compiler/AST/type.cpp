@@ -106,16 +106,11 @@ bool Type::isWidePtrType() const {
   if (symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS)) {
     // Workaround an ugly hack in insert wide references
     // which can make a wide _array record containing an "addr" record
-    Type* baseType = this->getField("addr")->type;
+    Type* baseType = toConstAggregateType(this)->getField(astr_addr)->type;
     if (isReferenceType(baseType) || isClass(baseType) || baseType == dtNil)
       return true;
   }
   return false;
-}
-
-Symbol* Type::getField(const char* name, bool fatal) const {
-  INT_FATAL(this, "getField not called on AggregateType");
-  return NULL;
 }
 
 bool Type::hasDestructor() const {
@@ -215,8 +210,8 @@ const char* toString(Type* type, bool decorateAllClasses) {
       const int   drDomNameLen = strlen(drDomName);
 
       if (isArrayClass(at) && !at->symbol->hasFlag(FLAG_BASE_ARRAY)) {
-        Symbol* domField = at->getField("dom", false);
-        Symbol* eltTypeField = at->getField("eltType", false);
+        Symbol* domField = at->getField(astr_dom, false);
+        Symbol* eltTypeField = at->getField(astr_eltType, false);
 
         if (domField && eltTypeField) {
           Type* domainType = canonicalDecoratedClassType(domField->type);
@@ -237,7 +232,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
         retval = fcfs::functionClassTypeToString(at);
 
       } else if (isRecordWrappedType(at) == true) {
-        Symbol* instanceField = at->getField("_instance", false);
+        Symbol* instanceField = at->getField(astr__instance, false);
 
         if (instanceField) {
           Type* implType = canonicalDecoratedClassType(instanceField->type);
@@ -2471,7 +2466,7 @@ bool isAliasingArrayType(Type* t) {
     AggregateType* at = toAggregateType(t);
     INT_ASSERT(at);
 
-    Symbol* instanceField = at->getField("_instance", false);
+    Symbol* instanceField = at->getField(astr__instance, false);
     if (instanceField) {
       return isAliasingArrayImplType(instanceField->type);
     }
@@ -2513,7 +2508,7 @@ Type* getManagedPtrBorrowType(const Type* managedPtrType) {
 
   INT_ASSERT(at);
 
-  const char* fieldName = astr("chpl_t");
+  const char* fieldName = astr_chpl_t;
   Type* borrowType = NULL;
   Symbol* field = at->getField(fieldName, /*fatal*/ false);
   if (field) {
@@ -3062,12 +3057,12 @@ bool isNumericParamDefaultType(Type* t)
 
 TypeSymbol*
 getDataClassType(TypeSymbol* ts) {
-  Symbol* value = ts->type->getSubstitutionWithName(astr("eltType"));
+  Symbol* value = ts->type->getSubstitutionWithName(astr_eltType);
 
   return toTypeSymbol(value);
 }
 
 void
 setDataClassType(TypeSymbol* ts, TypeSymbol* ets) {
-  ts->type->setSubstitutionWithName(astr("eltType"), ets);
+  ts->type->setSubstitutionWithName(astr_eltType, ets);
 }

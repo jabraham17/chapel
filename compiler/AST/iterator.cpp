@@ -513,9 +513,9 @@ CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,
 
   AggregateType* iRecord = toAggregateType(ir->type);
   INT_ASSERT(iRecord->symbol->hasFlag(FLAG_ITERATOR_RECORD));
-  Symbol* field = iRecord->getField("_shape_", false);
+  Symbol* field = iRecord->getField(astr__shape_, false);
   if (field == NULL) {
-    field = new VarSymbol("_shape_", value->type);
+    field = new VarSymbol(astr__shape_, value->type);
     iRecord->fields.insertAtTail(new DefExpr(field));
     // An accessor lets us get _shape_ in Chapel code.
     FnSymbol* accessor = build_accessor(iRecord, field, false, false);
@@ -1005,13 +1005,13 @@ buildZip1(IteratorInfo* ii, std::vector<BaseAST*>& asts, BlockStmt* singleLoop) 
     // This simplification depends on the current interpretation of more
     // in a single-loop, single-yield iterator (i.e. 1 = more; 0 = done).
     SymExpr* condExpr = stmt->condExprForTmpVariableGet()->copy(&map);
-    Type* moreType = ii->iclass->getField("more")->type;
+    Type* moreType = ii->iclass->getField(astr_more)->type;
     VarSymbol* condTemp = newTemp("cond_tmp", moreType);
     zip1body->insertAtTail(new DefExpr(condTemp));
     zip1body->insertAtTail(new CallExpr(PRIM_MOVE, condTemp,
                                         new CallExpr(PRIM_CAST, moreType->symbol, condExpr)));
     zip1body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, my_this,
-                                        ii->iclass->getField("more"), condTemp));
+                                        ii->iclass->getField(astr_more), condTemp));
   } else if (singleLoop->isCForLoop()) {
     // CForLoops do not use the "more" field in their loop termination test.
     // See the code for that special case in buildHasMore().
@@ -1074,7 +1074,7 @@ buildZip2(IteratorInfo* ii, std::vector<BaseAST*>& asts, BlockStmt* singleLoop) 
 
   // Since this passes isSingleLoopIterator(), there is a single yield,
   // so 'more' is always the first value after initialization, i.e. 2.
-  zip2body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, my_this, ii->iclass->getField("more"), new_IntSymbol(2)));
+  zip2body->insertAtTail( new CallExpr(PRIM_SET_MEMBER, my_this, ii->iclass->getField(astr_more), new_IntSymbol(2)));
 
   zip2body->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
@@ -1129,13 +1129,13 @@ buildZip3(IteratorInfo* ii, std::vector<BaseAST*>& asts, BlockStmt* singleLoop) 
 
   if (WhileStmt* stmt = toWhileStmt(singleLoop)) {
     SymExpr* condExpr = stmt->condExprForTmpVariableGet()->copy(&map);
-    Type* moreType = ii->iclass->getField("more")->type;
+    Type* moreType = ii->iclass->getField(astr_more)->type;
     VarSymbol* condTemp = newTemp("cond_tmp", moreType);
     zip3body->insertAtTail(new DefExpr(condTemp));
     zip3body->insertAtTail(new CallExpr(PRIM_MOVE, condTemp,
                                         new CallExpr(PRIM_CAST, moreType->symbol, condExpr)));
     zip3body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, my_this,
-                                        ii->iclass->getField("more"), condTemp));
+                                        ii->iclass->getField(astr_more), condTemp));
   } else if (isCForLoop(singleLoop)) {
     // CForLoops do not use the "more" field in their loop termination test.
     // See the code for that special case in buildHasMore().
@@ -1294,7 +1294,7 @@ static void handleYieldInAdvance(Vec<LabelSymbol*>& labels,
   BlockStmt* breakBlock = getAndRemoveIteratorBreakBlockForYield(NULL, call);
 
   call->insertBefore(new CallExpr(PRIM_SET_MEMBER,
-                                  ic, ii->iclass->getField("more"),
+                                  ic, ii->iclass->getField(astr_more),
                                   new_IntSymbol(idx)));
   call->insertBefore(new GotoStmt(GOTO_ITER_END, end));
 
@@ -1389,13 +1389,13 @@ buildAdvance(FnSymbol* fn,
   }
 
   // iterator is done ==> more=0
-  end->defPoint->insertBefore(new CallExpr(PRIM_SET_MEMBER, ic, ii->iclass->getField("more"), new_IntSymbol(0)));
+  end->defPoint->insertBefore(new CallExpr(PRIM_SET_MEMBER, ic, ii->iclass->getField(astr_more), new_IntSymbol(0)));
 
   // insert jump table at head of advance
-  Symbol* more = new VarSymbol("more", dtInt[INT_SIZE_DEFAULT]);
+  Symbol* more = new VarSymbol(astr_more, dtInt[INT_SIZE_DEFAULT]);
   buildJumpTables(advanceBody, labels, breakLbls, more);
 
-  advanceBody->insertAtHead(new CallExpr(PRIM_MOVE, more, new CallExpr(PRIM_GET_MEMBER_VALUE, ic, ii->iclass->getField("more"))));
+  advanceBody->insertAtHead(new CallExpr(PRIM_MOVE, more, new CallExpr(PRIM_GET_MEMBER_VALUE, ic, ii->iclass->getField(astr_more))));
   advanceBody->insertAtHead(new DefExpr(more));
   advanceBody->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
@@ -1444,7 +1444,7 @@ buildHasMore(IteratorInfo* ii, BlockStmt* singleLoop) {
                                              tmp,
                                              new CallExpr(PRIM_GET_MEMBER_VALUE,
                                                           my_this,
-                                                          ii->iclass->getField("more"))));
+                                                          ii->iclass->getField(astr_more))));
     }
     else
       INT_FATAL(singleLoop, "Unhandled singleLoop iterator type");
@@ -1453,7 +1453,7 @@ buildHasMore(IteratorInfo* ii, BlockStmt* singleLoop) {
                                            tmp,
                                            new CallExpr(PRIM_GET_MEMBER_VALUE,
                                                         my_this,
-                                                        ii->iclass->getField("more"))));
+                                                        ii->iclass->getField(astr_more))));
   }
 
   hasMoreBody->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
@@ -1482,9 +1482,10 @@ buildGetValue(IteratorInfo* ii, BlockStmt* singleLoop) {
   {
     VarSymbol* tmp = newTemp(ii->getValue->retType);
     getValueBody->insertAtTail(new DefExpr(tmp));
-    getValueBody->insertAtTail(new CallExpr(PRIM_MOVE, tmp,
-                                            new CallExpr(PRIM_GET_MEMBER_VALUE,
-                                                         my_this, ii->iclass->getField("value"))));
+    getValueBody->insertAtTail(
+      new CallExpr(PRIM_MOVE, tmp,
+        new CallExpr(PRIM_GET_MEMBER_VALUE,
+                      my_this, ii->iclass->getField(astr_value))));
     getValueBody->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
   } else {
     getValueBody->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
@@ -1930,12 +1931,12 @@ rebuildGetIterator(IteratorInfo* ii) {
   // initially signals that more elements available.
   getIterator->insertBeforeEpilogue(new CallExpr(PRIM_SET_MEMBER,
                                                  ret,
-                                                 ii->iclass->getField("more"),
+                                                 ii->iclass->getField(astr_more),
                                                  new_IntSymbol(1)));
 
   // Enumerate the fields in the iterator record (argument).
   for_fields(field, ii->irecord) {
-    if (!strcmp(field->name, "_shape_")) continue;
+    if (field->name == astr__shape_) continue;
     // Load the record field into a temp,
     // and then use that to set the corresponding class field.
     VarSymbol* fieldReadTmp  = newTemp(field->qualType());

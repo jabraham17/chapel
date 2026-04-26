@@ -500,15 +500,15 @@ void AggregateType::codegenDef() {
   if (symbol->hasFlag(FLAG_STAR_TUPLE)) {
     if( outfile ) {
       fprintf(outfile, "typedef ");
-      fprintf(outfile, "%s", getField("x0")->type->codegen().c.c_str());
+      fprintf(outfile, "%s", getField(astr_x0)->type->codegen().c.c_str());
       fprintf(outfile, " %s", symbol->codegen().c.c_str());
       fprintf(outfile, "[%d];\n\n", fields.length);
       return;
     } else {
 #ifdef HAVE_LLVM
-      llvm::Type *elementType = getField("x0")->type->codegen().type;
+      llvm::Type *elementType = getField(astr_x0)->type->codegen().type;
       type = llvm::ArrayType::get(elementType, fields.length);
-      structAlignment = getField("x0")->type->getLLVMAlignment();
+      structAlignment = getField(astr_x0)->type->getLLVMAlignment();
 #endif
     }
   } else if (symbol->hasFlag(FLAG_C_ARRAY)) {
@@ -621,7 +621,7 @@ void AggregateType::codegenDef() {
 
         globalAddressSpace = info->globalToWideInfo.globalSpace;
 
-        Type* baseType = this->getField("addr")->type;
+        Type* baseType = toConstAggregateType(this)->getField(astr_addr)->type;
         llvm::Type* llBaseType = baseType->symbol->codegen().type;
         INT_ASSERT(llBaseType);
         llvm::Type *globalPtrTy = nullptr;
