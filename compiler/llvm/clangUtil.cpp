@@ -47,6 +47,7 @@
 #include "clang/Driver/Job.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
+#include "clang/Frontend/FrontendActions.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/Lex/MacroInfo.h"
 #include "clang/Lex/Preprocessor.h"
@@ -442,7 +443,7 @@ typedef MacroInfo::const_tokens_iterator tokens_iterator;
 typedef MacroInfo::tokens_iterator tokens_iterator;
 #endif
 
-static const bool debugPrintMacros = false;
+static const bool debugPrintMacros = true;
 
 static void handleMacroExpr(const MacroInfo* inMacro,
                             const IdentifierInfo* origID,
@@ -575,7 +576,7 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
     if( varRet ) kind = "var";
     if( cTypeRet ) kind = "cdecl type";
     if( cValueRet ) kind = "cdecl value";
-    if( kind ) printf("%s: adding an %s to the lvt\n", s.c_str(), kind);
+    if( kind ) printf("%s: adding a %s to the lvt\n", s.c_str(), kind);
     if( cCastToTypeRet ) printf("with cast to %s\n", cCastToTypeRet);
   }
   if( varRet ) {
@@ -588,6 +589,450 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
     info->lvt->addGlobalCDecl(id->getName(), cValueRet, cCastToTypeRet);
   }
 
+}
+
+static std::string getConfiguredTargetTriple();
+
+// Reconstruct the text of a macro body from its tokens.
+// Uses Preprocessor::getSpelling to faithfully reproduce each token.
+static std::string getMacroBodyText(const MacroInfo* macro,
+                                    clang::Preprocessor& PP) {
+  std::string result;
+  bool first = true;
+  for (tokens_iterator tok = macro->tokens_begin();
+       tok != macro->tokens_end(); ++tok) {
+    if (!first) result += " ";
+    first = false;
+    result += PP.getSpelling(*tok);
+  }
+  return result;
+}
+
+// A custom ASTConsumer that captures the VarDecl for a probe variable.
+// Used by handleMacroNew to extract the deduced type of a macro expression.
+// Also attempts to evaluate the probe variable's initializer to obtain
+// the compile-time value of the macro.
+class MacroProbeASTConsumer : public clang::ASTConsumer {
+ public:
+  // The name of the probe variable to look for
+  std::string probeName;
+  // Result: the VarDecl found, if any
+  clang::VarDecl* foundDecl = nullptr;
+  // The evaluated constant value, or nullptr if evaluation failed
+  clang::APValue* evaluatedValue = nullptr;
+
+  MacroProbeASTConsumer(std::string name) : probeName(std::move(name)) {}
+
+  void HandleTranslationUnit(clang::ASTContext& Ctx) override {
+    clang::TranslationUnitDecl* TU = Ctx.getTranslationUnitDecl();
+    for (auto* D : TU->decls()) {
+      if (auto* VD = llvm::dyn_cast<clang::VarDecl>(D)) {
+        if (VD->getNameAsString() == probeName) {
+          foundDecl = VD;
+          // Use evaluateValue() which evaluates in the context of the
+          // variable declaration. Unlike EvaluateAsRValue on the init
+          // expression, this properly handles cases where the variable's
+          // type is a TypeOfExprType (from __typeof__), because it
+          // evaluates through the variable's own type context.
+          // if it has an init, eval the value
+          if (VD->hasInit()) {
+            evaluatedValue = VD->evaluateValue();
+            if (debugPrintMacros) {
+              printf("Found probe variable '%s' evaluateValue=%s\n",
+                    probeName.c_str(),
+                    evaluatedValue ? "success" : "failed");
+            }
+            return;
+          }
+        }
+      }
+    }
+  }
+};
+
+// A custom FrontendAction that uses MacroProbeASTConsumer.
+class MacroProbeAction final : public clang::ASTFrontendAction {
+ public:
+  MacroProbeASTConsumer* consumer = nullptr;
+  std::string probeName;
+
+  MacroProbeAction(std::string name) : probeName(std::move(name)) {}
+
+ protected:
+  std::unique_ptr<clang::ASTConsumer>
+  CreateASTConsumer(clang::CompilerInstance& CI,
+                    llvm::StringRef InFile) override {
+    auto c = std::make_unique<MacroProbeASTConsumer>(probeName);
+    consumer = c.get();
+    return c;
+  }
+};
+
+// handleMacroNew: resolve the type of a complex macro expression by
+// constructing a C probe variable using __typeof__ and parsing it with
+// a lightweight CompilerInstance.
+//
+// For a macro like:
+//   #define MY_MACRO (some_complex_expression)
+// this generates:
+//   __typeof__(MY_MACRO) __chpl_macro_probe;
+// and parses it to discover the type.
+
+void handleMacroNew(const IdentifierInfo* id, const MacroInfo* macro);
+void handleMacroNew(const IdentifierInfo* id, const MacroInfo* macro)
+{
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+  ClangInfo* clangInfo = info->clangInfo;
+  INT_ASSERT(clangInfo);
+
+  std::string macroName = id->getName().str();
+  const bool debugPrint = debugPrintMacros;
+
+  if (debugPrint) printf("handleMacroNew: trying macro %s\n", macroName.c_str());
+
+  // Skip macros with parameters (function-like macros) for now
+  if (macro->getNumParams() > 0)
+    return;
+
+  // Skip macros with no tokens
+  if (macro->tokens_begin() == macro->tokens_end())
+    return;
+
+  // Check if the macro was already resolved by handleMacro
+  {
+    VarSymbol* existingVar = info->lvt->getVarSymbol(macroName);
+    if (existingVar) return;
+
+    clang::TypeDecl* existingType = nullptr;
+    clang::ValueDecl* existingValue = nullptr;
+    info->lvt->getCDecl(macroName, &existingType, &existingValue);
+    if (existingType || existingValue) return;
+  }
+
+  // Reconstruct the macro body text
+  clang::Preprocessor& PP = clangInfo->Clang->getPreprocessor();
+  std::string macroBody = getMacroBodyText(macro, PP);
+
+  if (macroBody.empty())
+    return;
+
+  if (debugPrint) printf("handleMacroNew: macro body is '%s'\n", macroBody.c_str());
+
+  // Build the probe variable name
+  std::string probeName = "__chpl_macro_probe_" + macroName;
+
+  // Build a C source snippet that uses __typeof__ to deduce the macro type
+  // and also initializes the probe variable with the macro body so that
+  // we can evaluate its compile-time value.
+  // The generated code looks like:
+  //   __typeof__(MACRO_BODY) __chpl_macro_probe_MACRONAME = (MACRO_BODY);
+  std::string probeCode;
+  probeCode += "/* probe for macro " + macroName + " */\n";
+  probeCode += "__typeof__(" + macroBody + ") " + probeName +
+               " = (" + macroBody + ");\n";
+
+  if (debugPrint) printf("handleMacroNew: probe code:\n%s\n", probeCode.c_str());
+
+  // Write the probe code to a temporary file
+  std::string probeFilename = genIntermediateFilename(
+      astr("macro_probe_", macroName.c_str(), ".c"));
+  {
+    FILE* fp = openfile(probeFilename.c_str(), "w");
+    fprintf(fp, "%s", probeCode.c_str());
+    closefile(fp);
+  }
+
+  // Build arguments for a new lightweight CompilerInstance.
+  // We reuse the same CC args (include paths, defines, etc.) from the
+  // existing clang invocation, but compile in syntax-only mode.
+  std::vector<std::string> probeArgs;
+  probeArgs.push_back("<chapel macro probe>");
+  for (const auto& arg : clangInfo->clangCCArgs) {
+    probeArgs.push_back(arg);
+  }
+  // Include the same headers that the main compilation uses
+  for (const auto& arg : clangInfo->clangOtherArgs) {
+    probeArgs.push_back(arg);
+  }
+  probeArgs.push_back("-fsyntax-only");
+
+  int filenum = 0;
+  while (const char* inputFilename = nthFilename(filenum++)) {
+    if (isCHeader(inputFilename)) {
+      probeArgs.push_back("-include");
+      probeArgs.push_back(inputFilename);
+    }
+  }
+  // probeArgs.push_back("-include");
+  // probeArgs.push_back(probeFilename);
+
+  // We need a main input file for the driver. Use /dev/null as a
+  // minimal C source so that -include does all the real work.
+  probeArgs.push_back(probeFilename);
+
+  std::vector<const char*> probeArgsCStr;
+  for (const auto& a : probeArgs) {
+    probeArgsCStr.push_back(a.c_str());
+  }
+
+  // Create a new CompilerInstance for the probe
+  auto diagOptions = clang::CreateAndPopulateDiagOpts(probeArgsCStr);
+  // Use a diagnostic consumer that suppresses output (we don't want
+  // probe errors to show up to the user)
+  auto* diagClient = new clang::TextDiagnosticPrinter(llvm::nulls(),
+#if LLVM_VERSION_MAJOR >= 21
+                                                       *diagOptions
+#else
+                                                       diagOptions.get()
+#endif
+                                                     );
+
+#if LLVM_VERSION_MAJOR >= 20
+  auto probeDiags =
+    clang::CompilerInstance::createDiagnostics(*llvm::vfs::getRealFileSystem(),
+#if LLVM_VERSION_MAJOR >= 21
+                                               *diagOptions,
+#else
+                                               diagOptions.release(),
+#endif
+                                               diagClient,
+                                               /* owned */ true);
+#else
+  auto probeDiags =
+    clang::CompilerInstance::createDiagnostics(diagOptions.release(),
+                                               diagClient,
+                                               /* owned */ true);
+#endif
+
+  // Suppress all diagnostics from the probe compilation so errors
+  // in complex macros don't leak to the user
+  probeDiags->setSuppressAllDiagnostics(true);
+
+  std::string triple = getConfiguredTargetTriple();
+  clang::driver::Driver probeDriver(clangInfo->clangexe, triple, *probeDiags);
+
+  std::unique_ptr<clang::driver::Compilation> probeCompilation(
+      probeDriver.BuildCompilation(probeArgsCStr));
+
+  if (!probeCompilation || probeCompilation->getJobs().empty()) {
+    if (debugPrint) printf("handleMacroNew: failed to create probe compilation\n");
+    return;
+  }
+
+  // Find the cc1 job
+  clang::driver::Command* probeJob = nullptr;
+  for (auto& command : probeCompilation->getJobs()) {
+    for (const auto& arg : command.getArguments()) {
+      if (0 == strcmp(arg, "-cc1")) {
+        probeJob = &command;
+        break;
+      }
+    }
+    if (probeJob) break;
+  }
+
+  if (!probeJob) {
+    if (debugPrint) printf("handleMacroNew: no cc1 job found\n");
+    return;
+  }
+
+  clang::CompilerInstance probeCI;
+  probeCI.setDiagnostics(&*probeDiags);
+
+  bool success = clang::CompilerInvocation::CreateFromArgs(
+      probeCI.getInvocation(),
+      probeJob->getArguments(),
+      *probeDiags);
+
+  if (!success) {
+    if (debugPrint) printf("handleMacroNew: CreateFromArgs failed\n");
+    return;
+  }
+
+  // Set up the resource dir to match the main compiler instance
+  {
+    llvm::SmallString<128> P(clangInfo->clangexe);
+    llvm::SmallString<128> P2;
+    P2 = llvm::sys::path::parent_path(P);
+    P = llvm::sys::path::parent_path(P2);
+    if (!P.empty()) {
+      llvm::sys::path::append(P, "lib");
+      llvm::sys::path::append(P, "clang");
+      llvm::sys::path::append(P, CLANG_VERSION_STRING);
+    }
+    probeCI.getHeaderSearchOpts().ResourceDir = std::string(P.str());
+  }
+
+  // Create diagnostics for the probe CI
+#if LLVM_VERSION_MAJOR >= 20
+  probeCI.createDiagnostics(*llvm::vfs::getRealFileSystem());
+#else
+  probeCI.createDiagnostics();
+#endif
+  probeCI.getDiagnostics().setSuppressAllDiagnostics(true);
+
+  // Execute the probe action
+  MacroProbeAction probeAction(probeName);
+  if (!probeCI.ExecuteAction(probeAction)) {
+    if (debugPrint) printf("handleMacroNew: probe action failed for %s\n",
+                           macroName.c_str());
+    return;
+  }
+
+  // Check if the probe found the VarDecl
+  if (!probeAction.consumer || !probeAction.consumer->foundDecl) {
+    if (debugPrint) printf("handleMacroNew: probe decl not found for %s\n",
+                           macroName.c_str());
+    return;
+  }
+
+  clang::VarDecl* probeVD = probeAction.consumer->foundDecl;
+  clang::QualType probeType = probeVD->getType();
+
+  if (probeType.isNull()) {
+    if (debugPrint) printf("handleMacroNew: null type for %s\n",
+                           macroName.c_str());
+    return;
+  }
+
+  if (debugPrint) {
+    std::string typeName = probeType.getAsString();
+    printf("handleMacroNew: resolved %s to type '%s'\n",
+           macroName.c_str(), typeName.c_str());
+  }
+
+  // Now map the QualType to a TypeDecl we can store in the LVT.
+  // We look up the canonical type name in the main CompilerInstance's
+  // ASTContext so that we store a decl that is valid in the main context.
+  const clang::Type* ty = probeType.getCanonicalType().getTypePtrOrNull();
+  if (!ty) return;
+
+  // For builtin types, create a VarSymbol with the actual value if we
+  // were able to evaluate the initializer, and annotate with the cast type.
+  clang::APValue* evaluatedValue = probeAction.consumer->evaluatedValue;
+  bool hasValue = (evaluatedValue != nullptr);
+
+  if (const clang::BuiltinType* bt = llvm::dyn_cast<clang::BuiltinType>(ty)) {
+    VarSymbol* varRet = nullptr;
+    const char* castToType = nullptr;
+
+    switch (bt->getKind()) {
+      case clang::BuiltinType::Bool:
+        castToType = "bool";
+        if (hasValue && evaluatedValue->isInt()) {
+          varRet = new_BoolSymbol(evaluatedValue->getInt().getBoolValue());
+        }
+        break;
+      case clang::BuiltinType::Char_S:
+      case clang::BuiltinType::SChar:
+        castToType = "c_char";
+        if (hasValue && evaluatedValue->isInt()) {
+          varRet = new_IntSymbol(evaluatedValue->getInt().getSExtValue(), INT_SIZE_8);
+        }
+        break;
+      case clang::BuiltinType::Char_U:
+      case clang::BuiltinType::UChar:
+        castToType = "c_uchar";
+        if (hasValue && evaluatedValue->isInt()) {
+          varRet = new_UIntSymbol(evaluatedValue->getInt().getZExtValue(), INT_SIZE_8);
+        }
+        break;
+      case clang::BuiltinType::Short:
+        castToType = "c_short";
+        if (hasValue && evaluatedValue->isInt()) {
+          varRet = new_IntSymbol(evaluatedValue->getInt().getSExtValue(), INT_SIZE_16);
+        }
+        break;
+      case clang::BuiltinType::UShort:
+        castToType = "c_ushort";
+        if (hasValue && evaluatedValue->isInt()) {
+          varRet = new_UIntSymbol(evaluatedValue->getInt().getZExtValue(), INT_SIZE_16);
+        }
+        break;
+      case clang::BuiltinType::Int:
+        castToType = "c_int";
+        if (hasValue && evaluatedValue->isInt()) {
+          varRet = new_IntSymbol(evaluatedValue->getInt().getSExtValue(), INT_SIZE_32);
+        }
+        break;
+      case clang::BuiltinType::UInt:
+        castToType = "c_uint";
+        if (hasValue && evaluatedValue->isInt()) {
+          varRet = new_UIntSymbol(evaluatedValue->getInt().getZExtValue(), INT_SIZE_32);
+        }
+        break;
+      case clang::BuiltinType::Long:
+        castToType = "c_long";
+        if (hasValue && evaluatedValue->isInt()) {
+          varRet = new_IntSymbol(evaluatedValue->getInt().getSExtValue(), INT_SIZE_64);
+        }
+        break;
+      case clang::BuiltinType::ULong:
+        castToType = "c_ulong";
+        if (hasValue && evaluatedValue->isInt()) {
+          varRet = new_UIntSymbol(evaluatedValue->getInt().getZExtValue(), INT_SIZE_64);
+        }
+        break;
+      case clang::BuiltinType::LongLong:
+        castToType = "c_longlong";
+        if (hasValue && evaluatedValue->isInt()) {
+          varRet = new_IntSymbol(evaluatedValue->getInt().getSExtValue(), INT_SIZE_64);
+        }
+        break;
+      case clang::BuiltinType::ULongLong:
+        castToType = "c_ulonglong";
+        if (hasValue && evaluatedValue->isInt()) {
+          varRet = new_UIntSymbol(evaluatedValue->getInt().getZExtValue(), INT_SIZE_64);
+        }
+        break;
+      case clang::BuiltinType::Float:
+        castToType = "c_float";
+        if (hasValue && evaluatedValue->isFloat()) {
+          varRet = new_RealSymbol(
+              evaluatedValue->getFloat().convertToFloat());
+        }
+        break;
+      case clang::BuiltinType::Double:
+        castToType = "c_double";
+        if (hasValue && evaluatedValue->isFloat()) {
+          varRet = new_RealSymbol(
+              evaluatedValue->getFloat().convertToDouble());
+        }
+        break;
+      default:
+        if (debugPrint) printf("handleMacroNew: unhandled builtin type for %s\n",
+                               macroName.c_str());
+        return;
+    }
+
+    if (castToType != nullptr) {
+      if (debugPrint) {
+        printf("handleMacroNew: %s has cast type %s",
+               macroName.c_str(), castToType);
+        if (varRet) printf(" with value");
+        else if (hasValue) printf(" but failed to evaluate value");
+        printf("\n");
+      }
+      info->lvt->addGlobalVarSymbol(id->getName(), varRet, castToType);
+    }
+    return;
+  }
+
+  // For non-builtin types (structs, typedefs, enums, etc.), look up
+  // the type by name in the main ASTContext.
+  std::string typeStr = probeType.getUnqualifiedType().getAsString();
+  clang::TypeDecl* mainTypeDecl = nullptr;
+  clang::ValueDecl* mainValueDecl = nullptr;
+  info->lvt->getCDecl(typeStr, &mainTypeDecl, &mainValueDecl);
+  if (mainTypeDecl) {
+    info->lvt->addGlobalCDecl(id->getName(), mainTypeDecl);
+    if (debugPrint) printf("handleMacroNew: added type decl for %s\n",
+                           macroName.c_str());
+  } else {
+    if (debugPrint) printf("handleMacroNew: could not find type %s in main context\n",
+                           typeStr.c_str());
+  }
 }
 
 static void removeMacroOuterParens(const MacroInfo* inMacro,
@@ -725,9 +1170,18 @@ static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
       /* return NULL unless it's a specific pattern we know how to handle */
       bool canHandle = false;
       if (tok.getKind() == tok::identifier) {
+        if (debugPrintMacros) {
+           printf("handleTypeOrIdentifierExpr: found identifier '%s' followed by more tokens, checking if it's a macro we can handle\n",
+                  tok.getIdentifierInfo()->getName().str().c_str());
+        }
         IdentifierInfo* tokId = tok.getIdentifierInfo();
         if (info->lvt->getMacro(tokId->getName()))
           canHandle = true;
+      }
+      if (debugPrintMacros) {
+        if (!canHandle) {
+          printf("handleTypeOrIdentifierExpr: cannot handle token after main token, giving up\n");
+        }
       }
       if (!canHandle)
         return NULL;
@@ -735,6 +1189,10 @@ static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
 
     if (tok.getKind() == tok::identifier) {
       IdentifierInfo* tokId = tok.getIdentifierInfo();
+      if (debugPrintMacros) {
+        printf("handleTypeOrIdentifierExpr: found identifier '%s'\n",
+               tokId->getName().str().c_str());
+      }
       ii = tokId;
       if (const clang::MacroInfo* macro =
             info->lvt->getMacro(tokId->getName())) {
@@ -831,24 +1289,29 @@ static ::Type* getTypeForMacro(const char* name) {
 }
 
 static bool handleNumericCastExpr(const MacroInfo* inMacro,
+                                  const IdentifierInfo* origID,
                                   tokens_iterator start,
                                   tokens_iterator end,
                                   Immediate* imm,
                                   const char*& cCastToTypeRet);
 static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
+                                         const IdentifierInfo* origID,
                                          tokens_iterator start,
                                          tokens_iterator end,
                                          Immediate* imm);
 static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
+                                     const IdentifierInfo* origID,
                                      tokens_iterator start,
                                      tokens_iterator end,
                                      Immediate* imm);
 static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
+                                   const IdentifierInfo* origID,
                                    tokens_iterator start,
                                    tokens_iterator end,
                                    Immediate* imm);
 
 static bool handleNumericExpr(const MacroInfo* inMacro,
+                              const IdentifierInfo* origID,
                               tokens_iterator start,
                               tokens_iterator end,
                               Immediate* imm,
@@ -861,22 +1324,23 @@ static bool handleNumericExpr(const MacroInfo* inMacro,
   if (start == end)
     return false;
 
-  if (handleNumericUnaryPrefixExpr(inMacro, start, end, imm))
+  if (handleNumericUnaryPrefixExpr(inMacro, origID, start, end, imm))
     return true;
 
-  if (handleNumericLiteralExpr(inMacro, start, end, imm))
+  if (handleNumericLiteralExpr(inMacro, origID, start, end, imm))
     return true;
 
-  if (handleNumericCastExpr(inMacro, start, end, imm, cCastToTypeRet))
+  if (handleNumericCastExpr(inMacro, origID, start, end, imm, cCastToTypeRet))
     return true;
 
-  if (handleNumericBinOpExpr(inMacro, start, end, imm))
+  if (handleNumericBinOpExpr(inMacro, origID, start, end, imm))
     return true;
 
   return false;
 }
 
 static bool handleNumericCastExpr(const MacroInfo* inMacro,
+                                  const IdentifierInfo* origID,
                                   tokens_iterator start,
                                   tokens_iterator end,
                                   Immediate* imm,
@@ -918,7 +1382,7 @@ static bool handleNumericCastExpr(const MacroInfo* inMacro,
     const char* rhsCastToTy = NULL;
     Immediate rhsImm;
     Immediate retImm;
-    bool got = handleNumericExpr(inMacro, castEnd, end, &rhsImm, rhsCastToTy);
+    bool got = handleNumericExpr(inMacro, origID, castEnd, end, &rhsImm, rhsCastToTy);
 
     if (got == false)
       return false;
@@ -957,6 +1421,7 @@ static bool handleNumericCastExpr(const MacroInfo* inMacro,
 
 
 static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
+                                         const IdentifierInfo* origID,
                                          tokens_iterator start,
                                          tokens_iterator end,
                                          Immediate* imm) {
@@ -972,7 +1437,7 @@ static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
 
     Immediate rhsImm;
     const char* tmpCastToTy = NULL;
-    bool got = handleNumericExpr(inMacro, start+1, end, &rhsImm, tmpCastToTy);
+    bool got = handleNumericExpr(inMacro, origID, start+1, end, &rhsImm, tmpCastToTy);
     if (got == false || tmpCastToTy != NULL)
       return false;
 
@@ -992,6 +1457,7 @@ static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
 }
 
 static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
+                                     const IdentifierInfo* origID,
                                      tokens_iterator start,
                                      tokens_iterator end,
                                      Immediate* imm) {
@@ -1104,9 +1570,17 @@ static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
 }
 
 static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
+                                   const IdentifierInfo* origID,
                                    tokens_iterator start,
                                    tokens_iterator end,
                                    Immediate* imm) {
+  if (debugPrintMacros) {
+    printf("handleNumericBinOpExpr: trying to handle binary operator expression: ");
+    for (tokens_iterator cur = start; cur != end; ++cur) {
+      printf("%s ", cur->getName());
+    }
+    printf("\n");
+  }
   // handle select binary operators
   // this only works if the LHS and RHS are either:
   //  parenthesized expressions; or
@@ -1116,7 +1590,8 @@ static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
   tokens_iterator lhsEnd = start;
 
   // find a LHS constant or parenthesized-expression
-  if (start->getKind() == tok::numeric_constant) {
+  if (start->getKind() == tok::numeric_constant ||
+      start->getKind() == tok::identifier) {
     lhsOk = true;
     lhsStart = start;
     lhsEnd = start+1;
@@ -1133,7 +1608,8 @@ static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
   tokens_iterator rhsEnd = rhsStart;
 
   // find a RHS constant or parenthesized-expression
-  if (rhsStart->getKind() == tok::numeric_constant) {
+  if (rhsStart->getKind() == tok::numeric_constant ||
+      rhsStart->getKind() == tok::identifier) {
     rhsOk = true;
     rhsEnd = rhsStart+1;
   } else {
@@ -1153,9 +1629,65 @@ static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
   const char* lhsCastToTy = NULL;
   const char* rhsCastToTy = NULL;
 
-  lhsOk = handleNumericExpr(inMacro, lhsStart, lhsEnd, &lhsImm, lhsCastToTy);
-  rhsOk = handleNumericExpr(inMacro, rhsStart, rhsEnd, &rhsImm, rhsCastToTy);
-  if (lhsOk == false || rhsOk == false)
+  auto tryHandleIdent = [&](tokens_iterator start, tokens_iterator end, Immediate* imm) -> bool {
+    // // try and handle an ident
+    clang::IdentifierInfo* ii = NULL;
+    const char* idName = handleTypeOrIdentifierExpr(inMacro, origID,
+                                                    start, end, ii);
+    if (idName != NULL) {
+      if (debugPrintMacros) {
+        printf("handleNumericBinOpExpr: LHS is identifier '%s', checking if it's a macro we can handle\n",
+               idName);
+      }
+      // Handle the case where the macro refers to something we've
+      // already parsed in C
+      auto varRet = gGenInfo->lvt->getVarSymbol(idName);
+      // we found it, if its an immediate then we can use it
+      if (varRet && varRet->immediate) {
+        *imm = *varRet->immediate;
+        return true;
+      } else {
+        if (debugPrintMacros) {
+          printf("handleNumericBinOpExpr: LHS identifier '%s' is not a macro we can handle\n",
+                 idName);
+        }
+      }
+    }
+      // auto idName = start->getIdentifierInfo()->getName().str();
+      // auto varRet = gGenInfo->lvt->getVarSymbol(astr(idName.c_str()));
+      // // we found it, if its an immediate then we can use it
+      // if (varRet && varRet->immediate) {
+      //   if (debugPrintMacros) {
+      //     printf("handleNumericBinOpExpr: identifier '%s' maps to an immediate, using that value\n",
+      //            idName.c_str());
+      //   }
+      //   *imm = *varRet->immediate;
+      //   return true;
+      // }
+      // if (debugPrintMacros) {
+      //   printf("handleNumericBinOpExpr: identifier '%s' does not map to an immediate we can use\n",
+      //          idName.c_str());
+      // }
+    return false;
+  };
+
+  if (lhsStart->getKind() == tok::numeric_constant) {
+    lhsOk = handleNumericExpr(inMacro, origID, lhsStart, lhsEnd, &lhsImm, lhsCastToTy);
+  } else if (lhsStart->getKind() == tok::identifier) {
+    // try handling it as an ident that maps to an immediate
+    lhsOk = tryHandleIdent(lhsStart, lhsEnd, &lhsImm);
+  } else {
+    lhsOk = false;
+  }
+  if (rhsStart->getKind() == tok::numeric_constant) {
+    rhsOk = handleNumericExpr(inMacro, origID, rhsStart, rhsEnd, &rhsImm, rhsCastToTy);
+  } else if (rhsStart->getKind() == tok::identifier) {
+    // try handling it as an ident that maps to an immediate
+    rhsOk = tryHandleIdent(rhsStart, rhsEnd, &rhsImm);
+  } else {
+    rhsOk = false;
+  }
+  if (!lhsOk || !rhsOk)
     return false;
   if (lhsCastToTy != NULL || rhsCastToTy != NULL)
     return false;
@@ -1164,6 +1696,22 @@ static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
   int p = 0;
   switch (op->getKind()) {
     case tok::lessless:   p = P_prim_lsh;    break;
+    case tok::greatergreater:  p = P_prim_rsh;    break;
+    case tok::pipe:       p = P_prim_or;    break;
+    case tok::amp:        p = P_prim_and;    break;
+    case tok::caret:       p = P_prim_xor;   break;
+    case tok::plus:       p = P_prim_add;   break;
+    case tok::minus:      p = P_prim_subtract; break;
+    case tok::star:       p = P_prim_mult; break;
+    case tok::slash:      p = P_prim_div; break;
+    case tok::less:       p = P_prim_less;    break;
+    case tok::lessequal:  p = P_prim_lessorequal;    break;
+    case tok::greater:    p = P_prim_greater;    break;
+    case tok::greaterequal: p = P_prim_greaterorequal;    break;
+    case tok::equalequal: p = P_prim_equal;    break;
+    case tok::exclaimequal: p = P_prim_notequal;    break;
+    case tok::ampamp:      p = P_prim_land; break;
+    case tok::pipepipe:    p = P_prim_lor; break;
     default:
       return false; // this operator not handled
   }
@@ -1260,7 +1808,7 @@ static void handleMacroExpr(const MacroInfo* inMacro,
 
   Immediate imm;
   const char* castToTy = NULL;
-  if (handleNumericExpr(inMacro, start, end, &imm, castToTy)) {
+  if (handleNumericExpr(inMacro, origID, start, end, &imm, castToTy)) {
     if (debugPrint) {
       printf("num = ");
       fprint_imm(stdout, imm, true);
@@ -1318,6 +1866,16 @@ void readMacrosClang(void) {
 
     handleMacro(i->first, i->second.getLatest()->getMacroInfo());
   }
+
+  // Second pass: for macros that the simple token-based approach in
+  // handleMacro could not resolve, try the heavier-weight approach of
+  // creating a __typeof__ probe and parsing it with a new CompilerInstance.
+  // for(Preprocessor::macro_iterator i = preproc.macro_begin();
+  //     i != preproc.macro_end();
+  //     i++) {
+
+  //   handleMacroNew(i->first, i->second.getLatest()->getMacroInfo());
+  // }
 };
 
 // This ASTConsumer helps us to:
