@@ -12297,22 +12297,6 @@ static void resolveSupportForModuleDeinits() {
   resolveFunction(gAddModuleFn);
 }
 
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static bool hasVariableArgs(FnSymbol* fn) {
-  for_formals(formal, fn) {
-    if (formal->variableExpr) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
 static bool isGenericFn(FnSymbol* fn) {
   if (!fn->isGenericIsValid()) {
     fn->tagIfGeneric();
@@ -12352,7 +12336,7 @@ static void resolveExportsEtc() {
       if (!fn->hasFlag(FLAG_GENERIC) &&
           !fn->hasFlag(FLAG_LAST_RESORT) /* often a compilerError overload*/ &&
           !fn->hasFlag(FLAG_DO_NOT_RESOLVE_UNLESS_CALLED) &&
-          !hasVariableArgs(fn) &&
+          !fn->hasVariableArgs() &&
           !fn->hasFlag(FLAG_RESOLVED) &&
           !fn->hasFlag(FLAG_INVISIBLE_FN) &&
           !fn->hasFlag(FLAG_INLINE) &&

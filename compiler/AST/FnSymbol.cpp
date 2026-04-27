@@ -1767,3 +1767,12 @@ const char* toString(FnSymbol* fn) {
 
   return retval;
 }
+
+bool FnSymbol::hasVariableArgs() const {
+  for_formals(formal, this) {
+    if (formal->variableExpr != nullptr) {
+      return true;
+    }
+  }
+  return false;
+}

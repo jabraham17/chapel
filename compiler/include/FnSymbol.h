@@ -293,6 +293,8 @@ public:
                                                  bool forError,
                                                  bool& printedUnderline) const;
 
+  bool                       hasVariableArgs()                           const;
+
 private:
   std::string                docsDirective();
 

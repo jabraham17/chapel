@@ -33,6 +33,9 @@
 #include "symbol.h"
 #include "wellknown.h"
 
+#include <unordered_map>
+#include "llvm/ADT/DenseMap.h"
+
 typedef std::vector<ArgSymbol*> Formals;
 
 static FnSymbol* expandVarArgs(FnSymbol* fn, CallInfo& info);
@@ -95,34 +98,19 @@ static void      cacheExtend(FnSymbol* fn, FnSymbol* expansion);
 *                                                                             *
 ************************************** | *************************************/
 
-static bool hasVariableArgs(FnSymbol* fn);
-
-
 FnSymbol* expandIfVarArgs(FnSymbol* fn, CallInfo& info) {
   FnSymbol* retval = fn;
 
-  if (hasVariableArgs(fn) == true) {
+  if (fn->hasVariableArgs()) {
     retval = cacheLookup(fn, info.actuals.n);
 
     // No substitution found
-    if (retval == NULL) {
+    if (retval == nullptr) {
       retval = expandVarArgs(fn, info);
 
-      if (retval != NULL) {
+      if (retval != nullptr) {
         cacheExtend(fn, retval);
       }
-    }
-  }
-
-  return retval;
-}
-
-static bool hasVariableArgs(FnSymbol* fn) {
-  bool retval = false;
-
-  for_formals(formal, fn) {
-    if (formal->variableExpr != NULL) {
-      retval = true;
     }
   }
 
@@ -867,38 +855,28 @@ static bool isVarargSizeExpr(SymExpr* se, CallExpr* parent) {
 *                                                                             *
 ************************************** | *************************************/
 
-typedef std::map<FnSymbol*, std::vector<FnSymbol*>*> ExpandVarArgsMap;
+
+typedef std::unordered_map<FnSymbol*, llvm::SmallDenseMap<int, FnSymbol*>> ExpandVarArgsMap;
 
 static ExpandVarArgsMap sCache;
 
 static FnSymbol* cacheLookup(FnSymbol* fn, int numActuals) {
-  ExpandVarArgsMap::iterator it     = sCache.find(fn);
-  FnSymbol*                  retval = NULL;
-
+  auto it = sCache.find(fn);
   if (it != sCache.end()) {
-    std::vector<FnSymbol*>* fns = it->second;
-
-    for (size_t i = 0; i < (*fns).size() && retval == NULL; i++) {
-      if ((*fns)[i]->numFormals() == numActuals) {
-        retval = (*fns)[i];
-      }
-    }
+    auto& fns = it->second;
+    return fns.lookup_or(numActuals, nullptr);
   }
-
-  return retval;
+  return nullptr;
 }
 
 static void cacheExtend(FnSymbol* fn, FnSymbol* expansion) {
-  ExpandVarArgsMap::iterator it = sCache.find(fn);
+  auto it = sCache.find(fn);
 
   if (it != sCache.end()) {
-    it->second->push_back(expansion);
-
+    it->second.insert({expansion->numFormals(), expansion});
   } else {
-    std::vector<FnSymbol*>* fns = new std::vector<FnSymbol*>();
-
-    fns->push_back(expansion);
-
-    sCache[fn] = fns;
+    llvm::SmallDenseMap<int, FnSymbol*> fns;
+    fns.insert({expansion->numFormals(), expansion});
+    sCache.insert(it, {fn, std::move(fns)});
   }
 }
