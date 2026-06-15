@@ -10829,7 +10829,7 @@ Cray-specific Changes
 
 Documentation
 -------------
-* simplified URLs to use https://chapel-lang/docs/ rather than .../docs/latest/
+* simplified URLs to use https://chapel-lang.org/docs/ rather than .../docs/latest/
 * fixed some typos and broken links in this file
 
 Packaging Changes
