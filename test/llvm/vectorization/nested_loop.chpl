@@ -21,7 +21,5 @@ var D : [1..n,1..n] int(32);
 var E : [1..n,1..n,1..n] int(32);
 var F : [1..n,1..n,1..n] int(32);
 
-var z = [ i in 1..10] i;
-
 loop(A, B, C, D, E, F, n);
 writeln("Sum of A is ", + reduce A);
