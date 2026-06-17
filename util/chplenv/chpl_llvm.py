@@ -1705,7 +1705,7 @@ def _main():
         default="",
     )
     parser.add_option(
-        "--llvm-vesion",
+        "--llvm-version",
         dest="action",
         action="store_const",
         const="llvmversion",
