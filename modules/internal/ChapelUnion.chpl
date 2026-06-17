@@ -148,6 +148,20 @@ module ChapelUnion {
 
     The function should be generic and work with any of the field types in the
     union, or the code will not compile.
+    
+    .. note::
+
+       A generic first class function can currently only be defined as a functor
+       (a callable object).
+
+       For example,
+
+       .. code-block:: chapel
+
+          record functor {
+            proc this(x) do writeln("the active field has type ", x.type:string);
+          }
+          myUnion.visitOne(new functor());
   */
   proc (union).visitOne(ref func) {
     import Reflection;
