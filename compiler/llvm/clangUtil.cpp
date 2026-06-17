@@ -1837,8 +1837,8 @@ void setupClang(GenInfo* info, std::string mainFile)
   // Get the codegen options from the clang command line.
   clangInfo->codegenOptions = CI->getCodeGenOpts();
 
-  // if --fast is given, we should be at least at -O3.
-  if(fFastFlag && clangInfo->codegenOptions.OptimizationLevel < 3) {
+  // if --optimize is given, we should be at least at -O3.
+  if(optimizeCCode && clangInfo->codegenOptions.OptimizationLevel < 3) {
     clangInfo->codegenOptions.OptimizationLevel = 3;
   }
 
@@ -2218,7 +2218,7 @@ static void setupModule()
   // Set up the TargetOptions
   llvm::TargetOptions Options = getTargetOptions(ClangCodeGenOpts, ClangOpts);
 
-  if (!fFastFlag)
+  if (!optimizeCCode)
     Options.EnableFastISel = 1;
   else {
     // things to consider:
@@ -2243,9 +2243,9 @@ static void setupModule()
 
   auto optLevel =
 #if HAVE_LLVM_VER >= 180
-    fFastFlag ? llvm::CodeGenOptLevel::Aggressive : llvm::CodeGenOptLevel::None;
+    optimizeCCode ? llvm::CodeGenOptLevel::Aggressive : llvm::CodeGenOptLevel::None;
 #else
-    fFastFlag ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None;
+    optimizeCCode ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None;
 #endif
 
   // Create the target machine.
@@ -2536,7 +2536,7 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, bool forFunctionPasses, i
   if (optLevel < 0)
     optLevel = CodeGenOpts.OptimizationLevel;
 
-  if( fFastFlag ) {
+  if( optimizeCCode ) {
     // TODO -- remove this assert
     INT_ASSERT(CodeGenOpts.OptimizationLevel >= 2);
   }
@@ -4995,7 +4995,7 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
     // produces code with debugging directives incompatible
     // with -O3, so then strip those directives.
 
-    ptxasFlags = fFastFlag ? "-O3" : "-O0";
+    ptxasFlags = optimizeCCode ? "-O3" : "-O0";
     if (fDebugSymbols) ptxasFlags += " -lineinfo";
 
     // Kind of a hack; manually turn
@@ -5004,7 +5004,7 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
     //   .target sm_60
     // because we can't configure clang to not force
     // full debug info.
-    if (fDebugSymbols && fFastFlag) {
+    if (fDebugSymbols && optimizeCCode) {
       stripPtxDebugDirective(artifactFilename);
     }
   }
