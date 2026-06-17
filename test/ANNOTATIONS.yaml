@@ -2729,6 +2729,8 @@ arkouda: &arkouda-base
       config: chapcs
   02/10/26:
     - Add runtime warning on divide-by-zero (Bears-R-Us/arkouda#5315)
+  02/18/26:
+    - Change problem sizes for co-locale benchmarks (Bears-R-Us/arkouda#5022)
   02/19/26:
     - Fix performance regressions from divide-by-zero check (Bears-R-Us/arkouda#5416)
   04/19/26:
