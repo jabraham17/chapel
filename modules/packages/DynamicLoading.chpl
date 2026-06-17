@@ -74,9 +74,10 @@ having all loaded Chapel programs utilize a single shared copy of the runtime.
 .. warning::
 
   This feature is highly unstable (even more than the rest of this module).
-  As of the 2.9 release, it is only supported when ``CHPL_COMM=gasnet`` and
-  ``CHPL_LIB_PIC=pic``. Safety checks have not been added yet, so dynamically
-  loaded code may break in unexpected ways if these constraints are not met.
+  As of the 2.9 release, it is only supported when ``CHPL_COMM=none`` or
+  ``CHPL_COMM=gasnet``, and also requires ``CHPL_LIB_PIC=pic``. Safety checks
+  have not been added yet, so dynamically loaded code may break in unexpected
+  ways if these constraints are not met.
 
   Additionally, while it should be possible to execute parallel and
   distributed code from a loaded Chapel library, it is possible that certain
