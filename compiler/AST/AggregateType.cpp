@@ -2297,7 +2297,8 @@ void AggregateType::buildDefaultInitializer() {
       } else {
         USR_FATAL(this, "Unable to generate initializer for type '%s'", this->symbol->name);
       }
-    } else {
+    } else {  // Handle unions
+      /* 0-arg initializer */
       DefExpr* def = new DefExpr(fn);
       symbol->defPoint->insertBefore(def);
 
@@ -2311,6 +2312,88 @@ void AggregateType::buildDefaultInitializer() {
       normalize(fn);
 
       methods.add(fn);
+
+      /* 1-arg initializers */
+      for_fields(fieldDefExpr, this) {
+        SET_LINENO(this);
+        FnSymbol* fn = new FnSymbol("init");
+        fn->cname = fn->name;
+        fn->_this = _this;
+
+        fn->addFlag(FLAG_COMPILER_GENERATED);
+        fn->addFlag(FLAG_LAST_RESORT);
+        fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+        fn->addFlag(FLAG_DEFAULT_INIT);
+
+        ArgSymbol* _mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
+        fn->insertFormalAtTail(_mt);
+
+        ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", this);
+        _this->addFlag(FLAG_ARG_THIS);
+        fn->insertFormalAtTail(_this);
+
+        {
+          SET_LINENO(fieldDefExpr);
+          VarSymbol* field = toVarSymbol(fieldDefExpr);
+          if (!field) {
+            INT_FATAL("unexpected: fieldDefExpr can't be made a VarSymbol");
+          }
+          assert(!field->hasFlag(FLAG_SUPER_CLASS));
+
+          DefExpr* defPoint = field->defPoint;
+          const char* name = field->name;
+          ArgSymbol* arg = new ArgSymbol(INTENT_IN, name, dtUnknown);
+
+          if (field->hasEitherFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM)) {
+            USR_FATAL(arg, "union types don't currently support `type` or `param` fields");
+          }
+
+          {
+            SET_LINENO(field);
+
+            if (field->hasFlag(FLAG_UNSAFE))
+              arg->addFlag(FLAG_UNSAFE);
+
+            // TODO: We should really do this somewhere else, and let this
+            // method focus on the initializer and not modify the type's fields.
+            if (LoopExpr* fe = toLoopExpr(defPoint->init)) {
+              if (field->isType() == false) {
+                if (defPoint->exprType == NULL) {
+                  CallExpr* copy = new CallExpr(astr_initCopy);
+                  defPoint->init->replace(copy);
+
+                  Symbol *definedConst = defPoint->sym->hasFlag(FLAG_CONST) ?
+                                           gTrue : gFalse;
+                  copy->insertAtTail(fe);
+                  copy->insertAtTail(definedConst);
+                }
+              }
+            }
+
+            if (defPoint->exprType == NULL) {
+              INT_FATAL(field, "union fields currently must have a declared type");
+            } else if (defPoint->init == NULL) {
+              fieldToArgType(defPoint, arg);
+            } else {
+              INT_FATAL(field, "union fields currently cannot have initializers");
+            }
+            fn->insertFormalAtTail(arg);
+            fn->insertAtTail(new CallExpr("=", new CallExpr(".",
+                                                            fn->_this,
+                                                            new_CStringSymbol(name)),
+                                          arg));
+          }
+        }
+          
+        DefExpr* def = new DefExpr(fn);
+        symbol->defPoint->insertBefore(def);
+        fn->setMethod(true);
+        fn->addFlag(FLAG_METHOD_PRIMARY);
+        preNormalizeInitMethod(fn);
+        normalize(fn);
+        checkUseBeforeDefs(fn);
+        methods.add(fn);
+      }
     }
 
     builtDefaultInit = true;
