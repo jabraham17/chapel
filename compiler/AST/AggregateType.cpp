@@ -2384,7 +2384,7 @@ void AggregateType::buildDefaultInitializer() {
                                           arg));
           }
         }
-          
+
         DefExpr* def = new DefExpr(fn);
         symbol->defPoint->insertBefore(def);
         fn->setMethod(true);
