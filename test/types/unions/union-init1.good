@@ -4,5 +4,5 @@ union-init1.chpl:1: note: this candidate did not match: U.init()
 union-init1.chpl:7: note: because call uses named argument x
 union-init1.chpl:1: note: but function contains no formal named x
 union-init1.chpl:7: note: other candidates are:
-union-init1.chpl:1: note:   U.init(this: U, x: int(64))
-union-init1.chpl:1: note:   U.init(this: U, y: real(64))
+union-init1.chpl:1: note:   U.init(x: int(64))
+union-init1.chpl:1: note:   U.init(y: real(64))
