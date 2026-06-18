@@ -12,6 +12,6 @@ nightly_args="${nightly_args} $(set +x ; get_nightly_paratest_args 8) -asserts"
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="c-backend"
 
-log_info START nightly -cron ${nightly_args}
-$UTIL_CRON_DIR/nightly -cron ${nightly_args}
+log_info START nightly -cron -mason ${nightly_args}
+$UTIL_CRON_DIR/nightly -cron -mason ${nightly_args}
 log_info nightly EXIT status $?
