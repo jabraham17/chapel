@@ -11,4 +11,4 @@ source $UTIL_CRON_DIR/common-localnode-paratest.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="ubsan.gnu"
 
-$UTIL_CRON_DIR/nightly -cron ${nightly_args} $(get_nightly_paratest_args 16)
+$UTIL_CRON_DIR/nightly -cron -mason ${nightly_args} $(get_nightly_paratest_args 16)
