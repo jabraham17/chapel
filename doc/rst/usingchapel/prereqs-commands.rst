@@ -64,7 +64,14 @@
       sudo apt-get install llvm-16-dev llvm-16 llvm-16-tools clang-16 libclang-16-dev libclang-cpp16-dev libedit-dev
 
 
-  * Debian 12 "Bookworm", 13 "Trixie"::
+  * Debian 12 "Bookworm"::
+
+      sudo apt-get update
+      sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake libunwind-dev
+      sudo apt-get install llvm-16-dev llvm-16 llvm-16-tools clang-16 libclang-16-dev libclang-cpp16-dev libedit-dev
+
+
+  * Debian 13 "Trixie"::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake libunwind-dev
@@ -101,7 +108,14 @@
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * Ubuntu 22.04 "Jammy Jellyfish", 24.04 "Noble Numbat", 25.10 "Questing Quokka", 26.04 "Resolute Raccoon"::
+  * Ubuntu 22.04 "Jammy Jellyfish"::
+
+      sudo apt-get update
+      sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake libunwind-dev
+      sudo apt-get install llvm-15-dev llvm-15 llvm-15-tools clang-15 libclang-15-dev libclang-cpp15-dev libedit-dev
+
+
+  * Ubuntu 24.04 "Noble Numbat", 25.10 "Questing Quokka", 26.04 "Resolute Raccoon"::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake libunwind-dev
