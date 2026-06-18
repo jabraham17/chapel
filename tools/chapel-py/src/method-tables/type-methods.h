@@ -46,6 +46,38 @@ CLASS_BEGIN(CompositeType)
                return node->name())
 CLASS_END(CompositeType)
 
+CLASS_BEGIN(ArrayType)
+  PLAIN_GETTER(ArrayType, domain_type, "Get the domain type of this ArrayType",
+               Nilable<const chpl::types::DomainType*>,
+               auto ty = node->domainType().type();
+               if (!ty || !ty->isDomainType()) return {};
+               return ty->toDomainType())
+  PLAIN_GETTER(ArrayType, elt_type, "Get the element type of this ArrayType",
+               Nilable<const chpl::types::Type*>,
+               auto ty = node->eltType().type();
+               if (!ty) return {};
+               return ty)
+CLASS_END(ArrayType)
+
+CLASS_BEGIN(DomainType)
+ PLAIN_GETTER(DomainType, kind, "Get the kind of this DomainType (e.g. rectangular, associative, etc.)",
+              const char*,
+              return chpl::types::DomainType::kindToString(node->kind()))
+  PLAIN_GETTER(DomainType, rank, "Get the rank of this DomainType as an integer",
+               int,
+               return node->rankInt())
+  PLAIN_GETTER(DomainType, idx_type, "Get the index type of this DomainType",
+                Nilable<const chpl::types::Type*>,
+                auto ty = node->idxType().type();
+                if (!ty) return {};
+                return ty)
+  PLAIN_GETTER(DomainType, strides, "Get the param that represents the strides of this DomainType, if it exists",
+               Nilable<const chpl::types::Param*>,
+               auto ty = node->strides().param();
+               if (!ty) return {};
+               return ty)
+CLASS_END(DomainType)
+
 CLASS_BEGIN(EnumType)
   PLAIN_GETTER(EnumType, name, "Get name of this EnumType",
                chpl::UniqueString,

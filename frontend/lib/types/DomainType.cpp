@@ -37,6 +37,18 @@ const ID DomainType::stridesId = ID(UniqueString(), 2, 0);
 const ID DomainType::parSafeId = ID(UniqueString(), 1, 0);
 const ID DomainType::parentDomainId = ID(UniqueString(), 0, 0);
 
+const char* DomainType::kindToString(Kind k) {
+  switch (k) {
+    case Kind::Rectangular: return "Rectangular";
+    case Kind::Associative: return "Associative";
+    case Kind::Sparse: return "Sparse";
+    case Kind::Subdomain: return "Subdomain";
+    case Kind::Unknown: return "Unknown";
+  }
+  CHPL_ASSERT(false && "all domain kinds should be handled");
+  return "";
+}
+
 const RuntimeType* DomainType::runtimeType(Context* context) const {
   // generic domains do not have a runtime type
   if (kind() == DomainType::Kind::Unknown) return nullptr;
