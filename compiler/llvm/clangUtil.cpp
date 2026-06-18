@@ -2748,7 +2748,6 @@ void prepareCodegenLLVM()
       llvm::errs() << "Function Simplification Pipeline: '" << Pipeline << "'\n";
     }
   }
-#endif
 }
 
 static void handleErrorLLVM(void* user_data, const char* reason,
