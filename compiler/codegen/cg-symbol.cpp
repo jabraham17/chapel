@@ -2380,6 +2380,11 @@ codegenFunctionTypeLLVMImpl(
               if (argInfo->getInReg()) {
                 b.addAttribute(llvm::Attribute::InReg);
               }
+#if HAVE_LLVM_VER >= 170
+              if (argInfo->isDirect()) {
+                b.addStackAlignmentAttr(llvm::MaybeAlign(argInfo->getDirectAlign()));
+              }
+#endif
               llvmAddAttr(ctx, outAttrs, argTys.size(), b);
             }
           } else {
@@ -2415,6 +2420,12 @@ codegenFunctionTypeLLVMImpl(
             if (argInfo->getInReg()) {
               b.addAttribute(llvm::Attribute::InReg);
             }
+
+#if HAVE_LLVM_VER >= 170
+            if (argInfo->isDirect()) {
+              b.addStackAlignmentAttr(llvm::MaybeAlign(argInfo->getDirectAlign()));
+            }
+#endif
             llvmAddAttr(ctx, outAttrs, argTys.size(), b);
           }
         } break;
