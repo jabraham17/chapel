@@ -65,7 +65,7 @@ jobs:
         git checkout -b update-chapel-homebrew-release-${{ env.HASH_SUBSTRING }}
         mv hb_master_chapel.rb util/packaging/homebrew/chapel-release.rb
         git add util/packaging/homebrew/chapel-release.rb
-        git commit -m "Update chapel-main.rb with changes from chapel.rb" --signoff
+        git commit -m "Update chapel-release.rb with changes from chapel.rb" --signoff
         git push --set-upstream origin update-chapel-homebrew-release-${{ env.HASH_SUBSTRING }}
         echo "Homebrew has updated the formula!"
 
