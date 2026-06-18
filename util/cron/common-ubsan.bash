@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Configure environment for testing AddressSanitizer.
+# Configure environment for testing UndefinedBehaviorSanitizer.
 
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
