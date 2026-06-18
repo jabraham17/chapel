@@ -146,8 +146,17 @@ module ChapelUnion {
     A version of :proc:`~ChapelUnion.union.visit` that takes a single function
     and calls it with the active field in the union.
 
-    The function should be generic and work with any of the field types in the
-    union, or the code will not compile.
+    The function should be a callable object (functor) and work with any of the
+    field types in the union, or the code will not compile.
+
+    For example,
+
+    .. code-block:: chapel
+
+       record functor {
+         proc this(x) do writeln("the active field has type ", x.type:string);
+       }
+       myUnion.visitOne(new functor());
   */
   proc (union).visitOne(ref func) {
     import Reflection;
