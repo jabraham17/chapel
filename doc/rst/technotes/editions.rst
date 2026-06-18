@@ -169,6 +169,9 @@ remain in the preview until they are deemed sufficiently complete.
   real`` values taken to ``param real`` or ``integral`` exponents and
   considered stable.
 
+- The `Math` module defines a new ``lcm()`` procedure that supports
+  computing least common multiples of integral values.
+
 - Default comparison operators on records (``==``, ``!=``, ``<``,
   ``<=``, ``>``, ``>=``) are defined as module code accepting two
   generic arguments of type ``record`` rather than being inserted by
