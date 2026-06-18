@@ -2322,7 +2322,6 @@ void AggregateType::buildDefaultInitializer() {
         fn->addFlag(FLAG_COMPILER_GENERATED);
         fn->addFlag(FLAG_LAST_RESORT);
         fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
-        fn->addFlag(FLAG_DEFAULT_INIT);
 
         ArgSymbol* _mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
         fn->insertFormalAtTail(_mt);
