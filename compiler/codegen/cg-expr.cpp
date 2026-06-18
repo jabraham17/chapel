@@ -507,18 +507,6 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
 
       llvm::Value* addrVal = raddr.val;
 
-#ifdef HAVE_LLVM_TYPED_POINTERS
-      if (!isOpaquePointer(adr->getType())) {
-        // cast address if needed. This is necessary for building a wide
-        // NULL pointer since NULL is actually an i8*.
-        llvm::Type* addrType = adr->getType()->getPointerElementType();
-        if (raddr.val->getType() != addrType) {
-          addrVal = convertValueToType(addrVal, addrType);
-        }
-      }
-      INT_ASSERT(addrVal);
-#endif
-
       llvm::StoreInst* st1 = info->irBuilder->CreateStore(addrVal, adr);
       llvm::StoreInst* st2 = info->irBuilder->CreateStore(locale.val, loc);
       trackLLVMValue(st1);
@@ -537,17 +525,7 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
                                    addrType);
     INT_ASSERT(fn);
 
-    llvm::Type* locAddrType = nullptr;
-
-    if (isOpaquePointer(addrType)) {
-      locAddrType = getPointerType(gContext->llvmContext());
-    } else {
-#ifdef HAVE_LLVM_TYPED_POINTERS
-      locAddrType =
-        getPointerType(addrType->getPointerElementType());
-#endif
-    }
-    INT_ASSERT(locAddrType);
+    llvm::Type* locAddrType = getPointerType(gContext->llvmContext());
 
     // Null pointers require us to possibly cast to the pointer type
     // we are supposed to have since null has type void*.
@@ -3161,14 +3139,6 @@ static GenRet codegenCallExprInner(GenRet function,
       trackLLVMValue(c);
     } else {
       INT_ASSERT(fnType != nullptr);
-
-    #ifdef HAVE_LLVM_TYPED_POINTERS
-      // If we are using typed pointers, the pointer type must match the
-      // call type or else instruction verification will fail. If using
-      // opaque pointers, it is fine if the call pointer type is 'void*'.
-      auto fnPtrType = getPointerType(fnType);
-      val = info->irBuilder->CreateBitCast(val, fnPtrType);
-    #endif
 
       c = info->irBuilder->CreateCall(fnType, val, llArgs);
       trackLLVMValue(c);

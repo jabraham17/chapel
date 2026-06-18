@@ -27,7 +27,7 @@ def llvm_versions():
     # Which major release - only need one number for that with current
     # llvm (since LLVM 4.0).
     # These will be tried in order.
-    min_version = 14
+    min_version = 15
     max_version = 22
     versions = tuple(str(i) for i in range(max_version, min_version - 1, -1))
     return versions
@@ -1517,6 +1517,7 @@ def compute_host_link_settings():
         "-lclangAST",
         "-lclangLex",
         "-lclangBasic",
+        "-lclangSupport"
     ]
 
     llvm_components = [
@@ -1531,14 +1532,11 @@ def compute_host_link_settings():
         "coverage",
         "coroutines",
         "lto",
+        "windowsdriver"
     ]
 
     if llvm_val == "system" or llvm_val == "bundled":
         llvm_version = get_llvm_version()
-        # Starting with clang 15, clang needs additional libraries
-        if int(llvm_version) >= 15:
-            clang_static_libs.append("-lclangSupport")
-            llvm_components.append("windowsdriver")
         # Starting with clang 16, clang needs additional libraries
         if int(llvm_version) >= 16:
             llvm_components.append("frontendhlsl")

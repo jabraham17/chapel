@@ -460,11 +460,7 @@ static astlocT getClangDeclLocation(clang::Decl* d) {
 
 
 
-#if HAVE_LLVM_VER >= 150
 typedef MacroInfo::const_tokens_iterator tokens_iterator;
-#else
-typedef MacroInfo::tokens_iterator tokens_iterator;
-#endif
 
 static const bool debugPrintMacros = false;
 
@@ -1389,9 +1385,7 @@ class CCodeGenConsumer final : public ASTConsumer {
         info->clangInfo->cCodeGen = CreateLLVMCodeGen(
           *Diags,
           LLVM_MODULE_NAME,
-#if HAVE_LLVM_VER >= 150
           &info->clangInfo->Clang->getVirtualFileSystem(),
-#endif
           info->clangInfo->Clang->getHeaderSearchOpts(),
           info->clangInfo->Clang->getPreprocessorOpts(),
           info->clangInfo->codegenOptions,
@@ -2100,13 +2094,9 @@ static llvm::TargetOptions getTargetOptions(
   Options.MCOptions.SplitDwarfFile = CodeGenOpts.SplitDwarfFile;
   Options.MCOptions.MCRelaxAll = CodeGenOpts.RelaxAll;
   Options.MCOptions.MCSaveTempLabels = CodeGenOpts.SaveTempLabels;
-#if HAVE_LLVM_VER >= 150
   Options.MCOptions.MCUseDwarfDirectory =
     CodeGenOpts.NoDwarfDirectoryAsm ? llvm::MCTargetOptions::DisableDwarfDirectory
                                     : llvm::MCTargetOptions::EnableDwarfDirectory;
-#else
-  Options.MCOptions.MCUseDwarfDirectory = !CodeGenOpts.NoDwarfDirectoryAsm;
-#endif
   Options.MCOptions.MCNoExecStack = CodeGenOpts.NoExecStack;
   Options.MCOptions.MCIncrementalLinkerCompatible =
       CodeGenOpts.IncrementalLinkerCompatible;
@@ -2562,10 +2552,8 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, bool forFunctionPasses, i
   PMBuilder.DisableUnrollLoops = !CodeGenOpts.UnrollLoops;
   PMBuilder.LoopsInterleaved = CodeGenOpts.UnrollLoops;
   PMBuilder.MergeFunctions = CodeGenOpts.MergeFunctions;
-#if HAVE_LLVM_VER < 150
   PMBuilder.PrepareForThinLTO = CodeGenOpts.PrepareForThinLTO;
   PMBuilder.PrepareForLTO = CodeGenOpts.PrepareForLTO;
-#endif
 
 #if HAVE_LLVM_VER < 160
   PMBuilder.RerollLoops = CodeGenOpts.RerollLoops;
@@ -3085,14 +3073,12 @@ static void helpComputeClangArgs(std::string& clangCC,
     clangCCArgs.push_back(clangRequiredWarningFlags[i]);
   }
 
-#if HAVE_LLVM_VER >= 150
   if (usingGpuLocaleModel() &&
       getGpuCodegenType() == GpuCodegenType::GPU_CG_NVIDIA_CUDA) {
     // this is necessary for CUB 11. Once we drop CUDA 11 support, we can
     // probably remove this
     clangCCArgs.push_back("-Wno-deprecated-builtins");
   }
-#endif
 
 #if HAVE_LLVM_VER >= 210
   if (usingGpuLocaleModel() &&
@@ -5068,13 +5054,8 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
   INT_ASSERT(gpuArches.size() == 1);
 
   std::string targets = "-targets=host-x86_64-unknown-linux-unknown";
-#if HAVE_LLVM_VER >= 150
   std::string inputs = "-input=/dev/null ";
   std::string outputs = "-output=" + fatbinFilename;
-#else
-  std::string inputs = "-inputs=/dev/null";
-  std::string outputs = "-outputs=" + fatbinFilename;
-#endif
   std::string lldBin = CHPL_ROCM_LLVM_PATH + std::string("/bin/lld");
   for (auto& gpuArch : gpuArches) {
     std::string gpuObject = gpuObjFilename + "_" + gpuArch + ".o";
@@ -5099,11 +5080,7 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
     mysystem(lldCmd.c_str(), "Device .o file to .out file");
 
     targets += std::string(",hipv4-amdgcn-amd-amdhsa--") + gpuArch;
-#if HAVE_LLVM_VER >= 150
     inputs += "-input=" + gpuOut + " ";
-#else
-    inputs += "," + gpuOut;
-#endif
 
   }
   std::string bundlerCmd = findSiblingClangToolPath("clang-offload-bundler") +
