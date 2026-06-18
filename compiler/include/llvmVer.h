@@ -31,10 +31,6 @@
 #error LLVM version is too old for this version of Chapel
 #endif
 
-#if HAVE_LLVM_VER < 160
-#define LLVM_USE_OLD_PASSES 1
-#endif
-
 #endif //HAVE_LLVM
 
 #endif //LLVMVER_H
