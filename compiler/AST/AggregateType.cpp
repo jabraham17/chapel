@@ -2318,7 +2318,6 @@ void AggregateType::buildDefaultInitializer() {
         SET_LINENO(this);
         FnSymbol* fn = new FnSymbol("init");
         fn->cname = fn->name;
-        fn->_this = _this;
 
         fn->addFlag(FLAG_COMPILER_GENERATED);
         fn->addFlag(FLAG_LAST_RESORT);
@@ -2329,6 +2328,7 @@ void AggregateType::buildDefaultInitializer() {
         fn->insertFormalAtTail(_mt);
 
         ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", this);
+        fn->_this = _this;
         _this->addFlag(FLAG_ARG_THIS);
         fn->insertFormalAtTail(_this);
 
