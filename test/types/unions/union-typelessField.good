@@ -1,0 +1,1 @@
+union-typelessField.chpl:2: error: currently, union fields must have a declared type

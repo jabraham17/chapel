@@ -2371,11 +2371,11 @@ void AggregateType::buildDefaultInitializer() {
             }
 
             if (defPoint->exprType == NULL) {
-              INT_FATAL(field, "union fields currently must have a declared type");
+              USR_FATAL(field, "currently, union fields must have a declared type");
             } else if (defPoint->init == NULL) {
               fieldToArgType(defPoint, arg);
             } else {
-              INT_FATAL(field, "union fields currently cannot have initializers");
+              USR_FATAL(field, "currently, union fields cannot have initializer expressions");
             }
             fn->insertFormalAtTail(arg);
             fn->insertAtTail(new CallExpr("=", new CallExpr(".",
