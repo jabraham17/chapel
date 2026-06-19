@@ -549,6 +549,36 @@ async def test_common_inlays(client: LanguageClient):
 
 
 @pytest.mark.asyncio
+async def test_common_inlays_single_instantiation(client: LanguageClient):
+    """
+    Ensure that type inlays are shown properly for type variables
+    """
+
+    file = """
+            proc foo(x) {
+              var y = x;
+              var z = (x, x);
+              var xStr = x : string;
+              var zStr = z : (string, string);
+            }
+            foo(42);
+           """
+
+    inlays = [
+        (pos((0, 10)), "int(64)"),
+        (pos((1, 7)), "int(64)"),
+        (pos((2, 7)), "(int(64), int(64))"),
+        (pos((3, 10)), "string"),
+        (pos((4, 10)), "(string, string)"),
+    ]
+    async with source_file(client, file) as doc:
+        await check_type_inlay_hints(
+            client, doc, rng((0, 0), endpos(file)), inlays
+        )
+
+
+
+@pytest.mark.asyncio
 async def test_common_inlays_crossfile(client: LanguageClient):
     """
     Ensure that type inlays are shown properly for type variables
