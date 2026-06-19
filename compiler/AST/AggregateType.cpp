@@ -2331,6 +2331,10 @@ void AggregateType::buildDefaultInitializer() {
         _this->addFlag(FLAG_ARG_THIS);
         fn->insertFormalAtTail(_this);
 
+        fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
+                                      fn->_this,
+                                      new_IntSymbol(-1)));
+
         {
           SET_LINENO(fieldDefExpr);
           VarSymbol* field = toVarSymbol(fieldDefExpr);
@@ -3221,6 +3225,14 @@ void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
 
     if (fn->hasFlag(FLAG_NO_PARENS)) {
       USR_FATAL(fn, "an initializer cannot be declared without parentheses");
+    }
+
+    // For a user-defined union initializer to work properly, the active
+    // field indicator must be initialized to -1
+    if (ct->isUnion()) {
+      fn->insertAtHead(new CallExpr(PRIM_SET_UNION_ID,
+                                    fn->_this,
+                                    new_IntSymbol(-1)));
     }
 
     if (ct->hasUserDefinedInit == false) {
