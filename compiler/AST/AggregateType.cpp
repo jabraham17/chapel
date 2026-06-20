@@ -2241,26 +2241,57 @@ bool AggregateType::isFieldInThisClass(const char* name) const {
   return retval;
 }
 
+// start building a compiler-generated init method; after this, its
+// arguments and body should be defined
+//
+static FnSymbol* startBuildingInitFn(AggregateType* agg) {
+  FnSymbol*  fn    = new FnSymbol("init");
+  ArgSymbol* _mt   = new ArgSymbol(INTENT_BLANK, "_mt",  dtMethodToken);
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", agg);
+
+  fn->cname = fn->name;
+  fn->_this = _this;
+
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
+  fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+
+  _this->addFlag(FLAG_ARG_THIS);
+
+  fn->insertFormalAtTail(_mt);
+  fn->insertFormalAtTail(_this);
+
+  return fn;
+}
+
+// wrap up the building of a compiler-generated init method once its
+// arguments and body have been defined
+//
+static void finalizeInitFn(AggregateType* agg, FnSymbol* fn) {
+  DefExpr* def = new DefExpr(fn);
+  agg->symbol->defPoint->insertBefore(def);
+
+  fn->setMethod(true);
+  fn->addFlag(FLAG_METHOD_PRIMARY);
+
+  preNormalizeInitMethod(fn);
+
+  normalize(fn);
+
+  // BHARSH INIT TODO: Should this be part of normalize(fn)? If we did
+  // that we would emit two use-before-def errors for classes because of
+  // the generated _new function.
+  checkUseBeforeDefs(fn);
+
+  agg->methods.add(fn);
+}  
+
 void AggregateType::buildDefaultInitializer() {
   if (builtDefaultInit == false &&
       symbol->hasFlag(FLAG_REF) == false) {
     SET_LINENO(this);
-    FnSymbol*  fn    = new FnSymbol("init");
-    ArgSymbol* _mt   = new ArgSymbol(INTENT_BLANK, "_mt",  dtMethodToken);
-    ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", this);
-
-    fn->cname = fn->name;
-    fn->_this = _this;
-
-    fn->addFlag(FLAG_COMPILER_GENERATED);
-    fn->addFlag(FLAG_LAST_RESORT);
-    fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+    FnSymbol* fn = startBuildingInitFn(this);
     fn->addFlag(FLAG_DEFAULT_INIT);
-
-    _this->addFlag(FLAG_ARG_THIS);
-
-    fn->insertFormalAtTail(_mt);
-    fn->insertFormalAtTail(_this);
 
     if (!this->isUnion()) {
       std::set<const char*> names;
@@ -2277,59 +2308,23 @@ void AggregateType::buildDefaultInitializer() {
         // NOTE: doesn't handle inherited fields yet!
         update_symbols(fn, &fieldArgMap);
 
-        DefExpr* def = new DefExpr(fn);
-        symbol->defPoint->insertBefore(def);
-
-        fn->setMethod(true);
-        fn->addFlag(FLAG_METHOD_PRIMARY);
-
-        preNormalizeInitMethod(fn);
-
-        normalize(fn);
-
-        // BHARSH INIT TODO: Should this be part of normalize(fn)? If we did
-        // that we would emit two use-before-def errors for classes because of
-        // the generated _new function.
-        checkUseBeforeDefs(fn);
-
-        methods.add(fn);
-
+        finalizeInitFn(this, fn);
+        
       } else {
         USR_FATAL(this, "Unable to generate initializer for type '%s'", this->symbol->name);
       }
     } else {  // Handle unions
       /* 0-arg initializer */
-      DefExpr* def = new DefExpr(fn);
-      symbol->defPoint->insertBefore(def);
-
-      fn->setMethod(true);
-      fn->addFlag(FLAG_METHOD_PRIMARY);
-
       fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
                                     fn->_this,
                                     new_IntSymbol(-1)));
 
-      normalize(fn);
-
-      methods.add(fn);
+      finalizeInitFn(this, fn);
 
       /* 1-arg initializers */
       for_fields(fieldDefExpr, this) {
         SET_LINENO(this);
-        FnSymbol* fn = new FnSymbol("init");
-        fn->cname = fn->name;
-
-        fn->addFlag(FLAG_COMPILER_GENERATED);
-        fn->addFlag(FLAG_LAST_RESORT);
-        fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
-
-        ArgSymbol* _mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
-        fn->insertFormalAtTail(_mt);
-
-        ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", this);
-        fn->_this = _this;
-        _this->addFlag(FLAG_ARG_THIS);
-        fn->insertFormalAtTail(_this);
+        FnSymbol* fn = startBuildingInitFn(this);
 
         fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
                                       fn->_this,
@@ -2388,14 +2383,7 @@ void AggregateType::buildDefaultInitializer() {
           }
         }
 
-        DefExpr* def = new DefExpr(fn);
-        symbol->defPoint->insertBefore(def);
-        fn->setMethod(true);
-        fn->addFlag(FLAG_METHOD_PRIMARY);
-        preNormalizeInitMethod(fn);
-        normalize(fn);
-        checkUseBeforeDefs(fn);
-        methods.add(fn);
+        finalizeInitFn(this, fn);
       }
     }
 
