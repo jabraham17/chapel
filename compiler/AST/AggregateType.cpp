@@ -1,4 +1,4 @@
-/*
+`/*
  * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
@@ -2284,7 +2284,7 @@ static void finalizeInitFn(AggregateType* agg, FnSymbol* fn) {
   checkUseBeforeDefs(fn);
 
   agg->methods.add(fn);
-}  
+}
 
 void AggregateType::buildDefaultInitializer() {
   if (builtDefaultInit == false &&
@@ -2309,7 +2309,7 @@ void AggregateType::buildDefaultInitializer() {
         update_symbols(fn, &fieldArgMap);
 
         finalizeInitFn(this, fn);
-        
+
       } else {
         USR_FATAL(this, "Unable to generate initializer for type '%s'", this->symbol->name);
       }
