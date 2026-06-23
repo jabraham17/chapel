@@ -1517,7 +1517,7 @@ def compute_host_link_settings():
         "-lclangAST",
         "-lclangLex",
         "-lclangBasic",
-        "-lclangSupport"
+        "-lclangSupport",
     ]
 
     llvm_components = [
@@ -1532,7 +1532,7 @@ def compute_host_link_settings():
         "coverage",
         "coroutines",
         "lto",
-        "windowsdriver"
+        "windowsdriver",
     ]
 
     if llvm_val == "system" or llvm_val == "bundled":
