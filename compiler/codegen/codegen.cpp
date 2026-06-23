@@ -2231,7 +2231,8 @@ static void codegen_header(std::set<const char*> & cnames,
     current.move(next);
     current.set_to_vec();
 
-    qsort(current.v, current.n, sizeof(current.v[0]), compareSymbol2);
+    if (current.n)
+      qsort(current.v, current.n, sizeof(current.v[0]), compareSymbol2);
 
     next.clear();
   }

@@ -601,12 +601,11 @@ bool ErrorHandlingVisitor::enterForallStmt(ForallStmt* node) {
   return true;
 }
 
-void ErrorHandlingVisitor::exitForallLoop(Stmt* node)
-{
+void ErrorHandlingVisitor::exitForallLoop(Stmt* node) {
   if (tryStack.empty())
     return;
 
-  TryInfo& info = tryStack.top();
+  TryInfo info = tryStack.top();
   if (info.throwingForall == NULL)
     return;
   else if (info.throwingForall != node)
