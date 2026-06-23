@@ -2,10 +2,14 @@
 
 
 MASON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-DEPS_FILE="$MASON_DIR/ThirdParty/masonDeps.txt"
+MASON_THIRD_PARTY_DIRECTORY=${MASON_THIRD_PARTY_DIRECTORY:-$MASON_DIR/ThirdParty}
+MASON_THIRD_PARTY_DEPS_LIST=${MASON_THIRD_PARTY_DEPS_LIST:-$MASON_THIRD_PARTY_DIRECTORY/masonDeps.txt}
+
+rm -f $MASON_THIRD_PARTY_DIRECTORY/downloaded.txt
+rm -f $MASON_THIRD_PARTY_DIRECTORY/*.chpl
 
 # if masonDeps does not exist, skip
-if [ ! -f "$DEPS_FILE" ]; then
+if [ ! -f "$MASON_THIRD_PARTY_DEPS_LIST" ]; then
   echo "No masonDeps.txt found, skipping dependency download"
   exit 0
 fi
@@ -19,37 +23,37 @@ while IFS= read -r line; do
   url=$(echo "$line" | cut -d '@' -f 2)
   sha=$(echo "$line" | cut -d '@' -f 3)
 
-  rm -f $MASON_DIR/ThirdParty/$filename
+  rm -f $MASON_THIRD_PARTY_DIRECTORY/$filename
   if command -v curl > /dev/null; then
     # use curl if available
-    curl -sSfL "$url" -o "$MASON_DIR/ThirdParty/$filename"
+    curl -sSfL "$url" -o "$MASON_THIRD_PARTY_DIRECTORY/$filename"
   else
     # fall back to python
-    python3 -c "import urllib.request; urllib.request.urlretrieve('$url', '$MASON_DIR/ThirdParty/$filename')"
+    python3 -c "import urllib.request; urllib.request.urlretrieve('$url', '$MASON_THIRD_PARTY_DIRECTORY/$filename')"
   fi
-  if [ ! -f "$MASON_DIR/ThirdParty/$filename" ]; then
+  if [ ! -f "$MASON_THIRD_PARTY_DIRECTORY/$filename" ]; then
     echo "Failed to download $filename from $url"
     exit 1
   fi
 
   # verify the sha256
-  (cd $MASON_DIR/ThirdParty/ && echo "$sha  $filename" | shasum -a 256 -c -)
+  (cd $MASON_THIRD_PARTY_DIRECTORY/ && echo "$sha  $filename" | shasum -a 256 -c -)
   if [ $? -ne 0 ]; then
     echo "SHA256 verification failed for $filename"
     exit 1
   fi
 
   echo "Downloaded $filename"
-done < "$DEPS_FILE"
+done < "$MASON_THIRD_PARTY_DEPS_LIST"
 
-echo "this file indicates a successful run">$MASON_DIR/ThirdParty/downloaded.txt
+echo "this file indicates a successful run">$MASON_THIRD_PARTY_DIRECTORY/downloaded.txt
 
 echo "Patching includes to be relative..."
 # because we have shoved these dependencies into a submodule, we need to fix the
 # includes to be relative.
-for dep in $MASON_DIR/ThirdParty/*.chpl; do
+for dep in $MASON_THIRD_PARTY_DIRECTORY/*.chpl; do
   modName=$(basename $dep .chpl)
-  for other in $MASON_DIR/ThirdParty/*.chpl; do
+  for other in $MASON_THIRD_PARTY_DIRECTORY/*.chpl; do
   otherName=$(basename $other .chpl)
     if grep -q "import $modName" $other; then
       if [ "$otherName" != "$modName" ]; then

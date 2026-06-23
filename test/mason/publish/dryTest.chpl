@@ -11,4 +11,6 @@ proc dry() {
   masonPublish(['publish', '--dry-run']);
 }
 
-dry();
+proc main() {
+  dry();
+}

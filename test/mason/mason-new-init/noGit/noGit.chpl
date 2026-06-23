@@ -10,18 +10,22 @@ proc setEnv(name: string, val: string) {
   assert(ret == 0);
 }
 
-var newPkgManifest = new manifestFile(
-  name="name",
-  version="0.1.0",
-  chplVersion="2.9.0",
-  license="None",
-  pkgType=packageType.default);
+proc main() {
 
-setEnv("PATH", "");
+  var newPkgManifest = new manifestFile(
+    name="name",
+    version="0.1.0",
+    chplVersion="2.9.0",
+    license="None",
+    pkgType=packageType.default);
 
-var template = new MasonPackageTemplate(newPkgManifest, "name":path);
-try {
-  template.makeVCS(true); // should crash
-} catch e {
-  writeln(e.message());
+  setEnv("PATH", "");
+
+  var template = new MasonPackageTemplate(newPkgManifest, "name":path);
+  try {
+    template.makeVCS(true); // should crash
+  } catch e {
+    writeln(e.message());
+  }
+
 }
