@@ -1628,6 +1628,9 @@ def run_lsp():
             if instantiation is not None:
                 continue
 
+            # TODO: common inlays do not work with "Show Instantiation (Default Rectangular)"
+            # TODO: common inlays should be extended to params as well as types
+            #       both for types of params and values of params
             # Get inalys gathered if all instantiations show the same hint.
             inlays.extend(ls.get_common_decl_inlays(decl, fi))
             inlays.extend(ls.get_common_fn_inlays(decl, fi))
