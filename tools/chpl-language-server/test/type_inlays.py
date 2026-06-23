@@ -514,10 +514,11 @@ async def test_type_inlay_type_variable(client: LanguageClient):
             type t = bar(int);
            """
 
-    y_inlay = (pos((1, 6)), "int(64)")
+    formal_inlay = (pos((0, 15)), "int(64)")
+    var_inlay = (pos((1, 6)), "int(64)")
     async with source_file(client, file) as doc:
         await check_type_inlay_hints(
-            client, doc, rng((0, 0), endpos(file)), [y_inlay]
+            client, doc, rng((0, 0), endpos(file)), [formal_inlay, var_inlay]
         )
 
 

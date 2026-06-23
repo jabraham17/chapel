@@ -431,7 +431,6 @@ async def test_lenses_default_rect_with_calls(client: LanguageClient):
 
     expected_lens = (pos((0, 5)), 2)
 
-    generic_inlays = []
     default_inlays = [
         (pos((1, 12)), "param value is 1", None),
         (pos((1, 12)), ": int(64)", None),
@@ -443,6 +442,7 @@ async def test_lenses_default_rect_with_calls(client: LanguageClient):
         ),
         (pos((3, 17)), ": string", None),
     ]
+    generic_inlays = default_inlays 
     all_inlays = [
         generic_inlays,
         default_inlays,
