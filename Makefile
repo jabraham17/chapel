@@ -47,6 +47,8 @@
 #
 MAKEFLAGS = --no-print-directory
 
+# issue #29014: Ensure nested make invocations use a compatible make:
+export CHPL_MAKE := $(MAKE)
 export CHPL_MAKE_HOME=$(shell pwd)
 export CHPL_MAKE_PYTHON := $(shell $(CHPL_MAKE_HOME)/util/config/find-python.sh)
 
