@@ -2390,7 +2390,6 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
   }
 
   if (t->isPointerTy()) {
-    assert(isOpaquePointer(t));
     if (t->getPointerAddressSpace() == info->globalSpace ||
         t->getPointerAddressSpace() == info->wideSpace) {
         // Replace the pointer with a struct containing {locale, address}
