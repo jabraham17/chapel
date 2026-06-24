@@ -118,8 +118,9 @@ class Test:
 
         cmd = [str(executable.absolute())]
         if not os.access(executable, os.X_OK):
+            bashWrapper =  Path(__file__).resolve().absolute().parent / "MasonBashWrapper.bash"
             # if the file is not executable, run it with bash with decent defaults
-            cmd = ["bash", "-exo", "pipefail"] + cmd
+            cmd = [str(bashWrapper)] + cmd
         sys.stdout.write("[Executing program: {}]\n".format(" ".join(cmd)))
         sys.stdout.flush()
         env = self._compute_env()

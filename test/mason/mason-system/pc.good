@@ -1,8 +1,5 @@
-+ export PKG_CONFIG_LIBDIR=
-+ PKG_CONFIG_LIBDIR=
-+ export PKG_CONFIG_PATH=$CHPL_HOME/test/mason/mason-system/myPackages
-+ PKG_CONFIG_PATH=$CHPL_HOME/test/mason/mason-system/myPackages
-+ mason system pc dummy
+PKG_CONFIG_PATH=$CHPL_HOME/test/mason/mason-system/myPackages
+mason system pc dummy
 
 ------- dummy.pc -------
 
@@ -20,7 +17,7 @@ Libs: -L${libdir} -ldummy
 
 -------------------
 
-+ mason system pc myWeirdPackage
+mason system pc myWeirdPackage
 
 ------- myWeirdPackage.pc -------
 
@@ -32,11 +29,9 @@ Libs: -sMyChapelFlag=2
 
 -------------------
 
-+ mason system pc unknownPackage
+mason system pc unknownPackage
 Mason could not find unknownPackage on your system
-+ echo 'Expected failure for unknown package'
 Expected failure for unknown package
-+ mason system pc dummy.pc
+mason system pc dummy.pc
 Mason could not find dummy.pc on your system
-+ echo 'Expected failure for dummy.pc not found'
 Expected failure for dummy.pc not found
