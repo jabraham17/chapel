@@ -3301,7 +3301,7 @@ void FnSymbol::codegenDef() {
         printLlvmIr(name, func, llvmStageNum::NONE);
 
     // Now run the optimizations on that function.
-    // (we handle checking fFastFlag, etc, when we set up FPM_postgen)
+    // (we handle checking fFastFlag, etc, when we set up the pass manager)
     // This way we can potentially keep the fn in cache while it
     // is simplified. The big optos happen later.
 

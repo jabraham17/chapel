@@ -3712,12 +3712,9 @@ GenInfo::GenInfo()
              globalToWideInfo()
 #endif
 {
-#if HAVE_LLVM_VER >= 150 && HAVE_LLVM_VER < 160
-#ifdef LLVM_NO_OPAQUE_POINTERS
-  gContext->llvmContext().setOpaquePointers(false);
-#else
+// with LLVM 15, we have to explicitly opt in to opaque pointers
+#if LLVM_VERSION_MAJOR == 15
   gContext->llvmContext().setOpaquePointers(true);
-#endif
 #endif
 }
 
