@@ -7993,7 +7993,7 @@ int isAtomicValid(enum fi_datatype ofiType) {
   static int validByType[FI_DATATYPE_LAST];
 
   if (!inited) {
-    for (enum fi_datatype t = 0; t < FI_DATATYPE_LAST; t++) {
+    for (enum fi_datatype t = 0; t < (enum fi_datatype)FI_DATATYPE_LAST; t++) {
       validByType[t]  = computeAtomicValid(t);
     }
     inited = true;
@@ -8009,11 +8009,11 @@ int isAtomicValid(enum fi_datatype ofiType) {
       struct fid_ep* ep = tciTab[0].txCtx; // assume same answer for all
                                            // endpoints
 
-      for (enum fi_datatype t = 0; t < FI_DATATYPE_LAST; t++) {
+      for (enum fi_datatype t = 0; t < (enum fi_datatype)FI_DATATYPE_LAST; t++) {
         offset = 0;
         offset += snprintf(buf + offset, sizeof(buf) - offset, "%s: ",
                       fi_tostr(&t, FI_TYPE_ATOMIC_TYPE));
-        for (enum fi_op op = 0; op < FI_ATOMIC_OP_LAST; op++) {
+        for (enum fi_op op = 0; op < (enum fi_op)FI_ATOMIC_OP_LAST; op++) {
           size_t count; // needed by macros below
           int valid = my_valid(t, op);
           int fetch = my_fetch_valid(t, op);
@@ -8038,7 +8038,7 @@ int isAtomicValid(enum fi_datatype ofiType) {
         }
         DBG_PRINTF(DBG_CFG_AMO, "%s", buf);
       }
-      for (enum fi_datatype t = 0; t < FI_DATATYPE_LAST; t++) {
+      for (enum fi_datatype t = 0; t < (enum fi_datatype)FI_DATATYPE_LAST; t++) {
         DBG_PRINTF(DBG_CFG_AMO, "%s: %s", fi_tostr(&t, FI_TYPE_ATOMIC_TYPE),
                    validByType[t] ? "valid" : "invalid");
       }
