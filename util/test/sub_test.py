@@ -1716,21 +1716,15 @@ def run_test(test_args, out=sys.stdout):
 
     if (
         perftest
+        and (test_filename_files.count(PerfTFile(test_filename, "keys")) == 0)
         and (
-            test_filename_files.count(PerfTFile(test_filename, "keys")) == 0
+            test_filename_files.count(PerfTFile(test_filename, "execopts")) == 0
         )
         and (
-            test_filename_files.count(PerfTFile(test_filename, "execopts"))
-            == 0
-        )
-        and (
-            test_filename_files.count(PerfTFile(test_filename, "compopts"))
-            == 0
+            test_filename_files.count(PerfTFile(test_filename, "compopts")) == 0
         )
     ):
-        out.write(
-            "[Skipping noperf test: %s/%s]\n" % (localdir, test_filename)
-        )
+        out.write("[Skipping noperf test: %s/%s]\n" % (localdir, test_filename))
         return
 
     timeout = directoryTimeout
@@ -1801,28 +1795,22 @@ def run_test(test_args, out=sys.stdout):
             os.access(f, os.R_OK) and testnotests == "0"
         ):
             out.write(
-                "[Skipping notest test: %s/%s]\n"
-                % (localdir, test_filename)
+                "[Skipping notest test: %s/%s]\n" % (localdir, test_filename)
             )
             do_not_test = True
             break
 
         elif suffix == ".skipif" and (
-            os.access(f, os.R_OK)
-            and (os.getenv("CHPL_TEST_SINGLES") == "0")
+            os.access(f, os.R_OK) and (os.getenv("CHPL_TEST_SINGLES") == "0")
         ):
             testskipiffile = True
-            out.write(
-                "[Checking skipif: %s.skipif]\n" % (test_filename)
-            )
+            out.write("[Checking skipif: %s.skipif]\n" % (test_filename))
             out.flush()
             try:
                 skipme = False
                 skiptest = runSkipIf(f)
                 if skiptest.strip() != "False":
-                    skipme = (
-                        skiptest.strip() == "True" or int(skiptest) == 1
-                    )
+                    skipme = skiptest.strip() == "True" or int(skiptest) == 1
                 if skipme:
                     out.write(
                         "[Skipping test based on .skipif environment settings: %s]\n"
@@ -1857,8 +1845,7 @@ def run_test(test_args, out=sys.stdout):
                 suppresstest = runSkipIf(f)
                 if suppresstest.strip() != "False":
                     suppressme = (
-                        suppresstest.strip() == "True"
-                        or int(suppresstest) == 1
+                        suppresstest.strip() == "True" or int(suppresstest) == 1
                     )
                 if suppressme:
                     suppressline = ""
@@ -1895,13 +1882,9 @@ def run_test(test_args, out=sys.stdout):
             fileTimeout = ReadIntegerValue(f, localdir)
             if fileTimeout < defaultTimeout or fileTimeout > globalTimeout:
                 timeout = fileTimeout
-                out.write(
-                    "[Overriding default timeout with %d]\n" % (timeout)
-                )
+                out.write("[Overriding default timeout with %d]\n" % (timeout))
         elif (
-            perftest
-            and suffix == PerfSfx("timeexec")
-            and os.access(f, os.R_OK)
+            perftest and suffix == PerfSfx("timeexec") and os.access(f, os.R_OK)
         ):  # e.g. .perftimeexec
             timer = GetTimer(f)
 
@@ -1932,12 +1915,8 @@ def run_test(test_args, out=sys.stdout):
             numlocales = ReadIntegerValue(f, localdir)
 
         elif suffix == futureSuffix and os.access(f, os.R_OK):
-            with open(
-                "./" + test_filename + futureSuffix, "r"
-            ) as futurefile:
-                futuretest = (
-                    "Future (" + futurefile.readline().strip() + ") "
-                )
+            with open("./" + test_filename + futureSuffix, "r") as futurefile:
+                futuretest = "Future (" + futurefile.readline().strip() + ") "
 
         elif suffix == ".noexec" and os.access(f, os.R_OK):
             noexecfile = True
@@ -1977,9 +1956,7 @@ def run_test(test_args, out=sys.stdout):
 
     # 0: test no futures
     if testfutures == 0 and testfuturesfile == True:
-        out.write(
-            "[Skipping future test: %s/%s]\n" % (localdir, test_filename)
-        )
+        out.write("[Skipping future test: %s/%s]\n" % (localdir, test_filename))
         return
     # 1: test all futures
     elif testfutures == 1:
@@ -1987,15 +1964,12 @@ def run_test(test_args, out=sys.stdout):
     # 2: test only futures
     elif testfutures == 2 and testfuturesfile == False:
         out.write(
-            "[Skipping non-future test: %s/%s]\n"
-            % (localdir, test_filename)
+            "[Skipping non-future test: %s/%s]\n" % (localdir, test_filename)
         )
         return
     # 3: test futures that have a .skipif file
     elif (
-        testfutures == 3
-        and testfuturesfile == True
-        and testskipiffile == False
+        testfutures == 3 and testfuturesfile == True and testskipiffile == False
     ):
         out.write(
             "[Skipping future test without a skipif: %s/%s]\n"
@@ -2006,8 +1980,7 @@ def run_test(test_args, out=sys.stdout):
     # c tests don't have a way to launch themselves
     if is_c_or_cpp_test and chpllauncher != "none":
         out.write(
-            "[Skipping %s test: %s/%s]\n"
-            % (c_or_cpp, localdir, test_filename)
+            "[Skipping %s test: %s/%s]\n" % (c_or_cpp, localdir, test_filename)
         )
         return
 
@@ -2127,8 +2100,7 @@ def run_test(test_args, out=sys.stdout):
         noexecfile or testfuturesfile or execoptsfile
     ):
         out.write(
-            "[Skipping interpretation of: %s/%s]\n"
-            % (localdir, test_filename)
+            "[Skipping interpretation of: %s/%s]\n" % (localdir, test_filename)
         )
         return
 
@@ -2179,9 +2151,7 @@ def run_test(test_args, out=sys.stdout):
             out.flush()
 
         if precomp:
-            out.write(
-                "[Executing precomp %s.precomp]\n" % (test_filename)
-            )
+            out.write("[Executing precomp %s.precomp]\n" % (test_filename))
             out.flush()
             test_precomp = "./{0}.precomp".format(test_filename)
             stdout = run_process(
@@ -2211,9 +2181,7 @@ def run_test(test_args, out=sys.stdout):
         if is_c_or_cpp_test or is_ml_c_or_cpp_test:
             # we need to drop envCompopts for C tests as those are options
             # for `chpl` so don't include them here
-            args = (
-                ["-o", test_filename] + shlex.split(compopts) + [testname]
-            )
+            args = ["-o", test_filename] + shlex.split(compopts) + [testname]
             cmd = None
             if is_c_test:
                 cmd = run_compileline("--compile", "c compiler")
@@ -2292,9 +2260,7 @@ def run_test(test_args, out=sys.stdout):
             wholecmd = cmd + " " + " ".join(map(ShellEscape, args))
             status, output, _ = run_process(
                 [timedexec, str(comptimeout), wholecmd],
-                env=dict(
-                    list(os.environ.items()) + list(testcompenv.items())
-                ),
+                env=dict(list(os.environ.items()) + list(testcompenv.items())),
                 stdin=open(compstdin, "r"),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -2316,9 +2282,7 @@ def run_test(test_args, out=sys.stdout):
         else:
             p = subprocess.Popen(
                 [cmd] + args,
-                env=dict(
-                    list(os.environ.items()) + list(testcompenv.items())
-                ),
+                env=dict(list(os.environ.items()) + list(testcompenv.items())),
                 stdin=open(compstdin, "r"),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -2428,9 +2392,7 @@ def run_test(test_args, out=sys.stdout):
                 out.flush()
 
             if prediff:
-                out.write(
-                    "[Executing prediff %s.prediff]\n" % (test_filename)
-                )
+                out.write("[Executing prediff %s.prediff]\n" % (test_filename))
                 out.flush()
                 test_prediff = "./{0}.prediff".format(test_filename)
                 stdout = run_process(
@@ -2465,18 +2427,14 @@ def run_test(test_args, out=sys.stdout):
             # sys.stdout.write('default goodfile=%s\n'%(goodfile))
             error_msg = filter_compiler_errors(origoutput)
             if error_msg != "":
-                out.write(
-                    f"{futuretest}[Error {error_msg} for {test_name}]\n"
-                )
+                out.write(f"{futuretest}[Error {error_msg} for {test_name}]\n")
                 out.write("[Compiler output was as follows:]\n")
                 out.write(origoutput)
                 cleanup(execname, out=out)
                 cleanup(printpassesfile, out=out)
                 continue
 
-            if not os.path.isfile(goodfile) or not os.access(
-                goodfile, os.R_OK
-            ):
+            if not os.path.isfile(goodfile) or not os.access(goodfile, os.R_OK):
                 if perftest:
                     out.write(
                         f"{futuretest}[Error compilation failed for {test_name}]\n"
@@ -2530,9 +2488,7 @@ def run_test(test_args, out=sys.stdout):
                     else:
                         # bad file doesn't match, which is bad
                         out.write("[Error matching .bad file ")
-                    out.write(
-                        "for %s/%s" % (localdir, test_filename)
-                    )
+                    out.write("for %s/%s" % (localdir, test_filename))
                     printTestVariation(compoptsnum, compoptslist, out=out)
                     out.write("]\n")
 
@@ -2561,9 +2517,7 @@ def run_test(test_args, out=sys.stdout):
                 if execoptslist[0] == " ":
                     exec_opts_num_tmp = 0
                 exec_log_names.append(
-                    get_exec_log_name(
-                        execname, compoptsnum, exec_opts_num_tmp
-                    )
+                    get_exec_log_name(execname, compoptsnum, exec_opts_num_tmp)
                 )
 
             # One execution output file for each of the execution opts.
@@ -2590,9 +2544,7 @@ def run_test(test_args, out=sys.stdout):
         #
         # Compile successful
         #
-        out.write(
-            "[Success compiling %s/%s]\n" % (localdir, test_filename)
-        )
+        out.write("[Success compiling %s/%s]\n" % (localdir, test_filename))
 
         # Note that compiler performance only times successful compilations.
         # Tests that are designed to fail before compilation is complete will
@@ -2681,8 +2633,7 @@ def run_test(test_args, out=sys.stdout):
                     )
                     printTestVariation(compoptsnum, compoptslist, out=out)
                     out.write(
-                        "computePerfStats output was:\n%s\n"
-                        % (compkeysOutput)
+                        "computePerfStats output was:\n%s\n" % (compkeysOutput)
                     )
                     out.flush()
                     out.write(
@@ -2724,9 +2675,7 @@ def run_test(test_args, out=sys.stdout):
                 onlyone = False
                 if texecopts != " ":
                     execoptsnum += 1
-                execlog = get_exec_log_name(
-                    execname, compoptsnum, execoptsnum
-                )
+                execlog = get_exec_log_name(execname, compoptsnum, execoptsnum)
 
             tlist = texecopts.split("#")
             execopts = tlist[0].strip()
@@ -2766,9 +2715,7 @@ def run_test(test_args, out=sys.stdout):
                 out.flush()
 
             if preexec:
-                out.write(
-                    "[Executing preexec %s.preexec]\n" % (test_filename)
-                )
+                out.write("[Executing preexec %s.preexec]\n" % (test_filename))
                 out.flush()
                 test_preexec = "./{0}.preexec".format(test_filename)
                 stdout = run_process(
@@ -2837,7 +2784,11 @@ def run_test(test_args, out=sys.stdout):
                     % (futuretest, execname, localdir, test_filename)
                 )
                 printTestVariation(
-                    compoptsnum, compoptslist, execoptsnum, execoptslist, out=out
+                    compoptsnum,
+                    compoptslist,
+                    execoptsnum,
+                    execoptslist,
+                    out=out,
                 )
                 out.write("]\n")
                 break
@@ -2870,9 +2821,7 @@ def run_test(test_args, out=sys.stdout):
             if launchcmd:
                 # have chpl_launchcmd time execution and place results in a
                 # file since sub_test time will include time to get reservation
-                launchcmd_exec_time_file = (
-                    execname + "_launchcmd_exec_time.txt"
-                )
+                launchcmd_exec_time_file = execname + "_launchcmd_exec_time.txt"
                 # Scope this to the test's own subprocess env (testenv)
                 # rather than mutating the shared process environment, so
                 # concurrent run_test calls don't clobber each other when
@@ -2975,9 +2924,7 @@ def run_test(test_args, out=sys.stdout):
                         output = stdout + stderr
 
                         # Check for well-known failure modes
-                        launcher_error, thistimeout = translateOutput(
-                            output
-                        )
+                        launcher_error, thistimeout = translateOutput(output)
                         exectimeout = exectimeout or thistimeout
 
                         if launcher_error:
@@ -2998,15 +2945,11 @@ def run_test(test_args, out=sys.stdout):
                                 out=out,
                             )
                             out.write("]\n")
-                            out.write(
-                                "[Execution output was as follows:]\n"
-                            )
+                            out.write("[Execution output was as follows:]\n")
                             out.write(trim_output(output))
 
                     elif useTimedExec:
-                        wholecmd = (
-                            cmd + " " + " ".join(map(ShellEscape, args))
-                        )
+                        wholecmd = cmd + " " + " ".join(map(ShellEscape, args))
 
                         if redirectin == None:
                             my_stdin = sys.stdin
@@ -3036,9 +2979,7 @@ def run_test(test_args, out=sys.stdout):
                                 out=out,
                             )
                             out.write("]\n")
-                            out.write(
-                                "[Execution output was as follows:]\n"
-                            )
+                            out.write("[Execution output was as follows:]\n")
                             out.write(trim_output(output))
                         else:
                             # for perf runs print out the 5 processes with the
@@ -3135,20 +3076,14 @@ def run_test(test_args, out=sys.stdout):
                     file=out,
                 )
 
-                if (
-                    execTimeWarnLimit
-                    and elapsedExecTime > execTimeWarnLimit
-                ):
+                if execTimeWarnLimit and elapsedExecTime > execTimeWarnLimit:
                     out.write(
                         "[Warning: %s/%s took over %.0f seconds to "
                         "execute]\n"
                         % (localdir, test_filename, execTimeWarnLimit)
                     )
 
-                if (
-                    execTimeSkipTrials
-                    and elapsedExecTime > execTimeSkipTrials
-                ):
+                if execTimeSkipTrials and elapsedExecTime > execTimeSkipTrials:
                     skip_remaining_trials = True
 
                 if catfiles:
@@ -3171,9 +3106,7 @@ def run_test(test_args, out=sys.stdout):
                 if re.search(r"[\uD800-\uDFFF]", output) or re.search(
                     r"[\uD800-\uDFFF]", pre_exec_output
                 ):
-                    output_to_write = output.encode(
-                        errors="surrogateescape"
-                    )
+                    output_to_write = output.encode(errors="surrogateescape")
                     pre_exec_to_write = pre_exec_output.encode(
                         errors="surrogateescape"
                     )
@@ -3186,8 +3119,7 @@ def run_test(test_args, out=sys.stdout):
 
                 if postexec:
                     out.write(
-                        "[Executing postexec %s.postexec]\n"
-                        % (test_filename)
+                        "[Executing postexec %s.postexec]\n" % (test_filename)
                     )
                     out.flush()
                     test_postexec = "./{0}.postexec".format(test_filename)
@@ -3241,9 +3173,7 @@ def run_test(test_args, out=sys.stdout):
                         out.write(stdout)
 
                     if prediff:
-                        out.write(
-                            "[Executing prediff ./%s]\n" % (prediff)
-                        )
+                        out.write("[Executing prediff ./%s]\n" % (prediff))
                         out.flush()
                         stdout = run_process(
                             [
@@ -3271,33 +3201,26 @@ def run_test(test_args, out=sys.stdout):
                         if not onlyone:
                             commExecNum.insert(
                                 0,
-                                "."
-                                + str(compoptsnum)
-                                + "-"
-                                + str(execoptsnum),
+                                "." + str(compoptsnum) + "-" + str(execoptsnum),
                             )
 
                         # if the .good file was explicitly specified, look for
                         # that version instead of the multiple
                         # compopts/execopts or just the base .good file
                         if explicitexecgoodfile != None:
-                            basename = explicitexecgoodfile.replace(
-                                ".good", ""
-                            )
+                            basename = explicitexecgoodfile.replace(".good", "")
                             commExecNum = [""]
 
                         execgoodfile = FindGoodFile(basename, commExecNum)
 
-                        if not os.path.isfile(
-                            execgoodfile
-                        ) or not os.access(execgoodfile, os.R_OK):
+                        if not os.path.isfile(execgoodfile) or not os.access(
+                            execgoodfile, os.R_OK
+                        ):
                             out.write(
                                 "[Error cannot locate program output comparison file %s/%s]\n"
                                 % (localdir, execgoodfile)
                             )
-                            out.write(
-                                "[Execution output was as follows:]\n"
-                            )
+                            out.write("[Execution output was as follows:]\n")
                             exec_output = run_process(
                                 ["cat", execlog], stdout=subprocess.PIPE
                             )[1]
@@ -3316,9 +3239,7 @@ def run_test(test_args, out=sys.stdout):
                                 execgoodfile,
                                 execlog,
                             )
-                            out.write(
-                                "%s[Error %s" % (futuretest, extra_msg)
-                            )
+                            out.write("%s[Error %s" % (futuretest, extra_msg))
 
                         out.write(
                             "matching program output for %s/%s"
@@ -3340,14 +3261,10 @@ def run_test(test_args, out=sys.stdout):
                                 badresult = DiffFiles(badfile, execlog, out=out)
                                 if badresult == 0:
                                     os.unlink(execlog)
-                                    out.write(
-                                        "[Clean match against .bad file "
-                                    )
+                                    out.write("[Clean match against .bad file ")
                                 else:
                                     # bad file doesn't match, which is bad
-                                    out.write(
-                                        "[Error matching .bad file "
-                                    )
+                                    out.write("[Error matching .bad file ")
                                 out.write(
                                     "for %s/%s" % (localdir, test_filename)
                                 )
@@ -3389,9 +3306,7 @@ def run_test(test_args, out=sys.stdout):
 
                     perfdate = os.getenv("CHPL_TEST_PERF_DATE")
                     if perfdate == None:
-                        perfdate = datetime.date.today().strftime(
-                            "%m/%d/%y"
-                        )
+                        perfdate = datetime.date.today().strftime("%m/%d/%y")
 
                     # if the program exited with a non-zero exit code, don't attempt to collect performance keys
                     status = 0
@@ -3427,9 +3342,7 @@ def run_test(test_args, out=sys.stdout):
                         if not exectimeout and not launcher_error:
                             if status == 0:
                                 os.unlink(execlog)
-                                out.write(
-                                    "%s[Success " % (futuretest)
-                                )
+                                out.write("%s[Success " % (futuretest))
                             else:
                                 out.write("%s[Error " % (futuretest))
                             out.write(
@@ -3451,9 +3364,7 @@ def run_test(test_args, out=sys.stdout):
                             "%s[Error execution failed for %s]\n"
                             % (futuretest, test_name)
                         )
-                        out.write(
-                            "[Execution output was as follows:]\n"
-                        )
+                        out.write("[Execution output was as follows:]\n")
                         out.write(trim_output(output))
 
                     if exectimeout or status != 0 or exec_status != 0:
