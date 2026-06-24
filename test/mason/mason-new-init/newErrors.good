@@ -1,22 +1,14 @@
-+ rm -rf testingPkg
-+ mkdir testingPkg
-+ mason new testingPkg
+mason new testingPkg
 A directory named 'testingPkg' already exists
-+ true
-+ mason new testingPkg --name myNewPkg
+mason new testingPkg --name myNewPkg
 A directory named 'testingPkg' already exists
-+ true
-+ mason new testingPkg --lib
+mason new testingPkg --lib
 A directory named 'testingPkg' already exists
-+ true
-+ mason new testingPkg --light
+mason new testingPkg --light
 A directory named 'testingPkg' already exists
-+ true
-+ mason new testingPkg --no-vcs --app
+mason new testingPkg --no-vcs --app
 A directory named 'testingPkg' already exists
-+ true
-+ rm -rf testingPkg
-+ mason new
+mason new
 project name Required value missing
 Creates a new Mason project in a new directory with the given project name.
 
@@ -32,8 +24,7 @@ Options:
         --light                  Create a Mason "lightweight" project
         --name <legalName>       Specify package name different from directory
                                  name
-+ true
-+ mason new --app
+mason new --app
 project name Required value missing
 Creates a new Mason project in a new directory with the given project name.
 
@@ -49,8 +40,7 @@ Options:
         --light                  Create a Mason "lightweight" project
         --name <legalName>       Specify package name different from directory
                                  name
-+ true
-+ mason new --lib
+mason new --lib
 project name Required value missing
 Creates a new Mason project in a new directory with the given project name.
 
@@ -66,8 +56,7 @@ Options:
         --light                  Create a Mason "lightweight" project
         --name <legalName>       Specify package name different from directory
                                  name
-+ true
-+ mason new --light
+mason new --light
 project name Required value missing
 Creates a new Mason project in a new directory with the given project name.
 
@@ -83,8 +72,7 @@ Options:
         --light                  Create a Mason "lightweight" project
         --name <legalName>       Specify package name different from directory
                                  name
-+ true
-+ mason new --no-vcs
+mason new --no-vcs
 project name Required value missing
 Creates a new Mason project in a new directory with the given project name.
 
@@ -100,8 +88,7 @@ Options:
         --light                  Create a Mason "lightweight" project
         --name <legalName>       Specify package name different from directory
                                  name
-+ true
-+ mason new --app --name=myNewPkg
+mason new --app --name=myNewPkg
 project name Required value missing
 Creates a new Mason project in a new directory with the given project name.
 
@@ -117,8 +104,7 @@ Options:
         --light                  Create a Mason "lightweight" project
         --name <legalName>       Specify package name different from directory
                                  name
-+ true
-+ mason new --name=myNewPkg
+mason new --name=myNewPkg
 project name Required value missing
 Creates a new Mason project in a new directory with the given project name.
 
@@ -134,8 +120,7 @@ Options:
         --light                  Create a Mason "lightweight" project
         --name <legalName>       Specify package name different from directory
                                  name
-+ true
-+ mason new --name myNewPkg
+mason new --name myNewPkg
 project name Required value missing
 Creates a new Mason project in a new directory with the given project name.
 
@@ -151,12 +136,10 @@ Options:
         --light                  Create a Mason "lightweight" project
         --name <legalName>       Specify package name different from directory
                                  name
-+ true
-+ mason new --application
+mason new --application
 Bad package name '--application' - only Chapel identifiers are legal package names.
 Use '--name <LegalName>' to specify a legal package name.
-+ true
-+ mason new foo --application
+mason new foo --application
 Found some unrecognizable arguments: --application
 Creates a new Mason project in a new directory with the given project name.
 
@@ -172,4 +155,3 @@ Options:
         --light                  Create a Mason "lightweight" project
         --name <legalName>       Specify package name different from directory
                                  name
-+ true

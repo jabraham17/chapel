@@ -1,4 +1,3 @@
-+ cd SwitchTypes
 + mason build -- -smyType=myRec '-smyString1='\''hello world'\'''
 Compiling [debug] target: SwitchTypes
 Build Successful

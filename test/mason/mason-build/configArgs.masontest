@@ -1,5 +1,7 @@
 cd SwitchTypes
 
+set -x
+
 # test records
 mason build -- -smyType=myRec -smyString1="'hello world'"
 mason run -- --myString2="'goodbye world'"
