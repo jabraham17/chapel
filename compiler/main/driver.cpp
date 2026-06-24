@@ -2129,6 +2129,20 @@ static void checkClientServerLibrary() {
   fLibraryCompile = true;
 }
 
+static void checkNoBuiltinRuntime() {
+  // Runtime is "builtin" to program, nothing to do.
+  if (fBuiltinRuntime) return;
+
+  // Otherwise, we need "CHPL_LIB_PIC=pic".
+  bool isPic = !strcmp(CHPL_LIB_PIC, "pic");
+  if (!isPic) {
+    USR_FATAL("The '--no-builtin-runtime' flag requires position-independent "
+              "code. Rebuild Chapel with 'CHPL_LIB_PIC=pic'");
+  }
+
+  // TODO: Make sure the dynamic library file actually exists?
+}
+
 static void setMaxCIdentLen() {
   bool gotPGI = !strcmp(CHPL_TARGET_COMPILER, "pgi")
              || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
@@ -2543,6 +2557,8 @@ static void postprocess_args() {
   postTaskTracking();
 
   checkClientServerLibrary();
+
+  checkNoBuiltinRuntime();
 
   checkMacOsxLinkStyle();
 
