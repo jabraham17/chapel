@@ -150,6 +150,9 @@ import datetime
 import errno
 from functools import reduce, cache
 import atexit
+import io
+import threading
+import concurrent.futures
 
 
 def elapsed_sub_test_time():
@@ -1485,7 +1488,223 @@ def main():
 
     original_compiler = compiler
 
-    for testname in testsrc:
+    # All state needed to run a single test is gathered into a dictionary so
+    # that the per-test work can live in a standalone, thread-safe function
+    # (run_test) rather than relying on closure over main's locals.
+    common_test_args = {
+        "original_compiler": original_compiler,
+        "is_chpldoc": is_chpldoc,
+        "uniquifyTests": uniquifyTests,
+        "perftest": perftest,
+        "compperftest": compperftest,
+        "globalCatfiles": globalCatfiles,
+        "globalNumlocales": globalNumlocales,
+        "globalLastcompopts": globalLastcompopts,
+        "globalLastexecopts": globalLastexecopts,
+        "directoryTimeout": directoryTimeout,
+        "globalKillTimeout": globalKillTimeout,
+        "globalNumTrials": globalNumTrials,
+        "globalTimer": globalTimer,
+        "execute": execute,
+        "testnotests": testnotests,
+        "futureSuffix": futureSuffix,
+        "testfutures": testfutures,
+        "chpldocsuffix": chpldocsuffix,
+        "compoptssuffix": compoptssuffix,
+        "compenvsuffix": compenvsuffix,
+        "execenvsuffix": execenvsuffix,
+        "execoptssuffix": execoptssuffix,
+        "timeoutsuffix": timeoutsuffix,
+        "defaultTimeout": defaultTimeout,
+        "globalTimeout": globalTimeout,
+        "globalMaxQueueTime": globalMaxQueueTime,
+        "execTimeWarnLimit": execTimeWarnLimit,
+        "execTimeSkipTrials": execTimeSkipTrials,
+        "maxLocalesAvailable": maxLocalesAvailable,
+        "chpllauncher": chpllauncher,
+        "chplcomm": chplcomm,
+        "valgrindcomp": valgrindcomp,
+        "valgrindcompopts": valgrindcompopts,
+        "valgrindbin": valgrindbin,
+        "valgrindbinopts": valgrindbinopts,
+        "compstdin": compstdin,
+        "directoryCompopts": directoryCompopts,
+        "globalChpldocOpts": globalChpldocOpts,
+        "globalCompenv": globalCompenv,
+        "globalExecopts": globalExecopts,
+        "envExecopts": envExecopts,
+        "globalPrecomp": globalPrecomp,
+        "globalPrediff": globalPrediff,
+        "globalPreexec": globalPreexec,
+        "systemPreexecs": systemPreexecs,
+        "systemPrediffs": systemPrediffs,
+        "launchcmd": launchcmd,
+        "useTimedExec": useTimedExec,
+        "timedexec": timedexec,
+        "printpassesfile": printpassesfile,
+        "run_compileline": run_compileline,
+        "dirlist": dirlist,
+        "compperfdir": compperfdir if compperftest else None,
+        "tempDatFilesDir": tempDatFilesDir if compperftest else None,
+        "keyfile": keyfile if compperftest else None,
+        "perfdir": perfdir if perftest else None,
+    }
+
+    # Optionally run the tests in this directory in parallel. This is opt-in
+    # via CHPL_PARALLEL_SUB_TEST because not all tests in a directory are
+    # guaranteed to be independent of one another.
+    if os.getenv("CHPL_PARALLEL_SUB_TEST"):
+        run_tests_in_parallel(testsrc, common_test_args)
+    else:
+        for testname in testsrc:
+            run_test(dict(common_test_args, testname=testname))
+
+    sys.exit(0)
+
+
+class _ThreadLocalOutput:
+    """A ``sys.stdout`` proxy that routes writes to a per-thread buffer when
+    one is set, so concurrently-running tests do not interleave their output.
+    Threads without a buffer (e.g. the main thread) fall through to the real
+    stream."""
+
+    def __init__(self, real_stream):
+        self._real_stream = real_stream
+        self._local = threading.local()
+
+    def set_buffer(self, buffer):
+        self._local.buffer = buffer
+
+    def clear_buffer(self):
+        self._local.buffer = None
+
+    def _current_stream(self):
+        return getattr(self._local, "buffer", None) or self._real_stream
+
+    def write(self, data):
+        return self._current_stream().write(data)
+
+    def flush(self):
+        stream = self._current_stream()
+        if hasattr(stream, "flush"):
+            stream.flush()
+
+    def __getattr__(self, name):
+        return getattr(self._real_stream, name)
+
+
+# Set while running tests in parallel so each worker thread can capture its
+# own output. None when running serially.
+_thread_local_output = None
+
+
+def _run_test_capture(test_args):
+    """Run a single test, capturing all of its output into a string that is
+    returned to the caller. Safe to run from a worker thread."""
+    buffer = io.StringIO()
+    _thread_local_output.set_buffer(buffer)
+    try:
+        run_test(test_args)
+    finally:
+        _thread_local_output.clear_buffer()
+    return buffer.getvalue()
+
+
+def run_tests_in_parallel(testsrc, common_test_args):
+    """Run the tests in ``testsrc`` concurrently. Each test's output is
+    captured separately and written out in test order once it completes, so
+    the combined log is not interleaved."""
+    global _thread_local_output
+
+    num_workers = int(os.getenv("CHPL_PARALLEL_SUB_TEST", "1"))
+
+    test_args_list = [
+        dict(common_test_args, testname=testname) for testname in testsrc
+    ]
+    if not test_args_list:
+        return
+    num_workers = min(num_workers, len(test_args_list))
+
+    real_stdout = sys.stdout
+    _thread_local_output = _ThreadLocalOutput(real_stdout)
+    sys.stdout = _thread_local_output
+    try:
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=num_workers
+        ) as executor:
+            for output in executor.map(_run_test_capture, test_args_list):
+                real_stdout.write(output)
+                real_stdout.flush()
+    finally:
+        sys.stdout = real_stdout
+        _thread_local_output = None
+
+
+def run_test(test_args):
+    # Unpack the per-test state. These were previously closure variables from
+    # main; passing them explicitly keeps run_test self-contained and safe to
+    # call from multiple threads.
+    original_compiler = test_args["original_compiler"]
+    is_chpldoc = test_args["is_chpldoc"]
+    uniquifyTests = test_args["uniquifyTests"]
+    perftest = test_args["perftest"]
+    compperftest = test_args["compperftest"]
+    globalCatfiles = test_args["globalCatfiles"]
+    globalNumlocales = test_args["globalNumlocales"]
+    globalLastcompopts = test_args["globalLastcompopts"]
+    globalLastexecopts = test_args["globalLastexecopts"]
+    directoryTimeout = test_args["directoryTimeout"]
+    globalKillTimeout = test_args["globalKillTimeout"]
+    globalNumTrials = test_args["globalNumTrials"]
+    globalTimer = test_args["globalTimer"]
+    execute = test_args["execute"]
+    testnotests = test_args["testnotests"]
+    futureSuffix = test_args["futureSuffix"]
+    testfutures = test_args["testfutures"]
+    chpldocsuffix = test_args["chpldocsuffix"]
+    compoptssuffix = test_args["compoptssuffix"]
+    compenvsuffix = test_args["compenvsuffix"]
+    execenvsuffix = test_args["execenvsuffix"]
+    execoptssuffix = test_args["execoptssuffix"]
+    timeoutsuffix = test_args["timeoutsuffix"]
+    defaultTimeout = test_args["defaultTimeout"]
+    globalTimeout = test_args["globalTimeout"]
+    globalMaxQueueTime = test_args["globalMaxQueueTime"]
+    execTimeWarnLimit = test_args["execTimeWarnLimit"]
+    execTimeSkipTrials = test_args["execTimeSkipTrials"]
+    maxLocalesAvailable = test_args["maxLocalesAvailable"]
+    chpllauncher = test_args["chpllauncher"]
+    chplcomm = test_args["chplcomm"]
+    valgrindcomp = test_args["valgrindcomp"]
+    valgrindcompopts = test_args["valgrindcompopts"]
+    valgrindbin = test_args["valgrindbin"]
+    valgrindbinopts = test_args["valgrindbinopts"]
+    compstdin = test_args["compstdin"]
+    directoryCompopts = test_args["directoryCompopts"]
+    globalChpldocOpts = test_args["globalChpldocOpts"]
+    globalCompenv = test_args["globalCompenv"]
+    globalExecopts = test_args["globalExecopts"]
+    envExecopts = test_args["envExecopts"]
+    globalPrecomp = test_args["globalPrecomp"]
+    globalPrediff = test_args["globalPrediff"]
+    globalPreexec = test_args["globalPreexec"]
+    systemPreexecs = test_args["systemPreexecs"]
+    systemPrediffs = test_args["systemPrediffs"]
+    launchcmd = test_args["launchcmd"]
+    useTimedExec = test_args["useTimedExec"]
+    timedexec = test_args["timedexec"]
+    printpassesfile = test_args["printpassesfile"]
+    run_compileline = test_args["run_compileline"]
+    dirlist = test_args["dirlist"]
+    compperfdir = test_args.get("compperfdir")
+    tempDatFilesDir = test_args.get("tempDatFilesDir")
+    keyfile = test_args.get("keyfile")
+    perfdir = test_args.get("perfdir")
+
+    # A single-iteration loop binds 'testname' and preserves the original
+    # body's indentation and its 'continue # on to next test' control flow
+    # (which simply ends this one-shot loop, i.e. finishes the test).
+    for testname in (test_args["testname"],):
         sys.stdout.flush()
 
         compiler = original_compiler
@@ -2703,7 +2922,11 @@ def main():
                     launchcmd_exec_time_file = (
                         execname + "_launchcmd_exec_time.txt"
                     )
-                    os.environ["CHPL_LAUNCHCMD_EXEC_TIME_FILE"] = (
+                    # Scope this to the test's own subprocess env (testenv)
+                    # rather than mutating the shared process environment, so
+                    # concurrent run_test calls don't clobber each other when
+                    # CHPL_PARALLEL_SUB_TEST is set.
+                    testenv["CHPL_LAUNCHCMD_EXEC_TIME_FILE"] = (
                         launchcmd_exec_time_file
                     )
 
@@ -3283,8 +3506,6 @@ def main():
         elapsedCurFileTestTime = time.time() - curFileTestStart
         test_name = os.path.join(localdir, test_filename)
         printEndOfTestMsg(test_name, elapsedCurFileTestTime)
-
-    sys.exit(0)
 
 
 if __name__ == "__main__":
