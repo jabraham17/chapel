@@ -7777,13 +7777,13 @@ Developer-oriented changes: Naming Changes
 Developer-oriented changes: Documentation
 -----------------------------------------
 * added a draft style guide for standard modules  
-  (see https://github.com/chapel-lang/chapel/blob/release/1.25/doc/rst/developer/bestPractices/StandardModuleStyle.rst)
+  (see https://chapel-lang.org/docs/1.25/developer/bestPractices/StandardModuleStyle.html)
 * added notes about how Chapel web documentation is built  
-  (see https://github.com/chapel-lang/chapel/blob/release/1.25/doc/rst/developer/bestPractices/buildingdocs.rst)
+  (see https://chapel-lang.org/docs/1.25/developer/bestPractices/buildingdocs.html)
 * added information about how to test PRs in the contributor guidelines  
-  (see https://github.com/chapel-lang/chapel/blob/release/1.25/doc/rst/developer/bestPractices/ContributorInfo.rst#reviewer-responsibilities)
+  (see https://chapel-lang.org/docs/1.25/developer/bestPractices/ContributorInfo.html#reviewer-responsibilities)
 * generally cleaned up and streamlined the contributor guidelines  
-  (see https://github.com/chapel-lang/chapel/blob/release/1.25/doc/rst/developer/bestPractices/ContributorInfo.rst)
+  (see https://chapel-lang.org/docs/1.25/developer/bestPractices/ContributorInfo.html)
 * improved the layout of documentation generated for the new compiler
 * moved documents in `compilerOverview/` to `implementation/compilerOverview/`  
   (see https://github.com/chapel-lang/chapel/blob/release/1.25/doc/rst/developer/implementation/compilerOverview/)
