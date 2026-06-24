@@ -1553,7 +1553,7 @@ def main():
     # Optionally run the tests in this directory in parallel. This is opt-in
     # via CHPL_PARALLEL_SUB_TEST because not all tests in a directory are
     # guaranteed to be independent of one another.
-    if os.getenv("CHPL_PARALLEL_SUB_TEST"):
+    if parallel_sub_test_workers() > 1:
         run_tests_in_parallel(testsrc, common_test_args)
     else:
         for testname in testsrc:
@@ -1570,11 +1570,24 @@ def _run_test_capture(test_args):
     return buffer.getvalue()
 
 
+def parallel_sub_test_workers():
+    """Number of worker threads to use for intra-directory parallelism.
+
+    Derived from CHPL_PARALLEL_SUB_TEST. Returns 1 (i.e. serial) when the
+    variable is unset, empty, non-integer, or less than 1, so that a bad
+    value never crashes sub_test."""
+    try:
+        workers = int(os.getenv("CHPL_PARALLEL_SUB_TEST", "1"))
+    except (TypeError, ValueError):
+        return 1
+    return workers if workers > 1 else 1
+
+
 def run_tests_in_parallel(testsrc, common_test_args):
     """Run the tests in ``testsrc`` concurrently. Each test's output is
     captured separately and written out in test order once it completes, so
     the combined log is not interleaved."""
-    num_workers = int(os.getenv("CHPL_PARALLEL_SUB_TEST", "1"))
+    num_workers = parallel_sub_test_workers()
 
     test_args_list = [
         dict(common_test_args, testname=testname) for testname in testsrc

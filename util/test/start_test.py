@@ -300,12 +300,15 @@ def test_files_parallel(files):
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=num_workers
     ) as executor:
-        future_to_test = {
-            executor.submit(run_sub_test_file_capture, test): test
+        # Submit all work up front (so it runs concurrently), but iterate the
+        # futures in submission order so the combined log is deterministic
+        # regardless of completion order. Each result is still written as a
+        # contiguous block, so concurrent runs do not interleave.
+        futures = [
+            (test, executor.submit(run_sub_test_file_capture, test))
             for test in files
-        }
-        for future in concurrent.futures.as_completed(future_to_test):
-            test = future_to_test[future]
+        ]
+        for test, future in futures:
             path_to_test = os.path.relpath(test)
             logger.write()
             try:
@@ -470,6 +473,11 @@ def test_directory(test, test_type):
                     os.path.join(dir, "sub_test"), os.X_OK
                 )
 
+            # A PRETEST may generate test files (potentially for descendant
+            # directories) and a local sub_test is a custom harness; both can
+            # have side effects that descendant directories depend on.
+            has_pretest = "PRETEST" in files
+
             # check a lot of stuff before continuing
             if are_tests or run_local_sub_test:
                 # cd to dir for clean and run, saving current location
@@ -478,7 +486,16 @@ def test_directory(test, test_type):
                     clean()
 
                     if not args.clean_only:
-                        if parallel_mode:
+                        # Defer ordinary directories so they can run
+                        # concurrently below. Run directories that may set up
+                        # state for descendants (PRETEST or a local sub_test)
+                        # inline, in traversal order, so parent-before-child
+                        # ordering is preserved.
+                        if (
+                            parallel_mode
+                            and not has_pretest
+                            and not run_local_sub_test
+                        ):
                             # defer running sub_test so it can be run
                             # concurrently with other directories below
                             parallel_dirs.append((dir, root))
@@ -628,7 +645,7 @@ def run_sub_test(test=False):
     # side effects). When running sub_test on a single file (CHPL_ONETEST is
     # set), only one test runs so there is no concurrency and it is always
     # safe; otherwise require --allow-unsafe-parallel to opt in.
-    if args.parallel_sub_test and (test or args.allow_unsafe_parallel):
+    if args.parallel_sub_test > 1 and (test or args.allow_unsafe_parallel):
         os.environ["CHPL_PARALLEL_SUB_TEST"] = str(args.parallel_sub_test)
     else:
         os.environ.pop("CHPL_PARALLEL_SUB_TEST", None)
@@ -746,7 +763,7 @@ def run_sub_tests_parallel(work):
     # Running multiple tests within a directory concurrently is unsafe due to
     # shared directory state, so only enable it when --allow-unsafe-parallel
     # was given.
-    if args.parallel_sub_test and args.allow_unsafe_parallel:
+    if args.parallel_sub_test > 1 and args.allow_unsafe_parallel:
         os.environ["CHPL_PARALLEL_SUB_TEST"] = str(args.parallel_sub_test)
     else:
         os.environ.pop("CHPL_PARALLEL_SUB_TEST", None)
@@ -761,12 +778,15 @@ def run_sub_tests_parallel(work):
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=num_workers
     ) as executor:
-        future_to_dir = {
-            executor.submit(run_sub_test_capture, dir): root
+        # Submit all work up front (so it runs concurrently), but iterate the
+        # futures in submission order so the combined log is deterministic
+        # regardless of completion order. Each result is still written as a
+        # contiguous block, so concurrent runs do not interleave.
+        futures = [
+            (root, executor.submit(run_sub_test_capture, dir))
             for (dir, root) in work
-        }
-        for future in concurrent.futures.as_completed(future_to_dir):
-            root = future_to_dir[future]
+        ]
+        for root, future in futures:
             logger.write()
             logger.write("[Working on directory {0}]".format(root))
             try:
@@ -1716,6 +1736,21 @@ def jUnit():
 # PARSER
 
 
+def positive_int(value):
+    """argparse type for an integer >= 1."""
+    try:
+        ivalue = int(value)
+    except (TypeError, ValueError):
+        raise argparse.ArgumentTypeError(
+            "invalid int value: {0!r}".format(value)
+        )
+    if ivalue < 1:
+        raise argparse.ArgumentTypeError(
+            "value must be a positive integer (>= 1), got {0}".format(ivalue)
+        )
+    return ivalue
+
+
 def help_all(help_msg):
     if any("help-all" in s for s in sys.argv):
         return help_msg
@@ -2150,7 +2185,7 @@ def parser_setup():
         "-parallel",
         "--parallel",
         action="store",
-        type=int,
+        type=positive_int,
         default=1,
         dest="parallel",
         metavar="<N>",
@@ -2169,7 +2204,7 @@ def parser_setup():
         "-parallel-sub_test",
         "--parallel-sub_test",
         action="store",
-        type=int,
+        type=positive_int,
         default=1,
         dest="parallel_sub_test",
         metavar="<N>",
