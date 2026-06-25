@@ -4480,7 +4480,7 @@ static void linkGpuDeviceLibraries() {
     if (g.hasExternalLinkage()) {
       externals.insert(g.getGUID());
       // keep track of Chapel-emitted external globals like `chpl_nodeID`
-      // that might not have debice-size uses.
+      // that might not have device-side uses.
       // We need to explicitly preserve them
       if (!g.isDeclaration()) {
         preservedGlobals.push_back(&g);
