@@ -142,6 +142,9 @@ void put_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t dstlocale,
                      size_t maxOutstandingXfers, void (yieldFn)(void),
                      int32_t commID, int ln, int32_t fn) {
   const size_t strlvls=(size_t)stridelevels;
+  // allocate arrays with at least 1 element to avoid zero-length arrays
+  // if strlvls is 0, these arrays will not be used
+  const size_t strlvls_nz = strlvls > 0 ? strlvls : 1;
   size_t i,j,k,t,total,off,x,carry;
 
   int8_t* dstaddr,*dstaddr1;
@@ -149,10 +152,8 @@ void put_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t dstlocale,
 
   int *srcdisp, *dstdisp;
 
-  // allocate arrays with at least 1 element to avoid zero-length arrays
-  // if strlvls is 0, these arrays will not be used
-  size_t dststr[strlvls > 0 ? strlvls : 1];
-  size_t srcstr[strlvls > 0 ? strlvls : 1];
+  size_t dststr[strlvls_nz];
+  size_t srcstr[strlvls_nz];
   size_t cnt[strlvls+1];
 
   chpl_comm_nb_handle_t handles[maxOutstandingXfers];
@@ -290,16 +291,17 @@ void get_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t srclocale,
                      size_t maxOutstandingXfers, void (yieldFn)(void),
                      int32_t commID, int ln, int32_t fn) {
   const size_t strlvls=(size_t)stridelevels;
+  // allocate arrays with at least 1 element to avoid zero-length arrays
+  // if strlvls is 0, these arrays will not be used
+  const size_t strlvls_nz = strlvls > 0 ? strlvls : 1;
   size_t i,j,k,t,total,off,x,carry;
 
   int8_t* dstaddr,*dstaddr1;
   int8_t* srcaddr,*srcaddr1;
 
   int *srcdisp, *dstdisp;
-  // allocate arrays with at least 1 element to avoid zero-length arrays
-  // if strlvls is 0, these arrays will not be used
-  size_t dststr[strlvls > 0 ? strlvls : 1];
-  size_t srcstr[strlvls > 0 ? strlvls : 1];
+  size_t dststr[strlvls_nz];
+  size_t srcstr[strlvls_nz];
   size_t cnt[strlvls+1];
 
   chpl_comm_nb_handle_t handles[maxOutstandingXfers];
@@ -447,16 +449,17 @@ void strd_common_call(void* dstaddr_arg, size_t* dststrides, int32_t srclocale,
                                       /* ln */ int, /* fn */ int32_t),
                       int32_t commID, int ln, int32_t fn) {
   const size_t strlvls=(size_t)stridelevels;
+  // allocate arrays with at least 1 element to avoid zero-length arrays
+  // if strlvls is 0, these arrays will not be used
+  const size_t strlvls_nz = strlvls > 0 ? strlvls : 1;
   size_t i,j,k,t,total,off,x,carry;
 
   int8_t* dstaddr,*dstaddr1;
   int8_t* srcaddr,*srcaddr1;
 
   int *srcdisp, *dstdisp;
-  // allocate arrays with at least 1 element to avoid zero-length arrays
-  // if strlvls is 0, these arrays will not be used
-  size_t dststr[strlvls > 0 ? strlvls : 1];
-  size_t srcstr[strlvls > 0 ? strlvls : 1];
+  size_t dststr[strlvls_nz];
+  size_t srcstr[strlvls_nz];
   size_t cnt[strlvls+1];
 
   //Only count[0] and strides are measured in number of bytes.

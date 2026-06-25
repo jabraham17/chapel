@@ -1037,6 +1037,9 @@ void chpl_gpu_comm_get_strd(c_sublocid_t dst_subloc,
   // Note: This function differs from the original in chpl-comm-strd-xfer.h by
   // not supporting non-blocking communication calls.
   const size_t strlvls=(size_t)stridelevels;
+  // allocate arrays with at least 1 element to avoid zero-length arrays
+  // if strlvls is 0, these arrays will not be used
+  const size_t strlvls_nz = strlvls > 0 ? strlvls : 1;
   size_t i,j,k,t,total,off,x,carry;
 
   int8_t* dstaddr,*dstaddr1;
@@ -1045,8 +1048,8 @@ void chpl_gpu_comm_get_strd(c_sublocid_t dst_subloc,
   int *srcdisp, *dstdisp;
   // allocate arrays with at least 1 element to avoid zero-length arrays
   // if strlvls is 0, these arrays will not be used
-  size_t dststr[strlvls > 0 ? strlvls : 1];
-  size_t srcstr[strlvls > 0 ? strlvls : 1];
+  size_t dststr[strlvls_nz];
+  size_t srcstr[strlvls_nz];
   size_t cnt[strlvls+1];
 
 
@@ -1174,6 +1177,9 @@ void chpl_gpu_comm_put_strd(c_sublocid_t src_subloc,
   // Note: This function differs from the original in chpl-comm-strd-xfer.h by
   // not supporting non-blocking communication calls.
   const size_t strlvls=(size_t)stridelevels;
+  // allocate arrays with at least 1 element to avoid zero-length arrays
+  // if strlvls is 0, these arrays will not be used
+  const size_t strlvls_nz = strlvls > 0 ? strlvls : 1;
   size_t i,j,k,t,total,off,x,carry;
 
   int8_t* dstaddr,*dstaddr1;
@@ -1182,8 +1188,8 @@ void chpl_gpu_comm_put_strd(c_sublocid_t src_subloc,
   int *srcdisp, *dstdisp;
   // allocate arrays with at least 1 element to avoid zero-length arrays
   // if strlvls is 0, these arrays will not be used
-  size_t dststr[strlvls > 0 ? strlvls : 1];
-  size_t srcstr[strlvls > 0 ? strlvls : 1];
+  size_t dststr[strlvls_nz];
+  size_t srcstr[strlvls_nz];
   size_t cnt[strlvls+1];
 
 
