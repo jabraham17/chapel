@@ -149,8 +149,10 @@ void put_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t dstlocale,
 
   int *srcdisp, *dstdisp;
 
-  size_t dststr[strlvls];
-  size_t srcstr[strlvls];
+  // allocate arrays with at least 1 element to avoid zero-length arrays
+  // if strlvls is 0, these arrays will not be used
+  size_t dststr[strlvls > 0 ? strlvls : 1];
+  size_t srcstr[strlvls > 0 ? strlvls : 1];
   size_t cnt[strlvls+1];
 
   chpl_comm_nb_handle_t handles[maxOutstandingXfers];
@@ -294,8 +296,10 @@ void get_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t srclocale,
   int8_t* srcaddr,*srcaddr1;
 
   int *srcdisp, *dstdisp;
-  size_t dststr[strlvls];
-  size_t srcstr[strlvls];
+  // allocate arrays with at least 1 element to avoid zero-length arrays
+  // if strlvls is 0, these arrays will not be used
+  size_t dststr[strlvls > 0 ? strlvls : 1];
+  size_t srcstr[strlvls > 0 ? strlvls : 1];
   size_t cnt[strlvls+1];
 
   chpl_comm_nb_handle_t handles[maxOutstandingXfers];
@@ -449,8 +453,10 @@ void strd_common_call(void* dstaddr_arg, size_t* dststrides, int32_t srclocale,
   int8_t* srcaddr,*srcaddr1;
 
   int *srcdisp, *dstdisp;
-  size_t dststr[strlvls];
-  size_t srcstr[strlvls];
+  // allocate arrays with at least 1 element to avoid zero-length arrays
+  // if strlvls is 0, these arrays will not be used
+  size_t dststr[strlvls > 0 ? strlvls : 1];
+  size_t srcstr[strlvls > 0 ? strlvls : 1];
   size_t cnt[strlvls+1];
 
   //Only count[0] and strides are measured in number of bytes.

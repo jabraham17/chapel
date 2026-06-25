@@ -1043,8 +1043,10 @@ void chpl_gpu_comm_get_strd(c_sublocid_t dst_subloc,
   int8_t* srcaddr,*srcaddr1;
 
   int *srcdisp, *dstdisp;
-  size_t dststr[strlvls];
-  size_t srcstr[strlvls];
+  // allocate arrays with at least 1 element to avoid zero-length arrays
+  // if strlvls is 0, these arrays will not be used
+  size_t dststr[strlvls > 0 ? strlvls : 1];
+  size_t srcstr[strlvls > 0 ? strlvls : 1];
   size_t cnt[strlvls+1];
 
 
@@ -1178,8 +1180,10 @@ void chpl_gpu_comm_put_strd(c_sublocid_t src_subloc,
   int8_t* srcaddr,*srcaddr1;
 
   int *srcdisp, *dstdisp;
-  size_t dststr[strlvls];
-  size_t srcstr[strlvls];
+  // allocate arrays with at least 1 element to avoid zero-length arrays
+  // if strlvls is 0, these arrays will not be used
+  size_t dststr[strlvls > 0 ? strlvls : 1];
+  size_t srcstr[strlvls > 0 ? strlvls : 1];
   size_t cnt[strlvls+1];
 
 
