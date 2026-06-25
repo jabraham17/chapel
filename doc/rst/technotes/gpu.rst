@@ -716,7 +716,7 @@ marked with * are covered in our nightly testing configurations.
 
 * AMD
 
-  * Hardware: MI60, MI100 and MI250X*
+  * Hardware: MI60, MI100, MI250X*, and MI300A
 
   * Software:ROCm 5.4, 6.0, 6.1, 6.2, 6.3, 7.0*, 7.1, 7.2
 
