@@ -2524,6 +2524,8 @@ static PassBuilder constructPassBuilder(
 }
 
 
+// asan only supported in Chapel in LLVM 16+
+#if LLVM_VERSION_MAJOR >= 16
 //
 // Copied from clang/lib/CodeGen/BackendUtil.cpp
 // It's probably not really relevant to Chapel since we don't do GC, but this
@@ -2554,6 +2556,7 @@ static bool asanUseGlobalsGC(const Triple &T, const CodeGenOptions &CGOpts) {
   }
   return false;
 }
+#endif
 
 
 static void runModuleOptPipeline(bool addWideOpts) {
@@ -2610,6 +2613,8 @@ static void runModuleOptPipeline(bool addWideOpts) {
     MPM = PB.buildPerModuleDefaultPipeline(optLvl);
   }
 
+  // asan only supported in Chapel in LLVM 16+
+#if LLVM_VERSION_MAJOR >= 16
   if (strcmp(envMap["CHPL_SANITIZE_EXE"], "address") == 0) {
 
     // if `--no-llvm-wide-opt` add asan
@@ -2642,6 +2647,7 @@ static void runModuleOptPipeline(bool addWideOpts) {
       PB.registerOptimizerLastEPCallback(AsanCallback);
     }
   }
+#endif
 
   // Add the Global to Wide optimization if necessary.
   // This is done in this way to be added even with -O0
