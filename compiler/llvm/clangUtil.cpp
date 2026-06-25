@@ -91,6 +91,7 @@
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #endif
 #include "llvm/Transforms/Utils/Cloning.h"
+#include "llvm/Transforms/Utils/ModuleUtils.h"
 
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Passes/OptimizationLevel.h"
@@ -4480,9 +4481,16 @@ static void linkGpuDeviceLibraries() {
       externals.insert(f.getGUID());
     }
   }
-  for (const auto& g: info->module->globals()) {
+  std::vector<llvm::GlobalValue*> preservedGlobals;
+  for (auto& g: info->module->globals()) {
     if (g.hasExternalLinkage()) {
       externals.insert(g.getGUID());
+      // keep track of Chapel-emitted external globals like `chpl_nodeID`
+      // that might not have device-side uses.
+      // We need to explicitly preserve them
+      if (!g.isDeclaration()) {
+        preservedGlobals.push_back(&g);
+      }
     }
   }
 
@@ -4523,6 +4531,10 @@ static void linkGpuDeviceLibraries() {
     return externals.count(gv.getGUID()) > 0;
   });
   iPass.internalizeModule(*info->module);
+
+  if (!preservedGlobals.empty()) {
+    llvm::appendToCompilerUsed(*info->module, preservedGlobals);
+  }
 }
 
 // If we're using the LLVM wide optimizations, we have to add
