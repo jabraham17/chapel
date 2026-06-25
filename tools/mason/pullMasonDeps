@@ -5,14 +5,15 @@ MASON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 MASON_THIRD_PARTY_DIRECTORY=${MASON_THIRD_PARTY_DIRECTORY:-$MASON_DIR/ThirdParty}
 MASON_THIRD_PARTY_DEPS_LIST=${MASON_THIRD_PARTY_DEPS_LIST:-$MASON_THIRD_PARTY_DIRECTORY/masonDeps.txt}
 
-rm -f $MASON_THIRD_PARTY_DIRECTORY/downloaded.txt
-rm -f $MASON_THIRD_PARTY_DIRECTORY/*.chpl
-
 # if masonDeps does not exist, skip
 if [ ! -f "$MASON_THIRD_PARTY_DEPS_LIST" ]; then
   echo "No masonDeps.txt found, skipping dependency download"
   exit 0
 fi
+
+# clear downloaded files before trying to download more
+rm -f $MASON_THIRD_PARTY_DIRECTORY/downloaded.txt
+rm -f $MASON_THIRD_PARTY_DIRECTORY/*.chpl
 
 while IFS= read -r line; do
   # skip empty lines and comments
