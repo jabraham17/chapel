@@ -866,6 +866,7 @@ class ChapelLanguageServer(LanguageServer):
         self,
         decl: NodeAndRange,
         fi: FileInfo,
+        existing_inlays: List[InlayHint],
     ) -> List[InlayHint]:
 
         if (
