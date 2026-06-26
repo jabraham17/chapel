@@ -890,6 +890,15 @@ class ChapelLanguageServer(LanguageServer):
         if len(insts) == 0:
             return []
 
+        # if there are instantiations and its a generic inlay, we should not show common inlays
+        if (
+            len(insts) >= 1
+            and len(existing_inlays) == 1
+            and existing_inlays[0].data
+            and existing_inlays[0].data.get("is_generic")
+        ):
+            return []
+
         type_strs = set()
         for i, _ in insts:
             # If any one of the instantiations is purely provided by
@@ -1622,18 +1631,20 @@ def run_lsp():
 
         for decl in decls:
             instantiation = fi.get_inst_segment_at_position(decl.rng.start)
-            inlays.extend(ls.get_decl_inlays(decl, instantiation))
-            inlays.extend(ls.get_fn_inlays(decl, fi, instantiation))
+            decl_inlays = ls.get_decl_inlays(decl, instantiation)
+            fn_inlays = ls.get_fn_inlays(decl, fi, instantiation)
+            inlays.extend(decl_inlays)
+            inlays.extend(fn_inlays)
 
             if instantiation is not None:
                 continue
 
-            # TODO: common inlays do not work with "Show Instantiation (Default Rectangular)"
             # TODO: common inlays should be extended to params as well as types
             #       both for types of params and values of params
-            # Get inalys gathered if all instantiations show the same hint.
-            inlays.extend(ls.get_common_decl_inlays(decl, fi))
-            inlays.extend(ls.get_common_fn_inlays(decl, fi))
+            common_decl_inlays = ls.get_common_decl_inlays(decl, fi)
+            common_fn_inlays = ls.get_common_fn_inlays(decl, fi, fn_inlays)
+            inlays.extend(common_decl_inlays)
+            inlays.extend(common_fn_inlays)
 
         for call in calls:
             call_range = location_to_range(call.location())
