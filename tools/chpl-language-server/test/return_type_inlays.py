@@ -535,6 +535,7 @@ async def test_fn_type_inlay_type(client: LanguageClient):
         A=proc_file,
     )
 
+
 @pytest.mark.asyncio
 async def test_fn_type_inlay_header_variants(client: LanguageClient):
     """
