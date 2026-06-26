@@ -475,11 +475,11 @@ async def test_fn_type_inlay_per_instantiation(client: LanguageClient):
     iter_real_inlays: EXPECTED_INLAYS = [(pos((0, 13)), ": real(64)", None)]
 
     proc_generic_inlays_single: EXPECTED_INLAYS = [
-        (pos((0, 12)), ": string", None)
+        (pos((0, 12)), ": x.type", None)
     ]
     proc_str_inlays_single: EXPECTED_INLAYS = [(pos((0, 12)), ": string", None)]
     iter_generic_inlays_single: EXPECTED_INLAYS = [
-        (pos((0, 13)), ": string", None)
+        (pos((0, 13)), ": x.type", None)
     ]
     iter_str_inlays_single: EXPECTED_INLAYS = [(pos((0, 13)), ": string", None)]
 
