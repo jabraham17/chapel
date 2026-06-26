@@ -578,7 +578,6 @@ async def test_common_inlays_single_instantiation(client: LanguageClient):
         )
 
 
-
 @pytest.mark.asyncio
 async def test_common_inlays_crossfile(client: LanguageClient):
     """
