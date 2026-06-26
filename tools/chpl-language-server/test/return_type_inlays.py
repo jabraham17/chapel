@@ -510,6 +510,32 @@ async def test_fn_type_inlay_per_instantiation(client: LanguageClient):
 
 
 @pytest.mark.asyncio
+async def test_fn_type_inlay_type(client: LanguageClient):
+    """
+    For functions whose return type depends on the instantiation (i.e.,
+    is not common), ensure that clicking a particular instantiation shows
+    an appropriate inlay for that instantiation.
+    """
+    proc_file = """
+            proc foo(type x, type z) type { return x; }
+            foo(int, string);
+            foo(real, string);
+           """
+    # 3 lenses: "Show Generic" + 2 instantiations
+    proc_lens = (pos((0, 5)), 3)
+
+    proc_generic_inlays: EXPECTED_INLAYS = [(pos((0, 19)), ": x", None)]
+    proc_int_inlays: EXPECTED_INLAYS = [(pos((0, 19)), ": int(64)", None)]
+    proc_real_inlays: EXPECTED_INLAYS = [(pos((0, 19)), ": real(64)", None)]
+
+    await click_lenses_and_check_inlays(
+        client,
+        proc_lens,
+        [proc_generic_inlays, proc_int_inlays, proc_real_inlays],
+        A=proc_file,
+    )
+
+@pytest.mark.asyncio
 async def test_fn_type_inlay_header_variants(client: LanguageClient):
     """
     More cases for return inlays: param intent, throws, where, and combinations.
