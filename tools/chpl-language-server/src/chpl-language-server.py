@@ -800,6 +800,7 @@ class ChapelLanguageServer(LanguageServer):
         self,
         fn: chapel.Function,
         type_str: str,
+        data: Optional[Any] = None,
     ) -> InlayHint:
         """
         Build the InlayHint for a function return type
@@ -829,6 +830,7 @@ class ChapelLanguageServer(LanguageServer):
                 InlayHintLabelPart(padding),
             ],
             text_edits=text_edits,
+            data=data,
         )
 
     def get_fn_inlays(
@@ -853,14 +855,20 @@ class ChapelLanguageServer(LanguageServer):
             return []
 
         type_str = self._fn_return_type_str(fn, sig)
+        is_generic = False
         if type_str is None and self.generic_return_type_inlays:
             type_str = self._try_generic_fn_return_type_str(
                 fn, fi.context.context
             )
+            is_generic = type_str is not None
         if type_str is None:
             return []
 
-        return [self._fn_inlay_from_type_str(fn, type_str)]
+        return [
+            self._fn_inlay_from_type_str(
+                fn, type_str, data={"is_generic": is_generic}
+            )
+        ]
 
     def get_common_fn_inlays(
         self,
