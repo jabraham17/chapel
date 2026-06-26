@@ -1755,6 +1755,7 @@ def run_lsp():
                                 decl.node.unique_id(),
                                 i,
                                 from_file.uri,
+                                from_file.context.revision(),
                             ],
                         ),
                         range=decl.rng,
@@ -1781,13 +1782,16 @@ def run_lsp():
 
     @server.command("chpl-language-server/showInstantiation")
     async def show_instantiation(
-        ls: ChapelLanguageServer, data: Tuple[str, str, int, str]
+        ls: ChapelLanguageServer, data: Tuple[str, str, int, str, int]
     ):
-        uri, unique_id, i, source_uri = data
+        uri, unique_id, i, source_uri, revision = data
 
         fi, _ = ls.get_file_info(uri)
         source_fi, _ = ls.get_file_info(source_uri)
         decl = fi.find_decl_by_unique_id(unique_id)
+
+        if source_fi.context.revision() != revision:
+            return
 
         if decl is None:
             return
