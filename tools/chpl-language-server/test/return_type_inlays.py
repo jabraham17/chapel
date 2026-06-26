@@ -510,7 +510,7 @@ async def test_fn_type_inlay_per_instantiation(client: LanguageClient):
 
 
 @pytest.mark.asyncio
-async def test_fn_type_inlay_type(client: LanguageClient):
+async def test_fn_type_inlay_type_proc(client: LanguageClient):
     """
     For functions whose return type depends on the instantiation (i.e.,
     is not common), ensure that clicking a particular instantiation shows
@@ -524,9 +524,9 @@ async def test_fn_type_inlay_type(client: LanguageClient):
     # 3 lenses: "Show Generic" + 2 instantiations
     proc_lens = (pos((0, 5)), 3)
 
-    proc_generic_inlays: EXPECTED_INLAYS = [(pos((0, 19)), ": x", None)]
-    proc_int_inlays: EXPECTED_INLAYS = [(pos((0, 19)), ": int(64)", None)]
-    proc_real_inlays: EXPECTED_INLAYS = [(pos((0, 19)), ": real(64)", None)]
+    proc_generic_inlays: EXPECTED_INLAYS = [(pos((0, 29)), ": x", None)]
+    proc_int_inlays: EXPECTED_INLAYS = [(pos((0, 29)), ": int(64)", None)]
+    proc_real_inlays: EXPECTED_INLAYS = [(pos((0, 29)), ": real(64)", None)]
 
     await click_lenses_and_check_inlays(
         client,
