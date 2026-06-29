@@ -240,7 +240,6 @@ async def test_type_inlays_range(client: LanguageClient):
 
 
 @pytest.mark.asyncio
-@pytest.mark.xfail
 async def test_type_inlays_arrays(client: LanguageClient):
     """
     Ensure that type inlays are shown for arrays
@@ -253,8 +252,8 @@ async def test_type_inlays_arrays(client: LanguageClient):
            """
 
     inlays = [
-        (pos((0, 5)), "[0..2] int(64)"),
-        (pos((2, 5)), "[1..10] real(64)"),
+        (pos((0, 5)), "[domain(1, int(64), strideKind.one)] int(64)"),
+        (pos((2, 5)), "[domain(1, int(64), strideKind.one)] real(64)"),
     ]
 
     async with source_file(client, file) as doc:
