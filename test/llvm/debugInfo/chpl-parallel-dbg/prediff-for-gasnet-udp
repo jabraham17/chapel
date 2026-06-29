@@ -23,7 +23,7 @@ ioctl_broken = rb"\*\*\* GASNET WARNING\(Node 0\): ioctl\(\) is probably broken:
 extra_prints = rb"""\*\*\* NOTICE \(proc \d+\): Before reporting bugs, run with GASNET_BACKTRACE=1 in the environment to generate a backtrace\.
 \*\*\* NOTICE \(proc \d+\): We recommend linking the debug version of GASNet to assist you in resolving this application issue\.
 """
-gasnet_coll_team= rb"\*\*\* FATAL ERROR \(proc \d+\): in gasnete_coll_team_lookup\(\) at party/gasnet/gasnet-src/extended-ref/coll/gasnet_team.c:522: Collective operation on invalid \(destroyed\?\) TM\d+\n"
+gasnet_coll_team= rb"\*\*\* FATAL ERROR \(proc \d+\): in gasnete_coll_team_lookup\(\) at party/gasnet/gasnet-src/extended-ref/coll/gasnet_team.c:522: Collective operation on invalid \(destroyed\?\) TM[0-9a-fA-F]+\n"
 
 output = re.sub(out_of_order, b'', contents, flags=re.MULTILINE)
 output = re.sub(signal, b'', output)
