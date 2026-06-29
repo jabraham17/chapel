@@ -16,7 +16,7 @@
 # - Homebrew is meant to be run as non-root, which would require more work in
 #   the image build (and perhaps container run) to accommodate.
 Vagrant.configure("2") do |config|
-  config.vm.box = "ubuntu/jammy64"
+  config.vm.box = "bento/ubuntu-24.04"
 
   config.vm.provision "shell" do |s|
     s.env =  { http_proxy:ENV['http_proxy'], https_proxy:ENV['https_proxy'] }
