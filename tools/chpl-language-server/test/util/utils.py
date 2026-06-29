@@ -805,7 +805,7 @@ async def click_lenses_and_check_inlays(
                 else:
                     assert (
                         command.arguments is not None
-                        and len(command.arguments) == 4
+                        and len(command.arguments) == 5
                     )
                     idx = command.arguments[2]
                     assert idx is not None

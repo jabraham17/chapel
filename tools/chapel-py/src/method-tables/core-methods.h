@@ -75,6 +75,8 @@ CLASS_BEGIN(Context)
 
          auto prepareToGc = std::get<0>(args);
          node->advanceToNextRevision(prepareToGc))
+  METHOD(Context, current_revision, "Get the current revision number of the context",
+         int(), return node->currentRevision())
   METHOD(Context, get_file_text, "Get the text of the file at the given path",
          std::string(chpl::UniqueString), return parsing::fileText(node, std::get<0>(args)).text())
   METHOD(Context, get_compiler_version, "Get the version of the Chapel compiler",
