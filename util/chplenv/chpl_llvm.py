@@ -279,6 +279,13 @@ def check_llvm_packages(llvm_config):
 def find_system_llvm_config():
     llvm_config = overrides.get("CHPL_LLVM_CONFIG", "none")
     if llvm_config != "none":
+        _, config_err = check_llvm_config(llvm_config)
+        if config_err:
+            error(
+                "Problem with llvm-config at {0} -- {1}".format(
+                    llvm_config, config_err
+                )
+            )
         return llvm_config
 
     llvm_config = chpl_gpu.get_llvm_override()
@@ -379,7 +386,7 @@ def get_llvm_config():
 
     else:
         # check that the provided llvm-config is valid
-        version, config_err = check_llvm_config(llvm_config)
+        _, config_err = check_llvm_config(llvm_config)
         if config_err:
             error(
                 "Problem with llvm-config at {0} -- {1}".format(
