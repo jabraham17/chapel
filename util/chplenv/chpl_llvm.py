@@ -376,7 +376,7 @@ def get_llvm_config():
     elif llvm_config == "none":
         if llvm_val == "system" or llvm_support_val == "system":
             llvm_config = find_system_llvm_config()
-    
+
     else:
         # check that the provided llvm-config is valid
         version, config_err = check_llvm_config(llvm_config)
