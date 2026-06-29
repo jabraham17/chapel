@@ -43,7 +43,7 @@ fi
 # enable arrow/parquet support
 export ARKOUDA_SERVER_PARQUET_SUPPORT=true
 
-export CHPL_WHICH_RELEASE_FOR_ARKOUDA="2.8.0"
+export CHPL_WHICH_RELEASE_FOR_ARKOUDA="2.9.0"
 
 function partial_checkout_release() {
   currentSha=`git rev-parse HEAD`
@@ -100,6 +100,8 @@ function release_dependencies() {
         exit 1
       fi
     fi
+  elif [ "$CHPL_WHICH_RELEASE_FOR_ARKOUDA" = "2.9.0" ]; then
+    : # no extra setup needed yet
   else
     echo "CHPL_WHICH_RELEASE_FOR_ARKOUDA is set to $CHPL_WHICH_RELEASE_FOR_ARKOUDA, but is not supported by this script."
     exit 1
