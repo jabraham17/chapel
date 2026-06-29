@@ -892,7 +892,7 @@ class ChapelLanguageServer(LanguageServer):
         # * If there's only one, we can't distinguish "common" from
         #   "just in this one". We still compute the common inlays in that case,
         #   because its still generally useful and confusing to not show them.
-        #   if more instatnations are added later, the inlays will be updated to
+        #   if more instantiations are added later, the inlays will be updated to
         #   either show or not show based on whether the new instantiation
         #   matches the existing one.
         insts = list(fi.context.instantiations(fn.unique_id()))
@@ -959,7 +959,7 @@ class ChapelLanguageServer(LanguageServer):
         # * If there's only one, we can't distinguish "common" from
         #   "just in this one". We still compute the common inlays in that case,
         #   because its still generally useful and confusing to not show them.
-        #   if more instatnations are added later, the inlays will be updated to
+        #   if more instantiations are added later, the inlays will be updated to
         #   either show or not show based on whether the new instantiation
         #   matches the existing one.
         insts = list(fi.context.instantiations(parent_fn.unique_id()))
