@@ -901,6 +901,8 @@ void VarSymbol::codegenDefC(bool global, bool isHeader) {
         str += " = {CHPL_LOCALEID_T_INIT, NULL}";
       }
     }
+  } else if (isBoolType(type) && isFnSymbol(defPoint->parentSymbol)) {
+    str += " = false";
   }
 
   if (fGenIDS)
