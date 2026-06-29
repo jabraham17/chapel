@@ -3452,19 +3452,19 @@ int _ftoa(char* restrict dst, size_t size, double num, int base, bool needs_i, c
 
   // How many bytes are we adding for the sign?
   sign_base_width = 0;
-  if( style->showplus || shownegative ) sign_base_width++;
-  if( showbase ) sign_base_width+=2; // for 0x.
+  if (style->showplus || shownegative) sign_base_width++;
+  if (showbase) sign_base_width+=2; // for 0x.
 
   // Fill sign_base_width with spaces
   // (useful for debugging and clarity).
-  if( sign_base_width < size ) {
+  if (sign_base_width < size) {
     for( i = 0; i < sign_base_width; i++ ) {
       dst[i] = ' '; // put spaces to overwrite later
     }
   }
 
   skip = 0;
-  got = _ftoa_core(&dst[sign_base_width],
+  got = _ftoa_core(dst ? &dst[sign_base_width] : NULL,
                    (size>sign_base_width)?(size-sign_base_width):0,
                    num, base, style->realfmt,
                    precision, style->uppercase, style->prefix_base,
