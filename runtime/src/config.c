@@ -534,8 +534,8 @@ void parseConfigFile(const char* configFilename,
           handleUnexpectedConfigVar(moduleName, varName, 0,
                                     CHPL_FILE_IDX_SAVED_FILENAME);
         } else {
-          char* value = equalsSign + 1;
-          if (equalsSign && *value) {
+          char* value = equalsSign ? equalsSign + 1 : NULL;
+          if (value && *value) {
             initSetValue(varName, value, moduleName, 0,
                          CHPL_FILE_IDX_SAVED_FILENAME);
           } else {
