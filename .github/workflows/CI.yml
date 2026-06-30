@@ -152,7 +152,7 @@ jobs:
         ./util/buildRelease/smokeTest lint
 
   check_large_files:
-    if: github.event_name == 'pull_request'
+    if: ${{ github.event_name == 'pull_request' && !contains(github.event.*.labels.*.name, 'large files ok') }}
     runs-on: ubuntu-latest
     steps:
       - name: count PR commits
