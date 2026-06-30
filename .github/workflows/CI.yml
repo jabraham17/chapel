@@ -175,6 +175,7 @@ jobs:
           # Loop backward through commits added in the PR, starting from the
           # latest.
           commitIdx=0
+          errorCount=0
           for commit in $(git rev-list $baseSHA..$headSHA)
           do
             echo "Checking commit: $commit"
@@ -193,11 +194,7 @@ jobs:
 
               if [ "$file_size_kb" -ge "$FILE_SIZE_LIMIT_KB" ]; then
                 echo "Error: ${file} is too large (size ${file_size_kb}KB, limit ${FILE_SIZE_LIMIT_KB}KB). Introduced in commit: $commit"
-                if [ ${{ contains(github.event.*.labels.*.name, 'large files ok') }} = "true" ]; then
-                  echo "Ignoring error due to 'large files ok' label presence"
-                  break
-                fi
-                exit 1
+                errorCount=$((errorCount+1))
               fi
             done <<< "$newFiles"
 
@@ -208,6 +205,14 @@ jobs:
               break
             fi
           done
+
+          if [ "$errorCount" -gt 0 ]; then
+            if [ ${{ contains(github.event.*.labels.*.name, 'large files ok') }} = "true" ]; then
+              echo "Ignoring errors due to 'large files ok' label presence"
+            else
+              exit 1
+            fi
+          fi
 
   publish-docs:
     if: github.event_name == 'push' && github.repository == 'chapel-lang/chapel'
