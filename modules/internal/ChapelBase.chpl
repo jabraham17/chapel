@@ -736,11 +736,23 @@ module ChapelBase {
   inline operator *(param a: imag(32), param b: imag(32)) param do return __primitive("*", -a, b) : real(32);
   inline operator *(param a: imag(64), param b: imag(64)) param do return __primitive("*", -a, b) : real(64);
 
+  inline operator *(param a: complex(64), param b: complex(64)) param do return __primitive("*", a, b);
+  inline operator *(param a: complex(128), param b: complex(128)) param do return __primitive("*", a, b);
+
   inline operator *(param a: real(32), param b: imag(32)) param do return __primitive("*", a, b : real(32)) : imag(32);
   inline operator *(param a: real(64), param b: imag(64)) param do return __primitive("*", a, b : real(64)) : imag(64);
-
   inline operator *(param a: imag(32), param b: real(32)) param do return __primitive("*", a : real(32), b) : imag(32);
   inline operator *(param a: imag(64), param b: real(64)) param do return __primitive("*", a : real(64), b) : imag(64);
+
+  inline operator *(param a: real(32), param b: complex(64)) param do return __primitive("build_complex", a*b.re, a*b.im) : complex(64);
+  inline operator *(param a: complex(64), param b: real(32)) param do return __primitive("build_complex", a.re*b, a.im*b) : complex(64);
+  inline operator *(param a: real(64), param b: complex(128)) param do return __primitive("build_complex", a*b.re, a*b.im) : complex(128);
+  inline operator *(param a: complex(128), param b: real(64)) param do return __primitive("build_complex", a.re*b, a.im*b) : complex(128);
+
+  inline operator *(param a: imag(32), param b: complex(64)) param do return __primitive("build_complex", -_i2r(a)*b.im, _i2r(a)*b.re) : complex(64);
+  inline operator *(param a: complex(64), param b: imag(32)) param do return __primitive("build_complex", -a.im*_i2r(b), a.re*_i2r(b)) : complex(64);
+  inline operator *(param a: imag(64), param b: complex(128)) param do return __primitive("build_complex", -_i2r(a)*b.im, _i2r(a)*b.re) : complex(128);
+  inline operator *(param a: complex(128), param b: imag(64)) param do return __primitive("build_complex", -a.im*_i2r(b), a.re*_i2r(b)) : complex(128);
 
   inline operator /(param a: int(8), param b: int(8)) param {
     if b == 0 then compilerError("Attempt to divide by zero");
@@ -782,12 +794,36 @@ module ChapelBase {
   inline operator /(param a: imag(32), param b: imag(32)) param do return __primitive("/", a, b) : real(32);
   inline operator /(param a: imag(64), param b: imag(64)) param do return __primitive("/", a, b) : real(64);
 
+  inline operator /(param a: complex(64), param b: complex(64)) param do return __primitive("/", a, b);
+  inline operator /(param a: complex(128), param b: complex(128)) param do return __primitive("/", a, b);
+
+
   inline operator /(param a: real(32), param b: imag(32)) param do return __primitive("/", -a, b : real(32)) : imag(32);
   inline operator /(param a: real(64), param b: imag(64)) param do return __primitive("/", -a, b : real(64)) : imag(64);
-
   inline operator /(param a: imag(32), param b: real(32)) param do return __primitive("/", a : real(32), b) : imag(32);
   inline operator /(param a: imag(64), param b: real(64)) param do return __primitive("/", a : real(64), b) : imag(64);
 
+  inline operator /(param a: real(32), param b: complex(64)) param {
+    param d = abs(b);
+    return __primitive("build_complex", (a/d)*(b.re/d), (-a/d)*(b.im/d)):complex(64);
+  }
+  inline operator /(param a: complex(64), param b: real(32)) param do return __primitive("build_complex", a.re/b, a.im/b) : complex(64);
+  inline operator /(param a: real(64), param b: complex(128)) param {
+    param d = abs(b);
+    return __primitive("build_complex", (a/d)*(b.re/d), (-a/d)*(b.im/d)):complex(128);
+  }
+  inline operator /(param a: complex(128), param b: real(64)) param do return __primitive("build_complex", a.re/b, a.im/b) : complex(128);
+
+  inline operator /(param a: imag(32), param b: complex(64)) param {
+    param d = abs(b);
+    return __primitive("build_complex", (_i2r(a)/d)*(b.im/d), (_i2r(a)/d)*(b.re/d)):complex(64);
+  }
+  inline operator /(param a: complex(64), param b: imag(32)) param do return __primitive("build_complex", a.im/_i2r(b), -a.re/_i2r(b)) : complex(64);
+  inline operator /(param a: imag(64), param b: complex(128)) param {
+    param d = abs(b);
+    return __primitive("build_complex", (_i2r(a)/d)*(b.im/d), (_i2r(a)/d)*(b.re/d)):complex(128);
+  }
+  inline operator /(param a: complex(128), param b: imag(64)) param do return __primitive("build_complex", a.im/_i2r(b), -a.re/_i2r(b)) : complex(128);
 
   //
   // % on primitive types
@@ -1079,10 +1115,22 @@ module ChapelBase {
   operator **(param a: real(?w), param b: integral) param do return __primitive("**", a, b:real(w));
 
   @edition(first="preview")
-  operator **(param a: real(32), param b: real(32)) param do return __primitive("**", a, b:real(32));
+  operator **(param a: real(32), param b: real(32)) param do return __primitive("**", a, b);
 
   @edition(first="preview")
-  operator **(param a: real(64), param b: real(64)) param do return __primitive("**", a, b:real(64));
+  operator **(param a: real(64), param b: real(64)) param do return __primitive("**", a, b);
+
+  @edition(first="preview")
+  operator **(param a: complex(?w), param b: integral) param where _canOptimizeExp(b) do return _expHelpParam(a, b);
+
+  @edition(first="preview")
+  operator **(param a: complex(?w), param b: integral) param do return __primitive("**", a, b:complex(w));
+
+  @edition(first="preview")
+  operator **(param a: complex(64), param b: complex(64)) param do return __primitive("**", a, b);
+
+  @edition(first="preview")
+  operator **(param a: complex(128), param b: complex(128)) param do return __primitive("**", a, b);
 
   //
   // `param real **` overloads marked unstable for the 2.0 edition
@@ -1098,7 +1146,7 @@ module ChapelBase {
 
   @edition(last="2.0")
   @unstable("The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition")
-  operator **(param a: real(32), param b: real(32)) param do return __primitive("**", a, b:real(32));
+  operator **(param a: real(32), param b: real(32)) param do return __primitive("**", a, b);
 
   @edition(last="2.0")
   @unstable("The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition")
@@ -1516,6 +1564,8 @@ module ChapelBase {
   //
   inline proc _i2r(a: imag(?w)) do return __primitive("cast", real(w), a);
   inline proc _r2i(a: real(?w)) do return __primitive("cast", imag(w), a);
+  inline proc _i2r(param a: imag(?w)) param do return a:real(w);
+  inline proc _r2i(param a: real(?w)) param do return a:imag(w);
 
   //
   // More primitive funs

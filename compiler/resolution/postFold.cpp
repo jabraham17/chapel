@@ -652,6 +652,9 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
   } else if (call->isPrimitive(PRIM_GET_IMAG) == true) {
     FOLD_CALL1(P_prim_get_imag);
+  
+  } else if (call->isPrimitive(PRIM_BUILD_COMPLEX) == true) {
+    FOLD_CALL2(P_prim_build_complex);
 
   } else if (call->isPrimitive(PRIM_ADD) == true) {
     FOLD_CALL2(P_prim_add);
