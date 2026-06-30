@@ -164,6 +164,7 @@ jobs:
       - name: check commits for large files
         run: |
           FILE_SIZE_LIMIT_KB=1024
+          IGNORE_LABEL="large files ok"
 
           baseSHA=${{github.event.pull_request.base.sha}}
           headSHA=${{github.event.pull_request.head.sha}}
@@ -207,10 +208,10 @@ jobs:
           done
 
           if [ "$errorCount" -gt 0 ]; then
-            if [ ${{ contains(github.event.*.labels.*.name, 'large files ok') }} = "true" ]; then
-              echo "Ignoring errors due to 'large files ok' label presence"
+            if [ ${{ contains(github.event.*.labels.*.name, $IGNORE_LABEL) }} = "true" ]; then
+              echo "Ignoring errors due to '$IGNORE_LABEL' label presence"
             else
-              echo "If you want to ignore errors for this PR, add the label 'large files ok', then close and reopen the PR"
+              echo "If you want to ignore errors for this PR, add the label '$IGNORE_LABEL', then close and reopen the PR"
               exit 1
             fi
           fi
