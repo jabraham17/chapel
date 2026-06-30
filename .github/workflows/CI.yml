@@ -152,7 +152,7 @@ jobs:
         ./util/buildRelease/smokeTest lint
 
   check_large_files:
-    if: ${{ github.event_name == 'pull_request' && !contains(github.event.*.labels.*.name, 'large files ok') }}
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - name: count PR commits
@@ -193,6 +193,10 @@ jobs:
 
               if [ "$file_size_kb" -ge "$FILE_SIZE_LIMIT_KB" ]; then
                 echo "Error: ${file} is too large (size ${file_size_kb}KB, limit ${FILE_SIZE_LIMIT_KB}KB). Introduced in commit: $commit"
+                if [ ${{ contains(github.event.*.labels.*.name, 'large files ok') }} = "true" ]; then
+                  echo "Ignoring error due to 'large files ok' label presence"
+                  break
+                fi
                 exit 1
               fi
             done <<< "$newFiles"
