@@ -154,6 +154,8 @@ jobs:
   check_large_files:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    env:
+      IGNORE_LABEL: "large files ok"
     steps:
       - name: count PR commits
         run: echo "PR_NUM_COMMITS=$(( ${{ github.event.pull_request.commits }} + 2 ))" >> "${GITHUB_ENV}"
@@ -164,7 +166,6 @@ jobs:
       - name: check commits for large files
         run: |
           FILE_SIZE_LIMIT_KB=1024
-          IGNORE_LABEL="large files ok"
 
           baseSHA=${{github.event.pull_request.base.sha}}
           headSHA=${{github.event.pull_request.head.sha}}
@@ -208,10 +209,10 @@ jobs:
           done
 
           if [ "$errorCount" -gt 0 ]; then
-            if [ ${{ contains(github.event.*.labels.*.name, $IGNORE_LABEL) }} = "true" ]; then
-              echo "Ignoring errors due to '$IGNORE_LABEL' label presence"
+            if [ ${{ contains(github.event.*.labels.*.name, env.IGNORE_LABEL) }} = "true" ]; then
+              echo "Ignoring errors due to '${{ env.IGNORE_LABEL }}' label presence"
             else
-              echo "If you want to ignore errors for this PR, add the label '$IGNORE_LABEL', then close and reopen the PR"
+              echo "If you want to ignore errors for this PR, add the label '${{ env.IGNORE_LABEL }}', then close and reopen the PR"
               exit 1
             fi
           fi
