@@ -237,3 +237,29 @@ jobs:
             rsync -avz --cvs-exclude --delete --relative . ${{ secrets.WEBSITE_USER }}@${{ secrets.WEBSITE_URL }}:${{ secrets.WEBSITE_PATH }}
             rm ~/.ssh/id_rsa
             rm ~/.ssh/known_hosts
+
+  # This job exists to have a single check for which failure means merging
+  # should be blocked, for GH required status checks purposes.
+  # It runs (and fails) _only_ when one of the jobs listed in its `needs`
+  # failed; otherwise, it will be skipped, which GH considers acceptable for a
+  # 'required' check.
+  # When adding a new job which we would like to block PR merging, add it to
+  # the `needs` list below.
+  checks-alert-failure:
+    if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
+    runs-on: ubuntu-latest
+    needs:
+      - make_check
+      - make_doc
+      - make_mason
+      - check_dyno_linters
+      - check_compiler_dyno_tests
+      - make_check_llvm_none
+      - check_annotations_rt_calls
+      - check_large_files
+      - publish-docs
+    steps:
+      - name: Fail
+        run: |
+          echo "A required status check has failed"
+          exit 1
