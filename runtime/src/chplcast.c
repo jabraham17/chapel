@@ -101,9 +101,9 @@ static int illegalFirstUnsChar(char c) {
       *invalidCh = *str;                                                \
       return -1;                                                        \
     }                                                                   \
-    val = (_type(base, width))strtoull(str, &endPtr, numberBase);  \
+    val = (_type(base, width))strtoull(str, &endPtr, numberBase);       \
     if (negative) {                                                     \
-      val = -1*val;                                                     \
+      val = (_type(base, width))(-(unsigned long long)val);             \
     }                                                                   \
     while (*endPtr && isspace(*endPtr))                                 \
       endPtr++;                                                         \
@@ -314,7 +314,7 @@ _define_string_to_complex_precise(complex, 128, "%lf", 64)
 #define _define_string_to_int_type(base, width)                             \
   _type(base, width) c_string_to_##base##width##_t(c_string str, chpl_bool* err,\
                                                    int lineno, int32_t filename) { \
-    int invalid;                                                        \
+    int invalid = 0;                                                    \
     char invalidStr[2] = "\0\0";                                        \
     _type(base, width) val = 0;                                         \
     if (!str) {                                                         \
@@ -343,7 +343,7 @@ _define_string_to_int_type(uint, 64)
 #define _define_string_to_real_type(base, width)                        \
   _##base##width c_string_to_##base##width(c_string str, chpl_bool* err, \
                                            int lineno, int32_t filename) { \
-    int invalid;                                                        \
+    int invalid = 0;                                                    \
     char invalidStr[2] = "\0\0";                                        \
     _##base##width val = 0.0;                                           \
     if (!str) {                                                         \

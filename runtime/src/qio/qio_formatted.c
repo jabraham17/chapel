@@ -3683,7 +3683,7 @@ qioerr qio_channel_print_int(const int threadsafe, qio_channel_t* restrict ch, c
   if( issigned ) {
     if (num_s < 0 ) {
       isneg = 1;
-      num = - num_s;
+      num = - (uint64_t)num_s;
     } else {
       num = num_s;
     }
