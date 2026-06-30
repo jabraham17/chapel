@@ -210,6 +210,7 @@ jobs:
             if [ ${{ contains(github.event.*.labels.*.name, 'large files ok') }} = "true" ]; then
               echo "Ignoring errors due to 'large files ok' label presence"
             else
+              echo "If you want to ignore errors for this PR, add the label 'large files ok', then close and reopen the PR"
               exit 1
             fi
           fi
