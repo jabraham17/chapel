@@ -295,6 +295,9 @@ jobs:
       - check_annotations_rt_calls
       - check_large_files
       - publish-docs
+      - run-shellcheck
+      - check-format
+      - test_chpl_language_server
     steps:
       - name: Fail
         run: |
