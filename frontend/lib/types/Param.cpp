@@ -599,7 +599,7 @@ QualifiedType Param::fold(Context* context,
   Immediate result;
 
   // fold
-  int immOp = op;
+  auto immOp = op;
 
   if (op == chpl::uast::PrimitiveTag::PRIM_CAST) {
     // valid param casts should always be foldable
