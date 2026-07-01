@@ -34,6 +34,21 @@ jobs:
       run: |
         ./util/buildRelease/smokeTest chpl
 
+  test-make_doc:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - name: test upload docs
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: readme
+        path: README.rst
+
   make_doc:
     runs-on: ubuntu-latest
     container:
@@ -220,6 +235,21 @@ jobs:
               exit 1
             fi
           fi
+
+  test-publish-docs:
+    runs-on: ubuntu-latest
+    needs: test-make_doc
+    steps:
+      - name: test download artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: readme
+      - name: read artifact
+        run: |
+          cat README.rst
+      - name: check accessing secret
+        run: |
+          echo "${{ secrets.WEBSITE_KEY }}" > /dev/null
 
   publish-docs:
     if: github.event_name == 'push' && github.repository == 'chapel-lang/chapel'
