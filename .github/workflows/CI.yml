@@ -343,6 +343,7 @@ jobs:
       - run-shellcheck
       - check-format
       - test_chpl_language_server
+      - release-tarball-smoke-test
     steps:
       - name: Fail
         run: |
