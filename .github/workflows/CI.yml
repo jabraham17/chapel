@@ -222,7 +222,7 @@ jobs:
     steps:
       - name: test reading secret
         run: |
-          echo "${{ secrets.NONEXISTENT }}" > /dev/null
+          echo "${{ secrets.WEBSITE_KEY }}" > /dev/null
 
   publish-docs:
     if: github.event_name == 'push' && github.repository == 'chapel-lang/chapel'
