@@ -41,6 +41,7 @@
 #include "wellknown.h"
 
 #ifdef HAVE_LLVM
+#include "llvm/IR/InlineAsm.h"
 #include "llvm/IR/Module.h"
 #include "llvmTracker.h"
 #include "llvmUtil.h"
@@ -697,6 +698,36 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
                           ptr.noalias,
                           !ptr.mustPointOutsideOrderIndependentLoop);
 }
+
+// in some cases, we really really want pointers to stay flat pointers and not
+// be inferred to a global address space (this seems to happen mainly with the
+// AMD GPU backend). The primary use case for this is array data pointers,
+// which are obtained from the array descriptor. Its not actually safe for the
+// backend to infer that these pointers are global, since they are obtained
+// from a descriptor and the backend may assume that different descriptors
+// cannot alias. This function is used to launder such pointers through an
+// identity inline assembly barrier, which prevents the backend from inferring
+// the address space. I don't know if this is the best way to do this, but it
+// does seem to work
+static llvm::Value* codegenGpuKeepPointerFlat(llvm::Value* val) {
+  if (!gCodegenGPU) return val;
+  if (getGpuCodegenType() != GpuCodegenType::GPU_CG_AMD_HIP) return val;
+
+  llvm::PointerType* ptrTy = llvm::dyn_cast<llvm::PointerType>(val->getType());
+  if (ptrTy == NULL || ptrTy->getAddressSpace() != 0) return val;
+
+  GenInfo* info = gGenInfo;
+  llvm::Type* argTypes[] = { val->getType() };
+  llvm::FunctionType* asmTy =
+      llvm::FunctionType::get(val->getType(), argTypes, /*isVarArg=*/false);
+  llvm::InlineAsm* identity =
+      llvm::InlineAsm::get(asmTy, /*AsmString=*/"", /*Constraints=*/"=v,0",
+                           /*hasSideEffects=*/false);
+  llvm::CallInst* ret = info->irBuilder->CreateCall(identity, { val });
+  trackLLVMValue(ret);
+  return ret;
+}
+
 // Create an LLVM load instruction possibly adding
 // appropriate metadata based upon the Chapel type of ptr.
 static
@@ -1502,6 +1533,15 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
     }
   } else {
 #ifdef HAVE_LLVM
+    // For accesses into array data (_ddata), keep the base data pointer in the
+    // flat (generic) address space so that the AMD GPU backend's
+    // InferAddressSpaces pass does not promote it to the global address space.
+    // See codegenGpuKeepPointerFlat for why that promotion is unsafe for
+    // descriptor-chased array pointers.
+    if (baseValType->symbol->hasFlag(FLAG_DATA_CLASS)) {
+      base.val = codegenGpuKeepPointerFlat(base.val);
+    }
+
     unsigned AS = base.val->getType()->getPointerAddressSpace();
 
     // in LLVM, arrays are not pointers and cannot be used in
