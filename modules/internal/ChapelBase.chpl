@@ -884,16 +884,16 @@ module ChapelBase {
       if a == 1 then
         return 1;
       else if a == -1 then
-        return if b % 2 == 0 then 1 else -1;
+        return if b & 1 then -1 else 1;
       else
         return 0;
     }
     var i = b, y:a.type = 1, z = a;
-    while i != 0 {
-      if i % 2 == 1 then
-        y *= z;
+    while true {
+      if (i & 1) res *= z;
+      i >>= 1;
+      if (!i) break;
       z *= z;
-      i /= 2;
     }
     return y;
   }
