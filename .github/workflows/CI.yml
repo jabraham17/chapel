@@ -150,9 +150,12 @@ jobs:
     - name: smokeTest lint
       run: |
         ./util/buildRelease/smokeTest lint
+
   check_large_files:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    env:
+      IGNORE_LABEL: "large files ok"
     steps:
       - name: count PR commits
         run: echo "PR_NUM_COMMITS=$(( ${{ github.event.pull_request.commits }} + 2 ))" >> "${GITHUB_ENV}"
@@ -174,6 +177,7 @@ jobs:
           # Loop backward through commits added in the PR, starting from the
           # latest.
           commitIdx=0
+          errorCount=0
           for commit in $(git rev-list $baseSHA..$headSHA)
           do
             echo "Checking commit: $commit"
@@ -192,7 +196,7 @@ jobs:
 
               if [ "$file_size_kb" -ge "$FILE_SIZE_LIMIT_KB" ]; then
                 echo "Error: ${file} is too large (size ${file_size_kb}KB, limit ${FILE_SIZE_LIMIT_KB}KB). Introduced in commit: $commit"
-                exit 1
+                errorCount=$((errorCount+1))
               fi
             done <<< "$newFiles"
 
@@ -203,6 +207,15 @@ jobs:
               break
             fi
           done
+
+          if [ "$errorCount" -gt 0 ]; then
+            if [ ${{ contains(github.event.*.labels.*.name, env.IGNORE_LABEL) }} = "true" ]; then
+              echo "Ignoring errors due to '${{ env.IGNORE_LABEL }}' label presence"
+            else
+              echo "If you want to ignore errors for this PR, add the label '${{ env.IGNORE_LABEL }}', then close and reopen the PR"
+              exit 1
+            fi
+          fi
 
   publish-docs:
     if: github.event_name == 'push' && github.repository == 'chapel-lang/chapel'
