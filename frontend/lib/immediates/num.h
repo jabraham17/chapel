@@ -23,6 +23,7 @@
 
 #include "chpl/framework/Context.h"
 #include "chpl/framework/UniqueString.h"
+#include "chpl/uast/PrimOp.h"
 
 extern "C" {
   #include "complex-support.h"
@@ -45,18 +46,14 @@ extern unsigned int open_hash_multipliers[256];
 
 using ImmString = chpl::detail::PODUniqueString;
 
-//
-// NOTE: NUM_KIND_LAST is used to mark the last entry in this enum. The
-// 'IF1_const_kind' enum below uses it to set values.
-//
-enum IF1_num_kind : uint8_t {
-  NUM_KIND_NONE, NUM_KIND_BOOL, NUM_KIND_UINT, NUM_KIND_INT, NUM_KIND_REAL,
-  NUM_KIND_IMAG, NUM_KIND_COMPLEX, NUM_KIND_COMMID, NUM_KIND_LAST
-};
 
 enum IF1_const_kind : uint8_t {
-  CONST_KIND_STRING = NUM_KIND_LAST + 1, CONST_KIND_SYMBOL
+  NUM_KIND_NONE, NUM_KIND_BOOL, NUM_KIND_UINT, NUM_KIND_INT, NUM_KIND_REAL,
+  NUM_KIND_IMAG, NUM_KIND_COMPLEX, NUM_KIND_COMMID,
+  CONST_KIND_STRING, CONST_KIND_SYMBOL
 };
+// maintain old name for backwards compatibility
+using IF1_num_kind = IF1_const_kind;
 
 enum IF1_string_kind : uint8_t {
   STRING_KIND_STRING,
@@ -106,7 +103,7 @@ namespace chpl {
 namespace types {
 
 class Immediate { public:
-  uint8_t const_kind;
+  IF1_const_kind const_kind;
   IF1_string_kind string_kind;
   uint8_t num_index;
   union {
@@ -387,7 +384,7 @@ int fprint_imm(FILE *fp, const Immediate &imm, bool showType = false);
 int snprint_imm(char *s, size_t max, const Immediate &imm);
 void coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to);
 void fold_result(Immediate *imm1, Immediate *imm2, Immediate *imm);
-void fold_constant(chpl::Context* context, int op,
+void fold_constant(chpl::Context* context, chpl::uast::primtags::PrimitiveTag op,
                    Immediate *im1, Immediate *im2, Immediate *imm);
 ImmString istrFromUserBool(chpl::Context* context, bool b);
 ImmString istrFromUserUint(chpl::Context* context, uint64_t i);

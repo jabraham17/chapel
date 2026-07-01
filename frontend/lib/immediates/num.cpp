@@ -1015,7 +1015,7 @@ fold_result(Immediate *im1, Immediate *im2, Immediate *imm) {
 }
 
 void
-fold_constant(chpl::Context* context, int op,
+fold_constant(chpl::Context* context, chpl::uast::primtags::PrimitiveTag op,
               Immediate *aim1, Immediate *aim2, Immediate *imm) {
 
   Immediate im1(*aim1), im2, coerce;
