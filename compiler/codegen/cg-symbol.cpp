@@ -480,6 +480,8 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
       ret = info->irBuilder->CreateGlobalString(newString);
       trackLLVMValue(ret);
       break;
+    default:
+      INT_ASSERT("Unsupported immediate type");
   }
 
   return ret;
