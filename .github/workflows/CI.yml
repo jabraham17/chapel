@@ -120,6 +120,7 @@ jobs:
     - name: set llvm_none make check
       run: |
        CHPL_LLVM=none ./util/buildRelease/smokeTest chpl
+
   check_annotations_rt_calls:
     runs-on: ubuntu-latest
     container:
@@ -250,3 +251,78 @@ jobs:
             rsync -avz --cvs-exclude --delete --relative . ${{ secrets.WEBSITE_USER }}@${{ secrets.WEBSITE_URL }}:${{ secrets.WEBSITE_PATH }}
             rm ~/.ssh/id_rsa
             rm ~/.ssh/known_hosts
+
+  run-shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # 2.0.0
+        with:
+          severity: error
+          ignore_paths: ./test/* ./third-party/*
+
+  check-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
+        with:
+          options: "--check --verbose --line-length 80 --extend-exclude '^/(third-party|test)/'"
+          src: "."
+      - uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
+        with:
+          options: "--check --verbose --line-length 80 --extend-exclude '(install|build)/'"
+          src: "third-party/chpl-venv"
+
+  test_chpl_language_server:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+      id: changes
+      with:
+        filters: |
+          cls_sources:
+            - 'tools/chapel-py/**'
+            - 'tools/chpl-language-server/**'
+    - name: test chpl-language-server
+      if: steps.changes.outputs.cls_sources == 'true'
+      run: |
+        make test-chpl-language-server -j`util/buildRelease/chpl-make-cpu_count`
+
+  # This job exists to have a single check for which failure means merging
+  # should be blocked, for GH required status checks purposes.
+  # It runs (and fails) if any of the jobs listed in its `needs` ran and
+  # failed; otherwise, it will be skipped, which GH considers acceptable for a
+  # 'required' check.
+  # When adding a new job which we would like to block PR merging, add it to
+  # the `needs` list below. Note that if a dependent job is _skipped_, it will
+  # not trigger failure of this job.
+  checks-alert-failure:
+    if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
+    runs-on: ubuntu-latest
+    needs:
+      - make_check
+      - make_doc
+      - make_mason
+      - check_dyno_linters
+      - check_compiler_dyno_tests
+      - make_check_llvm_none
+      - check_annotations_rt_calls
+      - check_large_files
+      - publish-docs
+      - run-shellcheck
+      - check-format
+      - test_chpl_language_server
+    steps:
+      - name: Fail
+        run: |
+          echo "A required status check has failed"
+          exit 1
