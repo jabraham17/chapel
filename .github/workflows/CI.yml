@@ -5,6 +5,10 @@ on:
     branches: [ main ]
   pull_request:
 
+permissions:
+  contents: read
+  packages: read
+
 env:
   NIGHTLY_TEST_SETTINGS: true
 
@@ -216,13 +220,6 @@ jobs:
               exit 1
             fi
           fi
-
-  test-access-secret:
-    runs-on: ubuntu-latest
-    steps:
-      - name: test reading secret
-        run: |
-          echo "${{ secrets.WEBSITE_KEY }}" > /dev/null
 
   publish-docs:
     if: github.event_name == 'push' && github.repository == 'chapel-lang/chapel'
