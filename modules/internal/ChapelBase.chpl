@@ -890,9 +890,9 @@ module ChapelBase {
     }
     var i = b, y:a.type = 1, z = a;
     while true {
-      if (i & 1) res *= z;
+      if i & 1 then res *= z;
       i >>= 1;
-      if (!i) break;
+      if !i then break;
       z *= z;
     }
     return y;
