@@ -105,7 +105,17 @@ namespace types {
 class Immediate { public:
   IF1_const_kind const_kind;
   IF1_string_kind string_kind;
-  uint8_t num_index;
+  // NOTE: only num_index is ever used! boolIndex, intIndex, floatIndex, and
+  // complexIndex are only used to make the union more readable in the debugger
+  // (so the debugger can show the value of the correct type as a human
+  // readable enum)
+  union {
+    uint8_t          num_index;
+    IF1_bool_type    boolIndex;
+    IF1_int_type     intIndex;
+    IF1_float_type   floatIndex;
+    IF1_complex_type complexIndex;
+  };
   union {
     // Unions are initialized based off the first element, so we need to have
     // the largest thing first to make sure it is all zero initialized
