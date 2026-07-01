@@ -277,11 +277,12 @@ jobs:
 
   # This job exists to have a single check for which failure means merging
   # should be blocked, for GH required status checks purposes.
-  # It runs (and fails) _only_ when one of the jobs listed in its `needs`
+  # It runs (and fails) if any of the jobs listed in its `needs` ran and
   # failed; otherwise, it will be skipped, which GH considers acceptable for a
   # 'required' check.
   # When adding a new job which we would like to block PR merging, add it to
-  # the `needs` list below.
+  # the `needs` list below. Note that if a dependent job is _skipped_, it will
+  # not trigger failure of this job.
   checks-alert-failure:
     if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
     runs-on: ubuntu-latest
