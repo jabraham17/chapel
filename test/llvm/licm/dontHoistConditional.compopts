@@ -1,0 +1,1 @@
+--llvm-print-ir tester --llvm-print-ir-stage none --llvm-print-ir-file dontHoistConditional.ll --ccflags -fno-discard-value-names --no-checks
