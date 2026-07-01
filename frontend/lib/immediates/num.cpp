@@ -388,18 +388,18 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
     if (base == 1) {                                     \
       res = 1;                                           \
     } else if (base == -1) {                             \
-      res = exp % 2 == 0 ? 1 : -1;                       \
+      res = exp & 1 ? -1 : 1;                            \
     } else {                                             \
       res = 0;                                           \
     }                                                    \
   } else {                                               \
     type i = exp;                                        \
     type z = base;                                       \
-    while (i != 0) {                                     \
-      if (i % 2 == 1)                                    \
-        res *= z;                                        \
+    for (;;) {                                           \
+      if (i & 1) res *= z;                               \
+      i >>= 1;                                           \
+      if (!i) break;                                     \
       z *= z;                                            \
-      i /= 2;                                            \
     }                                                    \
   }
 
@@ -409,11 +409,11 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
   type res = 1;                                      \
   type i = exp;                                      \
   type z = base;                                     \
-  while (i != 0) {                                   \
-    if (i % 2 == 1)                                  \
-      res *= z;                                      \
+  for (;;) {                                         \
+    if (i & 1) res *= z;                             \
+    i >>= 1;                                         \
+    if (!i) break;                                   \
     z *= z;                                          \
-    i /= 2;                                          \
   }
 
 #define DO_FOLDPOW() \
