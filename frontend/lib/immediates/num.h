@@ -111,10 +111,10 @@ class Immediate { public:
   // readable enum)
   union {
     uint8_t          num_index;
-    IF1_bool_type    boolIndex;
-    IF1_int_type     intIndex;
-    IF1_float_type   floatIndex;
-    IF1_complex_type complexIndex;
+    IF1_bool_type    _boolIndex;
+    IF1_int_type     _intIndex;
+    IF1_float_type   _floatIndex;
+    IF1_complex_type _complexIndex;
   };
   union {
     // Unions are initialized based off the first element, so we need to have
