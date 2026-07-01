@@ -156,6 +156,7 @@ snprint_imm(char *str, size_t max, const Immediate &imm) {
       res = snprintf(str, max, fmt, imm.v_string.c_str());
       break;
     }
+    default: CHPL_ASSERT(false && "Unhandled case in switch statement");
   }
   return res;
 }
@@ -374,6 +375,7 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
             default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
       }
 
 #define COMPUTE_INT_POW(type, b, e)                      \
@@ -500,6 +502,7 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
       case NUM_KIND_IMAG: case NUM_KIND_COMPLEX:                        \
           CHPL_ASSERT(false && "Cannot fold ** on floating point values"); \
           break; \
+      default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
       }
 
 static void doFoldSqrt(chpl::Context* context,
@@ -557,6 +560,7 @@ static void doFoldSqrt(chpl::Context* context,
         default: CHPL_ASSERT(false && "Unhandled case in switch statement");
       }
       break;
+    default: CHPL_ASSERT(false && "Unhandled case in switch statement");
   }
 }
 
@@ -625,6 +629,7 @@ static void doFoldAbs(chpl::Context* context,
         default: CHPL_ASSERT(false && "Unhandled case in switch statement");
       }
       break;
+    default: CHPL_ASSERT(false && "Unhandled case in switch statement");
   }
 }
 
@@ -643,6 +648,7 @@ static void doFoldGetReal(chpl::Context* context,
         default: CHPL_ASSERT(false && "Unhandled case in switch statement");
       }
       break;
+    default: CHPL_ASSERT(false && "Unhandled case in switch statement");
   }
 }
 
@@ -661,6 +667,7 @@ static void doFoldGetImag(chpl::Context* context,
         default: CHPL_ASSERT(false && "Unhandled case in switch statement");
       }
       break;
+    default: CHPL_ASSERT(false && "Unhandled case in switch statement");
   }
 }
 
@@ -726,6 +733,7 @@ static void doFoldGetImag(chpl::Context* context,
             default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
       }
 
 #define DO_FOLDI(_op) \
@@ -765,6 +773,7 @@ static void doFoldGetImag(chpl::Context* context,
         } \
         case NUM_KIND_REAL: case NUM_KIND_IMAG: case NUM_KIND_COMPLEX: \
           CHPL_ASSERT(false && "Unhandled case in switch statement"); \
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
       }
 
 #define DO_FOLD1(_op) \
@@ -824,6 +833,7 @@ static void doFoldGetImag(chpl::Context* context,
             default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
       }
 
 #define DO_FOLD1I(_op) \
@@ -864,6 +874,7 @@ static void doFoldGetImag(chpl::Context* context,
         case NUM_KIND_REAL: case NUM_KIND_IMAG: case NUM_KIND_COMPLEX: \
           CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           break; \
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
       }
 
 static int
