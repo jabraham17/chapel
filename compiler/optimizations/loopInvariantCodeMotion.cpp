@@ -1126,6 +1126,37 @@ static bool defDominatesAllExits(Loop* loop, SymExpr* def, std::vector<BitVec*>&
 }
 
 
+/*
+ * Check that a definition is guaranteed to be executed on every iteration of
+ * the loop. This is the case when the block containing the definition dominates
+ * every exit block of the loop.
+ *
+ * If a definition is only conditionally executed within the loop (for instance,
+ * an operand of a short-circuiting && or ||, which the compiler lowers into a
+ * conditional), hoisting it into the preheader would cause it to execute
+ * unconditionally. For primitives this can change program semantics or
+ * introduce undefined behavior (e.g. signed integer overflow) that would not
+ * have occurred otherwise. To avoid speculatively executing such computations,
+ * we only hoist definitions that are guaranteed to run on each iteration.
+ *
+ * See https://github.com/chapel-lang/chapel/issues/29034
+ */
+static bool defIsGuaranteedToExecute(Loop* loop, SymExpr* def, std::vector<BitVec*>& dominators, std::map<SymExpr*, int>& localMap) {
+  int defBlock = localMap[def];
+
+  BitVec* bitExits = loop->getBitExits();
+
+  for(size_t i = 0; i < bitExits->size(); i++) {
+    if(bitExits->test(i)) {
+      if(dominates(defBlock, i, dominators) == false) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+
 
 /*
  * Collects the uses and defs of symbols the baseAST
@@ -1277,10 +1308,12 @@ static void licmFn(FnSymbol* fn) {
       if(CallExpr* call = toCallExpr(symExpr->parentExpr)) {
         if(defDominatesAllUses(curLoop, symExpr, dominators, localMap, localUseMap)) {
           if(defDominatesAllExits(curLoop, symExpr, dominators, localMap)) {
-            if(defsInLoop.count(symExpr->symbol()) == 1) {
-              curLoop->insertBefore(symExpr->symbol()->defPoint);
+            if(defIsGuaranteedToExecute(curLoop, symExpr, dominators, localMap)) {
+              if(defsInLoop.count(symExpr->symbol()) == 1) {
+                curLoop->insertBefore(symExpr->symbol()->defPoint);
+              }
+              curLoop->insertBefore(call);
             }
-            curLoop->insertBefore(call);
           }
         }
       }
