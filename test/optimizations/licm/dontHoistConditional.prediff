@@ -1,0 +1,21 @@
+#!/bin/sh
+# $1 = test name, $2 = output file to be diffed against the .good file.
+#
+# Inspect the generated C for the 'tester' function to confirm that LICM:
+#   * hoisted the unconditional `maxBytes < max(int)` comparison before the loop
+#   * left the conditionally-executed `maxBytes + 5` inside the loop
+# See https://github.com/chapel-lang/chapel/issues/29034
+awk '
+  /tester_chpl\(/ { infn=1 }
+  infn && /while *\(/ { inloop=1 }
+  infn && /maxBytes.*< INT64\(9223372036854775807\)/ { if (inloop) cmpIn=1; else cmpBefore=1 }
+  infn && /maxBytes.*\+ INT64\(5\)/ { if (inloop) addIn=1; else addBefore=1 }
+  infn && /^}/ { infn=0 }
+  END {
+    if (cmpBefore && !cmpIn) print "PASS: (maxBytes < max(int)) hoisted before loop";
+    else print "FAIL: (maxBytes < max(int)) not hoisted before loop";
+    if (addIn && !addBefore) print "PASS: (maxBytes + 5) kept inside loop";
+    else print "FAIL: (maxBytes + 5) hoisted out of loop";
+  }
+' gen_output/$1.c >> $2
+rm -r gen_output

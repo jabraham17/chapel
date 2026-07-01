@@ -1,0 +1,2 @@
+PASS: (maxBytes < max(int)) hoisted before loop
+PASS: (maxBytes + 5) kept inside loop
