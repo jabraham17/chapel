@@ -6,12 +6,12 @@ UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $UTIL_CRON_DIR/common-native-gpu.bash
 source $UTIL_CRON_DIR/common-hpe-cray-ex.bash
 source $UTIL_CRON_DIR/common-gpu-nvidia-hpe-cray-ex.bash
-source $UTIL_CRON_DIR/common-gpu-nvidia-hpe-cray-ex-cuda-12.bash
+source $UTIL_CRON_DIR/common-gpu-nvidia-hpe-cray-ex-cuda-13.bash
 
 export CHPL_COMM=none
 export CHPL_GPU=nvidia  # amd is detected automatically
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.gpu-ex-cuda-12"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.gpu-ex-cuda"
 
 export CHPL_TEST_PERF_CONFIG_NAME="1-node-a100" # pinoak has ampere GPUs
 source $UTIL_CRON_DIR/common-native-gpu-perf.bash
