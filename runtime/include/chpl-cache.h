@@ -87,17 +87,17 @@ void chpl_cache_exit(void);
 // If release is set, waits on any pending puts in the cache.
 // If acquire is set, sets this task's last acquire fence to
 // the cache's current request number.
-void chpl_cache_fence(int acquire, int release, int ln, int32_t fn);
+void chpl_cache_fence(int acquire, int release, int64_t ln, int32_t fn);
 
 // "acquire" barrier or fence -> discard pre-fetched GET values
 static inline
-void chpl_cache_acquire(int ln, int32_t fn)
+void chpl_cache_acquire(int64_t ln, int32_t fn)
 {
   if (chpl_cache_enabled()) chpl_cache_fence(1, 0, ln, fn);
 }
 // "release" barrier or fence -> complete pending PUTs
 static inline
-void chpl_cache_release(int ln, int32_t fn)
+void chpl_cache_release(int64_t ln, int32_t fn)
 {
   if (chpl_cache_enabled()) chpl_cache_fence(0, 1, ln, fn);
 }
@@ -106,27 +106,27 @@ void chpl_cache_release(int ln, int32_t fn)
 // These are the functions that the generated code should be eventually
 // calling on a put or a get.
 void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                         size_t size, int32_t commID, int ln, int32_t fn);
+                         size_t size, int32_t commID, int64_t ln, int32_t fn);
 void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
-                         size_t size, int32_t commID, int ln, int32_t fn);
+                         size_t size, int32_t commID, int64_t ln, int32_t fn);
 void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
-                              size_t size, int32_t commID, int ln, int32_t fn);
+                              size_t size, int32_t commID, int64_t ln, int32_t fn);
 void  chpl_cache_comm_get_strd(
                    void *addr, void *dststr, c_nodeid_t node, void *raddr,
                    void *srcstr, void *count, int32_t strlevels,
-                   size_t elemSize, int32_t commID, int ln, int32_t fn);
+                   size_t elemSize, int32_t commID, int64_t ln, int32_t fn);
 void  chpl_cache_comm_put_strd(
                       void *addr, void *dststr, c_nodeid_t node, void *raddr,
                       void *srcstr, void *count, int32_t strlevels,
-                      size_t elemSize, int32_t commID, int ln, int32_t fn);
+                      size_t elemSize, int32_t commID, int64_t ln, int32_t fn);
 void chpl_cache_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
-                                   size_t size, int32_t commID, int ln, int32_t fn);
+                                   size_t size, int32_t commID, int64_t ln, int32_t fn);
 void chpl_cache_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
-                                   size_t size, int32_t commID, int ln, int32_t fn);
+                                   size_t size, int32_t commID, int64_t ln, int32_t fn);
 void chpl_cache_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
                                       c_nodeid_t srcnode, void* srcaddr,
                                       size_t size, int32_t commID,
-                                      int ln, int32_t fn);
+                                      int64_t ln, int32_t fn);
 void chpl_cache_comm_getput_unordered_task_fence(void);
 
 int chpl_cache_pagesize(void);
@@ -139,7 +139,7 @@ void chpl_cache_print_stats(void);
 // returns 1 if the data was cached
 int chpl_cache_mock_get(c_nodeid_t node, uint64_t raddr, size_t size);
 void chpl_cache_invalidate(c_nodeid_t node, void* raddr, size_t size,
-                           int ln, int32_t fn);
+                           int64_t ln, int32_t fn);
 
 #ifdef __cplusplus
 }

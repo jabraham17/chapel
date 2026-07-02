@@ -351,7 +351,7 @@ typedef struct kernel_cfg_s {
 
 static void cfg_init(kernel_cfg* cfg, const char* fn_name,
                      int n_params, int n_pids, int n_reduce_vars,
-                     int n_host_registered_vars, int ln, int32_t fn) {
+                     int n_host_registered_vars, int64_t ln, int32_t fn) {
 
   cfg->fn_name = fn_name;
 
@@ -679,7 +679,7 @@ static int cfg_get_halt_flag(kernel_cfg* cfg) {
 void* chpl_gpu_init_kernel_cfg(const char* fn_name, int64_t num_threads,
                                int blk_dim, int n_params, int n_pids,
                                int n_reduce_vars, int n_host_registered_vars,
-                               int ln, int32_t fn) {
+                               int64_t ln, int32_t fn) {
   void* ret = chpl_mem_alloc(sizeof(kernel_cfg),
                              CHPL_RT_MD_GPU_KERNEL_PARAM_META, ln, fn);
 
@@ -965,7 +965,7 @@ extern void chpl_gpu_comm_on_get(c_sublocid_t src_subloc, void* addr,
 
 void chpl_gpu_comm_put(c_nodeid_t dst_node, c_sublocid_t dst_subloc, void *dst,
                        c_sublocid_t src_subloc, void *src,
-                       size_t size, int32_t commID, int ln, int32_t fn)
+                       size_t size, int32_t commID, int64_t ln, int32_t fn)
 {
   void* src_data = src;
   c_sublocid_t src_data_subloc = src_subloc;
@@ -997,7 +997,7 @@ void chpl_gpu_comm_put(c_nodeid_t dst_node, c_sublocid_t dst_subloc, void *dst,
 
 void chpl_gpu_comm_get(c_sublocid_t dst_subloc, void *dst,
                        c_nodeid_t src_node, c_sublocid_t src_subloc, void *src,
-                       size_t size, int32_t commID, int ln, int32_t fn)
+                       size_t size, int32_t commID, int64_t ln, int32_t fn)
 {
   void* dst_buff = dst;
   c_sublocid_t dst_buff_subloc = dst_subloc;
@@ -1031,7 +1031,7 @@ void chpl_gpu_comm_get_strd(c_sublocid_t dst_subloc,
                           c_nodeid_t srclocale, c_sublocid_t src_subloc,
                           void* srcaddr_arg, size_t* srcstrides,
                           size_t* count, int32_t stridelevels, size_t elemSize,
-                          int32_t commID, int ln, int32_t fn) {
+                          int32_t commID, int64_t ln, int32_t fn) {
   // TODO: Re-use code from chpl-comm-strd-xfer.h instead of copying it here.
   //
   // Note: This function differs from the original in chpl-comm-strd-xfer.h by
@@ -1171,7 +1171,7 @@ void chpl_gpu_comm_put_strd(c_sublocid_t src_subloc,
                           c_nodeid_t dstlocale, c_sublocid_t dst_subloc,
                           void* srcaddr_arg, size_t* srcstrides,
                           size_t* count, int32_t stridelevels, size_t elemSize,
-                          int32_t commID, int ln, int32_t fn) {
+                          int32_t commID, int64_t ln, int32_t fn) {
   // TODO: Re-use code from chpl-comm-strd-xfer.h instead of copying it here.
   //
   // Note: This function differs from the original in chpl-comm-strd-xfer.h by
@@ -1308,7 +1308,7 @@ void chpl_gpu_comm_put_strd(c_sublocid_t src_subloc,
 
 void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
                      c_sublocid_t src_subloc, const void* src, size_t n,
-                     int32_t commID, int ln, int32_t fn) {
+                     int32_t commID, int64_t ln, int32_t fn) {
 
   /* This generates just a lot of output
 
@@ -1405,7 +1405,7 @@ void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
 
 void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
                                   const void* src, size_t n, int32_t commID,
-                                  int ln, int32_t fn) {
+                                  int64_t ln, int32_t fn) {
   assert(chpl_gpu_is_device_ptr(src));
 
 
@@ -1427,7 +1427,7 @@ void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
 
 void chpl_gpu_copy_host_to_device(c_sublocid_t dst_dev, void* dst,
                                   const void* src, size_t n, int32_t commID,
-                                  int ln, int32_t fn) {
+                                  int64_t ln, int32_t fn) {
   assert(chpl_gpu_is_device_ptr(dst));
 
   CHPL_GPU_DEBUG("Copying %zu bytes from host to device\n", n);

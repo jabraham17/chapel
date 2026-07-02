@@ -103,7 +103,7 @@ static void                    comm_task_wrapper(void*);
 static void                    taskCallBody(chpl_fn_int_t, chpl_fn_p,
                                             void*, size_t,
                                             c_sublocid_t,
-                                            int, int32_t);
+                                            int64_t, int32_t);
 static chpl_taskID_t           get_next_task_id(void);
 static thread_private_data_t*  get_thread_private_data(void);
 static task_pool_p             get_current_ptask(chpl_bool);
@@ -114,7 +114,7 @@ static void                    thread_end(void);
 static void                    maybe_add_thread(void);
 static task_pool_p             add_to_task_pool(chpl_fn_int_t, chpl_fn_p,
                                                 void*, size_t,
-                                                chpl_bool, int, int32_t);
+                                                chpl_bool, int64_t, int32_t);
 
 //
 // Condition variable methods

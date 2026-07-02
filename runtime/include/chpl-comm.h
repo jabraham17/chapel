@@ -140,14 +140,14 @@ void chpl_rt_comm_bundle_ftable_call(chpl_comm_on_bundle_t* bundle) {
 // before the request completes (after waiting on the returned handle)
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
                                        size_t size, int32_t commID,
-                                       int ln, int32_t fn);
+                                       int64_t ln, int32_t fn);
 
 // Do a PUT in a nonblocking fashion, returning a handle which can be used to
 // wait for the PUT to complete. The source buffer must not be modified before
 // the request completes (after waiting on the returned handle)
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
                                        size_t size, int32_t commID,
-                                       int ln, int32_t fn);
+                                       int64_t ln, int32_t fn);
 
 // Returns nonzero iff the handle has already been waited for and has
 // been cleared out in a call to chpl_comm_{wait,try}_some.
@@ -327,7 +327,7 @@ size_t chpl_comm_regMemAllocThreshold(void) {
 #endif
 static inline
 void* chpl_comm_regMemAlloc(size_t size,
-                            chpl_mem_descInt_t desc, int ln, int32_t fn) {
+                            chpl_mem_descInt_t desc, int64_t ln, int32_t fn) {
   return CHPL_COMM_IMPL_REG_MEM_ALLOC(size, desc, ln, fn);
 }
 
@@ -344,7 +344,7 @@ void chpl_comm_regMemPostAlloc(void* p, size_t size) {
 #endif
 static inline
 void* chpl_comm_regMemRealloc(void* p, size_t oldSize, size_t newSize,
-                              chpl_mem_descInt_t desc, int ln, int32_t fn) {
+                              chpl_mem_descInt_t desc, int64_t ln, int32_t fn) {
   return CHPL_COMM_IMPL_REG_MEM_REALLOC(p, oldSize, newSize, desc, ln, fn);
 }
 
@@ -477,7 +477,7 @@ void chpl_comm_exit(int all, int status);
 //   size and locale are part of p
 //
 void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                   size_t size, int32_t commID, int ln, int32_t fn);
+                   size_t size, int32_t commID, int64_t ln, int32_t fn);
 
 //
 // get 'size' bytes of remote data at 'raddr' on locale 'locale' to
@@ -487,7 +487,7 @@ void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 //   size and locale are part of p
 //
 void chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
-                    size_t size, int32_t commID, int ln, int32_t fn);
+                    size_t size, int32_t commID, int64_t ln, int32_t fn);
 
 //
 // put the number of elements pointed out by count array, with strides pointed
@@ -504,7 +504,7 @@ void chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
 void chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode,
                         void* srcaddr, size_t* srcstrides, size_t* count,
                         int32_t stridelevels, size_t elemSize, int32_t commID,
-                        int ln, int32_t fn);
+                        int64_t ln, int32_t fn);
 
 //
 // same as chpl_comm_puts(), but do get instead
@@ -512,22 +512,22 @@ void chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode,
 void chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode,
                         void* srcaddr, size_t* srcstrides, size_t* count,
                         int32_t stridelevels, size_t elemSize, int32_t commID,
-                        int ln, int32_t fn);
+                        int64_t ln, int32_t fn);
 
 
 //
 // Unordered ops
 //
 void chpl_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
-                             size_t size, int32_t commID, int ln, int32_t fn);
+                             size_t size, int32_t commID, int64_t ln, int32_t fn);
 
 void chpl_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
-                             size_t size, int32_t commID, int ln, int32_t fn);
+                             size_t size, int32_t commID, int64_t ln, int32_t fn);
 
 void chpl_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
                                 c_nodeid_t srcnode, void* srcaddr,
                                 size_t size, int32_t commID,
-                                int ln, int32_t fn);
+                                int64_t ln, int32_t fn);
 
 void chpl_comm_getput_unordered_task_fence(void);
 

@@ -5132,7 +5132,7 @@ DEFINE_PRIM(UNORDERED_ASSIGN) {
     // chpl_gen_comm_get_unordered(void *dst,
     //   c_nodeid_t src_locale, void* src_raddr,
     //   size_t size, int32_t commID,
-    //   int ln, int32_t fn);
+    //   int64_t ln, int32_t fn);
 
     dst = codegenValuePtr(dst);
     if (dstRef)
@@ -5150,7 +5150,7 @@ DEFINE_PRIM(UNORDERED_ASSIGN) {
     // chpl_gen_comm_put_unordered(void *src,
     //   c_nodeid_t dst_locale, void* dst_raddr,
     //   size_t size, int32_t commID,
-    //   int ln, int32_t fn);
+    //   int64_t ln, int32_t fn);
 
     src = codegenValuePtr(src);
     if (srcRef)
@@ -5169,7 +5169,7 @@ DEFINE_PRIM(UNORDERED_ASSIGN) {
     //   c_nodeid_t dst_locale, void* dst_raddr,
     //   c_nodeid_t src_locale, void* src_raddr,
     //   size_t size, int32_t commID,
-    //   int ln, int32_t fn);
+    //   int64_t ln, int32_t fn);
     codegenCall("chpl_gen_comm_getput_unordered",
                 codegenRnode(dst),
                 codegenRaddr(dst),
