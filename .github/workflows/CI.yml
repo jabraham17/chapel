@@ -322,7 +322,7 @@ jobs:
 
           source ./util/cron/common.bash
 
-          if [[ "${{ matrix.os }}" == "macos*" ]] ; then
+          if [[ "${{ matrix.os }}" == "macos"* ]] ; then
             brew install llvm
             source ./util/cron/common-darwin.bash
           else
