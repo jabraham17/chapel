@@ -315,10 +315,12 @@ jobs:
       - name: run smokeTest
         run: |
           if [[ "${{ matrix.os }}" == "macos*" ]] ; then
+            brew install llvm
             source ./util/cron/common-darwin.bash
           fi
 
           if [[ "${{ matrix.config }}" == "gasnet" ]] ; then
+            sudo apt install llvm llvm-dev
             source ./util/cron/common-gasnet.bash
           fi
 
