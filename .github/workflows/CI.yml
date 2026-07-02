@@ -301,6 +301,31 @@ jobs:
       run: |
         make test-chpl-language-server -j`util/buildRelease/chpl-make-cpu_count`
 
+  chapel-code-smoke-test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        config: [gasnet, none]
+        exclude:
+          - os: macos-latest
+            config: gasnet
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: run smokeTest
+        run: |
+            if [[ "${{ matrix.os }}" == "macos*" ]] ; then
+              source ./util/cron/common-darwin.bash
+            fi
+
+            if [[ "${{ matrix.config }}" == "gasnet" ]] ; then
+              source ./util/cron/common-gasnet.bash
+            fi
+
+            export NIGHTLY_TEST_SETTINGS=true
+
+          ./util/buildRelease/smokeTest
+
   # This job exists to have a single check for which failure means merging
   # should be blocked, for GH required status checks purposes.
   # It runs (and fails) if any of the jobs listed in its `needs` ran and
@@ -325,6 +350,7 @@ jobs:
       - run-shellcheck
       - check-format
       - test_chpl_language_server
+      - chapel-code-smoke-test
     steps:
       - name: Fail
         run: |
