@@ -3228,7 +3228,7 @@ private proc isBCPindex(type t) param do
   // The "actual" counted range iter. Turn the bounds of a low bounded counted
   // range into the bounds of a fully bounded non-strided range. `low..#count`
   // becomes `low..(low + (count - 1))`. Needs to check for negative counts,
-  // and for zero counts iterates over a degenerate `1..0`.
+  // and for zero counts iterates over a degenerate `low..low-1`.
   iter chpl_direct_counted_range_iter_helper(low, count) {
     if boundsChecking && isIntType(count.type) && count < 0 then
       HaltWrappers.boundsCheckHalt("With a negative count, the range must have a last index.");
