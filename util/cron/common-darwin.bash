@@ -2,6 +2,8 @@
 
 UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
+source $UTIL_CRON_DIR/common.bash
+
 # 2017-11-03: needed on chapelmac since I.T. updates on 2017-10-10
 #             known to be needed on a Macbook when connected over VPN
 export CHPL_RT_MASTERIP=127.0.0.1
