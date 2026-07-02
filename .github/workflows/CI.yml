@@ -317,15 +317,10 @@ jobs:
           echo "${{ matrix.os }}"
           echo "${{ matrix.config }}"
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-      - name: run smokeTest
+      - name: install deps
         run: |
-          set -ex
-
-          source ./util/cron/common.bash
-
           if [[ "${{ matrix.os }}" == "macos"* ]] ; then
             brew install llvm
-            source ./util/cron/common-darwin.bash
           else
             sudo apt install \
               bash \
@@ -353,6 +348,15 @@ jobs:
               python3-pip \
               python3-venv \
               tzdata
+          fi
+      - name: setup env and run ./util/buildRelease/smokeTest
+        run: |
+          set -ex
+
+          source ./util/cron/common.bash
+
+          if [[ "${{ matrix.os }}" == "macos"* ]] ; then
+            source ./util/cron/common-darwin.bash
           fi
 
           if [[ "${{ matrix.config }}" == "gasnet" ]] ; then
