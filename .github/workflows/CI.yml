@@ -301,6 +301,50 @@ jobs:
       run: |
         make test-chpl-language-server -j`util/buildRelease/chpl-make-cpu_count`
 
+  gcc-version-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        gcc_version: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install GCC
+        uses: egor-tensin/setup-gcc@a2861a8b8538f49cf2850980acccf6b05a1b2ae4 # v2
+        with:
+          version: ${{ matrix.gcc_version }}
+      - name: Check default GCC
+        run: |
+          # Check desired GCC version is loaded
+          gcc_version=$(gcc -dumpversion)
+          gcc_major_version=$(cut -d. -f1 <<< "$gcc_version")
+          if [ "$gcc_major_version" != "${{ matrix.gcc_version }}" ]; then
+            echo "Wrong gcc version"
+            echo "Expected Version: ${{ matrix.gcc_version }} Actual Version: $gcc_major_version"
+            exit 2
+          fi
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Run start_test on examples
+        run: |
+          source util/setchplenv.bash
+
+          # Use CHPL_LLVM=none to avoid using a system LLVM potentially linked
+          # with a different and incompatible version of GCC
+          export CHPL_LLVM=none
+          export CHPL_LLVM_SUPPORT=bundled
+          unset CHPL_LLVM_CONFIG
+
+          # Set environment variables to nudge cmake towards desired GCC
+          export CHPL_CMAKE_USE_CC_CXX=1
+          export CC=$(which gcc)
+          export CXX=$(which g++)
+
+          export CHPL_LAUNCHER=none
+
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j$num_procs
+
+          start_test test/release/examples
+
   # This job exists to have a single check for which failure means merging
   # should be blocked, for GH required status checks purposes.
   # It runs (and fails) if any of the jobs listed in its `needs` ran and
@@ -325,6 +369,7 @@ jobs:
       - run-shellcheck
       - check-format
       - test_chpl_language_server
+      - gcc-version-tests
     steps:
       - name: Fail
         run: |
