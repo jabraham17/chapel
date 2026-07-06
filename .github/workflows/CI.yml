@@ -315,6 +315,7 @@ jobs:
         chown -R $(id -u):$(id -g) $PWD
     - name: create release tarball
       run: |
+        export CHPL_TEST_RELEASE_NORECURSE=1
         ./util/cron/test-release.bash
     - name: upload release tarball as artifact
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
