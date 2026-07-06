@@ -26,7 +26,7 @@
 extern "C" {
 #endif
 
-void chpldev_taskTable_add(chpl_taskID_t taskID, uint32_t lineno, int32_t filename, uint64_t tl_info);
+void chpldev_taskTable_add(chpl_taskID_t taskID, int64_t lineno, int32_t filename, uint64_t tl_info);
 void chpldev_taskTable_remove(chpl_taskID_t taskID);
 void chpldev_taskTable_set_active(chpl_taskID_t taskID);
 void chpldev_taskTable_set_suspended(chpl_taskID_t taskID);

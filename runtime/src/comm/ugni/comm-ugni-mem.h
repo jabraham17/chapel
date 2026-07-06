@@ -43,7 +43,7 @@ void chpl_comm_mem_reg_tell(void** space_p, size_t* size_p);
 
 void *chpl_comm_mem_reg_allocMany(size_t number, size_t size,
                                   chpl_mem_descInt_t description,
-                                  int32_t lineno, int32_t filename);
+                                  int64_t lineno, int32_t filename);
 
 void chpl_comm_mem_reg_exit(void);
 
