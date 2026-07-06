@@ -7,6 +7,12 @@ env:
   # NOTE: if this filename changes, also update in the on.paths section below
   DOCKERFILE: util/packaging/docker/github-ci/Dockerfile
 
+# Serialize runs of this workflow on 'main', to prevent a build from an older
+# ref pushing and overriding the results of a concurrently-building newer ref.
+concurrency:
+  group: ${{ github.workflow }}-${{ case(github.ref == 'refs/heads/main', 'main', github.sha) }}
+  queue: max
+
 on:
   push:
     branches: [ main ]
