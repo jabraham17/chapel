@@ -3969,7 +3969,7 @@ void strd_invalidate_fn(void* addr,
                         size_t size,
                         void* ctxv,
                         int32_t commID,
-                        int ln,
+                        int64_t ln,
                         int32_t fn)
 {
 

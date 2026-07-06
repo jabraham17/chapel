@@ -75,7 +75,7 @@ void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
 static inline
 void chpl_gen_comm_get_from_subloc(void *addr, c_nodeid_t src_node,
                                    c_sublocid_t src_subloc, void* raddr,
-                                   size_t size, int32_t commID, int ln,
+                                   size_t size, int32_t commID, int64_t ln,
                                    int32_t fn)
 {
   c_sublocid_t dst_subloc = chpl_task_getRequestedSubloc();

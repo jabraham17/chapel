@@ -197,7 +197,7 @@ __host__ static inline void chpl_gpu_force_warp_sync(unsigned mask) {
 __device__ static inline
 void chpl_gen_comm_get_from_subloc(void *addr, c_nodeid_t src_node,
                                    c_sublocid_t src_subloc, void* raddr,
-                                   size_t size, int32_t commID, int ln,
+                                   size_t size, int32_t commID, int64_t ln,
                                    int32_t fn) {
   printf("Warning: chpl_gen_comm_get_from_subloc called inside a GPU kernel. This shouldn't have happened.\n");
   // TODO

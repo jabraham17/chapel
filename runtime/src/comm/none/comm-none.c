@@ -335,7 +335,7 @@ void chpl_rt_comm_execute_on_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
                                   chpl_fn_int_t fid,
                                   chpl_comm_on_bundle_t *arg,
                                   size_t arg_size,
-                                  int ln,
+                                  int64_t ln,
                                   int32_t fn) {
   assert(node==0);
   chpl_rt_ftable_call(prg, fid, arg);
@@ -346,7 +346,7 @@ void chpl_rt_comm_execute_on_nb_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
                                      chpl_fn_int_t fid,
                                      chpl_comm_on_bundle_t *arg,
                                      size_t arg_size,
-                                     int ln,
+                                     int64_t ln,
                                      int32_t fn) {
   assert(node==0);
   CHPL_RT_PRGINFO_DECLARE(prg, chpl_ftable);
@@ -361,7 +361,7 @@ void chpl_rt_comm_execute_on_fast_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
                                        chpl_fn_int_t fid,
                                        chpl_comm_on_bundle_t *arg,
                                        size_t arg_size,
-                                       int ln,
+                                       int64_t ln,
                                        int32_t fn) {
   // Same as chpl_rt_comm_execute_on_impl()
   assert(node==0);

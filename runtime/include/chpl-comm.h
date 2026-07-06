@@ -546,7 +546,7 @@ void chpl_rt_comm_execute_on(chpl_rt_prginfo* prg, c_nodeid_t node,
                              chpl_fn_int_t fid,
                              chpl_comm_on_bundle_t *arg,
                              size_t arg_size,
-                             int ln,
+                             int64_t ln,
                              int32_t fn);
 
 //
@@ -558,7 +558,7 @@ void chpl_rt_comm_execute_on_nb(chpl_rt_prginfo* prg, c_nodeid_t node,
                                 chpl_fn_int_t fid,
                                 chpl_comm_on_bundle_t *arg,
                                 size_t arg_size,
-                                int ln,
+                                int64_t ln,
                                 int32_t fn);
 
 //
@@ -570,7 +570,7 @@ void chpl_rt_comm_execute_on_fast(chpl_rt_prginfo* prg, c_nodeid_t node,
                                   chpl_fn_int_t fid,
                                   chpl_comm_on_bundle_t *arg,
                                   size_t arg_size,
-                                  int ln,
+                                  int64_t ln,
                                   int32_t fn);
 
 //

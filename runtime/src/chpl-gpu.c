@@ -308,7 +308,7 @@ typedef struct kernel_cfg_s {
 
   int dev;
 
-  int ln;
+  int64_t ln;
   int32_t fn;
 
   int n_params;
@@ -699,7 +699,7 @@ void* chpl_gpu_init_kernel_cfg_3d(const char* fn_name,
                                   int grd_dim_x, int grd_dim_y, int grd_dim_z,
                                   int blk_dim_x, int blk_dim_y, int blk_dim_z,
                                   int n_params, int n_pids, int n_reduce_vars,
-                                  int n_host_registered_vars, int ln,
+                                  int n_host_registered_vars, int64_t ln,
                                   int32_t fn) {
 
   void* ret = chpl_mem_alloc(sizeof(kernel_cfg),
@@ -1377,7 +1377,7 @@ void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n) {
 
 void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
                                     c_sublocid_t src_dev, const void* src,
-                                    size_t n, int32_t commID, int ln,
+                                    size_t n, int32_t commID, int64_t ln,
                                     int32_t fn) {
   assert(chpl_gpu_is_device_ptr(src));
 

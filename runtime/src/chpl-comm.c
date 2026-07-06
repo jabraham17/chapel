@@ -194,7 +194,7 @@ static void execute_on_family_common_setup(chpl_rt_prginfo* prg,
                                            chpl_fn_int_t fid,
                                            chpl_comm_on_bundle_t* on_bundle,
                                            size_t arg_size,
-                                           int ln,
+                                           int64_t ln,
                                            int32_t fn) {
   chpl_task_bundle_t* task_bundle = &on_bundle->task_bundle;
 
@@ -218,7 +218,7 @@ void chpl_rt_comm_execute_on(chpl_rt_prginfo* prg, c_nodeid_t node,
                              chpl_fn_int_t fid,
                              chpl_comm_on_bundle_t *arg,
                              size_t arg_size,
-                             int ln,
+                             int64_t ln,
                              int32_t fn) {
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
     chpl_comm_cb_info_t cb_data =
@@ -242,7 +242,7 @@ void chpl_rt_comm_execute_on_nb(chpl_rt_prginfo* prg, c_nodeid_t node,
                                 chpl_fn_int_t fid,
                                 chpl_comm_on_bundle_t* arg,
                                 size_t arg_size,
-                                int ln,
+                                int64_t ln,
                                 int32_t fn) {
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
     chpl_comm_cb_info_t cb_data =
@@ -266,7 +266,7 @@ void chpl_rt_comm_execute_on_fast(chpl_rt_prginfo* prg, c_nodeid_t node,
                                   chpl_fn_int_t fid,
                                   chpl_comm_on_bundle_t *arg,
                                   size_t arg_size,
-                                  int ln,
+                                  int64_t ln,
                                   int32_t fn) {
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
     chpl_comm_cb_info_t cb_data =

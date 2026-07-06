@@ -129,7 +129,7 @@ void chpl_rt_comm_execute_on_impl(chpl_rt_prginfo* prg,
                                   chpl_fn_int_t fid,
                                   chpl_comm_on_bundle_t *arg,
                                   size_t arg_size,
-                                  int ln,
+                                  int64_t ln,
                                   int32_t fn);
 
 // Per comm layer implementation.
@@ -139,7 +139,7 @@ void chpl_rt_comm_execute_on_fast_impl(chpl_rt_prginfo* prg,
                                        chpl_fn_int_t fid,
                                        chpl_comm_on_bundle_t *arg,
                                        size_t arg_size,
-                                       int ln,
+                                       int64_t ln,
                                        int32_t fn);
 
 // Per comm layer implementation.
@@ -149,7 +149,7 @@ void chpl_rt_comm_execute_on_nb_impl(chpl_rt_prginfo* prg,
                                      chpl_fn_int_t fid,
                                      chpl_comm_on_bundle_t *arg,
                                      size_t arg_size,
-                                     int ln,
+                                     int64_t ln,
                                      int32_t fn);
 
 #ifdef __cplusplus

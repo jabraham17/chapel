@@ -93,7 +93,7 @@ void chpl_gpu_support_module_finished_initializing(void);
 
 void* chpl_gpu_init_kernel_cfg(const char* fn_name, int64_t num_threads,
                                int blk_dim, int n_params, int n_pids,
-                               int n_redbufs, int n_hostreg_vars, int ln,
+                               int n_redbufs, int n_hostreg_vars, int64_t ln,
                                int32_t fn);
 void* chpl_gpu_init_kernel_cfg_3d(const char* fn_name,
                                   int grd_dim_x, int grd_dim_y, int grd_dim_z,
@@ -161,7 +161,7 @@ void chpl_gpu_copy_host_to_device(c_sublocid_t dst_dev, void* dst,
                                   int64_t ln, int32_t fn);
 void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
                                     c_sublocid_t src_dev, const void* src,
-                                    size_t n, int32_t commID, int ln,
+                                    size_t n, int32_t commID, int64_t ln,
                                     int32_t fn);
 void* chpl_gpu_comm_async(void *dst, void *src, size_t n);
 void chpl_gpu_comm_wait(void *stream);
