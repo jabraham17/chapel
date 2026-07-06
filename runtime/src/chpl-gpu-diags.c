@@ -55,7 +55,7 @@ void broadcast_print_unstable(void) {
 
 void chpl_gpu_startVerbose(chpl_bool stacktrace,
                            chpl_bool print_unstable,
-                           int32_t lineno,
+                           int64_t lineno,
                            int32_t filename) {
   chpl_gpu_diags_print_unstable = (print_unstable == true);
   chpl_verbose_gpu_stacktrace = (stacktrace == true);
@@ -72,7 +72,7 @@ void chpl_gpu_startVerbose(chpl_bool stacktrace,
 }
 
 
-void chpl_gpu_stopVerbose(int32_t lineno, int32_t filename) {
+void chpl_gpu_stopVerbose(int64_t lineno, int32_t filename) {
   if (chpl_verbose_gpu == 0) {
     chpl_warning("verbose gpu was never started", lineno, filename);
   }
@@ -83,7 +83,7 @@ void chpl_gpu_stopVerbose(int32_t lineno, int32_t filename) {
 
 void chpl_gpu_startVerboseHere(chpl_bool stacktrace,
                                chpl_bool print_unstable,
-                               int32_t lineno,
+                               int64_t lineno,
                                int32_t filename) {
   chpl_gpu_diags_print_unstable = (print_unstable == true);
   chpl_verbose_gpu_stacktrace = (stacktrace == true);
@@ -95,7 +95,7 @@ void chpl_gpu_startVerboseHere(chpl_bool stacktrace,
 }
 
 
-void chpl_gpu_stopVerboseHere(int32_t lineno, int32_t filename) {
+void chpl_gpu_stopVerboseHere(int64_t lineno, int32_t filename) {
   if (chpl_verbose_gpu == 0) {
     chpl_warning("verbose gpu was never started", lineno, filename);
   }
@@ -104,7 +104,7 @@ void chpl_gpu_stopVerboseHere(int32_t lineno, int32_t filename) {
 
 
 void chpl_gpu_startDiagnostics(chpl_bool print_unstable,
-                               int32_t lineno,
+                               int64_t lineno,
                                int32_t filename) {
   chpl_gpu_diags_print_unstable = (print_unstable == true);
 
@@ -123,7 +123,7 @@ void chpl_gpu_startDiagnostics(chpl_bool print_unstable,
 }
 
 
-void chpl_gpu_stopDiagnostics(int32_t lineno, int32_t filename) {
+void chpl_gpu_stopDiagnostics(int64_t lineno, int32_t filename) {
   // Make sure that there are no pending GPU operations.
   chpl_rmem_consist_release(lineno, filename);
 
@@ -136,7 +136,7 @@ void chpl_gpu_stopDiagnostics(int32_t lineno, int32_t filename) {
 
 
 void chpl_gpu_startDiagnosticsHere(chpl_bool print_unstable,
-                                   int32_t lineno,
+                                   int64_t lineno,
                                    int32_t filename) {
   chpl_gpu_diags_print_unstable = (print_unstable == true);
 
@@ -150,7 +150,7 @@ void chpl_gpu_startDiagnosticsHere(chpl_bool print_unstable,
 }
 
 
-void chpl_gpu_stopDiagnosticsHere(int32_t lineno, int32_t filename) {
+void chpl_gpu_stopDiagnosticsHere(int64_t lineno, int32_t filename) {
   // Make sure that there are no pending GPU operations.
   chpl_rmem_consist_release(lineno, filename);
 

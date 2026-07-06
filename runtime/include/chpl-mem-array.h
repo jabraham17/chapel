@@ -55,7 +55,7 @@ static inline
 void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
                            c_sublocid_t subloc, chpl_bool* callPostAlloc,
                            chpl_bool haltOnOom,
-                           int32_t lineno, int32_t filename) {
+                           int64_t lineno, int32_t filename) {
   void* p = NULL;
   const size_t size = nmemb * eltSize;
 #if defined(HAS_GPU_LOCALE) && !defined(GPU_RUNTIME_CPU)
@@ -109,7 +109,7 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
 
 static inline
 void chpl_mem_array_postAlloc(void* p, size_t nmemb, size_t eltSize,
-                              int32_t lineno, int32_t filename) {
+                              int64_t lineno, int32_t filename) {
   //
   // Do comm layer post-allocation.
   //
@@ -120,7 +120,7 @@ void chpl_mem_array_postAlloc(void* p, size_t nmemb, size_t eltSize,
 
 static inline
 chpl_bool chpl_mem_array_supports_realloc(void* p, size_t oldNmemb, size_t newNmemb,
-                                          size_t eltSize, int32_t lineno,
+                                          size_t eltSize, int64_t lineno,
                                           int32_t filename) {
   const size_t oldSize = oldNmemb * eltSize;
   const size_t newSize = newNmemb * eltSize;
@@ -131,7 +131,7 @@ static inline
 void* chpl_mem_array_realloc(void* p, size_t oldNmemb, size_t newNmemb,
                              size_t eltSize,
                              c_sublocid_t subloc, chpl_bool* callPostAlloc,
-                             int32_t lineno, int32_t filename) {
+                             int64_t lineno, int32_t filename) {
   void* newp = NULL;
   intptr_t oldp = (intptr_t) p;
   const size_t newSize = newNmemb * eltSize;
@@ -181,7 +181,7 @@ static inline
 void chpl_mem_array_postRealloc(void* oldp, size_t oldNmemb,
                                 void* newp, size_t newNmemb,
                                 size_t eltSize,
-                                int32_t lineno, int32_t filename) {
+                                int64_t lineno, int32_t filename) {
   //
   // Do comm layer post-allocation.
   //
@@ -194,7 +194,7 @@ void chpl_mem_array_postRealloc(void* oldp, size_t oldNmemb,
 static inline
 void chpl_mem_array_free(void* p,
                          size_t nmemb, size_t eltSize, c_sublocid_t subloc,
-                         int32_t lineno, int32_t filename) {
+                         int64_t lineno, int32_t filename) {
 #ifdef HAS_GPU_LOCALE
   if (subloc >= 0) {
     chpl_gpu_mem_free(p, lineno, filename);

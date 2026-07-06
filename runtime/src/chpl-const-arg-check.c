@@ -39,7 +39,7 @@ uint64_t const_arg_hash(void* ptr, size_t size) {
 }
 
 void check_const_hash_matches(uint64_t start_val, uint64_t end_val,
-                              const char* arg_name, int32_t lineno,
+                              const char* arg_name, int64_t lineno,
                               int32_t filenameIdx) {
   if (start_val != end_val) {
     char* warning_msg = chpl_glom_strings(8, "The argument '", arg_name,

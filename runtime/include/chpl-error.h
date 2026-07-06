@@ -36,12 +36,12 @@ extern int verbosity;
 // filename index -> filename lookup, neither of which can be performed while
 // the runtime is being unit tested
 #ifndef CHPL_RT_UNIT_TEST
-void chpl_warning(const char* message, int32_t lineno, int32_t filenameIdx);
-void chpl_warning_explicit(const char *message, int32_t lineno,
+void chpl_warning(const char* message, int64_t lineno, int32_t filenameIdx);
+void chpl_warning_explicit(const char *message, int64_t lineno,
                            const char *filename);
 void chpl_error_preformatted(const char* message);
-void chpl_error(const char* message, int32_t lineno, int32_t filenameIdx);
-void chpl_error_explicit(const char *message, int32_t lineno,
+void chpl_error(const char* message, int64_t lineno, int32_t filenameIdx);
+void chpl_error_explicit(const char *message, int64_t lineno,
                          const char *filename);
 void chpl_internal_error(const char* message);
 void chpl_internal_error_v(const char *restrict format, ...)

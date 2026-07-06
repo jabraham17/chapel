@@ -30,7 +30,7 @@ struct chpl_chpl____wide_chpl_string_s {
 typedef struct chpl_chpl____wide_chpl_string_s chpl____wide_chpl_string;
 
 chpl_string
-chpl_wide_string_copy(chpl____wide_chpl_string* x, int32_t lineno, int32_t filename) {
+chpl_wide_string_copy(chpl____wide_chpl_string* x, int64_t lineno, int32_t filename) {
   if (x->addr == NULL) return NULL;
 
   chpl_string s = chpl_mem_alloc(x->size, CHPL_RT_MD_STR_COPY_DATA, lineno, filename);

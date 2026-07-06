@@ -621,7 +621,7 @@ argDescTuple_t universalArgs[]
 
 
 int handleNonstandardArg(int* argc, char* argv[], int argNum,
-                         int32_t lineno, int32_t filename) {
+                         int64_t lineno, int32_t filename) {
   int numHandled = chpl_launch_handle_arg(*argc, argv, argNum,
                                           lineno, filename);
   if (numHandled == 0) {

@@ -87,13 +87,13 @@ static inline void chpl_gpu_printf8(const char *fmt,
   printf(fmt, x1, x2, x3, x4, x5, x6, x7, x8);
 }
 
-static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameIdx) {
+static inline void chpl_assert_on_gpu(int64_t lineno, int32_t filenameIdx) {
   if (!chpl_gpu_no_cpu_mode_warning) {
     chpl_warning("assertOnGpu() is ignored with CHPL_GPU=cpu", lineno, filenameIdx);
   }
 }
 
-static inline unsigned int chpl_gpu_clock(int32_t lineno, int32_t filenameIdx) {
+static inline unsigned int chpl_gpu_clock(int64_t lineno, int32_t filenameIdx) {
   if (!chpl_gpu_no_cpu_mode_warning) {
     chpl_warning("chpl_gpu_clock was called.", lineno, filenameIdx);
   }

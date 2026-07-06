@@ -54,16 +54,16 @@ chpl_mem_descInt_t chpl_memhook_md_num(void)
 
 void chpl_memhook_check_pre(size_t number, size_t size,
                             chpl_mem_descInt_t description,
-                            int32_t lineno, int32_t filename);
+                            int64_t lineno, int32_t filename);
 void chpl_memhook_check_post(void* memAlloc,
                              chpl_mem_descInt_t description,
-                             int32_t lineno, int32_t filename);
+                             int64_t lineno, int32_t filename);
 
 
 static inline
 void chpl_memhook_malloc_pre(size_t number, size_t size,
                              chpl_mem_descInt_t description,
-                             int32_t lineno, int32_t filename) {
+                             int64_t lineno, int32_t filename) {
   if (CHPL_MEMHOOKS_ACTIVE)
     chpl_memhook_check_pre(number, size, description, lineno, filename);
 }
@@ -73,7 +73,7 @@ static inline
 void chpl_memhook_malloc_post(void* memAlloc,
                               size_t number, size_t size,
                               chpl_mem_descInt_t description,
-                              int32_t lineno, int32_t filename) {
+                              int64_t lineno, int32_t filename) {
   if (CHPL_MEMHOOKS_ACTIVE || (memAlloc == NULL && size != 0))
     chpl_memhook_check_post(memAlloc, description, lineno, filename);
   if (CHPL_MEMHOOKS_ACTIVE)
@@ -83,7 +83,7 @@ void chpl_memhook_malloc_post(void* memAlloc,
 
 static inline
 void chpl_memhook_free_pre(void* memAlloc, size_t approximateSize,
-                           int32_t lineno, int32_t filename) {
+                           int64_t lineno, int32_t filename) {
   if (CHPL_MEMHOOKS_ACTIVE) {
     // call this one just to check heap is initialized.
     chpl_memhook_check_pre(0, 0, 0, lineno, filename);
@@ -95,7 +95,7 @@ void chpl_memhook_free_pre(void* memAlloc, size_t approximateSize,
 static inline
 void chpl_memhook_realloc_pre(void* memAlloc, size_t size,
                               chpl_mem_descInt_t description,
-                              int32_t lineno, int32_t filename) {
+                              int64_t lineno, int32_t filename) {
   if (CHPL_MEMHOOKS_ACTIVE) {
     chpl_memhook_check_pre(1, size, description, lineno, filename);
     chpl_track_realloc_pre(memAlloc, size, description, lineno, filename);
@@ -107,7 +107,7 @@ static inline
 void chpl_memhook_realloc_post(void* newMemAlloc, intptr_t oldMemAlloc,
                                size_t size,
                                chpl_mem_descInt_t description,
-                               int32_t lineno, int32_t filename) {
+                               int64_t lineno, int32_t filename) {
   if (CHPL_MEMHOOKS_ACTIVE || newMemAlloc == NULL)
     chpl_memhook_check_post(newMemAlloc, description, lineno, filename);
   if (CHPL_MEMHOOKS_ACTIVE)

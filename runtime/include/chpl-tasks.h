@@ -74,8 +74,8 @@ typedef struct {
 typedef struct chpl_task_bundle {
   chpl_arg_bundle_kind_t kind;  // 'kind' indicator must be first in any bundle
   chpl_bool is_executeOn;
-  int lineno;
-  int filename;
+  int64_t lineno;
+  int32_t filename;
   chpl_rt_prginfo* prg;
   c_sublocid_t requestedSubloc;
   chpl_fn_int_t requested_fid;
@@ -209,7 +209,7 @@ void chpl_rt_task_task_ftable_call(chpl_rt_prginfo* prg,
                                    void* arg,           // function arg
                                    size_t arg_size,     // length of arg
                                    c_sublocid_t subloc, // desired sublocale
-                                   int lineno,          // source line
+                                   int64_t lineno,          // source line
                                    int32_t filename);   // source filename
 
 // In some cases, we are not worried about the "function number" (fid)

@@ -44,13 +44,13 @@ extern int chpl_verbose_mem;      // set via startVerboseMem
 void chpl_setMemFlags(void);
 void chpl_reportMemInfo(void);
 
-uint64_t chpl_memoryUsed(int32_t lineno, int32_t filename);
-void chpl_printMemAllocStats(int32_t lineno, int32_t filename);
-void chpl_printMemAllocsByType(int32_t lineno, int32_t filename);
+uint64_t chpl_memoryUsed(int64_t lineno, int32_t filename);
+void chpl_printMemAllocStats(int64_t lineno, int32_t filename);
+void chpl_printMemAllocsByType(int64_t lineno, int32_t filename);
 void chpl_printMemAllocs(int64_t threshold,
-                         int32_t lineno, int32_t filename);
+                         int64_t lineno, int32_t filename);
 void chpl_printMemAllocsByDesc(c_string descString, int64_t threshold,
-                               int32_t lineno, int32_t filename);
+                               int64_t lineno, int32_t filename);
 void chpl_startVerboseMem(void);
 void chpl_stopVerboseMem(void);
 void chpl_startVerboseMemHere(void);
@@ -66,16 +66,16 @@ size_t chpl_memtable_entry_size(void* entry);
 //    at memory allocation and deallocation points.
 void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
                        chpl_mem_descInt_t description,
-                       int32_t lineno, int32_t filename);
-void chpl_track_free(void* memAlloc, size_t approximateSize, int32_t lineno,
+                       int64_t lineno, int32_t filename);
+void chpl_track_free(void* memAlloc, size_t approximateSize, int64_t lineno,
                      int32_t filename);
 void chpl_track_realloc_pre(void* memAlloc, size_t size,
                             chpl_mem_descInt_t description,
-                            int32_t lineno, int32_t filename);
+                            int64_t lineno, int32_t filename);
 void chpl_track_realloc_post(void* newMemAlloc,
                              intptr_t oldMemAlloc, size_t size,
                              chpl_mem_descInt_t description,
-                             int32_t lineno, int32_t filename);
+                             int64_t lineno, int32_t filename);
 
 static inline void chpl_track_gen_subloc_info(char* subloc_info,
                                               c_sublocid_t subloc) {

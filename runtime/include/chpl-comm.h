@@ -99,7 +99,7 @@ void chpl_rt_comm_task_ftable_call(
                       chpl_comm_on_bundle_t* arg,   // function arg
                       size_t arg_size,              // length of arg in bytes
                       c_sublocid_t subloc,          // desired sublocale
-                      int lineno,                   // source line
+                      int64_t lineno,                   // source line
                       int32_t filename) {           // source filename
     arg->kind = CHPL_ARG_BUNDLE_KIND_COMM;
     chpl_rt_task_task_ftable_call(prg, fid, arg, arg_size, subloc,

@@ -178,8 +178,8 @@ typedef int16_t chpl_fn_int_t;    // int type for ftable indexing
 // Function table names and information, for VisualDebug use
 typedef struct _chpl_fn_info {
   const char *name;
-  int fileno;
-  int lineno;
+  int32_t fileno;
+  int64_t lineno;
 } chpl_fn_info;
 
 // It is tempting to #undef true and false and then #define them just to be sure

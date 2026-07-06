@@ -85,7 +85,7 @@ int _runInLLDB(void) {
 
 
 static void defineEnvVar(const char* currentArg,
-                         int32_t lineno, int32_t filename) {
+                         int64_t lineno, int32_t filename) {
   char* eqp;
 
   //
@@ -119,7 +119,7 @@ static void parseDashEArgs(int* argc, char* argv[]) {
   const int32_t filename = CHPL_FILE_IDX_COMMAND_LINE_ARG;
 
   for (int i = 1; i < *argc; i++) {
-    int lineno = i;
+    int64_t lineno = i;
     const char* currentArg = argv[i];
 
     if (currentArg[0] == '-' && currentArg[1] == 'E') {
@@ -245,7 +245,7 @@ void printHelpTable(void) {
 static int32_t _argNumLocales = 0;
 static int32_t _argNumLocalesPerNode = 1;
 
-void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename) {
+void parseNumLocales(const char* numPtr, int64_t lineno, int32_t filename) {
   int invalid;
   char invalidChars[2] = "\0\0";
   char *expr = chpl_mem_alloc(strlen(numPtr)+1, CHPL_RT_MD_COMMAND_BUFFER,
@@ -381,7 +381,7 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
 
   for (i = 1; i < *argc; i++) {
     const int32_t filename = CHPL_FILE_IDX_COMMAND_LINE_ARG;
-    int lineno = i + (origargc - *argc);
+    int64_t lineno = i + (origargc - *argc);
     int argLength = 0;
     const char* currentArg = argv[i];
     argLength = strlen(currentArg);

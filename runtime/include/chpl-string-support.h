@@ -79,11 +79,11 @@ c_string chpl_format(c_string format, ...)
 char* chpl_glom_strings(int numstrings, ...);
 
 chpl_bool string_contains(c_string x, c_string y);
-c_string string_copy(c_string x, int32_t lineno, int32_t filename);
-c_string string_concat(c_string x, c_string y, int32_t lineno, int32_t filename);
+c_string string_copy(c_string x, int64_t lineno, int32_t filename);
+c_string string_concat(c_string x, c_string y, int64_t lineno, int32_t filename);
 int string_index_of(c_string x, c_string y);
-c_string string_index(c_string x, int i, int32_t lineno, int32_t filename);
-c_string string_select(c_string x, int low, int high, int stride, int32_t lineno, int32_t filename);
+c_string string_index(c_string x, int i, int64_t lineno, int32_t filename);
+c_string string_select(c_string x, int low, int high, int stride, int64_t lineno, int32_t filename);
 
 #ifdef __cplusplus
 }

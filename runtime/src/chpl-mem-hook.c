@@ -34,7 +34,7 @@
 
 void chpl_memhook_check_pre(size_t number, size_t size,
                             chpl_mem_descInt_t description,
-                            int32_t lineno, int32_t filename) {
+                            int64_t lineno, int32_t filename) {
   if (!chpl_mem_inited())
     chpl_error("memory routine called before the memory layer is initialized",
                lineno, filename);
@@ -47,7 +47,7 @@ void chpl_memhook_check_pre(size_t number, size_t size,
 
 void chpl_memhook_check_post(void* memAlloc,
                              chpl_mem_descInt_t description,
-                             int32_t lineno, int32_t filename) {
+                             int64_t lineno, int32_t filename) {
   if (memAlloc == NULL) {
     const int messageSize = 1024;
     char message[messageSize];

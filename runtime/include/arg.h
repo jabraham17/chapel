@@ -34,7 +34,7 @@ typedef enum {
   parse_dash_E
 } chpl_parseArgsMode_t;
 
-void parseNumLocales(const char* numPtr, int32_t lineno, int32_t filename);
+void parseNumLocales(const char* numPtr, int64_t lineno, int32_t filename);
 void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
                int* argc, char* argv[]);
 int32_t getArgNumLocales(void);
@@ -48,7 +48,7 @@ int chpl_specify_locales_error(void);
 // defined with main()
 //
 int handleNonstandardArg(int* argc, char* argv[], int argNum,
-                         int32_t lineno, int32_t filename);
+                         int64_t lineno, int32_t filename);
 void printAdditionalHelp(void);
 
 void printHelpTable(void);

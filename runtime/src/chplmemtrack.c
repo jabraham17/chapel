@@ -50,7 +50,7 @@ int chpl_memTrack = 0;
 
 static void
 printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
-               int32_t lineno, int32_t filename);
+               int64_t lineno, int32_t filename);
 
 
 //
@@ -72,7 +72,7 @@ typedef struct memTableEntry_struct { /* table entry */
   c_sublocid_t subloc;
   chpl_mem_descInt_t description;
   void* memAlloc;
-  int32_t lineno;
+  int64_t lineno;
   int32_t filename;
   struct memTableEntry_struct* nextInBucket;
 } memTableEntry;
@@ -205,7 +205,7 @@ static unsigned hash(void* memAlloc, int hashSize) {
 }
 
 
-static void increaseMemStat(size_t chunk, int32_t lineno, int32_t filename) {
+static void increaseMemStat(size_t chunk, int64_t lineno, int32_t filename) {
   totalMem += chunk;
   totalAllocated += chunk;
   if (memMax && (totalMem > memMax)) {
@@ -252,7 +252,7 @@ resizeTable(int direction) {
 // assumes that the lock is held
 static void addMemTableEntry(void *memAlloc, size_t number, size_t size,
                              c_sublocid_t subloc,
-                             chpl_mem_descInt_t description, int32_t lineno,
+                             chpl_mem_descInt_t description, int64_t lineno,
                              int32_t filename) {
   unsigned hashValue;
   memTableEntry* memEntry;
@@ -316,7 +316,7 @@ static memTableEntry* removeMemTableEntry(void* address) {
 }
 
 
-uint64_t chpl_memoryUsed(int32_t lineno, int32_t filename) {
+uint64_t chpl_memoryUsed(int64_t lineno, int32_t filename) {
   if (!chpl_memTrack) {
     chpl_warning("invalid call to memoryUsed(); rerun with --memTrack",
                  lineno, filename);
@@ -327,7 +327,7 @@ uint64_t chpl_memoryUsed(int32_t lineno, int32_t filename) {
 }
 
 
-void chpl_printMemAllocStats(int32_t lineno, int32_t filename) {
+void chpl_printMemAllocStats(int64_t lineno, int32_t filename) {
   if (!chpl_memTrack) {
     chpl_warning("invalid call to printMemAllocStats(); rerun with --memTrack",
                  lineno, filename);
@@ -415,7 +415,7 @@ static int memTableEntryCmp(const void* p1, const void* p2) {
 
 
 static void printMemAllocsByType(_Bool forLeaks,
-                                 int32_t lineno, int32_t filename) {
+                                 int64_t lineno, int32_t filename) {
   size_t* table;
   memTableEntry* me;
   int i;
@@ -476,7 +476,7 @@ static void printMemAllocsByType(_Bool forLeaks,
 }
 
 
-void chpl_printMemAllocsByType(int32_t lineno, int32_t filename) {
+void chpl_printMemAllocsByType(int64_t lineno, int32_t filename) {
   printMemAllocsByType(false /* forLeaks */, lineno, filename);
 }
 
@@ -499,7 +499,7 @@ find_desc(const char* descString)
 // exceed the given threshold.
 // If no match is found, all entries (exceeding the given threshold) are printed.
 void chpl_printMemAllocsByDesc(const char* descString, int64_t threshold,
-                               int32_t lineno, int32_t filename)
+                               int64_t lineno, int32_t filename)
 {
   chpl_mem_descInt_t description = find_desc(descString);
   printMemAllocs(description, threshold, lineno, filename);
@@ -527,13 +527,13 @@ static int descCmp(const void* p1, const void* p2) {
 // If description is -1, print all entries; otherwise print only those with the
 // matching CHPL_RT_MD_ descriptor.
 // Print only those entries exceeding threshold.
-void chpl_printMemAllocs(int64_t threshold, int32_t lineno, int32_t filename) {
+void chpl_printMemAllocs(int64_t threshold, int64_t lineno, int32_t filename) {
   printMemAllocs(-1, threshold, lineno, filename);
 }
 
 static void
 printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
-               int32_t lineno, int32_t filename) {
+               int64_t lineno, int32_t filename) {
   const int numberWidth   = 9;
   const int precision     = sizeof(uintptr_t) * 2;
   const int addressWidth  = precision+4;
@@ -691,7 +691,7 @@ void chpl_reportMemInfo(void) {
 
 void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
                        chpl_mem_descInt_t description,
-                       int32_t lineno, int32_t filename) {
+                       int64_t lineno, int32_t filename) {
   if (number * size > memThreshold) {
     c_sublocid_t subloc = chpl_task_getRequestedSubloc();
     if (chpl_memTrack && chpl_mem_descTrack(description)) {
@@ -722,7 +722,7 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
 // allocation size. This allows us to pass the initial size if we have it, but
 // otherwise we can ask the allocator for the size of a pointer if it supports
 // that query, which isn't free but is much cheaper than grabbing a lock.
-void chpl_track_free(void* memAlloc, size_t approximateSize, int32_t lineno,
+void chpl_track_free(void* memAlloc, size_t approximateSize, int64_t lineno,
                      int32_t filename) {
   if (approximateSize == 0 || approximateSize > memThreshold) {
     c_sublocid_t subloc = chpl_task_getRequestedSubloc();
@@ -758,7 +758,7 @@ void chpl_track_free(void* memAlloc, size_t approximateSize, int32_t lineno,
 
 void chpl_track_realloc_pre(void* memAlloc, size_t size,
                          chpl_mem_descInt_t description,
-                         int32_t lineno, int32_t filename) {
+                         int64_t lineno, int32_t filename) {
   memTableEntry* memEntry = NULL;
 
   if (chpl_memTrack && size > memThreshold) {
@@ -776,7 +776,7 @@ void chpl_track_realloc_pre(void* memAlloc, size_t size,
 void chpl_track_realloc_post(void* newMemAlloc,
                              intptr_t oldMemAlloc, size_t size,
                              chpl_mem_descInt_t description,
-                             int32_t lineno, int32_t filename) {
+                             int64_t lineno, int32_t filename) {
   c_sublocid_t subloc = chpl_task_getRequestedSubloc();
   if (size > memThreshold) {
     if (chpl_memTrack && chpl_mem_descTrack(description)) {

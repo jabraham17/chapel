@@ -163,16 +163,16 @@ MAYBE_GPU static inline void chpl_gpu_printf8(const char *fmt,
   printf(fmt, x1, x2, x3, x4, x5, x6, x7, x8);
 }
 
-__device__ static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameIdx) { /* no op */ }
-__host__ static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameIdx) {
+__device__ static inline void chpl_assert_on_gpu(int64_t lineno, int32_t filenameIdx) { /* no op */ }
+__host__ static inline void chpl_assert_on_gpu(int64_t lineno, int32_t filenameIdx) {
   chpl_error("assertOnGpu() failed", lineno, filenameIdx);
 }
 
-__device__ static inline unsigned int chpl_gpu_clock(int32_t lineno,
+__device__ static inline unsigned int chpl_gpu_clock(int64_t lineno,
                                                      int32_t filenameIdx) {
   return (unsigned int)clock();
 }
-__host__ static inline unsigned int chpl_gpu_clock(int32_t lineno,
+__host__ static inline unsigned int chpl_gpu_clock(int64_t lineno,
                                                    int32_t filenameIdx) {
   chpl_warning("gpuClock was called from the host, it will return 0.",
                lineno, filenameIdx);
@@ -222,7 +222,7 @@ void chpl_internal_error(const char* message) {
 __device__ extern int chpl_haltFlag;
 
 __device__ static inline
-void chpl_gpu_halt(int lineno, int32_t filenameIdx) {
+void chpl_gpu_halt(int64_t lineno, int32_t filenameIdx) {
   chpl_haltFlag = 1;
 }
 

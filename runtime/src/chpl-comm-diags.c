@@ -55,7 +55,7 @@ void broadcast_print_unstable(void) {
 
 void chpl_comm_startVerbose(chpl_bool stacktrace,
                             chpl_bool print_unstable,
-                            int32_t lineno,
+                            int64_t lineno,
                             int32_t filename) {
   chpl_comm_diags_print_unstable = (print_unstable == true);
   chpl_verbose_comm_stacktrace = (stacktrace == true);
@@ -75,7 +75,7 @@ void chpl_comm_startVerbose(chpl_bool stacktrace,
 }
 
 
-void chpl_comm_stopVerbose(int32_t lineno,
+void chpl_comm_stopVerbose(int64_t lineno,
                            int32_t filename) {
 
   if (chpl_verbose_comm == 0) {
@@ -91,7 +91,7 @@ void chpl_comm_stopVerbose(int32_t lineno,
 
 void chpl_comm_startVerboseHere(chpl_bool stacktrace,
                                 chpl_bool print_unstable,
-                                int32_t lineno,
+                                int64_t lineno,
                                 int32_t filename) {
   chpl_comm_diags_print_unstable = (print_unstable == true);
   chpl_verbose_comm_stacktrace = (stacktrace == true);
@@ -103,7 +103,7 @@ void chpl_comm_startVerboseHere(chpl_bool stacktrace,
 }
 
 
-void chpl_comm_stopVerboseHere(int32_t lineno, int32_t filename) {
+void chpl_comm_stopVerboseHere(int64_t lineno, int32_t filename) {
 
   if (chpl_verbose_comm == 0) {
     chpl_warning("verbose comm was never started", lineno, filename);
@@ -113,7 +113,7 @@ void chpl_comm_stopVerboseHere(int32_t lineno, int32_t filename) {
 
 
 void chpl_comm_startDiagnostics(chpl_bool print_unstable,
-                                int32_t lineno,
+                                int64_t lineno,
                                 int32_t filename) {
   chpl_comm_diags_print_unstable = (print_unstable == true);
 
@@ -135,7 +135,7 @@ void chpl_comm_startDiagnostics(chpl_bool print_unstable,
 }
 
 
-void chpl_comm_stopDiagnostics(int32_t lineno, int32_t filename) {
+void chpl_comm_stopDiagnostics(int64_t lineno, int32_t filename) {
   // Make sure that there are no pending communication operations.
   chpl_rmem_consist_release(lineno, filename);
 
@@ -151,7 +151,7 @@ void chpl_comm_stopDiagnostics(int32_t lineno, int32_t filename) {
 
 
 void chpl_comm_startDiagnosticsHere(chpl_bool print_unstable,
-                                    int32_t lineno,
+                                    int64_t lineno,
                                     int32_t filename) {
   chpl_comm_diags_print_unstable = (print_unstable == true);
 
@@ -165,7 +165,7 @@ void chpl_comm_startDiagnosticsHere(chpl_bool print_unstable,
 }
 
 
-void chpl_comm_stopDiagnosticsHere(int32_t lineno, int32_t filename) {
+void chpl_comm_stopDiagnosticsHere(int64_t lineno, int32_t filename) {
   // Make sure that there are no pending communication operations.
   chpl_rmem_consist_release(lineno, filename);
 

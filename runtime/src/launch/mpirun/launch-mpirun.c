@@ -80,7 +80,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales,
 
 
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
-                           int32_t lineno, int32_t filename) {
+                           int64_t lineno, int32_t filename) {
   // handle --spmd <nrank> or --spmd=<nrank>
   if (!strcmp(argv[argNum], CHPL_SPMD)) {
     mpi_num_ranks = argv[argNum+1];

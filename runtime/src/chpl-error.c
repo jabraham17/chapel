@@ -41,7 +41,7 @@
 
 int verbosity = 1;
 
-void chpl_warning(const char* message, int32_t lineno, int32_t filenameIdx) {
+void chpl_warning(const char* message, int64_t lineno, int32_t filenameIdx) {
   const char* filename = NULL;
   // squash warnings if --quiet flag is used
   if (verbosity == 0) {
@@ -52,7 +52,7 @@ void chpl_warning(const char* message, int32_t lineno, int32_t filenameIdx) {
   chpl_warning_explicit(message, lineno, filename);
 }
 
-void chpl_warning_explicit(const char *message, int32_t lineno,
+void chpl_warning_explicit(const char *message, int64_t lineno,
                            const char *filename) {
   // squash warnings if --quiet flag is used
   if (verbosity == 0) {
@@ -85,7 +85,7 @@ static void spinhaltIfAlreadyExiting(void) {
 #endif
 }
 
-void chpl_error_explicit(const char *message, int32_t lineno,
+void chpl_error_explicit(const char *message, int64_t lineno,
                          const char *filename) {
   spinhaltIfAlreadyExiting();
   fflush(stdout);
@@ -106,7 +106,7 @@ void chpl_error_explicit(const char *message, int32_t lineno,
 __attribute__ ((format (printf, 6, 0)))
 static
 void msg_explicit_vs(char *restrict str, size_t size,
-                     int32_t lineno, const char *restrict filename,
+                     int64_t lineno, const char *restrict filename,
                      const char *restrict severity,
                      const char *restrict format, va_list ap) {
   int len;
@@ -136,7 +136,7 @@ void msg_explicit_vs(char *restrict str, size_t size,
 __attribute__ ((format (printf, 5, 0)))
 static
 void msg_explicit_v(FILE* f,
-                    int32_t lineno, const char *restrict filename,
+                    int64_t lineno, const char *restrict filename,
                     const char *restrict severity,
                     const char *restrict format, va_list ap) {
   char buf[1024];
@@ -155,7 +155,7 @@ void chpl_error_preformatted(const char* message) {
   chpl_exit_any(1);
 }
 
-void chpl_error(const char *message, int32_t lineno, int32_t filenameIdx) {
+void chpl_error(const char *message, int64_t lineno, int32_t filenameIdx) {
   const char *filename = NULL;
   if (filenameIdx != 0)
     filename= chpl_lookupFilename(filenameIdx);

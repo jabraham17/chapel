@@ -111,19 +111,19 @@ void chpl_gpu_arg_host_register(void* _cfg, void* arg, size_t size);
 void chpl_gpu_launch_kernel(void* cfg);
 
 void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
-                                   int32_t lineno, int32_t filename);
+                                   int64_t lineno, int32_t filename);
 void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
-                         int32_t lineno, int32_t filename);
+                         int64_t lineno, int32_t filename);
 void* chpl_gpu_mem_calloc(size_t number, size_t size,
                           chpl_mem_descInt_t description,
-                          int32_t lineno, int32_t filename);
+                          int64_t lineno, int32_t filename);
 void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
                            chpl_mem_descInt_t description,
-                           int32_t lineno, int32_t filename);
+                           int64_t lineno, int32_t filename);
 void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
                             chpl_mem_descInt_t description,
-                            int32_t lineno, int32_t filename);
-void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename);
+                            int64_t lineno, int32_t filename);
+void chpl_gpu_mem_free(void* memAlloc, int64_t lineno, int32_t filename);
 void chpl_gpu_hostmem_register(void *memAlloc, size_t size);
 
 void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,

@@ -4708,7 +4708,7 @@ qioerr qio_conv_parse(c_string fmt,
                       int scanning,
                       qio_conv_t* spec_out,
                       qio_style_t* style_out,
-                      int32_t lineno, int32_t filename)
+                      int64_t lineno, int32_t filename)
 {
   size_t i;
   int in_group = 0;

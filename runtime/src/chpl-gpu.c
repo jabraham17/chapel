@@ -1464,7 +1464,7 @@ size_t chpl_gpu_get_alloc_size(void* ptr) {
 }
 
 void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
-                         int32_t lineno, int32_t filename) {
+                         int64_t lineno, int32_t filename) {
 
   CHPL_GPU_DEBUG("chpl_gpu_mem_alloc called. Size:%zu file:%s line:%d\n", size,
                chpl_lookupFilename(filename), lineno);
@@ -1487,7 +1487,7 @@ void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
 }
 
 void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
-                               int32_t lineno, int32_t filename) {
+                               int64_t lineno, int32_t filename) {
   CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc called. Size:%zu file:%s line:%d\n",
                  size, chpl_lookupFilename(filename), lineno);
 
@@ -1509,7 +1509,7 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
   return ptr;
 }
 
-void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
+void chpl_gpu_mem_free(void* memAlloc, int64_t lineno, int32_t filename) {
   CHPL_GPU_DEBUG("chpl_gpu_mem_free is called. Ptr %p\n", memAlloc);
 
   chpl_memhook_free_pre(memAlloc, 0, lineno, filename);
@@ -1521,7 +1521,7 @@ void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
 
 void* chpl_gpu_mem_calloc(size_t number, size_t size,
                           chpl_mem_descInt_t description,
-                          int32_t lineno, int32_t filename) {
+                          int64_t lineno, int32_t filename) {
 
   CHPL_GPU_DEBUG("chpl_gpu_mem_calloc called. Size:%zu file:%s line:%d\n", size,
                chpl_lookupFilename(filename), lineno);
@@ -1559,7 +1559,7 @@ void* chpl_gpu_mem_calloc(size_t number, size_t size,
 
 void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
                            chpl_mem_descInt_t description,
-                           int32_t lineno, int32_t filename) {
+                           int64_t lineno, int32_t filename) {
 
   CHPL_GPU_DEBUG("chpl_gpu_mem_realloc called. Size:%zu Alloc:%p\n", size,
                  memAlloc);
@@ -1594,7 +1594,7 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
 
 void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
                             chpl_mem_descInt_t description,
-                            int32_t lineno, int32_t filename) {
+                            int64_t lineno, int32_t filename) {
   // ENGIN: I don't know if it is possible to allocate memory with custom
   // alignment on GPU. It looks like GPUs typically have a default alignment
   // (512?) that cannot be changed. I don't think we'd need more than that

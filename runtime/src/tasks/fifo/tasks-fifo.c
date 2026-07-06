@@ -132,7 +132,7 @@ static void chpl_thread_sync_awaken(chpl_sync_aux_t *s);
 
 static void sync_wait_and_lock(chpl_sync_aux_t *s,
                                chpl_bool want_full,
-                               int32_t lineno, int32_t filename) {
+                               int64_t lineno, int32_t filename) {
   chpl_bool suspend_using_cond;
 
   chpl_thread_mutexLock(&s->lock);
@@ -167,12 +167,12 @@ void chpl_sync_unlock(chpl_sync_aux_t *s) {
 }
 
 void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
-                                  int32_t lineno, int32_t filename) {
+                                  int64_t lineno, int32_t filename) {
   sync_wait_and_lock(s, true, lineno, filename);
 }
 
 void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
-                                   int32_t lineno, int32_t filename) {
+                                   int64_t lineno, int32_t filename) {
   sync_wait_and_lock(s, false, lineno, filename);
 }
 
@@ -494,7 +494,7 @@ void chpl_rt_task_add_task(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
                            chpl_task_bundle_t* arg,
                            size_t arg_size,
                            c_sublocid_t subloc,
-                           int lineno,
+                           int64_t lineno,
                            int32_t filename) {
   assert(subloc == c_sublocid_none);
 
@@ -517,7 +517,7 @@ void chpl_rt_task_task_ftable_call(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
                                    void* arg,
                                    size_t arg_size,
                                    c_sublocid_t subloc,
-                                   int lineno,
+                                   int64_t lineno,
                                    int32_t filename) {
   CHPL_RT_PRGINFO_DECLARE(prg, chpl_ftable);
   taskCallBody(fid, chpl_ftable[fid], arg, arg_size, subloc, lineno, filename);
@@ -528,7 +528,7 @@ static inline
 void taskCallBody(chpl_fn_int_t fid, chpl_fn_p fp,
                   void* arg, size_t arg_size,
                   c_sublocid_t subloc,
-                  int lineno, int32_t filename) {
+                  int64_t lineno, int32_t filename) {
   // begin critical section
   chpl_thread_mutexLock(&threading_lock);
 
@@ -908,7 +908,7 @@ static inline
 task_pool_p add_to_task_pool(chpl_fn_int_t fid, chpl_fn_p fp,
                              void* a, size_t a_size,
                              chpl_bool is_executeOn,
-                             int lineno, int32_t filename) {
+                             int64_t lineno, int32_t filename) {
 
 
   task_pool_p ptask;
