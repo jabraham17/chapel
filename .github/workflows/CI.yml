@@ -361,6 +361,8 @@ jobs:
 
           if [[ "${{ matrix.config }}" == "gasnet" ]] ; then
             source ./util/cron/common-gasnet.bash
+            # Silence warnings about not using ibv despite ibv hardware presence
+            export GASNET_QUIET=yes
           fi
 
           export NIGHTLY_TEST_SETTINGS=true
