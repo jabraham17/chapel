@@ -328,8 +328,7 @@ jobs:
               libclang-cpp-dev \
               libedit-dev \
               llvm \
-              llvm-dev \
-              llvm-tools
+              llvm-dev
           fi
       - name: setup env and run ./util/buildRelease/smokeTest
         run: |
