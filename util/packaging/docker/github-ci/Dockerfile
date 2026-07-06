@@ -18,6 +18,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     libclang-19-dev \
     libclang-cpp19-dev \
     libedit-dev \
+    libprotoc-dev \
     llvm-19 \
     llvm-19-dev \
     llvm-19-tools \
