@@ -12,6 +12,7 @@ export CHPL_COMM=gasnet
 export GASNET_SPAWNFN=L
 export CHPL_RT_MASTERIP=127.0.0.1
 export GASNET_ROUTE_OUTPUT=0
+CHPL_COMM_SUBSTRATE=udp
 
 # Bump the timeout slightly just because we're oversubscribed
 export CHPL_TEST_TIMEOUT=500
