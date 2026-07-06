@@ -10,7 +10,7 @@ env:
 # Serialize runs of this workflow, to prevent a build from an older ref pushing
 # and overriding the results of a concurrently-building newer ref.
 concurrency:
-  group: ${{ github.workflow }}
+  group: ${{ github.workflow }}-${{ github.repository }}
   queue: max
 
 on:
