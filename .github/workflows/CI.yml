@@ -313,6 +313,9 @@ jobs:
     - name: set git repo ownership
       run: |
         chown -R $(id -u):$(id -g) $PWD
+    - name: install libprotoc-dev
+      run: |
+        apt update && apt install -y libprotoc-dev
     - name: create release tarball
       run: |
         ./util/cron/test-release.bash
