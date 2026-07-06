@@ -349,6 +349,26 @@ jobs:
               python3-venv \
               tzdata
           fi
+
+          if [[ "${{ matrix.config }}" == "gasnet" ]] ; then
+            sudo apt install \
+              rdma-core \
+              libibmad5 \
+              opensm \
+              ibutils \
+              infiniband-diags \
+              perftest \
+              mstflint \
+              libibverbs1 \
+              libibverbs-dev \
+              librdmacm1 \
+              libibumad3 \
+              ibverbs-providers \
+              rdmacm-utils \
+              infiniband-diags \
+              libfabric1 \
+              ibverbs-utils
+          fi
       - name: setup env and run ./util/buildRelease/smokeTest
         run: |
           set -ex
