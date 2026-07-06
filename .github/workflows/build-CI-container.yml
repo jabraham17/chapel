@@ -30,7 +30,7 @@ on:
 
 
 jobs:
-  build:
+  build-ci-container:
     runs-on: ubuntu-latest
     permissions:
       contents: read
