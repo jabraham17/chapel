@@ -121,9 +121,9 @@ extern "C" {
 void      chpl_sync_lock(chpl_sync_aux_t *);
 void      chpl_sync_unlock(chpl_sync_aux_t *);
 void      chpl_sync_waitFullAndLock(chpl_sync_aux_t *,
-                                       int32_t, int32_t);
+                                       int64_t, int32_t);
 void      chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *,
-                                        int32_t, int32_t);
+                                        int64_t, int32_t);
 void      chpl_sync_markAndSignalFull(chpl_sync_aux_t *);     // and unlock
 void      chpl_sync_markAndSignalEmpty(chpl_sync_aux_t *);    // and unlock
 chpl_bool chpl_sync_isFull(void *, chpl_sync_aux_t *);
@@ -192,7 +192,7 @@ void chpl_rt_task_add_task(
          chpl_task_bundle_t*,// argument to the function
          size_t,             // length of the argument
          c_sublocid_t,       // desired sublocale
-         int,                // line at which function begins
+         int64_t,                // line at which function begins
          int32_t);           // name of file containing function
 
 //

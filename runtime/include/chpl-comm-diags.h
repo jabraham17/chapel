@@ -74,15 +74,15 @@ typedef struct _chpl_commDiagnostics {
 #undef _COMM_DIAGS_DECL
 } chpl_commDiagnostics;
 
-void chpl_comm_startVerbose(chpl_bool, chpl_bool, int32_t, int32_t);
-void chpl_comm_stopVerbose(int32_t, int32_t);
-void chpl_comm_startVerboseHere(chpl_bool, chpl_bool, int32_t, int32_t);
-void chpl_comm_stopVerboseHere(int32_t, int32_t);
+void chpl_comm_startVerbose(chpl_bool, chpl_bool, int64_t, int32_t);
+void chpl_comm_stopVerbose(int64_t, int32_t);
+void chpl_comm_startVerboseHere(chpl_bool, chpl_bool, int64_t, int32_t);
+void chpl_comm_stopVerboseHere(int64_t, int32_t);
 
-void chpl_comm_startDiagnostics(chpl_bool, int32_t, int32_t);
-void chpl_comm_stopDiagnostics(int32_t, int32_t);
-void chpl_comm_startDiagnosticsHere(chpl_bool, int32_t, int32_t);
-void chpl_comm_stopDiagnosticsHere(int32_t, int32_t);
+void chpl_comm_startDiagnostics(chpl_bool, int64_t, int32_t);
+void chpl_comm_stopDiagnostics(int64_t, int32_t);
+void chpl_comm_startDiagnosticsHere(chpl_bool, int64_t, int32_t);
+void chpl_comm_stopDiagnosticsHere(int64_t, int32_t);
 void chpl_comm_resetDiagnosticsHere(void);
 void chpl_comm_getDiagnosticsHere(chpl_commDiagnostics *cd);
 
