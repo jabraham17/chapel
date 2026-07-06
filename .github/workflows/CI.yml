@@ -314,6 +314,8 @@ jobs:
           version: ${{ matrix.gcc_version }}
       - name: Check desired GCC version is default
         run: |
+          set -exuo pipefail
+
           gcc_version=$(gcc -dumpversion)
           gcc_major_version=$(cut -d. -f1 <<< "$gcc_version")
           if [ "$gcc_major_version" != "${{ matrix.gcc_version }}" ]; then
