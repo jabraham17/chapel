@@ -170,16 +170,12 @@ The following are further requirements for GPU support:
   * For ROCm 5.x, ``CHPL_LLVM`` must be set to ``system``. Note that, ROCm
     installations come with LLVM. Setting ``CHPL_LLVM=system`` will allow you to
     use that LLVM. Note that ROCm 5.x is not actively tested and we recommend
-    using ROCm 6.3.
+    using ROCm 7.
 
   * For ROCm 6.3, only LLVM 21 is supported. Note that ROCm 6.x is not
     actively tested.
 
   * For ROCm 7.x, only LLVM 21+ is supported.
-
-    .. note:: ROCm 7.x and LLVM 22 do not currently support the ``--fast`` flag,
-      making this configuration unsuitable for workflows requiring high
-      performance. See `this GitHub issue <https://github.com/chapel-lang/chapel/issues/28955>`_ for more information.
 
 * Specifically for using the `CPU-as-Device mode`_:
 
@@ -712,7 +708,7 @@ marked with * are covered in our nightly testing configurations.
 
   * Hardware: RTX A2000, P100*, V100*, A100*, H100, GH200
 
-  * Software: CUDA 11.7, 11.8, 12.0, 12.2, 12.4, 12.8, 12.9*, 13.0
+  * Software: CUDA 11.7, 11.8, 12.0, 12.2, 12.4, 12.8, 12.9*, 13.0*
 
 * AMD
 

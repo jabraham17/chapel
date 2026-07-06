@@ -6,12 +6,12 @@ UTIL_CRON_DIR=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $UTIL_CRON_DIR/common.bash
 source $UTIL_CRON_DIR/common-hpe-cray-ex.bash
 source $UTIL_CRON_DIR/common-gpu-nvidia-hpe-cray-ex.bash
-source $UTIL_CRON_DIR/common-gpu-nvidia-hpe-cray-ex-cuda-12.bash
+source $UTIL_CRON_DIR/common-gpu-nvidia-hpe-cray-ex-cuda-13.bash
 
 export CHPL_TEST_GPU=true
 export CHPL_NIGHTLY_TEST_DIRS="gpu/interop/"
 
 module list
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-ex-cuda-12.interop"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-ex-cuda-13.interop"
 $UTIL_CRON_DIR/nightly -cron ${nightly_args}
