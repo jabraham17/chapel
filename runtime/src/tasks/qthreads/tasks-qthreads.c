@@ -221,7 +221,7 @@ void chpl_sync_unlock(chpl_sync_aux_t *s)
 }
 
 void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
-                               int32_t          lineno,
+                               int64_t          lineno,
                                int32_t         filename)
 {
     PROFILE_INCR(profile_sync_waitFullAndLock, 1);
@@ -235,7 +235,7 @@ void chpl_sync_waitFullAndLock(chpl_sync_aux_t *s,
 }
 
 void chpl_sync_waitEmptyAndLock(chpl_sync_aux_t *s,
-                                int32_t          lineno,
+                                int64_t          lineno,
                                 int32_t         filename)
 {
     PROFILE_INCR(profile_sync_waitEmptyAndLock, 1);

@@ -251,7 +251,7 @@ int chpl_gpu_query_attribute(int dev, int attribute);
 // Provide a fallback for the chpl_assert_on_gpu function for non-GPU locales.
 // This works exactly the same as the standard one.
 
-static inline void chpl_assert_on_gpu(int32_t ln, int32_t fn) {
+static inline void chpl_assert_on_gpu(int64_t ln, int32_t fn) {
   chpl_error("assertOnGpu() failed", ln, fn);
 }
 
