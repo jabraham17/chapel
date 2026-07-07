@@ -154,6 +154,20 @@ returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
 }
 
 static QualifiedType
+returnInfoComplex(CallExpr* call) {
+  Type *t = call->get(1)->getValType();
+  if (t == dtReal[FLOAT_SIZE_32] || t == dtImag[FLOAT_SIZE_32]) {
+    return QualifiedType(dtComplex[COMPLEX_SIZE_64], QUAL_VAL);
+  } else if (t == dtReal[FLOAT_SIZE_64] || t == dtImag[FLOAT_SIZE_64]) {
+    return QualifiedType(dtComplex[COMPLEX_SIZE_128], QUAL_VAL);
+  } else {
+    INT_FATAL( call, "unsupported complex size");
+  }
+  return QualifiedType(dtUnknown);
+}
+
+
+static QualifiedType
 returnInfoAbs(CallExpr* call) {
   Type *t = call->get(1)->getValType();
   if (t == dtComplex[COMPLEX_SIZE_64]) {
@@ -913,6 +927,7 @@ initPrimitive() {
   prim_def(PRIM_GET_REAL, "complex_get_real", returnInfoComplexField);
   // given a complex value, produce a reference to the imag component
   prim_def(PRIM_GET_IMAG, "complex_get_imag", returnInfoComplexField);
+  prim_def(PRIM_BUILD_COMPLEX, "build_complex", returnInfoComplex);
   // query expression primitive
   prim_def(PRIM_QUERY, "query", returnInfoUnknown);
   prim_def(PRIM_QUERY_PARAM_FIELD, "query param field", returnInfoGetMemberRef);

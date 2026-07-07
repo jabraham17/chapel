@@ -136,6 +136,7 @@ PRIMITIVE_R(NEW_WITH_ALLOCATOR, "new with allocator")
 
 PRIMITIVE_G(GET_REAL, "complex_get_real")
 PRIMITIVE_G(GET_IMAG, "complex_get_imag")
+PRIMITIVE_R(BUILD_COMPLEX, "build_complex")
 
 PRIMITIVE_R(QUERY, "query")
 PRIMITIVE_R(QUERY_PARAM_FIELD, "query param field")
