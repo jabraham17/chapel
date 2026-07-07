@@ -604,6 +604,12 @@ if ($build == 1) {
   if ($mason_build == 1) {
     print "Making mason\n";
     mysystem("cd $chplhomedir && $make -j$num_procs mason", "making mason", $exitOnError);
+  } else {
+    # if not building mason, just clone the mason deps so certain mason unit tests
+    # that run without building mason can still run without needing to
+    # download dependencies themselves (which they do for paratest)
+    print "Cloning mason dependencies\n";
+    mysystem("cd $chplhomedir && $make -j$num_procs mason-deps", "cloning mason dependencies", $exitOnError);
   }
 
   # Build the protobuf Chapel plugin
