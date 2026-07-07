@@ -321,6 +321,10 @@ module ChapelBase {
   inline operator <=(a: uint(64), b: uint(64)) do return __primitive("<=", a, b);
   inline operator <=(a: real(32), b: real(32)) do return __primitive("<=", a, b);
   inline operator <=(a: real(64), b: real(64)) do return __primitive("<=", a, b);
+  inline operator <=(a: imag(32), b: imag(32)) do return __primitive("<=", _i2r(a), _i2r(b));
+  inline operator <=(a: imag(64), b: imag(64)) do return __primitive("<=", _i2r(a), _i2r(b));
+  inline operator <=(a: complex(64), b: complex(64)) do compilerError("ordered comparison of complex numbers is not supported");
+  inline operator <=(a: complex(128), b: complex(128)) do compilerError("ordered comparison of complex numbers is not supported");
   operator <=(a: enum, b: enum) where (a.type == b.type) do
     return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   pragma "last resort"
@@ -339,6 +343,10 @@ module ChapelBase {
   inline operator >=(a: uint(64), b: uint(64)) do return __primitive(">=", a, b);
   inline operator >=(a: real(32), b: real(32)) do return __primitive(">=", a, b);
   inline operator >=(a: real(64), b: real(64)) do return __primitive(">=", a, b);
+  inline operator >=(a: imag(32), b: imag(32)) do return __primitive(">=", _i2r(a), _i2r(b));
+  inline operator >=(a: imag(64), b: imag(64)) do return __primitive(">=", _i2r(a), _i2r(b));
+  inline operator >=(a: complex(64), b: complex(64)) do compilerError("ordered comparison of complex numbers is not supported");
+  inline operator >=(a: complex(128), b: complex(128)) do compilerError("ordered comparison of complex numbers is not supported");
   operator >=(a: enum, b: enum) where (a.type == b.type) do
     return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   pragma "last resort"
@@ -357,6 +365,10 @@ module ChapelBase {
   inline operator <(a: uint(64), b: uint(64)) do return __primitive("<", a, b);
   inline operator <(a: real(32), b: real(32)) do return __primitive("<", a, b);
   inline operator <(a: real(64), b: real(64)) do return __primitive("<", a, b);
+  inline operator <(a: imag(32), b: imag(32)) do return __primitive("<", _i2r(a), _i2r(b));
+  inline operator <(a: imag(64), b: imag(64)) do return __primitive("<", _i2r(a), _i2r(b));
+  inline operator <(a: complex(64), b: complex(64)) do compilerError("ordered comparison of complex numbers is not supported");
+  inline operator <(a: complex(128), b: complex(128)) do compilerError("ordered comparison of complex numbers is not supported");
   operator <(a: enum, b: enum) where (a.type == b.type) do
     return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
   pragma "last resort"
@@ -375,6 +387,10 @@ module ChapelBase {
   inline operator >(a: uint(64), b: uint(64)) do return __primitive(">", a, b);
   inline operator >(a: real(32), b: real(32)) do return __primitive(">", a, b);
   inline operator >(a: real(64), b: real(64)) do return __primitive(">", a, b);
+  inline operator >(a: imag(32), b: imag(32)) do return __primitive(">", _i2r(a), _i2r(b));
+  inline operator >(a: imag(64), b: imag(64)) do return __primitive(">", _i2r(a), _i2r(b));
+  inline operator >(a: complex(64), b: complex(64)) do compilerError("ordered comparison of complex numbers is not supported");
+  inline operator >(a: complex(128), b: complex(128)) do compilerError("ordered comparison of complex numbers is not supported");
   operator >(a: enum, b: enum) where (a.type == b.type) do
     return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
   pragma "last resort"
@@ -394,6 +410,10 @@ module ChapelBase {
   inline operator <=(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   inline operator <=(param a: real(32), param b: real(32)) param do return __primitive("<=", a, b);
   inline operator <=(param a: real(64), param b: real(64)) param do return __primitive("<=", a, b);
+  inline operator <=(param a: imag(32), param b: imag(32)) param do return __primitive("<=", _i2r(a), _i2r(b));
+  inline operator <=(param a: imag(64), param b: imag(64)) param do return __primitive("<=", _i2r(a), _i2r(b));
+  inline operator <=(param a: complex(64), param b: complex(64)) param do compilerError("ordered comparison of complex numbers is not supported");
+  inline operator <=(param a: complex(128), param b: complex(128)) param do compilerError("ordered comparison of complex numbers is not supported");
 
   inline operator >=(param a: int(8), param b: int(8)) param do return __primitive(">=", a, b);
   inline operator >=(param a: int(16), param b: int(16)) param do return __primitive(">=", a, b);
@@ -406,6 +426,10 @@ module ChapelBase {
   inline operator >=(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   inline operator >=(param a: real(32), param b: real(32)) param do return __primitive(">=", a, b);
   inline operator >=(param a: real(64), param b: real(64)) param do return __primitive(">=", a, b);
+  inline operator >=(param a: imag(32), param b: imag(32)) param do return __primitive(">=", _i2r(a), _i2r(b));
+  inline operator >=(param a: imag(64), param b: imag(64)) param do return __primitive(">=", _i2r(a), _i2r(b));
+  inline operator >=(param a: complex(64), param b: complex(64)) param do compilerError("ordered comparison of complex numbers is not supported");
+  inline operator >=(param a: complex(128), param b: complex(128)) param do compilerError("ordered comparison of complex numbers is not supported");
 
   inline operator <(param a: int(8), param b: int(8)) param do return __primitive("<", a, b);
   inline operator <(param a: int(16), param b: int(16)) param do return __primitive("<", a, b);
@@ -418,6 +442,10 @@ module ChapelBase {
   inline operator <(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
   inline operator <(param a: real(32), param b: real(32)) param do return __primitive("<", a, b);
   inline operator <(param a: real(64), param b: real(64)) param do return __primitive("<", a, b);
+  inline operator <(param a: imag(32), param b: imag(32)) param do return __primitive("<", _i2r(a), _i2r(b));
+  inline operator <(param a: imag(64), param b: imag(64)) param do return __primitive("<", _i2r(a), _i2r(b));
+  inline operator <(param a: complex(64), param b: complex(64)) param do compilerError("ordered comparison of complex numbers is not supported");
+  inline operator <(param a: complex(128), param b: complex(128)) param do compilerError("ordered comparison of complex numbers is not supported");
 
   inline operator >(param a: int(8), param b: int(8)) param do return __primitive(">", a, b);
   inline operator >(param a: int(16), param b: int(16)) param do return __primitive(">", a, b);
@@ -430,6 +458,10 @@ module ChapelBase {
   inline operator >(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
   inline operator >(param a: real(32), param b: real(32)) param do return __primitive(">", a, b);
   inline operator >(param a: real(64), param b: real(64)) param do return __primitive(">", a, b);
+  inline operator >(param a: imag(32), param b: imag(32)) param do return __primitive(">", _i2r(a), _i2r(b));
+  inline operator >(param a: imag(64), param b: imag(64)) param do return __primitive(">", _i2r(a), _i2r(b));
+  inline operator >(param a: complex(64), param b: complex(64)) param do compilerError("ordered comparison of complex numbers is not supported");
+  inline operator >(param a: complex(128), param b: complex(128)) param do compilerError("ordered comparison of complex numbers is not supported");
 
   //
   // unary + and - on primitive types
