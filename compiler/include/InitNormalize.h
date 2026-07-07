@@ -54,7 +54,7 @@ public:
 
   void            checkPhase(BlockStmt* block);
 
-  void            completePhase1(CallExpr* insertBefore);
+  void            completePhase1(CallExpr* insertBefore, bool isUnion);
   void            completePhase0(CallExpr* initStmt);
 
   void            initializeFieldsAtTail(BlockStmt*          block,
@@ -83,7 +83,8 @@ public:
   bool            isFieldInitialized(const DefExpr* field)               const;
 
   Expr*           fieldInitFromInitStmt(DefExpr*  field,
-                                        CallExpr* callExpr);
+                                        CallExpr* callExpr,
+                                        bool isUnion);
 
   void            describe(int offset = 0)                               const;
 

@@ -230,8 +230,8 @@ bool InitNormalize::inOnInForall() const {
 *                                                                             *
 ************************************** | *************************************/
 
-void InitNormalize::completePhase1(CallExpr* initStmt) {
-  if        (isThisInit(initStmt)  == true) {
+void InitNormalize::completePhase1(CallExpr* initStmt, bool isUnion) {
+  if        (isThisInit(initStmt)  == true || isUnion) {
     mCurrField = NULL;
 
   } else if (isSuperInit(initStmt) == true) {
@@ -240,7 +240,7 @@ void InitNormalize::completePhase1(CallExpr* initStmt) {
   } else if (isInitDone(initStmt)  == true) {
     initializeFieldsBefore(initStmt);
 
-  } else {
+  } else if (!isUnion) {
     INT_ASSERT(false);
   }
 
@@ -1113,10 +1113,11 @@ void InitNormalize::processThisUses(Expr* expr) const {
 }
 
 Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
-                                           CallExpr* initStmt) {
+                                           CallExpr* initStmt,
+                                           bool isUnion) {
   Expr* retval = NULL;
 
-  if (field != mCurrField) {
+  if (field != mCurrField && !isUnion) {
     INT_ASSERT(isFieldReinitialized(field) == false);
 
     while (field != mCurrField) {
