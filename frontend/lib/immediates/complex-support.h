@@ -25,7 +25,7 @@
  This header exists to work around a problem with complex square root being
  inaccurate on libc++ by using C functions to do the complex square root.
 
- This is also used by complex pow
+ This is also used by complex multiplication and division to avoid the same problem.
 
  */
 
@@ -40,9 +40,6 @@ struct complex128 {
 
 struct complex64 complexSqrt64(struct complex64 x);
 struct complex128 complexSqrt128(struct complex128 x);
-
-struct complex64 complexPow64(struct complex64 x, struct complex64 y);
-struct complex128 complexPow128(struct complex128 x, struct complex128 y);
 
 struct complex64 complexMul64(struct complex64 c1, struct complex64 c2);
 struct complex128 complexMul128(struct complex128 c1, struct complex128 c2);
