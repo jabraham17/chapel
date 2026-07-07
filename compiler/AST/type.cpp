@@ -1053,7 +1053,7 @@ FunctionType::Formal FunctionType::constructErrorHandlingFormal() {
 std::array<FunctionType::Formal, 2>
 FunctionType::constructLineFileInfoFormals() {
   std::array<Formal, 2> ret = {{
-    Formal(QUAL_CONST_VAL, dtInt[INT_SIZE_DEFAULT], INTENT_CONST_IN, astr__ln, 0),
+    Formal(QUAL_CONST_VAL, dtInt[INT_SIZE_32], INTENT_CONST_IN, astr__ln, 0),
     Formal(QUAL_CONST_VAL, dtInt[INT_SIZE_32], INTENT_CONST_IN, astr__fn, 0),
   }};
 
