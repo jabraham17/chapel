@@ -443,9 +443,9 @@ chpl_bool chpl_task_doTaskReport(void);
 // These are service functions provided to the runtime by the module
 // code.
 //
-extern void chpl_taskRunningCntInc(int64_t _ln, int32_t _fn);
-extern void chpl_taskRunningCntDec(int64_t _ln, int32_t _fn);
-extern void chpl_taskRunningCntReset(int64_t _ln, int32_t _fn);
+extern void chpl_taskRunningCntInc(int32_t _ln, int32_t _fn);
+extern void chpl_taskRunningCntDec(int32_t _ln, int32_t _fn);
+extern void chpl_taskRunningCntReset(int32_t _ln, int32_t _fn);
 
 #ifdef __cplusplus
 } // end extern "C"
