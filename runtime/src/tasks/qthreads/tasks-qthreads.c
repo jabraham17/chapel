@@ -1003,7 +1003,7 @@ void chpl_rt_task_add_task(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
                            chpl_task_bundle_t *arg,
                            size_t arg_size,
                            c_sublocid_t full_subloc,
-                           int lineno,
+                           int32_t lineno,
                            int32_t filename) {
     CHPL_RT_PRGINFO_DECLARE(prg, chpl_ftable);
 
@@ -1045,7 +1045,7 @@ void chpl_rt_task_add_task(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
 static inline void taskCallBody(chpl_fn_int_t fid, chpl_fn_p fp,
                                 void *arg, size_t arg_size,
                                 c_sublocid_t full_subloc,
-                                int lineno, int32_t filename)
+                                int32_t lineno, int32_t filename)
 {
     chpl_task_bundle_t *bundle = chpl_argBundleTaskArgBundle(arg);
     c_sublocid_t execution_subloc =
@@ -1077,7 +1077,7 @@ void chpl_rt_task_task_ftable_call(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
                                    void *arg,
                                    size_t arg_size,
                                    c_sublocid_t subloc,
-                                   int lineno,
+                                   int32_t lineno,
                                    int32_t filename) {
     PROFILE_INCR(profile_task_taskCallFTable,1);
     CHPL_RT_PRGINFO_DECLARE(prg, chpl_ftable);
