@@ -1114,8 +1114,9 @@ void InitNormalize::processThisUses(Expr* expr) const {
 
 Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
                                            CallExpr* initStmt,
-                                           bool isUnion) {
+                                           AggregateType* at) {
   Expr* retval = NULL;
+  bool isUnion = at->isUnion();
 
   if (field != mCurrField && !isUnion) {
     INT_ASSERT(isFieldReinitialized(field) == false);
@@ -1131,6 +1132,15 @@ Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
   Expr* initExpr = initStmt->get(2)->remove();
   retval         = initStmt->next;
 
+  // Unions must initialize the active field ID in addition to the field itself
+  if (isUnion) {
+    initStmt->insertBefore(new CallExpr(PRIM_SET_UNION_ID,
+                                        mFn->_this,
+                                        new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                                                     at->symbol,
+                                                     new_CStringSymbol(field->sym->name))));
+
+  }
   initializeField(initStmt, field, initExpr);
   initStmt->remove();
 

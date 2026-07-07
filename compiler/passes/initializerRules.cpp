@@ -585,7 +585,7 @@ static InitNormalize preNormalize(AggregateType* at,
           }
         } else if (state.isFieldInitialized(field) == false) {
           checkLocalPhaseOneErrors(state, field, callExpr);
-          stmt = state.fieldInitFromInitStmt(field, callExpr, at->isUnion());
+          stmt = state.fieldInitFromInitStmt(field, callExpr, at);
           if (at->isUnion()) {
             state.completePhase1(callExpr, /* isUnion = */ true);
           }

@@ -2347,10 +2347,6 @@ void AggregateType::buildDefaultInitializer() {
         SET_LINENO(this);
         FnSymbol* fn = startBuildingInitFn(this);
 
-        fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
-                                      fn->_this,
-                                      new_IntSymbol(-1)));
-
         {
           SET_LINENO(fieldDefExpr);
           VarSymbol* field = toVarSymbol(fieldDefExpr);
@@ -2506,7 +2502,7 @@ void AggregateType::buildReaderInitializer() {
         // Replaces field references with argument references
         // NOTE: doesn't handle inherited fields yet!
         update_symbols(fn, &fieldArgMap);
-
+        // TODO: Should this be using finalizeInitFn()?
         DefExpr* def = new DefExpr(fn);
         symbol->defPoint->insertBefore(def);
 

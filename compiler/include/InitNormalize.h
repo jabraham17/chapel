@@ -84,7 +84,7 @@ public:
 
   Expr*           fieldInitFromInitStmt(DefExpr*  field,
                                         CallExpr* callExpr,
-                                        bool isUnion);
+                                        AggregateType* at);
 
   void            describe(int offset = 0)                               const;
 
