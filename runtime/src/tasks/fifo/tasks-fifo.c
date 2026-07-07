@@ -103,7 +103,7 @@ static void                    comm_task_wrapper(void*);
 static void                    taskCallBody(chpl_fn_int_t, chpl_fn_p,
                                             void*, size_t,
                                             c_sublocid_t,
-                                            int, int32_t);
+                                            int32_t, int32_t);
 static chpl_taskID_t           get_next_task_id(void);
 static thread_private_data_t*  get_thread_private_data(void);
 static task_pool_p             get_current_ptask(chpl_bool);
@@ -114,7 +114,7 @@ static void                    thread_end(void);
 static void                    maybe_add_thread(void);
 static task_pool_p             add_to_task_pool(chpl_fn_int_t, chpl_fn_p,
                                                 void*, size_t,
-                                                chpl_bool, int, int32_t);
+                                                chpl_bool, int32_t, int32_t);
 
 //
 // Condition variable methods
@@ -494,7 +494,7 @@ void chpl_rt_task_add_task(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
                            chpl_task_bundle_t* arg,
                            size_t arg_size,
                            c_sublocid_t subloc,
-                           int lineno,
+                           int32_t lineno,
                            int32_t filename) {
   assert(subloc == c_sublocid_none);
 
@@ -517,7 +517,7 @@ void chpl_rt_task_task_ftable_call(chpl_rt_prginfo* prg, chpl_fn_int_t fid,
                                    void* arg,
                                    size_t arg_size,
                                    c_sublocid_t subloc,
-                                   int lineno,
+                                   int32_t lineno,
                                    int32_t filename) {
   CHPL_RT_PRGINFO_DECLARE(prg, chpl_ftable);
   taskCallBody(fid, chpl_ftable[fid], arg, arg_size, subloc, lineno, filename);
@@ -528,7 +528,7 @@ static inline
 void taskCallBody(chpl_fn_int_t fid, chpl_fn_p fp,
                   void* arg, size_t arg_size,
                   c_sublocid_t subloc,
-                  int lineno, int32_t filename) {
+                  int32_t lineno, int32_t filename) {
   // begin critical section
   chpl_thread_mutexLock(&threading_lock);
 
@@ -908,7 +908,7 @@ static inline
 task_pool_p add_to_task_pool(chpl_fn_int_t fid, chpl_fn_p fp,
                              void* a, size_t a_size,
                              chpl_bool is_executeOn,
-                             int lineno, int32_t filename) {
+                             int32_t lineno, int32_t filename) {
 
 
   task_pool_p ptask;

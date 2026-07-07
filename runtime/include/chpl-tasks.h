@@ -74,7 +74,7 @@ typedef struct {
 typedef struct chpl_task_bundle {
   chpl_arg_bundle_kind_t kind;  // 'kind' indicator must be first in any bundle
   chpl_bool is_executeOn;
-  int lineno;
+  int32_t lineno;
   int filename;
   chpl_rt_prginfo* prg;
   c_sublocid_t requestedSubloc;
@@ -209,7 +209,7 @@ void chpl_rt_task_task_ftable_call(chpl_rt_prginfo* prg,
                                    void* arg,           // function arg
                                    size_t arg_size,     // length of arg
                                    c_sublocid_t subloc, // desired sublocale
-                                   int lineno,          // source line
+                                   int32_t lineno,          // source line
                                    int32_t filename);   // source filename
 
 // In some cases, we are not worried about the "function number" (fid)
@@ -443,9 +443,9 @@ chpl_bool chpl_task_doTaskReport(void);
 // These are service functions provided to the runtime by the module
 // code.
 //
-extern void chpl_taskRunningCntInc(int64_t _ln, int32_t _fn);
-extern void chpl_taskRunningCntDec(int64_t _ln, int32_t _fn);
-extern void chpl_taskRunningCntReset(int64_t _ln, int32_t _fn);
+extern void chpl_taskRunningCntInc(int32_t _ln, int32_t _fn);
+extern void chpl_taskRunningCntDec(int32_t _ln, int32_t _fn);
+extern void chpl_taskRunningCntReset(int32_t _ln, int32_t _fn);
 
 #ifdef __cplusplus
 } // end extern "C"
