@@ -10527,7 +10527,7 @@ void ensureEnumTypeResolved(EnumType* etype) {
         }
       }
       if (foundInit) {
-        v++;
+        if (v < INT64_MAX) v++;
         uv++;
       }
     }
