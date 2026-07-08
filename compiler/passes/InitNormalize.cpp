@@ -263,30 +263,27 @@ void InitNormalize::completePhase0(CallExpr* initStmt) {
 void InitNormalize::initializeFieldsAtTail(BlockStmt* block, DefExpr* endField) {
   AggregateType* at = toAggregateType(mFn->_this->type);
   if (at->isUnion()) {
-    block->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
-                                     mFn->_this,
-                                     new_IntSymbol(-1)));
-    mCurrField = NULL;
-    mPhase = cPhase2;
-  } else {
-    if (mCurrField != NULL && mCurrField != endField) {
-      Expr* noop = new CallExpr(PRIM_NOOP);
+    INT_FATAL("initializeFieldsAtTail() unexpectedly called on a union type");
+  }
 
-      block->insertAtTail(noop);
+  if (mCurrField != NULL && mCurrField != endField) {
+    Expr* noop = new CallExpr(PRIM_NOOP);
 
-      initializeFieldsBefore(noop, endField);
+    block->insertAtTail(noop);
 
-      noop->remove();
-    }
+    initializeFieldsBefore(noop, endField);
+
+    noop->remove();
   }
 }
 
 void InitNormalize::initializeFieldsBefore(Expr* insertBefore,
                                            DefExpr* endField) {
-  AggregateType* at     = toAggregateType(mFn->_this->type);
+  AggregateType* at = toAggregateType(mFn->_this->type);
   if (at->isUnion()) {
-    INT_FATAL("union called init at tail");
+    INT_FATAL("initializeFieldsBefore() unexpectedly called on a union type");
   }
+
   while (mCurrField != NULL && mCurrField != endField) {
     DefExpr* field = mCurrField;
 
@@ -1127,7 +1124,12 @@ void InitNormalize::processThisUses(Expr* expr) const {
 
 Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
                                            CallExpr* initStmt,
-                                           AggregateType* at) {
+                                           AggregateType* at_in) {
+  AggregateType* at = toAggregateType(mFn->_this->type);
+  // TODO: BLC remove the `at_in` argument if this never fails
+  if (at != at_in) {
+    INT_FATAL("Well that was unexpected");
+  }
   Expr* retval = NULL;
   bool isUnion = at->isUnion();
 
