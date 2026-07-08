@@ -261,19 +261,32 @@ void InitNormalize::completePhase0(CallExpr* initStmt) {
 }
 
 void InitNormalize::initializeFieldsAtTail(BlockStmt* block, DefExpr* endField) {
-  if (mCurrField != NULL && mCurrField != endField) {
-    Expr* noop = new CallExpr(PRIM_NOOP);
+  AggregateType* at = toAggregateType(mFn->_this->type);
+  if (at->isUnion()) {
+    block->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
+                                     mFn->_this,
+                                     new_IntSymbol(-1)));
+    mCurrField = NULL;
+    mPhase = cPhase2;
+  } else {
+    if (mCurrField != NULL && mCurrField != endField) {
+      Expr* noop = new CallExpr(PRIM_NOOP);
 
-    block->insertAtTail(noop);
+      block->insertAtTail(noop);
 
-    initializeFieldsBefore(noop, endField);
+      initializeFieldsBefore(noop, endField);
 
-    noop->remove();
+      noop->remove();
+    }
   }
 }
 
 void InitNormalize::initializeFieldsBefore(Expr* insertBefore,
                                            DefExpr* endField) {
+  AggregateType* at     = toAggregateType(mFn->_this->type);
+  if (at->isUnion()) {
+    INT_FATAL("union called init at tail");
+  }
   while (mCurrField != NULL && mCurrField != endField) {
     DefExpr* field = mCurrField;
 

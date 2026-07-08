@@ -41,8 +41,6 @@
 
 #include <stack>
 
-#include "view.h"
-
 static bool     isInitStmt (CallExpr* stmt);
 
 static bool     isUnacceptableTry(Expr* stmt);
@@ -283,14 +281,12 @@ static void          preNormalizeInitClass(FnSymbol* fn);
 
 static InitNormalize preNormalize(AggregateType* at,
                                   BlockStmt*     block,
-                                  InitNormalize  state,
-                                  bool           compilerGenerated);
+                                  InitNormalize  state);
 
 static InitNormalize preNormalize(AggregateType* at,
                                   BlockStmt*     block,
                                   InitNormalize  state,
-                                  Expr*          start,
-                                  bool           compilerGenerated);
+                                  Expr*          start);
 
 static void preNormalizeInit(FnSymbol* fn) {
   AggregateType* at = toAggregateType(fn->_this->type);
@@ -314,8 +310,7 @@ static void preNormalizeInitRecordUnion(FnSymbol* fn) {
 
   // The body contains at least one instance of this.init() or super.init()
   if (state.isPhase0() == true || state.isPhase1() == true) {
-    InitNormalize finalState = preNormalize(at, fn->body, state,
-                                            fn->hasFlag(FLAG_COMPILER_GENERATED));
+    InitNormalize finalState = preNormalize(at, fn->body, state);
 
     if (at->isUnion() == false)
       finalState.initializeFieldsAtTail(fn->body);
@@ -342,8 +337,7 @@ static void preNormalizeInitClass(FnSymbol* fn) {
   // i.e. the body is not empty and we do not need to insert super.init()
   if (state.isPhase0() == true) {
 
-    InitNormalize finalState = preNormalize(at, fn->body, state,
-                                            fn->hasFlag(FLAG_COMPILER_GENERATED));
+    InitNormalize finalState = preNormalize(at, fn->body, state);
     finalState.initializeFieldsAtTail(fn->body);
 
     // If an initDone was not encountered, we need to set the class ID on our
@@ -364,8 +358,7 @@ static void preNormalizeInitClass(FnSymbol* fn) {
     dummy->remove();
 
     // Call with 'startStmt' to avoid processing the 'this as parent' setup
-    InitNormalize finalState = preNormalize(at, fn->body, state, startStmt,
-                                            fn->hasFlag(FLAG_COMPILER_GENERATED));
+    InitNormalize finalState = preNormalize(at, fn->body, state, startStmt);
     finalState.initializeFieldsAtTail(fn->body);
 
     addSuperInit(fn);
@@ -481,16 +474,14 @@ static void checkInvalidInit(InitNormalize& state, CallExpr* callExpr) {
 
 static InitNormalize preNormalize(AggregateType* at,
                                   BlockStmt*     block,
-                                  InitNormalize  state,
-                                  bool           compilerGenerated) {
-  return preNormalize(at, block, state, block->body.head, compilerGenerated);
+                                  InitNormalize  state) {
+  return preNormalize(at, block, state, block->body.head);
 }
 
 static InitNormalize preNormalize(AggregateType* at,
                                   BlockStmt*     block,
                                   InitNormalize  state,
-                                  Expr*          stmt,
-                                  bool           compilerGenerated) {
+                                  Expr*          stmt) {
   // This sub-block may have a different phase than the parent
   state.checkPhase(block);
 
@@ -554,8 +545,6 @@ static InitNormalize preNormalize(AggregateType* at,
 
         stmt->replace(new CallExpr(PRIM_INIT_DONE));
 
-        //        list_view(stmt->parentExpr);
-        
         stmt = next;
 
       // Stmt is simple/compound assignment to a local field
@@ -656,23 +645,19 @@ static InitNormalize preNormalize(AggregateType* at,
         InitNormalize            stateThen = preNormalize(
                                                   at,
                                                   cond->thenStmt,
-                                                  InitNormalize(cond, state),
-                                                  compilerGenerated);
+                                                  InitNormalize(cond, state));
 
         if (state.isPhase2() == false) {
-          if (stateThen.isPhase2() == true) {
+          if (stateThen.isPhase2() == true && !at->isUnion()) {
             if (phaseThen == InitNormalize::cPhase0) {
               USR_FATAL(cond,
                         "use of this.init() in a conditional stmt "
                         "in phase 1");
 
             } else if (phaseThen == InitNormalize::cPhase1) {
-              if (!compilerGenerated) {
-                list_view(cond);
-                USR_FATAL(cond,
-                          "use of super.init() in a conditional stmt "
-                          "in phase 1");
-              }
+              USR_FATAL(cond,
+                        "use of super.init() in a conditional stmt "
+                        "in phase 1");
 
             } else {
               INT_ASSERT(false);
@@ -693,13 +678,11 @@ static InitNormalize preNormalize(AggregateType* at,
       } else {
         InitNormalize stateThen = preNormalize(at,
                                                cond->thenStmt,
-                                               InitNormalize(cond, state),
-                                               compilerGenerated);
+                                               InitNormalize(cond, state));
 
         InitNormalize stateElse = preNormalize(at,
                                                cond->elseStmt,
-                                               InitNormalize(cond, state),
-                                               compilerGenerated);
+                                               InitNormalize(cond, state));
 
         if (state.isPhase2() == false) {
           // Only one branch contained an init
@@ -722,25 +705,23 @@ static InitNormalize preNormalize(AggregateType* at,
       stmt = stmt->next;
 
     } else if (LoopStmt* loop = toLoopStmt(stmt)) {
-      preNormalize(at, (BlockStmt*) stmt, InitNormalize(loop, state), compilerGenerated);
+      preNormalize(at, (BlockStmt*) stmt, InitNormalize(loop, state));
       stmt = stmt->next;
 
     } else if (ForallStmt* forall = toForallStmt(stmt)) {
-      preNormalize(at, block, state, forall->iteratedExpressions().head, compilerGenerated);
+      preNormalize(at, block, state, forall->iteratedExpressions().head);
       preNormalize(at,
                    forall->loopBody(),
-                   InitNormalize(forall, state),
-                   compilerGenerated);
+                   InitNormalize(forall, state));
       stmt = stmt->next;
 
     } else if (BlockStmt* block = toBlockStmt(stmt)) {
       state.merge(preNormalize(at,
                                block,
-                               InitNormalize(block, state),
-                               compilerGenerated));
+                               InitNormalize(block, state)));
       stmt = stmt->next;
     } else if (TryStmt* tryStmt = toTryStmt(stmt)) {
-      state.merge(preNormalize(at, tryStmt->body(), InitNormalize(tryStmt->body(), state), compilerGenerated));
+      state.merge(preNormalize(at, tryStmt->body(), InitNormalize(tryStmt->body(), state)));
       stmt = stmt->next;
 
     } else {
