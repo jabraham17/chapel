@@ -307,7 +307,7 @@ jobs:
           options: "--check --verbose --line-length 80 --extend-exclude '(install|build)/'"
           src: "third-party/chpl-venv"
 
-  test_chpl_language_server:
+  test_chpl_language_server_chplcheck:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
@@ -323,10 +323,23 @@ jobs:
           cls_sources:
             - 'tools/chapel-py/**'
             - 'tools/chpl-language-server/**'
+          chplcheck_sources:
+            - 'tools/chapel-py/**'
+            - 'tools/chplcheck/**'
+            - 'test/chplcheck/**'
+    - name: build chapel-py
+      if: steps.changes.outputs.cls_sources == 'true' || steps.changes.outputs.chplcheck_sources == 'true'
+      run: |
+        make chapel-py-venv -j`util/buildRelease/chpl-make-cpu_count`
+        make test-venv -j`util/buildRelease/chpl-make-cpu_count`
     - name: test chpl-language-server
       if: steps.changes.outputs.cls_sources == 'true'
       run: |
         make test-chpl-language-server -j`util/buildRelease/chpl-make-cpu_count`
+    - name: test chplcheck
+      if: steps.changes.outputs.chplcheck_sources == 'true'
+      run: |
+        start_test test/chplcheck
 
   gcc-version-tests:
     strategy:
