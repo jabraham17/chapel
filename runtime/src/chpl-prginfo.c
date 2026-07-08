@@ -35,13 +35,6 @@
 
 static chpl_rt_prginfo* chpl_prg_root;
 
-// TODO: Have to switch to linking in separate object files?
-#ifndef CHPL_RT_IS_BUILT_AS_DYNAMIC_LIBRARY
-  int chpl_rt_is_dynamic_library = 0;
-#else
-  int chpl_rt_is_dynamic_library = 1;
-#endif
-
 /** Define setters that module code can call to set up program data. */
 #define CONCAT(a__, b__) a__##b__
 #define PREFIX chpl_rt_prginfo_data_entry_set_
