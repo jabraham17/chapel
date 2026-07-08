@@ -297,10 +297,24 @@ module AutoMath {
 
   /* Returns `true` if the argument `x` is a representation of a finite value;
      `false` otherwise. */
+  @edition(first="preview")
   inline proc isFinite(x: imag(64)): bool do return isFinite(x:real(64));
 
   /* Returns `true` if the argument `x` is a representation of a finite value;
      `false` otherwise. */
+  @edition(first="preview")
+  inline proc isFinite(x: imag(32)): bool do return isFinite(x:real(32));
+
+  /* Returns `true` if the argument `x` is a representation of a finite value;
+     `false` otherwise. */
+  @edition(last="2.0")
+  @unstable("isFinite is unstable pending review and will be stabilized in a future edition")
+  inline proc isFinite(x: imag(64)): bool do return isFinite(x:real(64));
+
+  /* Returns `true` if the argument `x` is a representation of a finite value;
+     `false` otherwise. */
+  @edition(last="2.0")
+  @unstable("isFinite is unstable pending review and will be stabilized in a future edition")
   inline proc isFinite(x: imag(32)): bool do return isFinite(x:real(32));
 
   /* Returns `true` if the argument `x` is a representation of *infinity*;
@@ -313,10 +327,24 @@ module AutoMath {
 
   /* Returns `true` if the argument `x` is a representation of *infinity*;
      `false` otherwise. */
+  @edition(first="preview")
   inline proc isInf(x: imag(64)): bool do return isInf(x:real(64));
 
   /* Returns `true` if the argument `x` is a representation of *infinity*;
      `false` otherwise. */
+  @edition(first="preview")
+  inline proc isInf(x: imag(32)): bool do return isInf(x:real(32));
+
+  /* Returns `true` if the argument `x` is a representation of *infinity*;
+     `false` otherwise. */
+  @edition(last="2.0")
+  @unstable("isInf is unstable pending review and will be stabilized in a future edition")
+  inline proc isInf(x: imag(64)): bool do return isInf(x:real(64));
+
+  /* Returns `true` if the argument `x` is a representation of *infinity*;
+     `false` otherwise. */
+  @edition(last="2.0")
+  @unstable("isInf is unstable pending review and will be stabilized in a future edition")
   inline proc isInf(x: imag(32)): bool do return isInf(x:real(32));
 
   /* Returns `true` if the argument `x` does not represent a valid number;
@@ -329,10 +357,24 @@ module AutoMath {
 
   /* Returns `true` if the argument `x` does not represent a valid number;
      `false` otherwise. */
+  @edition(first="preview")
   inline proc isNan(x: imag(64)): bool do return isNan(x:real(64));
 
   /* Returns `true` if the argument `x` does not represent a valid number;
      `false` otherwise. */
+  @edition(first="preview")
+  inline proc isNan(x: imag(32)): bool do return isNan(x:real(32));
+
+  /* Returns `true` if the argument `x` does not represent a valid number;
+     `false` otherwise. */
+  @edition(last="2.0")
+  @unstable("isNan is unstable pending review and will be stabilized in a future edition")
+  inline proc isNan(x: imag(64)): bool do return isNan(x:real(64));
+
+  /* Returns `true` if the argument `x` does not represent a valid number;
+     `false` otherwise. */
+  @edition(last="2.0")
+  @unstable("isNan is unstable pending review and will be stabilized in a future edition")
   inline proc isNan(x: imag(32)): bool do return isNan(x:real(32));
 
   //
@@ -419,7 +461,7 @@ module AutoMath {
     return if x > y then x else y;
   }
 
-  pragma "last resort"
+  // pragma "last resort"
   @chpldoc.nodoc
   inline proc max(param x: numeric, param y: numeric) param
     where isComplex(x) || isComplex(y) do
@@ -507,7 +549,7 @@ module AutoMath {
     return if x < y then x else y;
   }
 
-  pragma "last resort"
+  // pragma "last resort"
   @chpldoc.nodoc
   inline proc min(param x: numeric, param y: numeric) param
     where isComplex(x) || isComplex(y) do

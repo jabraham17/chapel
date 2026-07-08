@@ -181,3 +181,6 @@ remain in the preview until they are deemed sufficiently complete.
   are defined using tertiary methods.  In such cases, a default
   comparison operator will now be available in scopes that do not have
   access to the tertiary method.
+
+- The ``isFinite()``, ``isInf()``, and ``isNan()`` functions are now defined
+  for ``imag`` values, in addition to ``real`` values.
