@@ -61,6 +61,7 @@ static ___always_inline
 void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
                        size_t size, int32_t commID, int ln, int32_t fn)
 {
+  if (size == 0) return;
   if (chpl_nodeID == node) {
     memmove(addr, raddr, size);
 #ifdef HAS_CHPL_CACHE_FNS
@@ -125,6 +126,7 @@ static ___always_inline
 void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
                        size_t size, int32_t commID, int ln, int32_t fn)
 {
+  if (size == 0) return;
   if (chpl_nodeID == node) {
     memmove(raddr, addr, size);
 #ifdef HAS_CHPL_CACHE_FNS
