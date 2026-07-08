@@ -497,8 +497,22 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
               }                                                         \
           }                                                             \
           break;                                                        \
-      case NUM_KIND_IMAG: case NUM_KIND_COMPLEX:                        \
-          CHPL_ASSERT(false && "Cannot fold ** on floating point values"); \
+        case NUM_KIND_COMPLEX:                                          \
+          switch (imm->num_index) {                                     \
+            case COMPLEX_SIZE_64:                                       \
+              {                                                         \
+                imm->v_complex64 = complexPow64(im1.v_complex64, im2.v_complex64); \
+                break;                                                  \
+              }                                                         \
+            case COMPLEX_SIZE_128:                                      \
+              {                                                         \
+                imm->v_complex128 = complexPow128(im1.v_complex128, im2.v_complex128); \
+                break;                                                  \
+              }                                                         \
+          }                                                             \
+          break;                                                        \
+        case NUM_KIND_IMAG:                                             \
+          CHPL_ASSERT(false && "Cannot fold ** on imaginary values");   \
           break; \
       }
 

@@ -1115,10 +1115,22 @@ module ChapelBase {
   operator **(param a: real(?w), param b: integral) param do return __primitive("**", a, b:real(w));
 
   @edition(first="preview")
-  operator **(param a: real(32), param b: real(32)) param do return __primitive("**", a, b:real(32));
+  operator **(param a: real(32), param b: real(32)) param do return __primitive("**", a, b);
 
   @edition(first="preview")
-  operator **(param a: real(64), param b: real(64)) param do return __primitive("**", a, b:real(64));
+  operator **(param a: real(64), param b: real(64)) param do return __primitive("**", a, b);
+
+  @edition(first="preview")
+  operator **(param a: complex(?w), param b: integral) param where _canOptimizeExp(b) do return _expHelpParam(a, b);
+
+  @edition(first="preview")
+  operator **(param a: complex(?w), param b: integral) param do return __primitive("**", a, b:complex(w));
+
+  @edition(first="preview")
+  operator **(param a: complex(64), param b: complex(64)) param do return __primitive("**", a, b);
+
+  @edition(first="preview")
+  operator **(param a: complex(128), param b: complex(128)) param do return __primitive("**", a, b);
 
   //
   // `param real **` overloads marked unstable for the 2.0 edition
@@ -1134,11 +1146,28 @@ module ChapelBase {
 
   @edition(last="2.0")
   @unstable("The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition")
-  operator **(param a: real(32), param b: real(32)) param do return __primitive("**", a, b:real(32));
+  operator **(param a: real(32), param b: real(32)) param do return __primitive("**", a, b);
 
   @edition(last="2.0")
   @unstable("The '**' operator on `param real` values is currently unstable and will be stabilized in a future edition")
-  operator **(param a: real(64), param b: real(64)) param do return __primitive("**", a, b:real(64));
+  operator **(param a: real(64), param b: real(64)) param do return __primitive("**", a, b);
+
+
+  @edition(last="2.0")
+  @unstable("The '**' operator on `param complex` values is currently unstable and will be stabilized in a future edition")
+  operator **(param a: complex(?w), param b: integral) param where _canOptimizeExp(b) do return _expHelpParam(a, b);
+
+  @edition(last="2.0")
+  @unstable("The '**' operator on `param complex` values is currently unstable and will be stabilized in a future edition")
+  operator **(param a: complex(?w), param b: integral) param do return __primitive("**", a, b:complex(w));
+
+  @edition(last="2.0")
+  @unstable("The '**' operator on `param complex` values is currently unstable and will be stabilized in a future edition")
+  operator **(param a: complex(64), param b: complex(64)) param do return __primitive("**", a, b);
+
+  @edition(last="2.0")
+  @unstable("The '**' operator on `param complex` values is currently unstable and will be stabilized in a future edition")
+  operator **(param a: complex(128), param b: complex(128)) param do return __primitive("**", a, b);
 
 
   //

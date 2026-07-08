@@ -166,8 +166,8 @@ remain in the preview until they are deemed sufficiently complete.
   rather than just printing the error to stdout.
 
 - Exponentiation operator overloads (``**``) are supported for ``param
-  real`` values taken to ``param real`` or ``integral`` exponents and
-  considered stable.
+  real/imag/complex`` values taken to ``param real/imag/complex`` or
+  ``param integral`` exponents and considered stable.
 
 - The `Math` module defines a new ``lcm()`` procedure that supports
   computing least common multiples of integral values.
