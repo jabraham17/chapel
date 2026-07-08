@@ -339,7 +339,7 @@ jobs:
     - name: test chplcheck
       if: steps.changes.outputs.chplcheck_sources == 'true'
       run: |
-        start_test test/chplcheck
+        ./util/start_test test/chplcheck
 
   gcc-version-tests:
     strategy:
