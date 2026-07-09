@@ -54,7 +54,7 @@ public:
 
   void            checkPhase(BlockStmt* block);
 
-  void            completePhase1(CallExpr* insertBefore, bool isUnion);
+  void            completePhase1(CallExpr* insertBefore);
   void            completePhase0(CallExpr* initStmt);
 
   void            initializeFieldsAtTail(BlockStmt*          block,

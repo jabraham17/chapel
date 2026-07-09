@@ -506,7 +506,7 @@ static InitNormalize preNormalize(AggregateType* at,
         checkInvalidInit(state, callExpr);
         if (isThisInit(callExpr) == true) {
           INT_ASSERT(state.isPhase0() == true);
-          state.completePhase1(callExpr, at->isUnion());
+          state.completePhase1(callExpr);
 
           stmt = callExpr->next;
 
@@ -541,7 +541,7 @@ static InitNormalize preNormalize(AggregateType* at,
         Expr* next = stmt->next;
 
         checkInvalidInit(state, callExpr);
-        state.completePhase1(callExpr, at->isUnion());
+        state.completePhase1(callExpr);
 
         stmt->replace(new CallExpr(PRIM_INIT_DONE));
 
@@ -576,7 +576,7 @@ static InitNormalize preNormalize(AggregateType* at,
           checkLocalPhaseOneErrors(state, field, callExpr);
           stmt = state.fieldInitFromInitStmt(field, callExpr);
           if (at->isUnion()) {
-            state.completePhase1(callExpr, /* isUnion = */ true);
+            state.completePhase1(callExpr);
           }
         } else if (state.isFieldImplicitlyInitialized(field) == true) {
           USR_FATAL_CONT(stmt,

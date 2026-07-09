@@ -230,7 +230,9 @@ bool InitNormalize::inOnInForall() const {
 *                                                                             *
 ************************************** | *************************************/
 
-void InitNormalize::completePhase1(CallExpr* initStmt, bool isUnion) {
+void InitNormalize::completePhase1(CallExpr* initStmt) {
+  bool isUnion = toAggregateType(mFn->_this->type)->isUnion();
+
   if        (isThisInit(initStmt)  == true || isUnion) {
     mCurrField = NULL;
 
@@ -240,7 +242,7 @@ void InitNormalize::completePhase1(CallExpr* initStmt, bool isUnion) {
   } else if (isInitDone(initStmt)  == true) {
     initializeFieldsBefore(initStmt);
 
-  } else if (!isUnion) {
+  } else {
     INT_ASSERT(false);
   }
 
