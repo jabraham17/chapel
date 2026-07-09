@@ -2736,9 +2736,9 @@ arkouda: &arkouda-base
   04/19/26:
     - Make the loop iterating over multiple parquet files parallel (Bears-R-Us/arkouda#5486)
   05/15/26:
-    - Switched system LLVM to 22 causing Arkouda release to need to use LLVM=bundled which is built with better optimizations (#28821)
+    - Switched system LLVM to 22 requiring Arkouda-release to use CHPL_LLVM=bundled which runs faster due to better -O levels (#28821)
   06/30/26:
-    - Updating Arkouda release to Chapel 2.9 enabled the use of system LLVM 22 and restored previous performance (#29033)
+    - Updated Arkouda release to Chapel 2.9 permitting the use of CHPL_LLVM=system again now using LLVM 22 (#29033)
 
 arkouda-string:
   <<: *arkouda-base
