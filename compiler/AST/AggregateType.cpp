@@ -2446,9 +2446,7 @@ void AggregateType::buildReaderInitializer() {
   if (builtReaderInit == false &&
       symbol->hasFlag(FLAG_REF) == false) {
     SET_LINENO(this);
-    FnSymbol*  fn    = new FnSymbol("init");
-    ArgSymbol* _mt   = new ArgSymbol(INTENT_BLANK, "_mt",  dtMethodToken);
-    ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", this);
+    FnSymbol* fn = startBuildingInitFn(this);
 
     ArgSymbol* reader = new ArgSymbol(INTENT_BLANK, "reader", dtAny);
     ArgSymbol* deser  = new ArgSymbol(INTENT_REF, "deserializer", dtAny);
@@ -2458,17 +2456,6 @@ void AggregateType::buildReaderInitializer() {
     fn->where = new BlockStmt(new CallExpr("chpl__isFileReader",
                               new CallExpr(PRIM_TYPEOF, reader)));
 
-    fn->cname = fn->name;
-    fn->_this = _this;
-
-    fn->addFlag(FLAG_COMPILER_GENERATED);
-    fn->addFlag(FLAG_LAST_RESORT);
-    fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
-
-    _this->addFlag(FLAG_ARG_THIS);
-
-    fn->insertFormalAtTail(_mt);
-    fn->insertFormalAtTail(_this);
     fn->insertFormalAtTail(reader);
     fn->insertFormalAtTail(deser);
 
@@ -2502,17 +2489,7 @@ void AggregateType::buildReaderInitializer() {
         // Replaces field references with argument references
         // NOTE: doesn't handle inherited fields yet!
         update_symbols(fn, &fieldArgMap);
-        // TODO: Should this be using finalizeInitFn()?
-        DefExpr* def = new DefExpr(fn);
-        symbol->defPoint->insertBefore(def);
-
-        fn->setMethod(true);
-        fn->addFlag(FLAG_METHOD_PRIMARY);
-
-        preNormalizeInitMethod(fn);
-
-        normalize(fn);
-
+        finalizeInitFn(this, fn);
 
         // BHARSH INIT TODO: Should this be part of normalize(fn)? If we did
         // that we would emit two use-before-def errors for classes because of
