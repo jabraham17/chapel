@@ -613,7 +613,10 @@ if ($build == 1) {
     #   $CHPL_HOME/test, which includes mason tests so we need the mason deps
     # * if testdirs is not empty but does contain mason, then mason will be
     #   tested and we need the mason deps
-    if ($testdirs eq "" || $testdirs =~ /mason/) {
+    # no matter what, if performance testing is being done, we don't need to
+    # clone the mason deps
+    if (($testdirs eq "" || $testdirs =~ /mason/) &&
+        ($performance == 0 || $compperformance == 0)) {
       print "Cloning mason dependencies\n";
       mysystem("cd $chplhomedir && $make -j$num_procs mason-deps", "cloning mason dependencies", $exitOnError);
     } else {
