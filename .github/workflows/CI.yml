@@ -347,6 +347,7 @@ jobs:
           fi
 
           export NIGHTLY_TEST_SETTINGS=true
+          export CHPL_SMOKE_SKIP_MAKE_MASON=true
 
           ./util/buildRelease/smokeTest
 
