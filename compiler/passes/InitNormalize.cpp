@@ -1105,6 +1105,14 @@ bool ProcessThisUses::enterCallExpr(CallExpr* node) {
         return false;
       }
     }
+  } else if (node->isPrimitive(PRIM_TYPEOF)) {
+    // don't enter `.type` queries because the field need not be initialized
+    // to query its type; and if we do enter them, we get problems on unions
+    // with chained field declarations like `var x, y, z: int;` because we
+    // translate into `var y: x.type;`, which flags a use-before-def since
+    // 'x' was never defined (and need not be).
+    // TODO: But does this get us into trouble with runtime types?
+    return false;
   }
 
   return true;
@@ -1123,14 +1131,9 @@ void InitNormalize::processThisUses(Expr* expr) const {
 }
 
 Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
-                                           CallExpr* initStmt,
-                                           AggregateType* at_in) {
-  AggregateType* at = toAggregateType(mFn->_this->type);
-  // TODO: BLC remove the `at_in` argument if this never fails
-  if (at != at_in) {
-    INT_FATAL("Well that was unexpected");
-  }
+                                           CallExpr* initStmt) {
   Expr* retval = NULL;
+  AggregateType* at = toAggregateType(mFn->_this->type);
   bool isUnion = at->isUnion();
 
   if (field != mCurrField && !isUnion) {

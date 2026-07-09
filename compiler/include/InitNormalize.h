@@ -83,8 +83,7 @@ public:
   bool            isFieldInitialized(const DefExpr* field)               const;
 
   Expr*           fieldInitFromInitStmt(DefExpr*  field,
-                                        CallExpr* callExpr,
-                                        AggregateType* at);
+                                        CallExpr* callExpr);
 
   void            describe(int offset = 0)                               const;
 
