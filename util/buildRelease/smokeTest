@@ -151,11 +151,6 @@ if [ "$GITHUB_ACTIONS" != "true" ]; then
   source $CHPL_HOME/util/cron/common.bash
 fi
 
-# Disable GMP and re2 to speed up build.
-if [ "$ARKOUDA_SMOKE_TEST" != "true" ]; then
-    export CHPL_GMP=none
-fi
-
 # mason currently requires CHPL_COMM=none -- https://github.com/chapel-lang/chapel/issues/12626
 COMM=`$CHPL_HOME/util/chplenv/chpl_comm.py`
 if [ "$COMM" != "none" ]; then
@@ -171,6 +166,18 @@ if [ $MASON -eq 1 ]; then
 else
     export CHPL_RE2=none
 fi
+
+
+# Arkouda requires gmp and re2
+# if no arkouda required, disable gmp (re2 is already handled above)
+# otherwise, force enable gmp and re2 (even in a quickstart configuration)
+if [ "$ARKOUDA_SMOKE_TEST" != "true" ]; then
+    export CHPL_GMP=none
+else
+    export CHPL_GMP=bundled
+    export CHPL_RE2=bundled
+fi
+
 
 echo ""
 
