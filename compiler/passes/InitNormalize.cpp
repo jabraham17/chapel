@@ -1014,9 +1014,18 @@ void ProcessThisUses::visitSymExpr(SymExpr* node) {
   } else if (DefExpr* local = state->type()->toLocalField(node)) {
     field = local;
     if (state->isFieldInitialized(field) == false) {
-      USR_FATAL_CONT(node,
-                     "field \"%s\" used before it is initialized",
-                     field->sym->name);
+      AggregateType* at = toAggregateType(state->theFn()->_this->type);
+
+      // Why skip unions here?  We get false positives from 'var x, y:
+      // int;' cases because y is defined in terms of `x.type` where
+      // `x` is not, and need not, be initialized.  Open Q: Will
+      // skipping unions here sweep any actually important cases under
+      // the rug?
+      if (!at->isUnion()) {
+        USR_FATAL_CONT(node,
+                       "field \"%s\" used before it is initialized",
+                       field->sym->name);
+      }
     }
   } else if (DefExpr* super = state->type()->toSuperField(node)) {
     field = super;
@@ -1105,14 +1114,6 @@ bool ProcessThisUses::enterCallExpr(CallExpr* node) {
         return false;
       }
     }
-  } else if (node->isPrimitive(PRIM_TYPEOF)) {
-    // don't enter `.type` queries because the field need not be initialized
-    // to query its type; and if we do enter them, we get problems on unions
-    // with chained field declarations like `var x, y, z: int;` because we
-    // translate into `var y: x.type;`, which flags a use-before-def since
-    // 'x' was never defined (and need not be).
-    // TODO: But does this get us into trouble with runtime types?
-    return false;
   }
 
   return true;
