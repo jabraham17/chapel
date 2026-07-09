@@ -2313,7 +2313,7 @@ def main():
                         )
                     elif executebin:
                         sys.stdout.write(
-                            f"{futuretest}[Error compilation failed for {test_name}, but could not find {localdir}/{goodfile}]\n"
+                            f"{futuretest}[Error cannot locate output comparison file {localdir}/{goodfile} after compilation failed for {test_name}]\n"
                         )
                     else:
                         sys.stdout.write(
