@@ -54,19 +54,15 @@ static void checkExternProcs();
 static void checkExportedProcs();
 static void checkTheseWithArguments();
 
-static void
-checkConstLoops() {
+static void checkConstLoops() {
   if (fWarnConstLoops == true) {
-    forv_Vec(BlockStmt, block, gBlockStmts) {
-      block->checkConstLoops();
-    }
+    forv_Vec(BlockStmt, block, gBlockStmts) { block->checkConstLoops(); }
   }
 }
 
 static void checkForClassAssignOps(FnSymbol* fn) {
   if (fn->getModule()->modTag == MOD_USER) {
-    if (strcmp(fn->name, "=") == 0 &&
-        fn->formals.head) {
+    if (strcmp(fn->name, "=") == 0 && fn->formals.head) {
       ArgSymbol* formal = toArgSymbol(toDefExpr(fn->formals.head)->sym);
       Type* formalType = formal->type->getValType();
       if (isOwnedOrSharedOrBorrowed(formalType) ||
@@ -103,17 +99,17 @@ static void checkSyncAtomicDefaultInit() {
         bool isAtomic = isOrContainsAtomicType(field->type);
         if (isSync || isAtomic) {
           USR_WARN(at,
-                  "compiler generated default initializers for %s with '%s' "
-                  "fields are deprecated, please supply an 'init%s' method",
-                  at->isClass() ? "classes" : (at->isRecord() ? "records" : "unions"),
-                  isSync ? "sync" :  "atomic", hasCompilerGeneratedCopyInit ? "=" : "");
+                   "compiler generated default initializers for %s with '%s' "
+                   "fields are deprecated, please supply an 'init%s' method",
+                   at->isClass() ? "classes"
+                                 : (at->isRecord() ? "records" : "unions"),
+                   isSync ? "sync" : "atomic",
+                   hasCompilerGeneratedCopyInit ? "=" : "");
         }
       }
     }
   }
-
 }
-
 
 // This function is checking for any function which returns a non-default
 // copyable type (sync/atomic). This has exclusions for functions that
@@ -135,14 +131,16 @@ static void checkSyncAtomicReturnByCopy() {
     bool isAtomic = isOrContainsAtomicType(fn->retType, false);
     bool isRef = fn->returnsRefOrConstRef() || fn->retType->isRef();
 
-    bool isInitAutoCopy = fn->hasEitherFlag(FLAG_INIT_COPY_FN, FLAG_AUTO_COPY_FN);
-    bool isNoCopy = fn->hasEitherFlag(FLAG_NO_COPY, FLAG_NO_COPY_RETURN) || fn->hasFlag(FLAG_NO_COPY_RETURNS_OWNED);
+    bool isInitAutoCopy =
+      fn->hasEitherFlag(FLAG_INIT_COPY_FN, FLAG_AUTO_COPY_FN);
+    bool isNoCopy = fn->hasEitherFlag(FLAG_NO_COPY, FLAG_NO_COPY_RETURN) ||
+                    fn->hasFlag(FLAG_NO_COPY_RETURNS_OWNED);
     bool isCoerce = fn->hasFlag(FLAG_COERCE_FN);
     bool isDefaultOf = fn->name == astr_defaultOf;
     bool isAliasing = fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY);
     bool isDefaultActualFn = fn->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
-    bool optOut = isInitAutoCopy || isNoCopy ||
-                  isCoerce || isDefaultOf || isAliasing || isDefaultActualFn;
+    bool optOut = isInitAutoCopy || isNoCopy || isCoerce || isDefaultOf ||
+                  isAliasing || isDefaultActualFn;
 
     bool shouldWarn = !optOut && !isRef && (isSync || isAtomic);
 
@@ -155,23 +153,22 @@ static void checkSyncAtomicReturnByCopy() {
   }
 }
 
-void
-checkResolved() {
+void checkResolved() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     checkForClassAssignOps(fn);
     checkReturnPaths(fn);
     if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
         !fn->isIterator()) {
       IteratorInfo* ii = toAggregateType(fn->retType)->iteratorInfo;
-      if (ii && ii->iterator &&
-          ii->iterator->defPoint->parentSymbol == fn &&
+      if (ii && ii->iterator && ii->iterator->defPoint->parentSymbol == fn &&
           fn->hasFlag(FLAG_COMPILER_GENERATED) == false) {
         // This error isn't really possible in regular code anymore,
         // since you have to have FLAG_FN_RETURNS_ITERATOR / that pragma
         // to generate it. (Otherwise the iterator expression is turned
         // into an array in the process of being returned).
         // If we remove FLAG_FN_RETURNS_ITERATOR, we should remove this error.
-        USR_FATAL_CONT(fn, "functions cannot return nested iterators or loop expressions");
+        USR_FATAL_CONT(
+          fn, "functions cannot return nested iterators or loop expressions");
       }
     }
 
@@ -180,7 +177,8 @@ checkResolved() {
     // because currently there are array += scalar overloads and if
     // one of these is promoted, we get too many additions.
     if (fn->hasFlag(FLAG_ASSIGNOP) && fn->retType != dtVoid)
-      USR_FATAL(fn, "The return value of an assignment operator must be 'void'.");
+      USR_FATAL(fn,
+                "The return value of an assignment operator must be 'void'.");
   }
 
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
@@ -191,13 +189,15 @@ checkResolved() {
           SymExpr* sym = toSymExpr(def->init);
           if (!sym || (!sym->symbol()->hasFlag(FLAG_PARAM) &&
                        !toVarSymbol(sym->symbol())->immediate)) {
-            USR_FATAL_CONT(def, "enumerator '%s' is not an integer param value",
+            USR_FATAL_CONT(def,
+                           "enumerator '%s' is not an integer param value",
                            def->sym->name);
           } else if (fWarnUnstable) {
             Immediate* imm = toVarSymbol(sym->symbol())->immediate;
             std::string enumVal = imm->to_string();
             if (enumVals.count(enumVal) != 0) {
-              USR_WARN(sym, "it has been suggested that support for enums "
+              USR_WARN(sym,
+                       "it has been suggested that support for enums "
                        "with duplicate integer values should be deprecated, "
                        "so this enum could be considered unstable; if you "
                        "value such enums, please let the Chapel team know.");
@@ -221,7 +221,6 @@ checkResolved() {
   checkTheseWithArguments();
 }
 
-
 // This routine returns '0' if we can find a path through the given
 // expression that does not return (assign to 'ret'), halt, throw,
 // etc.  I.e., if there is a path that would constitute an error for a
@@ -233,48 +232,35 @@ checkResolved() {
 // our compiler, we are currently only relying on zero / non-zero
 // behavior and care should be taken before reading too much into the
 // non-zero value.
-static int
-isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
-{
-  if (!expr)
-    return 0;
+static int isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs) {
+  if (!expr) return 0;
 
-  if (isDefExpr(expr))
-    return 0;
+  if (isDefExpr(expr)) return 0;
 
-  if (isSymExpr(expr))
-    return 0;
+  if (isSymExpr(expr)) return 0;
 
-  if (ret == gNone)
-    return 1;
+  if (ret == gNone) return 1;
 
-  if (CallExpr* call = toCallExpr(expr))
-  {
+  if (CallExpr* call = toCallExpr(expr)) {
     if (call->isResolved() &&
         call->resolvedFunction()->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM))
       return 1;
 
-    if (call->isPrimitive(PRIM_RT_ERROR))
-      return 1;
+    if (call->isPrimitive(PRIM_RT_ERROR)) return 1;
 
     if (call->isPrimitive(PRIM_THROW)) {
       return 1;
     }
 
-    if (call->isPrimitive(PRIM_MOVE) ||
-        call->isPrimitive(PRIM_ASSIGN))
-    {
+    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
       SymExpr* lhs = toSymExpr(call->get(1));
 
-      if (lhs->symbol() == ret)
-        return 1;
+      if (lhs->symbol() == ret) return 1;
 
-      if (refs.find(lhs->symbol()) != refs.end())
-        return 1;
+      if (refs.find(lhs->symbol()) != refs.end()) return 1;
 
       if (CallExpr* rhs = toCallExpr(call->get(2)))
-        if (rhs->isPrimitive(PRIM_ADDR_OF))
-        {
+        if (rhs->isPrimitive(PRIM_ADDR_OF)) {
           // We expect only a SymExpr as the operand of 'addr of'.
           SymExpr* se = toSymExpr(rhs->get(1));
           if (se->symbol() == ret)
@@ -283,17 +269,13 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
         }
     }
 
-    if (call->isResolved())
-    {
-      for_alist(e, call->argList)
-      {
-        if (SymExpr* se = toSymExpr(e))
-        {
+    if (call->isResolved()) {
+      for_alist(e, call->argList) {
+        if (SymExpr* se = toSymExpr(e)) {
           ArgSymbol* arg = actual_to_formal(se);
           // If ret is passed as an out or inout argument, that's a definition.
           if (se->symbol() == ret &&
-              (arg->intent == INTENT_OUT ||
-               arg->intent == INTENT_INOUT ||
+              (arg->intent == INTENT_OUT || arg->intent == INTENT_INOUT ||
                arg->intent == INTENT_REF))
             return 1;
         }
@@ -308,16 +290,13 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
                     isDefinedAllPaths(cond->elseStmt, ret, refs));
   }
 
-  if (isGotoStmt(expr))
-    return 0;
+  if (isGotoStmt(expr)) return 0;
 
   // bodies of Defer statements will be moved, so treat them as
   // not defining anything
-  if (isDeferStmt(expr))
-    return 0;
+  if (isDeferStmt(expr)) return 0;
 
-  if (TryStmt* tryStmt = toTryStmt(expr))
-  {
+  if (TryStmt* tryStmt = toTryStmt(expr)) {
     int result = INT_MAX;
 
     // This indicates whether or not we find a catch-all case, in
@@ -348,37 +327,26 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
     return isDefinedAllPaths(catchStmt->bodyWithoutTest(), ret, refs);
   }
 
-  if (BlockStmt* block = toBlockStmt(expr))
-  {
+  if (BlockStmt* block = toBlockStmt(expr)) {
     // NOAKES 2014/11/25 Transitional.  Ensure we don't call blockInfoGet()
-    if (block->isWhileDoStmt() ||
-        block->isForLoop()     ||
-        block->isCForLoop()    ||
-        block->isParamForLoop())
-    {
+    if (block->isWhileDoStmt() || block->isForLoop() || block->isCForLoop() ||
+        block->isParamForLoop()) {
       return 0;
-    }
-    else if (block->isDoWhileStmt()        ||
-             block->blockInfoGet() == NULL ||
-             block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL)) {
+    } else if (block->isDoWhileStmt() || block->blockInfoGet() == NULL ||
+               block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL)) {
       int result = 0;
 
-      for_alist(e, block->body)
-        result += isDefinedAllPaths(e, ret, refs);
+      for_alist(e, block->body) result += isDefinedAllPaths(e, ret, refs);
 
       return result;
-    }
-    else
-    {
+    } else {
       return 0;
     }
   }
 
-  if (isForallStmt(expr))
-    return 0;
+  if (isForallStmt(expr)) return 0;
 
-  if (isExternBlockStmt(expr))
-    return 0;
+  if (isExternBlockStmt(expr)) return 0;
 
   INT_FATAL("isDefinedAllPaths: Unhandled case.");
   return 0;
@@ -390,17 +358,15 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
 //   * returning a ref-intent argument by ref
 //   * returning a const-ref-intent argument by const ref
 //
-static bool
-returnsRefArgumentByRef(CallExpr* returnedCall, FnSymbol* fn)
-{
+static bool returnsRefArgumentByRef(CallExpr* returnedCall, FnSymbol* fn) {
   INT_ASSERT(returnedCall->isPrimitive(PRIM_ADDR_OF));
   if (SymExpr* rhs = toSymExpr(returnedCall->get(1))) {
     if (ArgSymbol* formal = toArgSymbol(rhs->symbol())) {
       IntentTag intent = formal->intent;
       if (fn->retTag == RET_CONST_REF && (intent & INTENT_FLAG_REF))
         return true;
-      else if(fn->retTag == RET_REF &&
-              (intent == INTENT_REF || intent == INTENT_REF_MAYBE_CONST))
+      else if (fn->retTag == RET_REF &&
+               (intent == INTENT_REF || intent == INTENT_REF_MAYBE_CONST))
         return true;
     }
   }
@@ -411,16 +377,15 @@ returnsRefArgumentByRef(CallExpr* returnedCall, FnSymbol* fn)
 // This function finds the original Symbol that a local array
 // refers to (through aliasing or slicing).
 // It returns the number of Exprs added to sources.
-static int findOriginalArrays(FnSymbol*        fn,
-                              Symbol*          sym,
-                              std::set<Expr*>& sources) {
+static int
+findOriginalArrays(FnSymbol* fn, Symbol* sym, std::set<Expr*>& sources) {
   int ret = 0;
 
   for_SymbolSymExprs(se, sym) {
     Expr* stmt = se->getStmtExpr();
 
     if (CallExpr* call = toCallExpr(stmt)) {
-      if (call->isPrimitive(PRIM_MOVE)   == true  ||
+      if (call->isPrimitive(PRIM_MOVE) == true ||
           call->isPrimitive(PRIM_ASSIGN) == true) {
         Expr* lhs = call->get(1);
 
@@ -436,15 +401,14 @@ static int findOriginalArrays(FnSymbol*        fn,
             // is RHS a local variable (user or temp)?
             // if so, find the definitions for that, and further
             // traverse if they are aliases.
-            if (rhsSym                          != NULL &&
-                rhsSym->defPoint->getFunction() ==   fn &&
-                rhsSym->hasFlag(FLAG_TEMP)      == true) {
+            if (rhsSym != NULL && rhsSym->defPoint->getFunction() == fn &&
+                rhsSym->hasFlag(FLAG_TEMP) == true) {
               ret += findOriginalArrays(fn, rhsSym, sources);
             }
 
           } else if (CallExpr* rhsCall = toCallExpr(rhs)) {
             FnSymbol* calledFn = rhsCall->resolvedFunction();
-            SymExpr*  aliased  = NULL; // the array that is sliced or aliased
+            SymExpr* aliased = NULL; // the array that is sliced or aliased
 
             if (calledFn && calledFn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY)) {
               aliased = toSymExpr(rhsCall->get(1));
@@ -476,8 +440,7 @@ static int findOriginalArrays(FnSymbol*        fn,
   return ret;
 }
 
-static void
-checkBadLocalReturn(FnSymbol* fn, Symbol* retVar) {
+static void checkBadLocalReturn(FnSymbol* fn, Symbol* retVar) {
 
   for_SymbolSymExprs(se, retVar) {
     // se is a use or def of 'ret'
@@ -500,9 +463,8 @@ checkBadLocalReturn(FnSymbol* fn, Symbol* retVar) {
               USR_FATAL_CONT(ret, "illegal expression to return by ref");
             } else {
               // Check: Are we returning a constant by ref?
-              if (fn->retTag == RET_REF &&
-                  (ret->symbol()->isConstant() ||
-                   ret->symbol()->isParameter())) {
+              if (fn->retTag == RET_REF && (ret->symbol()->isConstant() ||
+                                            ret->symbol()->isParameter())) {
                 USR_FATAL_CONT(rhs, "function cannot return constant by ref");
               }
             }
@@ -525,18 +487,15 @@ checkBadLocalReturn(FnSymbol* fn, Symbol* retVar) {
       // by value? (The above code should have found the case returning
       // such things by ref).
       SymExpr* rhsSe = toSymExpr(source);
-      if (rhsSe &&
-          isVarSymbol(rhsSe->symbol()) &&
-          rhsSe->symbol()->defPoint->getFunction() == fn &&
-          !rhsSe->isRef()) {
+      if (rhsSe && isVarSymbol(rhsSe->symbol()) &&
+          rhsSe->symbol()->defPoint->getFunction() == fn && !rhsSe->isRef()) {
         USR_FATAL_CONT(rhsSe, "illegal return of array aliasing a local array");
       }
     }
   }
 }
 
-static void
-checkReturnPaths(FnSymbol* fn) {
+static void checkReturnPaths(FnSymbol* fn) {
   // Check to see if the function returns a value.
   //
   // FLAG_THUNK_BUILDER is analogous to isIterator (both produce a record
@@ -545,20 +504,18 @@ checkReturnPaths(FnSymbol* fn) {
   // is analogous to FLAG_AUTO_II (both mark compiler-generated methods
   // on the thunk record / iterator record that are filled in late in
   // compilation)
-  if (fn->isIterator() ||
-      fn->hasFlag(FLAG_THUNK_BUILDER) ||
+  if (fn->isIterator() || fn->hasFlag(FLAG_THUNK_BUILDER) ||
       !strcmp(fn->name, "=") || // TODO: Remove this to enforce new signature.
       !strcmp(fn->name, "chpl__buildArrayRuntimeType") ||
-      fn->retTag == RET_TYPE ||
-      fn->hasFlag(FLAG_EXTERN) ||
-      fn->hasFlag(FLAG_INIT_TUPLE) ||
-      fn->hasFlag(FLAG_AUTO_II) ||
+      fn->retTag == RET_TYPE || fn->hasFlag(FLAG_EXTERN) ||
+      fn->hasFlag(FLAG_INIT_TUPLE) || fn->hasFlag(FLAG_AUTO_II) ||
       fn->hasFlag(FLAG_THUNK_INVOKE))
     return; // No.
 
   if (fn->retType == dtVoid) {
     if (fn->returnsRefOrConstRef()) {
-      USR_FATAL_CONT(fn, "function declared 'ref' but does not return anything");
+      USR_FATAL_CONT(fn,
+                     "function declared 'ref' but does not return anything");
     }
     return; // Doesn't return a value, no need to look for returns.
   }
@@ -566,15 +523,12 @@ checkReturnPaths(FnSymbol* fn) {
   // Check to see if the returned value is initialized.
   Symbol* ret = fn->getReturnSymbol();
   VarSymbol* var = toVarSymbol(ret);
-  if (var)
-  {
+  if (var) {
     // If it has an immediate initializer, it is initialized.
-    if (var->immediate)
-      return;
+    if (var->immediate) return;
   }
 
-  if (isEnumSymbol(ret))
-    return;
+  if (isEnumSymbol(ret)) return;
 
   RefSet refs;
   int result = isDefinedAllPaths(fn->body, ret, refs);
@@ -583,7 +537,8 @@ checkReturnPaths(FnSymbol* fn) {
   // Issue a warning if there is a path that has zero definitions.
   //
   if (result == 0)
-    USR_FATAL_CONT(fn->body, "control reaches end of function that returns a value");
+    USR_FATAL_CONT(fn->body,
+                   "control reaches end of function that returns a value");
 
   //
   // Issue an error if returning a local variable by ref.
@@ -592,23 +547,19 @@ checkReturnPaths(FnSymbol* fn) {
   if (!fn->hasFlag(FLAG_WRAPPER)) {
     // Add returned aliases to refs.
     checkBadLocalReturn(fn, ret);
-    for_set(Symbol, alias, refs) {
-      checkBadLocalReturn(fn, alias);
-    }
+    for_set(Symbol, alias, refs) { checkBadLocalReturn(fn, alias); }
   }
 }
 
 static void checkIteratorContextPrimitives(CallExpr* call) {
   if (call->isPrimitive(PRIM_INNERMOST_CONTEXT) ||
-      call->isPrimitive(PRIM_OUTER_CONTEXT)     ||
-      call->isPrimitive(PRIM_HOIST_TO_CONTEXT)  )
-    USR_FATAL_CONT(call,
-      "use of this feature requires compiling with --iterator-contexts");
+      call->isPrimitive(PRIM_OUTER_CONTEXT) ||
+      call->isPrimitive(PRIM_HOIST_TO_CONTEXT))
+    USR_FATAL_CONT(
+      call, "use of this feature requires compiling with --iterator-contexts");
 }
 
-static void
-checkBadAddrOf(CallExpr* call)
-{
+static void checkBadAddrOf(CallExpr* call) {
   if (call->isPrimitive(PRIM_ADDR_OF)) {
     // This test is turned off if we are in a wrapper function.
     FnSymbol* fn = call->getFunction();
@@ -616,14 +567,13 @@ checkBadAddrOf(CallExpr* call)
       SymExpr* lhs = NULL;
 
       if (CallExpr* move = toCallExpr(call->parentExpr))
-        if (move->isPrimitive(PRIM_MOVE))
-          lhs = toSymExpr(move->get(1));
+        if (move->isPrimitive(PRIM_MOVE)) lhs = toSymExpr(move->get(1));
 
       //
       // check that the operand of 'addr of' is a legal lvalue.
       if (SymExpr* rhs = toSymExpr(call->get(1))) {
 
-        bool lhsRef   = lhs && lhs->symbol()->hasFlag(FLAG_REF_VAR);
+        bool lhsRef = lhs && lhs->symbol()->hasFlag(FLAG_REF_VAR);
         bool lhsConst = lhs && lhs->symbol()->hasFlag(FLAG_CONST);
 
         bool rhsType = rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE);
@@ -642,7 +592,8 @@ checkBadAddrOf(CallExpr* call)
           USR_FATAL_CONT(call, "Cannot set a reference to a param variable.");
         } else if (lhsRef && !lhsConst) {
           if (rhsExprTemp || rhs->symbol()->isConstant()) {
-            USR_FATAL_CONT(call, "Cannot set a non-const reference to a const variable.");
+            USR_FATAL_CONT(
+              call, "Cannot set a non-const reference to a const variable.");
           }
         }
       }
@@ -650,14 +601,10 @@ checkBadAddrOf(CallExpr* call)
   }
 }
 
-
-static void
-checkCalls()
-{
+static void checkCalls() {
   forv_Vec(CallExpr, call, gCallExprs) {
     checkBadAddrOf(call);
-    if (! fIteratorContexts)
-      checkIteratorContextPrimitives(call);
+    if (!fIteratorContexts) checkIteratorContextPrimitives(call);
   }
 }
 
@@ -676,20 +623,24 @@ static void externExportTypeError(FnSymbol* fn, Type* t) {
   if (!fn->hasFlag(FLAG_INSTANTIATED_GENERIC)) {
     if (t == dtString) {
       if (isExtern)
-        USR_FATAL_CONT(fn, "extern procedures should not take arguments of "
-                           "type string, use c_ptrConst(c_char) instead");
+        USR_FATAL_CONT(fn,
+                       "extern procedures should not take arguments of "
+                       "type string, use c_ptrConst(c_char) instead");
       else
-        USR_FATAL_CONT(fn, "export procedures should not take arguments of "
-                           "type string, use c_ptrConst(c_char) instead");
+        USR_FATAL_CONT(fn,
+                       "export procedures should not take arguments of "
+                       "type string, use c_ptrConst(c_char) instead");
     } else {
       if (isExtern)
-        USR_FATAL_CONT(fn, "extern procedure argument types should be "
-                           "extern types - '%s' is not",
-                           toString(t));
+        USR_FATAL_CONT(fn,
+                       "extern procedure argument types should be "
+                       "extern types - '%s' is not",
+                       toString(t));
       else
-        USR_FATAL_CONT(fn, "export procedure argument types should be "
-                           "exportable types - '%s' is not",
-                           toString(t));
+        USR_FATAL_CONT(fn,
+                       "export procedure argument types should be "
+                       "exportable types - '%s' is not",
+                       toString(t));
     }
   } else {
     // This is a generic instantiation of an extern proc that is using
@@ -701,21 +652,22 @@ static void externExportTypeError(FnSymbol* fn, Type* t) {
         USR_FATAL_CONT(fn, "export procedure has arguments of type string");
     } else {
       if (isExtern)
-        USR_FATAL_CONT(fn, "extern procedure argument types should be "
-                           "extern types - '%s' is not",
-                           toString(t));
+        USR_FATAL_CONT(fn,
+                       "extern procedure argument types should be "
+                       "extern types - '%s' is not",
+                       toString(t));
       else
-        USR_FATAL_CONT(fn, "export procedure argument types should be "
-                           "exportable types - '%s' is not",
-                           toString(t));
+        USR_FATAL_CONT(fn,
+                       "export procedure argument types should be "
+                       "exportable types - '%s' is not",
+                       toString(t));
     }
 
     forv_Vec(CallExpr, call, *fn->calledBy) {
       USR_PRINT(call, "when instantiated from here");
     }
 
-    if (t == dtString)
-      USR_PRINT(fn, "use c_ptrConst(c_char) instead");
+    if (t == dtString) USR_PRINT(fn, "use c_ptrConst(c_char) instead");
   }
 }
 
@@ -724,19 +676,15 @@ static bool isErroneousExternExportArgIntent(ArgSymbol* formal) {
   Type* valType = formal->getValType();
 
   // workaround for issue #15917
-  if (valType == dtExternalArray || valType == dtOpaqueArray)
-    return false;
+  if (valType == dtExternalArray || valType == dtOpaqueArray) return false;
 
   if (valType->symbol->hasFlag(FLAG_FUNCTION_CLASS)) return false;
 
-  return isRecord(valType) &&
-         (formal->originalIntent == INTENT_BLANK ||
-          formal->originalIntent == INTENT_CONST ||
-          formal->originalIntent == INTENT_INOUT ||
-          formal->originalIntent == INTENT_OUT);
+  return isRecord(valType) && (formal->originalIntent == INTENT_BLANK ||
+                               formal->originalIntent == INTENT_CONST ||
+                               formal->originalIntent == INTENT_INOUT ||
+                               formal->originalIntent == INTENT_OUT);
 }
-
-
 
 static void externExportIntentError(FnSymbol* fn, ArgSymbol* arg) {
   INT_ASSERT(fn->hasFlag(FLAG_EXTERN) || fn->hasFlag(FLAG_EXPORT));
@@ -746,18 +694,20 @@ static void externExportIntentError(FnSymbol* fn, ArgSymbol* arg) {
   IntentTag intent = arg->originalIntent;
 
   if (intent == INTENT_BLANK || intent == INTENT_CONST) {
-    USR_FATAL_CONT(arg, "a concrete intent is required for the "
-                        "%s function formal '%s' "
-                        "which has record type '%s'",
-                        isExtern ? "extern" : "exported",
-                        arg->name,
-                        toString(arg->getValType()));
+    USR_FATAL_CONT(arg,
+                   "a concrete intent is required for the "
+                   "%s function formal '%s' "
+                   "which has record type '%s'",
+                   isExtern ? "extern" : "exported",
+                   arg->name,
+                   toString(arg->getValType()));
   } else if (intent == INTENT_INOUT || intent == INTENT_OUT) {
-    USR_FATAL_CONT(arg, "%s is not yet supported for %s functions - "
-                        "consider changing formal '%s' to use 'ref' intent",
-                        intentDescrString(intent),
-                        isExtern ? "extern" : "exported",
-                        arg->name);
+    USR_FATAL_CONT(arg,
+                   "%s is not yet supported for %s functions - "
+                   "consider changing formal '%s' to use 'ref' intent",
+                   intentDescrString(intent),
+                   isExtern ? "extern" : "exported",
+                   arg->name);
   }
 }
 
@@ -768,14 +718,11 @@ static void checkExternProcs() {
   const char* c_pointer_return = astr("c_pointer_return");
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fn->hasFlag(FLAG_EXTERN))
-      continue;
+    if (!fn->hasFlag(FLAG_EXTERN)) continue;
 
     // Don't worry about passing Chapel types to sizeof etc.
-    if (fn->cname == sizeof_ ||
-        fn->cname == alignof_ ||
-        fn->cname == offsetof_ ||
-        fn->cname == c_pointer_return)
+    if (fn->cname == sizeof_ || fn->cname == alignof_ ||
+        fn->cname == offsetof_ || fn->cname == c_pointer_return)
       continue;
 
     for_formals(formal, fn) {
@@ -798,8 +745,7 @@ static void checkExternProcs() {
 
 static void checkExportedProcs() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fn->hasFlag(FLAG_EXPORT))
-      continue;
+    if (!fn->hasFlag(FLAG_EXPORT)) continue;
 
     for_formals(formal, fn) {
       if (!isExportableType(formal->type)) {
@@ -830,9 +776,8 @@ static bool hasIterTag(FnSymbol* fn, Symbol* iterKind) {
 }
 static bool isParallelTheseIterator(FnSymbol* fn) {
   return isTheseIterator(fn) &&
-          (hasIterTag(fn, gStandaloneTag) ||
-           hasIterTag(fn, gLeaderTag) ||
-           hasIterTag(fn, gFollowerTag));
+         (hasIterTag(fn, gStandaloneTag) || hasIterTag(fn, gLeaderTag) ||
+          hasIterTag(fn, gFollowerTag));
 }
 static bool isStandaloneTheseIterator(FnSymbol* fn) {
   return isTheseIterator(fn) && hasIterTag(fn, gStandaloneTag);

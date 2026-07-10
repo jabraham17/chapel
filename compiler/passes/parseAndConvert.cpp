@@ -61,22 +61,22 @@ using ID = chpl::ID;
 
 ID dynoIdForLastContainingDecl = ID();
 
-const char*          yyfilename                    = NULL;
-int                  yystartlineno                 = 0;
+const char* yyfilename = NULL;
+int yystartlineno = 0;
 
-bool                 parsingPrivate                = true;
+bool parsingPrivate = true;
 
-bool                 countTokens                   = false;
-bool                 printTokens                   = false;
-const char*          currentModuleName             = NULL;
+bool countTokens = false;
+bool printTokens = false;
+const char* currentModuleName = NULL;
 
-int                  chplLineno                    = 0;
-bool                 chplParseString               = false;
-const char*          chplParseStringMsg            = NULL;
+int chplLineno = 0;
+bool chplParseString = false;
+const char* chplParseStringMsg = NULL;
 
-bool                 parsed                        = false;
+bool parsed = false;
 
-static bool          sFirstFile                    = true;
+static bool sFirstFile = true;
 
 static void countTokensInCmdLineFiles();
 
@@ -86,7 +86,8 @@ static void checkFilenameNotTooLong(UniqueString path);
 
 static std::vector<UniqueString> gatherStdModulePaths();
 
-static void initializeGlobalParserState(const char* path, ModTag modTag,
+static void initializeGlobalParserState(const char* path,
+                                        ModTag modTag,
                                         bool namedOnCommandLine);
 
 static void deinitializeGlobalParserState();
@@ -103,6 +104,7 @@ class DynoErrorHandler : public chpl::Context::ErrorHandler {
   // "for later". Once we've parsed all the files, we can then decide whether
   // to silence them or not.
   std::vector<chpl::owned<chpl::ErrorBase>> deferredErrors_;
+
  public:
   DynoErrorHandler() = default;
   ~DynoErrorHandler() = default;
@@ -115,8 +117,8 @@ class DynoErrorHandler : public chpl::Context::ErrorHandler {
     return deferredErrors_;
   }
 
-  virtual void
-  report(chpl::Context* context, const chpl::ErrorBase* err) override {
+  virtual void report(chpl::Context* context,
+                      const chpl::ErrorBase* err) override {
     if (err->type() == chpl::ErrorType::ImplicitFileModule ||
         err->type() == chpl::ErrorType::ImplicitModuleSameName) {
       // Defer implicit module warnings until we know which module is the
@@ -144,12 +146,11 @@ class DynoErrorHandler : public chpl::Context::ErrorHandler {
   inline void clearDeferred() { deferredErrors_.clear(); }
 };
 
-static void dynoConvertInternalModule(UastConverter& c,
-                                      const char* moduleName);
+static void dynoConvertInternalModule(UastConverter& c, const char* moduleName);
 static ModuleSymbol* dynoConvertFile(UastConverter& c,
                                      const char* fileName,
-                                     ModTag      modTag,
-                                     bool        namedOnCommandLine);
+                                     ModTag modTag,
+                                     bool namedOnCommandLine);
 
 /************************************* | **************************************
 *                                                                             *
@@ -158,7 +159,7 @@ static ModuleSymbol* dynoConvertFile(UastConverter& c,
 ************************************** | *************************************/
 
 static void countTokensInCmdLineFiles() {
-  int         fileNum       = 0;
+  int fileNum = 0;
   const char* inputFileName = 0;
   auto parseStats = chpl::parsing::ParserStats(printTokens);
 
@@ -237,7 +238,6 @@ static void loadAndConvertModules(UastConverter& c) {
     requestedMainModuleName = UniqueString::get(gContext, gMainModuleName);
   }
 
-
   // compute paths based the command-line files
   std::vector<UniqueString> commandLinePaths;
   int fileNum = 0;
@@ -269,10 +269,8 @@ static void loadAndConvertModules(UastConverter& c) {
                                                  mainModule);
 
   const std::vector<ID>& modulesToConvert =
-    chpl::resolution::moduleInitializationOrder(gContext,
-                                                mainModule,
-                                                commandLineModules);
-
+    chpl::resolution::moduleInitializationOrder(
+      gContext, mainModule, commandLineModules);
 
   // note the main module
   c.setMainModule(mainModule);
@@ -336,7 +334,6 @@ static void loadAndConvertModules(UastConverter& c) {
     }
   }
 
-
   // also handle some modules that get magically included
   dynoConvertInternalModule(c, "PrintModuleInitOrder");
   if (fLibraryFortran) {
@@ -353,22 +350,19 @@ static void setupDynoLibFileGeneration() {
   if (fDynoGenLib) {
     // gather the top-level module names
     using LFW = chpl::libraries::LibraryFileWriter;
-    auto vec = LFW::gatherTopLevelModuleNames(gContext,
-                                              gDynoGenLibSourcePaths);
+    auto vec = LFW::gatherTopLevelModuleNames(gContext, gDynoGenLibSourcePaths);
 
-    for (UniqueString topLevelModuleName: vec) {
+    for (UniqueString topLevelModuleName : vec) {
       gDynoGenLibModuleNameAstrs.insert(astr(topLevelModuleName));
     }
   }
 }
-
 
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
-
 
 static void reorderInternalModules() {
   // Internal modules should be loaded already by loadAndConvertModules.
@@ -453,7 +447,6 @@ static void gatherWellKnown() {
   gatherWellKnownFns();
 }
 
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -481,7 +474,8 @@ static void checkFilenameNotTooLong(UniqueString path) {
   const char* baseName = stripdirectories(inputFileName);
   if (strlen(baseName) > maxFileName) {
     // error message to print placeholders for fileName and maxLength
-    const char *errorMessage = "%s, filename is longer than maximum allowed length of %d\n";
+    const char* errorMessage =
+      "%s, filename is longer than maximum allowed length of %d\n";
     // throw error with concatenated message
     USR_FATAL(errorMessage, baseName, maxFileName);
   }
@@ -554,11 +548,8 @@ static std::set<UniqueString> gatherStdModuleNames() {
 
   // add select packages that don't have dependencies at compile time
   // these particular ones are compiled by default even for "hello world"
-  std::vector<const char*> pkgModules = {"CopyAggregation",
-                                         "NPBRandom",
-                                         "RangeChunk",
-                                         "Search",
-                                         "Sort"};
+  std::vector<const char*> pkgModules = {
+    "CopyAggregation", "NPBRandom", "RangeChunk", "Search", "Sort"};
 
   for (auto name : pkgModules) {
     modNames.insert(UniqueString::get(gContext, name));
@@ -615,7 +606,8 @@ static std::vector<UniqueString> gatherStdModulePaths() {
 static void printModuleSearchPath() {
   fprintf(stderr, "module search dirs:\n");
 
-  const std::vector<UniqueString>& paths = chpl::parsing::moduleSearchPath(gContext);
+  const std::vector<UniqueString>& paths =
+    chpl::parsing::moduleSearchPath(gContext);
   for (auto p : paths) {
     fprintf(stderr, "  %s\n", cleanFilename(p.c_str()));
   }
@@ -656,24 +648,25 @@ static bool haveAlreadyConverted(const char* path) {
   }
 }
 
-static void initializeGlobalParserState(const char* path, ModTag modTag,
+static void initializeGlobalParserState(const char* path,
+                                        ModTag modTag,
                                         bool namedOnCommandLine) {
 
   // If this file only contains explicit module declarations, this
   // 'currentModuleName' is not accurate, but also should not be
   // used (because when the 'module' declarations are found, they
   // will override it).
-  currentModuleName             = filenameToModulename(path);
-  yyfilename                    = path;
-  yystartlineno                 = 1;
+  currentModuleName = filenameToModulename(path);
+  yyfilename = path;
+  yystartlineno = 1;
 
-  chplLineno                    = 1;
+  chplLineno = 1;
 }
 
 static void deinitializeGlobalParserState() {
-  yyfilename                    =  NULL;
-  yystartlineno                 =    -1;
-  chplLineno                    =    -1;
+  yyfilename = NULL;
+  yystartlineno = -1;
+  chplLineno = -1;
 }
 
 static void maybePrintModuleFile(ModTag modTag, const char* path) {
@@ -741,9 +734,8 @@ static const char* labelForContainingDeclFromId(ID id) {
     preface = "module";
   }
 
-  const char* ret = (doUseName && name)
-      ? astr(preface, " '", name, "'")
-      : astr(preface);
+  const char* ret =
+    (doUseName && name) ? astr(preface, " '", name, "'") : astr(preface);
 
   return ret;
 }
@@ -822,18 +814,10 @@ static void dynoDisplayError(chpl::Context* context,
     maybePrintErrorHeader(context, id);
 
     switch (err.kind()) {
-      case chpl::ErrorMessage::NOTE:
-        USR_PRINT(loc, "%s", msg);
-        break;
-      case chpl::ErrorMessage::WARNING:
-        USR_WARN(loc, "%s", msg);
-        break;
-      case chpl::ErrorMessage::ERROR:
-        USR_FATAL_CONT(loc, "%s", msg);
-        break;
-      default:
-        INT_FATAL("Should not reach here!");
-        break;
+      case chpl::ErrorMessage::NOTE: USR_PRINT(loc, "%s", msg); break;
+      case chpl::ErrorMessage::WARNING: USR_WARN(loc, "%s", msg); break;
+      case chpl::ErrorMessage::ERROR: USR_FATAL_CONT(loc, "%s", msg); break;
+      default: INT_FATAL("Should not reach here!"); break;
     }
   }
 
@@ -900,10 +884,11 @@ bool dynoRealizeDeferredErrors(void) {
 
   for (auto& err : gDynoErrorHandler->deferredErrors()) {
     if (err->type() == chpl::ErrorType::ImplicitFileModule) {
-      auto errCast = (const chpl::ErrorImplicitFileModule*) err.get();
+      auto errCast = (const chpl::ErrorImplicitFileModule*)err.get();
       auto implicitMod = std::get<2>(errCast->info());
 
-      if (implicitMod->id().symbolPathWithoutRepeats(gContext) == mainModulePath) {
+      if (implicitMod->id().symbolPathWithoutRepeats(gContext) ==
+          mainModulePath) {
         // Do not emit the implicit file module warning for the main module,
         // since it's a very common pattern.
         continue;
@@ -914,12 +899,16 @@ bool dynoRealizeDeferredErrors(void) {
       // Check if we need to report them after all, which can happen if
       // a compiler diagnostic is misused.
 
-      bool isError = err->type() == chpl::ErrorType::UserDiagnosticEncounterError;
-      auto query = isError ? resolution::noteErrorMessage : resolution::noteWarningMessage;
+      bool isError =
+        err->type() == chpl::ErrorType::UserDiagnosticEncounterError;
+      auto query =
+        isError ? resolution::noteErrorMessage : resolution::noteWarningMessage;
       auto errorMessage = std::get<0>(
-          isError ? ((chpl::ErrorUserDiagnosticEncounterError*) err.get())->info()
-                  : ((chpl::ErrorUserDiagnosticEncounterWarning*) err.get())->info());
-      if (gContext->hasCurrentResultForQuery(query, std::make_tuple(errorMessage))) {
+        isError
+          ? ((chpl::ErrorUserDiagnosticEncounterError*)err.get())->info()
+          : ((chpl::ErrorUserDiagnosticEncounterWarning*)err.get())->info());
+      if (gContext->hasCurrentResultForQuery(query,
+                                             std::make_tuple(errorMessage))) {
         continue;
       }
     }
@@ -947,9 +936,8 @@ dynoVerifySerialization(const chpl::uast::BuilderResult& builderResult,
 
     // deserialize from the same
     std::string got = ss.str();
-    auto des = chpl::Deserializer(gContext,
-                                  got.c_str(), got.size(),
-                                  ser.stringCache());
+    auto des =
+      chpl::Deserializer(gContext, got.c_str(), got.size(), ser.stringCache());
 
     // this path should not actually be used in this testing
     auto libPath = UniqueString::get(gContext, "test-serialize.dyno");
@@ -961,7 +949,7 @@ dynoVerifySerialization(const chpl::uast::BuilderResult& builderResult,
                                                       /*LibraryFile*/ nullptr);
 
     builder->addToplevelExpression(
-        chpl::uast::AstNode::deserializeWithoutIds(des));
+      chpl::uast::AstNode::deserializeWithoutIds(des));
     chpl::uast::BuilderResult r = builder->result();
 
     if (r.numTopLevelExpressions() != 1 ||
@@ -974,7 +962,6 @@ dynoVerifySerialization(const chpl::uast::BuilderResult& builderResult,
     }
   }
 }
-
 
 static void dynoConvertInternalModule(UastConverter& c,
                                       const char* moduleName) {
@@ -991,11 +978,10 @@ static void dynoConvertInternalModule(UastConverter& c,
   dynoConvertFile(c, path.c_str(), MOD_INTERNAL, false);
 }
 
-
 static ModuleSymbol* dynoConvertFile(UastConverter& c,
                                      const char* fileName,
-                                     ModTag      modTag,
-                                     bool        namedOnCommandLine) {
+                                     ModTag modTag,
+                                     bool namedOnCommandLine) {
   ModuleSymbol* ret = nullptr;
 
   // Do not parse if we've already done so.
@@ -1008,9 +994,8 @@ static ModuleSymbol* dynoConvertFile(UastConverter& c,
   // The 'parseFile' query gets us a builder result that we can inspect to
   // see if there were any parse errors.
   auto parentSymbolPath = UniqueString(); // always empty here
-  auto& builderResult =
-    chpl::parsing::parseFileToBuilderResultAndCheck(gContext, path,
-                                                    parentSymbolPath);
+  auto& builderResult = chpl::parsing::parseFileToBuilderResultAndCheck(
+    gContext, path, parentSymbolPath);
   InsertLineNumbers::addFilenameTableEntry(path.c_str());
 
   if (dynoRealizeErrors()) USR_STOP();
@@ -1109,7 +1094,6 @@ static ModuleSymbol* dynoConvertFile(UastConverter& c,
     }
   }
 
-
   if (modTag != MOD_USER && ret != nullptr) {
     // remember some key modules
     if (0 == strcmp(ret->name, "ChapelBase")) {
@@ -1164,9 +1148,7 @@ void parseAndConvertUast() {
 
   // add the default uses for all modules
   // TODO: why do we need to do this?
-  forv_Vec(ModuleSymbol, mod, allModules) {
-    mod->addDefaultUses();
-  }
+  forv_Vec(ModuleSymbol, mod, allModules) { mod->addDefaultUses(); }
 
   dynoRealizeDeferredErrors();
 

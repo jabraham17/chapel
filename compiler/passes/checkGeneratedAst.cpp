@@ -47,8 +47,7 @@ static void setupForCheckExplicitDeinitCalls();
 static void checkOperator(FnSymbol* fn);
 static void checkUseStmt(UseStmt* use);
 
-void
-checkGeneratedAst() {
+void checkGeneratedAst() {
   setupForCheckExplicitDeinitCalls();
 
   forv_Vec(CallExpr, call, gCallExprs) {
@@ -69,7 +68,8 @@ checkGeneratedAst() {
             DefExpr* queryDomain = toDefExpr(domainExpr->get(1));
             if (queryDomain) {
               USR_FATAL_CONT(queryDomain,
-                             "Domain query expressions may currently only be used in formal argument types");
+                             "Domain query expressions may currently only be "
+                             "used in formal argument types");
             }
           }
         }
@@ -79,9 +79,7 @@ checkGeneratedAst() {
     // checkPrivateDecls(def);
   }
 
-  forv_Vec(VarSymbol, var, gVarSymbols) {
-    checkParsedVar(var);
-  }
+  forv_Vec(VarSymbol, var, gVarSymbols) { checkParsedVar(var); }
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     checkFunction(fn);
@@ -97,14 +95,10 @@ checkGeneratedAst() {
 
   checkDefersAfterParsing();
 
-  forv_Vec(UseStmt, use, gUseStmts) {
-    checkUseStmt(use);
-  }
+  forv_Vec(UseStmt, use, gUseStmts) { checkUseStmt(use); }
 }
 
-
-static void
-checkNamedArguments(CallExpr* call) {
+static void checkNamedArguments(CallExpr* call) {
   Vec<const char*> names;
 
   for_actuals(expr, call) {
@@ -131,23 +125,17 @@ static const char* getClassKindSpecifier(CallExpr* call) {
       call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
       call->isNamed("_to_borrowed"))
     return "borrowed";
-  if (call->isNamed("_owned"))
-    return "owned";
-  if (call->isNamed("_shared"))
-    return "shared";
+  if (call->isNamed("_owned")) return "owned";
+  if (call->isNamed("_shared")) return "shared";
 
   if (call->isPrimitive(PRIM_NEW) && call->numActuals() >= 1) {
     if (NamedExpr* ne = toNamedExpr(call->get(1))) {
       if (ne->name == astr_chpl_manager) {
         Type* t = ne->actual->typeInfo();
-        if (t == dtBorrowed)
-          return "borrowed";
-        if (t == dtUnmanaged)
-          return "unmanaged";
-        if (t == dtOwned)
-          return "owned";
-        if (t == dtShared)
-          return "shared";
+        if (t == dtBorrowed) return "borrowed";
+        if (t == dtUnmanaged) return "unmanaged";
+        if (t == dtOwned) return "owned";
+        if (t == dtShared) return "shared";
       }
     }
   }
@@ -162,8 +150,7 @@ static void checkManagedClassKinds(CallExpr* call) {
     Expr* inner = call->get(1);
     // skip management decorator if present
     if (NamedExpr* ne = toNamedExpr(inner))
-      if (ne->name == astr_chpl_manager)
-        inner = call->get(2);
+      if (ne->name == astr_chpl_manager) inner = call->get(2);
 
     CallExpr* innerCall = toCallExpr(inner);
     if (innerCall) {
@@ -171,7 +158,8 @@ static void checkManagedClassKinds(CallExpr* call) {
       if (inner != NULL) {
         USR_FATAL_CONT(call,
                        "Type expression uses multiple class kinds: %s %s",
-                       outer, inner);
+                       outer,
+                       inner);
       }
     }
 
@@ -185,7 +173,7 @@ static void checkManagedClassKinds(CallExpr* call) {
   }
 }
 
-static VarSymbol*  deinitStrLiteral;
+static VarSymbol* deinitStrLiteral;
 
 static void setupForCheckExplicitDeinitCalls() {
   deinitStrLiteral = new_CStringSymbol("deinit");
@@ -297,12 +285,12 @@ static void checkPrivateDecls(DefExpr* def) {
 }
 */
 
-
-static void
-checkParsedVar(VarSymbol* var) {
+static void checkParsedVar(VarSymbol* var) {
   if (var->defPoint->init && var->defPoint->init->isNoInitExpr()) {
     if (var->hasFlag(FLAG_CONST))
-      USR_FATAL_CONT(var, "const variables specified with noinit must be explicitly initialized.");
+      USR_FATAL_CONT(var,
+                     "const variables specified with noinit must be explicitly "
+                     "initialized.");
   }
 
   //
@@ -322,7 +310,8 @@ checkParsedVar(VarSymbol* var) {
       varType = "variables";
 
     USR_FATAL_CONT(var->defPoint,
-                   "Configuration %s are allowed only at module scope.", varType);
+                   "Configuration %s are allowed only at module scope.",
+                   varType);
   }
 
   // Export vars are not yet supported
@@ -330,9 +319,7 @@ checkParsedVar(VarSymbol* var) {
     USR_FATAL_CONT(var->defPoint, "Export variables are not yet supported");
 }
 
-
-static void
-checkFunction(FnSymbol* fn) {
+static void checkFunction(FnSymbol* fn) {
 
   // Chapel doesn't really support procedures with no-op bodies (a
   // semicolon only).  Doing so is likely to cause confusion for C
@@ -345,12 +332,12 @@ checkFunction(FnSymbol* fn) {
     if (!isInterfaceSymbol(fn->defPoint->parentSymbol))
       doErrorAboutNoBody = true;
 
-  if (fn->hasFlag(FLAG_ANONYMOUS_FN))
-    doErrorAboutNoBody = false;
+  if (fn->hasFlag(FLAG_ANONYMOUS_FN)) doErrorAboutNoBody = false;
 
   if (doErrorAboutNoBody)
-    USR_FATAL_CONT(fn, "no-op procedures are only legal for extern "
-                       "functions");
+    USR_FATAL_CONT(fn,
+                   "no-op procedures are only legal for extern "
+                   "functions");
 
   if (fn->hasFlag(FLAG_EXTERN) && !fn->hasFlag(FLAG_NO_FN_BODY))
     USR_FATAL_CONT(fn, "Extern functions cannot have a body");
@@ -360,7 +347,6 @@ checkFunction(FnSymbol* fn) {
 
   if (fn->hasFlag(FLAG_EXPORT) && fn->where != NULL)
     USR_FATAL_CONT(fn, "Exported functions cannot have where clauses.");
-
 
   if ((fn->name == astrThis) && fn->hasFlag(FLAG_NO_PARENS))
     USR_FATAL_CONT(fn, "method 'this' must have parentheses");
@@ -382,8 +368,7 @@ checkFunction(FnSymbol* fn) {
 
   if (fn->retTag == RET_TYPE || fn->retTag == RET_PARAM) {
     for_formals(formal, fn) {
-      if (formal->intent == INTENT_OUT ||
-          formal->intent == INTENT_INOUT) {
+      if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
         USR_FATAL_CONT(formal,
                        "Cannot use %s in a "
                        "function returning with '%s' intent",
@@ -398,7 +383,8 @@ checkFunction(FnSymbol* fn) {
       if (formal->intent == INTENT_OUT) {
         USR_FATAL_CONT(formal, "out intent is not yet supported for iterators");
       } else if (formal->intent == INTENT_INOUT) {
-        USR_FATAL_CONT(formal, "inout intent is not yet supported for iterators");
+        USR_FATAL_CONT(formal,
+                       "inout intent is not yet supported for iterators");
       }
     }
   }
@@ -407,8 +393,8 @@ checkFunction(FnSymbol* fn) {
 static void checkOperator(FnSymbol* fn) {
   if (!fn->hasFlag(FLAG_OPERATOR)) {
     if (isAstrOpName(fn->name)) {
-      USR_FATAL_CONT(fn,
-                     "Operators cannot be declared without the operator keyword");
+      USR_FATAL_CONT(
+        fn, "Operators cannot be declared without the operator keyword");
     }
   } else {
     if (!isAstrOpName(fn->name)) {
@@ -428,14 +414,14 @@ static void includedStrictNames(ModuleSymbol* mod) {
     // module name should match file name
     const char* fname = filenameToModulename(parent->astloc.filename());
     if (fname != parent->name) {
-      USR_FATAL("Cannot include modules from a module whose name doesn't match its filename");
+      USR_FATAL("Cannot include modules from a module whose name doesn't match "
+                "its filename");
     }
 
     // parent module must be top-level in its file.
     // in is not necessarily a top-level module, though.
     ModuleSymbol* lastParentSameFile = parent;
-    for (ModuleSymbol* cur = parent;
-         cur != NULL && cur->defPoint != NULL;
+    for (ModuleSymbol* cur = parent; cur != NULL && cur->defPoint != NULL;
          cur = cur->defPoint->getModule()) {
       if (parent->astloc.filename() == cur->astloc.filename()) {
         lastParentSameFile = cur;
@@ -462,14 +448,14 @@ static void includedStrictNames(ModuleSymbol* mod) {
 // This is probably a good anchor for a family of tests of this form.
 //
 
-static void
-checkModule(ModuleSymbol* mod) {
+static void checkModule(ModuleSymbol* mod) {
   std::vector<CallExpr*> calls;
   collectCallExprs(mod->block, calls);
   for_vector(CallExpr, call, calls) {
     if (call->parentSymbol == mod) {
       if (call->isPrimitive(PRIM_RETURN)) {
-        USR_FATAL_CONT(call, "return statement is not in a function or iterator");
+        USR_FATAL_CONT(call,
+                       "return statement is not in a function or iterator");
       } else if (call->isPrimitive(PRIM_YIELD)) {
         USR_FATAL_CONT(call, "yield statement is outside an iterator");
       }
@@ -477,19 +463,19 @@ checkModule(ModuleSymbol* mod) {
   }
 }
 
-static void
-checkExportedNames()
-{
+static void checkExportedNames() {
   // The right side of the map is a dummy Boolean.
   // We are just using the map to implement a set.
   HashMap<const char*, StringHashFns, bool> names;
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fn->hasFlag(FLAG_EXPORT))
-      continue;
+    if (!fn->hasFlag(FLAG_EXPORT)) continue;
 
     const char* name = fn->cname;
     if (names.get(name))
-      USR_FATAL_CONT(fn, "The name %s cannot be exported twice from the same compilation unit.", name);
+      USR_FATAL_CONT(
+        fn,
+        "The name %s cannot be exported twice from the same compilation unit.",
+        name);
     names.put(name, true);
   }
 }
@@ -500,10 +486,11 @@ checkExportedNames()
 static void checkUseStmt(UseStmt* use) {
   if (!use->isPrivate && !use->isARename() && use->hasOnlyNothing()) {
     const char* name = "M";
-    if (auto used = toUnresolvedSymExpr(use->src))
-      name = used->unresolved;
+    if (auto used = toUnresolvedSymExpr(use->src)) name = used->unresolved;
     USR_WARN(use, "'public use %s only;' has no effect", name);
     USR_PRINT("try 'public import %s;' or 'public use %s as %s only;'",
-              name, name, name);
+              name,
+              name,
+              name);
   }
 }

@@ -48,11 +48,9 @@
 *                                                                             *
 ************************************** | *************************************/
 
-
 bool isSplitInitExpr(Expr* e) {
   if (SymExpr* se = toSymExpr(e))
-    if (se->symbol() == gSplitInit)
-      return true;
+    if (se->symbol() == gSplitInit) return true;
 
   return false;
 }
@@ -79,22 +77,20 @@ bool findInitPoints(DefExpr* def,
                     bool allowReturns) {
   // split initialization doesn't make sense to try for e.g.
   //  var x = 25;
-  if (def->init != NULL && !isSplitInitExpr(def->init))
-    return false;
+  if (def->init != NULL && !isSplitInitExpr(def->init)) return false;
 
   // no extern variables / vars used in inner functions
-  if (allowSplitInit(def->sym) == false)
-    return false;
+  if (allowSplitInit(def->sym) == false) return false;
 
   Expr* start = NULL;
-  if (def->getStmtExpr() != NULL)
-    start = def->getStmtExpr()->next;
+  if (def->getStmtExpr() != NULL) start = def->getStmtExpr()->next;
 
   BlockStmt* ignoreFirstEndInBlock = NULL;
-  if (start != NULL)
-    ignoreFirstEndInBlock = toBlockStmt(start->parentExpr);
+  if (start != NULL) ignoreFirstEndInBlock = toBlockStmt(start->parentExpr);
 
-  found_init_t found = doFindInitPoints(def->sym, start, initAssigns,
+  found_init_t found = doFindInitPoints(def->sym,
+                                        start,
+                                        initAssigns,
                                         usePreventingSplitInit,
                                         allowReturns,
                                         ignoreFirstEndInBlock);
@@ -111,18 +107,17 @@ bool findInitPoints(CallExpr* defaultInit,
   SymExpr* se = toSymExpr(defaultInit->get(1));
   Symbol* sym = se->symbol();
 
-  if (allowSplitInit(sym) == false)
-    return false;
+  if (allowSplitInit(sym) == false) return false;
 
   // PRIM_DEFAULT_INIT_VAR should already be at statement level.
   Expr* start = defaultInit->next;
 
   BlockStmt* ignoreFirstEndInBlock = NULL;
-  if (start != NULL)
-    ignoreFirstEndInBlock = toBlockStmt(start->parentExpr);
+  if (start != NULL) ignoreFirstEndInBlock = toBlockStmt(start->parentExpr);
 
-
-  found_init_t found = doFindInitPoints(sym, start, initAssigns,
+  found_init_t found = doFindInitPoints(sym,
+                                        start,
+                                        initAssigns,
                                         usePreventingSplitInit,
                                         allowReturns,
                                         ignoreFirstEndInBlock);
@@ -138,8 +133,7 @@ static bool allowSplitInit(Symbol* sym) {
     return false;
 
   // split-init doesn't make sense for extern variables
-  if (sym->hasFlag(FLAG_EXTERN))
-    return false;
+  if (sym->hasFlag(FLAG_EXTERN)) return false;
 
   return true;
 }
@@ -194,8 +188,7 @@ static found_init_t doFindInitPoints(Symbol* sym,
                                      Expr*& usePreventingSplitInit,
                                      bool allowReturns,
                                      BlockStmt*& ignoreFirstEndInBlock) {
-  if (start == NULL)
-    return FOUND_NOTHING;
+  if (start == NULL) return FOUND_NOTHING;
 
   // Scroll forward in the block containing DefExpr for x.
   // Find 'x = ' before any use of 'x'.
@@ -269,16 +262,21 @@ static found_init_t doFindInitPoints(Symbol* sym,
         }
 
         found_init_t foundReturn = regularReturn ? FOUND_RET : FOUND_THROW;
-        return handleReturnForInit(foundReturn, sym, cur, initAssigns,
-                                   usePreventingSplitInit, allowReturns,
+        return handleReturnForInit(foundReturn,
+                                   sym,
+                                   cur,
+                                   initAssigns,
+                                   usePreventingSplitInit,
+                                   allowReturns,
                                    ignoreFirstEndInBlock);
       }
 
-    // { x = ... }
+      // { x = ... }
     } else if (BlockStmt* block = toBlockStmt(cur)) {
 
       if (block->isLoopStmt() ||
-          (block->isRealBlockStmt() == false && !block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))) {
+          (block->isRealBlockStmt() == false &&
+           !block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))) {
         // Loop / on / begin / etc - just check for uses
         if (SymExpr* se = findSymExprFor(cur, sym)) {
           usePreventingSplitInit = se;
@@ -287,7 +285,9 @@ static found_init_t doFindInitPoints(Symbol* sym,
       } else {
         // non-loop block
         Expr* start = block->body.first();
-        found_init_t found = doFindInitPoints(sym, start, initAssigns,
+        found_init_t found = doFindInitPoints(sym,
+                                              start,
+                                              initAssigns,
                                               usePreventingSplitInit,
                                               allowReturns,
                                               ignoreFirstEndInBlock);
@@ -296,16 +296,22 @@ static found_init_t doFindInitPoints(Symbol* sym,
         } else if (found == FOUND_USE) {
           return FOUND_USE;
         } else if (found == FOUND_RET || found == FOUND_THROW) {
-          return handleReturnForInit(found, sym, cur, initAssigns,
-                                     usePreventingSplitInit, allowReturns,
+          return handleReturnForInit(found,
+                                     sym,
+                                     cur,
+                                     initAssigns,
+                                     usePreventingSplitInit,
+                                     allowReturns,
                                      ignoreFirstEndInBlock);
         }
       }
 
-    // try { x = ... }
+      // try { x = ... }
     } else if (TryStmt* tr = toTryStmt(cur)) {
       Expr* start = tr->body()->body.first();
-      found_init_t foundBody = doFindInitPoints(sym, start, initAssigns,
+      found_init_t foundBody = doFindInitPoints(sym,
+                                                start,
+                                                initAssigns,
                                                 usePreventingSplitInit,
                                                 allowReturns,
                                                 ignoreFirstEndInBlock);
@@ -313,8 +319,7 @@ static found_init_t doFindInitPoints(Symbol* sym,
       bool allCatchesRet = true;
       CatchStmt* nonReturningCatch = NULL;
 
-      if (foundBody == FOUND_USE)
-        return FOUND_USE;
+      if (foundBody == FOUND_USE) return FOUND_USE;
 
       // if there are any catches, check them for uses;
       // also a catch block prevents initialization in the try body.
@@ -326,9 +331,8 @@ static found_init_t doFindInitPoints(Symbol* sym,
             std::vector<CallExpr*> inits;
             Expr* use = NULL;
             Expr* start = ctch->body()->body.first();
-            found_init_t foundCatch = doFindInitPoints(sym, start, inits,
-                                                       use, allowReturns,
-                                                       ignoreFirstEndInBlock);
+            found_init_t foundCatch = doFindInitPoints(
+              sym, start, inits, use, allowReturns, ignoreFirstEndInBlock);
             if (foundCatch == FOUND_USE || foundCatch == FOUND_INIT) {
               // Consider even an assignment in a catch block as a use
               usePreventingSplitInit = findSymExprFor(ctch, sym);
@@ -353,12 +357,16 @@ static found_init_t doFindInitPoints(Symbol* sym,
           return FOUND_USE;
         }
       } else if (foundBody == FOUND_RET || foundBody == FOUND_THROW) {
-        return handleReturnForInit(foundBody, sym, cur, initAssigns,
-                                   usePreventingSplitInit, allowReturns,
+        return handleReturnForInit(foundBody,
+                                   sym,
+                                   cur,
+                                   initAssigns,
+                                   usePreventingSplitInit,
+                                   allowReturns,
                                    ignoreFirstEndInBlock);
       }
 
-    // if _ { x = ... } else { x = ... }
+      // if _ { x = ... } else { x = ... }
     } else if (CondStmt* cond = toCondStmt(cur)) {
       if (SymExpr* se = findSymExprFor(cond->condExpr, sym)) {
         usePreventingSplitInit = se;
@@ -371,38 +379,33 @@ static found_init_t doFindInitPoints(Symbol* sym,
       std::vector<CallExpr*> elseAssigns;
       Expr* ifUse = NULL;
       Expr* elseUse = NULL;
-      found_init_t foundIf = doFindInitPoints(sym, ifStart, ifAssigns,
-                                              ifUse, allowReturns,
-                                              ignoreFirstEndInBlock);
+      found_init_t foundIf = doFindInitPoints(
+        sym, ifStart, ifAssigns, ifUse, allowReturns, ignoreFirstEndInBlock);
       found_init_t foundElse = FOUND_NOTHING;
       if (elseStart != NULL)
-        foundElse = doFindInitPoints(sym, elseStart, elseAssigns,
-                                     elseUse, allowReturns,
+        foundElse = doFindInitPoints(sym,
+                                     elseStart,
+                                     elseAssigns,
+                                     elseUse,
+                                     allowReturns,
                                      ignoreFirstEndInBlock);
 
       bool ifInits = foundIf == FOUND_INIT;
       bool elseInits = foundElse == FOUND_INIT;
-      bool ifReturns = foundIf == FOUND_THROW ||
-                       (foundIf == FOUND_RET && allowReturns);
-      bool elseReturns = foundElse == FOUND_THROW ||
-                         (foundElse == FOUND_RET && allowReturns);
-      if ((ifInits   && elseInits) ||
-          (ifInits   && elseReturns) ||
+      bool ifReturns =
+        foundIf == FOUND_THROW || (foundIf == FOUND_RET && allowReturns);
+      bool elseReturns =
+        foundElse == FOUND_THROW || (foundElse == FOUND_RET && allowReturns);
+      if ((ifInits && elseInits) || (ifInits && elseReturns) ||
           (ifReturns && elseInits)) {
-        for_vector(CallExpr, call, ifAssigns) {
-          initAssigns.push_back(call);
-        }
-        for_vector(CallExpr, call, elseAssigns) {
-          initAssigns.push_back(call);
-        }
+        for_vector(CallExpr, call, ifAssigns) { initAssigns.push_back(call); }
+        for_vector(CallExpr, call, elseAssigns) { initAssigns.push_back(call); }
         return FOUND_INIT;
       } else if (foundIf == FOUND_USE || foundElse == FOUND_USE) {
         // at least one of them must be FOUND_USE, so return that
         usePreventingSplitInit = cur;
-        if (ifUse != NULL)
-          usePreventingSplitInit = ifUse;
-        if (elseUse != NULL)
-          usePreventingSplitInit = elseUse;
+        if (ifUse != NULL) usePreventingSplitInit = ifUse;
+        if (elseUse != NULL) usePreventingSplitInit = elseUse;
         return FOUND_USE;
       } else if (foundIf == FOUND_INIT || foundElse == FOUND_INIT) {
         // initialized on one side but not the other
@@ -415,8 +418,12 @@ static found_init_t doFindInitPoints(Symbol* sym,
         found_init_t found = FOUND_RET;
         if (foundIf == FOUND_THROW && foundElse == FOUND_THROW)
           found = FOUND_THROW;
-        return handleReturnForInit(found, sym, cur, initAssigns,
-                                   usePreventingSplitInit, allowReturns,
+        return handleReturnForInit(found,
+                                   sym,
+                                   cur,
+                                   initAssigns,
+                                   usePreventingSplitInit,
+                                   allowReturns,
                                    ignoreFirstEndInBlock);
       }
 
@@ -464,34 +471,31 @@ void splitInitMissingTypeError(Symbol* sym, Expr* mention, bool unresolved) {
 
   if (unresolved) {
     if (t == dtSplitInitType || !t->symbol->hasFlag(FLAG_GENERIC)) {
-      USR_PRINT(sym->defPoint,
-                "because '%s' is not initialized and has no type",
-                name);
+      USR_PRINT(
+        sym->defPoint, "because '%s' is not initialized and has no type", name);
     } else {
-      USR_PRINT(sym->defPoint,
-                "because '%s' has generic type '%s'",
-                name, toString(t));
+      USR_PRINT(
+        sym->defPoint, "because '%s' has generic type '%s'", name, toString(t));
     }
   } else {
     if (t == dtSplitInitType || !t->symbol->hasFlag(FLAG_GENERIC)) {
-      USR_FATAL_CONT(sym->defPoint,
-                     "'%s' is not initialized and has no type",
-                     name);
+      USR_FATAL_CONT(
+        sym->defPoint, "'%s' is not initialized and has no type", name);
     } else {
       USR_FATAL_CONT(sym->defPoint,
                      "cannot default-initialize a variable with generic type");
-      USR_PRINT(sym->defPoint, "'%s' has generic type '%s'",
-                name, toString(t));
+      USR_PRINT(sym->defPoint, "'%s' has generic type '%s'", name, toString(t));
     }
   }
 
   if (sym->hasFlag(FLAG_FORMAL_TEMP_OUT) ||
       (arg && arg->originalIntent == INTENT_OUT)) {
-    USR_PRINT(arg, "the type for a generic out-intent formal "
-                   "is inferred in the function body");
+    USR_PRINT(arg,
+              "the type for a generic out-intent formal "
+              "is inferred in the function body");
   } else {
     USR_PRINT(sym->defPoint,
-             "cannot find initialization point to split-init this variable");
+              "cannot find initialization point to split-init this variable");
   }
 
   if (mention && !unresolved) {
@@ -534,8 +538,10 @@ struct ReturnInfo {
      elide them. */
   bool elidedCopies;
 
-  ReturnInfo(bool returned, bool elided) : returnedUnconditionally(returned), elidedCopies(elided) {}
-  ReturnInfo(bool convert) : returnedUnconditionally(convert), elidedCopies(convert) {}
+  ReturnInfo(bool returned, bool elided)
+    : returnedUnconditionally(returned), elidedCopies(elided) {}
+  ReturnInfo(bool convert)
+    : returnedUnconditionally(convert), elidedCopies(convert) {}
 };
 
 static ReturnInfo doFindCopyElisionPoints(Expr* start,
@@ -544,8 +550,8 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
 
 // If call is a copy initialization call (e.g. chpl__autoCopy)
 // return the lhs and rhs variables representing the copy.
-static bool findCopyElisionCandidate(CallExpr* call,
-                                     Symbol*& lhs, Symbol*& rhs) {
+static bool
+findCopyElisionCandidate(CallExpr* call, Symbol*& lhs, Symbol*& rhs) {
   // a call to init=
   if (call->isNamedAstr(astrInitEquals)) {
     if (call->numActuals() >= 2) {
@@ -569,10 +575,10 @@ static bool findCopyElisionCandidate(CallExpr* call,
             rhsCall->isNamedAstr(astr_autoCopy) ||
             rhsCall->isNamedAstr(astr_coerceCopy)) {
           int nActuals = rhsCall->numActuals();
-          if (nActuals >= 2) {  // definedConst argument is the second arg
+          if (nActuals >= 2) { // definedConst argument is the second arg
             // note that errorLowering can add an argument
             int rhsIdx = rhsCall->isNamedAstr(astr_coerceCopy) ? 2 : 1;
-            sanityCheckDefinedConstArg(rhsCall->get(rhsIdx+1));
+            sanityCheckDefinedConstArg(rhsCall->get(rhsIdx + 1));
             if (SymExpr* rhsSe = toSymExpr(rhsCall->get(rhsIdx))) {
               if (lhsSe->getValType() == rhsSe->getValType()) {
                 lhs = lhsSe->symbol();
@@ -587,16 +593,15 @@ static bool findCopyElisionCandidate(CallExpr* call,
   }
 
   // a chpl__initCopy / chpl__autoCopy returning through RVV
-  if (call->isNamedAstr(astr_initCopy) ||
-      call->isNamedAstr(astr_autoCopy) ||
+  if (call->isNamedAstr(astr_initCopy) || call->isNamedAstr(astr_autoCopy) ||
       call->isNamedAstr(astr_coerceCopy)) {
     if (FnSymbol* calledFn = call->resolvedFunction()) {
       int nActuals = call->numActuals();
       // as this is function that returns via RVV, we have something like:
       // initCopy(rhs, definedConst, retArg)
       if (calledFn->hasFlag(FLAG_FN_RETARG) && nActuals >= 3) {
-        if (SymExpr* rhsSe = toSymExpr(call->get(nActuals-2))) {
-          sanityCheckDefinedConstArg(call->get(nActuals-1));
+        if (SymExpr* rhsSe = toSymExpr(call->get(nActuals - 2))) {
+          sanityCheckDefinedConstArg(call->get(nActuals - 1));
           if (SymExpr* lhsSe = toSymExpr(call->get(nActuals))) {
             if (lhsSe->getValType() == rhsSe->getValType()) {
               lhs = lhsSe->symbol();
@@ -612,16 +617,15 @@ static bool findCopyElisionCandidate(CallExpr* call,
   return false;
 }
 
-static void doElideCopies(VarToCopyElisionState &map) {
-  for (VarToCopyElisionState::iterator it = map.begin();
-       it != map.end();
+static void doElideCopies(VarToCopyElisionState& map) {
+  for (VarToCopyElisionState::iterator it = map.begin(); it != map.end();
        ++it) {
     VarSymbol* var = it->first;
     CopyElisionState& state = it->second;
 
     if (state.lastIsCopy) {
       std::vector<CallExpr*>& points = state.points;
-      for_vector (CallExpr, call, points) {
+      for_vector(CallExpr, call, points) {
         Symbol* lhs = NULL;
         Symbol* rhs = NULL;
         bool ok = false;
@@ -643,26 +647,24 @@ static void doElideCopies(VarToCopyElisionState &map) {
           VarSymbol* tmp = newTemp("copy_tmp", rhs->getValType());
           Expr* insertBefore = call->getStmtExpr();
           insertBefore->insertBefore(new DefExpr(tmp));
-          insertBefore->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY,
-                                                  tmp,
-                                                  rhs));
+          insertBefore->insertBefore(
+            new CallExpr(PRIM_ASSIGN_ELIDED_COPY, tmp, rhs));
 
           // Use the result of the PRIM_ASSIGN_ELIDED_COPY in the coerceMove.
           call->get(2)->replace(new SymExpr(tmp));
         } else {
           // Change the copy into a move and don't destroy the variable.
 
-          Symbol *definedConst = NULL;
+          Symbol* definedConst = NULL;
           SymExpr* se = NULL;
           if (call->isPrimitive(PRIM_MOVE)) {
-            if (CallExpr *rhsCall = toCallExpr(call->get(2))) {
+            if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
               if (rhsCall->isNamedAstr(astr_initCopy) ||
                   rhsCall->isNamedAstr(astr_autoCopy)) { // can it be autoCopy?
                 definedConst = toSymExpr(rhsCall->get(2))->symbol();
                 INT_ASSERT(definedConst->getValType() == dtBool);
                 se = toSymExpr(rhsCall->get(1));
               }
-
             }
           }
 
@@ -690,8 +692,7 @@ static void doElideCopies(VarToCopyElisionState &map) {
             // check for a postinit call following the init=
             // that has been replaced.
             Expr* postinit = NULL;
-            for (Expr* cur = call->getStmtExpr()->next;
-                 cur != NULL;
+            for (Expr* cur = call->getStmtExpr()->next; cur != NULL;
                  cur = cur->next) {
               if (CallExpr* curCall = toCallExpr(cur)) {
                 if (curCall->isNamedAstr(astrPostinit)) {
@@ -704,8 +705,7 @@ static void doElideCopies(VarToCopyElisionState &map) {
                 }
               }
             }
-            if (postinit == NULL)
-              INT_FATAL("Could not find postinit");
+            if (postinit == NULL) INT_FATAL("Could not find postinit");
 
             postinit->remove();
           }
@@ -743,16 +743,14 @@ static void noteUses(Expr* e, VarToCopyElisionState& map) {
 }
 
 static bool canCopyElideVar(Symbol* rhs) {
-  return isVarSymbol(rhs) &&
-         !rhs->isRef() &&
+  return isVarSymbol(rhs) && !rhs->isRef() &&
          rhs->hasFlag(FLAG_NO_AUTO_DESTROY) == false &&
          (rhs->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
           rhs->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW));
 }
 
 static bool canCopyElideCall(CallExpr* call, Symbol* lhs, Symbol* rhs) {
-  return canCopyElideVar(rhs) &&
-         rhs->getValType() == lhs->getValType() &&
+  return canCopyElideVar(rhs) && rhs->getValType() == lhs->getValType() &&
          rhs->defPoint->parentSymbol == call->parentSymbol &&
          !(isCallExprTemporary(rhs) && isTemporaryFromNoCopyReturn(rhs));
 }
@@ -784,8 +782,7 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
                                           VarToCopyElisionState& map,
                                           VariablesSet& eligible) {
 
-  if (start == NULL)
-    return false;
+  if (start == NULL) return false;
 
   // Process defers after we're done with 'start', in reverse order of appearence
   llvm::SmallVector<DeferStmt*, 4> defers;
@@ -810,8 +807,7 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
       bool foundCopy = findCopyElisionCandidate(call, lhs, rhs);
 
       // handle same-type copy-init from a variable
-      if (foundCopy &&
-          canCopyElideCall(call, lhs, rhs) &&
+      if (foundCopy && canCopyElideCall(call, lhs, rhs) &&
           eligible.count(rhs)) {
         // copy-init from a variable
         VarSymbol* var = toVarSymbol(rhs);
@@ -821,26 +817,25 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
         state.points.clear();
         state.points.push_back(call);
 
-      // handle PRIM_END_OF_STATEMENT
+        // handle PRIM_END_OF_STATEMENT
       } else if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
         std::vector<SymExpr*> symExprs;
         collectSymExprs(call, symExprs);
 
         // allow 1 end of statement following a copy elision.
         // two loops to handle duplicate mentions of same variable in the prim
-        for_vector (SymExpr, se, symExprs) {
+        for_vector(SymExpr, se, symExprs) {
           if (VarSymbol* var = toVarSymbol(se->symbol())) {
             VarToCopyElisionState::iterator it = map.find(var);
             if (it != map.end()) {
               CopyElisionState& state = it->second;
               if (state.lastIsCopy) {
-                if (state.foundEndOfStmtMentioning)
-                  state.reset();
+                if (state.foundEndOfStmtMentioning) state.reset();
               }
             }
           }
         }
-        for_vector (SymExpr, se, symExprs) {
+        for_vector(SymExpr, se, symExprs) {
           if (VarSymbol* var = toVarSymbol(se->symbol())) {
             VarToCopyElisionState::iterator it = map.find(var);
             if (it != map.end()) {
@@ -850,7 +845,7 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
           }
         }
 
-      // handle other calls
+        // handle other calls
       } else {
         noteUses(cur, map);
       }
@@ -860,12 +855,11 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
     if (DefExpr* def = toDefExpr(cur)) {
 
       // note variables that are defined as eligible
-      if (canCopyElideVar(def->sym))
-        eligible.insert(def->sym);
+      if (canCopyElideVar(def->sym)) eligible.insert(def->sym);
 
       noteUses(def, map);
 
-    // return / throw
+      // return / throw
     } else if (isGotoStmt(cur) || isCallExpr(cur)) {
       GotoStmt* gt = toGotoStmt(cur);
       CallExpr* call = toCallExpr(cur);
@@ -890,10 +884,10 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
         clearDefers();
         bool elide = !errorReturn || cannotRecover;
         if (elide) doElideCopies(map);
-        return { true, elide };
+        return {true, elide};
       }
 
-    // { ... }  (nested block)
+      // { ... }  (nested block)
     } else if (BlockStmt* block = toBlockStmt(cur)) {
 
       if (block->isLoopStmt() ||
@@ -927,15 +921,15 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
       doFindCopyElisionPoints(start, map, newEligible);
 
       // note the uses of symbols in the zip call
-      if (CallExpr *zipCall = forall->zipCall()) {
+      if (CallExpr* zipCall = forall->zipCall()) {
         noteUses(zipCall, map);
       }
 
-    // try { ... }
+      // try { ... }
     } else if (isTryStmt(cur)) {
       INT_FATAL("try statement not expected at this point in compilation");
 
-    // if _ { ... } else { ... }
+      // if _ { ... } else { ... }
     } else if (CondStmt* cond = toCondStmt(cur)) {
 
       // note uses from the CondExpr and also thenStmt and elseStmt.
@@ -975,12 +969,12 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
         clearDefers();
         return true;
 
-      // Neither if nor else block unconditionally elided copies.
-      // Promote elision points from
-      // each block into the parent copy elision map. If a variable is
-      // declared in a higher scope and is not copied in both blocks, then
-      // we cannot promote it. The elision points for local variables from
-      // each block can be promoted freely.
+        // Neither if nor else block unconditionally elided copies.
+        // Promote elision points from
+        // each block into the parent copy elision map. If a variable is
+        // declared in a higher scope and is not copied in both blocks, then
+        // we cannot promote it. The elision points for local variables from
+        // each block can be promoted freely.
       } else if (!ifRet.elidedCopies && !elseRet.elidedCopies) {
 
         // First, promote local variables from each block.
@@ -1014,10 +1008,10 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
               state.lastIsCopy = true;
               state.foundEndOfStmtMentioning = false;
               state.points.clear();
-              for_vector (CallExpr, point, ifState.points) {
+              for_vector(CallExpr, point, ifState.points) {
                 state.points.push_back(point);
               }
-              for_vector (CallExpr, point, elseState.points) {
+              for_vector(CallExpr, point, elseState.points) {
                 state.points.push_back(point);
               }
             }
@@ -1026,9 +1020,9 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
           }
         }
 
-      // One block hasn't unconditionally elided copies.
-      // Figure out which one it is, and promote
-      // all its elision points into the parent map.
+        // One block hasn't unconditionally elided copies.
+        // Figure out which one it is, and promote
+        // all its elision points into the parent map.
       } else {
         VarToCopyElisionState::iterator it, end;
         it = ifRet.elidedCopies ? elseMap.begin() : ifMap.begin();
@@ -1036,13 +1030,12 @@ static ReturnInfo doFindCopyElisionPoints(Expr* start,
         for (; it != end; ++it) {
           VarSymbol* var = it->first;
           CopyElisionState& state = it->second;
-          if (state.lastIsCopy)
-            map[var] = state;
+          if (state.lastIsCopy) map[var] = state;
         }
       }
       if (ifRet.returnedUnconditionally && elseRet.returnedUnconditionally) {
         clearDefers();
-        return ReturnInfo { true, ifRet.elidedCopies && elseRet.elidedCopies };
+        return ReturnInfo{true, ifRet.elidedCopies && elseRet.elidedCopies};
       }
     } else if (isFunctionOrTypeDeclaration(cur)) {
       // OK: mentions like `proc f() { ... x ... }` don't count

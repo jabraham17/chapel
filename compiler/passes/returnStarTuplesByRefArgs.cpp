@@ -30,7 +30,6 @@
 
 #include <utility>
 
-
 bool ReturnStarTuplesByRefArgs1::shouldProcess(FnSymbol* fn) {
   return fn->retType->symbol->hasFlag(FLAG_STAR_TUPLE);
 }
@@ -81,7 +80,7 @@ void ReturnStarTuplesByRefArgs1::process(FnSymbol* fn) {
       Symbol* tmp = newTemp(arg->type);
       move->insertBefore(new DefExpr(tmp));
       move->insertBefore(
-          new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, actual)));
+        new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, actual)));
       actual = new SymExpr(tmp);
     }
     move->replace(call->remove());
@@ -114,12 +113,8 @@ void ReturnStarTuplesByRefArgs2::process(CallExpr* call) {
   }
 }
 
-bool ComputeCallSitesPass::shouldProcess(FnSymbol* fn) {
-  return isAlive(fn);
-}
-void ComputeCallSitesPass::process(FnSymbol* fn) {
-  computeAllCallSites(fn);
-}
+bool ComputeCallSitesPass::shouldProcess(FnSymbol* fn) { return isAlive(fn); }
+void ComputeCallSitesPass::process(FnSymbol* fn) { computeAllCallSites(fn); }
 
 // Included down here so only the returnStarTuplesByRefArgs has access
 #include "global-ast-vecs.h"

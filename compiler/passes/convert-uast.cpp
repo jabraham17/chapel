@@ -81,8 +81,7 @@ struct Converter final : UastConverter {
     std::vector<ID> usedModuleIds;
     bool isFromLibraryFile = false;
     ModStackEntry(const uast::Module* mod, bool isFromLibraryFile)
-      : mod(mod), isFromLibraryFile(isFromLibraryFile) {
-    }
+      : mod(mod), isFromLibraryFile(isFromLibraryFile) {}
   };
   struct SymStackEntry {
     const uast::AstNode* ast;
@@ -90,8 +89,7 @@ struct Converter final : UastConverter {
 
     SymStackEntry(const uast::AstNode* ast,
                   const resolution::ResolutionResultByPostorderID* resolved)
-      : ast(ast), resolved(resolved) {
-    }
+      : ast(ast), resolved(resolved) {}
   };
 
   chpl::Context* context = nullptr;
@@ -138,11 +136,8 @@ struct Converter final : UastConverter {
      pushScopefulBlock, making the new block appear on this stack. */
   std::vector<BlockStmt*> blockStack;
 
-
   Converter(chpl::Context* context)
-    : context(context),
-      topLevelModTag(MOD_USER)
-  {
+    : context(context), topLevelModTag(MOD_USER) {
     canScopeResolve = fDynoScopeResolve;
     trace = fDynoDebugTrace;
   }
@@ -160,8 +155,8 @@ struct Converter final : UastConverter {
     // no action needed here
   }
 
-  void setFunctionsToConvertWithTypes(const resolution::CalledFnsSet& calledFns) override
-  {
+  void setFunctionsToConvertWithTypes(
+    const resolution::CalledFnsSet& calledFns) override {
     // no action needed here
   }
 
@@ -172,12 +167,13 @@ struct Converter final : UastConverter {
     symbolsToIgnore.erase(ignore);
   }
 
-  void useModuleWhenConverting(const chpl::ID& modId, ModuleSymbol* modSym) override {
+  void useModuleWhenConverting(const chpl::ID& modId,
+                               ModuleSymbol* modSym) override {
     modSyms[modId] = modSym;
   }
 
-  ModuleSymbol*
-  convertToplevelModule(const chpl::uast::Module* mod, ModTag modTag) override;
+  ModuleSymbol* convertToplevelModule(const chpl::uast::Module* mod,
+                                      ModTag modTag) override;
 
   void postConvertApplyFixups() override;
 
@@ -191,8 +187,9 @@ struct Converter final : UastConverter {
 
   // methods to help track what has been converted
   void noteConvertedSym(const uast::AstNode* ast, Symbol* sym) override;
-  void noteConvertedFn(const resolution::TypedFnSignature* sig, FnSymbol* fn) override;
-  Symbol* findConvertedSym(ID id, bool neverTrace=false);
+  void noteConvertedFn(const resolution::TypedFnSignature* sig,
+                       FnSymbol* fn) override;
+  Symbol* findConvertedSym(ID id, bool neverTrace = false);
   void noteIdentFixupNeeded(SymExpr* se, ID id);
   void noteModuleFixupNeeded(ModuleSymbol* m, ID id);
   void noteCallFixupNeeded(SymExpr* se,
@@ -201,9 +198,9 @@ struct Converter final : UastConverter {
   void noteAllContainedFixups(BaseAST* ast, int depth);
 
   // symStack helpers
-  void pushToSymStack(
-       const uast::AstNode* ast,
-       const resolution::ResolutionResultByPostorderID* resolved);
+  void
+  pushToSymStack(const uast::AstNode* ast,
+                 const resolution::ResolutionResultByPostorderID* resolved);
   void popFromSymStack(const uast::AstNode* ast, BaseAST* ret);
   const resolution::ResolutionResultByPostorderID* currentResolutionResult();
 
@@ -227,7 +224,9 @@ struct Converter final : UastConverter {
       blockStack.back()->modRefsAdd(tcs);
       modStack.back().usedModuleIds.push_back(tcs->symId);
     } else {
-      CHPL_ASSERT(false && "Only module symbols and temporary conversion symbols should be stored in a BlockStmt's modRefs!");
+      CHPL_ASSERT(false &&
+                  "Only module symbols and temporary conversion symbols should "
+                  "be stored in a BlockStmt's modRefs!");
     }
   }
 
@@ -247,17 +246,14 @@ struct Converter final : UastConverter {
   }
 
   Expr* convertExprOrNull(const uast::AstNode* node) {
-    if (node == nullptr)
-      return nullptr;
+    if (node == nullptr) return nullptr;
 
     Expr* ret = convertAST(node);
     INT_ASSERT(ret);
     return ret;
   }
 
-  Expr* visit(const uast::Comment* node) {
-    return nullptr;
-  }
+  Expr* visit(const uast::Comment* node) { return nullptr; }
 
   Expr* visit(const uast::AttributeGroup* node) {
     INT_FATAL("Should not be called directly!");
@@ -319,7 +315,8 @@ struct Converter final : UastConverter {
           auto scope = ResolveScope::getScopeFor(theProgram->block);
           if (!scope) scope = ResolveScope::getRootModule();
 
-          if (auto symbol = scope->lookupNameLocally(astr(node->name().c_str()), /* isUse */ false)) {
+          if (auto symbol = scope->lookupNameLocally(astr(node->name().c_str()),
+                                                     /* isUse */ false)) {
             return new SymExpr(symbol);
           }
         } else if (!id.isEmpty()) {
@@ -358,7 +355,8 @@ struct Converter final : UastConverter {
           // to the current 'this' type.
           bool isFieldAccess = false;
           Symbol* parentMethodConvertedThis = nullptr;
-          if (parsing::idIsField(context, id) || parsing::idIsMethod(context, id)) {
+          if (parsing::idIsField(context, id) ||
+              parsing::idIsMethod(context, id)) {
             if (methodThisStack.size() > 0) {
               parentMethodConvertedThis = methodThisStack.back();
               isFieldAccess = true;
@@ -471,7 +469,7 @@ struct Converter final : UastConverter {
                        bool flattenTopLevelScopelessBlocks) {
     BlockStmt* ret = pushScopefulBlock();
 
-    for (auto stmt: stmts) {
+    for (auto stmt : stmts) {
       astlocMarker markAstLoc(stmt->id());
 
       Expr* e = convertAST(stmt);
@@ -498,7 +496,7 @@ struct Converter final : UastConverter {
   convertImplicitBlock(uast::AstListIteratorPair<uast::AstNode> stmts) {
     BlockStmt* ret = nullptr;
 
-    for (auto stmt: stmts) {
+    for (auto stmt : stmts) {
       astlocMarker markAstLoc(stmt->id());
       Expr* e = convertAST(stmt);
       if (!e) continue;
@@ -512,7 +510,7 @@ struct Converter final : UastConverter {
   BlockStmt*
   createBlockWithStmts(uast::AstListIteratorPair<uast::AstNode> stmts,
                        uast::BlockStyle style,
-                       bool flattenTopLevelScopelessBlocks=true) {
+                       bool flattenTopLevelScopelessBlocks = true) {
     BlockStmt* ret = nullptr;
 
     switch (style) {
@@ -520,9 +518,7 @@ struct Converter final : UastConverter {
       case uast::BlockStyle::EXPLICIT:
         ret = convertExplicitBlock(stmts, flattenTopLevelScopelessBlocks);
         break;
-      case uast::BlockStyle::IMPLICIT:
-        ret = convertImplicitBlock(stmts);
-        break;
+      case uast::BlockStyle::IMPLICIT: ret = convertImplicitBlock(stmts); break;
     }
 
     INT_ASSERT(ret);
@@ -530,11 +526,10 @@ struct Converter final : UastConverter {
     return ret;
   }
 
-  Expr*
-  singleExprFromStmts(uast::AstListIteratorPair<uast::AstNode> stmts) {
+  Expr* singleExprFromStmts(uast::AstListIteratorPair<uast::AstNode> stmts) {
     Expr* ret = nullptr;
 
-    for (auto stmt: stmts) {
+    for (auto stmt : stmts) {
       if (ret != nullptr) return nullptr;
       ret = convertAST(stmt);
     }
@@ -585,7 +580,8 @@ struct Converter final : UastConverter {
 
         storedResourceVar = as->rename()->toVariable();
         INT_ASSERT(storedResourceVar);
-        INT_ASSERT(!storedResourceVar->initExpression() && !storedResourceVar->typeExpression());
+        INT_ASSERT(!storedResourceVar->initExpression() &&
+                   !storedResourceVar->typeExpression());
 
         resourceName = astr(storedResourceVar->name());
 
@@ -596,22 +592,14 @@ struct Converter final : UastConverter {
           // TODO: Duplication here and with 'attachSymbolStorage',
           // consider cleaning up after parser is replaced.
           switch (storedResourceVar->kind()) {
-            case uast::Variable::CONST:
-              flags->insert(FLAG_CONST);
-              break;
+            case uast::Variable::CONST: flags->insert(FLAG_CONST); break;
             case uast::Variable::CONST_REF:
               flags->insert(FLAG_REF_VAR);
               flags->insert(FLAG_CONST);
               break;
-            case uast::Variable::PARAM:
-              flags->insert(FLAG_PARAM);
-              break;
-            case uast::Variable::REF:
-              flags->insert(FLAG_REF_VAR);
-              break;
-            case uast::Variable::TYPE:
-              flags->insert(FLAG_TYPE_VARIABLE);
-              break;
+            case uast::Variable::PARAM: flags->insert(FLAG_PARAM); break;
+            case uast::Variable::REF: flags->insert(FLAG_REF_VAR); break;
+            case uast::Variable::TYPE: flags->insert(FLAG_TYPE_VARIABLE); break;
             default: break;
           }
         }
@@ -622,7 +610,8 @@ struct Converter final : UastConverter {
       INT_ASSERT(managerExpr);
 
       Symbol* storedResource;
-      auto conv = buildManagerBlock(managerExpr, flags, resourceName, storedResource);
+      auto conv =
+        buildManagerBlock(managerExpr, flags, resourceName, storedResource);
       if (storedResourceVar) {
         // If we had an 'as <whatever>', the production builder better have
         // created a Symbol* for it.
@@ -668,7 +657,8 @@ struct Converter final : UastConverter {
     }
 
     CallExpr* when = new CallExpr(PRIM_WHEN, args);
-    auto block = createBlockWithStmts(node->body()->stmts(), node->blockStyle());
+    auto block =
+      createBlockWithStmts(node->body()->stmts(), node->blockStyle());
 
     return new CondStmt(when, block);
   }
@@ -719,7 +709,8 @@ struct Converter final : UastConverter {
     ID moduleId, targetId;
     types::QualifiedType targetType;
     if (!isDotOnModule(node, moduleId, targetId, targetType) ||
-        targetId.isEmpty()) return nullptr;
+        targetId.isEmpty())
+      return nullptr;
     if (targetId.isFabricatedId()) {
       CHPL_ASSERT(targetId.fabricatedIdKind() == ID::ExternBlockElement);
       return nullptr;
@@ -829,8 +820,9 @@ struct Converter final : UastConverter {
     mod->addFlag(FLAG_INCLUDED_MODULE);
 
     if (fWarnUnstable && mod->modTag == MOD_USER) {
-      USR_WARN(node->id(), "module include statements are not yet stable "
-                           "and may change");
+      USR_WARN(node->id(),
+               "module include statements are not yet stable "
+               "and may change");
     }
 
     // allow production compiler to take action now that it is parsed
@@ -862,7 +854,7 @@ struct Converter final : UastConverter {
             const char* rename = astr(ident->name());
             conv = buildImportStmt(mod, rename);
 
-          // Handles: 'import foo'
+            // Handles: 'import foo'
           } else {
             Expr* mod = convertAST(vc->symbol());
             conv = buildImportStmt(mod);
@@ -881,9 +873,7 @@ struct Converter final : UastConverter {
 
           conv = buildImportStmt(mod, names);
         } break;
-        default:
-          INT_FATAL("Not possible!");
-          break;
+        default: INT_FATAL("Not possible!"); break;
       }
 
       INT_ASSERT(conv != nullptr);
@@ -900,7 +890,8 @@ struct Converter final : UastConverter {
   Expr* visit(const uast::Init* node) {
     // target should always be "this", aka the method receiver.
     auto toInit = convertAST(node->target());
-    return new CallExpr(new CallExpr(".", toInit, new_CStringSymbol("chpl__initThisType")));
+    return new CallExpr(
+      new CallExpr(".", toInit, new_CStringSymbol("chpl__initThisType")));
   }
 
   CallExpr* visit(const uast::New* node) {
@@ -1014,7 +1005,7 @@ struct Converter final : UastConverter {
     // old parser expects an empty potential rename to indicate something like
     // use A only;
     if (vc->limitationKind() == uast::VisibilityClause::ONLY &&
-        vc->numLimitations()==0) {
+        vc->numLimitations() == 0) {
       PotentialRename* ret = new PotentialRename();
       ret->tag = PotentialRename::SINGLE;
       ret->elem = new UnresolvedSymExpr("");
@@ -1062,8 +1053,7 @@ struct Converter final : UastConverter {
     if (auto opIdent = node->toIdentifier()) {
       auto name = opIdent->name();
       // TODO: check for a resolution result for these
-      if (name == USTR("+"))
-        return new UnresolvedSymExpr("SumReduceScanOp");
+      if (name == USTR("+")) return new UnresolvedSymExpr("SumReduceScanOp");
       if (name == USTR("*"))
         return new UnresolvedSymExpr("ProductReduceScanOp");
       if (name == USTR("&&"))
@@ -1077,16 +1067,11 @@ struct Converter final : UastConverter {
       if (name == USTR("^"))
         return new UnresolvedSymExpr("BitwiseXorReduceScanOp");
 
-      if (name == USTR("max"))
-        return new UnresolvedSymExpr("MaxReduceScanOp");
-      if (name == USTR("maxloc"))
-        return new UnresolvedSymExpr("maxloc");
-      if (name == USTR("min"))
-        return new UnresolvedSymExpr("MinReduceScanOp");
-      if (name == USTR("minloc"))
-        return new UnresolvedSymExpr("minloc");
-      if (name == USTR("minmax"))
-        return new UnresolvedSymExpr("minmax");
+      if (name == USTR("max")) return new UnresolvedSymExpr("MaxReduceScanOp");
+      if (name == USTR("maxloc")) return new UnresolvedSymExpr("maxloc");
+      if (name == USTR("min")) return new UnresolvedSymExpr("MinReduceScanOp");
+      if (name == USTR("minloc")) return new UnresolvedSymExpr("minloc");
+      if (name == USTR("minmax")) return new UnresolvedSymExpr("minmax");
     }
 
     auto ret = convertAST(node);
@@ -1117,14 +1102,15 @@ struct Converter final : UastConverter {
 
         // (const x) is a task intent, but (const x: int) and (const x = 1)
         // are task-private variable declarations.
-        isTaskVarDecl = tv->initExpression() != nullptr ||
-                        tv->typeExpression() != nullptr;
-      // Handle reductions in with clauses explicitly here.
+        isTaskVarDecl =
+          tv->initExpression() != nullptr || tv->typeExpression() != nullptr;
+        // Handle reductions in with clauses explicitly here.
       } else if (const uast::ReduceIntent* rd = expr->toReduceIntent()) {
         astlocMarker markAstLoc(rd->id());
 
-        if(parent->toForeach()) {
-          USR_FATAL(node->id(), "reduce intents can not be used in foreach loops");
+        if (parent->toForeach()) {
+          USR_FATAL(node->id(),
+                    "reduce intents can not be used in foreach loops");
         }
 
         Expr* ovar = new UnresolvedSymExpr(rd->name().c_str());
@@ -1154,9 +1140,8 @@ struct Converter final : UastConverter {
                 // we have nothing to map it to. This will cause problems when
                 // we can't convert TemporaryConversionSymbols referring to this
                 // task intent later. Instead, issue a user-friendly error now.
-                USR_FATAL(svs,
-                          "could not find the outer variable for '%s'",
-                          svs->name);
+                USR_FATAL(
+                  svs, "could not find the outer variable for '%s'", svs->name);
               }
             }
           }
@@ -1182,8 +1167,8 @@ struct Converter final : UastConverter {
   CatchStmt* visit(const uast::Catch* node) {
     auto errorVar = node->error();
     const char* name = errorVar ? astr(errorVar->name()) : nullptr;
-    Expr* type = errorVar ? convertExprOrNull(errorVar->typeExpression())
-                          : nullptr;
+    Expr* type =
+      errorVar ? convertExprOrNull(errorVar->typeExpression()) : nullptr;
     BlockStmt* body = toBlockStmt(convertAST(node->body()));
     CatchStmt* ret = nullptr;
 
@@ -1246,7 +1231,7 @@ struct Converter final : UastConverter {
    */
   bool checkAssignConditional(const uast::Conditional* node) {
     bool assignOp = false;
-    if (node->condition()->isOpCall() ) {
+    if (node->condition()->isOpCall()) {
       auto opCall = node->condition()->toOpCall();
       auto op = opCall->op();
       if (op == USTR("=")) {
@@ -1255,10 +1240,10 @@ struct Converter final : UastConverter {
                        "Assignment is illegal in a conditional");
         USR_PRINT(convertAST(opCall->actual(0)),
                   "Use == to check for equality in a conditional");
-      } else if (op == USTR("+=") || op == USTR("-=") || op == USTR("*=")
-                 || op == USTR("/=") || op == USTR("%=") || op == USTR("**=")
-                 || op == USTR("&=") || op == USTR("|=") || op == USTR("^=")
-                 || op == USTR(">>=")|| op == USTR("<<=")) {
+      } else if (op == USTR("+=") || op == USTR("-=") || op == USTR("*=") ||
+                 op == USTR("/=") || op == USTR("%=") || op == USTR("**=") ||
+                 op == USTR("&=") || op == USTR("|=") || op == USTR("^=") ||
+                 op == USTR(">>=") || op == USTR("<<=")) {
         assignOp = true;
         USR_FATAL_CONT(convertAST(opCall->actual(0)),
                        "Assignment operation %s is illegal in a conditional",
@@ -1429,8 +1414,8 @@ struct Converter final : UastConverter {
   BlockStmt* visit(const uast::DoWhile* node) {
     Expr* condExpr = toExpr(convertAST(node->condition()));
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
-    return DoWhileStmt::build(condExpr, body,
-                              extractLlvmAttributesAndRejectOthers(context, node));
+    return DoWhileStmt::build(
+      condExpr, body, extractLlvmAttributesAndRejectOthers(context, node));
   }
 
   BlockStmt* visit(const uast::While* node) {
@@ -1445,8 +1430,8 @@ struct Converter final : UastConverter {
       condExpr = toExpr(convertAST(node->condition()));
     }
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
-    return WhileDoStmt::build(condExpr, body,
-                              extractLlvmAttributesAndRejectOthers(context, node));
+    return WhileDoStmt::build(
+      condExpr, body, extractLlvmAttributesAndRejectOthers(context, node));
   }
 
   /// IndexableLoops ///
@@ -1469,8 +1454,8 @@ struct Converter final : UastConverter {
 
       return convertVariable(var, false).requireDefOnly();
 
-    // For tuples, recursively call 'convertLoopIndexDecl' on each element.
-    // to produce a CallExpr containing DefExprs
+      // For tuples, recursively call 'convertLoopIndexDecl' on each element.
+      // to produce a CallExpr containing DefExprs
     } else if (const uast::TupleDecl* td = node->toTupleDecl()) {
       CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
       for (auto decl : td->decls()) {
@@ -1479,7 +1464,7 @@ struct Converter final : UastConverter {
       }
       return new CallExpr("_build_tuple", actualList);
 
-    // Else it's something that we haven't seen yet.
+      // Else it's something that we haven't seen yet.
     } else {
       CHPL_UNIMPL("Unhandled Decl");
       return nullptr;
@@ -1530,9 +1515,8 @@ struct Converter final : UastConverter {
 
     INT_ASSERT(expr != nullptr);
 
-    return buildForallLoopExpr(indices, iteratorExpr, expr, cond,
-                               maybeArrayType,
-                               zippered);
+    return buildForallLoopExpr(
+      indices, iteratorExpr, expr, cond, maybeArrayType, zippered);
   }
 
   // Note that block statements in type expressions for variables need to
@@ -1559,8 +1543,8 @@ struct Converter final : UastConverter {
 
       auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
       loopAttributes.applyToLoop(*this, indices, body);
-      return ForallStmt::build(indices, iterator, intents, body, zippered,
-                               serialOK);
+      return ForallStmt::build(
+        indices, iterator, intents, body, zippered, serialOK);
     }
   }
 
@@ -1575,7 +1559,8 @@ struct Converter final : UastConverter {
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     bool zippered = node->iterand()->isZip();
 
-    return buildThunk(buildCoforallLoopStmt, indices, iterator, byref_vars, body, zippered);
+    return buildThunk(
+      buildCoforallLoopStmt, indices, iterator, byref_vars, body, zippered);
   }
 
   Expr* tryExtractFilterCond(const uast::IndexableLoop* node, Expr*& cond) {
@@ -1616,10 +1601,9 @@ struct Converter final : UastConverter {
     if (node->isExpressionLevel()) {
       body = tryExtractFilterCond(node, cond);
 
-      ret = buildForLoopExpr(index, iteratorExpr, body, cond,
-                             maybeArrayType,
-                             zippered);
-    // Param loops use the index variable name as 'const char*'.
+      ret = buildForLoopExpr(
+        index, iteratorExpr, body, cond, maybeArrayType, zippered);
+      // Param loops use the index variable name as 'const char*'.
     } else if (node->isParam()) {
       INT_ASSERT(node->index() && node->index()->isVariable());
 
@@ -1641,8 +1625,13 @@ struct Converter final : UastConverter {
 
       auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
       loopAttributes.applyToLoop(*this, index, block);
-      ret = ForLoop::buildForLoop(index, iteratorExpr, block, zippered,
-                                  isForExpr, extractLlvmAttributesAndRejectOthers(context, node));
+      ret = ForLoop::buildForLoop(
+        index,
+        iteratorExpr,
+        block,
+        zippered,
+        isForExpr,
+        extractLlvmAttributesAndRejectOthers(context, node));
     }
 
     INT_ASSERT(ret != nullptr);
@@ -1668,9 +1657,8 @@ struct Converter final : UastConverter {
     // An 'if-expr' without an else is special pattern for the builder.
     expr = tryExtractFilterCond(node, cond);
 
-    return buildForallLoopExpr(indices, iteratorExpr, expr, cond,
-                               maybeArrayType,
-                               zippered);
+    return buildForallLoopExpr(
+      indices, iteratorExpr, expr, cond, maybeArrayType, zippered);
   }
 
   Expr* visit(const uast::Forall* node) {
@@ -1689,8 +1677,8 @@ struct Converter final : UastConverter {
 
       auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
       loopAttributes.applyToLoop(*this, indices, body);
-      return ForallStmt::build(indices, iterator, intents, body, zippered,
-                               serialOK);
+      return ForallStmt::build(
+        indices, iterator, intents, body, zippered, serialOK);
     }
   }
 
@@ -1709,15 +1697,19 @@ struct Converter final : UastConverter {
     if (node->isExpressionLevel()) {
       auto body = tryExtractFilterCond(node, cond);
 
-      ret = buildForeachLoopExpr(indices, iteratorExpr, body, cond,
-                                 maybeArrayType, zippered);
+      ret = buildForeachLoopExpr(
+        indices, iteratorExpr, body, cond, maybeArrayType, zippered);
     } else {
       auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
       auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
       loopAttributes.applyToLoop(*this, indices, body);
-      ret = ForLoop::buildForeachLoop(indices, iteratorExpr, intents, body,
+      ret = ForLoop::buildForeachLoop(indices,
+                                      iteratorExpr,
+                                      intents,
+                                      body,
                                       zippered,
-                                      isForExpr, std::move(loopAttributes.llvmMetadata));
+                                      isForExpr,
+                                      std::move(loopAttributes.llvmMetadata));
     }
 
     return ret;
@@ -1804,8 +1796,8 @@ struct Converter final : UastConverter {
     Expr* ret = nullptr;
 
     if (node->usedCurlyBraces()) {
-      ret = new CallExpr("chpl__buildDomainExpr", actualList,
-                         new SymExpr(gTrue));
+      ret =
+        new CallExpr("chpl__buildDomainExpr", actualList, new SymExpr(gTrue));
     } else {
       ret = new CallExpr("chpl__ensureDomainExpr", actualList);
     }
@@ -1962,7 +1954,7 @@ struct Converter final : UastConverter {
         ret = new CallExpr(PRIM_TO_BORROWED_CLASS_CHECKED);
       }
 
-    // Unwrap 'foo.bytes' specially to avoid wrapping it in a third call.
+      // Unwrap 'foo.bytes' specially to avoid wrapping it in a third call.
     } else if (auto dot = node->toDot()) {
       auto member = dot->field();
       if (member == USTR("bytes")) {
@@ -1994,8 +1986,8 @@ struct Converter final : UastConverter {
             if (kwSubdomain->name() == USTR("subdomain")) {
               INT_ASSERT(innerCall->numActuals() == 1);
 
-              ret = new CallExpr
-                      ("chpl__buildSparseDomainRuntimeTypeForParentDomain");
+              ret = new CallExpr(
+                "chpl__buildSparseDomainRuntimeTypeForParentDomain");
               Expr* expr = convertAST(innerCall->actual(0));
               ret->insertAtTail(expr);
             }
@@ -2011,7 +2003,8 @@ struct Converter final : UastConverter {
     ID moduleId, targetId;
     types::QualifiedType targetType;
     auto dot = node->calledExpression()->toDot();
-    if (!dot || !isDotOnModule(dot, moduleId, targetId, targetType)) return nullptr;
+    if (!dot || !isDotOnModule(dot, moduleId, targetId, targetType))
+      return nullptr;
 
     // Don't know how to convert fabricated IDs yet.
     if (targetId.isFabricatedId()) {
@@ -2019,7 +2012,8 @@ struct Converter final : UastConverter {
       return nullptr;
     }
 
-    if (!targetId.isEmpty() && targetType.kind() != types::QualifiedType::FUNCTION) {
+    if (!targetId.isEmpty() &&
+        targetType.kind() != types::QualifiedType::FUNCTION) {
       // an empty ID indicates that it's an overloaded function or otherwise unknown,
       // and a function type indicates... a function. Otherwise, it's something
       // else (like a class name) and shouldn't be turned into a call in this
@@ -2029,7 +2023,8 @@ struct Converter final : UastConverter {
 
     auto moduleForCall = findConvertedSym(moduleId);
     storeReferencedMod(moduleForCall);
-    return new CallExpr(new UnresolvedSymExpr(astr(dot->field())), gModuleToken, moduleForCall);
+    return new CallExpr(
+      new UnresolvedSymExpr(astr(dot->field())), gModuleToken, moduleForCall);
   }
 
   Expr* visit(const uast::FnCall* node) {
@@ -2061,19 +2056,19 @@ struct Converter final : UastConverter {
       // to insert the remaining arguments into the second 'borrowed'
       // call rather than just inserting them to the right of it.
       CallExpr* initCall = (isCalledKeyword && isCallExpr(typeExpr))
-          ? toCallExpr(typeExpr)
-          : new CallExpr(typeExpr);
+                             ? toCallExpr(typeExpr)
+                             : new CallExpr(typeExpr);
 
       newExprStart->insertAtTail(initCall);
 
       ret = newExprStart;
       addArgsTo = initCall;
 
-    // Special case 'sparse' since it's weird and can only appear one way.
+      // Special case 'sparse' since it's weird and can only appear one way.
     } else if (Expr* expr = convertSparseKeyword(node)) {
       return expr;
 
-    // If a keyword produces a call, just use that instead of making one.
+      // If a keyword produces a call, just use that instead of making one.
     } else if (Expr* expr = convertCalledKeyword(calledExpression, node)) {
       ret = isCallExpr(expr) ? toCallExpr(expr) : new CallExpr(expr);
       addArgsTo = ret;
@@ -2109,7 +2104,7 @@ struct Converter final : UastConverter {
     CallExpr* ret = new CallExpr("chpl__distributed");
 
     // Call takes actuals in reverse order.
-    for (int i = node->numActuals()-1; i >= 0; i--) {
+    for (int i = node->numActuals() - 1; i >= 0; i--) {
       Expr* actual = convertAST(node->actual(i));
       INT_ASSERT(actual);
       ret->insertAtTail(actual);
@@ -2171,8 +2166,9 @@ struct Converter final : UastConverter {
   }
 
   Expr* convertTupleAssign(const uast::OpCall* node) {
-    if (node->op() != USTR("=") || node->numActuals() < 1
-        || !node->actual(0)->isTuple()) return nullptr;
+    if (node->op() != USTR("=") || node->numActuals() < 1 ||
+        !node->actual(0)->isTuple())
+      return nullptr;
 
     INT_ASSERT(node->numActuals() == 2);
     inTupleAssign = true;
@@ -2191,7 +2187,7 @@ struct Converter final : UastConverter {
   }
 
   Expr* convertRegularBinaryOrUnaryOp(const uast::OpCall* node,
-                                      const char* name=nullptr) {
+                                      const char* name = nullptr) {
     astlocMarker markAstLoc(node->id());
 
     const char* opName = name ? name : astr(node->op());
@@ -2235,9 +2231,9 @@ struct Converter final : UastConverter {
 
   Expr* visit(const uast::PrimCall* node) {
     CallExpr* call = new CallExpr(node->prim());
-      for (auto actual : node->actuals()) {
-        call->insertAtTail(convertAST(actual));
-      }
+    for (auto actual : node->actuals()) {
+      call->insertAtTail(convertAST(actual));
+    }
     return call;
   }
 
@@ -2279,9 +2275,9 @@ struct Converter final : UastConverter {
   Expr* visit(const uast::MultiDecl* node) {
     BlockStmt* ret = new BlockStmt(BLOCK_SCOPELESS);
 
-
     MultiDeclState desugaringState;
-    if (node->destination()) desugaringState.localeTemp = newTemp("chpl__localeTemp");
+    if (node->destination())
+      desugaringState.localeTemp = newTemp("chpl__localeTemp");
 
     // Field multi-decl desugaring happens later in build.cpp and produces
     // different code; don't do redundant work here.
@@ -2307,8 +2303,8 @@ struct Converter final : UastConverter {
 
         // Do not use the linkage name since multi-decls cannot be renamed.
         const bool useLinkageName = false;
-        auto convAll = convertVariable(var, useLinkageName,
-                                       isField ? nullptr : &desugaringState);
+        auto convAll = convertVariable(
+          var, useLinkageName, isField ? nullptr : &desugaringState);
         conv = convAll.entireExpr;
 
         DefExpr* defExpr = convAll.variableDef;
@@ -2316,7 +2312,7 @@ struct Converter final : UastConverter {
         auto varSym = toVarSymbol(defExpr->sym);
         INT_ASSERT(varSym);
 
-      // Otherwise convert in a generic fashion.
+        // Otherwise convert in a generic fashion.
       } else {
         // post-parse checks should rule this out
         INT_ASSERT(!desugaringState.localeTemp);
@@ -2367,12 +2363,12 @@ struct Converter final : UastConverter {
         conv = new DefExpr(varSym);
         noteConvertedSym(formal, varSym);
 
-      // Do not use the visitor because it produces a block statement.
+        // Do not use the visitor because it produces a block statement.
       } else if (auto var = decl->toVariable()) {
         const bool useLinkageName = false;
         conv = convertVariable(var, useLinkageName).entireExpr;
 
-      // It must be a tuple.
+        // It must be a tuple.
       } else {
         INT_ASSERT(decl->isTupleDecl());
         conv = convertTupleDeclComponents(decl->toTupleDecl());
@@ -2410,7 +2406,8 @@ struct Converter final : UastConverter {
 
     // TODO: Shouldn't this be all symbols?
     DefExpr* tmpDef = toDefExpr(ret->body.first());
-    attachSymbolStorage(node->intentOrKind(), tmpDef->sym, ATTACH_QUALIFIED_TYPES_EARLY);
+    attachSymbolStorage(
+      node->intentOrKind(), tmpDef->sym, ATTACH_QUALIFIED_TYPES_EARLY);
 
     // Move the block info around like in 'buildVarDecls'.
     if (auto info = ret->blockInfoGet()) {
@@ -2446,9 +2443,7 @@ struct Converter final : UastConverter {
         last->remove();
       }
       // Add the DefExpr for the VarSymbol to the ret Block
-      for_alist(tmp, varBlock->body) {
-        ret->insertAtTail(tmp->remove());
-      }
+      for_alist(tmp, varBlock->body) { ret->insertAtTail(tmp->remove()); }
       varName = var->name();
     }
 
@@ -2481,13 +2476,12 @@ struct Converter final : UastConverter {
     auto thisTypeExpr = new UnresolvedSymExpr(decl->name().c_str());
 
     // add a 'this' formal
-    ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this",
-                                   dtUnknown, thisTypeExpr);
+    ArgSymbol* arg =
+      new ArgSymbol(fn->thisTag, "this", dtUnknown, thisTypeExpr);
     fn->_this = arg;
 
-    fn->insertFormalAtTail(new DefExpr(new ArgSymbol(INTENT_BLANK,
-                                                 "_mt",
-                                                 dtMethodToken)));
+    fn->insertFormalAtTail(
+      new DefExpr(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken)));
     fn->insertFormalAtTail(new DefExpr(arg));
 
     // note that we're in a forwarding declaration working with 'fn'
@@ -2565,16 +2559,13 @@ struct Converter final : UastConverter {
 
     INT_ASSERT(node->isOpCall() || node->isReturn());
     if (auto opCall = node->toOpCall()) {
-      INT_ASSERT(opCall->numActuals()==2);
+      INT_ASSERT(opCall->numActuals() == 2);
       auto lhsIdent = opCall->actual(0)->toIdentifier();
       auto rhsIdent = opCall->actual(1)->toIdentifier();
       INT_ASSERT(lhsIdent && rhsIdent);
-      INT_ASSERT(opCall->op() == USTR("=") ||
-                 opCall->op() == USTR("<") ||
-                 opCall->op() == USTR(">") ||
-                 opCall->op() == USTR("==")||
-                 opCall->op() == USTR("<=")||
-                 opCall->op() == USTR(">="));
+      INT_ASSERT(opCall->op() == USTR("=") || opCall->op() == USTR("<") ||
+                 opCall->op() == USTR(">") || opCall->op() == USTR("==") ||
+                 opCall->op() == USTR("<=") || opCall->op() == USTR(">="));
       Expr* lhs = convertLifetimeIdent(lhsIdent);
       Expr* rhs = convertLifetimeIdent(rhsIdent);
       return new CallExpr(opCall->op().c_str(), lhs, rhs);
@@ -2597,8 +2588,8 @@ struct Converter final : UastConverter {
 
     auto ident = node->toIdentifier();
     INT_ASSERT(ident);
-    CallExpr* callExpr = new CallExpr(PRIM_LIFETIME_OF,
-                                      convertExprOrNull(node));
+    CallExpr* callExpr =
+      new CallExpr(PRIM_LIFETIME_OF, convertExprOrNull(node));
     return callExpr;
   }
 
@@ -2610,8 +2601,7 @@ struct Converter final : UastConverter {
     const resolution::ResolvedFunction* resolvedFn = nullptr;
 
     if (shouldScopeResolveFunction) {
-      resolvedFn =
-        resolution::scopeResolveFunction(context, node->id());
+      resolvedFn = resolution::scopeResolveFunction(context, node->id());
       if (resolvedFn) {
         resolved = &resolvedFn->resolutionById();
       }
@@ -2625,8 +2615,7 @@ struct Converter final : UastConverter {
 
     // Note that we have already converted this function
     noteConvertedSym(node, fn);
-    if (resolvedFn)
-      noteConvertedFn(resolvedFn->signature(), fn);
+    if (resolvedFn) noteConvertedFn(resolvedFn->signature(), fn);
 
     fn->userString = constructUserString(node);
 
@@ -2682,13 +2671,13 @@ struct Converter final : UastConverter {
             }
           }
 
-        // A varargs formal.
+          // A varargs formal.
         } else if (auto formal = decl->toVarArgFormal()) {
           INT_ASSERT(formal->name() != USTR("this"));
           conv = toDefExpr(convertAST(formal));
           INT_ASSERT(conv);
 
-        // A tuple decl, where components are formals or tuple decls.
+          // A tuple decl, where components are formals or tuple decls.
         } else if (auto formal = decl->toTupleDecl()) {
           auto castIntent = (uast::Formal::Intent)formal->intentOrKind();
           IntentTag tag = convertFormalIntent(castIntent);
@@ -2738,8 +2727,7 @@ struct Converter final : UastConverter {
       }
     }
 
-    if (fn->name == astrDeinit)
-      fn->addFlag(FLAG_DESTRUCTOR);
+    if (fn->name == astrDeinit) fn->addFlag(FLAG_DESTRUCTOR);
 
     if (isAssignOp(node->name())) {
       fn->addFlag(FLAG_ASSIGNOP);
@@ -2789,7 +2777,10 @@ struct Converter final : UastConverter {
       body = createBlockWithStmts(node->stmts(), style);
     }
 
-    setupFunctionDecl(fn, retTag, retType, node->throws(),
+    setupFunctionDecl(fn,
+                      retTag,
+                      retType,
+                      node->throws(),
                       whereClause,
                       lifetimeConstraints,
                       body);
@@ -2852,19 +2843,19 @@ struct Converter final : UastConverter {
               setupTypeIntentArg(convertedReceiver);
             }
 
-          // E.g., a formal like 'proc(_: int)'.
+            // E.g., a formal like 'proc(_: int)'.
           } else if (formal->isExplicitlyAnonymous()) {
             conv->sym->addFlag(FLAG_ANONYMOUS_FORMAL);
             INT_ASSERT(!strcmp(conv->sym->name, "_"));
           }
 
-        // A varargs formal.
+          // A varargs formal.
         } else if (auto formal = decl->toVarArgFormal()) {
           INT_ASSERT(formal->name() != USTR("this"));
           conv = toDefExpr(convertAST(formal));
           INT_ASSERT(conv);
 
-        // A tuple decl, where components are formals or tuple decls.
+          // A tuple decl, where components are formals or tuple decls.
         } else if (auto formal = decl->toTupleDecl()) {
           auto castIntent = (uast::Formal::Intent)formal->intentOrKind();
           IntentTag tag = convertFormalIntent(castIntent);
@@ -2921,7 +2912,10 @@ struct Converter final : UastConverter {
     // TODO: I'd like to get rid of these build calls (if Michael
     // has not already gotten rid of them on main), as there's not
     // too much in them.
-    setupFunctionDecl(fn, retTag, retType, node->throws(),
+    setupFunctionDecl(fn,
+                      retTag,
+                      retType,
+                      node->throws(),
                       /*whereClause*/ nullptr,
                       /*lifetimeConstraints*/ nullptr,
                       /*body*/ nullptr);
@@ -3069,15 +3063,12 @@ struct Converter final : UastConverter {
     currentModuleName = name;
     auto body = createBlockWithStmts(node->stmts(), style);
 
-
     ModuleSymbol* mod = nullptr;
     auto it = modSyms.find(node->id());
     if (it != modSyms.end()) {
       mod = it->second;
       // append the newly converted statements to the module's block
-      for_alist(expr, body->body) {
-        mod->block->insertAtTail(expr->remove());
-      }
+      for_alist(expr, body->body) { mod->block->insertAtTail(expr->remove()); }
     } else {
       mod = buildModule(name, tag, body, path, priv, prototype);
 
@@ -3145,10 +3136,11 @@ struct Converter final : UastConverter {
     Expr* typeExpr = convertTypeExpressionOrNull(node->typeExpression());
     Expr* initExpr = convertExprOrNull(node->initExpression());
 
-    auto ret =  buildArgDefExpr(intentTag, node->name().c_str(),
-                                typeExpr,
-                                initExpr,
-                                /*varargsVariable*/ nullptr);
+    auto ret = buildArgDefExpr(intentTag,
+                               node->name().c_str(),
+                               typeExpr,
+                               initExpr,
+                               /*varargsVariable*/ nullptr);
     INT_ASSERT(ret->sym);
 
     attachSymbolAttributes(context, node, ret->sym, isFromLibraryFile());
@@ -3180,10 +3172,8 @@ struct Converter final : UastConverter {
       def->sym->addFlag(FLAG_PARAM);
     }
 
-    auto ret = buildArgDefExpr(intentTag, node->name().c_str(),
-                               typeExpr,
-                               initExpr,
-                               varargsVariable);
+    auto ret = buildArgDefExpr(
+      intentTag, node->name().c_str(), typeExpr, initExpr, varargsVariable);
     INT_ASSERT(ret->sym);
 
     attachSymbolAttributes(context, node, ret->sym, isFromLibraryFile());
@@ -3229,7 +3219,7 @@ struct Converter final : UastConverter {
           domActuals = new SymExpr(gNil);
           isEmptyDomain = true;
 
-        // Otherwise, check for and sanitize type queries.
+          // Otherwise, check for and sanitize type queries.
         } else {
           for (int i = 0; i < dom->numExprs(); i++) {
             if (auto tq = dom->expr(i)->toTypeQuery()) {
@@ -3276,9 +3266,8 @@ struct Converter final : UastConverter {
       INT_ASSERT(subType);
     }
 
-    CallExpr* ret = new CallExpr("chpl__buildArrayRuntimeType",
-                                 domActuals,
-                                 subType);
+    CallExpr* ret =
+      new CallExpr("chpl__buildArrayRuntimeType", domActuals, subType);
 
     // This nonsense must be done so that the old builders can emit errors
     // about skyline arrays. TODO: Move check to 'dyno' rather than do this.
@@ -3356,8 +3345,8 @@ struct Converter final : UastConverter {
   // For children of remote multi-decls, parentDestination is the destination
   // of the outer multiDecl.
   VariableDefInfo convertVariable(const uast::Variable* node,
-                           bool useLinkageName,
-                           MultiDeclState* multiState = nullptr) {
+                                  bool useLinkageName,
+                                  MultiDeclState* multiState = nullptr) {
     astlocMarker markAstLoc(node->id());
 
     bool isStatic = false;
@@ -3365,7 +3354,8 @@ struct Converter final : UastConverter {
     if (auto ag = node->attributeGroup()) {
       if (auto attr = ag->getAttributeNamed(USTR("functionStatic"))) {
         if (!node->initExpression()) {
-          USR_FATAL(node->id(), "function-static variables must have an initializer.");
+          USR_FATAL(node->id(),
+                    "function-static variables must have an initializer.");
         }
         // post-parse checks rule this out.
         CHPL_ASSERT(!node->destination());
@@ -3377,11 +3367,14 @@ struct Converter final : UastConverter {
       }
     }
 
-    bool isRemote = node->destination() != nullptr ||
-                    (multiState != nullptr && multiState->localeTemp != nullptr);
-    auto block = (isRemote || multiState) ? new BlockStmt(BLOCK_SCOPELESS) : nullptr;
+    bool isRemote =
+      node->destination() != nullptr ||
+      (multiState != nullptr && multiState->localeTemp != nullptr);
+    auto block =
+      (isRemote || multiState) ? new BlockStmt(BLOCK_SCOPELESS) : nullptr;
 
-    auto varSym = new VarSymbol(sanitizeVarName(node->name().c_str(), inTupleDecl));
+    auto varSym =
+      new VarSymbol(sanitizeVarName(node->name().c_str(), inTupleDecl));
     const bool isTypeVar = node->kind() == uast::Variable::TYPE;
 
     if (fIdBasedMunging && node->linkage() == uast::Decl::DEFAULT_LINKAGE) {
@@ -3409,9 +3402,7 @@ struct Converter final : UastConverter {
       }
       // adjust the cname for module-scope variables
       if (moduleScopeVar && mod) {
-        varSym->cname = astr(mod->id().symbolPath().c_str(),
-                             ".",
-                             varSym->name);
+        varSym->cname = astr(mod->id().symbolPath().c_str(), ".", varSym->name);
       }
     }
 
@@ -3420,10 +3411,8 @@ struct Converter final : UastConverter {
       // Remote variables get desugared early (now!), but they get turned
       // into references to remote memory. So, we need the symbol storage
       // kind to be REF, not VAR.
-      switch(symbolKind) {
-        case uast::Variable::VAR:
-          symbolKind = uast::Variable::REF;
-          break;
+      switch (symbolKind) {
+        case uast::Variable::VAR: symbolKind = uast::Variable::REF; break;
         case uast::Variable::CONST:
           symbolKind = uast::Variable::CONST_REF;
           break;
@@ -3450,8 +3439,7 @@ struct Converter final : UastConverter {
     }
 
     // TODO (dlongnecke): Move to new parser (or post-parsing walk).
-    if (node->kind() == uast::Variable::PARAM &&
-        linkageFlag == FLAG_EXTERN) {
+    if (node->kind() == uast::Variable::PARAM && linkageFlag == FLAG_EXTERN) {
       USR_FATAL(varSym, "external params are not supported");
     }
 
@@ -3548,7 +3536,9 @@ struct Converter final : UastConverter {
       CHPL_ASSERT(block);
       auto wrapper = new VarSymbol(astr("chpl_wrapper_", varSym->name));
       auto wrapperCall = new CallExpr("chpl__buildRemoteWrapper");
-      wrapperCall->insertAtTail(destinationExpr ? destinationExpr : new SymExpr(multiState->localeTemp));
+      wrapperCall->insertAtTail(destinationExpr
+                                  ? destinationExpr
+                                  : new SymExpr(multiState->localeTemp));
 
       if (typeExpr) wrapperCall->insertAtTail(typeExpr);
       if (initExpr) {
@@ -3560,13 +3550,14 @@ struct Converter final : UastConverter {
       }
       auto wrapperDef = new DefExpr(wrapper, wrapperCall);
 
-      auto wrapperGet = new CallExpr(".", new SymExpr(wrapper), new_CStringSymbol("get"));
+      auto wrapperGet =
+        new CallExpr(".", new SymExpr(wrapper), new_CStringSymbol("get"));
       def = new DefExpr(varSym, new CallExpr(wrapperGet));
       varSym->addFlag(FLAG_REMOTE_VARIABLE);
 
       block->insertAtTail(wrapperDef);
       block->insertAtTail(def);
-      ret = VariableDefInfo { def, block };
+      ret = VariableDefInfo{def, block};
     } else {
       def = new DefExpr(varSym, initExpr, typeExpr);
       Expr* entireExpr = def;
@@ -3575,7 +3566,7 @@ struct Converter final : UastConverter {
         block->insertAtTail(def);
       }
 
-      ret = VariableDefInfo { def, entireExpr };
+      ret = VariableDefInfo{def, entireExpr};
     }
 
     auto loopFlags = LoopAttributeInfo::fromVariableDeclaration(context, node);
@@ -3724,8 +3715,8 @@ struct Converter final : UastConverter {
                             bool& inheritMarkedGeneric) {
     for (auto inheritExpr : iterable) {
       bool thisInheritMarkedGeneric = false;
-      auto* ident =
-        uast::Class::getUnwrappedInheritExpr(inheritExpr, thisInheritMarkedGeneric);
+      auto* ident = uast::Class::getUnwrappedInheritExpr(
+        inheritExpr, thisInheritMarkedGeneric);
 
       // Always convert the target expression so that we note used modules
       // as needed. We won't necessarily use the resulting expression;
@@ -3749,8 +3740,9 @@ struct Converter final : UastConverter {
           auto toId = result->toId();
           if (!toId.isEmpty()) {
             auto converted = findConvertedSym(toId);
-            CHPL_ASSERT(converted &&
-                        "non-null 'results' implies scope resolution is enabled");
+            CHPL_ASSERT(
+              converted &&
+              "non-null 'results' implies scope resolution is enabled");
             inherits.push_back(new SymExpr(converted));
             continue;
           }
@@ -3818,11 +3810,8 @@ struct Converter final : UastConverter {
       INT_ASSERT(externFlag == FLAG_UNKNOWN);
     }
 
-    auto ret = buildClassDefExpr(name, cname, tag,
-                                 inherits,
-                                 decls,
-                                 externFlag,
-                                 topLevelModTag);
+    auto ret = buildClassDefExpr(
+      name, cname, tag, inherits, decls, externFlag, topLevelModTag);
     INT_ASSERT(ret->sym);
 
     attachSymbolAttributes(context, node, ret->sym, isFromLibraryFile());
@@ -3839,22 +3828,13 @@ struct Converter final : UastConverter {
     return ret;
   }
 
-  Expr* visit(const uast::Class* node) {
-    return convertAggregateDecl(node);
-  }
+  Expr* visit(const uast::Class* node) { return convertAggregateDecl(node); }
 
-  Expr* visit(const uast::Record* node) {
-    return convertAggregateDecl(node);
-  }
+  Expr* visit(const uast::Record* node) { return convertAggregateDecl(node); }
 
-  Expr* visit(const uast::Union* node) {
-    return convertAggregateDecl(node);
-  }
+  Expr* visit(const uast::Union* node) { return convertAggregateDecl(node); }
 
-  Expr* visit(const uast::EmptyStmt* node) {
-    return new BlockStmt();
-  }
-
+  Expr* visit(const uast::EmptyStmt* node) { return new BlockStmt(); }
 };
 
 /// Generic conversion calling the above functions ///
@@ -3917,8 +3897,10 @@ void Converter::noteConvertedSym(const uast::AstNode* ast, Symbol* sym) {
 
   if (trace) {
     printf("Converted sym %s %s to %s[%i]\n",
-           astName(ast).c_str(), ast->id().str().c_str(),
-           sym->name, sym->id);
+           astName(ast).c_str(),
+           ast->id().str().c_str(),
+           sym->name,
+           sym->id);
   }
 
   syms[ast->id()] = sym;
@@ -3932,7 +3914,8 @@ void Converter::noteConvertedFn(const resolution::TypedFnSignature* sig,
     printf("Converted fn %s %s to %s[%i]\n",
            sig->untyped()->name().c_str(),
            sig->untyped()->id().str().c_str(),
-           fn->name, fn->id);
+           fn->name,
+           fn->id);
   }
 
   fns.emplace(sig, fn);
@@ -3986,9 +3969,8 @@ void Converter::noteIdentFixupNeeded(SymExpr* se, ID id) {
   if (!canScopeResolve) return;
 
   if (trace) {
-    printf("Noting fixup needed [%i] for mention of %s\n",
-           se->id,
-           id.str().c_str());
+    printf(
+      "Noting fixup needed [%i] for mention of %s\n", se->id, id.str().c_str());
   }
 
   identFixups.emplace_back(se, id);
@@ -3999,7 +3981,8 @@ void Converter::noteModuleFixupNeeded(ModuleSymbol* mod, ID id) {
 
   if (trace) {
     printf("Noting fixup needed [%i] for mention of %s\n",
-           mod->id, id.str().c_str());
+           mod->id,
+           id.str().c_str());
   }
 
   moduleFixups.emplace_back(mod, id);
@@ -4033,7 +4016,7 @@ void Converter::noteAllContainedFixups(BaseAST* ast, int depth) {
     }
   }
 
-  AST_CHILDREN_CALL(ast, noteAllContainedFixups, depth+1);
+  AST_CHILDREN_CALL(ast, noteAllContainedFixups, depth + 1);
 
   if (SymExpr* se = toSymExpr(ast)) {
     if (auto tcs = toTemporaryConversionSymbol(se->symbol())) {
@@ -4045,14 +4028,13 @@ void Converter::noteAllContainedFixups(BaseAST* ast, int depth) {
 }
 
 void Converter::pushToSymStack(
-     const uast::AstNode* ast,
-     const resolution::ResolutionResultByPostorderID* resolved) {
+  const uast::AstNode* ast,
+  const resolution::ResolutionResultByPostorderID* resolved) {
   if (trace) {
     printf("Entering %s %s\n", astName(ast).c_str(), ast->id().str().c_str());
   }
   symStack.emplace_back(ast, resolved);
 }
-
 
 void Converter::popFromSymStack(const uast::AstNode* ast, BaseAST* ret) {
   if (ret != nullptr) {
@@ -4069,7 +4051,9 @@ void Converter::popFromSymStack(const uast::AstNode* ast, BaseAST* ret) {
     if (ret != nullptr) id = ret->id;
 
     printf("Exiting %s %s [%i]\n",
-           astName(ast).c_str(), ast->id().str().c_str(), id);
+           astName(ast).c_str(),
+           ast->id().str().c_str(),
+           id);
   }
   symStack.pop_back();
 }
@@ -4082,9 +4066,8 @@ Converter::currentResolutionResult() {
   return r;
 }
 
-ModuleSymbol*
-Converter::convertToplevelModule(const chpl::uast::Module* mod,
-                                 ModTag modTag) {
+ModuleSymbol* Converter::convertToplevelModule(const chpl::uast::Module* mod,
+                                               ModTag modTag) {
   astlocMarker markAstLoc(mod->id());
 
   topLevelModTag = modTag;
@@ -4113,7 +4096,8 @@ void Converter::postConvertApplyFixups() {
 
     Symbol* sym = findConvertedSym(target, /* neverTrace */ true);
     if (isTemporaryConversionSymbol(sym)) {
-      INT_FATAL(se, "could not find target symbol for sym fixup for %s",
+      INT_FATAL(se,
+                "could not find target symbol for sym fixup for %s",
                 target.str().c_str());
     }
 
@@ -4141,7 +4125,8 @@ void Converter::postConvertApplyFixups() {
     Symbol* sym = findConvertedSym(target, /* neverTrace */ true);
     auto usedM = toModuleSymbol(sym);
     if (!usedM) {
-      INT_FATAL(m, "could not find target symbol for module fixup for %s",
+      INT_FATAL(m,
+                "could not find target symbol for module fixup for %s",
                 target.str().c_str());
     }
 
@@ -4202,11 +4187,9 @@ void Converter::postConvertApplyFixups() {
   fns.clear();
 }
 
-
 // keep the linker happy
-UastConverter::~UastConverter() { }
+UastConverter::~UastConverter() {}
 
 owned<UastConverter> createUntypedConverter(chpl::Context* context) {
   return toOwned(new Converter(context));
 }
-

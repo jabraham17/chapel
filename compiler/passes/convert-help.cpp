@@ -45,7 +45,8 @@ LoopAttributeInfo::tupleToLLVMMetadata(Context* context,
     auto attrVal = node->actual(1);
 
     if (auto str = attrVal->toStringLiteral())
-      return LLVMMetadata::constructString(attrName, str->value().astr(context));
+      return LLVMMetadata::constructString(attrName,
+                                           str->value().astr(context));
     else if (auto int_ = attrVal->toIntLiteral())
       return LLVMMetadata::constructInt(attrName, int_->value());
     else if (auto bool_ = attrVal->toBoolLiteral())
@@ -54,8 +55,8 @@ LoopAttributeInfo::tupleToLLVMMetadata(Context* context,
       auto v = tupleToLLVMMetadata(context, tup);
       if (v == nullptr) return nullptr;
       return LLVMMetadata::constructMetadata(attrName, v);
-    }
-    else return nullptr;
+    } else
+      return nullptr;
   }
 }
 
@@ -77,7 +78,7 @@ LoopAttributeInfo::buildLLVMMetadataList(Context* context,
                                          const uast::Attribute* node) const {
   LLVMMetadataList llvmAttrs;
 
-  for (auto act: node->actuals()) {
+  for (auto act : node->actuals()) {
     auto attr = nodeToLLVMMetadata(context, act);
     if (attr != nullptr) {
       llvmAttrs.push_back(attr);
@@ -101,21 +102,22 @@ void LoopAttributeInfo::readLlvmAttributes(Context* context,
                                            const uast::AttributeGroup* attrs) {
   if (auto a = attrs->getAttributeNamed(USTR("llvm.metadata"))) {
     auto userAttrs = buildLLVMMetadataList(context, a);
-    this->llvmMetadata.insert(this->llvmMetadata.end(),
-                              userAttrs.begin(),
-                              userAttrs.end());
+    this->llvmMetadata.insert(
+      this->llvmMetadata.end(), userAttrs.begin(), userAttrs.end());
   }
   if (auto a = attrs->getAttributeNamed(USTR("llvm.assertVectorized"))) {
     this->llvmMetadata.push_back(buildAssertVectorize(a));
   }
 }
 
-void
-LoopAttributeInfo::readNativeGpuAttributes(const uast::AttributeGroup* attrs) {
-    this->assertOnGpuAttr = attrs->getAttributeNamed(USTR("assertOnGpu"));
-    this->assertEligibleAttr = attrs->getAttributeNamed(USTR("gpu.assertEligible"));
-    this->blockSizeAttr = attrs->getAttributeNamed(USTR("gpu.blockSize"));
-    this->itersPerThreadAttr = attrs->getAttributeNamed(USTR("gpu.itersPerThread"));
+void LoopAttributeInfo::readNativeGpuAttributes(
+  const uast::AttributeGroup* attrs) {
+  this->assertOnGpuAttr = attrs->getAttributeNamed(USTR("assertOnGpu"));
+  this->assertEligibleAttr =
+    attrs->getAttributeNamed(USTR("gpu.assertEligible"));
+  this->blockSizeAttr = attrs->getAttributeNamed(USTR("gpu.blockSize"));
+  this->itersPerThreadAttr =
+    attrs->getAttributeNamed(USTR("gpu.itersPerThread"));
 }
 
 bool LoopAttributeInfo::insertGpuEligibilityAssertion(BlockStmt* body) {
@@ -156,14 +158,14 @@ static bool convertAttributeCall(UastConverter& converter,
 
 bool LoopAttributeInfo::insertBlockSizeCall(UastConverter& converter,
                                             BlockStmt* body) {
-  return convertAttributeCall(converter, body,
-                              blockSizeAttr, "chpl__gpuBlockSizeAttr");
+  return convertAttributeCall(
+    converter, body, blockSizeAttr, "chpl__gpuBlockSizeAttr");
 }
 
 bool LoopAttributeInfo::insertItersPerThreadCall(UastConverter& converter,
                                                  BlockStmt* body) {
-  return convertAttributeCall(converter, body,
-                           itersPerThreadAttr, "chpl__gpuItersPerThreadAttr");
+  return convertAttributeCall(
+    converter, body, itersPerThreadAttr, "chpl__gpuItersPerThreadAttr");
 }
 
 BlockStmt* LoopAttributeInfo::createPrimitivesBlock(UastConverter& converter) {
@@ -185,7 +187,9 @@ void LoopAttributeInfo::insertPrimitivesBlockAtHead(UastConverter& converter,
   }
 }
 
-void LoopAttributeInfo::applyToLoop(UastConverter& converter, Expr* indices, BlockStmt* body) {
+void LoopAttributeInfo::applyToLoop(UastConverter& converter,
+                                    Expr* indices,
+                                    BlockStmt* body) {
   insertPrimitivesBlockAtHead(converter, body);
 
   if (loopIndicesMutable) {
@@ -220,12 +224,11 @@ Flag convertFlagForDeclLinkage(const uast::AstNode* node) {
   return FLAG_UNKNOWN;
 }
 
-
 Flag convertPragmaToFlag(chpl::uast::PragmaTag pragma) {
   Flag ret = FLAG_UNKNOWN;
   switch (pragma) {
-#define PRAGMA(name__, canParse__, parseStr__, desc__) \
-    case chpl::uast::PRAGMA_ ## name__ : ret = FLAG_ ## name__; break;
+#define PRAGMA(name__, canParse__, parseStr__, desc__)          \
+  case chpl::uast::PRAGMA_##name__: ret = FLAG_##name__; break;
 #include "chpl/uast/PragmaList.h"
 #undef PRAGMA
     default: break;
@@ -235,7 +238,8 @@ Flag convertPragmaToFlag(chpl::uast::PragmaTag pragma) {
 }
 
 void attachSymbolAttributes(Context* context,
-                            const uast::Decl* node, Symbol* sym,
+                            const uast::Decl* node,
+                            Symbol* sym,
                             bool containedInLibraryFile) {
   if (containedInLibraryFile) {
     // If we are converting a symbol in a module from a .dyno
@@ -327,12 +331,12 @@ void attachSymbolVisibility(const uast::Decl* node, Symbol* sym) {
 
 UnresolvedSymExpr* reservedWordToInternalName(UniqueString name) {
   static std::unordered_map<UniqueString, const char*> map = {
-    { USTR("owned"), "_owned" },
-    { USTR("shared"), "_shared" },
-    { USTR("sync"), "_syncvar" },
-    { USTR("domain"), "_domain" },
-    { USTR("align"), "chpl_align" },
-    { USTR("by"), "chpl_by" },
+    {USTR("owned"), "_owned"},
+    {USTR("shared"), "_shared"},
+    {USTR("sync"), "_syncvar"},
+    {USTR("domain"), "_domain"},
+    {USTR("align"), "chpl_align"},
+    {USTR("by"), "chpl_by"},
 
     // if "index" becomes an actual type, rather than magic:
     //
@@ -381,14 +385,15 @@ Expr* reservedWordRemapForIdent(UniqueString name) {
   return reservedWordToInternalName(name);
 }
 
-LLVMMetadataList extractLlvmAttributesAndRejectOthers(Context* context, const uast::Loop* node) {
+LLVMMetadataList extractLlvmAttributesAndRejectOthers(Context* context,
+                                                      const uast::Loop* node) {
   auto loopAttributes = LoopAttributeInfo::fromExplicitLoop(context, node);
   if (loopAttributes.assertOnGpuAttr != nullptr) {
-    CHPL_REPORT(context, InvalidGpuAttribute, node,
-                loopAttributes.assertOnGpuAttr);
+    CHPL_REPORT(
+      context, InvalidGpuAttribute, node, loopAttributes.assertOnGpuAttr);
   } else if (loopAttributes.assertEligibleAttr != nullptr) {
-    CHPL_REPORT(context, InvalidGpuAttribute, node,
-                loopAttributes.assertEligibleAttr);
+    CHPL_REPORT(
+      context, InvalidGpuAttribute, node, loopAttributes.assertEligibleAttr);
   }
   return std::move(loopAttributes.llvmMetadata);
 }
@@ -397,16 +402,11 @@ RetTag convertRetTag(uast::Function::ReturnIntent returnIntent) {
   switch (returnIntent) {
     case uast::Function::DEFAULT_RETURN_INTENT:
     case uast::Function::OUT:
-    case uast::Function::CONST:
-      return RET_VALUE;
-    case uast::Function::CONST_REF:
-      return RET_CONST_REF;
-    case uast::Function::REF:
-      return RET_REF;
-    case uast::Function::PARAM:
-      return RET_PARAM;
-    case uast::Function::TYPE:
-      return RET_TYPE;
+    case uast::Function::CONST: return RET_VALUE;
+    case uast::Function::CONST_REF: return RET_CONST_REF;
+    case uast::Function::REF: return RET_REF;
+    case uast::Function::PARAM: return RET_PARAM;
+    case uast::Function::TYPE: return RET_TYPE;
   }
 
   CHPL_UNIMPL("return intent case not handled");
@@ -414,18 +414,10 @@ RetTag convertRetTag(uast::Function::ReturnIntent returnIntent) {
 }
 
 bool isAssignOp(UniqueString name) {
-  return (name == USTR("=") ||
-          name == USTR("+=") ||
-          name == USTR("-=") ||
-          name == USTR("*=") ||
-          name == USTR("/=") ||
-          name == USTR("%=") ||
-          name == USTR("**=") ||
-          name == USTR("&=") ||
-          name == USTR("|=") ||
-          name == USTR("^=") ||
-          name == USTR(">>=") ||
-          name == USTR("<<="));
+  return (name == USTR("=") || name == USTR("+=") || name == USTR("-=") ||
+          name == USTR("*=") || name == USTR("/=") || name == USTR("%=") ||
+          name == USTR("**=") || name == USTR("&=") || name == USTR("|=") ||
+          name == USTR("^=") || name == USTR(">>=") || name == USTR("<<="));
 }
 
 const char* createAnonymousRoutineName(const uast::Function* node) {
@@ -441,9 +433,8 @@ const char* createAnonymousRoutineName(const uast::Function* node) {
   auto kind = astr(uast::Function::kindToString(node->kind()));
 
   // Use sprintf to prevent buffer overflow if there are too many lambdas.
-  int n = snprintf(buf, (size_t) maxDigits, "%s_%s_%i", prefix, kind,
-                   nextId++);
-  if (n > (int) maxDigits) INT_FATAL("Too many lambdas.");
+  int n = snprintf(buf, (size_t)maxDigits, "%s_%s_%i", prefix, kind, nextId++);
+  if (n > (int)maxDigits) INT_FATAL("Too many lambdas.");
 
   auto ret = astr(buf);
   return ret;
@@ -500,21 +491,20 @@ const char* constructUserString(const uast::FunctionSignature* node) {
 IntentTag convertFormalIntent(uast::Formal::Intent intent) {
   switch (intent) {
     case uast::Formal::DEFAULT_INTENT: return INTENT_BLANK;
-    case uast::Formal::CONST:          return INTENT_CONST;
-    case uast::Formal::CONST_REF:      return INTENT_CONST_REF;
-    case uast::Formal::REF:            return INTENT_REF;
-    case uast::Formal::IN:             return INTENT_IN;
-    case uast::Formal::CONST_IN:       return INTENT_CONST_IN;
-    case uast::Formal::OUT:            return INTENT_OUT;
-    case uast::Formal::INOUT:          return INTENT_INOUT;
-    case uast::Formal::PARAM:          return INTENT_PARAM;
-    case uast::Formal::TYPE:           return INTENT_TYPE;
+    case uast::Formal::CONST: return INTENT_CONST;
+    case uast::Formal::CONST_REF: return INTENT_CONST_REF;
+    case uast::Formal::REF: return INTENT_REF;
+    case uast::Formal::IN: return INTENT_IN;
+    case uast::Formal::CONST_IN: return INTENT_CONST_IN;
+    case uast::Formal::OUT: return INTENT_OUT;
+    case uast::Formal::INOUT: return INTENT_INOUT;
+    case uast::Formal::PARAM: return INTENT_PARAM;
+    case uast::Formal::TYPE: return INTENT_TYPE;
   }
 
   CHPL_UNIMPL("Unhandled formal intent");
   return INTENT_BLANK;
 }
-
 
 ShadowVarPrefix convertTaskVarIntent(const uast::TaskVar* node) {
   // TODO: why is this here? It can't possible matter, here
@@ -540,22 +530,23 @@ const char* sanitizeVarName(const char* name, bool inTupleDecl) {
     return astr(name);
 }
 
-void attachSymbolStorage(const uast::Variable::Kind kind, Symbol* vs, bool setQual) {
-  return attachSymbolStorage((uast::Qualifier) kind, vs, setQual);
+void attachSymbolStorage(const uast::Variable::Kind kind,
+                         Symbol* vs,
+                         bool setQual) {
+  return attachSymbolStorage((uast::Qualifier)kind, vs, setQual);
 }
 
 void attachSymbolStorage(const uast::TupleDecl::IntentOrKind iok,
-                         Symbol* vs, bool setQual) {
-  return attachSymbolStorage((uast::Qualifier) iok, vs, setQual);
+                         Symbol* vs,
+                         bool setQual) {
+  return attachSymbolStorage((uast::Qualifier)iok, vs, setQual);
 }
 
 void attachSymbolStorage(const uast::Qualifier kind, Symbol* vs, bool setQual) {
   auto qual = QUAL_UNKNOWN;
 
   switch (kind) {
-    case uast::Qualifier::VAR:
-      qual = QUAL_VAL;
-      break;
+    case uast::Qualifier::VAR: qual = QUAL_VAL; break;
     case uast::Qualifier::CONST_VAR:
       vs->addFlag(FLAG_CONST);
       qual = QUAL_CONST;
@@ -573,14 +564,9 @@ void attachSymbolStorage(const uast::Qualifier kind, Symbol* vs, bool setQual) {
       vs->addFlag(FLAG_PARAM);
       qual = QUAL_PARAM;
       break;
-    case uast::Qualifier::TYPE:
-      vs->addFlag(FLAG_TYPE_VARIABLE);
-      break;
-    case uast::Qualifier::INDEX:
-      vs->addFlag(FLAG_INDEX_VAR);
-      break;
-    default:
-      break;
+    case uast::Qualifier::TYPE: vs->addFlag(FLAG_TYPE_VARIABLE); break;
+    case uast::Qualifier::INDEX: vs->addFlag(FLAG_INDEX_VAR); break;
+    default: break;
   }
 
   if (setQual && qual != QUAL_UNKNOWN) {
@@ -624,8 +610,8 @@ ModTag getModuleTag(Context* context, UniqueString path) {
 
 // Note: used in 'cleanup' pass as well
 void flattenPrimaryMethod(TypeSymbol* ts, FnSymbol* fn) {
-  Expr*    insertPoint = ts->defPoint;
-  DefExpr* def         = fn->defPoint;
+  Expr* insertPoint = ts->defPoint;
+  DefExpr* def = fn->defPoint;
 
   while (isTypeSymbol(insertPoint->parentSymbol)) {
     insertPoint = insertPoint->parentSymbol->defPoint;

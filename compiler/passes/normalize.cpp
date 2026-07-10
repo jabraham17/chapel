@@ -56,76 +56,75 @@
 
 bool normalized = false;
 
-static void        preNormalizeHandleStaticVars();
-static void        insertModuleInit();
-static FnSymbol*   toModuleDeinitFn(ModuleSymbol* mod, Expr* stmt);
-static void        handleModuleDeinitFn(ModuleSymbol* mod);
-static void        moveAndCheckInterfaceConstraints();
-static void        transformLogicalShortCircuit();
-static void        checkReduceAssign();
+static void preNormalizeHandleStaticVars();
+static void insertModuleInit();
+static FnSymbol* toModuleDeinitFn(ModuleSymbol* mod, Expr* stmt);
+static void handleModuleDeinitFn(ModuleSymbol* mod);
+static void moveAndCheckInterfaceConstraints();
+static void transformLogicalShortCircuit();
+static void checkReduceAssign();
 
-static bool
-cloneParameterizedPrimitiveInAnyFormal(FnSymbol* fn);
+static bool cloneParameterizedPrimitiveInAnyFormal(FnSymbol* fn);
 
-static bool        isArrayFormal(ArgSymbol* arg);
-static Expr*       arrayTypeEltTypeExprOrNull(Expr* expr);
+static bool isArrayFormal(ArgSymbol* arg);
+static Expr* arrayTypeEltTypeExprOrNull(Expr* expr);
 
-static bool        returnsArray(FnSymbol* fn);
-static void        makeExportWrapper(FnSymbol* fn);
+static bool returnsArray(FnSymbol* fn);
+static void makeExportWrapper(FnSymbol* fn);
 
-static void        fixupArrayFormals(FnSymbol* fn);
+static void fixupArrayFormals(FnSymbol* fn);
 
-static void        fixupQueryFormals(FnSymbol* fn);
-static void        fixupCastFormals(FnSymbol* fn);
+static void fixupQueryFormals(FnSymbol* fn);
+static void fixupCastFormals(FnSymbol* fn);
 
-static void        fixupExplicitGenericVariables(DefExpr* def);
+static void fixupExplicitGenericVariables(DefExpr* def);
 
-static void        updateInitMethod (FnSymbol* fn);
+static void updateInitMethod(FnSymbol* fn);
 
-static void        checkUseBeforeDefs();
-static void        moveGlobalDeclarationsToModuleScope();
+static void checkUseBeforeDefs();
+static void moveGlobalDeclarationsToModuleScope();
 
-static void        lowerIfExprs(BaseAST* base);
+static void lowerIfExprs(BaseAST* base);
 
-static void        hack_resolve_types(ArgSymbol* arg);
+static void hack_resolve_types(ArgSymbol* arg);
 
-static void        find_printModuleInit_stuff();
+static void find_printModuleInit_stuff();
 
-static void        normalizeBase(BaseAST* base, bool addEndOfStatements);
-static void        processSyntacticDistributions(CallExpr* call);
-static void        processManagedNew(CallExpr* call);
-static void        processSyntacticTupleAssignment(CallExpr* call);
-static void        addEndOfStatementMarkers(BaseAST* base);
-static Expr*       getCallTempInsertPoint(Expr* expr);
-static void        addTypeBlocksForParentTypeOf(CallExpr* call);
-static void        normalizeReturns(FnSymbol* fn);
-static void        normalizeYields(FnSymbol* fn);
-static void        fixupOutArrayFormals(FnSymbol* fn);
+static void normalizeBase(BaseAST* base, bool addEndOfStatements);
+static void processSyntacticDistributions(CallExpr* call);
+static void processManagedNew(CallExpr* call);
+static void processSyntacticTupleAssignment(CallExpr* call);
+static void addEndOfStatementMarkers(BaseAST* base);
+static Expr* getCallTempInsertPoint(Expr* expr);
+static void addTypeBlocksForParentTypeOf(CallExpr* call);
+static void normalizeReturns(FnSymbol* fn);
+static void normalizeYields(FnSymbol* fn);
+static void fixupOutArrayFormals(FnSymbol* fn);
 
-static bool        isCallToConstructor(CallExpr* call);
-static void        normalizeCallToConstructor(CallExpr* call);
-static void        fixStringLiteralInit(FnSymbol* fn);
+static bool isCallToConstructor(CallExpr* call);
+static void normalizeCallToConstructor(CallExpr* call);
+static void fixStringLiteralInit(FnSymbol* fn);
 
-static bool        isCallToTypeConstructor(CallExpr* call);
-static void        normalizeCallToTypeConstructor(CallExpr* call);
+static bool isCallToTypeConstructor(CallExpr* call);
+static void normalizeCallToTypeConstructor(CallExpr* call);
 
-static void        applyGetterTransform(CallExpr* call);
-static void        transformIfVar(CallExpr* call);
-static void        insertCallTemps(CallExpr* call);
-static void        propagateMarkedGeneric(Symbol* var, Expr* typeExpr);
-static Symbol*     insertCallTempsWithStmt(CallExpr* call, Expr* stmt);
+static void applyGetterTransform(CallExpr* call);
+static void transformIfVar(CallExpr* call);
+static void insertCallTemps(CallExpr* call);
+static void propagateMarkedGeneric(Symbol* var, Expr* typeExpr);
+static Symbol* insertCallTempsWithStmt(CallExpr* call, Expr* stmt);
 
 static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur);
 
-static void        normalizeTypeAlias(DefExpr* defExpr);
-static void        normalizeConfigVariableDefinition(DefExpr* defExpr);
-static void        normalizeVariableDefinition(DefExpr* defExpr);
+static void normalizeTypeAlias(DefExpr* defExpr);
+static void normalizeConfigVariableDefinition(DefExpr* defExpr);
+static void normalizeVariableDefinition(DefExpr* defExpr);
 
-static void        emitPrimInitRefDecl(DefExpr* def, VarSymbol* var);
-static void        emitRefVarInit(Expr* after, Symbol* var, Expr* init);
-static void        normRefVar(DefExpr* defExpr);
+static void emitPrimInitRefDecl(DefExpr* def, VarSymbol* var);
+static void emitRefVarInit(Expr* after, Symbol* var, Expr* init);
+static void normRefVar(DefExpr* defExpr);
 
-static void        updateVariableAutoDestroy(DefExpr* defExpr);
+static void updateVariableAutoDestroy(DefExpr* defExpr);
 
 static TypeSymbol* expandTypeAlias(SymExpr* se);
 
@@ -150,29 +149,31 @@ static void handleSharedCArrays() {
     //    call_tmp = c_array(t, k);
     //    __primitive("default init var", myArray, call_tmp);
     if (call->isPrimitive(PRIM_HOIST_TO_CONTEXT))
-     if (DefExpr* hoistDefExpr = toSymExpr(call->get(2))->symbol()->defPoint)
-      if (DefExpr* typeDefExpr = toDefExpr(hoistDefExpr->next))
-       if (CallExpr* typeAssign = toCallExpr(typeDefExpr->next))
-        if (typeAssign->isPrimitive(PRIM_MOVE))
-         if (CallExpr* typeCall = toCallExpr(typeAssign->get(2)))
-          if (CallExpr* initCall = toCallExpr(typeAssign->next))
-           if (initCall->isPrimitive(PRIM_DEFAULT_INIT_VAR))
-            if (SymExpr* typeConstructor = toSymExpr(typeCall->baseExpr))
-              if (typeConstructor->symbol()->hasFlag(FLAG_C_ARRAY)) {
-                SET_LINENO(hoistDefExpr);
-                auto newBlock = new BlockStmt();
-                auto newArr = new VarSymbol(astr("shared_",
-                                            hoistDefExpr->sym->name));
-                newArr->qual = Qualifier::QUAL_REF;
-                newBlock->insertAtTail(new DefExpr(newArr));
-                newBlock->insertAtTail(new CallExpr(PRIM_MOVE, newArr,
-                            new CallExpr("createSharedCArray",
-                                         typeDefExpr->sym)));
-                initCall->insertAfter(newBlock);
-              }
+      if (DefExpr* hoistDefExpr = toSymExpr(call->get(2))->symbol()->defPoint)
+        if (DefExpr* typeDefExpr = toDefExpr(hoistDefExpr->next))
+          if (CallExpr* typeAssign = toCallExpr(typeDefExpr->next))
+            if (typeAssign->isPrimitive(PRIM_MOVE))
+              if (CallExpr* typeCall = toCallExpr(typeAssign->get(2)))
+                if (CallExpr* initCall = toCallExpr(typeAssign->next))
+                  if (initCall->isPrimitive(PRIM_DEFAULT_INIT_VAR))
+                    if (SymExpr* typeConstructor =
+                          toSymExpr(typeCall->baseExpr))
+                      if (typeConstructor->symbol()->hasFlag(FLAG_C_ARRAY)) {
+                        SET_LINENO(hoistDefExpr);
+                        auto newBlock = new BlockStmt();
+                        auto newArr = new VarSymbol(
+                          astr("shared_", hoistDefExpr->sym->name));
+                        newArr->qual = Qualifier::QUAL_REF;
+                        newBlock->insertAtTail(new DefExpr(newArr));
+                        newBlock->insertAtTail(
+                          new CallExpr(PRIM_MOVE,
+                                       newArr,
+                                       new CallExpr("createSharedCArray",
+                                                    typeDefExpr->sym)));
+                        initCall->insertAfter(newBlock);
+                      }
   }
 }
-
 
 void normalize() {
   preNormalizeHandleStaticVars();
@@ -193,7 +194,7 @@ void normalize() {
   forv_Vec(AggregateType, at, gAggregateTypes) {
     if (shouldSkipNormalizing(at)) continue;
 
-    if (isClassWithInitializers(at)  == true ||
+    if (isClassWithInitializers(at) == true ||
         isRecordOrUnionWithInitializers(at) == true) {
       preNormalizeFields(at);
     }
@@ -213,7 +214,7 @@ void normalize() {
     SET_LINENO(fn);
 
     if (fn->hasFlag(FLAG_EXPORT) &&
-        fn->hasFlag(FLAG_COMPILER_GENERATED)  == false) {
+        fn->hasFlag(FLAG_COMPILER_GENERATED) == false) {
       makeExportWrapper(fn);
     }
 
@@ -276,7 +277,7 @@ void normalize() {
     if (shouldSkipNormalizing(fn)) continue;
 
     if (fn->hasFlag(FLAG_DESTRUCTOR)) {
-      if (fn->formals.length           <  2 ||
+      if (fn->formals.length < 2 ||
           fn->getFormal(1)->typeInfo() != gMethodToken->typeInfo()) {
         USR_FATAL(fn, "destructors must be methods");
 
@@ -284,21 +285,20 @@ void normalize() {
         USR_FATAL(fn, "destructors must not have arguments");
 
       } else {
-        DefExpr*       thisDef = toDefExpr(fn->formals.get(2));
-        AggregateType* ct      = toAggregateType(thisDef->sym->type);
+        DefExpr* thisDef = toDefExpr(fn->formals.get(2));
+        AggregateType* ct = toAggregateType(thisDef->sym->type);
 
         INT_ASSERT(thisDef);
 
         // verify the name of the destructor
-        bool notTildeName = (fn->name[0] != '~') ||
-                             strcmp(fn->name + 1, ct->symbol->name) != 0;
-        bool notDeinit    = (fn->name != astrDeinit);
+        bool notTildeName =
+          (fn->name[0] != '~') || strcmp(fn->name + 1, ct->symbol->name) != 0;
+        bool notDeinit = (fn->name != astrDeinit);
 
         if (ct && notDeinit && notTildeName) {
           USR_FATAL(fn,
                     "destructor name must match class/record name "
                     "or deinit()");
-
         }
 
         if (!notDeinit && fn->hasFlag(FLAG_NO_PARENS)) {
@@ -306,18 +306,19 @@ void normalize() {
         }
 
         if (ct == NULL)
-          USR_FATAL_CONT(fn, "deinit may not be defined for types other than record, union, or class");
+          USR_FATAL_CONT(fn,
+                         "deinit may not be defined for types other than "
+                         "record, union, or class");
         else if (ct->symbol->hasFlag(FLAG_EXTERN))
-          USR_FATAL_CONT(fn, "deinit may not be currently defined for extern types");
+          USR_FATAL_CONT(
+            fn, "deinit may not be currently defined for extern types");
 
         fn->name = astrDeinit;
       }
-
     }
   }
 
-  if (fIteratorContexts)
-    handleSharedCArrays();
+  if (fIteratorContexts) handleSharedCArrays();
 
   find_printModuleInit_stuff();
 }
@@ -335,9 +336,7 @@ void normalize(FnSymbol* fn) {
   }
 }
 
-void normalize(Expr* expr) {
-  normalizeBase(expr, false);
-}
+void normalize(Expr* expr) { normalizeBase(expr, false); }
 
 static void preNormalizeHandleStaticVars() {
   forv_Vec(CallExpr, call, gCallExprs) {
@@ -361,7 +360,8 @@ static void preNormalizeHandleStaticVars() {
       // Create the container for the static variable. This is defined in
       // module code.
       auto wrapperTypeTemp = newTemp("staticVarType");
-      auto wrapperTypeDef = new DefExpr(wrapperTypeTemp,
+      auto wrapperTypeDef = new DefExpr(
+        wrapperTypeTemp,
         new CallExpr("chpl__functionStaticVariableWrapperType",
                      new CallExpr(PRIM_STATIC_FUNCTION_VAR_VALIDATE_TYPE,
                                   new CallExpr(PRIM_TYPEOF, initVarTemp))));
@@ -372,9 +372,10 @@ static void preNormalizeHandleStaticVars() {
       auto wrapperBlock = new BlockStmt(BLOCK_SCOPELESS);
       wrapperBlock->insertAtTail(wrapperTypeDef);
       wrapperBlock->insertAtTail(wrapperDef);
-      wrapperBlock->insertAtTail(new CallExpr(PRIM_STATIC_FUNCTION_VAR_WRAPPER,
-                                              wrapperVar, initVarTemp));
-      wrapperBlock->insertAtTail(new CallExpr(PRIM_DEFAULT_INIT_VAR, wrapperVar, wrapperTypeTemp));
+      wrapperBlock->insertAtTail(new CallExpr(
+        PRIM_STATIC_FUNCTION_VAR_WRAPPER, wrapperVar, initVarTemp));
+      wrapperBlock->insertAtTail(
+        new CallExpr(PRIM_DEFAULT_INIT_VAR, wrapperVar, wrapperTypeTemp));
 
       bool needsCleanup = false;
       if (call->numActuals() > 0) {
@@ -435,13 +436,13 @@ static void preNormalizeHandleStaticVars() {
         auto cleanupFn = new FnSymbol("chpl__cleanupStaticWrapper");
         cleanupFnBlock->insertAtTail(new DefExpr(cleanupFn));
         cleanupBlock->insertAtTail(cleanupFnBlock);
-        cleanupBlock->insertAtTail(
-            new CallExpr(new CallExpr(".", wrapperVar, new_CStringSymbol("reset"))));
-        cleanupCallBlock->insertAtTail(new CallExpr("chpl__executeStaticWrapperCleanupEverywhere", cleanupFn));
+        cleanupBlock->insertAtTail(new CallExpr(
+          new CallExpr(".", wrapperVar, new_CStringSymbol("reset"))));
+        cleanupCallBlock->insertAtTail(new CallExpr(
+          "chpl__executeStaticWrapperCleanupEverywhere", cleanupFn));
         cleanupBlock->insertAtTail(cleanupCallBlock);
         wrapperBlock->insertAtTail(cleanupBlock);
       }
-
 
       anchor->insertBefore(initVarBlock);
       anchor->insertBefore(wrapperBlock);
@@ -451,11 +452,11 @@ static void preNormalizeHandleStaticVars() {
       SymbolMap map;
       auto computeValueBlock = initVarBlock->copy(&map);
       auto computeValueSym = map.get(initVarTemp);
-      auto setValueCall = new CallExpr("setValue", gMethodToken, wrapperVar,
-                                       computeValueSym);
+      auto setValueCall =
+        new CallExpr("setValue", gMethodToken, wrapperVar, computeValueSym);
       computeValueBlock->insertAtTail(setValueCall);
-      auto readyPred = new CallExpr("callerShouldComputeValue", gMethodToken,
-                                    wrapperVar);
+      auto readyPred =
+        new CallExpr("callerShouldComputeValue", gMethodToken, wrapperVar);
       auto readyCond = new CondStmt(readyPred, computeValueBlock);
       anchor->insertBefore(readyCond);
 
@@ -463,7 +464,6 @@ static void preNormalizeHandleStaticVars() {
     }
   }
 }
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -483,7 +483,7 @@ static void insertModuleInit() {
 
     SET_LINENO(mod);
 
-    mod->initFn          = new FnSymbol(astr("chpl__init_", mod->name));
+    mod->initFn = new FnSymbol(astr("chpl__init_", mod->name));
     mod->initFn->retType = dtVoid;
 
     mod->initFn->addFlag(FLAG_MODULE_INIT);
@@ -567,8 +567,7 @@ static bool isInLifetimeClause(CallExpr* call) {
   Expr* parent = call->parentExpr;
   BlockStmt* parentBlock = NULL;
   while (parent != NULL) {
-    if (BlockStmt* block = toBlockStmt(parent))
-      parentBlock = block;
+    if (BlockStmt* block = toBlockStmt(parent)) parentBlock = block;
 
     parent = parent->parentExpr;
   }
@@ -592,8 +591,7 @@ static bool isInLifetimeClause(CallExpr* call) {
 ************************************** | *************************************/
 
 static bool isInWhereBlock(FnSymbol* fn, Expr* expr) {
-  while (expr->parentExpr != NULL)
-    expr = expr->parentExpr;
+  while (expr->parentExpr != NULL) expr = expr->parentExpr;
   return fn->where == expr;
 }
 
@@ -601,10 +599,11 @@ static bool isInWhereBlock(FnSymbol* fn, Expr* expr) {
 static void checkInterfaceConstraint(IfcConstraint* icon) {
   if (SymExpr* ifcSE = toSymExpr(icon->interfaceExpr)) {
     Symbol* ifc = ifcSE->symbol();
-    if (! isInterfaceSymbol(ifc)) {
+    if (!isInterfaceSymbol(ifc)) {
       USR_FATAL_CONT(ifcSE, "'%s' is not an interface", ifc->name);
-      USR_PRINT(ifcSE, "an 'implements' keyword must be followed"
-                      " by an interface name");
+      USR_PRINT(ifcSE,
+                "an 'implements' keyword must be followed"
+                " by an interface name");
       USR_PRINT(ifc, "'%s' is defined here", ifc->name);
     }
   } else {
@@ -617,7 +616,7 @@ static void moveAndCheckInterfaceConstraints() {
   forv_Vec(IfcConstraint, icon, gIfcConstraints) {
     checkInterfaceConstraint(icon);
     if (isImplementsStmt(icon->parentExpr))
-      continue;  // this node is part of an ImplementsStmt, do not move it
+      continue; // this node is part of an ImplementsStmt, do not move it
 
     FnSymbol* fn = toFnSymbol(icon->parentSymbol);
     if (fn != nullptr) {
@@ -655,8 +654,10 @@ static void moveAndCheckInterfaceConstraints() {
           continue;
         } else if (isInWhereBlock(fn, call)) {
           if (!call->isNamed("&&")) {
-            USR_FATAL_CONT(icon, "combining an 'implements' constraint"
-                  " with others is currently supported only using '&&'");
+            USR_FATAL_CONT(
+              icon,
+              "combining an 'implements' constraint"
+              " with others is currently supported only using '&&'");
             continue;
           }
           INT_ASSERT(call->numActuals() == 2);
@@ -674,7 +675,8 @@ static void moveAndCheckInterfaceConstraints() {
       }
     }
 
-    USR_FATAL_CONT(icon, "'implements %s()' is not supported in this context",
+    USR_FATAL_CONT(icon,
+                   "'implements %s()' is not supported in this context",
                    icon->ifcSymbol()->name);
   }
   USR_STOP();
@@ -695,7 +697,7 @@ static void moveAndCheckInterfaceConstraints() {
 ************************************** | *************************************/
 
 static void transformLogicalShortCircuit() {
-  std::set<Expr*>           stmts;
+  std::set<Expr*> stmts;
   std::set<Expr*>::iterator iter;
 
   // Collect the distinct stmts that contain logical AND/OR expressions
@@ -738,7 +740,7 @@ static void checkReduceAssign() {
 
       // l.h.s. must be a single variable
       if (SymExpr* lhsSE = toSymExpr(call->get(1))) {
-        Symbol*     lhsVar      = lhsSE->symbol();
+        Symbol* lhsVar = lhsSE->symbol();
         ForallStmt* enclosingFS = enclosingForallStmt(call);
 
         if (enclosingFS == NULL) {
@@ -775,11 +777,9 @@ static void insertCallTempsForRiSpecs(BaseAST* base) {
 
   for_vector(ForallStmt, fs, forallStmts) {
     for_shadow_vars(svar, temp, fs) {
-      if (svar->specBlock == nullptr)
-        continue;
+      if (svar->specBlock == nullptr) continue;
       // hoist the details, if any out of the ForallStmt
-      for (AList& sbody = svar->specBlock->body;
-           sbody.head != sbody.tail;
+      for (AList& sbody = svar->specBlock->body; sbody.head != sbody.tail;
            fs->insertBefore(sbody.head->remove()));
       if (CallExpr* specCall = toCallExpr(svar->reduceOpExpr())) {
         insertCallTempsWithStmt(specCall, fs);
@@ -787,7 +787,6 @@ static void insertCallTempsForRiSpecs(BaseAST* base) {
     }
   }
 }
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -802,8 +801,7 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
   // Phase 0
   //
   normalizeErrorHandling(base);
-  if (addEndOfStatements)
-    addEndOfStatementMarkers(base);
+  if (addEndOfStatements) addEndOfStatementMarkers(base);
 
   //
   // Phase 1
@@ -817,11 +815,9 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
       processSyntacticDistributions(call);
       processManagedNew(call);
       processSyntacticTupleAssignment(call);
-      if (call->isPrimitive(PRIM_TYPEOF))
-        addTypeBlocksForParentTypeOf(call);
+      if (call->isPrimitive(PRIM_TYPEOF)) addTypeBlocksForParentTypeOf(call);
     }
   }
-
 
   //
   // Phase 2
@@ -843,7 +839,6 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
       }
     }
   }
-
 
   //
   // Phase 3
@@ -937,11 +932,11 @@ static bool isInsideTaskWithClause(Expr* expr) {
 void checkUseBeforeDefs(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_RESOLVED_EARLY)) return;
   if (fn->defPoint->parentSymbol) {
-    ModuleSymbol*         mod = fn->getModule();
+    ModuleSymbol* mod = fn->getModule();
 
-    std::set<Symbol*>     defined;
+    std::set<Symbol*> defined;
 
-    std::set<Symbol*>     undefined;
+    std::set<Symbol*> undefined;
     std::set<const char*> undeclared;
 
     std::vector<BaseAST*> asts;
@@ -955,10 +950,10 @@ void checkUseBeforeDefs(FnSymbol* fn) {
       } else if (SymExpr* se = toSymExpr(ast)) {
         Symbol* sym = se->symbol();
 
-        if (isModuleSymbol(sym)                    == true  &&
+        if (isModuleSymbol(sym) == true &&
             isFnSymbol(fn->defPoint->parentSymbol) == false &&
-            isUseStmt(se->parentExpr)              == false &&
-            isImportStmt(se->parentExpr)           == false) {
+            isUseStmt(se->parentExpr) == false &&
+            isImportStmt(se->parentExpr) == false) {
 
           if (CallExpr* call = toCallExpr(se->parentExpr)) {
             if (call->isPrimitive(PRIM_REFERENCED_MODULES_LIST)) {
@@ -968,7 +963,10 @@ void checkUseBeforeDefs(FnSymbol* fn) {
           SymExpr* prev = toSymExpr(se->prev);
 
           if (prev == NULL || prev->symbol() != gModuleToken) {
-            USR_FATAL_CONT(se, "modules (like '%s' here) cannot be called like procedures", sym->name);
+            USR_FATAL_CONT(
+              se,
+              "modules (like '%s' here) cannot be called like procedures",
+              sym->name);
           }
 
         } else if (isLcnSymbol(sym) == true) {
@@ -976,16 +974,17 @@ void checkUseBeforeDefs(FnSymbol* fn) {
             Symbol* parent = sym->defPoint->parentSymbol;
 
             if (parent == fn || (parent == mod && mod->initFn == fn)) {
-              if (defined.find(sym)           == defined.end() &&
+              if (defined.find(sym) == defined.end() &&
 
-                  sym->hasFlag(FLAG_ARG_THIS) == false         &&
-                  sym->hasFlag(FLAG_EXTERN)   == false         &&
-                  sym->hasFlag(FLAG_TEMP)     == false) {
+                  sym->hasFlag(FLAG_ARG_THIS) == false &&
+                  sym->hasFlag(FLAG_EXTERN) == false &&
+                  sym->hasFlag(FLAG_TEMP) == false) {
 
                 // Only complain one time
                 if (undefined.find(sym) == undefined.end()) {
                   if (se->parentSymbol->hasFlag(FLAG_RESOLVED_EARLY) &&
-                      mod->initFn == parent) continue;
+                      mod->initFn == parent)
+                    continue;
                   USR_FATAL_CONT(se, "'%s' used before defined", sym->name);
                   USR_PRINT(sym->defPoint, "defined here");
                   undefined.insert(sym);
@@ -1001,8 +1000,7 @@ void checkUseBeforeDefs(FnSymbol* fn) {
           call = toCallExpr(use->parentExpr->parentExpr);
 
         if (call == NULL ||
-            (call->baseExpr != use &&
-             !call->isPrimitive(PRIM_CAPTURE_FN) &&
+            (call->baseExpr != use && !call->isPrimitive(PRIM_CAPTURE_FN) &&
              !call->isPrimitive(PRIM_CAPTURE_FN_TO_CLASS))) {
           if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
             const char* name = use->unresolved;
@@ -1012,13 +1010,11 @@ void checkUseBeforeDefs(FnSymbol* fn) {
               // Check if this is a task intent variable in a with-clause
               // If so, use the same error message as forall loops
               if (isInsideTaskWithClause(use)) {
-                USR_FATAL_CONT(use,
-                               "could not find the outer variable for '%s'",
-                               name);
+                USR_FATAL_CONT(
+                  use, "could not find the outer variable for '%s'", name);
               } else {
-                USR_FATAL_CONT(use,
-                               "'%s' undeclared (first use this function)",
-                               name);
+                USR_FATAL_CONT(
+                  use, "'%s' undeclared (first use this function)", name);
               }
 
               undeclared.insert(name);
@@ -1031,9 +1027,7 @@ void checkUseBeforeDefs(FnSymbol* fn) {
 }
 
 static void checkUseBeforeDefs() {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    checkUseBeforeDefs(fn);
-  }
+  forv_Vec(FnSymbol, fn, gFnSymbols) { checkUseBeforeDefs(fn); }
   USR_STOP();
 }
 
@@ -1061,10 +1055,9 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
 
   if (SymExpr* se = toSymExpr(ast)) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
-      if (call->isPrimitive(PRIM_MOVE)      ||
-          call->isPrimitive(PRIM_ASSIGN)    ||
-          call->isPrimitive(PRIM_INIT_VAR)  ||
-          call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT)  ||
+      if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN) ||
+          call->isPrimitive(PRIM_INIT_VAR) ||
+          call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT) ||
           call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
           call->isPrimitive(PRIM_NOINIT_INIT_VAR) ||
           call->isPrimitive(PRIM_INIT_REF_DECL) ||
@@ -1077,8 +1070,7 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
       // Allow for init() for a task-private variable, which occurs in
       // ShadowVarSymbol::initBlock(), which does not include its DefExpr.
       else if (ShadowVarSymbol* svar = toShadowVarSymbol(se->symbol())) {
-        if (svar->isTaskPrivate()  &&
-            call->isNamed("init")  &&
+        if (svar->isTaskPrivate() && call->isNamed("init") &&
             // the first argument is gMethodToken
             call->get(2) == se)
           retval = svar;
@@ -1090,10 +1082,8 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
 
     // All arg symbols and loop induction variables are defined.
     // All shadow variables are defined.
-    if (isArgSymbol(sym) ||
-        isShadowVarSymbol(sym) ||
-        sym->hasFlag(FLAG_INDEX_VAR)
-    ) {
+    if (isArgSymbol(sym) || isShadowVarSymbol(sym) ||
+        sym->hasFlag(FLAG_INDEX_VAR)) {
       retval = sym;
 
     } else if (VarSymbol* var = toVarSymbol(sym)) {
@@ -1107,7 +1097,7 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
         if (type == dtNothing) {
           retval = var;
 
-        // records with initializers are defined
+          // records with initializers are defined
         } else if (AggregateType* at = toAggregateType(type)) {
           if (isRecordOrUnionWithInitializers(at) == true) {
             retval = var;
@@ -1136,13 +1126,11 @@ static void moveGlobalDeclarationsToModuleScope() {
         if (VarSymbol* vs = toVarSymbol(def->sym)) {
           // Don't move end counts to module scope
           // (just so that parallel.cpp can find them)
-          if (vs->hasFlag(FLAG_END_COUNT))
-            continue;
+          if (vs->hasFlag(FLAG_END_COUNT)) continue;
 
           // Move temps to module scope later
           // (after it is determined if they are last-mention or not)
-          if (vs->hasFlag(FLAG_TEMP))
-            continue;
+          if (vs->hasFlag(FLAG_TEMP)) continue;
 
           // otherwise, move this DefExpr
 
@@ -1188,7 +1176,6 @@ static void moveGlobalDeclarationsToModuleScope() {
 *                                                                             *
 ************************************** | *************************************/
 
-
 //
 // Inserts a temporary for the result if the last statement is a call.
 //
@@ -1198,7 +1185,8 @@ static void moveGlobalDeclarationsToModuleScope() {
 //
 // BHARSH INIT TODO: Do we really need PRIM_LOGICAL_FOLDER anymore?
 //
-static void normalizeIfExprBranch(VarSymbol* cond, VarSymbol* result, BlockStmt* stmt) {
+static void
+normalizeIfExprBranch(VarSymbol* cond, VarSymbol* result, BlockStmt* stmt) {
   Expr* last = stmt->body.tail->remove();
   Symbol* localResult = NULL;
 
@@ -1215,7 +1203,8 @@ static void normalizeIfExprBranch(VarSymbol* cond, VarSymbol* result, BlockStmt*
     stmt->body.insertAtTail(new CallExpr(PRIM_MOVE, localResult, last));
   }
 
-  stmt->body.insertAtTail(new CallExpr(PRIM_MOVE, result, new CallExpr(PRIM_LOGICAL_FOLDER, cond, localResult)));
+  stmt->body.insertAtTail(new CallExpr(
+    PRIM_MOVE, result, new CallExpr(PRIM_LOGICAL_FOLDER, cond, localResult)));
 }
 
 //
@@ -1225,13 +1214,12 @@ static void normalizeIfExprBranch(VarSymbol* cond, VarSymbol* result, BlockStmt*
 // temporary will take the place of the IfExpr, and the CondStmt will be
 // inserted before the IfExpr's parent statement.
 //
-class LowerIfExprVisitor final : public AstVisitorTraverse
-{
-  public:
-    LowerIfExprVisitor()          = default;
-   ~LowerIfExprVisitor() override = default;
+class LowerIfExprVisitor final : public AstVisitorTraverse {
+ public:
+  LowerIfExprVisitor() = default;
+  ~LowerIfExprVisitor() override = default;
 
-    void exitIfExpr(IfExpr* node) override;
+  void exitIfExpr(IfExpr* node) override;
 };
 
 static bool isInsideDefExpr(Expr* expr) {
@@ -1270,8 +1258,8 @@ void LowerIfExprVisitor::exitIfExpr(IfExpr* ife) {
 
   // Don't auto-destroy local result if returning from a branch of a parent
   // if-expression.
-  const bool parentIsIfExpr = isBlockStmt(ife->parentExpr) &&
-                              isIfExpr(ife->parentExpr->parentExpr);
+  const bool parentIsIfExpr =
+    isBlockStmt(ife->parentExpr) && isIfExpr(ife->parentExpr->parentExpr);
   if (parentIsIfExpr == false) {
     result->addFlag(FLAG_INSERT_AUTO_DESTROY);
   }
@@ -1283,7 +1271,8 @@ void LowerIfExprVisitor::exitIfExpr(IfExpr* ife) {
   anchor->insertBefore(new DefExpr(result));
   anchor->insertBefore(new DefExpr(cond));
 
-  CallExpr* condTest = new CallExpr("_cond_test", ife->getCondition()->remove());
+  CallExpr* condTest =
+    new CallExpr("_cond_test", ife->getCondition()->remove());
   anchor->insertBefore(new CallExpr(PRIM_MOVE, cond, condTest));
 
   normalizeIfExprBranch(cond, result, ife->getThenStmt());
@@ -1293,7 +1282,6 @@ void LowerIfExprVisitor::exitIfExpr(IfExpr* ife) {
                               ife->getThenStmt()->remove(),
                               ife->getElseStmt()->remove(),
                               true /* isIfExpr */);
-
 
   // Remove nested BlockStmts
   toBlockStmt(cs->thenStmt->body.tail)->flattenAndRemove();
@@ -1354,8 +1342,8 @@ static void processSyntacticDistributions(CallExpr* call) {
           USR_FATAL(
             distCall,
             "dmapped initialization expression requires a value, not a type "
-            "- did you mean to use '<domain> dmapped new %s(<args>)'?", ts->name
-          );
+            "- did you mean to use '<domain> dmapped new %s(<args>)'?",
+            ts->name);
         }
       }
     }
@@ -1413,8 +1401,8 @@ static void processManagedNew(CallExpr* newCall) {
         if (subCall != NULL) {
           subCall->insertAtTail(ne->remove());
         } else {
-          USR_FATAL_CONT(newCall,
-                         "type in 'new' expression is missing its argument list");
+          USR_FATAL_CONT(
+            newCall, "type in 'new' expression is missing its argument list");
         }
       }
     }
@@ -1493,7 +1481,8 @@ static void processManagedNew(CallExpr* newCall) {
     if (parent->hasFlag(FLAG_NEW_WRAPPER) == false &&
         parent->hasFlag(FLAG_COMPILER_GENERATED) == false &&
         resolvingField == false) {
-      USR_FATAL_CONT(newCall, "type in 'new' expression is missing its argument list");
+      USR_FATAL_CONT(newCall,
+                     "type in 'new' expression is missing its argument list");
     }
   }
 }
@@ -1509,10 +1498,8 @@ static void processManagedNew(CallExpr* newCall) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void      insertDestructureStatements(Expr*     S1,
-                                             Expr*     S2,
-                                             CallExpr* lhs,
-                                             Expr*     rhs);
+static void
+insertDestructureStatements(Expr* S1, Expr* S2, CallExpr* lhs, Expr* rhs);
 static CallExpr* destructureChk(CallExpr* lhs, Expr* rhs);
 static CallExpr* destructureErr();
 static void destructureTupleAssignment(CallExpr* assign, CallExpr* lhsCall);
@@ -1531,8 +1518,8 @@ static void destructureTupleAssignment(CallExpr* assign, CallExpr* lhsCall) {
   SET_LINENO(assign);
 
   VarSymbol* rtmp = newTemp();
-  Expr*      S1   = new CallExpr(PRIM_MOVE, rtmp, assign->get(2)->remove());
-  Expr*      S2   = new CallExpr(PRIM_NOOP);
+  Expr* S1 = new CallExpr(PRIM_MOVE, rtmp, assign->get(2)->remove());
+  Expr* S2 = new CallExpr(PRIM_NOOP);
 
   rtmp->addFlag(FLAG_EXPR_TEMP);
   rtmp->addFlag(FLAG_MAYBE_TYPE);
@@ -1548,13 +1535,11 @@ static void destructureTupleAssignment(CallExpr* assign, CallExpr* lhsCall) {
   S2->remove();
 }
 
-static void insertDestructureStatements(Expr*     S1,
-                                        Expr*     S2,
-                                        CallExpr* lhs,
-                                        Expr*     rhs) {
-  int       index = 0;
-  CallExpr* test  = destructureChk(lhs, rhs);
-  CallExpr* err   = destructureErr();
+static void
+insertDestructureStatements(Expr* S1, Expr* S2, CallExpr* lhs, Expr* rhs) {
+  int index = 0;
+  CallExpr* test = destructureChk(lhs, rhs);
+  CallExpr* err = destructureErr();
 
   S1->getStmtExpr()->insertAfter(buildIfStmt(test, err));
 
@@ -1563,14 +1548,14 @@ static void insertDestructureStatements(Expr*     S1,
 
     if (se == NULL || strcmp(se->unresolved, "chpl__tuple_blank") != 0) {
       CallExpr* nextLHS = toCallExpr(expr);
-      Expr*     nextRHS = new CallExpr(rhs->copy(), new_IntSymbol(index));
+      Expr* nextRHS = new CallExpr(rhs->copy(), new_IntSymbol(index));
 
       if (nextLHS != NULL && nextLHS->isNamedAstr(astrBuildTuple) == true) {
         insertDestructureStatements(S1, S2, nextLHS, nextRHS);
 
       } else {
         VarSymbol* lhsTmp = newTemp();
-        CallExpr*  addrOf = new CallExpr(PRIM_ADDR_OF, expr);
+        CallExpr* addrOf = new CallExpr(PRIM_ADDR_OF, expr);
 
         lhsTmp->addFlag(FLAG_MAYBE_PARAM);
 
@@ -1595,14 +1580,14 @@ static void insertDestructureStatements(Expr*     S1,
 }
 
 static CallExpr* destructureChk(CallExpr* lhs, Expr* rhs) {
-  CallExpr* dot  = new CallExpr(".", rhs->copy(), new_CStringSymbol("size"));
+  CallExpr* dot = new CallExpr(".", rhs->copy(), new_CStringSymbol("size"));
 
   return new CallExpr("!=", new_IntSymbol(lhs->numActuals()), dot);
 }
 
 static CallExpr* destructureErr() {
-  const char* msg  = NULL;
-  Symbol*     zero = new_IntSymbol(0);
+  const char* msg = NULL;
+  Symbol* zero = new_IntSymbol(0);
 
   msg = "tuple size must match the number of grouped variables";
 
@@ -1615,15 +1600,12 @@ static CallExpr* destructureErr() {
 *                                                                             *
 ************************************** | *************************************/
 
-
-
-class AddEndOfStatementMarkers final : public AstVisitorTraverse
-{
-  public:
-    bool enterCallExpr(CallExpr* node) override;
-    bool enterDefExpr(DefExpr* node) override;
-    bool enterIfExpr(IfExpr* node) override;
-    bool enterLoopExpr(LoopExpr* node) override;
+class AddEndOfStatementMarkers final : public AstVisitorTraverse {
+ public:
+  bool enterCallExpr(CallExpr* node) override;
+  bool enterDefExpr(DefExpr* node) override;
+  bool enterIfExpr(IfExpr* node) override;
+  bool enterLoopExpr(LoopExpr* node) override;
 };
 
 // Note, this might be called also during resolution
@@ -1631,12 +1613,10 @@ class AddEndOfStatementMarkers final : public AstVisitorTraverse
 void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement) {
 
   // Rule out several cases that shouldn't get end-of-statement markers
-  if (node->list == NULL)
-    return;
+  if (node->list == NULL) return;
 
   FnSymbol* fn = toFnSymbol(node->parentSymbol);
-  if (fn == NULL)
-    return;
+  if (fn == NULL) return;
 
   BlockStmt* firstBlock = NULL;
   BlockStmt* fnBlock = fn->body;
@@ -1644,13 +1624,10 @@ void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement) {
 
   // Check that the call is contained a FnSymbol's Block
   // While traversing, also compute the first parent Block.
-  for (Expr* cur = node->parentExpr;
-       cur != NULL;
-       cur = cur->parentExpr) {
+  for (Expr* cur = node->parentExpr; cur != NULL; cur = cur->parentExpr) {
 
     if (firstBlock == NULL)
-      if (BlockStmt* block = toBlockStmt(cur))
-        firstBlock = block;
+      if (BlockStmt* block = toBlockStmt(cur)) firstBlock = block;
 
     if (cur == fnBlock) {
       foundInBody = true;
@@ -1660,13 +1637,11 @@ void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement) {
 
   // not in a FnSymbol's body
   //  e.g. in where clause, lifetime clause, return type expression, arg, etc
-  if (foundInBody == false)
-    return;
+  if (foundInBody == false) return;
 
   // Otherwise, check that the call is a statement-level call, and
   // in that event, add the end-of-statement marker.
-  if (firstBlock != node->parentExpr)
-    return;
+  if (firstBlock != node->parentExpr) return;
 
   // Gather symexprs used in the statement
   llvm::SmallVector<SymExpr*, 32> mentions;
@@ -1680,8 +1655,7 @@ void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement) {
     // Don't add duplicate PRIM_END_OF_STATEMENT calls, but do
     // add mentions to an existing one.
     if (CallExpr* next = toCallExpr(node->next))
-      if (next->isPrimitive(PRIM_END_OF_STATEMENT))
-        call = next;
+      if (next->isPrimitive(PRIM_END_OF_STATEMENT)) call = next;
   }
 
   if (call == NULL) {
@@ -1696,8 +1670,7 @@ void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement) {
   // the removal of .type blocks to add such SymExprs.
   for (SymExpr* se : mentions) {
     if (VarSymbol* var = toVarSymbol(se->symbol())) {
-      if (!var->hasFlag(FLAG_TEMP) &&
-          !var->isParameter() &&
+      if (!var->hasFlag(FLAG_TEMP) && !var->isParameter() &&
           // exclude global variables, e.g. gMethodToken
           var->defPoint->getFunction() == node->getFunction()) {
 
@@ -1718,12 +1691,10 @@ void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement) {
           // a cheap peephole optimization to avoid redundant variables
           if (call->numActuals() > 0) {
             if (SymExpr* haveSe = toSymExpr(call->get(1)))
-              if (haveSe->symbol() == se->symbol())
-                alreadyThere = true;
+              if (haveSe->symbol() == se->symbol()) alreadyThere = true;
             if (call->numActuals() > 1)
               if (SymExpr* haveSe = toSymExpr(call->get(call->numActuals())))
-                if (haveSe->symbol() == se->symbol())
-                  alreadyThere = true;
+                if (haveSe->symbol() == se->symbol()) alreadyThere = true;
           }
           if (!alreadyThere) {
             call->insertAtTail(new SymExpr(se->symbol()));
@@ -1750,15 +1721,12 @@ bool AddEndOfStatementMarkers::enterLoopExpr(LoopExpr* node) {
 
 bool AddEndOfStatementMarkers::enterCallExpr(CallExpr* node) {
   // Don't add more markers after an end of statement marker.
-  if (node->isPrimitive(PRIM_END_OF_STATEMENT))
-    return false;
+  if (node->isPrimitive(PRIM_END_OF_STATEMENT)) return false;
 
   // Don't add markers after a move setting a temp
-  if (node->isPrimitive(PRIM_MOVE) ||
-      node->isPrimitive(PRIM_ASSIGN))
+  if (node->isPrimitive(PRIM_MOVE) || node->isPrimitive(PRIM_ASSIGN))
     if (SymExpr* lhs = toSymExpr(node->get(1)))
-      if (lhs->symbol()->hasFlag(FLAG_TEMP))
-        return false;
+      if (lhs->symbol()->hasFlag(FLAG_TEMP)) return false;
 
   // If the next statement is a PRIM_INIT_FIELD, it's a compound
   // thing from initializer pre-normalization, so don't add an end-of-statement
@@ -1795,22 +1763,19 @@ bool AddEndOfStatementMarkers::enterDefExpr(DefExpr* node) {
     CallExpr* endOfStatement = NULL;
     for (Expr* cur = node->next; cur != NULL; cur = cur->next)
       if (CallExpr* call = toCallExpr(cur))
-        if (call->isPrimitive(PRIM_END_OF_STATEMENT))
-          endOfStatement = call;
+        if (call->isPrimitive(PRIM_END_OF_STATEMENT)) endOfStatement = call;
     addMentionToEndOfStatement(node, endOfStatement);
     return false;
   }
 
-  if (isModuleSymbol(node->sym))
-    return true; // look for functions in modules
+  if (isModuleSymbol(node->sym)) return true; // look for functions in modules
 
   if (isFnSymbol(node->sym))
     if (!node->sym->hasFlag(FLAG_COMPILER_GENERATED))
-      return true;  // visit non-compiler-generated functions
+      return true; // visit non-compiler-generated functions
 
   return false; // other symbols, e.g. ArgSymbols
 }
-
 
 static void addEndOfStatementMarkers(BaseAST* base) {
   AddEndOfStatementMarkers visitor;
@@ -1837,7 +1802,8 @@ Expr* partOfNonNormalizableExpr(Expr* expr) {
           // cleaned up (via dead code elimination), but under --baseline
           // or --no-dead-code-elimination they would not be.
           call->isPrimitive(PRIM_STATIC_TYPEOF) ||
-          call->isPrimitive(PRIM_STATIC_FIELD_TYPE)) root = call;
+          call->isPrimitive(PRIM_STATIC_FIELD_TYPE))
+        root = call;
       if (root) return root;
     }
   }
@@ -1847,23 +1813,19 @@ Expr* partOfNonNormalizableExpr(Expr* expr) {
 
 static void addTypeBlocksForParentTypeOf(CallExpr* call) {
   Expr* stmt = getCallTempInsertPoint(call);
-  if (stmt == NULL)
-    return;
+  if (stmt == NULL) return;
 
   // Is the argument to PRIM_TYPEOF already just a symbol?
   // Then there's no possibility for side effects and nothing to do.
-  if (isSymExpr(call->get(1)))
-    return;
+  if (isSymExpr(call->get(1))) return;
 
   // Look for a parent PRIM_TYPEOF
   CallExpr* typeOf = NULL;
   for (CallExpr* cur = call; cur != NULL; cur = toCallExpr(cur->parentExpr)) {
-    if (cur->isPrimitive(PRIM_TYPEOF))
-      typeOf = cur;
+    if (cur->isPrimitive(PRIM_TYPEOF)) typeOf = cur;
   }
   // No PRIM_TYPEOF in parent exprs? Then nothing to do.
-  if (typeOf == NULL)
-    return;
+  if (typeOf == NULL) return;
 
   SET_LINENO(call);
 
@@ -1876,8 +1838,7 @@ static void addTypeBlocksForParentTypeOf(CallExpr* call) {
 
   for (Expr* cur = typeOf->parentExpr; cur != NULL; cur = cur->parentExpr) {
     if (IfExpr* ifExpr = toIfExpr(cur))
-      if (parentIfExpr == NULL)
-        parentIfExpr = ifExpr;
+      if (parentIfExpr == NULL) parentIfExpr = ifExpr;
 
     //if (ForallStmt* forallStmt = toForallStmt(cur))
     //  if (parentForallStmt == NULL)
@@ -1885,17 +1846,14 @@ static void addTypeBlocksForParentTypeOf(CallExpr* call) {
 
     if (DefExpr* def = toDefExpr(cur))
       if (ShadowVarSymbol* sv = toShadowVarSymbol(def->sym))
-        if (parentShadowVarSymbol == NULL)
-          parentShadowVarSymbol = sv;
+        if (parentShadowVarSymbol == NULL) parentShadowVarSymbol = sv;
 
     if (BlockStmt* block = toBlockStmt(cur))
-      if ((block->blockTag & BLOCK_TYPE_ONLY))
-        inTypeBlock = true;
+      if ((block->blockTag & BLOCK_TYPE_ONLY)) inTypeBlock = true;
   }
 
   // Found type block? then nothing to do.
-  if (inTypeBlock)
-    return;
+  if (inTypeBlock) return;
 
   // If it's in a shadow var symbol's def expr,
   // use the shadow var stmt init block as the stmt.
@@ -1915,15 +1873,13 @@ static void addTypeBlocksForParentTypeOf(CallExpr* call) {
 
   SymExpr* tmpSe = new SymExpr(tmp);
   typeOf->replace(tmpSe);
-  if (stmt == typeOf)
-    stmt = tmpSe;
+  if (stmt == typeOf) stmt = tmpSe;
   BlockStmt* typeBlock = new BlockStmt(BLOCK_TYPE);
   typeBlock->insertAtTail(new DefExpr(tmp));
   typeBlock->insertAtTail(new CallExpr(PRIM_MOVE, tmp, typeOf));
   stmt->insertBefore(typeBlock);
 
-  if (noop)
-    noop->remove();
+  if (noop) noop->remove();
 }
 
 /************************************* | **************************************
@@ -1943,24 +1899,27 @@ static void fixupExportedArrayReturns(FnSymbol* fn);
 static void fixupGenericReturnTypes(FnSymbol* fn);
 static bool isVoidReturn(CallExpr* call);
 static bool hasGenericArrayReturn(FnSymbol* fn);
-static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
+static void insertRetMove(FnSymbol* fn,
+                          VarSymbol* retval,
+                          CallExpr* ret,
                           bool genericArrayRet);
 
 static void normalizeReturns(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_NO_FN_BODY)) return;
   if (shouldSkipNormalizing(fn)) return;
 
-  SET_LINENO((fn->body->body.tail ? (BaseAST*)fn->body->body.tail : (BaseAST*)fn));
+  SET_LINENO(
+    (fn->body->body.tail ? (BaseAST*)fn->body->body.tail : (BaseAST*)fn));
 
   fixupExportedArrayReturns(fn);
   fixupGenericReturnTypes(fn);
 
   std::vector<CallExpr*> rets;
   std::vector<CallExpr*> calls;
-  size_t                 numVoidReturns = 0;
-  CallExpr*              theRet         = NULL;
-  bool                   isIterator     = fn->isIterator();
-  bool                   isThunkBuilder = fn->hasFlag(FLAG_THUNK_BUILDER);
+  size_t numVoidReturns = 0;
+  CallExpr* theRet = NULL;
+  bool isIterator = fn->isIterator();
+  bool isThunkBuilder = fn->hasFlag(FLAG_THUNK_BUILDER);
 
   collectMyCallExprs(fn, calls, fn);
 
@@ -1979,9 +1938,8 @@ static void normalizeReturns(FnSymbol* fn) {
   // Check if this function's returns are already normal.
   if (rets.size() == 1 && theRet == fn->body->body.last()) {
     if (SymExpr* se = toSymExpr(theRet->get(1))) {
-      if (strcmp ("=",      fn->name)           ==    0 ||
-          strcmp ("_init",  fn->name)           ==    0||
-          strcmp ("_ret",   se->symbol()->name) ==    0) {
+      if (strcmp("=", fn->name) == 0 || strcmp("_init", fn->name) == 0 ||
+          strcmp("_ret", se->symbol()->name) == 0) {
         return;
       }
     }
@@ -2003,9 +1961,9 @@ static void normalizeReturns(FnSymbol* fn) {
     return;
   }
 
-  LabelSymbol* label       = new LabelSymbol(astr("_end_", fn->name));
-  bool         labelIsUsed = false;
-  VarSymbol*   retval      = NULL;
+  LabelSymbol* label = new LabelSymbol(astr("_end_", fn->name));
+  bool labelIsUsed = false;
+  VarSymbol* retval = NULL;
 
   label->addFlag(FLAG_EPILOGUE_LABEL);
 
@@ -2090,8 +2048,7 @@ static void normalizeReturns(FnSymbol* fn) {
 // prior to any normalization occurring on the function, and this gets called
 // during normalize called on a specific AST node.
 static void fixupExportedArrayReturns(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_EXPORT) &&
-      fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+  if (fn->hasFlag(FLAG_EXPORT) && fn->hasFlag(FLAG_COMPILER_GENERATED) &&
       returnsArray(fn)) {
     // Save the element type for use at code generation, specifically for Python
     // modules.  Eventually, these operations will probably want to be moved
@@ -2120,7 +2077,7 @@ static void fixupExportedArrayReturns(FnSymbol* fn) {
     // otherwise, just use the value directly and let the normal call temp
     // insertion take care of it
     Expr* retVal = retCall->get(1);
-    if(CallExpr* callVal = toCallExpr(retVal)) {
+    if (CallExpr* callVal = toCallExpr(retVal)) {
       Symbol* retSym = insertCallTempsWithStmt(callVal, retCall);
       retSym->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
       retVal = new SymExpr(retSym);
@@ -2140,7 +2097,7 @@ static void fixupGenericReturnTypes(FnSymbol* fn) {
     propagateMarkedGeneric(fn, fn->retExprType);
 
     // simplify the simple case
-    Expr*     tail   = fn->retExprType->body.tail;
+    Expr* tail = fn->retExprType->body.tail;
     if (CallExpr* call = toCallExpr(tail)) {
       if (call->numActuals() == 1) {
         if (SymExpr* se = toSymExpr(call->get(1))) {
@@ -2248,20 +2205,18 @@ static void prepareRetExpr(Expr*& retExpr, CallExpr* retCall) {
 }
 
 // Validates the declared domain, if it exists.
-static void insertDomainCheck(Expr* actualRet, CallExpr* retVar,
-                              Expr* domExpr) {
-  CallExpr* checkDom = new CallExpr("chpl__checkDomainsMatch",
-                                    actualRet->copy(),
-                                    domExpr->copy());
+static void
+insertDomainCheck(Expr* actualRet, CallExpr* retVar, Expr* domExpr) {
+  CallExpr* checkDom =
+    new CallExpr("chpl__checkDomainsMatch", actualRet->copy(), domExpr->copy());
   retVar->insertBefore(checkDom);
 }
 
 // Validates the declared element type, if it exists
-static void insertElementTypeCheck(Expr* declaredRet, Expr* actualRet,
-                                   CallExpr* retVar) {
-  CallExpr* checkEltType = new CallExpr("chpl__checkRetEltTypeMatch",
-                                        actualRet->copy(),
-                                        declaredRet->copy());
+static void
+insertElementTypeCheck(Expr* declaredRet, Expr* actualRet, CallExpr* retVar) {
+  CallExpr* checkEltType = new CallExpr(
+    "chpl__checkRetEltTypeMatch", actualRet->copy(), declaredRet->copy());
   retVar->insertBefore(checkEltType);
 }
 
@@ -2293,7 +2248,9 @@ static void modifyPartiallyGenericArrayReturn(FnSymbol* fn,
   ret->insertBefore(new CallExpr(PRIM_MOVE, retval, retExpr));
 }
 
-static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
+static void insertRetMove(FnSymbol* fn,
+                          VarSymbol* retval,
+                          CallExpr* ret,
                           bool genericArrayRet) {
   Expr* retExpr = ret->get(1)->remove();
 
@@ -2306,7 +2263,7 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
     modifyPartiallyGenericArrayReturn(fn, retval, ret, retExpr);
 
   } else if (fn->retExprType != NULL) {
-    Expr*     tail   = fn->retExprType->body.tail;
+    Expr* tail = fn->retExprType->body.tail;
     CallExpr* coerce = new CallExpr(PRIM_COERCE, retExpr, tail->copy());
 
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, coerce));
@@ -2314,9 +2271,9 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
   } else if (fn->hasFlag(FLAG_MAYBE_REF) == true) {
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, retExpr));
 
-  } else if (fn->hasFlag(FLAG_WRAPPER)             == false &&
-             strcmp(fn->name, "iteratorIndex")     !=     0 &&
-             strcmp(fn->name, "iteratorIndexHelp") !=     0) {
+  } else if (fn->hasFlag(FLAG_WRAPPER) == false &&
+             strcmp(fn->name, "iteratorIndex") != 0 &&
+             strcmp(fn->name, "iteratorIndexHelp") != 0) {
     CallExpr* deref = new CallExpr(PRIM_DEREF, retExpr);
 
     ret->insertBefore(new CallExpr(PRIM_MOVE, retval, deref));
@@ -2345,9 +2302,7 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
 
 static void fixPrimNew(CallExpr* primNewToFix);
 
-static bool isCallToConstructor(CallExpr* call) {
-  return isNewLike(call);
-}
+static bool isCallToConstructor(CallExpr* call) { return isNewLike(call); }
 
 static void normalizeCallToConstructor(CallExpr* call) {
   if (call->getStmtExpr() != NULL) {
@@ -2406,8 +2361,7 @@ static bool callNeedsAnOwner(CallExpr* call) {
     if (parentIf == parentIf->getStmtExpr()) {
       return true;
     }
-  }
-  else if (call == call->getStmtExpr()) {
+  } else if (call == call->getStmtExpr()) {
     return true;
   }
 
@@ -2417,18 +2371,18 @@ static bool callNeedsAnOwner(CallExpr* call) {
 static void fixPrimNew(CallExpr* primNewToFix) {
   SET_LINENO(primNewToFix);
 
-  CallExpr* callInNew    = toCallExpr(primNewToFix->get(1));
-  CallExpr* newNew       = new CallExpr(PRIM_NEW);
+  CallExpr* callInNew = toCallExpr(primNewToFix->get(1));
+  CallExpr* newNew = new CallExpr(PRIM_NEW);
   newNew->tryTag = primNewToFix->tryTag; // preserve the tryTag
 
-  Expr*     exprModToken = NULL;
-  Expr*     exprMod      = NULL;
+  Expr* exprModToken = NULL;
+  Expr* exprMod = NULL;
 
   if (callInNew->numActuals() >= 2) {
     if (SymExpr* se1 = toSymExpr(callInNew->get(1))) {
       if (se1->symbol() == gModuleToken) {
         exprModToken = callInNew->get(1)->remove();
-        exprMod      = callInNew->get(1)->remove();
+        exprMod = callInNew->get(1)->remove();
       }
     }
   }
@@ -2441,16 +2395,12 @@ static void fixPrimNew(CallExpr* primNewToFix) {
   newNew->insertAtHead(baseExpr);
 
   // Move the actuals from the call to the new PRIM_NEW
-  for_actuals(actual, callInNew) {
-    newNew->insertAtTail(actual->remove());
-  }
+  for_actuals(actual, callInNew) { newNew->insertAtTail(actual->remove()); }
 
   // Move actual from the PRIM_NEW as well
   // This is not the expected AST form, but keeping this
   // code here adds some resiliency.
-  for_actuals(actual, primNewToFix) {
-    newNew->insertAtTail(actual->remove());
-  }
+  for_actuals(actual, primNewToFix) { newNew->insertAtTail(actual->remove()); }
 
   if (exprModToken != NULL) {
     newNew->insertAtHead(exprMod);
@@ -2458,7 +2408,7 @@ static void fixPrimNew(CallExpr* primNewToFix) {
   }
 
   if (callNeedsAnOwner(newNew)) {
-    CallExpr *noop = new CallExpr(PRIM_NOOP);
+    CallExpr* noop = new CallExpr(PRIM_NOOP);
     newNew->insertBefore(noop);
     insertCallTempsWithStmt(newNew, noop);
     noop->remove();
@@ -2491,7 +2441,7 @@ static void fixStringLiteralInit(FnSymbol* fn) {
 ************************************** | *************************************/
 
 static SymExpr* callUsedInRiSpec(Expr* call);
-static void     restoreReduceIntentSpecCall(SymExpr* riSpec, CallExpr* call);
+static void restoreReduceIntentSpecCall(SymExpr* riSpec, CallExpr* call);
 
 static bool isCallToTypeConstructor(CallExpr* call) {
   bool retval = false;
@@ -2539,7 +2489,6 @@ static void normalizeCallToTypeConstructor(CallExpr* call) {
 
           } else if (SymExpr* riSpec = callUsedInRiSpec(call)) {
             restoreReduceIntentSpecCall(riSpec, call);
-
           }
         }
       }
@@ -2565,9 +2514,9 @@ static SymExpr* callUsedInRiSpec(Expr* call) {
 
   if (CallExpr* parent = toCallExpr(call->parentExpr)) {
     if (parent->isPrimitive(PRIM_MOVE) == true) {
-      Symbol*  dest        = toSymExpr(parent->get(1))->symbol();
+      Symbol* dest = toSymExpr(parent->get(1))->symbol();
       SymExpr* riSpecMaybe = dest->firstSymExpr();
-      Symbol*  symParent   = riSpecMaybe->parentSymbol;
+      Symbol* symParent = riSpecMaybe->parentSymbol;
 
       if (ShadowVarSymbol* svar = toShadowVarSymbol(symParent)) {
         if (riSpecMaybe == svar->reduceOpExpr()) {
@@ -2590,7 +2539,7 @@ static void restoreReduceIntentSpecCall(SymExpr* riSpec, CallExpr* call) {
   // Verify the pattern that occurs if callUsedInRiSpec() returns true.
   // If any of these fail, either the pattern changed or callUsedInRiSpec()
   // returns true when it shouldn't.
-  INT_ASSERT(temp->firstSymExpr()      == riSpec);
+  INT_ASSERT(temp->firstSymExpr() == riSpec);
   INT_ASSERT(temp->lastSymExpr()->next == call);
 
   // 'temp' has only 2 SymExprs
@@ -2681,7 +2630,7 @@ static void applyGetterTransform(CallExpr* call) {
 //     ....
 //
 static void transformIfVar(CallExpr* primIfVar) {
-  if (! primIfVar->isPrimitive(PRIM_IF_VAR)) return;
+  if (!primIfVar->isPrimitive(PRIM_IF_VAR)) return;
   SET_LINENO(primIfVar);
 
   CondStmt* cond = toCondStmt(primIfVar->parentExpr);
@@ -2692,21 +2641,20 @@ static void transformIfVar(CallExpr* primIfVar) {
   }
 
   DefExpr* varDef = toDefExpr(primIfVar->get(1)->remove());
-  Expr*   rhsExpr = primIfVar->get(1)->remove();
+  Expr* rhsExpr = primIfVar->get(1)->remove();
 
   VarSymbol* borrow = newTemp("ifvar_borrow");
   cond->insertBefore(new DefExpr(borrow));
-  cond->insertBefore("'move'(%S,chpl_checkBorrowIfVar(%E,%S))",
-                     borrow, rhsExpr, gFalse);
+  cond->insertBefore(
+    "'move'(%S,chpl_checkBorrowIfVar(%E,%S))", borrow, rhsExpr, gFalse);
 
   primIfVar->replace(new SymExpr(borrow));
 
-  INT_ASSERT(! varDef->init && ! varDef->exprType); // already normalized
+  INT_ASSERT(!varDef->init && !varDef->exprType); // already normalized
   cond->thenStmt->insertAtHead(varDef);
-  varDef->insertAfter("'move'(%S,'to non nilable class'(%S))",
-                      varDef->sym, borrow);
+  varDef->insertAfter(
+    "'move'(%S,'to non nilable class'(%S))", varDef->sym, borrow);
 }
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -2720,7 +2668,7 @@ static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp);
 static bool moveMakesTypeAlias(CallExpr* call);
 static Expr* getCallTempInsertPoint(Expr* expr);
 
-Symbol *earlyNormalizeForallIterand(CallExpr *call, ForallStmt *forall) {
+Symbol* earlyNormalizeForallIterand(CallExpr* call, ForallStmt* forall) {
   return insertCallTempsWithStmt(call, forall);
 }
 
@@ -2744,26 +2692,21 @@ static void propagateMarkedGeneric(Symbol* var, Expr* typeExpr) {
         var->addFlag(FLAG_MARKED_GENERIC);
     }
   } else if (CallExpr* call = toCallExpr(typeExpr)) {
-    if (call->baseExpr)
-      propagateMarkedGeneric(var, call->baseExpr);
+    if (call->baseExpr) propagateMarkedGeneric(var, call->baseExpr);
 
-    for_actuals(actual, call) {
-      propagateMarkedGeneric(var, actual);
-    }
+    for_actuals(actual, call) { propagateMarkedGeneric(var, actual); }
   } else if (BlockStmt* blk = toBlockStmt(typeExpr)) {
     // handle blocks since they are used for return type exprs
-    for_alist(expr, blk->body) {
-      propagateMarkedGeneric(var, expr);
-    }
+    for_alist(expr, blk->body) { propagateMarkedGeneric(var, expr); }
   }
 }
 
 // returns the added call temp's symbol
-static Symbol *insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
+static Symbol* insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
   SET_LINENO(call);
 
-  CallExpr*  parentCall = toCallExpr(call->parentExpr);
-  VarSymbol* tmp        = newTemp("call_tmp");
+  CallExpr* parentCall = toCallExpr(call->parentExpr);
+  VarSymbol* tmp = newTemp("call_tmp");
 
   stmt->insertBefore(new DefExpr(tmp));
 
@@ -2775,7 +2718,7 @@ static Symbol *insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
     // as a sub-expression for a variable initialization.
     // This flag triggers autoCopy/autoDestroy behavior.
     if (parentCall == NULL ||
-        (parentCall->isNamedAstr(astr_initCopy)  == false &&
+        (parentCall->isNamedAstr(astr_initCopy) == false &&
          parentCall->isPrimitive(PRIM_INIT_VAR) == false &&
          parentCall->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT) == false)) {
       tmp->addFlag(FLAG_EXPR_TEMP);
@@ -2795,10 +2738,8 @@ static Symbol *insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
   tmp->addFlag(FLAG_MAYBE_PARAM);
   tmp->addFlag(FLAG_MAYBE_TYPE);
 
-  if (call->isNamed("super")            == true &&
-      parentCall                        != NULL &&
-      parentCall->isNamedAstr(astrSdot) == true &&
-      parentCall->get(1)                == call) {
+  if (call->isNamed("super") == true && parentCall != NULL &&
+      parentCall->isNamedAstr(astrSdot) == true && parentCall->get(1) == call) {
     // We've got an access to a method or field on the super type.
     // This means we should preserve that knowledge for when we
     // attempt to access the method on the super type.
@@ -2817,29 +2758,23 @@ static Symbol *insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
 }
 
 static bool shouldInsertCallTemps(CallExpr* call) {
-  Expr*     parentExpr = call->parentExpr;
+  Expr* parentExpr = call->parentExpr;
   CallExpr* parentCall = toCallExpr(parentExpr);
-  Expr*     stmt       = call->getStmtExpr();
+  Expr* stmt = call->getStmtExpr();
 
-  if (parentExpr == NULL                                 ||
-      isDefExpr(parentExpr)                              ||
-      isContextCallExpr(parentExpr)                      ||
-      stmt == NULL                                       ||
-      call == stmt                                       ||
-      call->partialTag                                   ||
-      call->isPrimitive(PRIM_TUPLE_EXPAND)               ||
-      call->isPrimitive(PRIM_IF_VAR)                     ||
+  if (parentExpr == NULL || isDefExpr(parentExpr) ||
+      isContextCallExpr(parentExpr) || stmt == NULL || call == stmt ||
+      call->partialTag || call->isPrimitive(PRIM_TUPLE_EXPAND) ||
+      call->isPrimitive(PRIM_IF_VAR) ||
       (parentCall && parentCall->isPrimitive(PRIM_MOVE)) ||
 
       // Avoid normalizing the type expression in a new call, because
       // this gets handled later by fixPrimNew.
-      (parentCall && isNewLike(parentCall)
-                  && parentCall->get(1) == call) )
+      (parentCall && isNewLike(parentCall) && parentCall->get(1) == call))
     return false;
 
   // Don't normalize lifetime constraint clauses
-  if (isInLifetimeClause(call))
-    return false;
+  if (isInLifetimeClause(call)) return false;
 
   if (call->parentSymbol && call->parentSymbol->hasFlag(FLAG_RESOLVED_EARLY))
     return false;
@@ -2861,23 +2796,20 @@ static Expr* getCallTempInsertPoint(Expr* expr) {
       // reached. The case to think about is a function returning
       // a record that throws (or a throwing initializer).
       if (DefExpr* def = toDefExpr(stmt->prev))
-        if (def->sym == sym)
-          return def;
+        if (def->sym == sym) return def;
     }
   }
   if (auto ctch = toCatchStmt(stmt)) {
     // Catch statements are not expected to have anything other than
     // catch statements as siblings, so we can put the call temp before
     // parent try.
-    if (isTryStmt(ctch->parentExpr))
-      stmt = ctch->parentExpr;
+    if (isTryStmt(ctch->parentExpr)) stmt = ctch->parentExpr;
   }
   return stmt;
 }
 
-static bool containedInRuntimeTypeInit(CallExpr* call,
-                                       bool ignorePosition) {
-  Expr*     parentExpr = call->parentExpr;
+static bool containedInRuntimeTypeInit(CallExpr* call, bool ignorePosition) {
+  Expr* parentExpr = call->parentExpr;
   CallExpr* parentCall = toCallExpr(parentExpr);
   CallExpr* cur = parentCall;
   CallExpr* sub = call;
@@ -2907,16 +2839,15 @@ static bool containedInRuntimeTypeInit(CallExpr* call,
 }
 
 static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp) {
-  Expr*     parentExpr = call->parentExpr;
+  Expr* parentExpr = call->parentExpr;
   CallExpr* parentCall = toCallExpr(parentExpr);
-  FnSymbol* fn         = call->getFunction();
+  FnSymbol* fn = call->getFunction();
 
   // Noakes 2015/11/02
   //   The expansion of _build_tuple() creates temps that need to be
   //   autoDestroyed.  This is a short-cut to arrange for that to occur.
   //   A better long term solution would be preferred
-  if (call->isNamedAstr(astr_initCopy)     == true &&
-      parentCall                          != NULL &&
+  if (call->isNamedAstr(astr_initCopy) == true && parentCall != NULL &&
       parentCall->isNamedAstr(astrBuildTuple) == true) {
     tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
   }
@@ -2926,14 +2857,14 @@ static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp) {
   // Sometimes an array type is represented with a loop-expression, so we
   // need to hoist the resulting runtime type into global scope so that it
   // isn't destroyed at the end of the loop-expr wrapper function.
-  bool isGlobalLoopExpr = fn->hasFlag(FLAG_MAYBE_ARRAY_TYPE) &&
-                          fn->defPoint->getFunction() == initFn;
+  bool isGlobalLoopExpr =
+    fn->hasFlag(FLAG_MAYBE_ARRAY_TYPE) && fn->defPoint->getFunction() == initFn;
 
   // This code used to look at any call in the initFn, and could trigger for
   // temporaries in nested scopes (e.g. a param for-loop). We should only look
   // for top-level calls/temps.
-  bool isCandidateGlobal = fn == initFn &&
-                           fn->body == call->getStmtExpr()->parentExpr;
+  bool isCandidateGlobal =
+    fn == initFn && fn->body == call->getStmtExpr()->parentExpr;
 
   // TODO: globalTemps needs updating only for isGlobalLoopExpr
   // once all temps are hoisted in this way.
@@ -3005,9 +2936,9 @@ static void emitTypeAliasInit(Expr* after, Symbol* var, Expr* init) {
 static void normalizeTypeAlias(DefExpr* defExpr) {
   SET_LINENO(defExpr);
 
-  Symbol* var  = defExpr->sym;
-  Expr*   type = defExpr->exprType;
-  Expr*   init = defExpr->init;
+  Symbol* var = defExpr->sym;
+  Expr* type = defExpr->exprType;
+  Expr* init = defExpr->init;
 
   if (type == NULL && init == NULL) {
     // Don't worry about compiler temporaries
@@ -3081,18 +3012,16 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
 *                                                                             *
 ************************************** | *************************************/
 
-static CondStmt* assignConfig(VarSymbol* var,
-                              VarSymbol* varTmp,
-                              Expr*      noop);
+static CondStmt* assignConfig(VarSymbol* var, VarSymbol* varTmp, Expr* noop);
 
-static Symbol*   varModuleName(VarSymbol* var);
+static Symbol* varModuleName(VarSymbol* var);
 
 static void normalizeConfigVariableDefinition(DefExpr* defExpr) {
   SET_LINENO(defExpr);
 
-  VarSymbol* var  = toVarSymbol(defExpr->sym);
-  Expr*      type = defExpr->exprType;
-  Expr*      init = defExpr->init;
+  VarSymbol* var = toVarSymbol(defExpr->sym);
+  Expr* type = defExpr->exprType;
+  Expr* init = defExpr->init;
 
   INT_ASSERT(type != NULL || init != NULL);
 
@@ -3104,12 +3033,12 @@ static void normalizeConfigVariableDefinition(DefExpr* defExpr) {
 
   } else {
     VarSymbol* varTmp = var;
-    Expr*      insert = defExpr;
+    Expr* insert = defExpr;
 
     // insert code to initialize a config var/const
     // config param is evaluated at compile time
     if (var->hasFlag(FLAG_PARAM) == false) {
-      if (var->hasFlag(FLAG_CONST)  ==  true &&
+      if (var->hasFlag(FLAG_CONST) == true &&
           var->hasFlag(FLAG_EXTERN) == false) {
         varTmp = newTemp("tmp");
 
@@ -3125,8 +3054,8 @@ static void normalizeConfigVariableDefinition(DefExpr* defExpr) {
       insert->insertAfter(new CallExpr(PRIM_INIT_VAR, varTmp, init->remove()));
 
     } else if (init == NULL) {
-      insert->insertAfter(new CallExpr(PRIM_DEFAULT_INIT_VAR,
-                                       varTmp, type->remove()));
+      insert->insertAfter(
+        new CallExpr(PRIM_DEFAULT_INIT_VAR, varTmp, type->remove()));
 
     } else if (var->hasFlag(FLAG_PARAM) == true) {
       CallExpr* cast = createCast(init->remove(), type->remove());
@@ -3137,52 +3066,48 @@ static void normalizeConfigVariableDefinition(DefExpr* defExpr) {
       USR_FATAL("noinit is not currently supported for config vars");
 
     } else {
-      insert->insertAfter(new CallExpr(PRIM_INIT_VAR,
-                                       varTmp, init->remove(), type->remove()));
-
-
+      insert->insertAfter(
+        new CallExpr(PRIM_INIT_VAR, varTmp, init->remove(), type->remove()));
     }
   }
 }
 
 static CondStmt* assignConfig(VarSymbol* var, VarSymbol* varTmp, Expr* noop) {
-  Symbol*    modName  = varModuleName(var);
+  Symbol* modName = varModuleName(var);
 
   //
   // A fragment for the conditional test
   //
-  SymExpr*   name0    = new SymExpr(new_CStringSymbol(var->name));
-  CallExpr*  hasValue = new CallExpr("chpl_config_has_value", name0, modName);
-  CallExpr*  test     = new CallExpr("!", hasValue);
+  SymExpr* name0 = new SymExpr(new_CStringSymbol(var->name));
+  CallExpr* hasValue = new CallExpr("chpl_config_has_value", name0, modName);
+  CallExpr* test = new CallExpr("!", hasValue);
 
   //
   // An "empty" block stmt for the consequent
   //
-  BlockStmt* cons     = new BlockStmt(noop);
+  BlockStmt* cons = new BlockStmt(noop);
 
   //
   // The alternative sets the config from the command line
   //
-  SymExpr*   name1    = new SymExpr(new_CStringSymbol(var->name));
-  CallExpr*  typeOf   = new CallExpr(PRIM_TYPEOF, varTmp);
+  SymExpr* name1 = new SymExpr(new_CStringSymbol(var->name));
+  CallExpr* typeOf = new CallExpr(PRIM_TYPEOF, varTmp);
 
-  SymExpr*   name2    = new SymExpr(new_CStringSymbol(var->name));
-  CallExpr*  getValue = new CallExpr("chpl_config_get_value", name2, modName);
+  SymExpr* name2 = new SymExpr(new_CStringSymbol(var->name));
+  CallExpr* getValue = new CallExpr("chpl_config_get_value", name2, modName);
 
-  CallExpr*  strToVal = new CallExpr("_command_line_cast",
-                                     name1,
-                                     typeOf,
-                                     getValue);
+  CallExpr* strToVal =
+    new CallExpr("_command_line_cast", name1, typeOf, getValue);
 
-  CallExpr*  moveTmp  = new CallExpr(PRIM_MOVE, varTmp, strToVal);
-  BlockStmt* alt      = new BlockStmt(moveTmp);
+  CallExpr* moveTmp = new CallExpr(PRIM_MOVE, varTmp, strToVal);
+  BlockStmt* alt = new BlockStmt(moveTmp);
 
   return new CondStmt(test, cons, alt);
 }
 
 static Symbol* varModuleName(VarSymbol* var) {
-  ModuleSymbol* module     = var->getModule();
-  bool          isInternal = module->modTag == MOD_INTERNAL;
+  ModuleSymbol* module = var->getModule();
+  bool isInternal = module->modTag == MOD_INTERNAL;
 
   return new_CStringSymbol(isInternal ? "Built-in" : module->name);
 }
@@ -3195,21 +3120,21 @@ static Symbol* varModuleName(VarSymbol* var) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void           normVarTypeInference(DefExpr* expr);
-static void           normVarTypeWoutInit(DefExpr* expr, bool noinit);
-static void           normVarTypeWithInit(DefExpr* expr);
-static void           normVarNoinit(DefExpr* defExpr);
+static void normVarTypeInference(DefExpr* expr);
+static void normVarTypeWoutInit(DefExpr* expr, bool noinit);
+static void normVarTypeWithInit(DefExpr* expr);
+static void normVarNoinit(DefExpr* defExpr);
 
 static Expr* prepareShadowVarForNormalize(DefExpr* def, VarSymbol* var);
-static void  restoreShadowVarForNormalize(DefExpr* def, Expr* svarMark);
+static void restoreShadowVarForNormalize(DefExpr* def, Expr* svarMark);
 
 void normalizeVariableDefinition(DefExpr* defExpr) {
   SET_LINENO(defExpr);
 
-  VarSymbol* var  = toVarSymbol(defExpr->sym);
-  Expr*      type = defExpr->exprType;
-  Expr*      init = defExpr->init;
-  Expr*  svarMark = prepareShadowVarForNormalize(defExpr, var);
+  VarSymbol* var = toVarSymbol(defExpr->sym);
+  Expr* type = defExpr->exprType;
+  Expr* init = defExpr->init;
+  Expr* svarMark = prepareShadowVarForNormalize(defExpr, var);
   std::vector<CallExpr*> initAssigns;
 
   // if there is no init expression, search for initialization
@@ -3241,14 +3166,12 @@ void normalizeVariableDefinition(DefExpr* defExpr) {
     //
     // in which case the type of x is inferred from the out
     // argument of the function.
-    CallExpr* init = new CallExpr(PRIM_DEFAULT_INIT_VAR,
-                                  var,
-                                  new SymExpr(dtSplitInitType->symbol));
+    CallExpr* init = new CallExpr(
+      PRIM_DEFAULT_INIT_VAR, var, new SymExpr(dtSplitInitType->symbol));
     defExpr->init->remove();
     defExpr->insertAfter(init);
 
-  } else if ((init != NULL && !requestedSplitInit) ||
-              foundSplitInit == false) {
+  } else if ((init != NULL && !requestedSplitInit) || foundSplitInit == false) {
     // handle non-split initialization
 
     // handle ref variables
@@ -3274,8 +3197,7 @@ void normalizeVariableDefinition(DefExpr* defExpr) {
     var->addFlag(FLAG_SPLIT_INITED);
 
     // remove the init expression if present
-    if (init != NULL)
-      init->remove();
+    if (init != NULL) init->remove();
 
     VarSymbol* typeTemp = NULL;
 
@@ -3283,7 +3205,7 @@ void normalizeVariableDefinition(DefExpr* defExpr) {
       // Emit PRIM_INIT_VAR_SPLIT for non-ref variables
       // It sets the type, if we have a type expression.
       if (type == NULL) {
-        defExpr->insertAfter( new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var));
+        defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var));
       } else {
         VarSymbol* tt = newTemp("type_tmp");
         tt->addFlag(FLAG_MAYBE_PARAM);
@@ -3343,20 +3265,16 @@ void normalizeVariableDefinition(DefExpr* defExpr) {
 static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
   // Don't worry about compiler temporaries or index variables
   // or reduction variables
-  if (def->sym->hasFlag(FLAG_TEMP) ||
-      def->sym->hasFlag(FLAG_INDEX_VAR) ||
-      def->sym->hasFlag(FLAG_UNSAFE)    ||
-      isShadowVarSymbol(def->sym))
+  if (def->sym->hasFlag(FLAG_TEMP) || def->sym->hasFlag(FLAG_INDEX_VAR) ||
+      def->sym->hasFlag(FLAG_UNSAFE) || isShadowVarSymbol(def->sym))
     return;
 
   // Don't worry about declarations in unsafe functions
-  if (def->getFunction()->hasFlag(FLAG_UNSAFE))
-    return;
+  if (def->getFunction()->hasFlag(FLAG_UNSAFE)) return;
 
   bool requestedSplitInit = isSplitInitExpr(def->init);
   // Don't worry about non-split init
-  if (def->init != NULL && !requestedSplitInit)
-    return;
+  if (def->init != NULL && !requestedSplitInit) return;
 
   bool refVar = def->sym->hasFlag(FLAG_REF_VAR);
 
@@ -3370,8 +3288,7 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
       (def->init == NULL || isSplitInitExpr(def->init)))
     canDefaultInit = false;
   // Can't default init a ref ever
-  if (refVar)
-    canDefaultInit = false;
+  if (refVar) canDefaultInit = false;
   // Check for a few other cases to give better errors now
   // (this will not catch all patterns)
   if (SymExpr* typeSe = toSymExpr(def->exprType)) {
@@ -3413,8 +3330,7 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
 
     // Don't give errors for compiler generated functions at this time.
     FnSymbol* inFn = def->getFunction();
-    if (inFn->hasFlag(FLAG_COMPILER_GENERATED))
-      return;
+    if (inFn->hasFlag(FLAG_COMPILER_GENERATED)) return;
 
     if (def->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
       USR_FATAL_CONT(def, "type alias '%s' is not initialized", name);
@@ -3422,8 +3338,8 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
       USR_FATAL_CONT(def, "reference '%s' is not initialized", name);
     } else {
       if (def->exprType == NULL)
-        USR_FATAL_CONT(def, "variable '%s' is not initialized and has no type",
-                       name);
+        USR_FATAL_CONT(
+          def, "variable '%s' is not initialized and has no type", name);
       else
         USR_FATAL_CONT(def, "variable '%s' is not initialized", name);
 
@@ -3442,7 +3358,8 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
         AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
         ClassTypeDecoratorEnum d = classTypeDecorator(type);
         Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
-        USR_PRINT("Consider using the type %s instead", toString(suggestedType));
+        USR_PRINT("Consider using the type %s instead",
+                  toString(suggestedType));
       } else if (genericType != NULL) {
         USR_PRINT("generic type %s does not support default initialization",
                   toString(genericType));
@@ -3451,19 +3368,16 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
 
     if (cur) {
       if (def->exprType == NULL || genericType != NULL) {
-        USR_PRINT(cur,
-                  "'%s' use here prevents split-init from establishing the type",
-                  name);
+        USR_PRINT(
+          cur,
+          "'%s' use here prevents split-init from establishing the type",
+          name);
       } else {
-        USR_PRINT(cur,
-                  "'%s' use here prevents split-init",
-                  name);
+        USR_PRINT(cur, "'%s' use here prevents split-init", name);
       }
     }
   }
 }
-
-
 
 static void emitRefVarInit(Expr* after, Symbol* var, Expr* init) {
   Expr* varLocation = NULL;
@@ -3474,7 +3388,7 @@ static void emitRefVarInit(Expr* after, Symbol* var, Expr* init) {
   if (var->hasFlag(FLAG_CONST)) {
     if (SymExpr* initSym = toSymExpr(init)) {
       if (initSym->symbol()->isImmediate()) {
-        VarSymbol* constRefTemp  = newTemp("const_ref_immediate_tmp");
+        VarSymbol* constRefTemp = newTemp("const_ref_immediate_tmp");
 
         // Store the temp variable to the immediate next to the
         // variable definition because `after` might be at an inner scope
@@ -3493,8 +3407,8 @@ static void emitRefVarInit(Expr* after, Symbol* var, Expr* init) {
 
   if (SymExpr* sym = toSymExpr(varLocation)) {
     Symbol* symbol = sym->symbol();
-    bool    error  = var->hasFlag(FLAG_CONST) == false &&
-                     symbol->isConstant()     == true;
+    bool error =
+      var->hasFlag(FLAG_CONST) == false && symbol->isConstant() == true;
 
     // This is a workaround for the fact that isConstant for an
     // ArgSymbol with blank intent and type dtUnknown returns true,
@@ -3502,9 +3416,9 @@ static void emitRefVarInit(Expr* after, Symbol* var, Expr* init) {
     if (ArgSymbol* arg = toArgSymbol(symbol)) {
       if (arg->intent == INTENT_BLANK && arg->type == dtUnknown) {
         error = false;
-      } else if (arg->hasFlag(FLAG_ARG_THIS) &&
-                 arg->intent == INTENT_BLANK &&
-                 (arg->getFunction()->isInitializer() || arg->getFunction()->isCopyInit())) {
+      } else if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_BLANK &&
+                 (arg->getFunction()->isInitializer() ||
+                  arg->getFunction()->isCopyInit())) {
         // InitNormalize.cpp will handle the case of initializing a ref-var
         // from 'this' inside an initializer.
         error = false;
@@ -3521,9 +3435,8 @@ static void emitRefVarInit(Expr* after, Symbol* var, Expr* init) {
     }
   }
 
-  after->insertAfter(new CallExpr(PRIM_MOVE,
-                                  var,
-                                  new CallExpr(PRIM_ADDR_OF, varLocation)));
+  after->insertAfter(
+    new CallExpr(PRIM_MOVE, var, new CallExpr(PRIM_ADDR_OF, varLocation)));
 }
 
 static void emitPrimInitRefDecl(DefExpr* def, VarSymbol* var) {
@@ -3535,16 +3448,14 @@ static void emitPrimInitRefDecl(DefExpr* def, VarSymbol* var) {
 }
 
 static void normRefVar(DefExpr* defExpr) {
-  VarSymbol* var         = toVarSymbol(defExpr->sym);
-  Expr*      init        = defExpr->init;
+  VarSymbol* var = toVarSymbol(defExpr->sym);
+  Expr* init = defExpr->init;
 
-  if (init != NULL)
-    init->remove();
+  if (init != NULL) init->remove();
 
   emitRefVarInit(defExpr, var, init);
   emitPrimInitRefDecl(defExpr, var);
 }
-
 
 //
 // const <name> = <value>;
@@ -3554,8 +3465,8 @@ static void normRefVar(DefExpr* defExpr) {
 // The type of <name> will be inferred from the type of <value>
 //
 static void normVarTypeInference(DefExpr* defExpr) {
-  Symbol* var      = defExpr->sym;
-  Expr*   initExpr = defExpr->init->remove();
+  Symbol* var = defExpr->sym;
+  Expr* initExpr = defExpr->init->remove();
 
   defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExpr));
   return;
@@ -3570,10 +3481,10 @@ static void normVarTypeInference(DefExpr* defExpr) {
 //
 
 static void normVarTypeWoutInit(DefExpr* defExpr, bool noinit) {
-  Symbol* var      = defExpr->sym;
-  Expr*   typeExpr = defExpr->exprType->remove();
+  Symbol* var = defExpr->sym;
+  Expr* typeExpr = defExpr->exprType->remove();
 
-  PrimitiveTag prim = noinit?PRIM_NOINIT_INIT_VAR:PRIM_DEFAULT_INIT_VAR;
+  PrimitiveTag prim = noinit ? PRIM_NOINIT_INIT_VAR : PRIM_DEFAULT_INIT_VAR;
   CallExpr* init = new CallExpr(prim, var, typeExpr);
 
   if (var->hasFlag(FLAG_EXTERN)) {
@@ -3591,9 +3502,9 @@ static void normVarTypeWoutInit(DefExpr* defExpr, bool noinit) {
 }
 
 static void normVarTypeWithInit(DefExpr* defExpr) {
-  Symbol* var      = defExpr->sym;
-  Expr*   typeExpr = defExpr->exprType->remove();
-  Expr*   initExpr = defExpr->init->remove();
+  Symbol* var = defExpr->sym;
+  Expr* typeExpr = defExpr->exprType->remove();
+  Expr* initExpr = defExpr->init->remove();
 
   //
   // e.g. const x : int     = 10;
@@ -3631,18 +3542,16 @@ static Expr* prepareShadowVarForNormalize(DefExpr* def, VarSymbol* var) {
   return normBlock;
 }
 
-static void  restoreShadowVarForNormalize(DefExpr* def, Expr* svarMark) {
-  if (!svarMark)
-    return;
+static void restoreShadowVarForNormalize(DefExpr* def, Expr* svarMark) {
+  if (!svarMark) return;
 
   BlockStmt* normBlock = toBlockStmt(svarMark);
   BlockStmt* initBlock = toShadowVarSymbol(def->sym)->initBlock();
-  AList&     initList  = initBlock->body;
+  AList& initList = initBlock->body;
 
   normBlock->insertAfter(def->remove());
 
-  for_alist(stmt, normBlock->body)
-    initList.insertAtTail(stmt->remove());
+  for_alist(stmt, normBlock->body) initList.insertAtTail(stmt->remove());
 
   normBlock->remove();
 }
@@ -3669,13 +3578,13 @@ static bool isGenericClassIgnoringManagement(TypeSymbol* ts) {
 
 static void updateVariableAutoDestroy(DefExpr* defExpr) {
   VarSymbol* var = toVarSymbol(defExpr->sym);
-  FnSymbol*  fn  = toFnSymbol(defExpr->parentSymbol);
+  FnSymbol* fn = toFnSymbol(defExpr->parentSymbol);
 
   if (var->hasFlag(FLAG_NO_AUTO_DESTROY) == false &&
-      var->hasFlag(FLAG_PARAM)           == false && // Note 1.
-      var->hasFlag(FLAG_REF_VAR)         == false &&
+      var->hasFlag(FLAG_PARAM) == false && // Note 1.
+      var->hasFlag(FLAG_REF_VAR) == false &&
 
-      fn->_this                          != var) {   // Note 2.
+      fn->_this != var) { // Note 2.
 
     // Note that if the DefExpr is at module scope, the auto-destroy
     // for it will end up in the module deinit function.
@@ -3722,15 +3631,13 @@ void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type, Expr* typeExpr) {
   // ignore any decorator; generic-management is ignored here
   // and so the decorator is irrelevant
   if (DecoratedClassType* dct = toDecoratedClassType(type))
-    if (AggregateType* at = dct->getCanonicalClass())
-      type = at;
+    if (AggregateType* at = dct->getCanonicalClass()) type = at;
 
   bool genericWithDefaults = false;
   if (AggregateType* at = toAggregateType(type))
     genericWithDefaults = at->isGenericWithDefaults();
 
-  if (type->symbol->hasFlag(FLAG_GENERIC) &&
-      !genericWithDefaults &&
+  if (type->symbol->hasFlag(FLAG_GENERIC) && !genericWithDefaults &&
       !arg->hasFlag(FLAG_MARKED_GENERIC) &&
       arg->defPoint->getModule()->modTag == MOD_USER) {
     if (type->symbol->hasFlag(FLAG_ARRAY)) {
@@ -3754,7 +3661,8 @@ void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type, Expr* typeExpr) {
         USR_WARN(where,
                  "need '(?)' on the type '%s' of the formal '%s' "
                  "because this type is generic",
-                 toString(type, /*decorators*/false), arg->name);
+                 toString(type, /*decorators*/ false),
+                 arg->name);
         if (fWarnUnstable) {
           USR_PRINT("this warning may be an error in the future");
         }
@@ -3768,7 +3676,8 @@ void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type, Expr* typeExpr) {
     USR_FATAL(arg,
               "the formal argument '%s' is marked generic with (?) "
               "but the type '%s' is not generic",
-              arg->name, toString(type, /*decorators*/ false));
+              arg->name,
+              toString(type, /*decorators*/ false));
   }
 }
 
@@ -3875,8 +3784,8 @@ static void makeExportWrapper(FnSymbol* fn) {
     if ((fn->retExprType != NULL &&
          fn->retExprType->body.tail->typeInfo() != dtVoid) ||
         hasNonVoidReturnStmt(fn)) {
-      newFn->body->replace(new BlockStmt(new CallExpr(PRIM_RETURN,
-                                                      new CallExpr(fn->name))));
+      newFn->body->replace(
+        new BlockStmt(new CallExpr(PRIM_RETURN, new CallExpr(fn->name))));
     } else {
       newFn->body->replace(new BlockStmt(new CallExpr(fn->name)));
     }
@@ -3917,7 +3826,6 @@ static bool returnsArray(FnSymbol* fn) {
   return false;
 }
 
-
 /************************************* | **************************************
 *                                                                             *
 * The parser represents formals with an array type specifier as a formal with *
@@ -3941,14 +3849,14 @@ static void fixupExportedArrayFormals(FnSymbol* fn);
 
 static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal);
 
-static void fixupArrayDomainExpr(FnSymbol*                    fn,
-                                 ArgSymbol*                   formal,
-                                 Expr*                        domExpr,
+static void fixupArrayDomainExpr(FnSymbol* fn,
+                                 ArgSymbol* formal,
+                                 Expr* domExpr,
                                  const std::vector<SymExpr*>& symExprs);
 
-static void fixupArrayElementExpr(FnSymbol*                    fn,
-                                  ArgSymbol*                   formal,
-                                  Expr*                        eltExpr,
+static void fixupArrayElementExpr(FnSymbol* fn,
+                                  ArgSymbol* formal,
+                                  Expr* eltExpr,
                                   const std::vector<SymExpr*>& symExprs);
 
 static void fixupArrayFormals(FnSymbol* fn) {
@@ -4016,8 +3924,10 @@ static Expr* arrayTypeEltTypeExprOrNull(Expr* expr) {
   return nullptr;
 }
 
-static CondStmt* makeCondToTransformArr(ArgSymbol* formal, VarSymbol* newArr,
-                                        Expr* eltExpr, Expr* oldCall);
+static CondStmt* makeCondToTransformArr(ArgSymbol* formal,
+                                        VarSymbol* newArr,
+                                        Expr* eltExpr,
+                                        Expr* oldCall);
 
 static void fixupExportedArrayFormals(FnSymbol* fn) {
   CallExpr* retCall = toCallExpr(fn->body->body.tail);
@@ -4032,28 +3942,33 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
 
   for_formals(formal, fn) {
     if (isArrayFormal(formal)) {
-      BlockStmt*            typeExpr = formal->typeExpr;
+      BlockStmt* typeExpr = formal->typeExpr;
 
       // call is chpl__buildArrayRuntimeType, which takes in a domain and
       // optionally a type expression.  The domain information will get
       // validated during resolution, but we need the type expression to
       // correctly create our Chapel array wrapper.
-      CallExpr*             call     = toCallExpr(typeExpr->body.tail);
+      CallExpr* call = toCallExpr(typeExpr->body.tail);
       // Should be handled by the isArrayFormal call
       INT_ASSERT(call->isNamed("chpl__buildArrayRuntimeType"));
-      int                   nArgs    = call->numActuals();
-      Expr*                 eltExpr  = nArgs == 2 ? call->get(2) : NULL;
+      int nArgs = call->numActuals();
+      Expr* eltExpr = nArgs == 2 ? call->get(2) : NULL;
 
       if (eltExpr == NULL) {
-        USR_FATAL(formal, "array argument '%s' in exported function '%s'"
-                  " must specify its type", formal->name, fn->name);
+        USR_FATAL(formal,
+                  "array argument '%s' in exported function '%s'"
+                  " must specify its type",
+                  formal->name,
+                  fn->name);
         continue;
       }
       if (formal->intent == INTENT_OUT) {
-        USR_FATAL(formal, "array argument '%s' in exported function '%s'"
+        USR_FATAL(formal,
+                  "array argument '%s' in exported function '%s'"
                   " uses out intent - out intent not yet supported"
                   " for arrays in export procs",
-                  formal->name, fn->name);
+                  formal->name,
+                  fn->name);
         continue;
       }
 
@@ -4071,8 +3986,7 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
       }
 
       SymExpr* dom = toSymExpr(call->get(1));
-      if ((dom != NULL && dom->symbol() == gNil) ||
-          isDefExpr(call->get(1))) {
+      if ((dom != NULL && dom->symbol() == gNil) || isDefExpr(call->get(1))) {
         // Either the domain is nil or the domain is a query expression, meaning
         // the argument did not specify its domain.
         // chpl_opaque_array cannot adjust for that today, but
@@ -4096,11 +4010,11 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
         VarSymbol* typeExprTmp = new VarSymbol("typeExpr");
         typeExprTmp->addFlag(FLAG_MAYBE_TYPE);
 
-        CallExpr* newFormalType = new CallExpr("getExternalArrayType",
-                                               typeExprTmp);
+        CallExpr* newFormalType =
+          new CallExpr("getExternalArrayType", typeExprTmp);
         formal->typeExpr->replace(new BlockStmt(new DefExpr(typeExprTmp)));
-        formal->typeExpr->insertAtTail(new CallExpr(PRIM_MOVE, typeExprTmp,
-                                                    call->copy()));
+        formal->typeExpr->insertAtTail(
+          new CallExpr(PRIM_MOVE, typeExprTmp, call->copy()));
         formal->typeExpr->insertAtTail(newFormalType);
       }
 
@@ -4124,8 +4038,10 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
 // Create an if statement based on the formal type to transform
 // chpl_external_array, CFI_cdesc_t, or chpl_opaque_array into a normal
 // Chapel array
-static CondStmt* makeCondToTransformArr(ArgSymbol* formal, VarSymbol* newArr,
-                                        Expr* eltExpr, Expr* oldCall) {
+static CondStmt* makeCondToTransformArr(ArgSymbol* formal,
+                                        VarSymbol* newArr,
+                                        Expr* eltExpr,
+                                        Expr* oldCall) {
   // if (formal.type is dtExternalArray) then
   //   formalname_arr = makeArrayFromExternArray(formal, eltExpr)
   // else if (formal.type is dtCFI_cdesc_t) then
@@ -4138,43 +4054,42 @@ static CondStmt* makeCondToTransformArr(ArgSymbol* formal, VarSymbol* newArr,
 
   // Handle chpl_external_array
   BlockStmt* ifBody = new BlockStmt();
-  CallExpr* makeChplArrayFromExt = new CallExpr("makeArrayFromExternArray",
-                                                new SymExpr(formal),
-                                                eltExpr->copy());
+  CallExpr* makeChplArrayFromExt = new CallExpr(
+    "makeArrayFromExternArray", new SymExpr(formal), eltExpr->copy());
   ifBody->insertAtTail(new CallExpr(PRIM_MOVE, newArr, makeChplArrayFromExt));
 
   BlockStmt* elseIfBody = new BlockStmt();
-  CallExpr* makeChplArrayFromFort = new CallExpr("makeArrayFromFortranArray",
-                                                 new SymExpr(formal),
-                                                 eltExpr->copy());
+  CallExpr* makeChplArrayFromFort = new CallExpr(
+    "makeArrayFromFortranArray", new SymExpr(formal), eltExpr->copy());
 
-  elseIfBody->insertAtTail(new CallExpr(PRIM_MOVE, newArr, makeChplArrayFromFort));
+  elseIfBody->insertAtTail(
+    new CallExpr(PRIM_MOVE, newArr, makeChplArrayFromFort));
 
   // Handle chpl_opaque_array
   BlockStmt* elseBody = new BlockStmt();
   // Array type creator
-  VarSymbol* oldTypeExpr = new VarSymbol(astr(formal->name,
-                                              "_oldTypeExpr"));
+  VarSymbol* oldTypeExpr = new VarSymbol(astr(formal->name, "_oldTypeExpr"));
   oldTypeExpr->addFlag(FLAG_MAYBE_TYPE);
   elseBody->insertAtTail(new DefExpr(oldTypeExpr));
   elseBody->insertAtTail(new CallExpr(PRIM_MOVE, oldTypeExpr, oldCall->copy()));
   // Get the _instance field's type for that array
   VarSymbol* instanceType = new VarSymbol(astr(formal->name, "_instype"));
   instanceType->addFlag(FLAG_MAYBE_TYPE);
-  CallExpr* makeIT = new CallExpr(PRIM_STATIC_FIELD_TYPE, oldTypeExpr,
-                                  new_StringSymbol("_instance"));
+  CallExpr* makeIT = new CallExpr(
+    PRIM_STATIC_FIELD_TYPE, oldTypeExpr, new_StringSymbol("_instance"));
   elseBody->insertAtTail(new DefExpr(instanceType));
   elseBody->insertAtTail(new CallExpr(PRIM_MOVE, instanceType, makeIT));
   // Make a proper array using the argument and the _instance field's type
   // that we determined
-  CallExpr* makeChplArray = new CallExpr("makeArrayFromOpaque",
-                                         new SymExpr(formal), instanceType);
+  CallExpr* makeChplArray =
+    new CallExpr("makeArrayFromOpaque", new SymExpr(formal), instanceType);
   elseBody->insertAtTail(new CallExpr(PRIM_MOVE, newArr, makeChplArray));
   Stmt* elseStmt;
   if (fLibraryFortran) {
-    CallExpr* checkFormalType2 = new CallExpr(PRIM_IS_SUBTYPE,
-                                              dtCFI_cdesc_t->symbol,
-                                              new CallExpr(PRIM_TYPEOF, formal));
+    CallExpr* checkFormalType2 =
+      new CallExpr(PRIM_IS_SUBTYPE,
+                   dtCFI_cdesc_t->symbol,
+                   new CallExpr(PRIM_TYPEOF, formal));
     elseStmt = new CondStmt(checkFormalType2, elseIfBody, elseBody);
   } else {
     elseStmt = elseBody;
@@ -4184,16 +4099,17 @@ static CondStmt* makeCondToTransformArr(ArgSymbol* formal, VarSymbol* newArr,
 }
 
 static void outFormalQueryError(ArgSymbol* formal) {
-  USR_FATAL(formal, "type query for out intent formals is "
-                    "not implemented yet");
+  USR_FATAL(formal,
+            "type query for out intent formals is "
+            "not implemented yet");
 }
 
 static void fixupOutArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
-  BlockStmt*            typeExpr = formal->typeExpr;
-  CallExpr*             call     = toCallExpr(typeExpr->body.tail);
-  int                   nArgs    = call->numActuals();
-  Expr*                 domExpr  = call->get(1);
-  Expr*                 eltExpr  = nArgs == 2 ? call->get(2) : NULL;
+  BlockStmt* typeExpr = formal->typeExpr;
+  CallExpr* call = toCallExpr(typeExpr->body.tail);
+  int nArgs = call->numActuals();
+  Expr* domExpr = call->get(1);
+  Expr* eltExpr = nArgs == 2 ? call->get(2) : NULL;
   bool noDom = (isSymExpr(domExpr) && toSymExpr(domExpr)->symbol() == gNil);
 
   SET_LINENO(formal);
@@ -4202,16 +4118,14 @@ static void fixupOutArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
     typeExpr->replace(new BlockStmt(new SymExpr(dtAny->symbol), BLOCK_TYPE));
 
   if (noDom == false) {
-    CallExpr* checkDom = new CallExpr("chpl__checkDomainsMatch",
-                                      formal,
-                                      domExpr->copy());
+    CallExpr* checkDom =
+      new CallExpr("chpl__checkDomainsMatch", formal, domExpr->copy());
     fn->insertIntoEpilogue(checkDom);
   }
 
   if (eltExpr != NULL) {
-    CallExpr* checkEltType = new CallExpr("chpl__checkOutEltTypeMatch",
-                                          formal,
-                                          eltExpr->copy());
+    CallExpr* checkEltType =
+      new CallExpr("chpl__checkOutEltTypeMatch", formal, eltExpr->copy());
     fn->insertIntoEpilogue(checkEltType);
   }
 }
@@ -4224,15 +4138,14 @@ static void fixupOutArrayFormals(FnSymbol* fn) {
   }
 }
 
-
 // Preliminary validation is performed within the caller
 static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
-  BlockStmt*            typeExpr = formal->typeExpr;
+  BlockStmt* typeExpr = formal->typeExpr;
 
-  CallExpr*             call     = toCallExpr(typeExpr->body.tail);
-  int                   nArgs    = call->numActuals();
-  Expr*                 domExpr  = call->get(1);
-  Expr*                 eltExpr  = nArgs == 2 ? call->get(2) : NULL;
+  CallExpr* call = toCallExpr(typeExpr->body.tail);
+  int nArgs = call->numActuals();
+  Expr* domExpr = call->get(1);
+  Expr* eltExpr = nArgs == 2 ? call->get(2) : NULL;
 
   std::vector<SymExpr*> symExprs;
 
@@ -4248,8 +4161,7 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
 
   if (formal->intent == INTENT_OUT) {
     // handled in fixupOutArrayFormals, called elsewhere
-    if (isDefExpr(domExpr) || isDefExpr(eltExpr))
-      outFormalQueryError(formal);
+    if (isDefExpr(domExpr) || isDefExpr(eltExpr)) outFormalQueryError(formal);
     return;
   }
 
@@ -4278,9 +4190,9 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
   }
 }
 
-static void fixupArrayDomainExpr(FnSymbol*                    fn,
-                                 ArgSymbol*                   formal,
-                                 Expr*                        domExpr,
+static void fixupArrayDomainExpr(FnSymbol* fn,
+                                 ArgSymbol* formal,
+                                 Expr* domExpr,
                                  const std::vector<SymExpr*>& symExprs) {
   // : [?D]   -> defExpr('D')
   if (DefExpr* queryDomain = toDefExpr(domExpr)) {
@@ -4309,13 +4221,15 @@ static void fixupArrayDomainExpr(FnSymbol*                    fn,
           // Otherwise, create a temporary at the top of the function and use
           // that in the function body.
           if (domRef == nullptr) {
-            VarSymbol* vs = new VarSymbol(astr("_chpl__domain_expr_", queryDomain->sym->name));
+            VarSymbol* vs = new VarSymbol(
+              astr("_chpl__domain_expr_", queryDomain->sym->name));
             vs->addFlag(FLAG_TEMP);
             vs->addFlag(FLAG_REF_VAR);
             vs->addFlag(FLAG_CONST);
             vs->qual = QUAL_CONST_REF;
 
-            DefExpr* def = new DefExpr(vs, new CallExpr(".", formal, new_CStringSymbol("_dom")));
+            DefExpr* def = new DefExpr(
+              vs, new CallExpr(".", formal, new_CStringSymbol("_dom")));
             fn->insertAtHead(def);
             normalizeVariableDefinition(def);
 
@@ -4327,9 +4241,9 @@ static void fixupArrayDomainExpr(FnSymbol*                    fn,
       }
     }
 
-  // : []     -> symExpr('nil')
-  // : [D]    -> symExpr('D')
-  // : [1..3] -> callExpr('buildRange', 1, 3)
+    // : []     -> symExpr('nil')
+    // : [D]    -> symExpr('D')
+    // : [1..3] -> callExpr('buildRange', 1, 3)
   } else {
     bool insertCheck = true;
 
@@ -4349,9 +4263,9 @@ static void fixupArrayDomainExpr(FnSymbol*                    fn,
   }
 }
 
-static void fixupArrayElementExpr(FnSymbol*                    fn,
-                                  ArgSymbol*                   formal,
-                                  Expr*                        eltExpr,
+static void fixupArrayElementExpr(FnSymbol* fn,
+                                  ArgSymbol* formal,
+                                  Expr* eltExpr,
                                   const std::vector<SymExpr*>& symExprs) {
   // e.g. x : [1..3] ?t
   if (DefExpr* queryEltType = toDefExpr(eltExpr)) {
@@ -4375,9 +4289,9 @@ static void fixupArrayElementExpr(FnSymbol*                    fn,
 
     formal->addFlag(FLAG_NOT_FULLY_GENERIC);
 
-    Expr*     oldWhere   = fn->where->body.tail;
-    CallExpr* newWhere   = new CallExpr("&");
-    Symbol*   eltType    = new_CStringSymbol("eltType");
+    Expr* oldWhere = fn->where->body.tail;
+    CallExpr* newWhere = new CallExpr("&");
+    Symbol* eltType = new_CStringSymbol("eltType");
     CallExpr* getEltType = new CallExpr(".", formal, eltType);
 
     oldWhere->replace(newWhere);
@@ -4386,12 +4300,10 @@ static void fixupArrayElementExpr(FnSymbol*                    fn,
 
     // Is '<formal>.eltType' an instantiation of the formal's '<type-expr>'?
     // Order for call is ('<type-expr>', '<formal>.eltType')...
-    newWhere->insertAtTail(new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES,
-                                        eltExpr->remove(),
-                                        getEltType));
+    newWhere->insertAtTail(new CallExpr(
+      PRIM_IS_INSTANTIATION_ALLOW_VALUES, eltExpr->remove(), getEltType));
   }
 }
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -4419,15 +4331,12 @@ static CallExpr* firstParameterizedPrimitiveInCall(CallExpr* call);
 
 static CallExpr* firstParameterizedPrimitiveInFormal(ArgSymbol* formal);
 
-static bool
-cloneFirstParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal);
+static bool cloneFirstParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal);
 
 static void
-doCloneFirstParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal,
-                                   int width);
+doCloneFirstParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal, int width);
 
-static bool
-cloneParameterizedPrimitiveInAnyFormal(FnSymbol* fn) {
+static bool cloneParameterizedPrimitiveInAnyFormal(FnSymbol* fn) {
   for_formals(formal, fn) {
     if (cloneFirstParameterizedPrimitive(fn, formal)) return true;
   }
@@ -4442,8 +4351,8 @@ static bool isCallParameterizedPrimitive(CallExpr* queryCall) {
       SymExpr* query = toSymExpr(first);
       if (isDefExpr(first) || (query && query->symbol() == gUninstantiated)) {
         Symbol* baseSym = baseSymExpr->symbol();
-        if (baseSym == dtInt[INT_SIZE_DEFAULT]->symbol    ||
-            baseSym == dtUInt[INT_SIZE_DEFAULT]->symbol   ||
+        if (baseSym == dtInt[INT_SIZE_DEFAULT]->symbol ||
+            baseSym == dtUInt[INT_SIZE_DEFAULT]->symbol ||
             baseSym == dtReal[FLOAT_SIZE_DEFAULT]->symbol ||
             baseSym == dtImag[FLOAT_SIZE_DEFAULT]->symbol ||
             baseSym == dtComplex[COMPLEX_SIZE_DEFAULT]->symbol) {
@@ -4488,8 +4397,7 @@ static CallExpr* firstParameterizedPrimitiveInFormal(ArgSymbol* formal) {
 }
 
 // Returns 'true' if cloning occurred.
-static bool
-cloneFirstParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal) {
+static bool cloneFirstParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal) {
   auto queryCall = firstParameterizedPrimitiveInFormal(formal);
   if (!queryCall) return false;
 
@@ -4511,7 +4419,8 @@ cloneFirstParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal) {
   } else if (baseSym == dtComplex[COMPLEX_SIZE_DEFAULT]->symbol) {
     ret = true;
     for (int i = COMPLEX_SIZE_64; i < COMPLEX_SIZE_NUM; i++) {
-      doCloneFirstParameterizedPrimitive(fn, formal, getWidthOfType(dtComplex[i]));
+      doCloneFirstParameterizedPrimitive(
+        fn, formal, getWidthOfType(dtComplex[i]));
     }
   }
 
@@ -4522,8 +4431,7 @@ cloneFirstParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal) {
 }
 
 static void
-doCloneFirstParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal,
-                                   int width) {
+doCloneFirstParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal, int width) {
   auto queryCall = firstParameterizedPrimitiveInFormal(formal);
   INT_ASSERT(queryCall);
 
@@ -4539,9 +4447,7 @@ doCloneFirstParameterizedPrimitive(FnSymbol* fn, ArgSymbol* formal,
     newSym->defPoint->replace(new SymExpr(new_IntSymbol(width)));
 
     collectSymExprsFor(newFn, newSym, symExprs);
-    for_vector(SymExpr, se, symExprs) {
-      se->setSymbol(new_IntSymbol(width));
-    }
+    for_vector(SymExpr, se, symExprs) { se->setSymbol(new_IntSymbol(width)); }
 
   } else {
     auto newQueryCall = firstParameterizedPrimitiveInFormal(newFormal);
@@ -4619,24 +4525,21 @@ static bool isQueryForGenericTypeSpecifier(ArgSymbol* formal);
 
 static void fixDecoratedTypePrimitives(FnSymbol* fn, ArgSymbol* formal);
 
-static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
-                                               ArgSymbol* formal);
+static void expandQueryForGenericTypeSpecifier(FnSymbol* fn, ArgSymbol* formal);
 
-static void replaceQueryUses(ArgSymbol*             formal,
-                             DefExpr*               def,
-                             CallExpr*              query,
+static void replaceQueryUses(ArgSymbol* formal,
+                             DefExpr* def,
+                             CallExpr* query,
                              std::vector<SymExpr*>& symExprs);
 
-static void addToWhereClause(FnSymbol*  fn,
-                             ArgSymbol* formal,
-                             Expr*      test);
+static void addToWhereClause(FnSymbol* fn, ArgSymbol* formal, Expr* test);
 
 static void fixupCastFormals(FnSymbol* fn) {
   for_formals(formal, fn) {
     if (BlockStmt* typeExpr = formal->typeExpr) {
-      if(typeExpr->body.length == 1) {
-        if(CallExpr* typeCast = toCallExpr(typeExpr->body.tail)) {
-          if(typeCast->isCast() && isBorrowedTypeActual(typeCast->castTo())) {
+      if (typeExpr->body.length == 1) {
+        if (CallExpr* typeCast = toCallExpr(typeExpr->body.tail)) {
+          if (typeCast->isCast() && isBorrowedTypeActual(typeCast->castTo())) {
             VarSymbol* tmp = newTemp("call_type_tmp");
             tmp->addFlag(FLAG_TYPE_VARIABLE);
             tmp->addFlag(FLAG_MAYBE_TYPE);
@@ -4651,15 +4554,17 @@ static void fixupCastFormals(FnSymbol* fn) {
             mod->block->insertAtTail(def);
 
             // insert the move just after we def the fromType
-            if(SymExpr* fromType = toSymExpr(typeCast->castFrom())) {
-              if(fromType->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+            if (SymExpr* fromType = toSymExpr(typeCast->castFrom())) {
+              if (fromType->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
                 fromType->symbol()->defPoint->insertAfter(move);
-              }
-              else {
+              } else {
                 USR_FATAL(formal, "Cannot perform a type cast on a non-type");
               }
             } else {
-              USR_FATAL(formal, "Complex expressions casted to `borrowed` in a formal type are not currently supported, consider using a helper function");
+              USR_FATAL(
+                formal,
+                "Complex expressions casted to `borrowed` in a formal type are "
+                "not currently supported, consider using a helper function");
             }
           }
         }
@@ -4677,19 +4582,16 @@ static void fixupQueryFormals(FnSymbol* fn) {
     if (BlockStmt* typeExpr = formal->typeExpr) {
       Expr* tail = typeExpr->body.tail;
 
-      if  (isDefExpr(tail) == true) {
-        if (formal->intent == INTENT_OUT)
-          outFormalQueryError(formal);
+      if (isDefExpr(tail) == true) {
+        if (formal->intent == INTENT_OUT) outFormalQueryError(formal);
 
         replaceUsesWithPrimTypeof(fn, formal);
 
       } else if (isCastToBorrowedInFormal(formal)) {
         // avoids expandQueryForGenericTypeSpecifier messing up the cast to borrowed
         // TODO: This will still break for something like `myOwnedType:unmanaged`
-      }
-      else if (isQueryForGenericTypeSpecifier(formal) == true) {
-        if (formal->intent == INTENT_OUT)
-          outFormalQueryError(formal);
+      } else if (isQueryForGenericTypeSpecifier(formal) == true) {
+        if (formal->intent == INTENT_OUT) outFormalQueryError(formal);
 
         fixDecoratedTypePrimitives(fn, formal);
         expandQueryForGenericTypeSpecifier(fn, formal);
@@ -4705,8 +4607,8 @@ static void fixupQueryFormals(FnSymbol* fn) {
 
 // The type-expr is known to be a simple DefExpr
 static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal) {
-  BlockStmt*            typeExpr = formal->typeExpr;
-  DefExpr*              def      = toDefExpr(typeExpr->body.tail);
+  BlockStmt* typeExpr = formal->typeExpr;
+  DefExpr* def = toDefExpr(typeExpr->body.tail);
   std::vector<SymExpr*> symExprs;
 
   collectSymExprsFor(fn, def->sym, symExprs);
@@ -4715,13 +4617,13 @@ static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal) {
     addToWhereClause(fn, formal, new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, formal));
 
   for_vector(SymExpr, se, symExprs) {
-      if (formal->variableExpr)
-        // e.g. proc foo(arg:?t ...)
-        // formal is a tuple but the query should be of the tuple elements
-        // 1 is the size field, 2 is the index of the first tuple field
-        se->replace(new CallExpr(PRIM_QUERY, formal, new_IntSymbol(2)));
-      else
-        se->replace(new CallExpr(PRIM_TYPEOF, formal));
+    if (formal->variableExpr)
+      // e.g. proc foo(arg:?t ...)
+      // formal is a tuple but the query should be of the tuple elements
+      // 1 is the size field, 2 is the index of the first tuple field
+      se->replace(new CallExpr(PRIM_QUERY, formal, new_IntSymbol(2)));
+    else
+      se->replace(new CallExpr(PRIM_TYPEOF, formal));
   }
 
   formal->typeExpr->remove();
@@ -4732,7 +4634,8 @@ static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal) {
 static bool isBorrowedTypeActual(Expr* expr) {
   if (SymExpr* se = toSymExpr(expr)) {
     if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-      auto decoratorType = classTypeDecorator(canonicalDecoratedClassType(ts->type));
+      auto decoratorType =
+        classTypeDecorator(canonicalDecoratedClassType(ts->type));
       return isDecoratorBorrowed(decoratorType);
     }
   }
@@ -4743,7 +4646,7 @@ static bool isBorrowedTypeActual(Expr* expr) {
 static bool isCastToBorrowedInFormal(ArgSymbol* formal) {
   bool retval = false;
 
-  if(formal->typeExpr->body.length == 1) {
+  if (formal->typeExpr->body.length == 1) {
     if (CallExpr* call = toCallExpr(formal->typeExpr->body.tail)) {
       retval = call->isCast() && isBorrowedTypeActual(call->castTo());
     }
@@ -4752,18 +4655,14 @@ static bool isCastToBorrowedInFormal(ArgSymbol* formal) {
   return retval;
 }
 
-
 static bool isGenericActual(Expr* expr) {
-  if (isDefExpr(expr))
-    return true;
+  if (isDefExpr(expr)) return true;
   if (SymExpr* se = toSymExpr(expr)) {
     if (se->symbol() == gUninstantiated) {
       return true;
     } else if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-      if (isGenericClassIgnoringManagement(ts))
-        return true;
-      if (ts->hasFlag(FLAG_GENERIC))
-        return true;
+      if (isGenericClassIgnoringManagement(ts)) return true;
+      if (ts->hasFlag(FLAG_GENERIC)) return true;
     }
   }
 
@@ -4780,9 +4679,9 @@ static bool doesCallContainGenericActual(CallExpr* call) {
   // Is this a partial type expression?
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
     if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-      if (AggregateType* at = toAggregateType(canonicalDecoratedClassType(ts->type))) {
-        if (at->isGeneric() &&
-            !at->isGenericWithDefaults() &&
+      if (AggregateType* at =
+            toAggregateType(canonicalDecoratedClassType(ts->type))) {
+        if (at->isGeneric() && !at->isGenericWithDefaults() &&
             at->genericFields.size() != (unsigned int)(call->numActuals())) {
           return true;
         }
@@ -4824,12 +4723,10 @@ static void fixDecoratedTypePrimitives(FnSymbol* fn, ArgSymbol* formal) {
 
   collectCallExprs(formal->typeExpr, calls);
 
-  for_vector(CallExpr, call, calls) {
-    resolveUnmanagedBorrows(call);
-  }
+  for_vector(CallExpr, call, calls) { resolveUnmanagedBorrows(call); }
 }
 
-static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
+static void expandQueryForGenericTypeSpecifier(FnSymbol* fn,
                                                std::vector<SymExpr*>& symExprs,
                                                ArgSymbol* formal,
                                                CallExpr* call,
@@ -4838,11 +4735,11 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 static TypeSymbol* getTypeForSpecialConstructor(CallExpr* call);
 
 // The type-expr is known to be a CallExpr with a query definition
-static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
+static void expandQueryForGenericTypeSpecifier(FnSymbol* fn,
                                                ArgSymbol* formal) {
-  BlockStmt*            typeExpr  = formal->typeExpr;
-  Expr*                 tail      = typeExpr->body.tail;
-  CallExpr*             call      = toCallExpr(tail);
+  BlockStmt* typeExpr = formal->typeExpr;
+  Expr* tail = typeExpr->body.tail;
+  CallExpr* call = toCallExpr(tail);
 
   // workaround: don't add a where clause just for varargs with type R(?)
   if (formal->variableExpr && call->numActuals() == 1) {
@@ -4894,8 +4791,8 @@ static TypeSymbol* getTypeForSpecialConstructor(CallExpr* call) {
 
   // TODO: remove the below code
   else if (call->isNamed("_to_unmanaged") ||
-             call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
-             call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
+           call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+           call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
     return dtUnmanaged->symbol;
   } else if (call->isNamed("_to_borrowed") ||
              call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
@@ -4905,10 +4802,9 @@ static TypeSymbol* getTypeForSpecialConstructor(CallExpr* call) {
   return NULL;
 }
 
-
 // Constructs a PRIM_QUERY with arguments a, b
 // Copies an expr argument but not a symbol argument
-static CallExpr* makePrimQuery(BaseAST* a, BaseAST* b=NULL) {
+static CallExpr* makePrimQuery(BaseAST* a, BaseAST* b = NULL) {
   Expr* aExpr = NULL;
   Expr* bExpr = toExpr(b);
   if (Symbol* sym = toSymbol(a))
@@ -4939,7 +4835,7 @@ static CallExpr* makePrimQuery(BaseAST* a, BaseAST* b=NULL) {
 // actual - the actual argument to the nested type constructor
 //
 // symExprs are the symExprs referring to e.g. t for ?t we might replace
-static void expandQueryForActual(FnSymbol*  fn,
+static void expandQueryForActual(FnSymbol* fn,
                                  std::vector<SymExpr*>& symExprs,
                                  ArgSymbol* formal,
                                  CallExpr* call,
@@ -4957,9 +4853,11 @@ static void expandQueryForActual(FnSymbol*  fn,
         TypeSymbol* ts = toTypeSymbol(se->symbol());
         INT_ASSERT(ts);
         Expr* subtype = new SymExpr(ts);
-        addToWhereClause(fn, formal,
+        addToWhereClause(fn,
+                         formal,
                          new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES,
-                                      subtype, query->copy()));
+                                      subtype,
+                                      query->copy()));
 
         warnIfGenericFormalMissingQ(formal, ts->type, actual);
       }
@@ -4977,23 +4875,22 @@ static void expandQueryForActual(FnSymbol*  fn,
       INT_ASSERT(!doesCallContainGenericActual(subcall));
     }
     // Add check that actual type satisfies
-    addToWhereClause(fn, formal,
-                     new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES,
-                                  subtype, query->copy()));
+    addToWhereClause(
+      fn,
+      formal,
+      new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES, subtype, query->copy()));
     // Recurse to handle any nested DefExprs
-    expandQueryForGenericTypeSpecifier(fn, symExprs, formal,
-                                       subcall, query);
+    expandQueryForGenericTypeSpecifier(fn, symExprs, formal, subcall, query);
   } else {
     // Add check that formal type/param matches actual
-    addToWhereClause(fn, formal,
-                     new CallExpr("==", actual->copy(), query));
+    addToWhereClause(fn, formal, new CallExpr("==", actual->copy(), query));
   }
 }
 
 // call - the type constructor or build tuple call currently being considered
 // queried - a PRIM_QUERY formal, ... recording the path to the current call
 //           but not in the AST (it should be copied)
-static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
+static void expandQueryForGenericTypeSpecifier(FnSymbol* fn,
                                                std::vector<SymExpr*>& symExprs,
                                                ArgSymbol* formal,
                                                CallExpr* call,
@@ -5003,8 +4900,8 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 
   if (call->isNamedAstr(astrBuildTuple)) {
     isTuple = true;
-    Expr*     actual = new SymExpr(new_IntSymbol(call->numActuals()));
-    CallExpr* query  = makePrimQuery(queried, new_CStringSymbol("size"));
+    Expr* actual = new SymExpr(new_IntSymbol(call->numActuals()));
+    CallExpr* query = makePrimQuery(queried, new_CStringSymbol("size"));
 
     // Add check that actual tuple size == formal tuple size
     addToWhereClause(fn, formal, new CallExpr("==", actual, query));
@@ -5015,8 +4912,8 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 
   } else if (call->isNamedAstr(astrSstar)) {
     // it happens to be that 1st actual == size so that will be checked below
-    addToWhereClause(fn, formal,
-                     new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, queried->copy()));
+    addToWhereClause(
+      fn, formal, new CallExpr(PRIM_IS_STAR_TUPLE_TYPE, queried->copy()));
   }
 
   // Fix type constructor calls to owned e.g.
@@ -5029,9 +4926,11 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
           Type* manager = getManagedPtrManagerType(ts->type);
 
           // Where clause checks that it has the right manager
-          addToWhereClause(fn, formal,
+          addToWhereClause(fn,
+                           formal,
                            new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES,
-                                        manager->symbol, queried->copy()));
+                                        manager->symbol,
+                                        queried->copy()));
 
           if (call->numActuals() == 1) {
             if (SymExpr* se2 = toSymExpr(call->get(1))) {
@@ -5042,7 +4941,8 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
                   d = ClassTypeDecorator::GENERIC_NILABLE;
                 Type* genericMgmt = getDecoratedClass(ts2->type, d);
                 CallExpr* c = new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES,
-                                           genericMgmt->symbol, queried);
+                                           genericMgmt->symbol,
+                                           queried);
                 addToWhereClause(fn, formal, c);
                 warnIfGenericFormalMissingQ(formal, genericMgmt, call);
                 // Nothing else to do here since there is no nested call.
@@ -5069,7 +4969,7 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
 
   for_actuals(actual, call) {
     if (NamedExpr* named = toNamedExpr(actual)) {
-      Symbol*   name = new_CStringSymbol(named->name);
+      Symbol* name = new_CStringSymbol(named->name);
       CallExpr* query = makePrimQuery(queried, name);
 
       gatheringNamedArgs->insertAtTail(new SymExpr(name));
@@ -5091,16 +4991,26 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
         if (!isTuple) {
           if (foundUninstantiated && !multipleQuestionError) {
             multipleQuestionError = true;
-            USR_FATAL_CONT(call, "formal '%s' may not have a type expression with multiple '?'", formal->name);
-            USR_PRINT(call, "'?' cannot be used to positionally indicate uninstantiated fields");
+            USR_FATAL_CONT(
+              call,
+              "formal '%s' may not have a type expression with multiple '?'",
+              formal->name);
+            USR_PRINT(call,
+                      "'?' cannot be used to positionally indicate "
+                      "uninstantiated fields");
           } else {
             foundUninstantiated = true;
           }
         }
       } else if (foundUninstantiated && !positionalQuestionError) {
         positionalQuestionError = true;
-        USR_FATAL_CONT(call, "type expression of formal '%s' cannot use '?' before unnamed arguments to a type specifier", formal->name);
-        USR_PRINT(call, "'?' cannot be used to positionally indicate uninstantiated fields");
+        USR_FATAL_CONT(call,
+                       "type expression of formal '%s' cannot use '?' before "
+                       "unnamed arguments to a type specifier",
+                       formal->name);
+        USR_PRINT(
+          call,
+          "'?' cannot be used to positionally indicate uninstantiated fields");
       }
 
       CallExpr* query = gatheringNamedArgs->copy();
@@ -5113,9 +5023,9 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
   }
 }
 
-static void replaceQueryUses(ArgSymbol*             formal,
-                             DefExpr*               def,
-                             CallExpr*              query,
+static void replaceQueryUses(ArgSymbol* formal,
+                             DefExpr* def,
+                             CallExpr* query,
                              std::vector<SymExpr*>& symExprs) {
   for_vector(SymExpr, se, symExprs) {
     if (se->symbol() == def->sym) {
@@ -5125,10 +5035,8 @@ static void replaceQueryUses(ArgSymbol*             formal,
   }
 }
 
-static void addToWhereClause(FnSymbol*  fn,
-                             ArgSymbol* formal,
-                             Expr*      test) {
-  Expr*     where  = NULL;
+static void addToWhereClause(FnSymbol* fn, ArgSymbol* formal, Expr* test) {
+  Expr* where = NULL;
 
   if (fn->where == NULL) {
     where = new SymExpr(gTrue);
@@ -5205,7 +5113,8 @@ static void updateInitMethod(FnSymbol* fn) {
       if (isClass(thisType))
         USR_FATAL_CONT(fn, "init= may not be defined on class types");
       if (thisType->symbol->hasFlag(FLAG_EXTERN))
-        USR_FATAL_CONT(fn, "init= may not currently be defined on extern types");
+        USR_FATAL_CONT(fn,
+                       "init= may not currently be defined on extern types");
     }
 
     preNormalizeInitMethod(fn);
@@ -5214,7 +5123,9 @@ static void updateInitMethod(FnSymbol* fn) {
     // we'll issue an error for this case downstream
     return;
   } else {
-    USR_FATAL_CONT(fn, "initializers may currently only be defined on class, record, or union types");
+    USR_FATAL_CONT(fn,
+                   "initializers may currently only be defined on class, "
+                   "record, or union types");
   }
 }
 

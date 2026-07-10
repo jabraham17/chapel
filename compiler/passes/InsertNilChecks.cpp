@@ -49,12 +49,12 @@
 //
 
 static bool isClassMethodCall(CallExpr* call) {
-  FnSymbol* fn     = call->resolvedFunction();
-  bool      retval = false;
+  FnSymbol* fn = call->resolvedFunction();
+  bool retval = false;
 
   if (fn && fn->isMethod() && fn->_this) {
     if (AggregateType* ct = toAggregateType(fn->_this->typeInfo())) {
-      if (fn->numFormals()             >  0 &&
+      if (fn->numFormals() > 0 &&
           fn->getFormal(1)->typeInfo() == fn->_this->typeInfo()) {
         if (isClass(ct) || ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
           retval = true;
@@ -65,13 +65,11 @@ static bool isClassMethodCall(CallExpr* call) {
   return retval;
 }
 
-bool InsertNilChecks::shouldProcess(CallExpr *call) {
+bool InsertNilChecks::shouldProcess(CallExpr* call) {
   if (!(call->isPrimitive(PRIM_GET_MEMBER) ||
         call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-        call->isPrimitive(PRIM_SET_MEMBER) ||
-        call->isPrimitive(PRIM_GETCID) ||
-        call->isPrimitive(PRIM_TESTCID) ||
-        isClassMethodCall(call))) {
+        call->isPrimitive(PRIM_SET_MEMBER) || call->isPrimitive(PRIM_GETCID) ||
+        call->isPrimitive(PRIM_TESTCID) || isClassMethodCall(call))) {
     return false;
   }
 

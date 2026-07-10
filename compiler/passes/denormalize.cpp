@@ -20,7 +20,6 @@
 
 #include "passes.h"
 
-
 #include "astutil.h"
 #include "baseAST.h"
 #include "CForLoop.h"
@@ -46,22 +45,29 @@ typedef std::map<SymExpr*, DefCastPair> UseDefCastMap;
 
 //prototypes
 bool primMoveGeneratesCommCall(CallExpr* ce);
-inline bool unsafeExprInBetween(Expr* e1, Expr* e2, Expr* exprToMove,
-    SafeExprAnalysis& analysisData);
+inline bool unsafeExprInBetween(Expr* e1,
+                                Expr* e2,
+                                Expr* exprToMove,
+                                SafeExprAnalysis& analysisData);
 inline bool requiresCast(Type* t);
-inline bool isArithmeticPrimitive(CallExpr *ce);
-inline bool isFloatComparisonPrimitive(CallExpr *ce);
+inline bool isArithmeticPrimitive(CallExpr* ce);
+inline bool isFloatComparisonPrimitive(CallExpr* ce);
 bool isDenormalizable(Symbol* sym,
-    SymExpr** useOut, Expr** defOut,
-    Type** castTo, SafeExprAnalysis& analysisData);
-void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& candidates,
-    SafeExprAnalysis& analysisData);
-void findCandidatesInFuncOnlySym(FnSymbol* fn, std::set<Symbol*> symVec,
-    UseDefCastMap& udcMap, SafeExprAnalysis& analysisData);
+                      SymExpr** useOut,
+                      Expr** defOut,
+                      Type** castTo,
+                      SafeExprAnalysis& analysisData);
+void findCandidatesInFunc(FnSymbol* fn,
+                          UseDefCastMap& candidates,
+                          SafeExprAnalysis& analysisData);
+void findCandidatesInFuncOnlySym(FnSymbol* fn,
+                                 std::set<Symbol*> symVec,
+                                 UseDefCastMap& udcMap,
+                                 SafeExprAnalysis& analysisData);
 void denormalize(void);
 void denormalize(Expr* def, SymExpr* use, Type* castTo);
 void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
-    std::set<Symbol*>& deferredSyms);
+                                  std::set<Symbol*>& deferredSyms);
 
 int maxDenormalizesPerFunction = 1000;
 
@@ -92,14 +98,11 @@ void denormalize(void) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       // remove unused epilogue labels
       removeUnnecessaryGotos(fn, true);
-      if (!fReturnByRef && fn->hasFlag(FLAG_FN_RETARG))
-        undoReturnByRef(fn);
+      if (!fReturnByRef && fn->hasFlag(FLAG_FN_RETARG)) undoReturnByRef(fn);
 
       // skip the rest of denormalization if we are only doing
       // debug safe optimizations
-      if (fDebugSafeOptOnly)
-        continue;
-
+      if (fDebugSafeOptOnly) continue;
 
       bool isFirstRound = true;
       do {
@@ -110,21 +113,19 @@ void denormalize(void) {
         // we look at all the symbols in the function. otherwise we only
         // look at the ones deferred in the previous passes on the same
         // function
-        if(isFirstRound) {
+        if (isFirstRound) {
           findCandidatesInFunc(fn, candidates, analysisData);
-        }
-        else {
-          findCandidatesInFuncOnlySym(fn, deferredSyms, candidates,
-              analysisData);
+        } else {
+          findCandidatesInFuncOnlySym(
+            fn, deferredSyms, candidates, analysisData);
         }
 
         denormalizeOrDeferCandidates(candidates, deferredSyms);
 
         isFirstRound = false;
-      } while(deferredSyms.size() > 0);
+      } while (deferredSyms.size() > 0);
     }
-    if (!fDebugSafeOptOnly)
-      collapseTrivialMoves();
+    if (!fDebugSafeOptOnly) collapseTrivialMoves();
   }
 }
 
@@ -172,17 +173,17 @@ void denormalize(void) {
  *   denormalize(void)
  */
 void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
-    std::set<Symbol*>& deferredSyms) {
+                                  std::set<Symbol*>& deferredSyms) {
 
-  for(UseDefCastMap::iterator it = candidates.begin() ;
-      it != candidates.end() ; ++it) {
+  for (UseDefCastMap::iterator it = candidates.begin(); it != candidates.end();
+       ++it) {
     // unpack the bundle
     DefCastPair defCastPair = it->second;
     SymExpr* use = it->first;
     Expr* def = defCastPair.first;
     Type* castTo = defCastPair.second;
 
-    if(def->parentExpr == NULL) {
+    if (def->parentExpr == NULL) {
       deferredSyms.insert(use->symbol());
       continue;
     }
@@ -190,8 +191,10 @@ void denormalizeOrDeferCandidates(UseDefCastMap& candidates,
   }
 }
 
-void findCandidatesInFuncOnlySym(FnSymbol* fn, std::set<Symbol*> symVec,
-    UseDefCastMap& udcMap, SafeExprAnalysis& analysisData) {
+void findCandidatesInFuncOnlySym(FnSymbol* fn,
+                                 std::set<Symbol*> symVec,
+                                 UseDefCastMap& udcMap,
+                                 SafeExprAnalysis& analysisData) {
 
   bool cachedGlobalManip = analysisData.isRegisteredGlobalManip(fn);
   bool cachedExternManip = analysisData.isRegisteredExternManip(fn);
@@ -203,32 +206,31 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, std::set<Symbol*> symVec,
 
   for_set(Symbol, sym, symVec) {
 
-    SymExpr *use = NULL;
-    Expr *def = NULL;
+    SymExpr* use = NULL;
+    Expr* def = NULL;
     Type* castTo = NULL;
 
     //if we don't already have it cached,
     //check for global symbols in function body
-    if(!cachedGlobalManip) {
+    if (!cachedGlobalManip) {
       // I am not sure if we can check for const and param here.
       // Touching a global const and param sounds safe to me, but I am
       // not certain especially with nonprimitive types. Playing safe
       // for now. Engin
-      if(sym && !sym->isImmediate() && isGlobal(sym)){
+      if (sym && !sym->isImmediate() && isGlobal(sym)) {
         analysisData.registerGlobalManip(fn, true);
         cachedGlobalManip = true;
       }
     }
 
-    if(!cachedExternManip) {
-      if(sym && sym->hasFlag(FLAG_EXTERN)){
+    if (!cachedExternManip) {
+      if (sym && sym->hasFlag(FLAG_EXTERN)) {
         analysisData.registerExternManip(fn, true);
         cachedExternManip = true;
       }
-
     }
 
-    if(isDenormalizable(sym, &use, &def, &castTo, analysisData)) {
+    if (isDenormalizable(sym, &use, &def, &castTo, analysisData)) {
 
       // Initially I used to defer denormalizing actuals and have
       // special treatment while denormalizing actuals of a function
@@ -244,31 +246,30 @@ void findCandidatesInFuncOnlySym(FnSymbol* fn, std::set<Symbol*> symVec,
 
       //denormalize if the def is safe to move and there is no unsafe
       //function between use and def
-      if(analysisData.exprHasNoSideEffects(def, NULL)) {
-        if(!unsafeExprInBetween(def, use, def, analysisData)) {
+      if (analysisData.exprHasNoSideEffects(def, NULL)) {
+        if (!unsafeExprInBetween(def, use, def, analysisData)) {
           DefCastPair defCastPair(def, castTo);
-          udcMap.insert(std::pair<SymExpr*, DefCastPair>
-              (use, defCastPair));
+          udcMap.insert(std::pair<SymExpr*, DefCastPair>(use, defCastPair));
           found++;
         }
       }
     }
 
     // Stop if we've found too many.
-    if (found >= limit)
-      break;
+    if (found >= limit) break;
 
   } // end loop for symbol
-  if(!cachedGlobalManip) {
+  if (!cachedGlobalManip) {
     analysisData.registerGlobalManip(fn, false);
   }
-  if(!cachedExternManip) {
+  if (!cachedExternManip) {
     analysisData.registerExternManip(fn, false);
   }
 }
 
-void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& udcMap,
-    SafeExprAnalysis& analysisData) {
+void findCandidatesInFunc(FnSymbol* fn,
+                          UseDefCastMap& udcMap,
+                          SafeExprAnalysis& analysisData) {
 
   std::set<Symbol*> symSet;
 
@@ -302,16 +303,13 @@ static bool isBadMove(CallExpr* ce) {
   return ret;
 }
 
-static ArgSymbol* formalForActual(FnSymbol* fn, Expr* firstActual,
-                                  Expr* actualToMatch)
-{
+static ArgSymbol*
+formalForActual(FnSymbol* fn, Expr* firstActual, Expr* actualToMatch) {
   Expr* formalDef = fn->formals.head;
-  Expr* actual    = firstActual;
+  Expr* actual = firstActual;
 
-  while (formalDef != NULL && actual != NULL)
-  {
-    if (actual == actualToMatch)
-      return toArgSymbol(toDefExpr(formalDef)->sym);
+  while (formalDef != NULL && actual != NULL) {
+    if (actual == actualToMatch) return toArgSymbol(toDefExpr(formalDef)->sym);
 
     formalDef = formalDef->next;
     actual = actual->next;
@@ -325,8 +323,7 @@ static ArgSymbol* formalForActual(FnSymbol* fn, Expr* firstActual,
 // and we wouldn't know it just by looking at it
 // i.e. se itself is not a ref.
 // TODO are there any primitives where this can occur?
-static bool isValPassedByRef(CallExpr* ce, SymExpr* se)
-{
+static bool isValPassedByRef(CallExpr* ce, SymExpr* se) {
   if (se->symbol()->isRef())
     // It is a reference, not a value.
     return false;
@@ -355,33 +352,35 @@ static bool isValPassedByRef(CallExpr* ce, SymExpr* se)
 }
 
 bool isDenormalizable(Symbol* sym,
-    SymExpr** useOut, Expr** defOut, Type** castTo,
-    SafeExprAnalysis& analysisData) {
+                      SymExpr** useOut,
+                      Expr** defOut,
+                      Type** castTo,
+                      SafeExprAnalysis& analysisData) {
   // The rest of denormalize/codegen is not well-equipped to handle
   // procedure pointers, so let's keep things simple.
   if (sym && isFunctionType(sym->type->getValType())) return false;
 
-  if(sym && !(toFnSymbol(sym) || toArgSymbol(sym) || toTypeSymbol(sym))) {
-    if(sym->name != astrThis) { //avoid issue with --baseline
-      SymExpr *use = NULL;
-      Expr *usePar = NULL;
-      Expr *def = NULL;
-      Expr *defPar = NULL;
+  if (sym && !(toFnSymbol(sym) || toArgSymbol(sym) || toTypeSymbol(sym))) {
+    if (sym->name != astrThis) { //avoid issue with --baseline
+      SymExpr* use = NULL;
+      Expr* usePar = NULL;
+      Expr* def = NULL;
+      Expr* defPar = NULL;
 
       SymExpr* singleDef = sym->getSingleDef();
       SymExpr* singleUse = sym->getSingleUse();
 
-      if(singleDef != NULL && singleUse != NULL) { // check def-use counts
+      if (singleDef != NULL && singleUse != NULL) { // check def-use counts
         SymExpr* se = singleDef;
         defPar = se->parentExpr;
 
         //defPar has to be a move without any coercion
         CallExpr* ce = toCallExpr(defPar);
-        if(ce) {
-          if(ce->isPrimitive(PRIM_MOVE) || ce->isPrimitive(PRIM_ASSIGN)) {
+        if (ce) {
+          if (ce->isPrimitive(PRIM_MOVE) || ce->isPrimitive(PRIM_ASSIGN)) {
             Type* lhsType = ce->get(1)->typeInfo();
             Type* rhsType = ce->get(2)->typeInfo();
-            if(lhsType == rhsType) {
+            if (lhsType == rhsType) {
               // records semantics required next if
               // More: it seems records are passed by value. denormalizing
               // record temporaries caused semantics to change. So I use a
@@ -389,23 +388,23 @@ bool isDenormalizable(Symbol* sym,
               // passes of denormalization implementation this was only
               // checking if the temporary to be removed is an actual to a
               // function.
-              if(! isRecord(lhsType)) {
+              if (!isRecord(lhsType)) {
                 // calls to communication functions are generated during
                 // codegen. ie at this time they are still PRIM_MOVEs.
                 // Generated communication calls return their result in a
                 // pointer argument, therefore not suitable for
                 // denormalization. See function definition for more
                 // comments
-                if(! primMoveGeneratesCommCall(ce)) {
-                  if(! (lhsType->symbol->hasFlag(FLAG_EXTERN))){
-                    if(!lhsType->symbol->hasFlag(FLAG_ATOMIC_TYPE)){
+                if (!primMoveGeneratesCommCall(ce)) {
+                  if (!(lhsType->symbol->hasFlag(FLAG_EXTERN))) {
+                    if (!lhsType->symbol->hasFlag(FLAG_ATOMIC_TYPE)) {
                       //at this point we now that def is fine
                       def = ce->get(2);
 
                       //now check if we need to cast it when we move it
-                      if(CallExpr* defCe = toCallExpr(def)) {
-                        if(isArithmeticPrimitive(defCe)) {
-                          if(requiresCast(lhsType)) {
+                      if (CallExpr* defCe = toCallExpr(def)) {
+                        if (isArithmeticPrimitive(defCe)) {
+                          if (requiresCast(lhsType)) {
                             *castTo = lhsType;
                           }
                         }
@@ -418,13 +417,13 @@ bool isDenormalizable(Symbol* sym,
           }
         }
 
-        if(def) {
+        if (def) {
           *defOut = def;
           // we have def now find where the value is used
           SymExpr* se = singleUse;
           usePar = se->parentExpr;
-          if(CallExpr* ce = toCallExpr(usePar)) {
-            if( !(ce->isPrimitive(PRIM_ADDR_OF) ||
+          if (CallExpr* ce = toCallExpr(usePar)) {
+            if (!(ce->isPrimitive(PRIM_ADDR_OF) ||
                   ce->isPrimitive(PRIM_SET_REFERENCE) ||
                   // TODO: PRIM_SET_REFERENCE?
                   //
@@ -450,14 +449,14 @@ bool isDenormalizable(Symbol* sym,
                   ce->isPrimitive(PRIM_DEREF) ||
                   ce->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                   ce->isPrimitive(PRIM_RETURN) ||
-                  (ce->isPrimitive(PRIM_ARRAY_SHIFT_BASE_POINTER) && ce->get(1) == se) ||
+                  (ce->isPrimitive(PRIM_ARRAY_SHIFT_BASE_POINTER) &&
+                   ce->get(1) == se) ||
 
                   // We want to pass symbols to kernel launches for now. This
                   // simplifies its codegen.
                   ce->isPrimitive(PRIM_GPU_KERNEL_LAUNCH) ||
 
-                  isBadMove(ce) ||
-                  isValPassedByRef(ce, se) ||
+                  isBadMove(ce) || isValPassedByRef(ce, se) ||
                   isFloatComparisonPrimitive(ce))) {
               use = se;
             }
@@ -465,11 +464,11 @@ bool isDenormalizable(Symbol* sym,
             use = se;
           }
         }
-        if(use) {
+        if (use) {
           *useOut = use;
         }
 
-        if(!use || !def) {
+        if (!use || !def) {
           return false;
         }
 
@@ -484,9 +483,9 @@ bool isDenormalizable(Symbol* sym,
         //test/library/standard/FileSystem/bharshbarg/filer
         //
         //The issue seemed to be yielding string from an iterator
-        if(CallExpr* useParentCe = toCallExpr(usePar)) {
-          if(useParentCe->isPrimitive(PRIM_FTABLE_CALL)) {
-            if(argMustUseCPtr(def->typeInfo())){
+        if (CallExpr* useParentCe = toCallExpr(usePar)) {
+          if (useParentCe->isPrimitive(PRIM_FTABLE_CALL)) {
+            if (argMustUseCPtr(def->typeInfo())) {
               return false;
             }
           }
@@ -494,20 +493,18 @@ bool isDenormalizable(Symbol* sym,
 
         // we have to protect repeatedly evaluated statements of loops
         // from expensive and/or unsafe CallExprs
-        if(CallExpr* defCe = toCallExpr(def)){
+        if (CallExpr* defCe = toCallExpr(def)) {
           //nonessential primitives are safe
-          if(! analysisData.isNonEssentialPrimitive(defCe)) {
-            if(LoopStmt* enclLoop = LoopStmt::findEnclosingLoop(use)) {
-              if(CForLoop* enclCForLoop = toCForLoop(enclLoop)) {
-                if(enclCForLoop->testBlockGet()->contains(ce) ||
+          if (!analysisData.isNonEssentialPrimitive(defCe)) {
+            if (LoopStmt* enclLoop = LoopStmt::findEnclosingLoop(use)) {
+              if (CForLoop* enclCForLoop = toCForLoop(enclLoop)) {
+                if (enclCForLoop->testBlockGet()->contains(ce) ||
                     enclCForLoop->incrBlockGet()->contains(ce)) {
                   return false;
                 }
-              }
-              else if(enclLoop->isWhileStmt() ||
-                  enclLoop->isDoWhileStmt() ||
-                  enclLoop->isWhileDoStmt()) {
-                if(toWhileStmt(enclLoop)->condExprGet()->contains(ce)) {
+              } else if (enclLoop->isWhileStmt() || enclLoop->isDoWhileStmt() ||
+                         enclLoop->isWhileDoStmt()) {
+                if (toWhileStmt(enclLoop)->condExprGet()->contains(ce)) {
                   return false;
                 }
               }
@@ -531,12 +528,11 @@ void denormalize(Expr* def, SymExpr* use, Type* castTo) {
   Expr* replExpr = def->remove();
 
   //replace use with def
-  if(castTo != NULL) {
+  if (castTo != NULL) {
     SET_LINENO(def);
     Expr* castExpr = new CallExpr(PRIM_CAST, castTo->symbol, replExpr);
     use->replace(castExpr);
-  }
-  else {
+  } else {
     use->replace(replExpr);
   }
   //remove defPar
@@ -544,37 +540,35 @@ void denormalize(Expr* def, SymExpr* use, Type* castTo) {
 }
 
 inline bool requiresCast(Type* t) {
-  if(isIntType(t) || isUIntType(t) || isRealType(t)) {
+  if (isIntType(t) || isUIntType(t) || isRealType(t)) {
     return true;
   }
   return false;
 }
 
-inline bool isFloatComparisonPrimitive(CallExpr *ce) {
-  if(ce->isPrimitive()) {
-    switch(ce->primitive->tag) {
+inline bool isFloatComparisonPrimitive(CallExpr* ce) {
+  if (ce->isPrimitive()) {
+    switch (ce->primitive->tag) {
       case PRIM_EQUAL:
       case PRIM_NOTEQUAL:
       case PRIM_LESSOREQUAL:
       case PRIM_GREATEROREQUAL:
       case PRIM_LESS:
       case PRIM_GREATER:
-        if(isRealType(ce->get(1)->typeInfo()) ||
-           isRealType(ce->get(2)->typeInfo())) {
+        if (isRealType(ce->get(1)->typeInfo()) ||
+            isRealType(ce->get(2)->typeInfo())) {
           return true;
         }
         break;
-      default:
-        return false;
-        break;
+      default: return false; break;
     }
   }
   return false;
 }
 
-inline bool isArithmeticPrimitive(CallExpr *ce) {
-  if(ce->isPrimitive()) {
-    switch(ce->primitive->tag) {
+inline bool isArithmeticPrimitive(CallExpr* ce) {
+  if (ce->isPrimitive()) {
+    switch (ce->primitive->tag) {
       case PRIM_ADD:
       case PRIM_SUBTRACT:
       case PRIM_MULT:
@@ -582,12 +576,8 @@ inline bool isArithmeticPrimitive(CallExpr *ce) {
       case PRIM_MOD:
       case PRIM_LSH:
       case PRIM_RSH:
-      case PRIM_UNARY_NOT:
-        return true;
-        break;
-      default:
-        return false;
-        break;
+      case PRIM_UNARY_NOT: return true; break;
+      default: return false; break;
     }
   }
   return false;
@@ -612,45 +602,47 @@ bool primMoveGeneratesCommCall(CallExpr* ce) {
   Type* lhsType = lhs->typeInfo();
   Type* rhsType = rhs->typeInfo();
 
-  if(lhsType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) || lhs->isWideRef())
+  if (lhsType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) ||
+      lhs->isWideRef())
     return true; // direct put
-  if(rhsType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) || rhs->isWideRef())
+  if (rhsType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) ||
+      rhs->isWideRef())
     return true; // direct get
 
   //now it is still possible that rhs primitive has a nonwide symbol yet
   //the primitive itself generates communication
-  if(CallExpr* rhsCe = toCallExpr(rhs)) {
-    if(rhsCe->isPrimitive()) {
-      switch(rhsCe->primitive->tag) {
+  if (CallExpr* rhsCe = toCallExpr(rhs)) {
+    if (rhsCe->isPrimitive()) {
+      switch (rhsCe->primitive->tag) {
         case PRIM_SET_MEMBER:
         case PRIM_GET_MEMBER:
         case PRIM_GET_MEMBER_VALUE:
         case PRIM_SET_SVEC_MEMBER:
         case PRIM_GET_SVEC_MEMBER:
         case PRIM_GET_SVEC_MEMBER_VALUE:
-          if(rhsCe->get(1)->typeInfo()->symbol->hasEitherFlag(FLAG_WIDE_REF,
-                FLAG_WIDE_CLASS) || rhsCe->get(1)->isWideRef()) {
+          if (rhsCe->get(1)->typeInfo()->symbol->hasEitherFlag(
+                FLAG_WIDE_REF, FLAG_WIDE_CLASS) ||
+              rhsCe->get(1)->isWideRef()) {
             return true;
           }
           break;
-        default:
-          return false;
+        default: return false;
       }
     }
-  }
-  else {
+  } else {
     // var to var move
     // I don't see how this might create communication
   }
   return false;
 }
 
-
-inline bool unsafeExprInBetween(Expr* e1, Expr* e2, Expr* exprToMove,
-    SafeExprAnalysis& analysisData){
+inline bool unsafeExprInBetween(Expr* e1,
+                                Expr* e2,
+                                Expr* exprToMove,
+                                SafeExprAnalysis& analysisData) {
   int counter = 0;
-  for(Expr* e = e1; e != e2 ; e = getNextExpr(e)) {
-    if(! analysisData.exprHasNoSideEffects(e, exprToMove)) {
+  for (Expr* e = e1; e != e2; e = getNextExpr(e)) {
+    if (!analysisData.exprHasNoSideEffects(e, exprToMove)) {
       return true;
     }
 
@@ -679,7 +671,7 @@ inline bool unsafeExprInBetween(Expr* e1, Expr* e2, Expr* exprToMove,
     //
     // (3) there is an unsafe Expr between Expr_i and Expr_j if their "distance"
     // are different.
-    if(++counter >= 100) {
+    if (++counter >= 100) {
       return true;
     }
   }
@@ -701,28 +693,30 @@ inline bool unsafeExprInBetween(Expr* e1, Expr* e2, Expr* exprToMove,
 //   return(something)
 
 struct ReturnByRefDef {
-  FnSymbol*  fn;           // the function that returns by ref
-  ArgSymbol* refArg;       // the function's formal used for indirect return
-  bool       skipLnFnArgs; // if true, refArg is fn's 3rd-last formal
+  FnSymbol* fn;      // the function that returns by ref
+  ArgSymbol* refArg; // the function's formal used for indirect return
+  bool skipLnFnArgs; // if true, refArg is fn's 3rd-last formal
 };
 
-static bool isGoodRefArg(FnSymbol* fn, ReturnByRefDef& info,
-                         bool skippedLnFnArgs, Expr* argDef) {
+static bool isGoodRefArg(FnSymbol* fn,
+                         ReturnByRefDef& info,
+                         bool skippedLnFnArgs,
+                         Expr* argDef) {
   ArgSymbol* refArg = toArgSymbol(toDefExpr(argDef)->sym);
   if (!refArg->hasFlag(FLAG_RETARG))
     return false; // give up; maybe look harder?
   INT_ASSERT(!strcmp(refArg->name, "_retArg"));
   INT_ASSERT(fn->retType = dtVoid);
 
-  info = { fn, refArg, skippedLnFnArgs };
+  info = {fn, refArg, skippedLnFnArgs};
   return true;
 }
 
 static bool acceptableDef(FnSymbol* fn, ReturnByRefDef& info) {
   // isGoodRefArg() fills 'info'
-  if (! isGoodRefArg(fn, info, false, fn->formals.tail)             &&
-      ! (fn->numFormals() >= 3 &&
-         isGoodRefArg(fn, info, true, fn->formals.tail->prev->prev)) )
+  if (!isGoodRefArg(fn, info, false, fn->formals.tail) &&
+      !(fn->numFormals() >= 3 &&
+        isGoodRefArg(fn, info, true, fn->formals.tail->prev->prev)))
     return false;
 
   if (info.refArg->type->symbol->hasFlag(FLAG_STAR_TUPLE))
@@ -730,9 +724,8 @@ static bool acceptableDef(FnSymbol* fn, ReturnByRefDef& info) {
 
   for_SymbolSymExprs(refSE, info.refArg) {
     if (CallExpr* call = toCallExpr(refSE->parentExpr)) {
-      if (call->isPrimitive(PRIM_NO_ALIAS_SET))
-        continue; // any of these are ok
-      if (! call->isPrimitive(PRIM_ASSIGN))
+      if (call->isPrimitive(PRIM_NO_ALIAS_SET)) continue; // any of these are ok
+      if (!call->isPrimitive(PRIM_ASSIGN))
         return false; // need more work to handle, ex., PRIM_SET_MEMBER
       // transformRetTempDef() will assert that we have only one PRIM_ASSIGN
     }
@@ -746,8 +739,10 @@ static void transformRetTempDef(ReturnByRefDef& info) {
   for_SymbolSymExprs(refSE, info.refArg) {
     if (CallExpr* call = toCallExpr(refSE->parentExpr))
       if (call->isPrimitive(PRIM_NO_ALIAS_SET)) {
-        if (call->numActuals() == 1) call->remove();
-        else refSE->remove();
+        if (call->numActuals() == 1)
+          call->remove();
+        else
+          refSE->remove();
         continue;
       }
     INT_ASSERT(refUse == nullptr); // expect only a single SE
@@ -781,31 +776,31 @@ static void transformRetTempDef(ReturnByRefDef& info) {
 // collapseTrivialMoves() will reduce to the original 'call_temp = fn(...)'
 
 struct ReturnByRefUse {
-  SymExpr* fnSE;    //  'fn'
-  SymExpr* tempSE;  //  'ret_tmp'
+  SymExpr* fnSE;   //  'fn'
+  SymExpr* tempSE; //  'ret_tmp'
 };
 
 // Return true if the desired pattern is present.
-static bool acceptableUse(ReturnByRefDef& defInfo, SymExpr* fnUse,
+static bool acceptableUse(ReturnByRefDef& defInfo,
+                          SymExpr* fnUse,
                           ReturnByRefUse& useInfo) {
   CallExpr* call = toCallExpr(fnUse->parentExpr);
-  if (call == nullptr || call->resolvedFunction() != defInfo.fn)
-    return false;
+  if (call == nullptr || call->resolvedFunction() != defInfo.fn) return false;
 
   INT_ASSERT(call == call->getStmtExpr());
-  SymExpr* tempSE = toSymExpr(defInfo.skipLnFnArgs ?
-                      call->argList.tail->prev->prev : call->argList.tail);
+  SymExpr* tempSE = toSymExpr(
+    defInfo.skipLnFnArgs ? call->argList.tail->prev->prev : call->argList.tail);
   // the temp is usually called "ret_tmp", however not necessarily
   INT_ASSERT(tempSE->symbol()->type == defInfo.refArg->type); // fyi
 
-  useInfo = { fnUse, tempSE };
+  useInfo = {fnUse, tempSE};
   return true;
 }
 
 static void transformRetTempUse(ReturnByRefUse& info) {
-  Expr*   fnCall  = info.fnSE->parentExpr;
+  Expr* fnCall = info.fnSE->parentExpr;
   Symbol* retTemp = info.tempSE->symbol();
-  INT_ASSERT(! retTemp->type->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF));
+  INT_ASSERT(!retTemp->type->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF));
 
   // replace:
   //   call fn(args, ret_tmp)
@@ -816,21 +811,23 @@ static void transformRetTempUse(ReturnByRefUse& info) {
 
   Expr* anchor = fnCall->prev;
   BlockStmt* encl = anchor ? nullptr : toBlockStmt(fnCall->parentExpr);
-  Expr* move   = new CallExpr(retTemp->isRef() ? PRIM_ASSIGN : PRIM_MOVE,
-                              info.tempSE->remove(), fnCall->remove());
-  if (anchor) anchor->insertAfter(move);
-  else        encl->insertAtHead(move);
+  Expr* move = new CallExpr(retTemp->isRef() ? PRIM_ASSIGN : PRIM_MOVE,
+                            info.tempSE->remove(),
+                            fnCall->remove());
+  if (anchor)
+    anchor->insertAfter(move);
+  else
+    encl->insertAtHead(move);
 }
 
 ///////////
 // putting it all together
 
 static void undoReturnByRef(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_VIRTUAL)) return;  // skip these for now
+  if (fn->hasFlag(FLAG_VIRTUAL)) return; // skip these for now
 
   ReturnByRefDef defInfo;
-  if (! acceptableDef(fn, defInfo))
-    return;
+  if (!acceptableDef(fn, defInfo)) return;
 
   // Make changes only if we can handle all uses of 'fn'.
   // While checking, store some findings for later use.
@@ -843,8 +840,7 @@ static void undoReturnByRef(FnSymbol* fn) {
       return;
   }
 
-  for (ReturnByRefUse& info: infos)
-    transformRetTempUse(info);
+  for (ReturnByRefUse& info : infos) transformRetTempUse(info);
 
   transformRetTempDef(defInfo);
 }
@@ -868,20 +864,17 @@ static bool okSymbol(Symbol* sym) {
 
 static bool canCollapseMoveBetween(SymExpr* dest, SymExpr* source) {
   Symbol *destSym = dest->symbol(), *sourceSym = source->symbol();
-  return
-    destSym->type == sourceSym->type        &&
-    ! sourceSym->hasFlag(FLAG_CONFIG)       &&
-    ! sourceSym->hasFlag(FLAG_EXPORT)       &&
-    ! sourceSym->hasFlag(FLAG_EXTERN)       &&
-    okSymbol(destSym) && okSymbol(sourceSym);
+  return destSym->type == sourceSym->type && !sourceSym->hasFlag(FLAG_CONFIG) &&
+         !sourceSym->hasFlag(FLAG_EXPORT) && !sourceSym->hasFlag(FLAG_EXTERN) &&
+         okSymbol(destSym) && okSymbol(sourceSym);
 }
 
 static bool closeEnough(Expr* move1, Expr* move2) {
   Expr* curr = move1;
-  for (int dist = 0; dist < 5; dist++) {  // heuristically allow <=5 defs
+  for (int dist = 0; dist < 5; dist++) { // heuristically allow <=5 defs
     curr = curr->next;
     if (curr == move2) return true;
-    if (!curr || ! isDefExpr(curr)) return false;
+    if (!curr || !isDefExpr(curr)) return false;
   }
   return false;
 }
@@ -897,8 +890,7 @@ static CallExpr* singleMoveTo(CallExpr* move2, SymExpr* sourceSE) {
     otherSE = otherSE->symbolSymExprsNext;
     if (otherSE == nullptr || otherSE->symbolSymExprsNext != nullptr)
       return nullptr; // 1 or >2 references
-  }
-  else {
+  } else {
     // need source -> otherSE -> sourceSE -> NULL
     if (otherSE->symbolSymExprsNext != sourceSE ||
         sourceSE->symbolSymExprsNext != nullptr)
@@ -906,10 +898,9 @@ static CallExpr* singleMoveTo(CallExpr* move2, SymExpr* sourceSE) {
   }
 
   CallExpr* move1 = toCallExpr(otherSE->parentExpr);
-  if (move1 != nullptr                                    &&
-      otherSE == move1->get(1)                            &&
-      move1->isPrimitive(PRIM_MOVE)                       &&
-      (move2 == move1->next || closeEnough(move1, move2)) )
+  if (move1 != nullptr && otherSE == move1->get(1) &&
+      move1->isPrimitive(PRIM_MOVE) &&
+      (move2 == move1->next || closeEnough(move1, move2)))
     return move1;
   else
     return nullptr;
@@ -922,18 +913,18 @@ static void collapseTrivialMoves() {
   // This work could be done on a per-function basis using collectCallExprs().
   // Simply traversing 'gCallExprs' avoids the overhead of collectCallExprs().
   for_alive_in_Vec(CallExpr, move2, gCallExprs) {
-   if (move2->isPrimitive(PRIM_MOVE))
-    if (SymExpr* dest = toSymExpr(move2->get(1)))
-     while (true) {
-      if (SymExpr* source = toSymExpr(move2->get(2)))
-       if (canCollapseMoveBetween(dest, source))
-        if (CallExpr* move1 = singleMoveTo(move2, source)) {
-          move1->remove();
-          source->replace(move1->get(2)->remove());
-          source->symbol()->defPoint->remove();
-          continue; // will check for another move1 to reduce with move2
-        }
-      break; // no further opportunities with move2
-     } // while
+    if (move2->isPrimitive(PRIM_MOVE))
+      if (SymExpr* dest = toSymExpr(move2->get(1)))
+        while (true) {
+          if (SymExpr* source = toSymExpr(move2->get(2)))
+            if (canCollapseMoveBetween(dest, source))
+              if (CallExpr* move1 = singleMoveTo(move2, source)) {
+                move1->remove();
+                source->replace(move1->get(2)->remove());
+                source->symbol()->defPoint->remove();
+                continue; // will check for another move1 to reduce with move2
+              }
+          break; // no further opportunities with move2
+        } // while
   } // for
 }

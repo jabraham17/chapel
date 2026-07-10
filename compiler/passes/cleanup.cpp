@@ -54,9 +54,7 @@ void cleanup() {
 
   ModuleSymbol::getTopLevelModules(mods);
 
-  for_vector(ModuleSymbol, mod, mods) {
-    cleanup(mod);
-  }
+  for_vector(ModuleSymbol, mod, mods) { cleanup(mod); }
 }
 
 /************************************* | **************************************
@@ -66,7 +64,7 @@ void cleanup() {
 ************************************** | *************************************/
 
 static void setAstHelp(Expr* parent, Expr*& lhs, Expr* rhs) {
-  if(lhs){
+  if (lhs) {
     lhs->remove();
   }
   lhs = rhs;
@@ -78,13 +76,13 @@ static void handleNonTypedAndNonInitedVar(DefExpr* def) {
     bool needsInit = false;
     // The test for FLAG_TEMP allows compiler-generated (temporary) variables
     // to be declared without an explicit type or initializer expression.
-    if ((!def->init || def->init->isNoInitExpr())
-        && !def->exprType && !def->sym->hasFlag(FLAG_TEMP))
+    if ((!def->init || def->init->isNoInitExpr()) && !def->exprType &&
+        !def->sym->hasFlag(FLAG_TEMP))
       if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol) &&
           !isShadowVarSymbol(def->sym))
-        if (def->parentExpr != rootModule->block && def->parentExpr != stringLiteralModule->block)
-          if (!def->sym->hasFlag(FLAG_INDEX_VAR))
-            needsInit = true;
+        if (def->parentExpr != rootModule->block &&
+            def->parentExpr != stringLiteralModule->block)
+          if (!def->sym->hasFlag(FLAG_INDEX_VAR)) needsInit = true;
 
     if (needsInit) {
       if ((def->init && def->init->isNoInitExpr()) ||
@@ -132,20 +130,20 @@ static void cleanup(ModuleSymbol* module) {
         }
 
         if (fn->name == astrScolon) {
-          int extraMethodArgs = 2*fn->isMethod(); // 2 extra args: this & _mt
+          int extraMethodArgs = 2 * fn->isMethod(); // 2 extra args: this & _mt
           int numFormals = fn->numFormals() - extraMethodArgs;
           if (numFormals != 2) {
-            USR_FATAL_CONT(fn, "cast operator should have two formals, not %d",
-                           numFormals);
+            USR_FATAL_CONT(
+              fn, "cast operator should have two formals, not %d", numFormals);
           } else {
             // skip 'this' argument, if method
             ArgSymbol* arg2 = fn->getFormal(2 + extraMethodArgs);
             if (arg2->intent != INTENT_TYPE &&
                 !arg2->hasFlag(FLAG_TYPE_VARIABLE)) {
-              USR_FATAL_CONT(arg2, "second formal for cast should have type intent");
+              USR_FATAL_CONT(arg2,
+                             "second formal for cast should have type intent");
             }
-            if (arg2->typeExpr == NULL &&
-                fn->getModule()->modTag != MOD_USER) {
+            if (arg2->typeExpr == NULL && fn->getModule()->modTag != MOD_USER) {
               USR_WARN(arg2, "cast type formal should be constrained");
             }
           }
@@ -209,7 +207,6 @@ static void normalizeNestedFunctionExpressions(FnSymbol* fn) {
     stmt->insertBefore(def);
   }
 }
-
 
 static void addIntentRefMaybeConst(ArgSymbol* arg) {
   if (arg->hasFlag(FLAG_INTENT_REF_MAYBE_CONST_FORMAL)) {

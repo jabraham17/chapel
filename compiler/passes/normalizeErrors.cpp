@@ -30,21 +30,17 @@ namespace {
 
 class NormalizeTryExprsVisitor final : public AstVisitorTraverse {
 
-public:
+ public:
   NormalizeTryExprsVisitor();
 
-  bool enterCallExpr  (CallExpr*   call) override;
-  void exitCallExpr   (CallExpr*   call) override;
+  bool enterCallExpr(CallExpr* call) override;
+  void exitCallExpr(CallExpr* call) override;
 
-private:
-
+ private:
   std::stack<TryTag> stack;
 };
 
-NormalizeTryExprsVisitor::NormalizeTryExprsVisitor()
-  : stack()
-{
-}
+NormalizeTryExprsVisitor::NormalizeTryExprsVisitor() : stack() {}
 
 bool NormalizeTryExprsVisitor::enterCallExpr(CallExpr* call) {
 
@@ -89,20 +85,17 @@ void NormalizeTryExprsVisitor::exitCallExpr(CallExpr* call) {
     sub->remove();
     call->replace(sub);
   }
-
 }
 
 class NormalizeThrowsVisitor final : public AstVisitorTraverse {
 
-public:
+ public:
   NormalizeThrowsVisitor();
 
-  bool enterCallExpr   (CallExpr*   call) override;
+  bool enterCallExpr(CallExpr* call) override;
 };
 
-NormalizeThrowsVisitor::NormalizeThrowsVisitor()
-{
-}
+NormalizeThrowsVisitor::NormalizeThrowsVisitor() {}
 
 bool NormalizeThrowsVisitor::enterCallExpr(CallExpr* call) {
 
@@ -110,8 +103,8 @@ bool NormalizeThrowsVisitor::enterCallExpr(CallExpr* call) {
     SET_LINENO(call);
 
     INT_ASSERT(call->numActuals() == 1);
-    CallExpr* callFixError = new CallExpr("chpl_fix_thrown_error",
-                                          call->get(1)->remove());
+    CallExpr* callFixError =
+      new CallExpr("chpl_fix_thrown_error", call->get(1)->remove());
     call->insertAtTail(callFixError);
   }
 
@@ -120,21 +113,17 @@ bool NormalizeThrowsVisitor::enterCallExpr(CallExpr* call) {
 
 } /* end anon namespace */
 
-static
-void lowerTryExprs(BaseAST* ast)
-{
+static void lowerTryExprs(BaseAST* ast) {
   NormalizeTryExprsVisitor n;
   ast->accept(&n);
 }
 
-static
-void normalizeThrows(BaseAST* ast) {
+static void normalizeThrows(BaseAST* ast) {
   NormalizeThrowsVisitor n;
   ast->accept(&n);
 }
 
-void normalizeErrorHandling(BaseAST* ast)
-{
+void normalizeErrorHandling(BaseAST* ast) {
   lowerTryExprs(ast);
   normalizeThrows(ast);
 }

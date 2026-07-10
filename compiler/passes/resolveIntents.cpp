@@ -29,39 +29,22 @@
 bool intentsResolved = false;
 
 IntentTag constIntentForType(Type* t) {
-  if (isBoolType(t) ||
-      isIntType(t) ||
-      isUIntType(t) ||
-      isRealType(t) ||
-      isImagType(t) ||
-      isComplexType(t) ||
-      isEnumType(t) ||
-      isClass(t) ||
-      isDecoratedClassType(t) ||
-      isFunctionType(t) ||
-      t == dtOpaque ||
-      t == dtTaskID ||
-      t == dtNil ||
-      t == dtStringC ||
-      t == dtCVoidPtr ||
-      t == dtCFnPtr ||
-      t == dtNothing ||
-      t == dtVoid ||
-      t == dtUninstantiated ||
+  if (isBoolType(t) || isIntType(t) || isUIntType(t) || isRealType(t) ||
+      isImagType(t) || isComplexType(t) || isEnumType(t) || isClass(t) ||
+      isDecoratedClassType(t) || isFunctionType(t) || t == dtOpaque ||
+      t == dtTaskID || t == dtNil || t == dtStringC || t == dtCVoidPtr ||
+      t == dtCFnPtr || t == dtNothing || t == dtVoid || t == dtUninstantiated ||
       t->symbol->hasFlag(FLAG_RANGE) ||
       // MPF: This rule seems odd to me
       (t->symbol->hasFlag(FLAG_EXTERN) && !isRecord(t))) {
     return INTENT_CONST_IN;
 
-  } else if (isSyncType(t)          ||
-             isRecordWrappedType(t) ||  // domain, array, or distribution
-             isManagedPtrType(t) ||
-             isConstrainedType(t) ||
-             isAtomicType(t) ||
+  } else if (isSyncType(t) ||
+             isRecordWrappedType(t) || // domain, array, or distribution
+             isManagedPtrType(t) || isConstrainedType(t) || isAtomicType(t) ||
              isUnion(t) ||
              isRecord(t)) { // may eventually want to decide based on size
     return INTENT_CONST_REF;
-
   }
 
   INT_FATAL(t, "Unhandled type in constIntentForType()");
@@ -70,9 +53,7 @@ IntentTag constIntentForType(Type* t) {
 
 // Detect tuples containing e.g. arrays by reference
 // These should be const / not const element-by-element.
-static
-bool isTupleContainingRefMaybeConst(Type* t)
-{
+static bool isTupleContainingRefMaybeConst(Type* t) {
   AggregateType* at = toAggregateType(t);
   if (t->symbol->hasFlag(FLAG_TUPLE)) {
     for_fields(field, at) {
@@ -81,8 +62,7 @@ bool isTupleContainingRefMaybeConst(Type* t)
         if (fieldType->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST))
           return true;
       }
-      if (isTupleContainingRefMaybeConst(fieldType))
-        return true;
+      if (isTupleContainingRefMaybeConst(fieldType)) return true;
     }
   }
   return false;
@@ -94,8 +74,7 @@ static bool isTupleContainingTypeWithFlag(Type* t, Flag f) {
   if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE)) {
     for_fields(field, at) {
       Type* ft = field->type->getValType();
-      if (ft->symbol->hasFlag(f))
-        return true;
+      if (ft->symbol->hasFlag(f)) return true;
     }
   }
 
@@ -113,17 +92,15 @@ static bool isTupleContainingAtomicType(Type* t) {
 IntentTag blankIntentForType(Type* t) {
   IntentTag retval = INTENT_BLANK;
 
-  if (isAtomicType(t)                                ||
-      t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF)) {
+  if (isAtomicType(t) || t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF)) {
     retval = INTENT_REF;
 
     // Blank intent for sync/single/atomic types is ref, but we can't mark
     // the entire tuple as INTENT_REF because that has a special meaning.
     // So go ahead and mark the tuple as INTENT_REF_MAYBE_CONST instead.
-  } else if (t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST)
-            || isTupleContainingRefMaybeConst(t)
-            || isTupleContainingSyncType(t)
-            || isTupleContainingAtomicType(t)) {
+  } else if (t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST) ||
+             isTupleContainingRefMaybeConst(t) ||
+             isTupleContainingSyncType(t) || isTupleContainingAtomicType(t)) {
     retval = INTENT_REF_MAYBE_CONST;
 
   } else if (isManagedPtrType(t)) {
@@ -131,31 +108,15 @@ IntentTag blankIntentForType(Type* t) {
     // allow blank intent owned to be transferred out of
     retval = INTENT_CONST_REF;
 
-  } else if (isBoolType(t)                           ||
-             isIntType(t)                            ||
-             isUIntType(t)                           ||
-             isRealType(t)                           ||
-             isImagType(t)                           ||
-             isComplexType(t)                        ||
-             isEnumType(t)                           ||
-             t == dtStringC                          ||
-             t == dtCVoidPtr                         ||
-             t == dtCFnPtr                           ||
-             isClass(t)                              ||
-             isDecoratedClassType(t)                 ||
-             isRecord(t)                             ||
-             isFunctionType(t)                       ||
+  } else if (isBoolType(t) || isIntType(t) || isUIntType(t) || isRealType(t) ||
+             isImagType(t) || isComplexType(t) || isEnumType(t) ||
+             t == dtStringC || t == dtCVoidPtr || t == dtCFnPtr || isClass(t) ||
+             isDecoratedClassType(t) || isRecord(t) || isFunctionType(t) ||
              // Note: isRecord(t) includes range (FLAG_RANGE)
-             isUnion(t)                              ||
-             isConstrainedType(t)                    ||
-             t == dtTaskID                           ||
-             t == dtNil                              ||
-             t == dtVoid                             ||
-             t == dtOpaque                           ||
-             t == dtNothing                          ||
-             t == dtUninstantiated                   ||
-             t->symbol->hasFlag(FLAG_DOMAIN)         ||
-             t->symbol->hasFlag(FLAG_DISTRIBUTION)   ||
+             isUnion(t) || isConstrainedType(t) || t == dtTaskID ||
+             t == dtNil || t == dtVoid || t == dtOpaque || t == dtNothing ||
+             t == dtUninstantiated || t->symbol->hasFlag(FLAG_DOMAIN) ||
+             t->symbol->hasFlag(FLAG_DISTRIBUTION) ||
              t->symbol->hasFlag(FLAG_EXTERN)) {
     retval = constIntentForType(t);
 
@@ -183,7 +144,7 @@ IntentTag concreteIntent(IntentTag existingIntent, Type* t) {
         baseIntent = blankIntentForType(valType);
       else if (existingIntent == INTENT_CONST)
         baseIntent = constIntentForType(valType);
-      if ( (baseIntent & INTENT_FLAG_REF) )
+      if ((baseIntent & INTENT_FLAG_REF))
         return baseIntent; // it's already REF/CONST_REF/REF_MAYBE_CONST
       else if (baseIntent == INTENT_CONST_IN)
         return INTENT_CONST_REF;
@@ -216,8 +177,7 @@ static IntentTag blankIntentForThisArg(Type* t) {
   Type* valType = t->getValType();
 
   // Range default this intent is const-in
-  if (valType->symbol->hasFlag(FLAG_RANGE))
-    return INTENT_CONST_IN;
+  if (valType->symbol->hasFlag(FLAG_RANGE)) return INTENT_CONST_IN;
 
   // For user records or types with FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST,
   // the intent for this is INTENT_REF_MAYBE_CONST
@@ -237,8 +197,7 @@ static IntentTag blankIntentForThisArg(Type* t) {
     return INTENT_CONST_IN;
 }
 
-static
-IntentTag blankIntentForExternFnArg(Type* type) {
+static IntentTag blankIntentForExternFnArg(Type* type) {
   if (fLlvmCodegen && type->getValType()->symbol->hasFlag(FLAG_C_ARRAY))
     // Pass c_array by ref by default for LLVM backend
     // (for C, an argument like int arg[2] is actually just int* arg).
@@ -276,23 +235,23 @@ static void warnForInferredConstRef(ArgSymbol* arg) {
   // standard modules unless the appropriate flag is used, nor for
   // compiler-generated functions
   auto mod = fn->getModule();
-  bool shouldWarnInternal = (mod->modTag == MOD_INTERNAL &&
-                             fWarnUnstableInternal);
-  bool shouldWarnStandard = (mod->modTag == MOD_STANDARD &&
-                             fWarnUnstableStandard);
-  if (fWarnUnstable && (shouldWarnInternal || shouldWarnStandard ||
-                        mod->modTag == MOD_USER) &&
+  bool shouldWarnInternal =
+    (mod->modTag == MOD_INTERNAL && fWarnUnstableInternal);
+  bool shouldWarnStandard =
+    (mod->modTag == MOD_STANDARD && fWarnUnstableStandard);
+  if (fWarnUnstable &&
+      (shouldWarnInternal || shouldWarnStandard || mod->modTag == MOD_USER) &&
       !fNoConstArgChecks && !fn->hasFlag(FLAG_COMPILER_GENERATED)) {
 
     // Hash the argument at the start of the function
-    CallExpr* getStartHash = new CallExpr(PRIM_CONST_ARG_HASH,
-                                          new SymExpr(arg));
+    CallExpr* getStartHash =
+      new CallExpr(PRIM_CONST_ARG_HASH, new SymExpr(arg));
 
     VarSymbol* startHash = newTemp(dtUInt[INT_SIZE_64]);
     DefExpr* startDef = new DefExpr(startHash);
 
-    CallExpr* outerStart = new CallExpr(PRIM_MOVE, new SymExpr(startHash),
-                                        getStartHash);
+    CallExpr* outerStart =
+      new CallExpr(PRIM_MOVE, new SymExpr(startHash), getStartHash);
 
     fn->insertAtHead(outerStart);
     outerStart->insertBefore(startDef);
@@ -303,8 +262,8 @@ static void warnForInferredConstRef(ArgSymbol* arg) {
     VarSymbol* endHash = newTemp(dtUInt[INT_SIZE_64]);
     DefExpr* endDef = new DefExpr(endHash);
 
-    CallExpr* outerEnd = new CallExpr(PRIM_MOVE, new SymExpr(endHash),
-                                      getEndHash);
+    CallExpr* outerEnd =
+      new CallExpr(PRIM_MOVE, new SymExpr(endHash), getEndHash);
 
     // Create defer block to ensure we will always check the end hash
     DeferStmt* finishCheck = new DeferStmt(outerEnd);
@@ -359,19 +318,15 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
     }
     return concreteIntent(arg->intent, arg->type);
   }
-
 }
 
 static bool shouldSkipArgType(Type* t) {
-  return t == dtMethodToken       ||
-         t == dtTypeDefaultToken  ||
-         t == dtNothing           ||
+  return t == dtMethodToken || t == dtTypeDefaultToken || t == dtNothing ||
          t == dtUnknown;
 }
 
 static bool shouldSkipArg(ArgSymbol* arg) {
-  return shouldSkipArgType(arg->type)     ||
-         arg->hasFlag(FLAG_TYPE_VARIABLE) ||
+  return shouldSkipArgType(arg->type) || arg->hasFlag(FLAG_TYPE_VARIABLE) ||
          arg->hasFlag(FLAG_PARAM);
 }
 
@@ -386,8 +341,7 @@ void resolveArgIntent(ArgSymbol* arg) {
     // After resolution, change out/inout/in to ref
     // to be more accurate to the generated code.
 
-    if (intent == INTENT_OUT ||
-        intent == INTENT_INOUT) {
+    if (intent == INTENT_OUT || intent == INTENT_INOUT) {
       // Resolution already handled out/inout copying
       intent = INTENT_REF;
     } else if (intent == INTENT_IN) {
@@ -406,8 +360,7 @@ void resolveArgIntent(ArgSymbol* arg) {
         // Q - should this check arg->type->symbol->hasFlag(FLAG_EXTERN)?
         addedTmp = false;
       // Pass wrappers used in libraries/interop by value.
-      if (arg->type->symbol->hasFlag(FLAG_EXPORT_WRAPPER))
-        addedTmp = false;
+      if (arg->type->symbol->hasFlag(FLAG_EXPORT_WRAPPER)) addedTmp = false;
       if (addedTmp) {
         if (arg->type->symbol->hasFlag(FLAG_COPY_MUTATES) ||
             (formalRequiresTemp(arg, fn) &&
@@ -473,41 +426,36 @@ static FunctionType* computeConcreteIntentsForFunctionType(FunctionType* ft) {
       newIntent = concreteIntent(formal.intent(), formal.type());
     }
 
-    if (newIntent == INTENT_OUT ||
-        newIntent == INTENT_INOUT) {
+    if (newIntent == INTENT_OUT || newIntent == INTENT_INOUT) {
       // Resolution already handled out/inout copying
       newIntent = INTENT_REF;
     } else if (newIntent == INTENT_IN) {
       // Replicates and merges some of the logic from `resolveArgIntent`
       auto type = formal.type()->getValType();
-      bool addedTmp = (isRecord(type) || isUnion(type) ||
-                       isConstrainedType(type));
+      bool addedTmp =
+        (isRecord(type) || isUnion(type) || isConstrainedType(type));
 
       // How can we anticipate this for procedure pointers?
-      if (ft->isExtern())
-        addedTmp = false;
+      if (ft->isExtern()) addedTmp = false;
 
-      if (addedTmp &&
-          ft->returnIntent() != RET_PARAM &&
+      if (addedTmp && ft->returnIntent() != RET_PARAM &&
           formalRequiresTemp(formal)) {
-          newIntent = INTENT_REF;
+        newIntent = INTENT_REF;
       }
     }
 
     bool isFormal = true;
     auto qualForIntent = QualifiedType::qualifierForArgIntent(newIntent);
     bool isConst = QualifiedType::qualifierIsConst(qualForIntent);
-    auto qt = Symbol::computeQualifiedType(isFormal, newIntent,
-                                           formal.type(),
-                                           qualForIntent,
-                                           isConst);
+    auto qt = Symbol::computeQualifiedType(
+      isFormal, newIntent, formal.type(), qualForIntent, isConst);
 
     // Set the 'qual' from the qualifier that was computed.
     newQual = qt.getQual();
 
     if (newIntent != formal.intent() || newQual != formal.qual()) {
-      FunctionType::Formal newFormal(newQual, formal.type(), newIntent,
-                                     formal.name(), formal.flags());
+      FunctionType::Formal newFormal(
+        newQual, formal.type(), newIntent, formal.name(), formal.flags());
       newFormals.push_back(std::move(newFormal));
       changed = true;
 
@@ -518,7 +466,9 @@ static FunctionType* computeConcreteIntentsForFunctionType(FunctionType* ft) {
 
   if (changed) {
     SET_LINENO(ft->symbol);
-    ret = FunctionType::get(ft->kind(), ft->width(), ft->linkage(),
+    ret = FunctionType::get(ft->kind(),
+                            ft->width(),
+                            ft->linkage(),
                             std::move(newFormals),
                             ft->returnIntent(),
                             ft->returnType(),
@@ -534,8 +484,7 @@ static FunctionType* computeConcreteIntentsForFunctionType(FunctionType* ft) {
 class ResolveIntentsForProcPtrTypes : public AdjustSymbolTypes {
  public:
   Type* computeAdjustedType(Type* t) const override {
-    if (auto ft = toFunctionType(t->getValType());
-        ft && !ft->isGeneric()) {
+    if (auto ft = toFunctionType(t->getValType()); ft && !ft->isGeneric()) {
       auto ret = computeConcreteIntentsForFunctionType(ft);
       return ret;
     }
@@ -545,19 +494,14 @@ class ResolveIntentsForProcPtrTypes : public AdjustSymbolTypes {
 
 void resolveIntents() {
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
-    if (arg->defPoint->sym->hasFlag(FLAG_RESOLVED_EARLY))
-      continue;
+    if (arg->defPoint->sym->hasFlag(FLAG_RESOLVED_EARLY)) continue;
     resolveArgIntent(arg);
   }
 
   // BHARSH TODO: This shouldn't be necessary, but will be until we fully
   // switch over to qualified types.
-  forv_Vec(VarSymbol, sym, gVarSymbols) {
-    resolveVarIntent(sym);
-  }
-  forv_Vec(ShadowVarSymbol, sym, gShadowVarSymbols) {
-    resolveVarIntent(sym);
-  }
+  forv_Vec(VarSymbol, sym, gVarSymbols) { resolveVarIntent(sym); }
+  forv_Vec(ShadowVarSymbol, sym, gShadowVarSymbols) { resolveVarIntent(sym); }
 
   PassManager pm;
   runPassOverAllSymbols(pm, ResolveIntentsForProcPtrTypes());

@@ -41,8 +41,8 @@
 #include "chpl-linefile-defs.h"
 
 namespace {
-  // As a means of abbreviation.
-  using Pass = InsertLineNumbers;
+// As a means of abbreviation.
+using Pass = InsertLineNumbers;
 }
 
 //
@@ -63,10 +63,10 @@ namespace {
 // position and some runtime functions make this assumption (e.g., if it
 // is not there and you throw from within standard/internal modules, you'll
 // end up seeing a weird file/line.
-std::vector<std::string> constantFilenames = { "", "<internal>" };
+std::vector<std::string> constantFilenames = {"", "<internal>"};
 
 ValueMappedTable<std::string>
-InsertLineNumbers::gFilenameTable(constantFilenames);
+  InsertLineNumbers::gFilenameTable(constantFilenames);
 
 int Pass::addFilenameTableEntry(const std::string& name) {
   return gFilenameTable.add(name);
@@ -82,8 +82,7 @@ const std::vector<std::string>& Pass::getFilenameTable() {
 }
 
 static bool isWrapper(FnSymbol* fn) {
-  return (fn->hasFlag(FLAG_ON_BLOCK) ||
-          fn->hasFlag(FLAG_BEGIN_BLOCK) ||
+  return (fn->hasFlag(FLAG_ON_BLOCK) || fn->hasFlag(FLAG_BEGIN_BLOCK) ||
           fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK));
 }
 
@@ -123,8 +122,7 @@ bool Pass::shouldPreferASTLine(CallExpr* call) {
   // TODO can we mark the FnSymbol directly instead of checking this global map?
   //      Or maybe you could know it is an ftable call based on how it is called
   // don't add arguments to ftable calls
-  if (ftableMap.count(fn))
-    return true;
+  if (ftableMap.count(fn)) return true;
 
   // in user's code, it's better to use AST line number
   // as long as it's not compiler generated/inline
@@ -164,8 +162,8 @@ Pass::LineAndFile Pass::makeASTLine(CallExpr* call) {
     INT_ASSERT(var->immediate);
     INT_ASSERT(var->immediate->const_kind == CONST_KIND_STRING);
 
-    const char* cmdLineSetting = astr("<command line setting of '",
-                                      var->immediate->v_string.c_str(), "'>");
+    const char* cmdLineSetting = astr(
+      "<command line setting of '", var->immediate->v_string.c_str(), "'>");
 
     int filenameIdx = addFilenameTableEntry(cmdLineSetting);
 
@@ -221,10 +219,10 @@ void Pass::insertLineNumber(CallExpr* call, LineAndFile lineAndFile) {
       AggregateType* bundleType = toAggregateType(bundleArg->sym->typeInfo());
       Symbol* lineField = bundleType->getField(astr__ln);
       Symbol* fileField = bundleType->getField(astr__fn);
-      call->insertBefore(new CallExpr(PRIM_SET_MEMBER, bundleActual->copy(),
-                                      lineField, lineAndFile.line));
-      call->insertBefore(new CallExpr(PRIM_SET_MEMBER, bundleActual->copy(),
-                                      fileField, lineAndFile.file));
+      call->insertBefore(new CallExpr(
+        PRIM_SET_MEMBER, bundleActual->copy(), lineField, lineAndFile.line));
+      call->insertBefore(new CallExpr(
+        PRIM_SET_MEMBER, bundleActual->copy(), fileField, lineAndFile.file));
 
     } else {
       call->insertAtTail(lineAndFile.line);
@@ -244,14 +242,14 @@ void Pass::assertInvariants(FnSymbol* fn) {
 }
 
 static VarSymbol* getOrCreateField(AggregateType* aggType,
-                                   const char* fieldName, Type* fieldType) {
+                                   const char* fieldName,
+                                   Type* fieldType) {
   VarSymbol* field = toVarSymbol(aggType->getField(fieldName, /*fatal*/ false));
   if (field) {
     // if needed, we can turn this assertion into a check
     INT_ASSERT(field->typeInfo() == fieldType);
     return field;
-  }
-  else {
+  } else {
     // Engin: temp field doesn't make much sense, but I am keeping the logic
     field = newTemp(fieldName, fieldType);
     aggType->fields.insertAtTail(new DefExpr(field));
@@ -274,7 +272,7 @@ static VarSymbol* getOrCreateField(AggregateType* aggType,
 // FLAG_INSERT_LINE_FILE_INFO so that later processing can treat them
 // appropriately
 //
-Pass::LineAndFile Pass::getLineAndFileForFn(FnSymbol *fn) {
+Pass::LineAndFile Pass::getLineAndFileForFn(FnSymbol* fn) {
   auto it = lineAndFilenameMap.find(fn);
   if (it != lineAndFilenameMap.end()) {
     return it->second;
@@ -297,33 +295,33 @@ Pass::LineAndFile Pass::getLineAndFileForFn(FnSymbol *fn) {
     // lineField could have been created already. Today we see this only with
     // --gpu-specialization, which can clone `coforall_fn`s while using the same
     // arg bundle for both clones. We want to create lineField only once.
-    VarSymbol* lineField = getOrCreateField(bundleType, lineFormal.name(),
-                                            lineFormal.type());
+    VarSymbol* lineField =
+      getOrCreateField(bundleType, lineFormal.name(), lineFormal.type());
     VarSymbol* lineLocal = newTemp(lineFormal.name(), lineFormal.type());
 
-    fn->insertAtHead("'move'(%S, '.v'(%S, %S))", lineLocal, bundleArg->sym,
-                     lineField);
+    fn->insertAtHead(
+      "'move'(%S, '.v'(%S, %S))", lineLocal, bundleArg->sym, lineField);
     fn->insertAtHead(new DefExpr(lineLocal));
 
     // Same thing, just for the filename index now.
 
     // See the comment above lineField.
-    VarSymbol* fileField = getOrCreateField(bundleType, fileFormal.name(),
-                                            fileFormal.type());
+    VarSymbol* fileField =
+      getOrCreateField(bundleType, fileFormal.name(), fileFormal.type());
     VarSymbol* fileLocal = newTemp(fileFormal.name(), fileFormal.type());
 
-    fn->insertAtHead("'move'(%S, '.v'(%S, %S))", fileLocal, bundleArg->sym,
-                     fileField);
+    fn->insertAtHead(
+      "'move'(%S, '.v'(%S, %S))", fileLocal, bundleArg->sym, fileField);
     fn->insertAtHead(new DefExpr(fileLocal));
 
     result = {lineLocal, fileLocal};
 
   } else {
-    auto line = new ArgSymbol(lineFormal.intent(), lineFormal.name(),
-                              lineFormal.type());
+    auto line =
+      new ArgSymbol(lineFormal.intent(), lineFormal.name(), lineFormal.type());
     line->addFlag(FLAG_NO_USER_DEBUG_INFO);
-    auto file = new ArgSymbol(fileFormal.intent(), fileFormal.name(),
-                              fileFormal.type());
+    auto file =
+      new ArgSymbol(fileFormal.intent(), fileFormal.name(), fileFormal.type());
     line->addFlag(FLAG_NO_USER_DEBUG_INFO);
     fn->insertFormalAtTail(line);
     fn->insertFormalAtTail(file);
@@ -362,8 +360,8 @@ bool Pass::mustAddLineInfoFormalsToFn(FnSymbol* fn) {
   }
 
   if (fn->isUsedAsValue()) {
-    bool hasForeignLinkage = fn->hasFlag(FLAG_EXPORT) ||
-                             fn->hasFlag(FLAG_EXTERN);
+    bool hasForeignLinkage =
+      fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_EXTERN);
 
     // Cannot insert hidden formals into functions with foreign linkage.
     if (hasForeignLinkage) return false;
@@ -409,8 +407,7 @@ void Pass::process(FnSymbol* fn) {
   // need to process the fn itself more than once, so that if we
   // discover a function needs a line/file formal after processing the
   // first time, we can do so
-  if (alreadyProcessed(fn))
-    return;
+  if (alreadyProcessed(fn)) return;
 
   // TODO iterator (or reuse calls)
   // TODO Another cool concept might be to just run the ComputeCallSites
@@ -428,7 +425,7 @@ void Pass::process(FnSymbol* fn) {
 // This function operates on a 'call' that is within the body of 'fn'. It
 // decides whether to append the line/file info of the callsite to the call,
 // or to propagate the caller's line/file info if they exist.
-void Pass::process(FnSymbol *fn, CallExpr* call) {
+void Pass::process(FnSymbol* fn, CallExpr* call) {
   if (auto pair = fixedCalls.insert(call); !pair.second) return;
 
   if (shouldPreferASTLine(call)) {

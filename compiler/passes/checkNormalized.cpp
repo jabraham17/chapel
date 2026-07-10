@@ -37,7 +37,6 @@ void checkNormalized() {
   checkExplicitThis();
 }
 
-
 static void checkFunctionSignatures() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->isIterator()) {
@@ -64,27 +63,26 @@ static void checkPrimNew() {
       int type_index = call->isPrimitive(PRIM_NEW) ? 1 : 2;
 
       if (call->numActuals() >= type_index) {
-        Expr*    arg1     = call->get(type_index);
-        SymExpr* se       = toSymExpr(arg1);
-        Expr*    typeExpr = NULL;
+        Expr* arg1 = call->get(type_index);
+        SymExpr* se = toSymExpr(arg1);
+        Expr* typeExpr = NULL;
 
         // Extract the type expression
         if (se != NULL && se->symbol() == gModuleToken) {
-          typeExpr = call->get(type_index+2);
+          typeExpr = call->get(type_index + 2);
         } else {
           typeExpr = call->get(type_index);
         }
 
-        if        (isUnresolvedSymExpr(typeExpr) == true) {
+        if (isUnresolvedSymExpr(typeExpr) == true) {
 
-        } else if (isTypeExpr(typeExpr)          == true) {
+        } else if (isTypeExpr(typeExpr) == true) {
 
-        } else if (isCallExpr(typeExpr)          == true) {
+        } else if (isCallExpr(typeExpr) == true) {
 
         } else if (SymExpr* se = toSymExpr(typeExpr)) {
           if (se->symbol()->hasFlag(FLAG_MAYBE_TYPE) == false) {
-            USR_FATAL_CONT(call,
-                           "'new' must be followed by a type expression");
+            USR_FATAL_CONT(call, "'new' must be followed by a type expression");
           }
 
         } else {
@@ -128,8 +126,8 @@ static void checkExplicitThis() {
 
       if (isNamedThis && isMethod)
         USR_WARN(ce,
-                "calling the 'this' method explicitly is unstable "
-                "and may change in the future");
+                 "calling the 'this' method explicitly is unstable "
+                 "and may change in the future");
     }
   }
   hasPerformedChecks = true;

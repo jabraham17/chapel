@@ -28,13 +28,12 @@
 #include "type.h"
 
 namespace {
-  // As a means of abbreviation.
-  using Pass = StreamlineProcPtrTypesForCodegen;
+// As a means of abbreviation.
+using Pass = StreamlineProcPtrTypesForCodegen;
 }
 
 Type* Pass::computeAdjustedType(Type* t) const {
-  if (auto ft = toFunctionType(t->getValType());
-      ft && !ft->isGeneric()) {
+  if (auto ft = toFunctionType(t->getValType()); ft && !ft->isGeneric()) {
     auto ret = ft->getWithStreamlinedComponents();
     return ret;
   }

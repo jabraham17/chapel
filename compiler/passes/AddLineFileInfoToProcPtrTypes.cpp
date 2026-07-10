@@ -28,8 +28,8 @@
 #include "type.h"
 
 namespace {
-  // As a means of abbreviation.
-  using Pass = AddLineFileInfoToProcPtrTypes;
+// As a means of abbreviation.
+using Pass = AddLineFileInfoToProcPtrTypes;
 }
 
 bool Pass::shouldProcess(Symbol* sym) {

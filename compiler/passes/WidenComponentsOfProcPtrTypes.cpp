@@ -32,8 +32,8 @@
 #include "symbol.h"
 
 namespace {
-  // As a means of abbreviation.
-  using Pass = WidenComponentsOfProcPtrTypes;
+// As a means of abbreviation.
+using Pass = WidenComponentsOfProcPtrTypes;
 }
 
 bool Pass::shouldProcess(Symbol* sym) {

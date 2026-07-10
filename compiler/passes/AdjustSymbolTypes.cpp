@@ -30,8 +30,8 @@
 #include "type.h"
 
 namespace {
-  // As a means of abbreviation.
-  using Pass = AdjustSymbolTypes;
+// As a means of abbreviation.
+using Pass = AdjustSymbolTypes;
 }
 
 bool Pass::shouldProcessDefault(Symbol* sym) {
@@ -64,15 +64,12 @@ bool Pass::shouldProcessIfNonForeignLinkage(Symbol* sym) {
     return !ft->hasForeignLinkage();
   }
 
-  bool ret = !sym->hasFlag(FLAG_EXTERN) &&
-             !sym->hasFlag(FLAG_EXPORT);
+  bool ret = !sym->hasFlag(FLAG_EXTERN) && !sym->hasFlag(FLAG_EXPORT);
 
   return ret;
 }
 
-bool Pass::shouldProcess(Symbol* sym) {
-  return shouldProcessDefault(sym);
-}
+bool Pass::shouldProcess(Symbol* sym) { return shouldProcessDefault(sym); }
 
 void Pass::process(Symbol* sym) {
   // TODO: The 'maybeAdjustSymbolType' should be made to take a template arg.
@@ -96,9 +93,9 @@ void Pass::process(Symbol* sym) {
     // TODO: This does not necessarily always need to be the case, but for
     //       now it seems to be, so crash if it's not so.
     INT_ASSERT(!oldType->symbol->hasFlag(FLAG_REF) ||
-                newType->symbol->hasFlag(FLAG_REF));
+               newType->symbol->hasFlag(FLAG_REF));
     INT_ASSERT(!oldType->symbol->hasFlag(FLAG_WIDE_REF) ||
-                newType->symbol->hasFlag(FLAG_WIDE_REF));
+               newType->symbol->hasFlag(FLAG_WIDE_REF));
   }
 
   if (isTypeSymbol(sym) && changed) {
@@ -106,9 +103,7 @@ void Pass::process(Symbol* sym) {
     // symbol where it doesn't actually make any sense to set 'sym->type'.
     // Instead, if they "changed", what we have to do is walk all the uses
     // of the type symbol and point them to the new type.
-    for_SymbolSymExprs(se, sym) {
-      enqueue(newType->symbol, se);
-    }
+    for_SymbolSymExprs(se, sym) { enqueue(newType->symbol, se); }
   }
 
   if (newVt != dtUnknown) {

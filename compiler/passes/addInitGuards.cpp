@@ -67,7 +67,6 @@
 // at run time.
 //
 
-
 // TODO GLOBALS theProgram and baseModule
 // TODO IDEMPOTENT
 // We need a function to drop the initializers into.
@@ -83,13 +82,10 @@ FnSymbol* AddInitGuards::getOrCreatePreInitFn() {
 
   return preInitFn;
 }
-AddInitGuards::AddInitGuards() {
-  preInitFn = getOrCreatePreInitFn();
-}
+AddInitGuards::AddInitGuards() { preInitFn = getOrCreatePreInitFn(); }
 
 bool AddInitGuards::shouldProcess(ModuleSymbol* mod) {
-  if (mod == rootModule)
-    return false;
+  if (mod == rootModule) return false;
 
   FnSymbol* fn = toFnSymbol(mod->initFn);
   if (!fn)
@@ -99,8 +95,7 @@ bool AddInitGuards::shouldProcess(ModuleSymbol* mod) {
 
   // Test if this fn has a nontrivial body.
   BlockStmt* body = fn->body;
-  if (body->length() < 1)
-    return false;
+  if (body->length() < 1) return false;
 
   return true;
 }
@@ -112,41 +107,41 @@ void AddInitGuards::process(ModuleSymbol* mod) {
 }
 
 void AddInitGuards::addInitGuard(FnSymbol* fn, FnSymbol* preInitFn) {
-    SET_LINENO(fn);
-    // The declaration:
-    //      var <init_fn_name>_p : bool;
-    // is added to the end of the program block.
-    const char* init_p = astr(fn->name, "_p"); // Add _p to make it a predicate.
-    Symbol* var = new VarSymbol(init_p, dtBool);
-    Expr* declExpr = new DefExpr(var);
-    theProgram->block->insertAtTail(declExpr);
+  SET_LINENO(fn);
+  // The declaration:
+  //      var <init_fn_name>_p : bool;
+  // is added to the end of the program block.
+  const char* init_p = astr(fn->name, "_p"); // Add _p to make it a predicate.
+  Symbol* var = new VarSymbol(init_p, dtBool);
+  Expr* declExpr = new DefExpr(var);
+  theProgram->block->insertAtTail(declExpr);
 
-    // The assignment:
-    //      <init_fn_name>_p = false;
-    // is added at the end of chpl__init_preInit().
-    // This means the module has not yet been initialized.
-    Expr* asgnExprFalse = new CallExpr(PRIM_MOVE, var, new SymExpr(gFalse));
-    preInitFn->insertBeforeEpilogue(asgnExprFalse);
+  // The assignment:
+  //      <init_fn_name>_p = false;
+  // is added at the end of chpl__init_preInit().
+  // This means the module has not yet been initialized.
+  Expr* asgnExprFalse = new CallExpr(PRIM_MOVE, var, new SymExpr(gFalse));
+  preInitFn->insertBeforeEpilogue(asgnExprFalse);
 
-    // The assignment:
-    //      <init_fn_name>_p = true;
-    // is added to the start of the module initialization function.
-    // This means that the module has been initialized.
-    Expr* asgnExprTrue = new CallExpr(PRIM_MOVE, var, new SymExpr(gTrue));
-    fn->insertAtHead(asgnExprTrue);
+  // The assignment:
+  //      <init_fn_name>_p = true;
+  // is added to the start of the module initialization function.
+  // This means that the module has been initialized.
+  Expr* asgnExprTrue = new CallExpr(PRIM_MOVE, var, new SymExpr(gTrue));
+  fn->insertAtHead(asgnExprTrue);
 
-    // Add debugging aid that prints module init order
-    addPrintModInitOrder(fn);
+  // Add debugging aid that prints module init order
+  addPrintModInitOrder(fn);
 
-    // The guard:
-    //      if (<init_fn_name>_p) goto _exit_<init_fn_name>.
-    // Precedes everything in the module initialization function,
-    // including the assignment we just added.
-    LabelSymbol* label = new LabelSymbol(astr("_exit_", fn->name));
-    fn->insertIntoEpilogue(new DefExpr(label));
-    Expr* gotoExit = new GotoStmt(GOTO_NORMAL, label);
-    Expr* ifStmt = new CondStmt(new SymExpr(var), gotoExit);
-    fn->insertAtHead(ifStmt);
+  // The guard:
+  //      if (<init_fn_name>_p) goto _exit_<init_fn_name>.
+  // Precedes everything in the module initialization function,
+  // including the assignment we just added.
+  LabelSymbol* label = new LabelSymbol(astr("_exit_", fn->name));
+  fn->insertIntoEpilogue(new DefExpr(label));
+  Expr* gotoExit = new GotoStmt(GOTO_NORMAL, label);
+  Expr* ifStmt = new CondStmt(new SymExpr(var), gotoExit);
+  fn->insertAtHead(ifStmt);
 }
 
 // TODO GLOBALS gPrintModuleInitFn, gModuleInitIndentLevel
@@ -162,8 +157,7 @@ void AddInitGuards::addPrintModInitOrder(FnSymbol* fn) {
   // Only do this if gPrintModuleInitFn exists.  It won't exist when
   // compiling --minimal-modules
   //
-  if (gPrintModuleInitFn == NULL)
-    return;
+  if (gPrintModuleInitFn == NULL) return;
 
   // The function printModuleInitFn() takes 3 arguments:
   //   s1:  the format string "%*s"
@@ -179,28 +173,26 @@ void AddInitGuards::addPrintModInitOrder(FnSymbol* fn) {
   int myLen = strlen(s2);
   char lenStr[25];
   snprintf(lenStr, sizeof(lenStr), "%d", myLen);
-  Expr *es1 = buildCStringLiteral(s1);
-  Expr *es2 = buildCStringLiteral(s2);
-  Expr *elen = buildIntLiteral(lenStr);
+  Expr* es1 = buildCStringLiteral(s1);
+  Expr* es2 = buildCStringLiteral(s2);
+  Expr* elen = buildIntLiteral(lenStr);
   CallExpr* s1Init = new CallExpr(PRIM_MOVE, new SymExpr(s1tmp), es1);
   CallExpr* s2Init = new CallExpr(PRIM_MOVE, new SymExpr(s2tmp), es2);
-  CallExpr *printModInit = new CallExpr(gPrintModuleInitFn,
-                                        new SymExpr(s1tmp),
-                                        new SymExpr(s2tmp), elen);
+  CallExpr* printModInit = new CallExpr(
+    gPrintModuleInitFn, new SymExpr(s1tmp), new SymExpr(s2tmp), elen);
 
   // += and -+ take ref args, so we must first get a reference to the
   // indent level variable
-  VarSymbol* refIndentLevel = newTemp("refIndentLevel",gModuleInitIndentLevel->qualType().toRef());
-  CallExpr *getAddr = new CallExpr(PRIM_MOVE,
-                                   new SymExpr(refIndentLevel),
-                                   new CallExpr(PRIM_ADDR_OF,
-                                                new SymExpr(gModuleInitIndentLevel)));
-  CallExpr *incIndentLevel = new CallExpr(PRIM_ADD_ASSIGN,
-                                          new SymExpr(refIndentLevel),
-                                          buildIntLiteral("1"));
-  CallExpr *decIndentLevel = new CallExpr(PRIM_SUBTRACT_ASSIGN,
-                                          new SymExpr(refIndentLevel),
-                                          buildIntLiteral("1"));
+  VarSymbol* refIndentLevel =
+    newTemp("refIndentLevel", gModuleInitIndentLevel->qualType().toRef());
+  CallExpr* getAddr = new CallExpr(
+    PRIM_MOVE,
+    new SymExpr(refIndentLevel),
+    new CallExpr(PRIM_ADDR_OF, new SymExpr(gModuleInitIndentLevel)));
+  CallExpr* incIndentLevel = new CallExpr(
+    PRIM_ADD_ASSIGN, new SymExpr(refIndentLevel), buildIntLiteral("1"));
+  CallExpr* decIndentLevel = new CallExpr(
+    PRIM_SUBTRACT_ASSIGN, new SymExpr(refIndentLevel), buildIntLiteral("1"));
   fn->insertAtHead(incIndentLevel);
   fn->insertAtHead(getAddr);
   fn->insertAtHead(printModInit);
@@ -212,12 +204,10 @@ void AddInitGuards::addPrintModInitOrder(FnSymbol* fn) {
   fn->insertBeforeEpilogue(decIndentLevel);
 }
 
-
 // ---------- AddModuleInitBlocks ----------
 
 bool AddModuleInitBlocks::shouldProcess(ModuleSymbol* mod) {
-  if (mod == rootModule)
-    return false;
+  if (mod == rootModule) return false;
 
   FnSymbol* fn = toFnSymbol(mod->initFn);
   if (!fn) {
@@ -248,9 +238,8 @@ void AddModuleInitBlocks::process(ModuleSymbol* mod) {
                              new SymExpr(mod->deinitFn),
                              new SymExpr(dtCFnPtr->symbol));
 
-    fn->insertAtHead(new CallExpr(gAddModuleFn,
-                                  buildCStringLiteral(mod->name),
-                                  cast));
+    fn->insertAtHead(
+      new CallExpr(gAddModuleFn, buildCStringLiteral(mod->name), cast));
   }
 
   BlockStmt* initBlock = new BlockStmt();
@@ -271,8 +260,7 @@ void AddModuleInitBlocks::process(ModuleSymbol* mod) {
   }
 
   // TODO REFACTOR Q can't we check this before and only create all the above if its true?
-  if (initBlock->body.length > 0)
-    fn->insertAtHead(initBlock);
+  if (initBlock->body.length > 0) fn->insertAtHead(initBlock);
 }
 
 #include "global-ast-vecs.h"

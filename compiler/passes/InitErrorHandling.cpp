@@ -35,38 +35,31 @@
 ************************************** | *************************************/
 
 InitErrorHandling::InitErrorHandling(FnSymbol* fn) {
-  mFn            = fn;
-  mPhase         = startPhase(fn);
+  mFn = fn;
+  mPhase = startPhase(fn);
 }
 
-InitErrorHandling::InitErrorHandling(CondStmt* cond, const InitErrorHandling& curr) {
-  mFn            = curr.mFn;
-  mPhase         = curr.mPhase;
+InitErrorHandling::InitErrorHandling(CondStmt* cond,
+                                     const InitErrorHandling& curr) {
+  mFn = curr.mFn;
+  mPhase = curr.mPhase;
 }
 
 void InitErrorHandling::merge(const InitErrorHandling& fork) {
-  mPhase     = fork.mPhase;
+  mPhase = fork.mPhase;
 }
 
-FnSymbol* InitErrorHandling::theFn() const {
-  return mFn;
-}
+FnSymbol* InitErrorHandling::theFn() const { return mFn; }
 
 InitErrorHandling::InitPhase InitErrorHandling::currPhase() const {
   return mPhase;
 }
 
-bool InitErrorHandling::isPhase0() const {
-  return mPhase == cPhase0;
-}
+bool InitErrorHandling::isPhase0() const { return mPhase == cPhase0; }
 
-bool InitErrorHandling::isPhase1() const {
-  return mPhase == cPhase1;
-}
+bool InitErrorHandling::isPhase1() const { return mPhase == cPhase1; }
 
-bool InitErrorHandling::isPhase2() const {
-  return mPhase == cPhase2;
-}
+bool InitErrorHandling::isPhase2() const { return mPhase == cPhase2; }
 
 /************************************* | **************************************
 *                                                                             *
@@ -81,13 +74,13 @@ bool isResolvedSuperInit(CallExpr* stmt) {
   return name != NULL && name == astrSuper ? true : false;
 }
 
-bool isResolvedThisInit (CallExpr* stmt) {
+bool isResolvedThisInit(CallExpr* stmt) {
   const char* name = initName(stmt);
 
-  return name != NULL && name == astrThis ? true: false;
+  return name != NULL && name == astrThis ? true : false;
 }
 
-bool InitErrorHandling::isInitDone (CallExpr* stmt) const {
+bool InitErrorHandling::isInitDone(CallExpr* stmt) const {
   return stmt->isPrimitive(PRIM_INIT_DONE);
 }
 
@@ -103,8 +96,7 @@ static const char* initName(CallExpr* stmt) {
     if (SymExpr* base = toSymExpr(stmt->baseExpr)) {
 
       // Call is to an initializer
-      if (base->symbol()->name == astrInit &&
-          stmt->numActuals() >= 1) {
+      if (base->symbol()->name == astrInit && stmt->numActuals() >= 1) {
         SymExpr* firstArg = toSymExpr(stmt->get(1));
         if (firstArg->symbol()->name == astrSuper ||
             strcmp(firstArg->symbol()->name, "super_tmp") == 0) {
@@ -126,8 +118,8 @@ static const char* initName(CallExpr* stmt) {
 }
 
 bool InitErrorHandling::hasInitDone(BlockStmt* block) {
-  Expr* stmt   = block->body.head;
-  bool  retval = false;
+  Expr* stmt = block->body.head;
+  bool retval = false;
 
   while (stmt != NULL && retval == false) {
     if (CallExpr* callExpr = toCallExpr(stmt)) {
@@ -154,17 +146,13 @@ bool InitErrorHandling::hasInitDone(BlockStmt* block) {
   return retval;
 }
 
-
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
 
-void InitErrorHandling::completePhase1(CallExpr* initStmt) {
-  mPhase = cPhase2;
-}
+void InitErrorHandling::completePhase1(CallExpr* initStmt) { mPhase = cPhase2; }
 
 void InitErrorHandling::completePhase0(CallExpr* initStmt) {
   if (isResolvedSuperInit(initStmt) == true) {
@@ -180,12 +168,13 @@ void InitErrorHandling::completePhase0(CallExpr* initStmt) {
 *                                                                             *
 ************************************** | *************************************/
 
-InitErrorHandling::InitPhase InitErrorHandling::startPhase(FnSymbol*  fn)    const {
+InitErrorHandling::InitPhase InitErrorHandling::startPhase(FnSymbol* fn) const {
   return startPhase(fn->body);
 }
 
-InitErrorHandling::InitPhase InitErrorHandling::startPhase(BlockStmt* block) const {
-  Expr*     stmt   = block->body.head;
+InitErrorHandling::InitPhase
+InitErrorHandling::startPhase(BlockStmt* block) const {
+  Expr* stmt = block->body.head;
   const InitPhase defaultPhase = cPhase1;
   InitPhase retval = defaultPhase;
 
@@ -194,7 +183,7 @@ InitErrorHandling::InitPhase InitErrorHandling::startPhase(BlockStmt* block) con
       stmt = stmt->next;
 
     } else if (CallExpr* callExpr = toCallExpr(stmt)) {
-      if        (isResolvedThisInit(callExpr)  == true) {
+      if (isResolvedThisInit(callExpr) == true) {
         retval = cPhase0;
         break;
 
@@ -202,12 +191,12 @@ InitErrorHandling::InitPhase InitErrorHandling::startPhase(BlockStmt* block) con
         retval = cPhase0;
         break;
 
-      } else if (isInitDone(callExpr)  == true) {
+      } else if (isInitDone(callExpr) == true) {
         retval = cPhase1;
         break;
 
       } else {
-        stmt   = stmt->next;
+        stmt = stmt->next;
       }
 
     } else if (CondStmt* cond = toCondStmt(stmt)) {
@@ -217,14 +206,14 @@ InitErrorHandling::InitPhase InitErrorHandling::startPhase(BlockStmt* block) con
         if (thenPhase != defaultPhase) {
           retval = thenPhase;
         } else {
-          stmt   = stmt->next;
+          stmt = stmt->next;
         }
 
       } else {
         InitPhase thenPhase = startPhase(cond->thenStmt);
         InitPhase elsePhase = startPhase(cond->elseStmt);
 
-        if        (thenPhase == cPhase0 || elsePhase == cPhase0) {
+        if (thenPhase == cPhase0 || elsePhase == cPhase0) {
           retval = cPhase0;
 
         } else if (thenPhase == cPhase1 || elsePhase == cPhase1) {
@@ -234,7 +223,7 @@ InitErrorHandling::InitPhase InitErrorHandling::startPhase(BlockStmt* block) con
           stmt = stmt->next;
 
         } else {
-          stmt   = stmt->next;
+          stmt = stmt->next;
         }
       }
 
@@ -244,7 +233,7 @@ InitErrorHandling::InitPhase InitErrorHandling::startPhase(BlockStmt* block) con
       if (phase != defaultPhase) {
         retval = phase;
       } else {
-        stmt   = stmt->next;
+        stmt = stmt->next;
       }
 
     } else if (ForallStmt* forall = toForallStmt(stmt)) {
@@ -253,7 +242,7 @@ InitErrorHandling::InitPhase InitErrorHandling::startPhase(BlockStmt* block) con
       if (phase != defaultPhase) {
         retval = phase;
       } else {
-        stmt   = stmt->next;
+        stmt = stmt->next;
       }
 
     } else {
@@ -284,17 +273,11 @@ InitErrorHandling::phaseToString(InitErrorHandling::InitPhase phase) const {
   const char* retval = "?";
 
   switch (phase) {
-    case cPhase0:
-      retval = "Phase0";
-      break;
+    case cPhase0: retval = "Phase0"; break;
 
-    case cPhase1:
-      retval = "Phase1";
-      break;
+    case cPhase1: retval = "Phase1"; break;
 
-    case cPhase2:
-      retval = "Phase2";
-      break;
+    case cPhase2: retval = "Phase2"; break;
   }
 
   return retval;

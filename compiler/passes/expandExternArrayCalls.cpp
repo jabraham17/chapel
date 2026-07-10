@@ -92,8 +92,7 @@ void ExpandExternArrayCalls::process(FnSymbol* fn) {
 
     replaced_args.insert(current_formal);
 
-    bool isRef = formal->intent == INTENT_REF ||
-                 formal->intent == INTENT_OUT ||
+    bool isRef = formal->intent == INTENT_REF || formal->intent == INTENT_OUT ||
                  formal->intent == INTENT_INOUT;
 
     const char* cPtrType = isRef ? "c_ptr" : "c_ptrConst";
@@ -102,13 +101,11 @@ void ExpandExternArrayCalls::process(FnSymbol* fn) {
     if (eltType) {
       // replace '[] foo' with 'c_ptr(foo)'
       formal->typeExpr->replace(
-          new BlockStmt(
-            new CallExpr(cPtrType, eltType->remove())));
+        new BlockStmt(new CallExpr(cPtrType, eltType->remove())));
     } else {
       // generic arrays are replaced with 'raw_c_void_ptr'
       formal->typeExpr->replace(
-          new BlockStmt(
-            new CallExpr(cPtrType, dtVoid->symbol)));
+        new BlockStmt(new CallExpr(cPtrType, dtVoid->symbol)));
     }
     formal->intent = INTENT_BLANK;
     formal->originalIntent = INTENT_BLANK;
@@ -141,7 +138,7 @@ void ExpandExternArrayCalls::process(FnSymbol* fn) {
   CallExpr* externCall = new CallExpr(fn);
   current_formal = 0;
   for_formals(formal, fwrapper) {
-    if(replaced_args.count(current_formal)) {
+    if (replaced_args.count(current_formal)) {
       UnresolvedSymExpr* eltType = NULL;
       std::ignore = isFormalArray(formal, &eltType);
 
@@ -149,13 +146,13 @@ void ExpandExternArrayCalls::process(FnSymbol* fn) {
                    formal->intent == INTENT_OUT ||
                    formal->intent == INTENT_INOUT;
 
-      const char* arrayToPtr = isRef ? "chpl_arrayToPtr" : "chpl_arrayToPtrConst";
+      const char* arrayToPtr =
+        isRef ? "chpl_arrayToPtr" : "chpl_arrayToPtrConst";
 
-      externCall->argList.insertAtTail(new CallExpr(arrayToPtr,
-                                                    new SymExpr(formal),
-                                                    new SymExpr((eltType ?
-                                                                 gFalse :
-                                                                 gTrue))));
+      externCall->argList.insertAtTail(
+        new CallExpr(arrayToPtr,
+                     new SymExpr(formal),
+                     new SymExpr((eltType ? gFalse : gTrue))));
     } else {
       externCall->argList.insertAtTail(new SymExpr(formal));
     }
@@ -185,7 +182,7 @@ bool ExpandExternArrayCalls::isFormalArray(ArgSymbol* formal,
       if (urSym && !strcmp(urSym->unresolved, arrayRtTypeFn)) {
         if (typeAsCall->numActuals() > 1) {
           if (outType) {
-            *outType= toUnresolvedSymExpr(typeAsCall->get(2));
+            *outType = toUnresolvedSymExpr(typeAsCall->get(2));
           }
         }
         return true;

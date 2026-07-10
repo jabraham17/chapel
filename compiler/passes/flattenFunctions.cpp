@@ -45,7 +45,6 @@ void flattenFunctions() {
   flattenNestedFunctions(nestedFunctions);
 }
 
-
 void flattenNestedFunction(FnSymbol* nestedFunction) {
   if (isFnSymbol(nestedFunction->defPoint->parentSymbol)) {
     Vec<FnSymbol*> nestedFunctions;
@@ -77,13 +76,11 @@ static void markTaskFunctionsInIterators(Vec<FnSymbol*>& nestedFunctions) {
   }
 }
 
-
 // returns true if:
 //  * fn is a function implementing a task/on statement
 //  * sym is a module-scope variable
 //  * the type of sym is marked with "always rvf"
-static bool
-shouldAddArgForAlwaysRvf(Symbol* sym, FnSymbol* fn) {
+static bool shouldAddArgForAlwaysRvf(Symbol* sym, FnSymbol* fn) {
 
   // If the symbol is at module scope and the type should always be
   // RVF'd and the symbol doesn't have the "locale private" flag
@@ -101,8 +98,7 @@ shouldAddArgForAlwaysRvf(Symbol* sym, FnSymbol* fn) {
   // already have special handling to localize them, and RVFing them
   // causes the `Locales` to be RVF'd which caused extra
   // communications to take place (and generally seems confusing).
-  if (isTaskFun(fn) &&
-      isModuleSymbol(sym->defPoint->parentSymbol) &&
+  if (isTaskFun(fn) && isModuleSymbol(sym->defPoint->parentSymbol) &&
       sym->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF) &&
       !sym->hasFlag(FLAG_LOCALE_PRIVATE))
     return true;
@@ -117,15 +113,12 @@ shouldPropagateOuterArg(Symbol* sym, FnSymbol* parentFn, FnSymbol* calledFn) {
   Symbol* symDefParent = sym->defPoint->parentSymbol;
 
   // e.g. sym is a local variable or formal
-  if (symDefParent == parentFn)
-    return false;
+  if (symDefParent == parentFn) return false;
 
   // e.g. sym is a formal for the called function
-  if (calledFn && symDefParent == calledFn)
-    return false;
+  if (calledFn && symDefParent == calledFn) return false;
 
-  if (sym->hasFlag(FLAG_TYPE_VARIABLE) &&
-      !sym->hasFlag(FLAG_HAS_RUNTIME_TYPE))
+  if (sym->hasFlag(FLAG_TYPE_VARIABLE) && !sym->hasFlag(FLAG_HAS_RUNTIME_TYPE))
     // don't propagate type variables
     return false;
 
@@ -159,8 +152,7 @@ static bool isTemporaryOuterUse(SymExpr* symExpr) {
 //
 // finds outer vars directly used in a function
 //
-static void
-findOuterVars(FnSymbol* fn, SymbolMap* uses) {
+static void findOuterVars(FnSymbol* fn, SymbolMap* uses) {
   std::vector<SymExpr*> SEs;
   collectLcnSymExprs(fn, SEs);
 
@@ -174,27 +166,18 @@ findOuterVars(FnSymbol* fn, SymbolMap* uses) {
     if (symExpr->getFunction() == fn &&
         shouldPropagateOuterArg(sym, fn, nullptr) &&
         !isTemporaryOuterUse(symExpr)) {
-      uses->put(sym,gNil);
+      uses->put(sym, gNil);
     }
   }
 }
 
-
 // Is this type OK to pass by value (e.g. it's reasonably-sized)?
-static bool
-passableByVal(Type* type) {
-  if (isBoolType(type)    ||
-      isIntType(type)     ||
-      isUIntType(type)    ||
-      isRealType(type)    ||
-      isImagType(type)    ||
-      isComplexType(type) ||
-      isEnumType(type)    ||
-      isClass(type)         ||
-      type == dtTaskID      ||
+static bool passableByVal(Type* type) {
+  if (isBoolType(type) || isIntType(type) || isUIntType(type) ||
+      isRealType(type) || isImagType(type) || isComplexType(type) ||
+      isEnumType(type) || isClass(type) || type == dtTaskID ||
       // For now, allow ranges as a special case, not records in general.
-      type->symbol->hasFlag(FLAG_RANGE) ||
-      0)
+      type->symbol->hasFlag(FLAG_RANGE) || 0)
     return true;
 
   // TODO: allow reasonably-sized records. NB this-in-taskfns-in-ctors.chpl
@@ -203,11 +186,9 @@ passableByVal(Type* type) {
   return false;
 }
 
-
 // Should we pass 'sym' by reference? This is needed if 'sym' may be modified.
 // Otherwise passing by value is more efficient.
-static bool
-passByRef(Symbol* sym) {
+static bool passByRef(Symbol* sym) {
   //
   // If it's constant (in the sense that the value will not change),
   // there's no need to pass it by reference
@@ -230,8 +211,7 @@ passByRef(Symbol* sym) {
     return false;
   }
 
-  if (sym->hasFlag(FLAG_ARG_THIS) == true &&
-      passableByVal(type)         == true) {
+  if (sym->hasFlag(FLAG_ARG_THIS) == true && passableByVal(type) == true) {
     // This is also constant. TODO: mark with FLAG_CONST.
     // TODO: join with the passableByVal(type) test below.
     return false;
@@ -247,9 +227,9 @@ passByRef(Symbol* sym) {
              !sym->hasFlag(FLAG_CONST));
 
   if (sym->hasFlag(FLAG_CONST) ||
-      sym->hasFlag(FLAG_COFORALL_INDEX_VAR)) {  // These are constant, too.
+      sym->hasFlag(FLAG_COFORALL_INDEX_VAR)) { // These are constant, too.
     if (passableByVal(type)) {
-       return false;
+      return false;
     }
   }
 
@@ -271,15 +251,13 @@ passByRef(Symbol* sym) {
   }
 }
 
-
-static void
-addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
-  for (auto elem: sortedSymbolMapElts(*vars)) {
+static void addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
+  for (auto elem : sortedSymbolMapElts(*vars)) {
     if (Symbol* sym = elem.key) {
       Type* type = sym->type;
       IntentTag intent = INTENT_BLANK;
 
-        /* NOTE: This is still conservative.  This avoids passing
+      /* NOTE: This is still conservative.  This avoids passing
            coforall index vars by reference for non-var iterators.
            David came up with an example with nested functions and no
            iterators that would unnecessarily pass coforall index vars
@@ -317,16 +295,14 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
 
       SET_LINENO(sym);
       ArgSymbol* arg = new ArgSymbol(intent, sym->name, type);
-      if (sym->hasFlag(FLAG_ARG_THIS))
-          arg->addFlag(FLAG_ARG_THIS);
+      if (sym->hasFlag(FLAG_ARG_THIS)) arg->addFlag(FLAG_ARG_THIS);
       if (sym->hasFlag(FLAG_REF_TO_IMMUTABLE))
-          arg->addFlag(FLAG_REF_TO_IMMUTABLE);
+        arg->addFlag(FLAG_REF_TO_IMMUTABLE);
       if (sym->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT))
-          arg->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+        arg->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
       if (sym->hasFlag(FLAG_COFORALL_INDEX_VAR))
-          arg->addFlag(FLAG_COFORALL_INDEX_VAR);
-      if (sym->hasFlag(FLAG_NO_RVF))
-          arg->addFlag(FLAG_NO_RVF);
+        arg->addFlag(FLAG_COFORALL_INDEX_VAR);
+      if (sym->hasFlag(FLAG_NO_RVF)) arg->addFlag(FLAG_NO_RVF);
       arg->addFlag(FLAG_OUTER_VARIABLE);
 
       fn->insertFormalAtTail(new DefExpr(arg));
@@ -335,8 +311,7 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
   }
 }
 
-static void
-replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
+static void replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
   if (vars->n == 0) return;
 
   std::vector<SymExpr*> symExprs;
@@ -347,10 +322,10 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
   if (fn->lifetimeConstraints)
     collectSymExprs(fn->lifetimeConstraints, symExprs);
 
-  for (auto elem: sortedSymbolMapElts(*vars)) {
-    Symbol*    sym = elem.key;
+  for (auto elem : sortedSymbolMapElts(*vars)) {
+    Symbol* sym = elem.key;
     ArgSymbol* arg = toArgSymbol(elem.value);
-    Type*      type = arg->type;
+    Type* type = arg->type;
 
     size_t i = 0;
     for_vector(SymExpr, se, symExprs) {
@@ -359,14 +334,13 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
           se->setSymbol(arg);
 
         } else if (CallExpr* call = toCallExpr(se->parentExpr)) {
-          FnSymbol* fnc         = call->resolvedFunction();
-          bool      canPassToFn = false;
+          FnSymbol* fnc = call->resolvedFunction();
+          bool canPassToFn = false;
 
           if (fnc) {
             ArgSymbol* form = actual_to_formal(se);
 
-            if (arg->isRef()                            &&
-                form->isRef()                           &&
+            if (arg->isRef() && form->isRef() &&
                 arg->getValType() == form->getValType()) {
               canPassToFn = true;
             } else if (arg->type == form->type) {
@@ -375,19 +349,17 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
           }
 
           // check if call is in a lifetime clause
-          if (i >= firstInLifetimeConstraint)
-            canPassToFn = true;
+          if (i >= firstInLifetimeConstraint) canPassToFn = true;
 
-          if (( (call->isPrimitive(PRIM_MOVE)       ||
-                 call->isPrimitive(PRIM_ASSIGN)     ||
-                 call->isPrimitive(PRIM_SET_MEMBER) )
-                && call->get(1) == se)                                   ||
-              call->isPrimitive(PRIM_GET_MEMBER)                         ||
-              call->isPrimitive(PRIM_GET_MEMBER_VALUE)                   ||
-              call->isPrimitive(PRIM_WIDE_GET_LOCALE)                    ||
-              call->isPrimitive(PRIM_WIDE_GET_NODE)                      ||
-              call->isPrimitive(PRIM_END_OF_STATEMENT)                   ||
-              canPassToFn) {
+          if (((call->isPrimitive(PRIM_MOVE) ||
+                call->isPrimitive(PRIM_ASSIGN) ||
+                call->isPrimitive(PRIM_SET_MEMBER)) &&
+               call->get(1) == se) ||
+              call->isPrimitive(PRIM_GET_MEMBER) ||
+              call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+              call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
+              call->isPrimitive(PRIM_WIDE_GET_NODE) ||
+              call->isPrimitive(PRIM_END_OF_STATEMENT) || canPassToFn) {
             se->setSymbol(arg); // do not dereference argument in these cases
 
           } else if (call->isPrimitive(PRIM_ADDR_OF)) {
@@ -397,9 +369,9 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
           } else {
             SET_LINENO(se);
 
-            VarSymbol* tmp   = newTemp(sym->type);
-            CallExpr*  deref = new CallExpr(PRIM_DEREF, arg);
-            CallExpr*  move  = new CallExpr(PRIM_MOVE,  tmp, deref);
+            VarSymbol* tmp = newTemp(sym->type);
+            CallExpr* deref = new CallExpr(PRIM_DEREF, arg);
+            CallExpr* move = new CallExpr(PRIM_MOVE, tmp, deref);
 
             se->getStmtExpr()->insertBefore(new DefExpr(tmp));
             se->getStmtExpr()->insertBefore(move);
@@ -420,10 +392,8 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
   }
 }
 
-
-static void
-addVarsToActuals(CallExpr* call, SymbolMap* vars) {
-  for (auto elem: sortedSymbolMapElts(*vars)) {
+static void addVarsToActuals(CallExpr* call, SymbolMap* vars) {
+  for (auto elem : sortedSymbolMapElts(*vars)) {
     if (Symbol* sym = elem.key) {
       SET_LINENO(sym);
       call->insertAtTail(sym);
@@ -434,12 +404,11 @@ addVarsToActuals(CallExpr* call, SymbolMap* vars) {
 void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   Vec<FnSymbol*> nestedFunctionSet;
 
-  forv_Vec(FnSymbol, fn, nestedFunctions)
-    nestedFunctionSet.set_add(fn);
+  forv_Vec(FnSymbol, fn, nestedFunctions) nestedFunctionSet.set_add(fn);
 
   // args_map is a map from function to an inner "uses" map
   //   inner "uses" map is from outerVariable -> formal
-  Map<FnSymbol*,SymbolMap*> args_map;
+  Map<FnSymbol*, SymbolMap*> args_map;
 
   forv_Vec(FnSymbol, fn, nestedFunctions) {
     SymbolMap* uses = new SymbolMap();
@@ -534,9 +503,7 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   forv_Vec(FnSymbol, fn, nestedFunctions) {
     SymbolMap* uses = args_map.get(fn);
 
-    forv_Vec(CallExpr, call, *fn->calledBy) {
-      addVarsToActuals(call, uses);
-    }
+    forv_Vec(CallExpr, call, *fn->calledBy) { addVarsToActuals(call, uses); }
   }
 
   // move nested functions to module level

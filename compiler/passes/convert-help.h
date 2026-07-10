@@ -35,7 +35,6 @@
 #include "convert-uast.h"
 #include "metadata.h"
 
-
 using namespace chpl;
 
 struct Converter;
@@ -65,8 +64,7 @@ struct LoopAttributeInfo {
   LLVMMetadataList buildLLVMMetadataList(Context* context,
                                          const uast::Attribute* node) const;
   LLVMMetadataPtr buildAssertVectorize(const uast::Attribute* node) const;
-  void readLlvmAttributes(Context* context,
-                          const uast::AttributeGroup* attrs);
+  void readLlvmAttributes(Context* context, const uast::AttributeGroup* attrs);
   void readNativeGpuAttributes(const uast::AttributeGroup* attrs);
 
  public:
@@ -97,16 +95,12 @@ struct LoopAttributeInfo {
   }
 
   bool empty() const {
-    return llvmMetadata.size() == 0 &&
-           assertOnGpuAttr == nullptr &&
-           assertEligibleAttr == nullptr &&
-           itersPerThreadAttr == nullptr &&
+    return llvmMetadata.size() == 0 && assertOnGpuAttr == nullptr &&
+           assertEligibleAttr == nullptr && itersPerThreadAttr == nullptr &&
            blockSizeAttr == nullptr;
   }
 
-  operator bool() const {
-    return !empty();
-  }
+  operator bool() const { return !empty(); }
 
   bool insertGpuEligibilityAssertion(BlockStmt* body);
   bool insertBlockSizeCall(UastConverter& converter, BlockStmt* body);
@@ -119,11 +113,15 @@ struct LoopAttributeInfo {
 const char* convertLinkageNameAstr(const uast::Decl* node);
 Flag convertFlagForDeclLinkage(const uast::AstNode* node);
 Flag convertPragmaToFlag(uast::PragmaTag pragma);
-void attachSymbolAttributes(Context* context, const uast::Decl* node, Symbol* sym, bool containedInLibraryFile);
+void attachSymbolAttributes(Context* context,
+                            const uast::Decl* node,
+                            Symbol* sym,
+                            bool containedInLibraryFile);
 void attachSymbolVisibility(const uast::Decl* node, Symbol* sym);
 UnresolvedSymExpr* reservedWordToInternalName(UniqueString name);
 Expr* reservedWordRemapForIdent(UniqueString name);
-LLVMMetadataList extractLlvmAttributesAndRejectOthers(Context* context, const uast::Loop* node);
+LLVMMetadataList extractLlvmAttributesAndRejectOthers(Context* context,
+                                                      const uast::Loop* node);
 RetTag convertRetTag(uast::Function::ReturnIntent returnIntent);
 bool isAssignOp(UniqueString name);
 const char* createAnonymousRoutineName(const uast::Function* node);
@@ -133,8 +131,12 @@ const char* constructUserString(const uast::FunctionSignature* node);
 IntentTag convertFormalIntent(uast::Formal::Intent intent);
 ShadowVarPrefix convertTaskVarIntent(const uast::TaskVar* node);
 const char* sanitizeVarName(const char* name, bool inTupleDecl);
-void attachSymbolStorage(const uast::Variable::Kind kind, Symbol* vs, bool setQual);
-void attachSymbolStorage(const uast::TupleDecl::IntentOrKind iok, Symbol* vs, bool setQual);
+void attachSymbolStorage(const uast::Variable::Kind kind,
+                         Symbol* vs,
+                         bool setQual);
+void attachSymbolStorage(const uast::TupleDecl::IntentOrKind iok,
+                         Symbol* vs,
+                         bool setQual);
 void attachSymbolStorage(const uast::Qualifier kind, Symbol* vs, bool setQual);
 bool isEnsureDomainExprCall(Expr* expr);
 AggregateTag convertAggregateDeclTag(const uast::AggregateDecl* node);
