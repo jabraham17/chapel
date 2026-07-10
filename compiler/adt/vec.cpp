@@ -47,45 +47,34 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 *****************************************************************************/
 
-
 /* UnionFind by Tarjan (adapted) */
 
 #include "misc.h"
 #include "vec.h"
 
-unsigned int prime2[] = {
-  1, 3, 7, 13, 31, 61, 127, 251, 509, 1021, 2039, 4093, 8191,
-  16381, 32749, 65521, 131071, 262139, 524287, 1048573, 2097143,
-  4194301, 8388593, 16777213, 33554393, 67108859, 134217689,
-  268435399, 536870909
-};
+unsigned int prime2[] = {1,        3,         7,         13,       31,
+                         61,       127,       251,       509,      1021,
+                         2039,     4093,      8191,      16381,    32749,
+                         65521,    131071,    262139,    524287,   1048573,
+                         2097143,  4194301,   8388593,   16777213, 33554393,
+                         67108859, 134217689, 268435399, 536870909};
 
-template<>
-uintptr_t _vec_hasher(const char* obj) {
+template <> uintptr_t _vec_hasher(const char* obj) {
   uintptr_t h = 0;
   while (obj != NULL && *obj) h = h * 27 + (unsigned char)*obj++;
   return h;
 }
-template<>
-uintptr_t _vec_hasher(unsigned int obj) {
-  return obj;
-}
-template<>
-uintptr_t _vec_hasher(int obj) {
-  return obj;
-}
+template <> uintptr_t _vec_hasher(unsigned int obj) { return obj; }
+template <> uintptr_t _vec_hasher(int obj) { return obj; }
 
 // binary search over intervals
-static int
-i_find(Intervals *i, int x) {
+static int i_find(Intervals* i, int x) {
   INT_ASSERT(i->n);
   int l = 0, h = i->n;
- Lrecurse:
+Lrecurse:
   if (h <= l + 2) {
-    if (h <= l)
-      return -(l + 1);
-    if (x < i->v[l] || x > i->v[l + 1])
-      return -(l + 1);
+    if (h <= l) return -(l + 1);
+    if (x < i->v[l] || x > i->v[l + 1]) return -(l + 1);
     return h;
   }
   int m = (((h - l) / 4) * 2) + l;
@@ -100,26 +89,21 @@ i_find(Intervals *i, int x) {
   return (l + 1);
 }
 
-int
-Intervals::in(int x) {
-  if (!n)
-    return 0;
-  if (i_find(this, x) > 0)
-    return 1;
+int Intervals::in(int x) {
+  if (!n) return 0;
+  if (i_find(this, x) > 0) return 1;
   return 0;
 }
 
 // insert into interval with merge
-void
-Intervals::insert(int x) {
+void Intervals::insert(int x) {
   if (!n) {
     add(x);
     add(x);
     return;
   }
   int l = i_find(this, x);
-  if (l > 0)
-    return;
+  if (l > 0) return;
   l = -l - 1;
 
   if (x > v[l + 1]) {
@@ -141,49 +125,43 @@ Intervals::insert(int x) {
       v[l]--;
       goto Lmerge;
     }
-    if (!l)
-      goto Lmore;
+    if (!l) goto Lmore;
     l -= 2;
     if (x == v[l + 1] + 1) {
       v[l + 1]++;
       goto Lmerge;
     }
   }
- Lmore:
+Lmore:
   fill(n + 2);
-  if (n - 2 - l > 0)
-    memmove(v + l + 2, v + l, sizeof(int) * (n - 2 - l));
+  if (n - 2 - l > 0) memmove(v + l + 2, v + l, sizeof(int) * (n - 2 - l));
   v[l] = x;
-  v[l+1] = x;
+  v[l + 1] = x;
   return;
- Lmerge:
+Lmerge:
   if (l) {
-    if (v[l] - v[l-1] < 2) {
+    if (v[l] - v[l - 1] < 2) {
       l -= 2;
       goto Ldomerge;
     }
   }
   if (l < n - 2) {
-    if (v[l + 2] - v[l + 1] < 2)
-      goto Ldomerge;
+    if (v[l + 2] - v[l + 1] < 2) goto Ldomerge;
   }
   return;
- Ldomerge:
+Ldomerge:
   memmove(v + l + 1, v + l + 3, sizeof(int) * (n - 3 - l));
   n -= 2;
   goto Lmerge;
 }
 
-void
-UnionFind::size(int s) {
+void UnionFind::size(int s) {
   int nn = n;
   fill(s);
-  for (int i = nn; i < n; i++)
-    v[i] = -1;
+  for (int i = nn; i < n; i++) v[i] = -1;
 }
 
-int
-UnionFind::find(int n) {
+int UnionFind::find(int n) {
   int i, t;
   for (i = n; v[i] >= 0; i = v[i]);
   while (v[n] >= 0) {
@@ -194,8 +172,7 @@ UnionFind::find(int n) {
   return i;
 }
 
-void
-UnionFind::unify(int n, int m) {
+void UnionFind::unify(int n, int m) {
   n = find(n);
   m = find(m);
   if (n != m) {
