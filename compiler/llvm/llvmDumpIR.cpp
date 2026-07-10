@@ -35,7 +35,7 @@
 
 using namespace llvm;
 
-void DumpIR::run(Function &F) {
+void DumpIR::run(Function& F) {
   std::string str = F.getName().str();
   if (shouldLlvmPrintIrCName(str.c_str())) {
     printLlvmIr(str.c_str(), &F, stage);
@@ -61,11 +61,11 @@ PreservedAnalyses DumpIRPass::run(Loop& L,
   return llvm::PreservedAnalyses::all();
 }
 
-PreservedAnalyses DumpIRPass::run(LazyCallGraph::SCC &C,
-                                  CGSCCAnalysisManager &AM,
-                                  LazyCallGraph &CG,
-                                  CGSCCUpdateResult &) {
-  for (auto node: C) {
+PreservedAnalyses DumpIRPass::run(LazyCallGraph::SCC& C,
+                                  CGSCCAnalysisManager& AM,
+                                  LazyCallGraph& CG,
+                                  CGSCCUpdateResult&) {
+  for (auto node : C) {
     Function* F = &node.getFunction();
     pass.run(*F);
   }
@@ -78,20 +78,18 @@ bool LegacyDumpIRPass::runOnFunction(llvm::Function& function) {
   return false;
 }
 
-void LegacyDumpIRPass::getAnalysisUsage(AnalysisUsage &AU) const {
+void LegacyDumpIRPass::getAnalysisUsage(AnalysisUsage& AU) const {
   // We don't modify the program, so we preserve all analyses.
   AU.setPreservesAll();
 }
 
 // createDumpIrPass - The public interface to this file...
-FunctionPass* createLegacyDumpIrPass(llvmStageNum_t stage)
-{
+FunctionPass* createLegacyDumpIrPass(llvmStageNum_t stage) {
   return new LegacyDumpIRPass(stage);
 }
 
-
 char LegacyDumpIRPass::ID = 0;
-static RegisterPass<LegacyDumpIRPass>
-X("dump-ir", "Dump LLVM IR from Chapel compilation");
+static RegisterPass<LegacyDumpIRPass> X("dump-ir",
+                                        "Dump LLVM IR from Chapel compilation");
 
 #endif

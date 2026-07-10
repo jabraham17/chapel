@@ -38,26 +38,25 @@
 #include <unordered_map>
 #endif
 
-bool isArrayVecOrStruct(llvm::Type* t)
-{
+bool isArrayVecOrStruct(llvm::Type* t) {
   return t->isArrayTy() || t->isVectorTy() || t->isStructTy();
 }
 
 llvm::AllocaInst* makeAlloca(llvm::Type* type,
                              const char* name,
                              llvm::Instruction* insertBefore,
-                             unsigned n, unsigned align)
-{
+                             unsigned n,
+                             unsigned align) {
   // It's important to alloca at the front of the function in order
   // to avoid having an alloca in a loop which is a good way to achieve
   // stack overflow.
-  llvm::Function *func = insertBefore->getParent()->getParent();
-  llvm::BasicBlock* entryBlock = & func->getEntryBlock();
-  const llvm::DataLayout &DL = func->getParent()->getDataLayout();
+  llvm::Function* func = insertBefore->getParent()->getParent();
+  llvm::BasicBlock* entryBlock = &func->getEntryBlock();
+  const llvm::DataLayout& DL = func->getParent()->getDataLayout();
 
-  if( insertBefore->getParent() == entryBlock ) {
+  if (insertBefore->getParent() == entryBlock) {
     // Add before specific instruction in entry block.
-  } else if(llvm::Instruction *i = func->getEntryBlock().getTerminator()) {
+  } else if (llvm::Instruction* i = func->getEntryBlock().getTerminator()) {
     // Add before terminator in entry block.
     insertBefore = i;
   } else {
@@ -65,35 +64,40 @@ llvm::AllocaInst* makeAlloca(llvm::Type* type,
     insertBefore = NULL;
   }
 
-  llvm::AllocaInst *tempVar;
+  llvm::AllocaInst* tempVar;
 
   llvm::Value* size =
     llvm::ConstantInt::get(llvm::Type::getInt32Ty(type->getContext()), n);
 
-  if( insertBefore ) {
+  if (insertBefore) {
     if (align != 0) {
       tempVar = new llvm::AllocaInst(type,
                                      DL.getAllocaAddrSpace(),
-                                     size, llvm::Align(align),
-                                     name, getInsertPosition(insertBefore));
+                                     size,
+                                     llvm::Align(align),
+                                     name,
+                                     getInsertPosition(insertBefore));
       trackLLVMValue(tempVar);
     } else {
       tempVar = new llvm::AllocaInst(type,
                                      DL.getAllocaAddrSpace(),
-                                     size, name, getInsertPosition(insertBefore));
+                                     size,
+                                     name,
+                                     getInsertPosition(insertBefore));
       trackLLVMValue(tempVar);
     }
   } else {
     if (align != 0) {
       tempVar = new llvm::AllocaInst(type,
                                      DL.getAllocaAddrSpace(),
-                                     size, llvm::Align(align),
-                                     name, entryBlock);
+                                     size,
+                                     llvm::Align(align),
+                                     name,
+                                     entryBlock);
       trackLLVMValue(tempVar);
     } else {
-      tempVar = new llvm::AllocaInst(type,
-                                     DL.getAllocaAddrSpace(),
-                                     size, name, entryBlock);
+      tempVar = new llvm::AllocaInst(
+        type, DL.getAllocaAddrSpace(), size, name, entryBlock);
       trackLLVMValue(tempVar);
     }
   }
@@ -103,13 +107,12 @@ llvm::AllocaInst* makeAlloca(llvm::Type* type,
 
 llvm::AllocaInst* createAllocaInFunctionEntry(llvm::IRBuilder<>* irBuilder,
                                               llvm::Type* type,
-                                              const char* name)
-{
+                                              const char* name) {
   // It's important to alloca at the front of the function in order
   // to avoid having an alloca in a loop which is a good way to achieve
   // stack overflow.
-  llvm::Function *func = irBuilder->GetInsertBlock()->getParent();
-  if(llvm::Instruction *i = func->getEntryBlock().getTerminator()) {
+  llvm::Function* func = irBuilder->GetInsertBlock()->getParent();
+  if (llvm::Instruction* i = func->getEntryBlock().getTerminator()) {
     irBuilder->SetInsertPoint(i);
   } else {
     irBuilder->SetInsertPoint(&func->getEntryBlock());
@@ -122,12 +125,11 @@ llvm::AllocaInst* createAllocaInFunctionEntry(llvm::IRBuilder<>* irBuilder,
     irBuilder->SetCurrentDebugLocation(llvm::DebugLoc());
   }
 
-  llvm::AllocaInst *tempVar = irBuilder->CreateAlloca(type, nullptr, name);
+  llvm::AllocaInst* tempVar = irBuilder->CreateAlloca(type, nullptr, name);
   trackLLVMValue(tempVar);
 
   irBuilder->SetInsertPoint(&func->back());
-  if (debugInfo)
-    irBuilder->SetCurrentDebugLocation(currentDebugLocation);
+  if (debugInfo) irBuilder->SetCurrentDebugLocation(currentDebugLocation);
   return tempVar;
 }
 
@@ -166,23 +168,22 @@ operand with signed integer type.
 Otherwise, both operands are converted to the unsigned integer type
 corresponding to the type of the operand with signed integer type.
 */
-PromotedPair convertValuesToLarger(
-    llvm::IRBuilder<> *irBuilder,
-    llvm::Value *value1,
-    llvm::Value *value2,
-    bool isSigned1,
-    bool isSigned2) {
+PromotedPair convertValuesToLarger(llvm::IRBuilder<>* irBuilder,
+                                   llvm::Value* value1,
+                                   llvm::Value* value2,
+                                   bool isSigned1,
+                                   bool isSigned2) {
 
-  llvm::Type *type1 = value1->getType();
-  llvm::Type *type2 = value2->getType();
+  llvm::Type* type1 = value1->getType();
+  llvm::Type* type2 = value2->getType();
 
-  if(type1 == type2 && isSigned1 == isSigned2) {
+  if (type1 == type2 && isSigned1 == isSigned2) {
     return PromotedPair(value1, value2, isSigned1);
   }
 
   //Floating point values
-  if(type1->isFloatingPointTy() && type2->isFloatingPointTy()) {
-    if(type1->getPrimitiveSizeInBits() > type2->getPrimitiveSizeInBits()) {
+  if (type1->isFloatingPointTy() && type2->isFloatingPointTy()) {
+    if (type1->getPrimitiveSizeInBits() > type2->getPrimitiveSizeInBits()) {
       llvm::Value* fpe2 = irBuilder->CreateFPExt(value2, type1);
       trackLLVMValue(fpe2);
       return PromotedPair(value1, fpe2, true);
@@ -194,8 +195,8 @@ PromotedPair convertValuesToLarger(
   }
 
   //Floating point / Integer values
-  if(type1->isFloatingPointTy() && type2->isIntegerTy()) {
-    if(isSigned2) {
+  if (type1->isFloatingPointTy() && type2->isIntegerTy()) {
+    if (isSigned2) {
       llvm::Value* stf = irBuilder->CreateSIToFP(value2, type1);
       trackLLVMValue(stf);
       return PromotedPair(value1, stf, true);
@@ -207,8 +208,8 @@ PromotedPair convertValuesToLarger(
   }
 
   //Integer / Floating point values
-  if(type2->isFloatingPointTy() && type1->isIntegerTy()) {
-    if(isSigned1) {
+  if (type2->isFloatingPointTy() && type1->isIntegerTy()) {
+    if (isSigned1) {
       llvm::Value* stf = irBuilder->CreateSIToFP(value1, type2);
       trackLLVMValue(stf);
       return PromotedPair(stf, value2, true);
@@ -220,11 +221,11 @@ PromotedPair convertValuesToLarger(
   }
 
   //Integer values
-  if(type1->isIntegerTy() && type2->isIntegerTy()) {
-    if(isSigned1 == isSigned2) {
+  if (type1->isIntegerTy() && type2->isIntegerTy()) {
+    if (isSigned1 == isSigned2) {
       // both are signed or both are unsigned.
-      if(type1->getPrimitiveSizeInBits() > type2->getPrimitiveSizeInBits()) {
-        if(isSigned2) {
+      if (type1->getPrimitiveSizeInBits() > type2->getPrimitiveSizeInBits()) {
+        if (isSigned2) {
           llvm::Value* cast2 = irBuilder->CreateSExtOrBitCast(value2, type1);
           trackLLVMValue(cast2);
           return PromotedPair(value1, cast2, true);
@@ -234,7 +235,7 @@ PromotedPair convertValuesToLarger(
           return PromotedPair(value1, cast2, false);
         }
       } else {
-        if(isSigned1) {
+        if (isSigned1) {
           llvm::Value* cast1 = irBuilder->CreateSExtOrBitCast(value1, type2);
           trackLLVMValue(cast1);
           return PromotedPair(cast1, value2, true);
@@ -247,16 +248,14 @@ PromotedPair convertValuesToLarger(
     } else {
       // signed/unsigned. Does unsigned integer type have > rank?
       // if so, convert to unsigned.
-      if( !isSigned1 &&
-              type1->getPrimitiveSizeInBits() >=
-              type2->getPrimitiveSizeInBits()) {
+      if (!isSigned1 &&
+          type1->getPrimitiveSizeInBits() >= type2->getPrimitiveSizeInBits()) {
         // value1 is unsigned and >= bits; value2 is signed
         llvm::Value* cast2 = irBuilder->CreateSExtOrBitCast(value2, type1);
         trackLLVMValue(cast2);
         return PromotedPair(value1, cast2, false);
-      } else if( !isSigned2 &&
-                     type1->getPrimitiveSizeInBits() <=
-                     type2->getPrimitiveSizeInBits() ) {
+      } else if (!isSigned2 && type1->getPrimitiveSizeInBits() <=
+                                 type2->getPrimitiveSizeInBits()) {
         // value2 is unsigned and >= bits; value1 is signed
         llvm::Value* cast1 = irBuilder->CreateSExtOrBitCast(value1, type2);
         trackLLVMValue(cast1);
@@ -267,16 +266,14 @@ PromotedPair convertValuesToLarger(
         // with unsigned integer type, then the operand with unsigned
         // integer type is converted to the type of the operand with
         // signed integer type.
-        if( isSigned1 &&
-               type1->getPrimitiveSizeInBits()-1 >=
-               type2->getPrimitiveSizeInBits()) {
+        if (isSigned1 && type1->getPrimitiveSizeInBits() - 1 >=
+                           type2->getPrimitiveSizeInBits()) {
           // value1 is signed, value2 is not
           llvm::Value* cast2 = irBuilder->CreateZExtOrBitCast(value2, type1);
           trackLLVMValue(cast2);
           return PromotedPair(value1, cast2, true);
-        } else if( isSigned2 &&
-                      type1->getPrimitiveSizeInBits() <=
-                      type2->getPrimitiveSizeInBits() - 1) {
+        } else if (isSigned2 && type1->getPrimitiveSizeInBits() <=
+                                  type2->getPrimitiveSizeInBits() - 1) {
           llvm::Value* cast1 = irBuilder->CreateZExtOrBitCast(value1, type2);
           trackLLVMValue(cast1);
           return PromotedPair(cast1, value2, true);
@@ -284,7 +281,7 @@ PromotedPair convertValuesToLarger(
           // otherwise, both operands are converted to the unsigned
           // integer type corresponding to the type of the operand
           // with signed integer type.
-          if( isSigned1 ) {
+          if (isSigned1) {
             // convert both to unsigned type1
             llvm::Value* cast2 = irBuilder->CreateZExtOrBitCast(value2, type1);
             trackLLVMValue(cast2);
@@ -302,7 +299,7 @@ PromotedPair convertValuesToLarger(
 
   //Pointers
   if (type1->isPointerTy() && type2->isPointerTy()) {
-    llvm::Type *castTy = type1;
+    llvm::Type* castTy = type1;
 
     llvm::Value* cast1 = irBuilder->CreatePointerCast(value1, castTy);
     llvm::Value* cast2 = irBuilder->CreatePointerCast(value2, castTy);
@@ -315,16 +312,14 @@ PromotedPair convertValuesToLarger(
 }
 
 // Returns n elements in a vector/array or -1
-static
-int64_t arrayVecN(llvm::Type *t)
-{
-  if( t->isArrayTy() ) {
-    llvm::ArrayType *at = llvm::dyn_cast<llvm::ArrayType>(t);
+static int64_t arrayVecN(llvm::Type* t) {
+  if (t->isArrayTy()) {
+    llvm::ArrayType* at = llvm::dyn_cast<llvm::ArrayType>(t);
     unsigned n = at->getNumElements();
     return n;
-  } else if( t->isVectorTy() ) {
+  } else if (t->isVectorTy()) {
     unsigned n;
-    if (llvm::FixedVectorType *vt = llvm::dyn_cast<llvm::FixedVectorType>(t)) {
+    if (llvm::FixedVectorType* vt = llvm::dyn_cast<llvm::FixedVectorType>(t)) {
       n = vt->getNumElements();
     } else {
       // Scalable vector type not handled here
@@ -336,43 +331,40 @@ int64_t arrayVecN(llvm::Type *t)
   }
 }
 
-
-static
-llvm::Type* arrayVecEltType(llvm::Type *t)
-{
-  if( t->isArrayTy() ) {
-    llvm::ArrayType *at = llvm::dyn_cast<llvm::ArrayType>(t);
+static llvm::Type* arrayVecEltType(llvm::Type* t) {
+  if (t->isArrayTy()) {
+    llvm::ArrayType* at = llvm::dyn_cast<llvm::ArrayType>(t);
     return at->getElementType();
-  } else if( t->isVectorTy() ) {
-    llvm::VectorType *vt = llvm::dyn_cast<llvm::VectorType>(t);
+  } else if (t->isVectorTy()) {
+    llvm::VectorType* vt = llvm::dyn_cast<llvm::VectorType>(t);
     return vt->getElementType();
   } else {
     return NULL;
   }
 }
 
-static
-bool isTypeEquivalent(const llvm::DataLayout& layout, llvm::Type* a, llvm::Type* b, bool force)
-{
+static bool isTypeEquivalent(const llvm::DataLayout& layout,
+                             llvm::Type* a,
+                             llvm::Type* b,
+                             bool force) {
   int64_t aN = arrayVecN(a);
   int64_t bN = arrayVecN(a);
   int alignA, alignB;
   int64_t sizeA, sizeB;
 
-  if( a == b ) {
+  if (a == b) {
     return true;
-  } else if( a->isStructTy() && b->isStructTy() ) {
-    llvm::StructType *aTy = llvm::dyn_cast<llvm::StructType>(a);
-    llvm::StructType *bTy = llvm::dyn_cast<llvm::StructType>(b);
-    if( aTy->isLayoutIdentical(bTy) ) return true;
+  } else if (a->isStructTy() && b->isStructTy()) {
+    llvm::StructType* aTy = llvm::dyn_cast<llvm::StructType>(a);
+    llvm::StructType* bTy = llvm::dyn_cast<llvm::StructType>(b);
+    if (aTy->isLayoutIdentical(bTy)) return true;
     // handle case like
     // {float, float, float, float} <=> { <2xfloat>, <2xfloat> }
     // fall through...
-  } else if( aN >= 0 && aN == bN &&
-             arrayVecEltType(a) && arrayVecEltType(a) == arrayVecEltType(b) ) {
+  } else if (aN >= 0 && aN == bN && arrayVecEltType(a) &&
+             arrayVecEltType(a) == arrayVecEltType(b)) {
     return true;
   }
-
 
   alignA = layout.getPrefTypeAlign(a).value();
   alignB = layout.getPrefTypeAlign(b).value();
@@ -380,18 +372,18 @@ bool isTypeEquivalent(const llvm::DataLayout& layout, llvm::Type* a, llvm::Type*
   sizeB = layout.getTypeStoreSize(b);
 
   // Are they the same size?
-  if( sizeA == sizeB ) return true;
+  if (sizeA == sizeB) return true;
 
-  if( !force ) return false;
+  if (!force) return false;
 
   // Are they the same size, within alignment?
-  if( sizeA < sizeB ) {
+  if (sizeA < sizeB) {
     // Try making size A bigger...
-    if( sizeA + alignA >= sizeB ) return true;
+    if (sizeA + alignA >= sizeB) return true;
   } else {
     // A >= B
     // Try making size B bigger...
-    if( sizeB + alignB >= sizeA ) return true;
+    if (sizeB + alignB >= sizeA) return true;
   }
 
   return false;
@@ -400,81 +392,78 @@ bool isTypeEquivalent(const llvm::DataLayout& layout, llvm::Type* a, llvm::Type*
 // in the event a temporary is made,
 // *alloca will store the alloca instruction for it
 // and this function will emit a lifetime start intrinsic.
-llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
+llvm::Value* convertValueToType(llvm::IRBuilder<>* irBuilder,
                                 const llvm::DataLayout& layout,
-                                llvm::LLVMContext &ctx,
-                                llvm::Value *value, llvm::Type *newType,
-                                llvm::AllocaInst **alloca,
-                                bool isSigned, bool force) {
+                                llvm::LLVMContext& ctx,
+                                llvm::Value* value,
+                                llvm::Type* newType,
+                                llvm::AllocaInst** alloca,
+                                bool isSigned,
+                                bool force) {
 
-  llvm::Type *curType = value->getType();
+  llvm::Type* curType = value->getType();
 
-  if(curType == newType) {
+  if (curType == newType) {
     return value;
   }
 
   //Integer values
-  if(newType->isIntegerTy() && curType->isIntegerTy()) {
-    if(newType->getPrimitiveSizeInBits() > curType->getPrimitiveSizeInBits()) {
+  if (newType->isIntegerTy() && curType->isIntegerTy()) {
+    if (newType->getPrimitiveSizeInBits() > curType->getPrimitiveSizeInBits()) {
       // Sign extend if isSigned, but never sign extend single bits.
-      if(isSigned && ! curType->isIntegerTy(1)) {
+      if (isSigned && !curType->isIntegerTy(1)) {
         return trackLLVMValue(irBuilder->CreateSExtOrBitCast(value, newType));
-      }
-      else {
+      } else {
         return trackLLVMValue(irBuilder->CreateZExtOrBitCast(value, newType));
       }
-    }
-    else {
+    } else {
       return trackLLVMValue(irBuilder->CreateTruncOrBitCast(value, newType));
     }
   }
 
   //Floating point values
-  if(newType->isFloatingPointTy() && curType->isFloatingPointTy()) {
-    if(newType->getPrimitiveSizeInBits() > curType->getPrimitiveSizeInBits()) {
+  if (newType->isFloatingPointTy() && curType->isFloatingPointTy()) {
+    if (newType->getPrimitiveSizeInBits() > curType->getPrimitiveSizeInBits()) {
       return trackLLVMValue(irBuilder->CreateFPExt(value, newType));
-    }
-    else {
+    } else {
       return trackLLVMValue(irBuilder->CreateFPTrunc(value, newType));
     }
   }
 
   //Integer value to floating point value
-  if(newType->isFloatingPointTy() && curType->isIntegerTy()) {
-    if(isSigned) {
+  if (newType->isFloatingPointTy() && curType->isIntegerTy()) {
+    if (isSigned) {
       return trackLLVMValue(irBuilder->CreateSIToFP(value, newType));
-    }
-    else {
+    } else {
       return trackLLVMValue(irBuilder->CreateUIToFP(value, newType));
     }
   }
 
   //Floating point value to integer value
-  if(newType->isIntegerTy() && curType->isFloatingPointTy()) {
+  if (newType->isIntegerTy() && curType->isFloatingPointTy()) {
     return trackLLVMValue(irBuilder->CreateFPToSI(value, newType));
   }
 
   //Integer to pointer
-  if(newType->isPointerTy() && curType->isIntegerTy()) {
+  if (newType->isPointerTy() && curType->isIntegerTy()) {
     return trackLLVMValue(irBuilder->CreateIntToPtr(value, newType));
   }
 
   //Pointer to integer
-  if(newType->isIntegerTy() && curType->isPointerTy()) {
+  if (newType->isIntegerTy() && curType->isPointerTy()) {
     return trackLLVMValue(irBuilder->CreatePtrToInt(value, newType));
   }
 
   //Pointers
-  if(newType->isPointerTy() && curType->isPointerTy()) {
+  if (newType->isPointerTy() && curType->isPointerTy()) {
 
     // It's safe to convert pointers between generic (0) and non generic (non
     // 0) address spaces
     auto newTypeAddrSpace = newType->getPointerAddressSpace();
     auto curTypeAddrSpace = curType->getPointerAddressSpace();
-    if(newTypeAddrSpace != 0 && curTypeAddrSpace != 0 &&
-       newTypeAddrSpace != curTypeAddrSpace)
-    {
-      assert( 0 && "Can't convert pointer to different address space");
+    if (newTypeAddrSpace != 0 && curTypeAddrSpace != 0 &&
+        newTypeAddrSpace != curTypeAddrSpace) {
+      assert(0 && "Can't convert pointer to different address space");
     }
     return trackLLVMValue(irBuilder->CreatePointerCast(value, newType));
   }
@@ -482,15 +471,14 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
   // Structure types.
   // This is important in order to handle clang structure expansion
   // (e.g. calling a function that returns {int64,int64})
-  if( isArrayVecOrStruct(curType) || isArrayVecOrStruct(newType) ) {
-    if( isTypeEquivalent(layout, curType, newType, force) ) {
+  if (isArrayVecOrStruct(curType) || isArrayVecOrStruct(newType)) {
+    if (isTypeEquivalent(layout, curType, newType, force)) {
       // We turn it into a store/load to convert the type
       // since LLVM does not allow bit casts on structure types.
       llvm::AllocaInst* tmp_alloc;
       llvm::Type* useTy = NULL;
 
-      if( layout.getTypeStoreSize(newType) >=
-          layout.getTypeStoreSize(curType) )
+      if (layout.getTypeStoreSize(newType) >= layout.getTypeStoreSize(curType))
         useTy = newType;
       else
         useTy = curType;
@@ -502,9 +490,11 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
       auto curPtrType = getPointerType(curType);
       auto newPtrType = getPointerType(newType);
       // Now get cast pointers
-      llvm::Value* tmp_cur = irBuilder->CreatePointerCast(tmp_alloc, curPtrType);
+      llvm::Value* tmp_cur =
+        irBuilder->CreatePointerCast(tmp_alloc, curPtrType);
       trackLLVMValue(tmp_cur);
-      llvm::Value* tmp_new = irBuilder->CreatePointerCast(tmp_alloc, newPtrType);
+      llvm::Value* tmp_new =
+        irBuilder->CreatePointerCast(tmp_alloc, newPtrType);
       trackLLVMValue(tmp_new);
       llvm::StoreInst* store_cur = irBuilder->CreateStore(value, tmp_cur);
       trackLLVMValue(store_cur);
@@ -515,28 +505,26 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
   return NULL;
 }
 
-int64_t getTypeSizeInBytes(const llvm::DataLayout& layout, llvm::Type* ty)
-{
-  if( ! ty->isSized() ) return -1; // who knows how big it is!
+int64_t getTypeSizeInBytes(const llvm::DataLayout& layout, llvm::Type* ty) {
+  if (!ty->isSized()) return -1; // who knows how big it is!
 
   int64_t sz = layout.getTypeSizeInBits(ty);
-  sz = (sz + 7)/8; // now in bytes.
+  sz = (sz + 7) / 8; // now in bytes.
   return sz;
 }
 
-bool isTypeSizeSmallerThan(const llvm::DataLayout& layout, llvm::Type* ty, uint64_t max_size_bytes)
-{
-  if( ! ty->isSized() ) return false; // who knows how big it is!
+bool isTypeSizeSmallerThan(const llvm::DataLayout& layout,
+                           llvm::Type* ty,
+                           uint64_t max_size_bytes) {
+  if (!ty->isSized()) return false; // who knows how big it is!
 
   uint64_t sz = getTypeSizeInBytes(layout, ty);
 
-  if( sz < max_size_bytes ) return true;
+  if (sz < max_size_bytes) return true;
   return false;
 }
 
-
-void print_llvm(llvm::Type* t)
-{
+void print_llvm(llvm::Type* t) {
   if (t == NULL)
     fprintf(stderr, "NULL");
   else
@@ -545,8 +533,7 @@ void print_llvm(llvm::Type* t)
   fprintf(stderr, "\n");
 }
 
-void print_llvm(llvm::Value* v)
-{
+void print_llvm(llvm::Value* v) {
   if (v == NULL)
     fprintf(stderr, "NULL");
   else
@@ -555,8 +542,7 @@ void print_llvm(llvm::Value* v)
   fprintf(stderr, "\n");
 }
 
-void print_llvm(llvm::Module* m)
-{
+void print_llvm(llvm::Module* m) {
   if (m == NULL)
     fprintf(stderr, "NULL");
   else
@@ -565,8 +551,7 @@ void print_llvm(llvm::Module* m)
   fprintf(stderr, "\n");
 }
 
-void print_llvm(llvm::Metadata* m)
-{
+void print_llvm(llvm::Metadata* m) {
   if (m == NULL)
     fprintf(stderr, "NULL");
   else
@@ -602,7 +587,8 @@ static void printIDLLVMHelper(int id, const char* suffix) {
 // except when TRACK_LLVM_VALUES=1 they also display LLVM IDs when available
 
 void list_view(const llvm::Type* arg) {
-  if (arg == NULL) printfLLVMHelper("<NULL>");
+  if (arg == NULL)
+    printfLLVMHelper("<NULL>");
   else {
     auto fd = getLlvmPrintIrFile();
     arg->print(*fd, true);
@@ -611,7 +597,8 @@ void list_view(const llvm::Type* arg) {
 }
 
 void list_view(const llvm::Value* arg) {
-  if (arg == NULL) printfLLVMHelper("<NULL>");
+  if (arg == NULL)
+    printfLLVMHelper("<NULL>");
   else {
     auto fd = getLlvmPrintIrFile();
     arg->print(*fd, true);
@@ -620,7 +607,8 @@ void list_view(const llvm::Value* arg) {
 }
 
 void list_view(const llvm::Module* arg) {
-  if (arg == NULL) printfLLVMHelper("<NULL>");
+  if (arg == NULL)
+    printfLLVMHelper("<NULL>");
   else {
     auto fd = getLlvmPrintIrFile();
     arg->print(*fd, nullptr, true, true);
@@ -629,7 +617,8 @@ void list_view(const llvm::Module* arg) {
 }
 
 void list_view(const llvm::Metadata* arg) {
-  if (arg == NULL) printfLLVMHelper("<NULL>");
+  if (arg == NULL)
+    printfLLVMHelper("<NULL>");
   else {
     auto fd = getLlvmPrintIrFile();
     arg->print(*fd, nullptr, true);
@@ -650,8 +639,10 @@ static int nextTrackId = 1;
 
 static void printLlvmId(const llvm::Value* val) {
   auto search = trackValIds.find(val);
-  if (search != trackValIds.end())  printIDLLVMHelper(search->second, " ");
-  else                              printfLLVMHelper("[    ] ");
+  if (search != trackValIds.end())
+    printIDLLVMHelper(search->second, " ");
+  else
+    printfLLVMHelper("[    ] ");
   flushLLVMHelper();
 }
 
@@ -667,8 +658,7 @@ static int addLlvmValue(const llvm::Value* val) {
   int& insertedId = trackValIds[val];
   // Some XXX::Create() and irBuilder->CreateYYY() may return
   // a previously-created Value. Keep the existing ID for those.
-  if (insertedId == 0)
-    insertedId = nextTrackId++;
+  if (insertedId == 0) insertedId = nextTrackId++;
   return insertedId;
 }
 
@@ -679,7 +669,7 @@ const llvm::Value* trackLLVMValue(const llvm::Value* val) {
 }
 
 llvm::Value* trackLLVMValue(llvm::Value* val) {
-  trackLLVMValue((const llvm::Value*) val);
+  trackLLVMValue((const llvm::Value*)val);
   return val;
 }
 
@@ -692,50 +682,50 @@ void trackClonedLLVMValues(llvm::ValueToValueMapTy& VMap) {
 }
 
 class LLVMValueTracker : public llvm::AssemblyAnnotationWriter {
-public:
-   /// emit a string right before the start of a function
-   void emitFunctionAnnot(const llvm::Function *F,
-                          llvm::formatted_raw_ostream &s) {
-     printLlvmId(F);
-   }
+ public:
+  /// emit a string right before the start of a function
+  void emitFunctionAnnot(const llvm::Function* F,
+                         llvm::formatted_raw_ostream& s) {
+    printLlvmId(F);
+  }
 
-   /// emit a string right after the basic block label
-   void emitBasicBlockStartAnnot(const llvm::BasicBlock *BB,
-                                 llvm::formatted_raw_ostream &s) {
-     printLlvmIdIfFound(BB, "\n");
-   }
+  /// emit a string right after the basic block label
+  void emitBasicBlockStartAnnot(const llvm::BasicBlock* BB,
+                                llvm::formatted_raw_ostream& s) {
+    printLlvmIdIfFound(BB, "\n");
+  }
 
-   /// emit a string right after the basic block
-   void emitBasicBlockEndAnnot(const llvm::BasicBlock *BB,
-                               llvm::formatted_raw_ostream &s) {
-     // nothing
-   }
+  /// emit a string right after the basic block
+  void emitBasicBlockEndAnnot(const llvm::BasicBlock* BB,
+                              llvm::formatted_raw_ostream& s) {
+    // nothing
+  }
 
-   /// emit a string right before an instruction is emitted
-   void emitInstructionAnnot(const llvm::Instruction *I,
-                             llvm::formatted_raw_ostream &s) {
-     printLlvmId(I);
-   }
+  /// emit a string right before an instruction is emitted
+  void emitInstructionAnnot(const llvm::Instruction* I,
+                            llvm::formatted_raw_ostream& s) {
+    printLlvmId(I);
+  }
 
-   /// emit a comment to the right of an instruction or global value
-   void printInfoComment(const llvm::Value &val,
-                         llvm::formatted_raw_ostream &s) {
-     // nothing
-   }
+  /// emit a comment to the right of an instruction or global value
+  void printInfoComment(const llvm::Value& val,
+                        llvm::formatted_raw_ostream& s) {
+    // nothing
+  }
 };
 
 static LLVMValueTracker llvmValueTracker;
 
 void nprint_view(const llvm::Value* arg) {
   auto fd = getLlvmPrintIrFile();
-  if (arg == NULL) printfLLVMHelper("<NULL>");
+  if (arg == NULL)
+    printfLLVMHelper("<NULL>");
   else if (const llvm::Function* f = llvm::dyn_cast<llvm::Function>(arg)) {
     f->print(*fd, &llvmValueTracker, true, true);
-  }
-  else if (const llvm::BasicBlock* bb = llvm::dyn_cast<llvm::BasicBlock>(arg)) {
+  } else if (const llvm::BasicBlock* bb =
+               llvm::dyn_cast<llvm::BasicBlock>(arg)) {
     bb->print(*fd, &llvmValueTracker, true, true);
-  }
-  else {
+  } else {
     printLlvmId(arg);
     // LLVM currently does not print Value* w/ AssemblyAnnotationWriter
     arg->print(*fd, true);
@@ -744,7 +734,8 @@ void nprint_view(const llvm::Value* arg) {
 }
 
 void nprint_view(const llvm::Type* arg) {
-  if (arg == NULL) printfLLVMHelper("<NULL>");
+  if (arg == NULL)
+    printfLLVMHelper("<NULL>");
   else {
     auto fd = getLlvmPrintIrFile();
     arg->print(*fd, true); // no tracking currently
@@ -753,7 +744,8 @@ void nprint_view(const llvm::Type* arg) {
 }
 
 void nprint_view(const llvm::Module* arg) {
-  if (arg == NULL) printfLLVMHelper("<NULL>");
+  if (arg == NULL)
+    printfLLVMHelper("<NULL>");
   else {
     auto fd = getLlvmPrintIrFile();
     arg->print(*fd, &llvmValueTracker, true, true);
@@ -761,9 +753,9 @@ void nprint_view(const llvm::Module* arg) {
   printfLLVMHelper("\n");
 }
 
-
 void nprint_view(const llvm::Metadata* arg) {
-  if (arg == NULL) printfLLVMHelper("<NULL>");
+  if (arg == NULL)
+    printfLLVMHelper("<NULL>");
   else {
     auto fd = getLlvmPrintIrFile();
     arg->print(*fd, &llvmValueTracker, nullptr, true);
@@ -775,9 +767,9 @@ void nprint_view(const llvm::Metadata* arg) {
 
 // LLVM IDs are not tracked; nprint_view() is the same as list_view()
 
-void nprint_view(const llvm::Type* arg)     { list_view(arg); }
-void nprint_view(const llvm::Value* arg)    { list_view(arg); }
-void nprint_view(const llvm::Module* arg)   { list_view(arg); }
+void nprint_view(const llvm::Type* arg) { list_view(arg); }
+void nprint_view(const llvm::Value* arg) { list_view(arg); }
+void nprint_view(const llvm::Module* arg) { list_view(arg); }
 void nprint_view(const llvm::Metadata* arg) { list_view(arg); }
 
 #endif // if TRACK_LLVM_VALUES
@@ -787,20 +779,21 @@ llvm::AttrBuilder llvmPrepareAttrBuilder(llvm::LLVMContext& ctx) {
   return ret;
 }
 
-void llvmAddAttr(llvm::LLVMContext& ctx, llvm::AttributeList& attrs,
-            size_t idx,
-            llvm::AttrBuilder& b) {
+void llvmAddAttr(llvm::LLVMContext& ctx,
+                 llvm::AttributeList& attrs,
+                 size_t idx,
+                 llvm::AttrBuilder& b) {
   attrs = attrs.addAttributesAtIndex(ctx, idx, b);
 }
 
 void llvmAttachStructRetAttr(llvm::AttrBuilder& b, llvm::Type* returnTy) {
   b.addStructRetAttr(returnTy);
 
-  #if HAVE_LLVM_VER >= 180
+#if HAVE_LLVM_VER >= 180
   // matches attributes added by clang with sret
   b.addAttribute(llvm::Attribute::Writable);
   b.addAttribute(llvm::Attribute::DeadOnUnwind);
-  #endif
+#endif
 }
 
 bool isOpaquePointer(llvm::Type* ty) {

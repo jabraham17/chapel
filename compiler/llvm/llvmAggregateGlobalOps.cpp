@@ -18,7 +18,6 @@
  * limitations under the License.
  */
 
-
 // Merges sequences of loads or sequences of stores
 // on address space(globalSpace) into memcpy operations so
 // that we can do fewer puts or gets. For example
@@ -81,12 +80,10 @@ using namespace llvm;
 
 namespace {
 
-
 static const bool DEBUG = false;
 static const bool extraChecks = true;
 // Set a function name here to get lots of debugging output.
 static const char* debugThisFn = "";
-
 
 // If there is a gap between memory that we are loading,
 // for example due to padding, or just because we didn't
@@ -95,36 +92,31 @@ static const char* debugThisFn = "";
 // used.
 #define GET_EXTRA 64
 
-static inline
-bool isMergeableGlobalLoadOrStore(Instruction* I,
-                                  unsigned globalSpace,
-                                  bool findLoad, bool findStore)
-{
-  if( findLoad && isa<LoadInst>(I) ) {
-    LoadInst *load = cast<LoadInst>(I);
-    if( load->getPointerAddressSpace() == globalSpace &&
-        load->isSimple() ) {
+static inline bool isMergeableGlobalLoadOrStore(Instruction* I,
+                                                unsigned globalSpace,
+                                                bool findLoad,
+                                                bool findStore) {
+  if (findLoad && isa<LoadInst>(I)) {
+    LoadInst* load = cast<LoadInst>(I);
+    if (load->getPointerAddressSpace() == globalSpace && load->isSimple()) {
       return true;
     }
   }
-  if( findStore && isa<StoreInst>(I)) {
-    StoreInst *store = cast<StoreInst>(I);
-    if( store->getPointerAddressSpace() == globalSpace &&
-        store->isSimple() ) {
+  if (findStore && isa<StoreInst>(I)) {
+    StoreInst* store = cast<StoreInst>(I);
+    if (store->getPointerAddressSpace() == globalSpace && store->isSimple()) {
       return true;
     }
   }
   return false;
 }
-static inline
-Value* getLoadStorePointer(Instruction* I)
-{
-  if( isa<LoadInst>(I) ) {
-    LoadInst *load = cast<LoadInst>(I);
+static inline Value* getLoadStorePointer(Instruction* I) {
+  if (isa<LoadInst>(I)) {
+    LoadInst* load = cast<LoadInst>(I);
     return load->getPointerOperand();
   }
-  if( isa<StoreInst>(I)) {
-    StoreInst *store = cast<StoreInst>(I);
+  if (isa<StoreInst>(I)) {
+    StoreInst* store = cast<StoreInst>(I);
     return store->getPointerOperand();
   }
   return NULL;
@@ -134,41 +126,37 @@ Value* getLoadStorePointer(Instruction* I)
 // reorder the instructions so that any uses of loaded values are
 // after Last.
 // Returns the last instruction in the reordering.
-static
-Instruction* postponeDependentInstructions(
-   Instruction *First,
-   Instruction *Last,
-   const SmallSet<Instruction*, 8>& toAggregate,
-   bool DebugThis)
-{
+static Instruction*
+postponeDependentInstructions(Instruction* First,
+                              Instruction* Last,
+                              const SmallSet<Instruction*, 8>& toAggregate,
+                              bool DebugThis) {
   // memopsUses stores uses of toAggregate
   SmallPtrSet<Instruction*, 8> memopsUses;
-  Instruction *LastMemopUse = NULL;
+  Instruction* LastMemopUse = NULL;
 
   // Gather any instructions using the result of a load
-  for (BasicBlock::iterator BI = First->getIterator();
-       !BI->isTerminator();
-       ++BI)
-  {
+  for (BasicBlock::iterator BI = First->getIterator(); !BI->isTerminator();
+       ++BI) {
     Instruction& insnRef = *BI;
     Instruction* insn = &insnRef;
     bool isUseOfMemop = false;
 
     // Check -- are any operands to this instruction memopsUses?
-    for (User::op_iterator i = insn->op_begin(), e = insn->op_end(); i != e; ++i) {
-      Value *v = *i;
-      if (Instruction *used_insn = dyn_cast<Instruction>(v)) {
-        if (toAggregate.count(used_insn) ||
-            memopsUses.count(used_insn)){
+    for (User::op_iterator i = insn->op_begin(), e = insn->op_end(); i != e;
+         ++i) {
+      Value* v = *i;
+      if (Instruction* used_insn = dyn_cast<Instruction>(v)) {
+        if (toAggregate.count(used_insn) || memopsUses.count(used_insn)) {
           isUseOfMemop = true;
           break;
         }
       }
     }
 
-    if( isUseOfMemop ) memopsUses.insert(insn);
+    if (isUseOfMemop) memopsUses.insert(insn);
 
-    if( insn == Last ) break;
+    if (insn == Last) break;
   }
 
   LastMemopUse = Last;
@@ -176,15 +164,13 @@ Instruction* postponeDependentInstructions(
   // Reorder the instructions here.
   // Move all addressing instructions before StartInst.
   // Move all uses of loaded values before LastLoadOrStore (which will be removed).
-  for (BasicBlock::iterator BI = First->getIterator();
-       !BI->isTerminator();)
-  {
+  for (BasicBlock::iterator BI = First->getIterator(); !BI->isTerminator();) {
     Instruction& insnRef = *BI;
     Instruction* insn = &insnRef;
     ++BI; // don't invalidate iterator.
 
     if (memopsUses.count(insn)) {
-      if( DebugThis ) {
+      if (DebugThis) {
         dbgs() << "reorder found dependent instruction: ";
         insn->print(dbgs(), true);
         dbgs() << '\n';
@@ -194,7 +180,7 @@ Instruction* postponeDependentInstructions(
       insn->insertAfter(LastMemopUse);
       LastMemopUse = insn;
     }
-    if( insn == Last ) break;
+    if (insn == Last) break;
   }
 
   return LastMemopUse;
@@ -203,10 +189,8 @@ Instruction* postponeDependentInstructions(
 // The next several fns are stolen almost totally unmodified from MemCpyOptimizer.
 // modified code areas say CUSTOM.
 
-
-static chpl::optional<int64_t> getPointerOffset(Value *Ptr1,
-                                               Value *Ptr2,
-                                               const DataLayout &DL) {
+static chpl::optional<int64_t>
+getPointerOffset(Value* Ptr1, Value* Ptr2, const DataLayout& DL) {
   chpl::optional<int64_t> optOffset;
 #if HAVE_LLVM_VER >= 170
   optOffset = Ptr2->getPointerOffsetFrom(Ptr1, DL);
@@ -216,7 +200,6 @@ static chpl::optional<int64_t> getPointerOffset(Value *Ptr1,
   return optOffset;
 }
 
-
 struct MemOpRange { // from MemsetRange in MemCpyOptimizer
   // Start/End - A semi range that describes the span that this range covers.
   // The range is closed at the start and open at the end: [Start, End).
@@ -225,7 +208,7 @@ struct MemOpRange { // from MemsetRange in MemCpyOptimizer
   int64_t SlackEnd;
   /// StartPtr - The getelementptr instruction that points to the start of the
   /// range.
-  Value *StartPtr;
+  Value* StartPtr;
   /// Alignment - The known alignment of the first store.
   unsigned Alignment;
   // The load or store instructions. Called TheStores because
@@ -237,54 +220,62 @@ struct MemOpRanges { // from MemsetRanges in MemCpyOptimizer
   /// because each element is relatively large and expensive to copy.
   std::list<MemOpRange> Ranges;
   typedef std::list<MemOpRange>::iterator range_iterator;
-  const DataLayout &DL;
-  MemOpRanges(const DataLayout &td) : DL(td) { }
+  const DataLayout& DL;
+  MemOpRanges(const DataLayout& td) : DL(td) {}
   typedef std::list<MemOpRange>::const_iterator const_iterator;
   const_iterator begin() const { return Ranges.begin(); }
   const_iterator end() const { return Ranges.end(); }
   bool empty() const { return Ranges.empty(); }
   bool moreThanOneOp() const {
-    if( Ranges.size() > 1 ) return true;
+    if (Ranges.size() > 1) return true;
     MemOpRanges::const_iterator I = begin();
     MemOpRanges::const_iterator E = end();
-    if( I != E ) {
-      const MemOpRange &Range = *I;
-      if( Range.TheStores.size() > 1 ) return true;
+    if (I != E) {
+      const MemOpRange& Range = *I;
+      if (Range.TheStores.size() > 1) return true;
     }
     return false;
   }
-  void addInst(int64_t offsetFromFirst, Instruction *Inst) {
-    if( StoreInst *SI = dyn_cast<StoreInst>(Inst) ) {
+  void addInst(int64_t offsetFromFirst, Instruction* Inst) {
+    if (StoreInst* SI = dyn_cast<StoreInst>(Inst)) {
       addStore(offsetFromFirst, SI);
     }
-    if( LoadInst *LI = dyn_cast<LoadInst>(Inst) ) {
+    if (LoadInst* LI = dyn_cast<LoadInst>(Inst)) {
       addLoad(offsetFromFirst, LI);
     }
   }
-  void addStore(int64_t OffsetFromFirst, StoreInst *SI) {
+  void addStore(int64_t OffsetFromFirst, StoreInst* SI) {
     int64_t StoreSize = DL.getTypeStoreSize(SI->getOperand(0)->getType());
     int64_t Slack = 0; // TODO - compute slack based on structure padding.
                        // Make slack include padding if it is after this
                        // element in a structure.
 
-    addRange(OffsetFromFirst, StoreSize, Slack,
+    addRange(OffsetFromFirst,
+             StoreSize,
+             Slack,
              SI->getPointerOperand(),
              SI->getAlign().value(),
              SI);
   }
   // CUSTOM because MemsetRanges doesn't work with LoadInsts.
-  void addLoad(int64_t OffsetFromFirst, LoadInst *LI) {
+  void addLoad(int64_t OffsetFromFirst, LoadInst* LI) {
     int64_t LoadSize = DL.getTypeStoreSize(LI->getType());
-    int64_t Slack =  GET_EXTRA; // Pretend loads use more space...
+    int64_t Slack = GET_EXTRA; // Pretend loads use more space...
 
-    addRange(OffsetFromFirst, LoadSize, Slack,
+    addRange(OffsetFromFirst,
+             LoadSize,
+             Slack,
              LI->getPointerOperand(),
              LI->getAlign().value(),
              LI);
   }
   // CUSTOM adds Slack
-  void addRange(int64_t Start, int64_t Size, int64_t Slack, Value *Ptr,
-                unsigned Alignment, Instruction *Inst);
+  void addRange(int64_t Start,
+                int64_t Size,
+                int64_t Slack,
+                Value* Ptr,
+                unsigned Alignment,
+                Instruction* Inst);
 };
 
 /// addRange - Add a new store to the MemOpRanges data structure.  This adds a
@@ -296,25 +287,28 @@ struct MemOpRanges { // from MemsetRanges in MemCpyOptimizer
 /// simplicity here.  This is a linear search of a linked list, which is ugly,
 /// however the number of ranges is limited, so this won't get crazy slow.
 // CUSTOM -- uses SlackEnd instead of End
-void MemOpRanges::addRange(int64_t Start, int64_t Size, int64_t Slack, Value *Ptr,
-                            unsigned Alignment, Instruction *Inst) {
-  int64_t End = Start+Size;
-  int64_t SlackEnd = Start+Size+Slack;
+void MemOpRanges::addRange(int64_t Start,
+                           int64_t Size,
+                           int64_t Slack,
+                           Value* Ptr,
+                           unsigned Alignment,
+                           Instruction* Inst) {
+  int64_t End = Start + Size;
+  int64_t SlackEnd = Start + Size + Slack;
   range_iterator I = Ranges.begin(), E = Ranges.end();
 
-  while (I != E && Start > I->SlackEnd)
-    ++I;
+  while (I != E && Start > I->SlackEnd) ++I;
 
   // We now know that I == E, in which case we didn't find anything to merge
   // with, or that Start <= I->End.  If End < I->Start or I == E, then we need
   // to insert a new range.  Handle this now.
   if (I == E || SlackEnd < I->Start) {
-    MemOpRange &R = *Ranges.insert(I, MemOpRange());
-    R.Start        = Start;
-    R.End          = End;
-    R.SlackEnd     = SlackEnd;
-    R.StartPtr     = Ptr;
-    R.Alignment    = Alignment;
+    MemOpRange& R = *Ranges.insert(I, MemOpRange());
+    R.Start = Start;
+    R.End = End;
+    R.SlackEnd = SlackEnd;
+    R.StartPtr = Ptr;
+    R.Alignment = Alignment;
     R.TheStores.push_back(Inst);
     return;
   }
@@ -327,8 +321,7 @@ void MemOpRanges::addRange(int64_t Start, int64_t Size, int64_t Slack, Value *Pt
 
   // At this point, we may have an interval that completely contains our store.
   // If so, just add it to the interval and return.
-  if (I->Start <= Start && I->SlackEnd >= SlackEnd)
-    return;
+  if (I->Start <= Start && I->SlackEnd >= SlackEnd) return;
 
   // Now we know that Start <= I->End and End >= I->Start so the range overlaps
   // but is not entirely contained within the range.
@@ -351,10 +344,8 @@ void MemOpRanges::addRange(int64_t Start, int64_t Size, int64_t Slack, Value *Pt
     while (++NextI != E && SlackEnd >= NextI->Start) {
       // Merge the range in.
       I->TheStores.append(NextI->TheStores.begin(), NextI->TheStores.end());
-      if (NextI->SlackEnd > I->SlackEnd)
-        I->SlackEnd = NextI->SlackEnd;
-      if (NextI->End > I->End)
-        I->End = NextI->End;
+      if (NextI->SlackEnd > I->SlackEnd) I->SlackEnd = NextI->SlackEnd;
+      if (NextI->End > I->End) I->End = NextI->End;
       Ranges.erase(NextI);
       NextI = I;
     }
@@ -370,15 +361,14 @@ AggregateGlobalOpsOpt::AggregateGlobalOpsOpt() {
 }
 
 AggregateGlobalOpsOpt::AggregateGlobalOpsOpt(unsigned _globalSpace)
-  : globalSpace(_globalSpace) {
-}
+  : globalSpace(_globalSpace) {}
 
-bool LegacyAggregateGlobalOpsOptPass::runOnFunction(Function &F) {
+bool LegacyAggregateGlobalOpsOptPass::runOnFunction(Function& F) {
   return pass.run(F);
 }
 
-void
-LegacyAggregateGlobalOpsOptPass::getAnalysisUsage(AnalysisUsage &AU) const {
+void LegacyAggregateGlobalOpsOptPass::getAnalysisUsage(
+  AnalysisUsage& AU) const {
   // TODO -- update these better
   AU.setPreservesCFG();
   /*AU.addRequired<DominatorTree>();
@@ -390,16 +380,19 @@ LegacyAggregateGlobalOpsOptPass::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 char LegacyAggregateGlobalOpsOptPass::ID = 0;
-static RegisterPass<LegacyAggregateGlobalOpsOptPass> X("aggregate-global-ops", "Aggregate Global Pointer Operations", false /* only looks at CFG */, false /* Analysis pass */ );
+static RegisterPass<LegacyAggregateGlobalOpsOptPass>
+  X("aggregate-global-ops",
+    "Aggregate Global Pointer Operations",
+    false /* only looks at CFG */,
+    false /* Analysis pass */);
 
 // createAggregateGlobalOpsOptPass - The public interface to this file...
-FunctionPass* createLegacyAggregateGlobalOpsOptPass(unsigned globalSpace)
-{
+FunctionPass* createLegacyAggregateGlobalOpsOptPass(unsigned globalSpace) {
   return new LegacyAggregateGlobalOpsOptPass(globalSpace);
 }
 
-PreservedAnalyses AggregateGlobalOpsOptPass::run(Function &F,
-                                                 FunctionAnalysisManager &AM) {
+PreservedAnalyses AggregateGlobalOpsOptPass::run(Function& F,
+                                                 FunctionAnalysisManager& AM) {
   bool changed = pass.run(F);
   if (!changed) {
     return PreservedAnalyses::all();
@@ -416,8 +409,9 @@ PreservedAnalyses AggregateGlobalOpsOptPass::run(Function &F,
 /// other loads or stores that could be aggregated with this one.
 /// Returns the last instruction added (if one was added) since we might have
 /// removed some loads or stores and that might invalidate an iterator.
-Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value *StartPtr,
-    bool DebugThis) {
+Instruction* AggregateGlobalOpsOpt::tryAggregating(Instruction* StartInst,
+                                                   Value* StartPtr,
+                                                   bool DebugThis) {
   if (DL == 0) return 0;
 
   Module* M = StartInst->getParent()->getParent()->getParent();
@@ -428,7 +422,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
   auto globalInt8PtrTy = getPointerType(int8Ty, globalSpace);
   bool isLoad = isa<LoadInst>(StartInst);
   bool isStore = isa<StoreInst>(StartInst);
-  Instruction *lastAddedInsn = NULL;
+  Instruction* lastAddedInsn = NULL;
 
   DenseMap<Instruction*, int> bbPos; // pos in basic block
 
@@ -448,21 +442,19 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     pos++;
     Instruction& insnRef = *BI;
     Instruction* insn = &insnRef;
-    if( isMergeableGlobalLoadOrStore(insn, globalSpace, isLoad, isStore) ) {
+    if (isMergeableGlobalLoadOrStore(insn, globalSpace, isLoad, isStore)) {
       // OK!
     } else {
       // If the instruction is readnone, ignore it, otherwise bail out.  We
       // don't even allow readonly here because we don't want something like:
       // A[1] = 2; strlen(A); A[2] = 2; -> memcpy(A, ...); strlen(A).
-      if (BI->mayWriteToMemory())
-        break;
-      if (isStore && BI->mayReadFromMemory())
-        break;
+      if (BI->mayWriteToMemory()) break;
+      if (isStore && BI->mayReadFromMemory()) break;
       continue;
     }
 
-    if ( isStore && isa<StoreInst>(BI) ) {
-      StoreInst *NextStore = cast<StoreInst>(BI);
+    if (isStore && isa<StoreInst>(BI)) {
+      StoreInst* NextStore = cast<StoreInst>(BI);
       // If this is a store, see if we can merge it in.
       if (!NextStore->isSimple()) break;
 
@@ -470,21 +462,19 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
       chpl::optional<int64_t> optOffset =
         getPointerOffset(StartPtr, NextStore->getPointerOperand(), *DL);
-      if (!optOffset)
-        break;
+      if (!optOffset) break;
       int64_t Offset = *optOffset;
 
       Ranges.addStore(Offset, NextStore);
       bbPos[NextStore] = pos;
     } else {
-      LoadInst *NextLoad = cast<LoadInst>(BI);
+      LoadInst* NextLoad = cast<LoadInst>(BI);
       if (!NextLoad->isSimple()) break;
 
       // Check to see if this load is to a constant offset from the start ptr.
       chpl::optional<int64_t> optOffset =
         getPointerOffset(StartPtr, NextLoad->getPointerOperand(), *DL);
-      if (!optOffset)
-        break;
+      if (!optOffset) break;
       int64_t Offset = *optOffset;
 
       Ranges.addLoad(Offset, NextLoad);
@@ -494,32 +484,34 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
   // If we have no ranges, then we just had a single store with nothing that
   // could be merged in.  This is a very common case of course.
-  if (!Ranges.moreThanOneOp())
-    return 0;
+  if (!Ranges.moreThanOneOp()) return 0;
 
   // Print out debugging information before reordering
   if (DebugThis) {
     for (MemOpRanges::const_iterator I = Ranges.begin(), E = Ranges.end();
-         I != E; ++I) {
-      const MemOpRange &Range = *I;
+         I != E;
+         ++I) {
+      const MemOpRange& Range = *I;
 
       if (Range.TheStores.size() == 1) continue;
 
       StartPtr = Range.StartPtr;
 
-      if( DebugThis ) {
+      if (DebugThis) {
         dbgs() << "base is:";
         StartPtr->print(dbgs(), true);
         dbgs() << '\n';
       }
 
-      if( isStore ) {
+      if (isStore) {
         for (SmallVector<Instruction*, 16>::const_iterator
-             SI = Range.TheStores.begin(),
-             SE = Range.TheStores.end(); SI != SE; ++SI) {
+               SI = Range.TheStores.begin(),
+               SE = Range.TheStores.end();
+             SI != SE;
+             ++SI) {
           StoreInst* oldStore = cast<StoreInst>(*SI);
 
-          if( DebugThis ) {
+          if (DebugThis) {
             dbgs() << "have store in range:";
             oldStore->print(dbgs(), true);
             dbgs() << '\n';
@@ -527,12 +519,14 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         }
       }
 
-      if( isLoad ) {
+      if (isLoad) {
         for (SmallVector<Instruction*, 16>::const_iterator
-             SI = Range.TheStores.begin(),
-             SE = Range.TheStores.end(); SI != SE; ++SI) {
+               SI = Range.TheStores.begin(),
+               SE = Range.TheStores.end();
+             SI != SE;
+             ++SI) {
           LoadInst* oldLoad = cast<LoadInst>(*SI);
-          if( DebugThis ) {
+          if (DebugThis) {
             dbgs() << "have load in range:";
             oldLoad->print(dbgs(), true);
             dbgs() << '\n';
@@ -544,25 +538,26 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
   // Now that we have full information about ranges, loop over the ranges and
   // emit memcpy's for anything big enough to be worthwhile.
-  for (MemOpRanges::const_iterator I = Ranges.begin(), E = Ranges.end();
-       I != E; ++I) {
-    const MemOpRange &Range = *I;
+  for (MemOpRanges::const_iterator I = Ranges.begin(), E = Ranges.end(); I != E;
+       ++I) {
+    const MemOpRange& Range = *I;
 
-    if (Range.TheStores.size() == 1) continue; // Don't bother if there's only one thing...
+    if (Range.TheStores.size() == 1)
+      continue; // Don't bother if there's only one thing...
 
     // Figure out the start and end instruction
     // and the set of loads and stores in the Range
     SmallSet<Instruction*, 8> toAggregate;
-    Instruction *First = NULL;
-    Instruction *Last = NULL;
+    Instruction* First = NULL;
+    Instruction* Last = NULL;
     for (SmallVector<Instruction*, 16>::const_iterator
-         SI = Range.TheStores.begin(),
-         SE = Range.TheStores.end(); SI != SE; ++SI) {
+           SI = Range.TheStores.begin(),
+           SE = Range.TheStores.end();
+         SI != SE;
+         ++SI) {
       Instruction* insn = *SI;
-      if (First == NULL || bbPos[insn] < bbPos[First])
-        First = insn;
-      if (Last == NULL || bbPos[insn] > bbPos[Last])
-        Last = insn;
+      if (First == NULL || bbPos[insn] < bbPos[First]) First = insn;
+      if (Last == NULL || bbPos[insn] > bbPos[Last]) Last = insn;
 
       toAggregate.insert(insn);
     }
@@ -583,7 +578,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     // Get the starting pointer of the block.
     StartPtr = Range.StartPtr;
 
-    if( DebugThis ) {
+    if (DebugThis) {
       dbgs() << "working on base:";
       StartPtr->print(dbgs(), true);
       dbgs() << '\n';
@@ -609,17 +604,19 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
       }
     }
 
-    Instruction *alloc = NULL;
+    Instruction* alloc = NULL;
 
     // create temporary alloca space to communicate to/from.
-    alloc = makeAlloca(int8Ty, "agg.tmp", insertBefore,
-                       Range.End-Range.Start, Alignment);
+    alloc = makeAlloca(
+      int8Ty, "agg.tmp", insertBefore, Range.End - Range.Start, Alignment);
 
     // If storing, do the stores we had into our alloca'd region.
-    if( isStore ) {
+    if (isStore) {
       for (SmallVector<Instruction*, 16>::const_iterator
-           SI = Range.TheStores.begin(),
-           SE = Range.TheStores.end(); SI != SE; ++SI) {
+             SI = Range.TheStores.begin(),
+             SE = Range.TheStores.end();
+           SI != SE;
+           ++SI) {
         StoreInst* oldStore = cast<StoreInst>(*SI);
 
         int64_t offset = 0;
@@ -634,9 +631,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
         Constant* offsetC = ConstantInt::get(sizeTy, offset, true);
         Value* offsets[] = {offsetC};
-        Value* i8Dst = irBuilder.CreateInBoundsGEP(int8Ty,
-                                                   alloc,
-                                                   offsets);
+        Value* i8Dst = irBuilder.CreateInBoundsGEP(int8Ty, alloc, offsets);
         trackLLVMValue(i8Dst);
 
         auto StoreType = oldStore->getValueOperand()->getType();
@@ -653,32 +648,33 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     }
 
     // cast the pointer that was load/stored to i8 if necessary.
-    Value *globalPtr = irBuilder.CreatePointerCast(StartPtr, globalInt8PtrTy);
+    Value* globalPtr = irBuilder.CreatePointerCast(StartPtr, globalInt8PtrTy);
     trackLLVMValue(globalPtr);
 
     // Get a Constant* for the length.
-    Constant* len = ConstantInt::get(sizeTy, Range.End-Range.Start, false);
+    Constant* len = ConstantInt::get(sizeTy, Range.End - Range.Start, false);
 
     // Now add the memcpy instruction
-    unsigned addrSpaceDst,addrSpaceSrc;
+    unsigned addrSpaceDst, addrSpaceSrc;
     addrSpaceDst = addrSpaceSrc = 0;
-    if( isStore ) addrSpaceDst = globalSpace;
-    if( isLoad ) addrSpaceSrc = globalSpace;
+    if (isStore) addrSpaceDst = globalSpace;
+    if (isLoad) addrSpaceSrc = globalSpace;
 
-    Type *types[3];
+    Type* types[3];
     types[0] = getPointerType(int8Ty, addrSpaceDst);
     types[1] = getPointerType(int8Ty, addrSpaceSrc);
     types[2] = sizeTy;
 
 #if LLVM_VERSION_MAJOR >= 20
-    Function *func = Intrinsic::getOrInsertDeclaration(M, Intrinsic::memcpy, types);
+    Function* func =
+      Intrinsic::getOrInsertDeclaration(M, Intrinsic::memcpy, types);
 #else
-    Function *func = Intrinsic::getDeclaration(M, Intrinsic::memcpy, types);
+    Function* func = Intrinsic::getDeclaration(M, Intrinsic::memcpy, types);
 #endif
     // LLVM 7 and later: memcpy has no alignment argument
     Value* args[4]; // dst src len isvolatile
 
-    if( isStore ) {
+    if (isStore) {
       // it's a store (ie put)
       args[0] = globalPtr;
       args[1] = alloc;
@@ -703,10 +699,12 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     lastAddedInsn = aMemCpy;
 
     // If loading, load from the memcpy'd region
-    if( isLoad ) {
+    if (isLoad) {
       for (SmallVector<Instruction*, 16>::const_iterator
-           SI = Range.TheStores.begin(),
-           SE = Range.TheStores.end(); SI != SE; ++SI) {
+             SI = Range.TheStores.begin(),
+             SE = Range.TheStores.end();
+           SI != SE;
+           ++SI) {
         LoadInst* oldLoad = cast<LoadInst>(*SI);
         int64_t offset = 0;
 
@@ -720,9 +718,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
         Constant* offsetC = ConstantInt::get(sizeTy, offset, true);
         Value* offsets[] = {offsetC};
-        Value* i8Src = irBuilder.CreateInBoundsGEP(int8Ty,
-                                                   alloc,
-                                                   offsets);
+        Value* i8Src = irBuilder.CreateInBoundsGEP(int8Ty, alloc, offsets);
         trackLLVMValue(i8Src);
 
         auto LoadType = oldLoad->getType();
@@ -743,8 +739,10 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
     // Zap all the old loads/stores
     for (SmallVector<Instruction*, 16>::const_iterator
-         SI = Range.TheStores.begin(),
-         SE = Range.TheStores.end(); SI != SE; ++SI) {
+           SI = Range.TheStores.begin(),
+           SE = Range.TheStores.end();
+         SI != SE;
+         ++SI) {
       (*SI)->eraseFromParent();
     }
   }
@@ -755,16 +753,16 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 // AggregateGlobalOpsOpt::run - This is the main transformation
 // entry point for a function. Returns true if it changed the function.
 //
-bool AggregateGlobalOpsOpt::run(Function &F) {
+bool AggregateGlobalOpsOpt::run(Function& F) {
   bool ChangedFn = false;
   bool DebugThis = DEBUG;
 
-  if( debugThisFn[0] && F.getName() == debugThisFn ) {
+  if (debugThisFn[0] && F.getName() == debugThisFn) {
     DebugThis = true;
   }
 
   //MD = &getAnalysis<MemoryDependenceAnalysis>();
-  DL = & F.getParent()->getDataLayout();
+  DL = &F.getParent()->getDataLayout();
   //TLI = &getAnalysis<TargetLibraryInfo>();
 
   // Walk all instruction in the function.
@@ -772,7 +770,7 @@ bool AggregateGlobalOpsOpt::run(Function &F) {
 
     bool ChangedBB = false;
 
-    if( DebugThis ) {
+    if (DebugThis) {
       dbgs() << "Working on BB ";
       BB->print(dbgs(), nullptr, false, true);
       dbgs() << '\n';
@@ -781,12 +779,13 @@ bool AggregateGlobalOpsOpt::run(Function &F) {
     for (BasicBlock::iterator BI = BB->begin(), BE = BB->end(); BI != BE;) {
       // Avoid invalidating the iterator.
       Instruction& insnRef = *BI;
-      Instruction *I = &insnRef;
+      Instruction* I = &insnRef;
       ++BI;
 
-      if( isMergeableGlobalLoadOrStore(I, globalSpace, true, true) ) {
-        Instruction* lastAdded = tryAggregating(I, getLoadStorePointer(I), DebugThis);
-        if( lastAdded ) {
+      if (isMergeableGlobalLoadOrStore(I, globalSpace, true, true)) {
+        Instruction* lastAdded =
+          tryAggregating(I, getLoadStorePointer(I), DebugThis);
+        if (lastAdded) {
           ChangedBB = true;
           ChangedFn = true;
           BI = lastAdded->getIterator();
@@ -794,16 +793,15 @@ bool AggregateGlobalOpsOpt::run(Function &F) {
       }
     }
 
-    if( DebugThis && ChangedBB ) {
+    if (DebugThis && ChangedBB) {
       dbgs() << "in function " << F.getName() << "\n";
       dbgs() << "After transform BB is ";
       BB->print(dbgs(), nullptr, false, true);
       dbgs() << '\n';
     }
-
   }
 
-  if( extraChecks ) {
+  if (extraChecks) {
     assert(!verifyFunction(F, &errs()));
   }
 

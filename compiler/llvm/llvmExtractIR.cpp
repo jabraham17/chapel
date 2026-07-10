@@ -49,13 +49,13 @@
 using namespace llvm;
 
 std::unique_ptr<Module> extractLLVM(const llvm::Module* fromModule,
-                                    std::set<const GlobalValue*> &gvs) {
+                                    std::set<const GlobalValue*>& gvs) {
   ValueToValueMapTy VMap;
   // Create a new module containing only the definition of the function
   // and using external declarations for everything else
-  auto ownedM = CloneModule(*fromModule, VMap,
-                            [&](const GlobalValue *GV) {
-                                       return gvs.count(GV) > 0; });
+  auto ownedM = CloneModule(*fromModule, VMap, [&](const GlobalValue* GV) {
+    return gvs.count(GV) > 0;
+  });
 #if TRACK_LLVM_VALUES
   trackClonedLLVMValues(VMap);
 #endif
@@ -72,7 +72,7 @@ std::unique_ptr<Module> extractLLVM(const llvm::Module* fromModule,
 
   // Make sure the function in the module is externally visible
   // (so the below cleanups don't remove it)
-  for (Function &F : M) {
+  for (Function& F : M) {
     std::string name = F.getName().str();
     if (names.count(name) > 0) {
       saveLinkage[F.getName().str()] = F.getLinkage();
@@ -84,7 +84,7 @@ std::unique_ptr<Module> extractLLVM(const llvm::Module* fromModule,
   removeUnreferencedLLVM(&M);
 
   // Put the linkage for functions back
-  for (const auto& pair: saveLinkage) {
+  for (const auto& pair : saveLinkage) {
     const std::string& name = pair.first;
     GlobalValue::LinkageTypes linkage = pair.second;
     if (Function* f = M.getFunction(name)) {
@@ -138,16 +138,16 @@ void removeUnreferencedLLVM(llvm::Module* mod) {
 // when using the class, ex. upon --llvm-print-ir
 //
 class PrintModuleWithIDs : public ModulePass {
-public:
+ public:
   static char ID;
   PrintModuleWithIDs() : ModulePass(ID) {}
 
-  bool runOnModule(Module &M) override {
+  bool runOnModule(Module& M) override {
     nprint_view(&M);
     return false;
   }
 
-  void getAnalysisUsage(AnalysisUsage &AU) const override {
+  void getAnalysisUsage(AnalysisUsage& AU) const override {
     AU.setPreservesAll();
   }
 
@@ -156,10 +156,9 @@ public:
 
 char PrintModuleWithIDs::ID = 0;
 
-void extractAndPrintFunctionsLLVM(std::set<const GlobalValue*> *gvs) {
+void extractAndPrintFunctionsLLVM(std::set<const GlobalValue*>* gvs) {
 
-  if (gvs == NULL || gvs->size() == 0)
-    return;
+  if (gvs == NULL || gvs->size() == 0) return;
 
   const Module* funcModule = NULL;
 

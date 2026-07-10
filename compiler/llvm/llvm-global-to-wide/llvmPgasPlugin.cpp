@@ -31,11 +31,14 @@ using namespace llvm;
 /* New PM Registration */
 llvm::PassPluginLibraryInfo getLlvmPgasPluginInfo() {
   printf("In getLlvmPgasPluginInfo\n");
-  return {LLVM_PLUGIN_API_VERSION, "llvm-pgas", LLVM_VERSION_STRING,
-          [](PassBuilder &PB) {
-            printf("In callback RegisterPassBuilderCallbacks\n");
+  return {
+    LLVM_PLUGIN_API_VERSION,
+    "llvm-pgas",
+    LLVM_VERSION_STRING,
+    [](PassBuilder& PB) {
+      printf("In callback RegisterPassBuilderCallbacks\n");
 
-            /*
+      /*
             PB.registerVectorizerStartEPCallback(
                 [](llvm::FunctionPassManager &PM, OptimizationLevel Level) {
                   printf("In VectorizerStartEPCallback\n");
@@ -46,51 +49,59 @@ llvm::PassPluginLibraryInfo getLlvmPgasPluginInfo() {
                   fflush(stdout);
                   PM.addPass(AggregateGlobalOpsOptPass());
                 });*/
-            PB.registerPipelineParsingCallback(
-                [](StringRef Name, llvm::FunctionPassManager &FPM,
-                   ArrayRef<llvm::PassBuilder::PipelineElement> Pipeline) {
-                  printf("In PipelineParsingCallback FPM Considering Pass Name '%s'\n", Name.str().c_str());
-                  if (!Pipeline.empty()) {
-                    printf("Pipeline.front().Name '%s'\n", Pipeline.front().Name.str().c_str());
-                  }
-                  fflush(stdout);
-                  if (Name == "aggregate-global-ops") {
-                    FPM.addPass(AggregateGlobalOpsOptPass());
-                    return true;
-                  }
-                  return false;
-                });
-            PB.registerPipelineParsingCallback(
-                [](StringRef Name, llvm::ModulePassManager &MPM,
-                   ArrayRef<llvm::PassBuilder::PipelineElement> Pipeline) {
-                  printf("In PipelineParsingCallback MPM Considering Pass Name '%s'\n", Name.str().c_str());
-                  if (!Pipeline.empty()) {
-                    printf("Pipeline.front().Name '%s'\n", Pipeline.front().Name.str().c_str());
-                  }
-                  fflush(stdout);
-                  if (Name == "global-to-wide") {
-                    MPM.addPass(GlobalToWidePass());
-                    return true;
-                  }
-                  return false;
-                });
+      PB.registerPipelineParsingCallback(
+        [](StringRef Name,
+           llvm::FunctionPassManager& FPM,
+           ArrayRef<llvm::PassBuilder::PipelineElement> Pipeline) {
+          printf("In PipelineParsingCallback FPM Considering Pass Name '%s'\n",
+                 Name.str().c_str());
+          if (!Pipeline.empty()) {
+            printf("Pipeline.front().Name '%s'\n",
+                   Pipeline.front().Name.str().c_str());
+          }
+          fflush(stdout);
+          if (Name == "aggregate-global-ops") {
+            FPM.addPass(AggregateGlobalOpsOptPass());
+            return true;
+          }
+          return false;
+        });
+      PB.registerPipelineParsingCallback(
+        [](StringRef Name,
+           llvm::ModulePassManager& MPM,
+           ArrayRef<llvm::PassBuilder::PipelineElement> Pipeline) {
+          printf("In PipelineParsingCallback MPM Considering Pass Name '%s'\n",
+                 Name.str().c_str());
+          if (!Pipeline.empty()) {
+            printf("Pipeline.front().Name '%s'\n",
+                   Pipeline.front().Name.str().c_str());
+          }
+          fflush(stdout);
+          if (Name == "global-to-wide") {
+            MPM.addPass(GlobalToWidePass());
+            return true;
+          }
+          return false;
+        });
 
-            PB.registerParseTopLevelPipelineCallback(
-               [](ModulePassManager &MPM,
-                   ArrayRef<llvm::PassBuilder::PipelineElement> Pipeline) {
-                  printf("In ParseTopLevelPipelineCallback\n");
-                  if (!Pipeline.empty()) {
-                    printf("Pipeline.front().Name '%s'\n", Pipeline.front().Name.str().c_str());
-                  }
-                  fflush(stdout);
-                  if (!Pipeline.empty() && Pipeline.front().Name == "aggregate-global-ops") {
-                    //MPM.addPass(AggregateGlobalOpsOptPass());
-                    return true;
-                  }
-                  return false;
-                });
-            printf("Done callback RegisterPassBuilderCallbacks\n");
-          }};
+      PB.registerParseTopLevelPipelineCallback(
+        [](ModulePassManager& MPM,
+           ArrayRef<llvm::PassBuilder::PipelineElement> Pipeline) {
+          printf("In ParseTopLevelPipelineCallback\n");
+          if (!Pipeline.empty()) {
+            printf("Pipeline.front().Name '%s'\n",
+                   Pipeline.front().Name.str().c_str());
+          }
+          fflush(stdout);
+          if (!Pipeline.empty() &&
+              Pipeline.front().Name == "aggregate-global-ops") {
+            //MPM.addPass(AggregateGlobalOpsOptPass());
+            return true;
+          }
+          return false;
+        });
+      printf("Done callback RegisterPassBuilderCallbacks\n");
+    }};
 }
 
 extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
