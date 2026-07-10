@@ -1,0 +1,49 @@
+# Chapel compiler C++ formatting style.
+BasedOnStyle: LLVM
+Language: Cpp
+
+# Includes are grouped and ordered by hand, so don't let clang-format sort them.
+SortIncludes: false
+
+IndentWidth: 2
+ContinuationIndentWidth: 2
+# 'public:' / 'private:' / 'protected:' sit one space in from the class body.
+AccessModifierOffset: -1
+# Namespace bodies are not indented (contents start at column 0).
+NamespaceIndentation: None
+FixNamespaceComments: false
+IndentCaseLabels: true
+# Constructor initializer lists break before the colon, indented two spaces.
+BreakConstructorInitializers: BeforeColon
+ConstructorInitializerIndentWidth: 2
+
+PointerAlignment: Left
+DerivePointerAlignment: false
+MaxEmptyLinesToKeep: 1
+
+# Don't reflow or rewrap comment text; doc comments (/** ... */), including
+# embedded \rst blocks, are hand-formatted and must be left intact.
+ReflowComments: Never
+
+AlignConsecutiveAssignments: None
+AlignConsecutiveDeclarations: None
+AlignConsecutiveMacros: Consecutive
+AlignEscapedNewlines: LeftWithLastLine
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 0
+
+AlignConsecutiveShortCaseStatements:
+  Enabled: false
+
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: true
+
+# When a call or signature wraps, arguments align under the open paren and
+# each goes on its own line rather than being bin-packed.
+AlignAfterOpenBracket: Align
+BinPackParameters: false
+BinPackArguments: false
