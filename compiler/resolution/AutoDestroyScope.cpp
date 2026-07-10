@@ -40,7 +40,7 @@
 *                                                                             *
 ************************************** | *************************************/
 
-static VarSymbol* variableToExclude(FnSymbol*  fn, Expr* refStmt);
+static VarSymbol* variableToExclude(FnSymbol* fn, Expr* refStmt);
 
 static BlockStmt* findBlockForTarget(GotoStmt* stmt);
 
@@ -48,8 +48,8 @@ static void deinitialize(Expr* before, Expr* after, VarSymbol* var);
 
 AutoDestroyScope::AutoDestroyScope(AutoDestroyScope* parent,
                                    const BlockStmt* block) {
-  mParent        = parent;
-  mBlock         = block;
+  mParent = parent;
+  mBlock = block;
 
   mLocalsHandled = false;
 }
@@ -66,8 +66,7 @@ static VarSymbol* findFormalTempAssignBack(const Expr* stmt) {
         lhsSe = toSymExpr(call->get(1));
         rhsSe = toSymExpr(call->get(2));
       }
-    } else if (call->isPrimitive(PRIM_MOVE) ||
-               call->isPrimitive(PRIM_ASSIGN)) {
+    } else if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
       lhsSe = toSymExpr(call->get(1));
       rhsSe = toSymExpr(call->get(2));
     }
@@ -95,13 +94,11 @@ void AutoDestroyScope::addFormalTemps() {
   INT_ASSERT(mParent == NULL);
   INT_ASSERT(fn != NULL);
 
-  if (fn->hasFlag(FLAG_EXTERN))
-    return;
+  if (fn->hasFlag(FLAG_EXTERN)) return;
 
   bool anyOut = false;
   for_formals(formal, fn) {
-    if (formal->intent == INTENT_OUT ||
-        formal->originalIntent == INTENT_OUT) {
+    if (formal->intent == INTENT_OUT || formal->originalIntent == INTENT_OUT) {
       anyOut = true;
     }
   }
@@ -167,7 +164,6 @@ void AutoDestroyScope::addEarlyDeinit(VarSymbol* var) {
   INT_FATAL("could not find scope declaring var");
 }
 
-
 size_t AutoDestroyScope::numLocalsAndDefers() const {
   return mLocalsAndDefers.size();
 }
@@ -203,7 +199,7 @@ void AutoDestroyScope::forgetOuterVariableInitializations() {
     // Each outer variable should be stored in some parent scope's
     // mLocalsAndDefers.
     for (AutoDestroyScope* cur = this; cur != NULL; cur = cur->mParent) {
-      if (cur->mInitedVars.erase(var) > 0 ) {
+      if (cur->mInitedVars.erase(var) > 0) {
         if (cur->mDeclaredVars.count(var) > 0) {
           // expecting to find it at the last position in mLocalsAndDefers
           INT_ASSERT(cur->mLocalsAndDefers.back() == var);
@@ -219,7 +215,7 @@ void AutoDestroyScope::forgetOuterVariableInitializations() {
   }
 
   // iterate through DeinitedVars
-  for_set (VarSymbol, var, mDeinitedVars) {
+  for_set(VarSymbol, var, mDeinitedVars) {
     // clear it from any parent scopes, stopping at the declaration point
     for (AutoDestroyScope* s = this->mParent; s != NULL; s = s->mParent) {
       s->mDeinitedVars.erase(var);
@@ -237,17 +233,13 @@ std::vector<VarSymbol*> AutoDestroyScope::getInitedOuterVars() const {
 
 std::vector<VarSymbol*> AutoDestroyScope::getDeinitedOuterVars() const {
   std::vector<VarSymbol*> ret;
-  for_set (VarSymbol, var, mDeinitedVars) {
-    if (mDeclaredVars.count(var) == 0)
-      ret.push_back(var);
+  for_set(VarSymbol, var, mDeinitedVars) {
+    if (mDeclaredVars.count(var) == 0) ret.push_back(var);
   }
   return ret;
 }
 
-AutoDestroyScope* AutoDestroyScope::getParentScope() const {
-  return mParent;
-}
-
+AutoDestroyScope* AutoDestroyScope::getParentScope() const { return mParent; }
 
 //
 // Functions have an informal epilogue defined by code that
@@ -277,15 +269,16 @@ bool AutoDestroyScope::handlingFormalTemps(const Expr* stmt) const {
 // to the block that contains the target of the goto
 //
 // adds autodestroys after refStmt
-void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt,
+void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn,
+                                          Expr* refStmt,
                                           const std::set<VarSymbol*>& ignored) {
-  GotoStmt*               gotoStmt   = toGotoStmt(refStmt);
-  bool                    recurse    = (gotoStmt != NULL) ? true : false;
-  BlockStmt*              forTarget  = findBlockForTarget(gotoStmt);
-  VarSymbol*              excludeVar = variableToExclude(fn, refStmt);
-  const AutoDestroyScope* scope      = this;
-  bool                    gotoError  = false;
-  std::set<VarSymbol*>    ignoredSet(ignored);
+  GotoStmt* gotoStmt = toGotoStmt(refStmt);
+  bool recurse = (gotoStmt != NULL) ? true : false;
+  BlockStmt* forTarget = findBlockForTarget(gotoStmt);
+  VarSymbol* excludeVar = variableToExclude(fn, refStmt);
+  const AutoDestroyScope* scope = this;
+  bool gotoError = false;
+  std::set<VarSymbol*> ignoredSet(ignored);
 
   if (gotoStmt != NULL && gotoStmt->gotoTag == GOTO_ERROR_HANDLING)
     gotoError = true;
@@ -301,8 +294,7 @@ void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt,
 
   while (scope != NULL) {
     // stop when block == forTarget for non-error-handling gotos
-    if (scope->mBlock == forTarget && gotoError == false)
-      break;
+    if (scope->mBlock == forTarget && gotoError == false) break;
 
     // destroy outer variables initialized in the scope too
     if (gotoError) {
@@ -312,10 +304,8 @@ void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt,
     scope->variablesDestroy(refStmt, excludeVar, ignoredSet, this);
 
     // stop if recurse == false or if block == forTarget
-    if (recurse == false)
-      break;
-    if (scope->mBlock == forTarget)
-      break;
+    if (recurse == false) break;
+    if (scope->mBlock == forTarget) break;
 
     scope = scope->mParent;
   }
@@ -333,7 +323,7 @@ static void deinitialize(Expr* before, Expr* after, VarSymbol* var) {
 
   INT_ASSERT(autoDestroyFn->hasFlag(FLAG_AUTO_DESTROY_FN));
 
-  BaseAST* useLoc = before?before:after;
+  BaseAST* useLoc = before ? before : after;
   SET_LINENO(useLoc);
   CallExpr* autoDestroy = new CallExpr(autoDestroyFn, var);
   if (before)
@@ -342,7 +332,8 @@ static void deinitialize(Expr* before, Expr* after, VarSymbol* var) {
     after->insertAfter(autoDestroy);
 }
 
-void AutoDestroyScope::destroyVariable(Expr* after, VarSymbol* var,
+void AutoDestroyScope::destroyVariable(Expr* after,
+                                       VarSymbol* var,
                                        const std::set<VarSymbol*>& ignored) {
   INT_ASSERT(!var->hasFlag(FLAG_FORMAL_TEMP));
 
@@ -352,9 +343,8 @@ void AutoDestroyScope::destroyVariable(Expr* after, VarSymbol* var,
 
 // Destroy outer variables and add them to the ignored set
 // This is used for error handling cases
-void AutoDestroyScope::destroyOuterVariables(Expr* before,
-                                             std::set<VarSymbol*>& ignored) const
-{
+void AutoDestroyScope::destroyOuterVariables(
+  Expr* before, std::set<VarSymbol*>& ignored) const {
   size_t count = mInitedOuterVars.size();
   for (size_t i = 1; i <= count; i++) {
     VarSymbol* var = mInitedOuterVars[count - i];
@@ -371,22 +361,21 @@ void AutoDestroyScope::destroyOuterVariables(Expr* before,
 // return that svar's deinitBlock(). Otherwise return NULL.
 static BlockStmt* shadowVarsDeinitBlock(Expr* refStmt) {
   if (ShadowVarSymbol* svar = toShadowVarSymbol(refStmt->parentSymbol))
-    if (refStmt->parentExpr == svar->initBlock())
-      return svar->deinitBlock();
+    if (refStmt->parentExpr == svar->initBlock()) return svar->deinitBlock();
 
   return NULL;
 }
 
 // add autoDestroys after refStmt
-void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
+void AutoDestroyScope::variablesDestroy(Expr* refStmt,
                                         VarSymbol* excludeVar,
                                         const std::set<VarSymbol*>& ignored,
                                         AutoDestroyScope* startingScope) const {
   // Handle the primary locals
   if (mLocalsHandled == false) {
-    Expr*  insertBeforeStmt = refStmt;
-    Expr*  noop             = NULL;
-    size_t count            = mLocalsAndDefers.size();
+    Expr* insertBeforeStmt = refStmt;
+    Expr* noop = NULL;
+    size_t count = mLocalsAndDefers.size();
 
     // If this is a simple nested block, insert after the final stmt
     // But always insert the destruction calls in reverse declaration order.
@@ -415,8 +404,8 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
     // Add formal temp writebacks for non-error returns
     // Do the writebacks in formal declaration order
     GotoStmt* gotoStmt = toGotoStmt(refStmt);
-    bool forErrorReturn = gotoStmt != NULL &&
-                          gotoStmt->gotoTag == GOTO_ERROR_HANDLING_RETURN;
+    bool forErrorReturn =
+      gotoStmt != NULL && gotoStmt->gotoTag == GOTO_ERROR_HANDLING_RETURN;
 
     if (forErrorReturn == false) {
       size_t nActions = mFormalTempActions.size();
@@ -428,7 +417,7 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
     }
 
     for (size_t i = 1; i <= count; i++) {
-      BaseAST*  localOrDefer = mLocalsAndDefers[count - i];
+      BaseAST* localOrDefer = mLocalsAndDefers[count - i];
       VarSymbol* var = toVarSymbol(localOrDefer);
       DeferStmt* defer = toDeferStmt(localOrDefer);
       // This code only handles VarSymbols and DeferStmts.
@@ -438,8 +427,8 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
 
       if (var != NULL && var != excludeVar && ignored.count(var) == 0) {
         if (startingScope->isVariableInitialized(var)) {
-          bool outIntentFormalReturn = forErrorReturn == false &&
-                                       var->hasFlag(FLAG_FORMAL_TEMP_OUT);
+          bool outIntentFormalReturn =
+            forErrorReturn == false && var->hasFlag(FLAG_FORMAL_TEMP_OUT);
           // No deinit for out formal returns - deinited at call site
           if (outIntentFormalReturn == false)
             deinitialize(insertBeforeStmt, NULL, var);
@@ -455,35 +444,28 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
     }
 
     // remove the PRIM_NOOP if we added one.
-    if (noop != NULL)
-      noop->remove();
+    if (noop != NULL) noop->remove();
   }
-
 }
 
 bool AutoDestroyScope::isVariableInitialized(VarSymbol* var) const {
-  for (const AutoDestroyScope* scope = this;
-       scope != NULL;
+  for (const AutoDestroyScope* scope = this; scope != NULL;
        scope = scope->mParent) {
     if (scope->mInitedVars.count(var) > 0)
-      if (scope->mDeinitedVars.count(var) == 0)
-        return true;
+      if (scope->mDeinitedVars.count(var) == 0) return true;
   }
 
   return false;
 }
 
 bool AutoDestroyScope::isVariableDeclared(VarSymbol* var) const {
-  for (const AutoDestroyScope* scope = this;
-       scope != NULL;
+  for (const AutoDestroyScope* scope = this; scope != NULL;
        scope = scope->mParent) {
-    if (scope->mDeclaredVars.count(var) > 0)
-      return true;
+    if (scope->mDeclaredVars.count(var) > 0) return true;
   }
 
   return false;
 }
-
 
 // Walk backwards from the current statement to determine if a sequence of
 // moves have copied a variable that is marked for auto destruction in to
@@ -528,13 +510,13 @@ static VarSymbol* variableToExclude(FnSymbol* fn, Expr* refStmt) {
     if (typeNeedsCopyInitDeinit(retVar->type) ||
         fn->hasFlag(FLAG_INIT_COPY_FN)) {
       Symbol* needle = retVar;
-      Expr*   expr   = refStmt;
+      Expr* expr = refStmt;
 
       // Walk backwards looking for the variable that is being returned
       while (exclude == NULL && expr != NULL && needle != NULL) {
         if (CallExpr* move = toCallExpr(expr)) {
           if (move->isPrimitive(PRIM_MOVE) || move->isPrimitive(PRIM_ASSIGN)) {
-            SymExpr*   lhs    = toSymExpr(move->get(1));
+            SymExpr* lhs = toSymExpr(move->get(1));
 
             if (needle == lhs->symbol()) {
               if (SymExpr* rhs = toSymExpr(move->get(2))) {
@@ -566,7 +548,7 @@ static BlockStmt* findBlockForTarget(GotoStmt* stmt) {
 
   if (stmt != NULL && stmt->isGotoReturn() == false) {
     SymExpr* labelSymExpr = toSymExpr(stmt->label);
-    Expr*    ptr          = labelSymExpr->symbol()->defPoint;
+    Expr* ptr = labelSymExpr->symbol()->defPoint;
 
     while (ptr != NULL && isBlockStmt(ptr) == false) {
       ptr = ptr->parentExpr;

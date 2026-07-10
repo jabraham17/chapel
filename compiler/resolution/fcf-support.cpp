@@ -51,26 +51,26 @@
 #include <sstream>
 
 namespace {
-  using namespace fcfs;
+using namespace fcfs;
 
-  struct FcfFormalInfo {
-    Type* type;
-    IntentTag intent;
-    const char* name;
-  };
+struct FcfFormalInfo {
+  Type* type;
+  IntentTag intent;
+  const char* name;
+};
 
-  struct FcfSuperInfo {
-    const char* name;
-    std::vector<FcfFormalInfo> formals;
-    RetTag retTag;
-    Type* retType;
-    bool throws;
-    bool isAnyFormalNamed;
-    AggregateType* type;
-    Type* sharedType;
-    FnSymbol* thisMethod;
-    const char* userTypeString;
-  };
+struct FcfSuperInfo {
+  const char* name;
+  std::vector<FcfFormalInfo> formals;
+  RetTag retTag;
+  Type* retType;
+  bool throws;
+  bool isAnyFormalNamed;
+  AggregateType* type;
+  Type* sharedType;
+  FnSymbol* thisMethod;
+  const char* userTypeString;
+};
 
 using SharedFcfSuperInfo = std::shared_ptr<FcfSuperInfo>;
 
@@ -92,8 +92,7 @@ static bool isIntentSameAsDefault(IntentTag tag, Type* t);
 
 static Type* buildSharedWrapperType(AggregateType* super);
 
-static const SharedFcfSuperInfo
-buildWrapperSuperTypeAtProgram(FnSymbol* fn);
+static const SharedFcfSuperInfo buildWrapperSuperTypeAtProgram(FnSymbol* fn);
 
 static const char* intentToString(IntentTag tag);
 
@@ -117,18 +116,16 @@ static const char* intentTagMnemonicMangled(IntentTag tag);
 
 static const char* retTagMnemonicMangled(RetTag tag);
 
-static const char*
-buildSuperName(const std::vector<FcfFormalInfo>& formals,
-               RetTag retTag,
-               Type* retType,
-               bool throws);
+static const char* buildSuperName(const std::vector<FcfFormalInfo>& formals,
+                                  RetTag retTag,
+                                  Type* retType,
+                                  bool throws);
 
 static AggregateType*
 insertFcfWrapperSuperTypeAtProgram(const char* name,
-                                   AggregateType* superSuper=dtObject);
+                                   AggregateType* superSuper = dtObject);
 
-static FnSymbol*
-attachSuperRetTypeGetter(AggregateType* super, Type* retType);
+static FnSymbol* attachSuperRetTypeGetter(AggregateType* super, Type* retType);
 
 static FnSymbol*
 attachSuperArgTypeGetter(AggregateType* super,
@@ -136,37 +133,32 @@ attachSuperArgTypeGetter(AggregateType* super,
 
 static FnSymbol* attachSuperPayloadPtrGetter(AggregateType* super);
 
-static FnSymbol*
-attachSuperThis(AggregateType* super,
-                const std::vector<FcfFormalInfo>& formals,
-                RetTag retTag,
-                Type* retType,
-                bool throws);
+static FnSymbol* attachSuperThis(AggregateType* super,
+                                 const std::vector<FcfFormalInfo>& formals,
+                                 RetTag retTag,
+                                 Type* retType,
+                                 bool throws);
 
-static FnSymbol*
-attachSuperSerializeMethod(AggregateType* super);
+static FnSymbol* attachSuperSerializeMethod(AggregateType* super);
 
-static AggregateType*
-insertChildWrapperAtPayload(const SharedFcfSuperInfo info,
-                            FnSymbol* payload);
+static AggregateType* insertChildWrapperAtPayload(const SharedFcfSuperInfo info,
+                                                  FnSymbol* payload);
 
-static FnSymbol*
-attachChildThis(const SharedFcfSuperInfo info, AggregateType* child,
-                FnSymbol* payload);
+static FnSymbol* attachChildThis(const SharedFcfSuperInfo info,
+                                 AggregateType* child,
+                                 FnSymbol* payload);
 
-static FnSymbol*
-attachChildSerializeMethod(const SharedFcfSuperInfo info, AggregateType* child,
-                       FnSymbol* payload);
+static FnSymbol* attachChildSerializeMethod(const SharedFcfSuperInfo info,
+                                            AggregateType* child,
+                                            FnSymbol* payload);
 
-static FnSymbol*
-attachChildPayloadPtrGetter(const SharedFcfSuperInfo info,
-                            AggregateType* child,
-                            FnSymbol* payload);
+static FnSymbol* attachChildPayloadPtrGetter(const SharedFcfSuperInfo info,
+                                             AggregateType* child,
+                                             FnSymbol* payload);
 
-static FnSymbol*
-insertSharedParentFactory(const SharedFcfSuperInfo info,
-                          AggregateType* child,
-                          FnSymbol* payload);
+static FnSymbol* insertSharedParentFactory(const SharedFcfSuperInfo info,
+                                           AggregateType* child,
+                                           FnSymbol* payload);
 
 static Expr* createLegacyClassInstance(FnSymbol* fn, Expr* use);
 
@@ -204,8 +196,7 @@ static FcfFormalInfo extractFormalInfo(ArgSymbol* formal) {
   return ret;
 }
 
-static const SharedFcfSuperInfo
-buildWrapperSuperTypeAtProgram(FnSymbol* fn) {
+static const SharedFcfSuperInfo buildWrapperSuperTypeAtProgram(FnSymbol* fn) {
   std::vector<FcfFormalInfo> formals;
   RetTag retTag = fn->retTag;
   Type* retType = fn->retType;
@@ -216,8 +207,7 @@ buildWrapperSuperTypeAtProgram(FnSymbol* fn) {
     formals.push_back(std::move(info));
   }
 
-  auto& ret = buildWrapperSuperTypeAtProgram(formals, retTag, retType,
-                                             throws);
+  auto& ret = buildWrapperSuperTypeAtProgram(formals, retTag, retType, throws);
   return ret;
 }
 
@@ -250,7 +240,7 @@ buildUserFacingTypeString(const std::vector<FcfFormalInfo>& formals,
     if (info.name) oss << info.name;
     if ((!skip || info.name) && info.type != dtAny) oss << ": ";
     if (info.type != dtAny) oss << typeToStringSpecializing(info.type);
-    if ((i+1) != formals.size()) oss << ", ";
+    if ((i + 1) != formals.size()) oss << ", ";
   }
 
   oss << ")";
@@ -291,18 +281,17 @@ buildWrapperSuperTypeAtProgram(const std::vector<FcfFormalInfo>& formals,
     std::vector<FcfFormalInfo> unnamedFormals;
 
     for (auto& f : formals) {
-      FcfFormalInfo copy = { f.type, f.intent, nullptr };
+      FcfFormalInfo copy = {f.type, f.intent, nullptr};
       unnamedFormals.push_back(std::move(copy));
     }
 
-    auto info = buildWrapperSuperTypeAtProgram(unnamedFormals, retTag,
-                                               retType,
-                                               throws);
+    auto info =
+      buildWrapperSuperTypeAtProgram(unnamedFormals, retTag, retType, throws);
 
     at = insertFcfWrapperSuperTypeAtProgram(superName, info->type);
     info->type->dispatchChildren.add(at);
 
-  // Or no formals are named, so use 'object' as the parent class.
+    // Or no formals are named, so use 'object' as the parent class.
   } else {
     at = insertFcfWrapperSuperTypeAtProgram(superName);
   }
@@ -319,9 +308,7 @@ buildWrapperSuperTypeAtProgram(const std::vector<FcfFormalInfo>& formals,
 
   v->type = at;
   typeToInfo[v->type] = v;
-  v->thisMethod = attachSuperThis(v->type, formals, retTag,
-                                  retType,
-                                  throws);
+  v->thisMethod = attachSuperThis(v->type, formals, retTag, retType, throws);
   std::ignore = attachSuperSerializeMethod(v->type);
 
   if (isAnyFormalNamed) v->thisMethod->addFlag(FLAG_OVERRIDE);
@@ -331,9 +318,8 @@ buildWrapperSuperTypeAtProgram(const std::vector<FcfFormalInfo>& formals,
   typeToInfo[v->sharedType] = v;
 
   // Ordering matters relative to above.
-  v->userTypeString = buildUserFacingTypeString(formals, retTag,
-                                                retType,
-                                                throws);
+  v->userTypeString =
+    buildUserFacingTypeString(formals, retTag, retType, throws);
 
   // Only generate method skeletons for the root class.
   if (!isAnyFormalNamed) {
@@ -354,11 +340,10 @@ static const char* retTagMnemonicMangled(RetTag tag) {
 }
 
 // Either a list of formals or a list of types in a tuple.
-static const char*
-buildSuperName(const std::vector<FcfFormalInfo>& formals,
-               RetTag retTag,
-               Type* retType,
-               bool throws) {
+static const char* buildSuperName(const std::vector<FcfFormalInfo>& formals,
+                                  RetTag retTag,
+                                  Type* retType,
+                                  bool throws) {
   std::ostringstream oss;
 
   oss << superTypePrefix;
@@ -406,8 +391,7 @@ insertFcfWrapperSuperTypeAtProgram(const char* name,
   return ret;
 }
 
-static FnSymbol*
-attachSuperRetTypeGetter(AggregateType* super, Type* retType) {
+static FnSymbol* attachSuperRetTypeGetter(AggregateType* super, Type* retType) {
   FnSymbol* ret = new FnSymbol("retType");
 
   ret->addFlag(FLAG_NO_IMPLICIT_COPY);
@@ -417,10 +401,7 @@ attachSuperRetTypeGetter(AggregateType* super, Type* retType) {
   ret->setMethod(true);
   ret->addFlag(FLAG_METHOD_PRIMARY);
   ret->addFlag(FLAG_NO_PARENS);
-  ret->cname = astr("chpl_get_",
-                    super->symbol->cname,
-                    "_",
-                    ret->cname);
+  ret->cname = astr("chpl_get_", super->symbol->cname, "_", ret->cname);
 
   ret->addFlag(FLAG_UNSTABLE);
   ret->unstableMsg = "The 'retType' method is unstable";
@@ -444,7 +425,7 @@ attachSuperRetTypeGetter(AggregateType* super, Type* retType) {
 
 static FnSymbol*
 attachSuperArgTypeGetter(AggregateType* super,
-                            const std::vector<FcfFormalInfo>& formals) {
+                         const std::vector<FcfFormalInfo>& formals) {
   FnSymbol* ret = new FnSymbol("argTypes");
 
   ret->addFlag(FLAG_NO_IMPLICIT_COPY);
@@ -454,9 +435,7 @@ attachSuperArgTypeGetter(AggregateType* super,
   ret->setMethod(true);
   ret->addFlag(FLAG_METHOD_PRIMARY);
   ret->addFlag(FLAG_NO_PARENS);
-  ret->cname = astr("chpl_get_",
-                    super->symbol->cname, "_",
-                    ret->cname);
+  ret->cname = astr("chpl_get_", super->symbol->cname, "_", ret->cname);
 
   ret->addFlag(FLAG_UNSTABLE);
   ret->unstableMsg = "The 'argTypes' method is unstable";
@@ -472,8 +451,8 @@ attachSuperArgTypeGetter(AggregateType* super,
   ret->_this = receiver;
   ret->insertFormalAtTail(receiver);
 
-  ret->insertAtTail(new CallExpr(PRIM_RETURN,
-                                 new CallExpr("_build_tuple", expr)));
+  ret->insertAtTail(
+    new CallExpr(PRIM_RETURN, new CallExpr("_build_tuple", expr)));
 
   DefExpr* def = new DefExpr(ret);
   super->symbol->defPoint->insertBefore(def);
@@ -511,12 +490,11 @@ static FnSymbol* attachSuperPayloadPtrGetter(AggregateType* super) {
   return ret;
 }
 
-static FnSymbol*
-attachSuperThis(AggregateType* super,
-                const std::vector<FcfFormalInfo>& formals,
-                RetTag retTag,
-                Type* retType,
-                bool throws) {
+static FnSymbol* attachSuperThis(AggregateType* super,
+                                 const std::vector<FcfFormalInfo>& formals,
+                                 RetTag retTag,
+                                 Type* retType,
+                                 bool throws) {
   FnSymbol* ret = new FnSymbol("this");
   ret->retTag = retTag;
   ret->addFlag(FLAG_COMPILER_GENERATED);
@@ -537,14 +515,12 @@ attachSuperThis(AggregateType* super,
     std::string name;
     name += "f";
     name += std::to_string(i);
-    auto f = new ArgSymbol(info.intent,
-                           astr(name.c_str()),
-                           info.type);
+    auto f = new ArgSymbol(info.intent, astr(name.c_str()), info.type);
     ret->insertFormalAtTail(f);
   }
 
   if (retType != dtVoid) {
-    VarSymbol *tmp = newTemp("_return_tmp_", retType);
+    VarSymbol* tmp = newTemp("_return_tmp_", retType);
     ret->insertAtTail(new DefExpr(tmp));
     ret->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
   }
@@ -558,8 +534,7 @@ attachSuperThis(AggregateType* super,
   return ret;
 }
 
-static FnSymbol*
-attachSuperSerializeMethod(AggregateType* super) {
+static FnSymbol* attachSuperSerializeMethod(AggregateType* super) {
   ArgSymbol* fileArg = nullptr;
   auto ret = buildSerializeFnSymbol(super, &fileArg);
   ret->throwsErrorInit();
@@ -567,9 +542,8 @@ attachSuperSerializeMethod(AggregateType* super) {
   return ret;
 }
 
-static AggregateType*
-insertChildWrapperAtPayload(const SharedFcfSuperInfo info,
-                            FnSymbol* payload) {
+static AggregateType* insertChildWrapperAtPayload(const SharedFcfSuperInfo info,
+                                                  FnSymbol* payload) {
   AggregateType* super = info->type;
   auto ret = new AggregateType(AGGREGATE_CLASS);
   std::ostringstream oss;
@@ -600,9 +574,9 @@ insertChildWrapperAtPayload(const SharedFcfSuperInfo info,
   return ret;
 }
 
-static FnSymbol*
-attachChildThis(const SharedFcfSuperInfo info, AggregateType* child,
-                FnSymbol* payload) {
+static FnSymbol* attachChildThis(const SharedFcfSuperInfo info,
+                                 AggregateType* child,
+                                 FnSymbol* payload) {
   FnSymbol* superThis = info->thisMethod;
 
   auto ret = new FnSymbol("this");
@@ -661,8 +635,7 @@ attachChildThis(const SharedFcfSuperInfo info, AggregateType* child,
   return ret;
 }
 
-static const char*
-generateWriteThisOutput(FnSymbol* fn) {
+static const char* generateWriteThisOutput(FnSymbol* fn) {
   auto ft = toFunctionType(fn->type);
   INT_ASSERT(ft && ft->kind() == FunctionType::PROC);
   std::string str = ft->toString();
@@ -681,10 +654,9 @@ generateWriteThisOutput(FnSymbol* fn) {
   return astr(str);
 }
 
-static FnSymbol*
-attachChildSerializeMethod(const SharedFcfSuperInfo info,
-                     AggregateType* child,
-                     FnSymbol* payload) {
+static FnSymbol* attachChildSerializeMethod(const SharedFcfSuperInfo info,
+                                            AggregateType* child,
+                                            FnSymbol* payload) {
   ArgSymbol* fileArg = NULL;
   FnSymbol* ret = buildSerializeFnSymbol(child, &fileArg);
 
@@ -697,18 +669,16 @@ attachChildSerializeMethod(const SharedFcfSuperInfo info,
   ret->body->useListAdd(new UseStmt(ioModule, "", false));
   ret->getModule()->moduleUseAdd(ioModule);
   auto str = new_StringSymbol(generateWriteThisOutput(payload));
-  auto writeCall = new CallExpr(".", fileArg, new_StringSymbol("write"),
-                                str);
+  auto writeCall = new CallExpr(".", fileArg, new_StringSymbol("write"), str);
   ret->insertAtTail(new CallExpr(writeCall));
   normalize(ret);
 
   return ret;
 }
 
-static FnSymbol*
-attachChildPayloadPtrGetter(const SharedFcfSuperInfo info,
-                            AggregateType* child,
-                            FnSymbol* payload) {
+static FnSymbol* attachChildPayloadPtrGetter(const SharedFcfSuperInfo info,
+                                             AggregateType* child,
+                                             FnSymbol* payload) {
   auto ret = new FnSymbol("chpl_fcfPtr");
 
   ret->addFlag(FLAG_COMPILER_GENERATED);
@@ -728,8 +698,7 @@ attachChildPayloadPtrGetter(const SharedFcfSuperInfo info,
   // Have to use temporary/move to get the type colored properly.
   auto tmp = newTemp("tmp_ret");
   ret->insertAtTail(new DefExpr(tmp));
-  auto move = new CallExpr(PRIM_MOVE, new SymExpr(tmp),
-                           new SymExpr(payload));
+  auto move = new CallExpr(PRIM_MOVE, new SymExpr(tmp), new SymExpr(payload));
   ret->insertAtTail(move);
   ret->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(tmp)));
 
@@ -741,10 +710,9 @@ attachChildPayloadPtrGetter(const SharedFcfSuperInfo info,
   return ret;
 }
 
-static FnSymbol*
-insertSharedParentFactory(const SharedFcfSuperInfo info,
-                          AggregateType* child,
-                          FnSymbol* payload) {
+static FnSymbol* insertSharedParentFactory(const SharedFcfSuperInfo info,
+                                           AggregateType* child,
+                                           FnSymbol* payload) {
   AggregateType* super = info->type;
   FnSymbol* ret = new FnSymbol("wrapper");
 
@@ -758,8 +726,8 @@ insertSharedParentFactory(const SharedFcfSuperInfo info,
   ret->insertAtTail(block);
 
   auto dec = getDecoratedClass(child, ClassTypeDecorator::GENERIC_NONNIL);
-  auto usym = new NamedExpr(astr_chpl_manager,
-                            new SymExpr(dtUnmanaged->symbol));
+  auto usym =
+    new NamedExpr(astr_chpl_manager, new SymExpr(dtUnmanaged->symbol));
 
   // Create a new "unmanaged child".
   auto seUnmanaged = new SymExpr(dec->symbol);
@@ -858,14 +826,13 @@ struct OuterVariableCollector : public AstVisitorTraverse {
                          std::vector<Symbol*>& outerVariables,
                          OuterVarToMentionMap& outerVariableToMentions,
                          std::vector<FnSymbol*>& childFunctions)
-      : owner_(owner),
-        outerVariables_(outerVariables),
-        outerVariableToMentions_(outerVariableToMentions),
-        childFunctions_(childFunctions) {
+    : owner_(owner), outerVariables_(outerVariables),
+      outerVariableToMentions_(outerVariableToMentions),
+      childFunctions_(childFunctions) {
     return;
   }
 
- ~OuterVariableCollector() = default;
+  ~OuterVariableCollector() = default;
 
   bool isOuterSymbol(Symbol* node) const {
     auto p = node->defPoint->parentSymbol;
@@ -900,16 +867,13 @@ ClosureEnv::ClosureEnv(FnSymbol* owner) : owner_(owner) {
 
   // Visitor takes our fields by reference and populates them.
   if (isFnSymbol(p) && p != owner->getModule()->initFn) {
-    auto v = OuterVariableCollector(owner_, outerVariables_,
-                                    outerVariableToMentions_,
-                                    childFunctions_);
+    auto v = OuterVariableCollector(
+      owner_, outerVariables_, outerVariableToMentions_, childFunctions_);
     owner->body->accept(&v);
   }
 }
 
-FnSymbol* ClosureEnv::owner() const {
-  return owner_;
-}
+FnSymbol* ClosureEnv::owner() const { return owner_; }
 
 bool ClosureEnv::isEmpty() const {
   bool ret = numOuterVariables() == 0;
@@ -917,7 +881,7 @@ bool ClosureEnv::isEmpty() const {
 }
 
 int ClosureEnv::numOuterVariables() const {
-  auto ret = ((int) outerVariables_.size());
+  auto ret = ((int)outerVariables_.size());
   return ret;
 }
 
@@ -930,7 +894,7 @@ Symbol* ClosureEnv::outerVariable(int idx) const {
 int ClosureEnv::numMentions(Symbol* sym) const {
   auto it = outerVariableToMentions_.find(sym);
   if (it == outerVariableToMentions_.end()) return 0;
-  auto ret = ((int) it->second.size());
+  auto ret = ((int)it->second.size());
   return ret;
 }
 
@@ -943,7 +907,7 @@ SymExpr* ClosureEnv::firstMention(Symbol* sym) const {
 SymExpr* ClosureEnv::mention(Symbol* sym, int idx) const {
   auto it = outerVariableToMentions_.find(sym);
   if (it == outerVariableToMentions_.end()) return nullptr;
-  int hi = ((int) it->second.size());
+  int hi = ((int)it->second.size());
   INT_ASSERT(0 <= idx && idx < hi);
   auto ret = it->second[idx];
   return ret;
@@ -962,9 +926,9 @@ const std::vector<FnSymbol*>& ClosureEnv::childFunctions() const {
 bool usePointerImplementation(void) {
   static bool fcfsUsePointerImplementation = false;
   static bool fcfsUsePointerImplementationLegal = false;
-  if(!fcfsUsePointerImplementationLegal) {
-    fcfsUsePointerImplementation = getConfigParamBool(baseModule,
-        "useProcedurePointers") == gTrue;
+  if (!fcfsUsePointerImplementationLegal) {
+    fcfsUsePointerImplementation =
+      getConfigParamBool(baseModule, "useProcedurePointers") == gTrue;
     fcfsUsePointerImplementationLegal = true;
   }
   return fcfsUsePointerImplementation;
@@ -994,11 +958,9 @@ Type* functionClassSuperTypeFromFunctionType(FunctionType* ft) {
     formals.push_back(std::move(info));
   }
 
-  auto info = buildWrapperSuperTypeAtProgram(formals, retTag, retType,
-                                             throws);
+  auto info = buildWrapperSuperTypeAtProgram(formals, retTag, retType, throws);
   auto ret = info->sharedType;
   return ret;
-
 }
 
 Type* functionClassSuperTypeForFuncConstructor(CallExpr* call) {
@@ -1030,15 +992,14 @@ Type* functionClassSuperTypeForFuncConstructor(CallExpr* call) {
     formals.push_back(std::move(info));
   }
 
-  auto info = buildWrapperSuperTypeAtProgram(formals, retTag, retType,
-                                             throws);
+  auto info = buildWrapperSuperTypeAtProgram(formals, retTag, retType, throws);
   auto ret = info->sharedType;
   return ret;
 }
 
 static bool isAnyErrorSinkType(Type* t) {
-  return (t == errorSink(FunctionType::PROC)->type  ||
-          t == errorSink(FunctionType::ITER)->type  ||
+  return (t == errorSink(FunctionType::PROC)->type ||
+          t == errorSink(FunctionType::ITER)->type ||
           t == errorSink(FunctionType::OPERATOR)->type);
 }
 
@@ -1084,11 +1045,11 @@ bool checkAndResolveSignature(FnSymbol* fn, Expr* use) {
       resolveSpecifiedReturnType(fn);
       return false;
 
-    // We are a function type with no return type, so we return void.
+      // We are a function type with no return type, so we return void.
     } else if (fn->hasFlag(FLAG_NO_FN_BODY)) {
       fn->retType = dtVoid;
 
-    // Only try to resolve the body if we can succeed.
+      // Only try to resolve the body if we can succeed.
     } else if (!fn->isResolved() && !fn->isGeneric()) {
       resolveFunction(fn);
       INT_ASSERT(fn->isResolved());
@@ -1189,10 +1150,13 @@ void emitWarningForStandaloneCapture(Expr* expr, const char* name) {
       }
     }
 
-
-    USR_WARN(expr, "function '%s' is mentioned but not called, so it is being "
-             "captured as a first-class function", name);
-    USR_PRINT(expr, "'%s' is a parenful function, so it needs '(...)' to be called", name);
+    USR_WARN(expr,
+             "function '%s' is mentioned but not called, so it is being "
+             "captured as a first-class function",
+             name);
+    USR_PRINT(expr,
+              "'%s' is a parenful function, so it needs '(...)' to be called",
+              name);
   }
 }
 

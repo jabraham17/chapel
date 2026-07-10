@@ -28,74 +28,73 @@
 
 // Track status of auto destroy variables within lexical scopes
 class AutoDestroyScope {
-public:
-                           AutoDestroyScope(AutoDestroyScope* parent,
-                                            const BlockStmt*  block);
+ public:
+  AutoDestroyScope(AutoDestroyScope* parent, const BlockStmt* block);
 
-  void                     addFormalTemps();
+  void addFormalTemps();
 
   // adds a declaration
-  void                     variableAdd(VarSymbol* var);
+  void variableAdd(VarSymbol* var);
 
-  void                     deferAdd(DeferStmt* var);
+  void deferAdd(DeferStmt* var);
 
   // adds an initialization
-  void                     addInitialization(VarSymbol* var);
+  void addInitialization(VarSymbol* var);
 
-  void                     addEarlyDeinit(VarSymbol* var);
+  void addEarlyDeinit(VarSymbol* var);
 
   // Counts how many local declarations and defers are in the scope
-  size_t                   numLocalsAndDefers() const;
+  size_t numLocalsAndDefers() const;
 
-  VarSymbol*               findVariableUsedBeforeInitialized(Expr* stmt);
+  VarSymbol* findVariableUsedBeforeInitialized(Expr* stmt);
 
   // Forget about initializations for outer variables initialized
   // in this scope. The variables will no longer be considered initialized.
   // This matters for split-init and conditionals.
-  void                     forgetOuterVariableInitializations();
+  void forgetOuterVariableInitializations();
 
   // Returns outer variables initialized in this scope
-  std::vector<VarSymbol*>  getInitedOuterVars() const;
+  std::vector<VarSymbol*> getInitedOuterVars() const;
   // Returns variables in outer scopes deinited early (from copy elision)
-  std::vector<VarSymbol*>  getDeinitedOuterVars() const;
+  std::vector<VarSymbol*> getDeinitedOuterVars() const;
 
-  AutoDestroyScope*        getParentScope() const;
+  AutoDestroyScope* getParentScope() const;
 
   // Report initialization for outer variables to parent scope
-  void                     addInitializationsToParent() const;
+  void addInitializationsToParent() const;
 
-  bool                     handlingFormalTemps(const Expr* stmt) const;
+  bool handlingFormalTemps(const Expr* stmt) const;
 
-  void                     insertAutoDestroys(FnSymbol* fn,
-                                              Expr*     refStmt,
-                                              const std::set<VarSymbol*>& ignored);
+  void insertAutoDestroys(FnSymbol* fn,
+                          Expr* refStmt,
+                          const std::set<VarSymbol*>& ignored);
 
-  void                     destroyVariable(Expr* after, VarSymbol* var,
-                                           const std::set<VarSymbol*>& ignored);
+  void destroyVariable(Expr* after,
+                       VarSymbol* var,
+                       const std::set<VarSymbol*>& ignored);
 
-private:
-  void                     variablesDestroy(Expr*      refStmt,
-                                            VarSymbol* excludeVar,
-                                            const std::set<VarSymbol*>& ignored,
-                                            AutoDestroyScope* startingScope) const;
+ private:
+  void variablesDestroy(Expr* refStmt,
+                        VarSymbol* excludeVar,
+                        const std::set<VarSymbol*>& ignored,
+                        AutoDestroyScope* startingScope) const;
 
-  void                     destroyOuterVariables(Expr* before,
-                                                 std::set<VarSymbol*>& ignored) const;
+  void destroyOuterVariables(Expr* before, std::set<VarSymbol*>& ignored) const;
 
   // Returns true if the variable has already been initialized - and
   // has not already been deinitialized - in this or a parent scope.
   // Returns false otherwise.
-  bool                     isVariableInitialized(VarSymbol* var) const;
+  bool isVariableInitialized(VarSymbol* var) const;
 
   // Returns true if the variable has been declared in this or a parent scope.
-  bool                     isVariableDeclared(VarSymbol* var) const;
+  bool isVariableDeclared(VarSymbol* var) const;
 
-  AutoDestroyScope*        mParent;
-  const BlockStmt*         mBlock;
+  AutoDestroyScope* mParent;
+  const BlockStmt* mBlock;
 
-  bool                     mLocalsHandled;     // Manage function epilogue
-  std::vector<CallExpr*>   mFormalTempActions; // e.g. = back for inout
-  std::vector<BaseAST*>    mLocalsAndDefers;   // VarSymbol* or DeferStmt*
+  bool mLocalsHandled;                       // Manage function epilogue
+  std::vector<CallExpr*> mFormalTempActions; // e.g. = back for inout
+  std::vector<BaseAST*> mLocalsAndDefers;    // VarSymbol* or DeferStmt*
   // note: mLocalsAndDefers contains both VarSymbol and DeferStmt in
   // order to create a single stack for cleanup operations to be executed.
   // In particular, the ordering between defer blocks and locals matters,
@@ -105,20 +104,19 @@ private:
   // in initialization order.
 
   // Which variables are declared in this scope?
-  std::set<VarSymbol*>     mDeclaredVars;
+  std::set<VarSymbol*> mDeclaredVars;
 
   // Which variables have been initialized in this scope
   // (possibly including outer variables)?
-  std::set<VarSymbol*>     mInitedVars;
+  std::set<VarSymbol*> mInitedVars;
 
   // Which outer variables have been initialized in this scope?
   // This vector lists them in initialization order.
-  std::vector<VarSymbol*>  mInitedOuterVars;
+  std::vector<VarSymbol*> mInitedOuterVars;
 
   // Which variables have been deinitialized early in this scope
   // (possibly including outer variables)?
-  std::set<VarSymbol*>     mDeinitedVars;
+  std::set<VarSymbol*> mDeinitedVars;
 };
 
 #endif
-

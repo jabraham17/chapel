@@ -28,40 +28,35 @@
 
 #include "global-ast-vecs.h"
 
-
 /////////////////////////////////////////////////////////////////////////////
 // needsShadowVar() and helpers
 //
 
 // Is 'sym' an index variable of 'fs' ?
-static bool isFsIndexVar(LoopWithShadowVarsInterface* fs, Symbol* sym)
-{
-  if (!sym->hasFlag(FLAG_INDEX_VAR))
-    return false;
+static bool isFsIndexVar(LoopWithShadowVarsInterface* fs, Symbol* sym) {
+  if (!sym->hasFlag(FLAG_INDEX_VAR)) return false;
 
   return fs->isInductionVar(sym);
 }
 
-static bool isFsShadowVar(LoopWithShadowVarsInterface* fs, Symbol* sym)
-{
-  if (!isShadowVarSymbol(sym))
-    return false;
+static bool isFsShadowVar(LoopWithShadowVarsInterface* fs, Symbol* sym) {
+  if (!isShadowVarSymbol(sym)) return false;
 
   return sym->defPoint->list == &fs->shadowVariables();
 }
 
-static bool needsShadowVar(LoopWithShadowVarsInterface* fs, BlockStmt* block, Symbol* sym) {
-  return
-    isLcnSymbol(sym)             && // include only variable-like things
-    sym->type != dtMethodToken   && // not a method token
-    sym->defPoint->parentSymbol != rootModule && // not a system symbol
-    !sym->isParameter()          && // not a param, including isImmediate()
-    !sym->hasFlag(FLAG_INSTANTIATED_PARAM) && // not a param, again
-    !sym->hasFlag(FLAG_TYPE_VARIABLE)      && // not a type alias or formal
-    !sym->hasFlag(FLAG_TEMP)     && // not a temp
-    !isFsIndexVar(fs, sym)       && // not fs's index var
-    !isFsShadowVar(fs, sym)      && // not fs's shadow var
-    isOuterVarLoop(sym, block);     // it must be an outer variable
+static bool
+needsShadowVar(LoopWithShadowVarsInterface* fs, BlockStmt* block, Symbol* sym) {
+  return isLcnSymbol(sym) &&           // include only variable-like things
+         sym->type != dtMethodToken && // not a method token
+         sym->defPoint->parentSymbol != rootModule && // not a system symbol
+         !sym->isParameter() && // not a param, including isImmediate()
+         !sym->hasFlag(FLAG_INSTANTIATED_PARAM) && // not a param, again
+         !sym->hasFlag(FLAG_TYPE_VARIABLE) &&      // not a type alias or formal
+         !sym->hasFlag(FLAG_TEMP) &&               // not a temp
+         !isFsIndexVar(fs, sym) &&                 // not fs's index var
+         !isFsShadowVar(fs, sym) &&                // not fs's shadow var
+         isOuterVarLoop(sym, block); // it must be an outer variable
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -80,11 +75,9 @@ bool preserveShadowVar(Symbol* var) {
       case TFI_REDUCE:
       case TFI_REDUCE_OP:
       case TFI_REDUCE_PARENT_AS:
-      case TFI_REDUCE_PARENT_OP:
-        return true;
+      case TFI_REDUCE_PARENT_OP: return true;
 
-      default:
-        break; // handle normally
+      default: break; // handle normally
     }
   }
 
@@ -94,13 +87,11 @@ bool preserveShadowVar(Symbol* var) {
 // If an outer var is nothing, it was probably pruned.
 // Replace it with none.
 void adjustNothingShadowVariables() {
-  forv_Vec(ShadowVarSymbol, svar, gShadowVarSymbols)
-    if (svar->inTree())
-      if (Symbol* ovar = svar->outerVarSym())
-        if (ovar->type == dtNothing) {
-          SET_LINENO(svar);
-          svar->outerVarSE->replace(new SymExpr(gNone));
-        }
+  forv_Vec(ShadowVarSymbol, svar, gShadowVarSymbols) if (svar->inTree()) if (
+    Symbol* ovar = svar->outerVarSym()) if (ovar->type == dtNothing) {
+    SET_LINENO(svar);
+    svar->outerVarSE->replace(new SymExpr(gNone));
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -113,8 +104,8 @@ void adjustNothingShadowVariables() {
 //  (b1) initialize from a Symbol, or
 //  (b2) initialize from an Expr, computing it into a temp.
 
-static void insertInitialization(BlockStmt* destBlock,
-                                 Symbol* destVar, Symbol* srcVar) {
+static void
+insertInitialization(BlockStmt* destBlock, Symbol* destVar, Symbol* srcVar) {
   destBlock->insertAtTail("'init var'(%S,%S)", destVar, srcVar);
 }
 
@@ -122,8 +113,8 @@ static void insertInitialization(ShadowVarSymbol* destVar, Symbol* srcVar) {
   insertInitialization(destVar->initBlock(), destVar, srcVar);
 }
 
-static void insertInitialization(BlockStmt* destBlock,
-                                 Symbol* destVar, Expr* srcExpr) {
+static void
+insertInitialization(BlockStmt* destBlock, Symbol* destVar, Expr* srcExpr) {
 
   Expr* initCall = new_Expr("'init var'(%S,%E)", destVar, srcExpr);
   destBlock->insertAtTail(initCall);
@@ -142,7 +133,8 @@ static void insertDeinitialization(ShadowVarSymbol* destVar) {
   insertDeinitialization(destVar->deinitBlock(), destVar);
 }
 
-static void resolveOneShadowVar(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* svar) {
+static void resolveOneShadowVar(LoopWithShadowVarsInterface* fs,
+                                ShadowVarSymbol* svar) {
   resolveBlockStmt(svar->initBlock());
   resolveBlockStmt(svar->deinitBlock());
 }
@@ -157,11 +149,12 @@ static void resolveOneShadowVar(LoopWithShadowVarsInterface* fs, ShadowVarSymbol
 // If this does not resolve, instead call:
 //   globalOp.accumulate(outerVar)
 //
-static void insertAndResolveInitialAccumulate(LoopWithShadowVarsInterface* fs, BlockStmt* hld,
-                                            Symbol* globalOp, Symbol* outerVar)
-{
-  CallExpr* initAccum = new CallExpr("initialAccumulate", gMethodToken,
-                                     globalOp, outerVar);
+static void insertAndResolveInitialAccumulate(LoopWithShadowVarsInterface* fs,
+                                              BlockStmt* hld,
+                                              Symbol* globalOp,
+                                              Symbol* outerVar) {
+  CallExpr* initAccum =
+    new CallExpr("initialAccumulate", gMethodToken, globalOp, outerVar);
   if (hld)
     hld->insertAtTail(initAccum);
   else
@@ -174,8 +167,8 @@ static void insertAndResolveInitialAccumulate(LoopWithShadowVarsInterface* fs, B
 
   } else {
     // No, call accumulate() instead.
-    CallExpr* accum = new CallExpr("accumulate", gMethodToken,
-                                   globalOp, outerVar);
+    CallExpr* accum =
+      new CallExpr("accumulate", gMethodToken, globalOp, outerVar);
     initAccum->replace(accum);
     initAccum = accum;
     initAccumOutcome = tryResolveCall(initAccum);
@@ -185,7 +178,12 @@ static void insertAndResolveInitialAccumulate(LoopWithShadowVarsInterface* fs, B
 
     } else {
       // The user must provide at least one of the two.
-      USR_FATAL_CONT(initAccum, "the reduction operation of the reduce intent for the variable %s does not provide initialAccumulate() or accumulate() that accepts the initial value of this variable", outerVar->name);
+      USR_FATAL_CONT(
+        initAccum,
+        "the reduction operation of the reduce intent for the variable %s does "
+        "not provide initialAccumulate() or accumulate() that accepts the "
+        "initial value of this variable",
+        outerVar->name);
 
       // We can continue compilation meanwhile.
       initAccum->remove();
@@ -210,7 +208,8 @@ static void insertAndResolveInitialAccumulate(LoopWithShadowVarsInterface* fs, B
 //
 // This is invoked only for ShadowVarLoopInterfaces representing reduce expressions.
 //
-static void workaroundForReduceIntoDetupleDecl(LoopWithShadowVarsInterface* fs, Symbol* svar) {
+static void workaroundForReduceIntoDetupleDecl(LoopWithShadowVarsInterface* fs,
+                                               Symbol* svar) {
   //
   // The pattern we are looking for is when 'svar' is used twice:
   // * as an outer variable of one of fs's shadow variables, and
@@ -220,19 +219,20 @@ static void workaroundForReduceIntoDetupleDecl(LoopWithShadowVarsInterface* fs, 
 
   // Find the SE using 'svar' as an outer var.
   SymExpr* ovarSE = NULL;
-  for_shadow_vars(sv2,temp,fs)
-    if (SymExpr* ovar2 = sv2->outerVarSE)
-      if (ovar2->symbol() == svar)
-        { ovarSE = ovar2; break; }
+  for_shadow_vars(sv2, temp, fs) if (SymExpr* ovar2 =
+                                       sv2->outerVarSE) if (ovar2->symbol() ==
+                                                            svar) {
+    ovarSE = ovar2;
+    break;
+  }
   if (ovarSE == NULL) return; // not our pattern
 
   // Find the other use of 'svar'.
   SymExpr* otherUse = NULL;
-  for_SymbolUses(useSE, svar)
-    if (useSE != ovarSE) {
-      if (otherUse != NULL) return; // too many uses - not our pattern
-      otherUse = useSE;
-    }
+  for_SymbolUses(useSE, svar) if (useSE != ovarSE) {
+    if (otherUse != NULL) return; // too many uses - not our pattern
+    otherUse = useSE;
+  }
   if (otherUse == NULL) return; // not our pattern
 
   // Find the var initialized from 'otherUse', if any.
@@ -250,21 +250,21 @@ static void workaroundForReduceIntoDetupleDecl(LoopWithShadowVarsInterface* fs, 
 
 // Finalize the reduction:  outerVar = globalOp.generate()
 static void insertFinalGenerate(LoopWithShadowVarsInterface* fs,
-                                Symbol* fiVarSym, Symbol* globalOp)
-{
+                                Symbol* fiVarSym,
+                                Symbol* globalOp) {
   if (fs->needsInitialAccumulate()) {
     VarSymbol* genTemp = newTemp("chpl_gentemp");
-    fs->asExpr()->insertAfter("chpl_check_assign_reduce_result(%S,%S)",
-                              fiVarSym, genTemp);
-    fs->asExpr()->insertAfter("'move'(%S, generate(%S,%S))",
-                    genTemp, gMethodToken, globalOp);
+    fs->asExpr()->insertAfter(
+      "chpl_check_assign_reduce_result(%S,%S)", fiVarSym, genTemp);
+    fs->asExpr()->insertAfter(
+      "'move'(%S, generate(%S,%S))", genTemp, gMethodToken, globalOp);
     fs->asExpr()->insertAfter(new DefExpr(genTemp));
     // TODO: Should we try to free chpl_gentemp right after the assignment?
     genTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
   } else {
     // Initialize, not assign. Do everything *after* 'fs'.
-    fs->asExpr()->insertAfter("'move'(%S, generate(%S,%S))",
-                    fiVarSym, gMethodToken, globalOp);
+    fs->asExpr()->insertAfter(
+      "'move'(%S, generate(%S,%S))", fiVarSym, gMethodToken, globalOp);
     fs->asExpr()->insertAfter(fiVarSym->defPoint->remove());
     fiVarSym->addFlag(FLAG_EXPR_TEMP);
     workaroundForReduceIntoDetupleDecl(fs, fiVarSym);
@@ -285,7 +285,8 @@ static void moveInstantiationPoint(BlockStmt* to, BlockStmt* from, Type* type) {
   // Vass 2018-08-01: Does not look like we can remove this yet. See ex.:
   //   release/examples/benchmarks/isx
   //   parallel/forall/reduce-intents
-  AggregateType* reductionClass = toAggregateType(canonicalDecoratedClassType(type));
+  AggregateType* reductionClass =
+    toAggregateType(canonicalDecoratedClassType(type));
   if (reductionClass->symbol->instantiationPoint == from) {
     reductionClass->symbol->instantiationPoint = to;
     forv_Vec(FnSymbol, fn, reductionClass->methods) {
@@ -296,10 +297,11 @@ static void moveInstantiationPoint(BlockStmt* to, BlockStmt* from, Type* type) {
   }
 }
 
-static Symbol* setupRiGlobalOp(LoopWithShadowVarsInterface* fs, Symbol* fiVarSym,
-                               Expr* origRiSpec, TypeSymbol* riTypeSym,
-                               Expr* eltTypeArg)
-{
+static Symbol* setupRiGlobalOp(LoopWithShadowVarsInterface* fs,
+                               Symbol* fiVarSym,
+                               Expr* origRiSpec,
+                               TypeSymbol* riTypeSym,
+                               Expr* eltTypeArg) {
   BlockStmt* hld = new BlockStmt(); // "holder"
   fs->asExpr()->insertBefore(hld);
 
@@ -307,7 +309,7 @@ static Symbol* setupRiGlobalOp(LoopWithShadowVarsInterface* fs, Symbol* fiVarSym
   hld->insertAtTail(new DefExpr(globalOp));
 
   if (!eltTypeArg) {
-    Type* eltType   = fiVarSym->qualType().type()->getValType();
+    Type* eltType = fiVarSym->qualType().type()->getValType();
     // fiVar should have been resolved already
     INT_ASSERT(eltType != dtUnknown && eltType != dtAny);
 
@@ -324,12 +326,13 @@ static Symbol* setupRiGlobalOp(LoopWithShadowVarsInterface* fs, Symbol* fiVarSym
     }
   }
 
-
   {
     NamedExpr* newArg = new NamedExpr("eltType", eltTypeArg);
-    CallExpr* newCall = new CallExpr(PRIM_NEW, new SymExpr(riTypeSym), newArg,
-                                     new NamedExpr(astr_chpl_manager,
-                                         new SymExpr(dtUnmanaged->symbol)));
+    CallExpr* newCall = new CallExpr(
+      PRIM_NEW,
+      new SymExpr(riTypeSym),
+      newArg,
+      new NamedExpr(astr_chpl_manager, new SymExpr(dtUnmanaged->symbol)));
     hld->insertAtTail(new CallExpr(PRIM_MOVE, globalOp, newCall));
   }
 
@@ -350,11 +353,11 @@ static Symbol* setupRiGlobalOp(LoopWithShadowVarsInterface* fs, Symbol* fiVarSym
   return globalOp;
 }
 
-static void handleRISpec(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* svar)
-{
+static void handleRISpec(LoopWithShadowVarsInterface* fs,
+                         ShadowVarSymbol* svar) {
   Symbol* globalOp = NULL;
   Symbol* fiVarSym = svar->outerVarSym();
-  Expr*   riSpec   = svar->reduceOpExpr();
+  Expr* riSpec = svar->reduceOpExpr();
   SET_LINENO(riSpec);
 
   if (SymExpr* riSE = toSymExpr(riSpec)) {
@@ -382,7 +385,11 @@ static void handleRISpec(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* svar)
     INT_ASSERT(riTypeSym); // non-types should be handled elsewhere
 
     if (riSpecCall->numActuals() != 1)
-      USR_FATAL(riSpecCall, "for a reduce intent, the 'reduce' keyword must be preceded by the reduction operator or the name of the reduction class with the single optional argument indicating the type of the reduction input");
+      USR_FATAL(
+        riSpecCall,
+        "for a reduce intent, the 'reduce' keyword must be preceded by the "
+        "reduction operator or the name of the reduction class with the single "
+        "optional argument indicating the type of the reduction input");
 
     riTypeSE->remove();
     Expr* eltTypeArg = riSpecCall->get(1)->remove();
@@ -396,34 +403,35 @@ static void handleRISpec(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* svar)
   if (globalOp) INT_ASSERT(globalOp); // dummy use of 'globalOp'
 }
 
-void  setReduceSVars(ShadowVarSymbol*& PRP, ShadowVarSymbol*& PAS,
-                     ShadowVarSymbol*& RP, ShadowVarSymbol* AS)
-{
-  DefExpr* defRP  = toDefExpr(AS->defPoint->prev);
+void setReduceSVars(ShadowVarSymbol*& PRP,
+                    ShadowVarSymbol*& PAS,
+                    ShadowVarSymbol*& RP,
+                    ShadowVarSymbol* AS) {
+  DefExpr* defRP = toDefExpr(AS->defPoint->prev);
   DefExpr* defPAS = toDefExpr(defRP->prev);
   DefExpr* defPRP = toDefExpr(defPAS->prev);
 
-  RP  = toShadowVarSymbol(defRP->sym);
+  RP = toShadowVarSymbol(defRP->sym);
   PAS = toShadowVarSymbol(defPAS->sym);
   PRP = toShadowVarSymbol(defPRP->sym);
 
-  INT_ASSERT(AS->intent  == TFI_REDUCE);
-  INT_ASSERT(RP->intent  == TFI_REDUCE_OP);
+  INT_ASSERT(AS->intent == TFI_REDUCE);
+  INT_ASSERT(RP->intent == TFI_REDUCE_OP);
   INT_ASSERT(PAS->intent == TFI_REDUCE_PARENT_AS);
   INT_ASSERT(PRP->intent == TFI_REDUCE_PARENT_OP);
 }
 
-static ShadowVarSymbol* create_REDUCE_PRP(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* AS)
-{
+static ShadowVarSymbol* create_REDUCE_PRP(LoopWithShadowVarsInterface* fs,
+                                          ShadowVarSymbol* AS) {
   // This is the global reduce op, either provided by user or set up by us.
   // PRP->outerVarSE will point to it.
   SymExpr* gOpSE = toSymExpr(AS->reduceOpExpr()->remove());
-  Symbol*  gOp   = gOpSE->symbol();
+  Symbol* gOp = gOpSE->symbol();
   // Handling of the case of gOp being a type should have happened earlier.
   INT_ASSERT(!gOp->hasFlag(FLAG_TYPE_VARIABLE));
 
-  ShadowVarSymbol* PRP = new ShadowVarSymbol(TFI_REDUCE_PARENT_OP,
-                                             astr("PRP_", AS->name), gOpSE);
+  ShadowVarSymbol* PRP =
+    new ShadowVarSymbol(TFI_REDUCE_PARENT_OP, astr("PRP_", AS->name), gOpSE);
 
   // It always points to the same reduction op class instance.
   PRP->addFlag(FLAG_CONST);
@@ -436,10 +444,10 @@ static ShadowVarSymbol* create_REDUCE_PRP(LoopWithShadowVarsInterface* fs, Shado
   return PRP;
 }
 
-static ShadowVarSymbol* create_REDUCE_PAS(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* AS)
-{
-  ShadowVarSymbol* PAS = new ShadowVarSymbol(TFI_REDUCE_PARENT_AS,
-                                             astr("PAS_", AS->name), NULL);
+static ShadowVarSymbol* create_REDUCE_PAS(LoopWithShadowVarsInterface* fs,
+                                          ShadowVarSymbol* AS) {
+  ShadowVarSymbol* PAS =
+    new ShadowVarSymbol(TFI_REDUCE_PARENT_AS, astr("PAS_", AS->name), NULL);
   PAS->qual = QUAL_VAL;
   PAS->type = AS->type;
 
@@ -449,11 +457,11 @@ static ShadowVarSymbol* create_REDUCE_PAS(LoopWithShadowVarsInterface* fs, Shado
   return PAS;
 }
 
-static ShadowVarSymbol* create_REDUCE_RP(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* PRP,
-                                         ShadowVarSymbol* AS)
-{
-  ShadowVarSymbol* RP = new ShadowVarSymbol(TFI_REDUCE_OP,
-                                            astr("RP_", AS->name), NULL);
+static ShadowVarSymbol* create_REDUCE_RP(LoopWithShadowVarsInterface* fs,
+                                         ShadowVarSymbol* PRP,
+                                         ShadowVarSymbol* AS) {
+  ShadowVarSymbol* RP =
+    new ShadowVarSymbol(TFI_REDUCE_OP, astr("RP_", AS->name), NULL);
 
   // It always points to the same reduction op class instance.
   RP->addFlag(FLAG_CONST);
@@ -468,12 +476,13 @@ static ShadowVarSymbol* create_REDUCE_RP(LoopWithShadowVarsInterface* fs, Shadow
 }
 
 static void setupForReduce(LoopWithShadowVarsInterface* fs,
-                           ShadowVarSymbol* PRP, ShadowVarSymbol* PAS,
-                           ShadowVarSymbol* RP,  ShadowVarSymbol* AS)
-{
+                           ShadowVarSymbol* PRP,
+                           ShadowVarSymbol* PAS,
+                           ShadowVarSymbol* RP,
+                           ShadowVarSymbol* AS) {
   // Put everything in AS's init/deinit block. No need to use the others'.
-  BlockStmt* IB  = AS->initBlock();
-  BlockStmt* DB  = AS->deinitBlock();
+  BlockStmt* IB = AS->initBlock();
+  BlockStmt* DB = AS->deinitBlock();
 
   /// at task startup ///
   insertInitialization(IB, RP, new_Expr("clone(%S,%S)", gMethodToken, PRP));
@@ -487,7 +496,7 @@ static void setupForReduce(LoopWithShadowVarsInterface* fs,
 
   // At the top level, we have global RP and global AS.
   // The global RP has already been set up. On to the global AS.
-  Symbol*    globalRP = PRP->outerVarSym();
+  Symbol* globalRP = PRP->outerVarSym();
   VarSymbol* globalAS = new VarSymbol(astr("globalAS_", AS->name), AS->type);
   globalAS->qual = QUAL_VAL;
 
@@ -498,8 +507,8 @@ static void setupForReduce(LoopWithShadowVarsInterface* fs,
   BlockStmt* holder1 = new BlockStmt();
   fs->asExpr()->insertBefore(holder1);
   holder1->insertAtTail(new DefExpr(globalAS));
-  insertInitialization(holder1, globalAS,
-                       new_Expr("identity(%S,%S)", gMethodToken, globalRP));
+  insertInitialization(
+    holder1, globalAS, new_Expr("identity(%S,%S)", gMethodToken, globalRP));
   resolveBlockStmt(holder1);
   PAS->type = globalAS->type; // now that we know it
   holder1->flattenAndRemove();
@@ -507,8 +516,8 @@ static void setupForReduce(LoopWithShadowVarsInterface* fs,
   /// after the forall ///
   BlockStmt* holder2 = new BlockStmt();
   fs->asExpr()->insertAfter(holder2);
-  holder2->insertAtTail("accumulate(%S,%S,%S)",
-                        gMethodToken, globalRP, globalAS);
+  holder2->insertAtTail(
+    "accumulate(%S,%S,%S)", gMethodToken, globalRP, globalAS);
   insertDeinitialization(holder2, globalAS);
   // the contents will be resolved after resolving 'fs'
   holder2->flattenAndRemove();
@@ -520,7 +529,8 @@ static void handleReduce(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* AS) {
   Symbol* ASovar = AS->outerVarSym();
   if (ASovar && ASovar->hasFlag(FLAG_CONST)) {
     USR_FATAL_CONT(fs->asExpr(),
-      "reduce intent is applied to a 'const' variable %s", ASovar->name);
+                   "reduce intent is applied to a 'const' variable %s",
+                   ASovar->name);
   }
 
   // The AS shadow var is a reference to the accumulation state.
@@ -532,15 +542,15 @@ static void handleReduce(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* AS) {
   // PRP, PAS, RP precede AS in fs->shadowVariables() in this order.
   ShadowVarSymbol* PRP = create_REDUCE_PRP(fs, AS);
   ShadowVarSymbol* PAS = create_REDUCE_PAS(fs, AS);
-  ShadowVarSymbol* RP  = create_REDUCE_RP(fs, PRP, AS);
+  ShadowVarSymbol* RP = create_REDUCE_RP(fs, PRP, AS);
   setupForReduce(fs, PRP, PAS, RP, AS);
 
   // Ensure setReduceSVars() works.
-  ShadowVarSymbol *PRP1=0, *PAS1=0, *RP1=0;
+  ShadowVarSymbol *PRP1 = 0, *PAS1 = 0, *RP1 = 0;
   setReduceSVars(PRP1, PAS1, RP1, AS);
   INT_ASSERT(PRP1 == PRP);
   INT_ASSERT(PAS1 == PAS);
-  INT_ASSERT(RP1  == RP);
+  INT_ASSERT(RP1 == RP);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -549,26 +559,25 @@ static void handleReduce(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* AS) {
 
 static ShadowVarSymbol* create_IN_Parentvar(LoopWithShadowVarsInterface* fs,
                                             ShadowVarSymbol* SI,
-                                            Symbol* userOuterVar)
-{
-  ShadowVarSymbol* INP = new ShadowVarSymbol(TFI_IN_PARENT,
-                                             astr("INP_", SI->name), NULL);
-  INP->addFlag(FLAG_CONST);  // make it be like 'const in'
+                                            Symbol* userOuterVar) {
+  ShadowVarSymbol* INP =
+    new ShadowVarSymbol(TFI_IN_PARENT, astr("INP_", SI->name), NULL);
+  INP->addFlag(FLAG_CONST); // make it be like 'const in'
   INP->qual = QUAL_CONST_VAL;
   INP->type = SI->type;
 
   // INP goes on the shadow variable list right before SI.
   SI->defPoint->insertBefore(new DefExpr(INP));
-  INT_ASSERT(SI->ParentvarForIN() == INP);  // ensure ParentvarForIN() works
+  INT_ASSERT(SI->ParentvarForIN() == INP); // ensure ParentvarForIN() works
 
   Symbol* INPovar = userOuterVar;
 
   if (userOuterVar->getValType() != SI->type) {
     // For example, when userOuterVar is "owned" and SI is "borrowed".
-    BlockStmt* holder  = new BlockStmt();
-    CallExpr*  cast    = createCast(userOuterVar, SI->type->symbol);
+    BlockStmt* holder = new BlockStmt();
+    CallExpr* cast = createCast(userOuterVar, SI->type->symbol);
     VarSymbol* inptemp = newTempConst("INPtemp", SI->type);
-    inptemp->qual      = QUAL_CONST_VAL;
+    inptemp->qual = QUAL_CONST_VAL;
     inptemp->addFlag(FLAG_TFI_BORROW_TEMP);
 
     fs->asExpr()->insertBefore(holder);
@@ -598,7 +607,8 @@ static void constDueToTFI(ShadowVarSymbol* svar, Symbol* ovar) {
     svar->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
 }
 
-static void handleIn(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* SI, bool isConst) {
+static void
+handleIn(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* SI, bool isConst) {
   Symbol* ovar = SI->outerVarSym();
 
   if (isConst) {
@@ -617,7 +627,8 @@ static void handleIn(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* SI, bool 
   resolveOneShadowVar(fs, INP);
 }
 
-static void handleRef(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* SR, bool isConst) {
+static void
+handleRef(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* SR, bool isConst) {
   Symbol* ovar = SR->outerVarSym();
   if (isConst) {
     SR->addFlag(FLAG_CONST);
@@ -627,40 +638,39 @@ static void handleRef(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* SR, bool
     SR->qual = QUAL_REF;
   }
   INT_ASSERT(SR->isRef());
-  if (ovar->isConstValWillNotChange())
-    SR->addFlag(FLAG_REF_TO_IMMUTABLE);
+  if (ovar->isConstValWillNotChange()) SR->addFlag(FLAG_REF_TO_IMMUTABLE);
 }
 
-static void handleTaskPrivate(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* TPV) {
+static void handleTaskPrivate(LoopWithShadowVarsInterface* fs,
+                              ShadowVarSymbol* TPV) {
   // initBlock() already comes from TPV's declaration in the with-clause,
   // so nothing to do with it.
 
   // Need deinitialization - for 'var'/'const' only. No deinit for refs.
-  if (!TPV->isRef())
-    insertDeinitialization(TPV);
+  if (!TPV->isRef()) insertDeinitialization(TPV);
 }
 
-static void handleOneShadowVar(LoopWithShadowVarsInterface* fs, ShadowVarSymbol* svar)
-{
+static void handleOneShadowVar(LoopWithShadowVarsInterface* fs,
+                               ShadowVarSymbol* svar) {
   if (svar->id == breakOnResolveID) debuggerBreakHere();
 
   switch (svar->intent) {
-    case TFI_IN:           handleIn(fs, svar, false);   break;
-    case TFI_CONST_IN:     handleIn(fs, svar, true);    break;
+    case TFI_IN: handleIn(fs, svar, false); break;
+    case TFI_CONST_IN: handleIn(fs, svar, true); break;
 
-    case TFI_REF:          handleRef(fs, svar, false);  break;
-    case TFI_CONST_REF:    handleRef(fs, svar, true);   break;
+    case TFI_REF: handleRef(fs, svar, false); break;
+    case TFI_CONST_REF: handleRef(fs, svar, true); break;
 
-    case TFI_REDUCE:       handleReduce(fs, svar);      break;
+    case TFI_REDUCE: handleReduce(fs, svar); break;
     case TFI_TASK_PRIVATE: handleTaskPrivate(fs, svar); break;
 
-    case TFI_DEFAULT:            // these should have been converted
-    case TFI_CONST:              INT_ASSERT(false);     break;
+    case TFI_DEFAULT: // these should have been converted
+    case TFI_CONST: INT_ASSERT(false); break;
 
-    case TFI_IN_PARENT:          // these have not been created yet
+    case TFI_IN_PARENT: // these have not been created yet
     case TFI_REDUCE_OP:
     case TFI_REDUCE_PARENT_AS:
-    case TFI_REDUCE_PARENT_OP:   INT_ASSERT(false);     break;
+    case TFI_REDUCE_PARENT_OP: INT_ASSERT(false); break;
   }
 
   resolveOneShadowVar(fs, svar);
@@ -671,24 +681,24 @@ static void handleOneShadowVar(LoopWithShadowVarsInterface* fs, ShadowVarSymbol*
 //
 
 static ForallIntentTag forallIntentForArgIntent(IntentTag intent) {
-  switch (intent)
-  {
-    case INTENT_IN:        return TFI_IN;
-    case INTENT_CONST:     return TFI_CONST;
-    case INTENT_CONST_IN:  return TFI_CONST_IN;
-    case INTENT_REF:       return TFI_REF;
+  switch (intent) {
+    case INTENT_IN: return TFI_IN;
+    case INTENT_CONST: return TFI_CONST;
+    case INTENT_CONST_IN: return TFI_CONST_IN;
+    case INTENT_REF: return TFI_REF;
     case INTENT_CONST_REF: return TFI_CONST_REF;
-    case INTENT_BLANK:     return TFI_DEFAULT;
+    case INTENT_BLANK: return TFI_DEFAULT;
     case INTENT_REF_MAYBE_CONST: return TFI_REF; //todo: TFI_REF_MAYBE_CONST ?
 
     case INTENT_OUT:
     case INTENT_INOUT:
     case INTENT_PARAM:
-    case INTENT_TYPE:     INT_ASSERT(false);   // don't know what to return
-                          return TFI_DEFAULT;  // dummy
+    case INTENT_TYPE:
+      INT_ASSERT(false);  // don't know what to return
+      return TFI_DEFAULT; // dummy
   }
-  INT_ASSERT(false);   // unexpected IntentTag; 'intent' contains garbage?
-  return TFI_DEFAULT;  // dummy
+  INT_ASSERT(false);  // unexpected IntentTag; 'intent' contains garbage?
+  return TFI_DEFAULT; // dummy
 }
 
 /*
@@ -712,7 +722,6 @@ Potential culprits:
 - others?
 */
 
-
 //
 // * If 'intent' is abstract, convert it to a concrete intent.
 // *
@@ -723,40 +732,40 @@ static void resolveShadowVarTypeIntent(LoopWithShadowVarsInterface* fs,
                                        Symbol* sym,
                                        Type*& type,
                                        ForallIntentTag& intent,
-                                       bool& prune)
-{
+                                       bool& prune) {
   switch (intent) {
     case TFI_DEFAULT:
     case TFI_CONST:
-    // Convert to a concrete intent.
-    {
-      Type* valType = type->getValType();
+      // Convert to a concrete intent.
+      {
+        Type* valType = type->getValType();
 
-      // For managed pointers, don't do ownership transfer by default.
-      // Instead, use the borrow type for the shadow variable.
-      if (isManagedPtrType(valType)) {
-        type    = getManagedPtrBorrowType(valType);
-        valType = type->getValType();
+        // For managed pointers, don't do ownership transfer by default.
+        // Instead, use the borrow type for the shadow variable.
+        if (isManagedPtrType(valType)) {
+          type = getManagedPtrBorrowType(valType);
+          valType = type->getValType();
+        }
+
+        IntentTag argInt =
+          (intent == TFI_DEFAULT) ? INTENT_BLANK : INTENT_CONST;
+        argInt = concreteIntent(argInt, valType);
+        intent = forallIntentForArgIntent(argInt);
+
+        break;
       }
 
-      IntentTag argInt = (intent == TFI_DEFAULT) ? INTENT_BLANK : INTENT_CONST;
-      argInt = concreteIntent(argInt, valType);
-      intent = forallIntentForArgIntent(argInt);
-
-      break;
-    }
-
-    case TFI_IN:               // Nothing to do for now.
+    case TFI_IN: // Nothing to do for now.
     case TFI_CONST_IN:
     case TFI_REF:
     case TFI_CONST_REF:
     case TFI_REDUCE:
-    case TFI_TASK_PRIVATE:      break;
+    case TFI_TASK_PRIVATE: break;
 
-    case TFI_IN_PARENT:         // These have not been created yet.
+    case TFI_IN_PARENT: // These have not been created yet.
     case TFI_REDUCE_OP:
     case TFI_REDUCE_PARENT_AS:
-    case TFI_REDUCE_PARENT_OP:  INT_ASSERT(false);  break;
+    case TFI_REDUCE_PARENT_OP: INT_ASSERT(false); break;
   }
 
   // Enforce val type for in- and ref-intents.
@@ -764,18 +773,18 @@ static void resolveShadowVarTypeIntent(LoopWithShadowVarsInterface* fs,
     case TFI_IN:
     case TFI_CONST_IN:
     case TFI_REF:
-    case TFI_CONST_REF:         type = type->getValType(); break;
+    case TFI_CONST_REF: type = type->getValType(); break;
 
-    case TFI_REDUCE:            // Nothing to do for now.
-    case TFI_TASK_PRIVATE:      break;
+    case TFI_REDUCE: // Nothing to do for now.
+    case TFI_TASK_PRIVATE: break;
 
-    case TFI_DEFAULT:           // We just eliminated these.
-    case TFI_CONST:             INT_ASSERT(false); break;
+    case TFI_DEFAULT: // We just eliminated these.
+    case TFI_CONST: INT_ASSERT(false); break;
 
-    case TFI_IN_PARENT:         // These have not been created yet.
+    case TFI_IN_PARENT: // These have not been created yet.
     case TFI_REDUCE_OP:
     case TFI_REDUCE_PARENT_AS:
-    case TFI_REDUCE_PARENT_OP:  INT_ASSERT(false);  break;
+    case TFI_REDUCE_PARENT_OP: INT_ASSERT(false); break;
   }
 
   // Prune, as discussed in the above comment.
@@ -796,11 +805,10 @@ static void resolveShadowVarTypeIntent(LoopWithShadowVarsInterface* fs,
 
 // If 'sym' is the receiver and 'fs' has a shadow var for the receiver,
 // return that shadow var.
-static ShadowVarSymbol* svarForReceiver(LoopWithShadowVarsInterface* fs, Symbol* sym) {
+static ShadowVarSymbol* svarForReceiver(LoopWithShadowVarsInterface* fs,
+                                        Symbol* sym) {
   if (sym->name == astrThis && !sym->hasFlag(FLAG_TYPE_VARIABLE))
-    for_shadow_vars(SV, TEMP, fs)
-      if (SV->name == astrThis)
-        return SV;
+    for_shadow_vars(SV, TEMP, fs) if (SV->name == astrThis) return SV;
   return NULL;
 }
 
@@ -808,8 +816,7 @@ static ShadowVarSymbol* svarForReceiver(LoopWithShadowVarsInterface* fs, Symbol*
 static AggregateType* isRecordReceiver(Symbol* sym) {
   if (sym->hasFlag(FLAG_ARG_THIS) && !sym->hasFlag(FLAG_TYPE_VARIABLE))
     if (Type* type = sym->type->getValType())
-      if (isUserRecord(type))
-        return toAggregateType(type);
+      if (isUserRecord(type)) return toAggregateType(type);
   return NULL;
 }
 
@@ -833,19 +840,17 @@ static void assertNotRecordReceiver(Symbol* ovar, Expr* ref) {
 // At the same time, perform the substitutions already in 'outer2shadow'
 // except markPruned.
 //
-static void doImplicitShadowVars(LoopWithShadowVarsInterface* fs, BlockStmt* block,
-                                 SymbolMap& outer2shadow)
-{
+static void doImplicitShadowVars(LoopWithShadowVarsInterface* fs,
+                                 BlockStmt* block,
+                                 SymbolMap& outer2shadow) {
   std::vector<SymExpr*> symExprs;
-  for_alist(next_ast, block->body)
-    collectLcnSymExprs(next_ast, symExprs);
+  for_alist(next_ast, block->body) collectLcnSymExprs(next_ast, symExprs);
 
   for_vector(SymExpr, se, symExprs) {
     Symbol* sym = se->symbol();
 
-    if (Symbol* sub = outer2shadow.get(sym)) { // already know how to handle?
-      if (sub != markPruned)
-        se->setSymbol(sub); // substitute
+    if (Symbol* sub = outer2shadow.get(sym)) {   // already know how to handle?
+      if (sub != markPruned) se->setSymbol(sub); // substitute
       continue;
     }
 
@@ -862,21 +867,22 @@ static void doImplicitShadowVars(LoopWithShadowVarsInterface* fs, BlockStmt* blo
     }
 
     ForallIntentTag intent = TFI_DEFAULT;
-    Type* type  = sym->type;
-    bool  prune = false;
+    Type* type = sym->type;
+    bool prune = false;
     if (sym->type == dtUnknown)
       USR_FATAL(se, "'%s' appears to be used before it is defined", sym->name);
-    resolveShadowVarTypeIntent(fs, sym, type, intent, prune); // updates the args
+    resolveShadowVarTypeIntent(
+      fs, sym, type, intent, prune); // updates the args
 
-    if (prune) {                      // do not convert to shadow var
+    if (prune) { // do not convert to shadow var
       assertNotRecordReceiver(sym, se);
       outer2shadow.put(sym, markPruned);
       continue;
     }
 
     // Yes, convert to a shadow variable.
-    ShadowVarSymbol* svar = new ShadowVarSymbol(intent, sym->name,
-                                                new SymExpr(sym));
+    ShadowVarSymbol* svar =
+      new ShadowVarSymbol(intent, sym->name, new SymExpr(sym));
     svar->type = type;
     fs->shadowVariables().insertAtTail(new DefExpr(svar));
 
@@ -887,9 +893,9 @@ static void doImplicitShadowVars(LoopWithShadowVarsInterface* fs, BlockStmt* blo
   }
 }
 
-static void collectAndResolveImplicitShadowVars(LoopWithShadowVarsInterface* fs)
-{
-  if (!fs->needToHandleOuterVars())  // no shadow vars, please
+static void
+collectAndResolveImplicitShadowVars(LoopWithShadowVarsInterface* fs) {
+  if (!fs->needToHandleOuterVars()) // no shadow vars, please
     return;
 
   SET_LINENO(fs->asExpr());
@@ -898,11 +904,13 @@ static void collectAndResolveImplicitShadowVars(LoopWithShadowVarsInterface* fs)
   // These are the additional blocks to look into for outer/shadow variables.
   // This is specific to the start-of-resolution-of-LoopWithShadowVarsInterface point,
   // where most initBlock() and deinitBlock() are irrelevant/empty.
-  for_shadow_vars(svar, temp, fs)
-    if (svar->isTaskPrivate())
-      if (BlockStmt* initB = svar->initBlock())
-        if (!initB->body.empty())
-          doImplicitShadowVars(fs, initB, outer2shadow);
+  for_shadow_vars(
+    svar,
+    temp,
+    fs) if (svar->isTaskPrivate()) if (BlockStmt* initB =
+                                         svar->initBlock()) if (!initB->body
+                                                                   .empty())
+    doImplicitShadowVars(fs, initB, outer2shadow);
 
   // The bulk of the work is the loop body.
   doImplicitShadowVars(fs, fs->loopBody(), outer2shadow);
@@ -918,24 +926,21 @@ static Type* ovarOrSvarType(ShadowVarSymbol* svar) {
 static void removeUsesOfShadowVar(ShadowVarSymbol* svar) {
   // Substitute its uses with the outer var.
   Symbol* ovar = svar->outerVarSym();
-  for_SymbolSymExprs(se, svar)
-    se->setSymbol(ovar);
+  for_SymbolSymExprs(se, svar) se->setSymbol(ovar);
 
   // Remove it from the tree.
   svar->defPoint->remove();
 }
 
 static void resolveAndPruneExplicitShadowVars(LoopWithShadowVarsInterface* fs,
-                                              Expr* lastExplicitSVarDef)
-{
-  if (lastExplicitSVarDef == NULL)
-    return;  // there were no explicit shadow vars
+                                              Expr* lastExplicitSVarDef) {
+  if (lastExplicitSVarDef == NULL) return; // there were no explicit shadow vars
 
-  for_shadow_vars_and_defs(svar, svdef, temp, fs)
-  {
-    Type* type  = ovarOrSvarType(svar);
-    bool  prune = false;
-    resolveShadowVarTypeIntent(fs, svar, type, svar->intent, prune); // updates the args
+  for_shadow_vars_and_defs(svar, svdef, temp, fs) {
+    Type* type = ovarOrSvarType(svar);
+    bool prune = false;
+    resolveShadowVarTypeIntent(
+      fs, svar, type, svar->intent, prune); // updates the args
 
     // Ensure the svar is retained for a `this` with an explicit intent,
     // see convertFieldsOfRecordThis().
@@ -945,8 +950,7 @@ static void resolveAndPruneExplicitShadowVars(LoopWithShadowVarsInterface* fs,
     if (prune) {
       assertNotRecordReceiver(svar->outerVarSym(), svar->outerVarSE);
       removeUsesOfShadowVar(svar);
-    }
-    else {
+    } else {
       SET_LINENO(svar);
       svar->type = type;
       handleOneShadowVar(fs, svar);
@@ -970,18 +974,17 @@ static Symbol* isFieldAccess(AggregateType* recType, Expr* arg) {
         // field access.
         if (UnresolvedSymExpr* base = toUnresolvedSymExpr(call->baseExpr))
           if (Symbol* fieldSym = recType->getField(base->unresolved, false))
-            if (! fieldSym->hasFlag(FLAG_PARAM) &&
-                ! fieldSym->hasFlag(FLAG_TYPE_VARIABLE))
+            if (!fieldSym->hasFlag(FLAG_PARAM) &&
+                !fieldSym->hasFlag(FLAG_TYPE_VARIABLE))
               return fieldSym;
   return NULL;
 }
 
-static VarSymbol* createFieldRef(Expr* anchor, Symbol* thisSym,
-                                 Symbol* fieldSym, bool isConst)
-{
+static VarSymbol*
+createFieldRef(Expr* anchor, Symbol* thisSym, Symbol* fieldSym, bool isConst) {
   makeRefType(fieldSym->type);
-  VarSymbol* fieldRef = newTemp(astr(fieldSym->name, "_ref"),
-                                fieldSym->type->refType);
+  VarSymbol* fieldRef =
+    newTemp(astr(fieldSym->name, "_ref"), fieldSym->type->refType);
   fieldRef->qual = isConst ? QUAL_CONST_REF : QUAL_REF;
   if (isConst) fieldRef->addFlag(FLAG_CONST);
   anchor->insertBefore(new DefExpr(fieldRef));
@@ -1000,9 +1003,9 @@ static VarSymbol* createFieldRef(Expr* anchor, Symbol* thisSym,
 // Given a field "myField", create a shadow variable myField_SV
 // whose outer variable "myField_ref" is set up prior to 'fs':
 //   ref myField_ref = ovar.myField;
-static ShadowVarSymbol* createSVforFieldAccess(LoopWithShadowVarsInterface* fs, Symbol* ovar,
-                                               Symbol* field)
-{
+static ShadowVarSymbol* createSVforFieldAccess(LoopWithShadowVarsInterface* fs,
+                                               Symbol* ovar,
+                                               Symbol* field) {
   bool isConst = ovar->isConstant() || field->isConstant();
 
   // with --baseline, we have to be careful where we insert the initialization of
@@ -1010,12 +1013,11 @@ static ShadowVarSymbol* createSVforFieldAccess(LoopWithShadowVarsInterface* fs, 
   // symbol that has implicit ref intent, the initialization has to be in the
   // loop body.
   Expr* anchor = nullptr;
-  const bool insertIntoBody = fNoInlineIterators &&
-                              isAggregateType(field->type);
+  const bool insertIntoBody =
+    fNoInlineIterators && isAggregateType(field->type);
   if (!insertIntoBody || fs->isForallStmt()) {
     anchor = fs->asExpr();
-  }
-  else {
+  } else {
     CallExpr* noop = new CallExpr(PRIM_NOOP);
     fs->loopBody()->insertAtHead(noop);
     anchor = noop;
@@ -1023,14 +1025,13 @@ static ShadowVarSymbol* createSVforFieldAccess(LoopWithShadowVarsInterface* fs, 
   VarSymbol* fieldRef = createFieldRef(anchor, ovar, field, isConst);
 
   // Now create the shadow variable.
-  Type*           svarType   = field->type;
+  Type* svarType = field->type;
   ForallIntentTag svarIntent = isConst ? TFI_CONST : TFI_DEFAULT;
-  bool            pruneDummy = false;
+  bool pruneDummy = false;
   resolveShadowVarTypeIntent(fs, field, svarType, svarIntent, pruneDummy);
 
-  ShadowVarSymbol* svar = new ShadowVarSymbol(svarIntent,
-                                              astr(field->name, "_svar"),
-                                              new SymExpr(fieldRef));
+  ShadowVarSymbol* svar = new ShadowVarSymbol(
+    svarIntent, astr(field->name, "_svar"), new SymExpr(fieldRef));
   svar->type = svarType;
   fs->shadowVariables().insertAtTail(new DefExpr(svar));
   handleOneShadowVar(fs, svar);
@@ -1038,24 +1039,23 @@ static ShadowVarSymbol* createSVforFieldAccess(LoopWithShadowVarsInterface* fs, 
   return svar;
 }
 
-static void doConvertFieldsOfThis(LoopWithShadowVarsInterface* fs, AggregateType* recType,
-                                  ShadowVarSymbol* svar, Symbol* ovar)
-{
+static void doConvertFieldsOfThis(LoopWithShadowVarsInterface* fs,
+                                  AggregateType* recType,
+                                  ShadowVarSymbol* svar,
+                                  Symbol* ovar) {
   std::map<Symbol*, ShadowVarSymbol*> fieldVars;
 
   // This traversal covers the loop body as well as IB/DB.
   for_SymbolSymExprs(se, svar) {
     if (Symbol* fieldSym = isFieldAccess(recType, se)) {
       ShadowVarSymbol*& fieldSV = fieldVars[fieldSym];
-      if (fieldSV == NULL)
-        fieldSV = createSVforFieldAccess(fs, ovar, fieldSym);
+      if (fieldSV == NULL) fieldSV = createSVforFieldAccess(fs, ovar, fieldSym);
       se->parentExpr->replace(new SymExpr(fieldSV));
     }
   }
 
   // Remove 'svar' if it does not have any uses remaining.
-  if (svar->firstSymExpr() == NULL)
-    svar->defPoint->remove();
+  if (svar->firstSymExpr() == NULL) svar->defPoint->remove();
 }
 
 // This handles forall loops.
@@ -1075,11 +1075,10 @@ static void convertFieldsOfRecordReceiver(LoopWithShadowVarsInterface* fs) {
   // within another method. This is perhaps useless, however, because
   // scopeResolve/insertFieldAccess() prevents that from happening.
 
-  for_shadow_vars(svar, temp, fs)
-   if (! svar->svExplicit)
-    if (Symbol* ovar = svar->outerVarSym())
-      if (AggregateType* recType = isRecordReceiver(ovar))
-        doConvertFieldsOfThis(fs, recType, svar, ovar);
+  for_shadow_vars(svar, temp, fs) if (!svar->svExplicit) if (
+    Symbol* ovar = svar->outerVarSym()) if (AggregateType* recType =
+                                              isRecordReceiver(ovar))
+    doConvertFieldsOfThis(fs, recType, svar, ovar);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1087,13 +1086,10 @@ static void convertFieldsOfRecordReceiver(LoopWithShadowVarsInterface* fs) {
 // This code is invoked from elsewhere.
 
 // If 'fn' is nested in a method on a record, return its 'this' formal.
-static ArgSymbol* enclosingRecordThisArg(FnSymbol* fn)
-{
-  while (FnSymbol* parent = toFnSymbol(fn->defPoint->parentSymbol))
-  {
+static ArgSymbol* enclosingRecordThisArg(FnSymbol* fn) {
+  while (FnSymbol* parent = toFnSymbol(fn->defPoint->parentSymbol)) {
     if (ArgSymbol* thisArg = toArgSymbol(parent->_this))
-      if (isRecordReceiver(thisArg))
-        return thisArg;
+      if (isRecordReceiver(thisArg)) return thisArg;
 
     if (parent->hasFlag(FLAG_METHOD))
       // A method on a non-record or a weird-o lacking _this.
@@ -1107,14 +1103,13 @@ static ArgSymbol* enclosingRecordThisArg(FnSymbol* fn)
 
 // This adds a new formal to 'fn' and augments all calls to 'fn'
 // to pass a field access to that formal.
-static ArgSymbol* createArgForFieldAccess(ArgSymbol* thisArg, FnSymbol* fn,
-                                          Symbol* fieldSym)
-{
+static ArgSymbol*
+createArgForFieldAccess(ArgSymbol* thisArg, FnSymbol* fn, Symbol* fieldSym) {
   bool isConst = thisArg->isConstant() || fieldSym->isConstant();
   // Create the formal.
   IntentTag intent = isConst ? INTENT_CONST : INTENT_BLANK;
-  ArgSymbol* fieldArg = new ArgSymbol(intent, astr(fieldSym->name, "_arg"),
-                                      fieldSym->type);
+  ArgSymbol* fieldArg =
+    new ArgSymbol(intent, astr(fieldSym->name, "_arg"), fieldSym->type);
   fieldArg->addFlag(FLAG_FIELD_ACCESSOR);
   fn->insertFormalAtTail(fieldArg);
 
@@ -1125,8 +1120,8 @@ static ArgSymbol* createArgForFieldAccess(ArgSymbol* thisArg, FnSymbol* fn,
     CallExpr* fnCall = toCallExpr(fnse->parentExpr);
     INT_ASSERT(fnCall->baseExpr == fnse); // expect a simple call to task fn
 
-    VarSymbol* fieldRef = createFieldRef(fnCall->getStmtExpr(), thisArg,
-                                         fieldSym, isConst);
+    VarSymbol* fieldRef =
+      createFieldRef(fnCall->getStmtExpr(), thisArg, fieldSym, isConst);
     fnCall->insertAtTail(fieldRef);
   }
 
@@ -1141,10 +1136,10 @@ void convertFieldsOfRecordThis(FnSymbol* fn) {
   // to something that is created by the compiler, rather than
   // something that corresponds to a task construct in user code.
   // Future work: do this during createTaskFunctions().
-  INT_ASSERT(! resolved);
+  INT_ASSERT(!resolved);
 
   ArgSymbol* thisArg = enclosingRecordThisArg(fn);
-  if (! thisArg) return; // not in a method on a record
+  if (!thisArg) return; // not in a method on a record
   AggregateType* thisType = toAggregateType(thisArg->type->getValType());
   std::map<Symbol*, ArgSymbol*> fieldArgs;
 
@@ -1154,22 +1149,20 @@ void convertFieldsOfRecordThis(FnSymbol* fn) {
   // so fields of `this` will not be converted.
   std::vector<SymExpr*> symExprs;
   collectSymExprsFor(fn, thisArg, symExprs);
-  for_vector(SymExpr, se, symExprs)
-    if (Symbol* fieldSym = isFieldAccess(thisType, se))
-     {
-       ArgSymbol*& fieldArg = fieldArgs[fieldSym];
-       if (fieldArg == NULL)
-         fieldArg = createArgForFieldAccess(thisArg, fn, fieldSym);
-       se->parentExpr->replace(new SymExpr(fieldArg));
-     }
+  for_vector(SymExpr, se, symExprs) if (Symbol* fieldSym =
+                                          isFieldAccess(thisType, se)) {
+    ArgSymbol*& fieldArg = fieldArgs[fieldSym];
+    if (fieldArg == NULL)
+      fieldArg = createArgForFieldAccess(thisArg, fn, fieldSym);
+    se->parentExpr->replace(new SymExpr(fieldArg));
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////
 // setupAndResolveShadowVars() - the driver
 //
 
-void setupAndResolveShadowVars(LoopWithShadowVarsInterface* fs)
-{
+void setupAndResolveShadowVars(LoopWithShadowVarsInterface* fs) {
   // Remember the last explicit shadow variable on the list, so that
   // resolveAndPruneExplicitShadowVars() stops there and does not deal
   // with the ones added by collectAndResolveImplicitShadowVars().

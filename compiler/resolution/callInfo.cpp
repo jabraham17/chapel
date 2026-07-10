@@ -28,9 +28,9 @@
 #include "stringutil.h"
 
 CallInfo::CallInfo() {
-  call  = NULL;
+  call = NULL;
   scope = NULL;
-  name  = NULL;
+  name = NULL;
 }
 
 bool CallInfo::isWellFormed(CallExpr* callExpr) {
@@ -89,8 +89,8 @@ bool CallInfo::isWellFormed(CallExpr* callExpr) {
 
     INT_ASSERT(se);
 
-    Symbol*  sym = se->symbol();
-    Type*    t   = sym->type;
+    Symbol* sym = se->symbol();
+    Type* t = sym->type;
 
     if (t == dtUnknown && sym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
       retval = false;
@@ -112,52 +112,50 @@ void CallInfo::haltNotWellFormed() const {
     }
 
     if (isDefExpr(actual)) {
-      USR_FATAL(actual, "Query expressions are not currently supported in this context");
+      USR_FATAL(
+        actual,
+        "Query expressions are not currently supported in this context");
     }
 
     SymExpr* se = toSymExpr(actual);
     INT_ASSERT(se);
 
-    Symbol*  sym = se->symbol();
-    Type*    t   = sym->type;
+    Symbol* sym = se->symbol();
+    Type* t = sym->type;
 
     if (t == dtUnknown && sym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
       USR_FATAL(call,
                 "use of '%s' before encountering its definition, "
                 "type unknown",
                 sym->name);
-
     }
   }
 }
 
 const char* CallInfo::toString() {
-  bool        method = false;
-  bool        _this  = false;
-  int         start  = 0;
+  bool method = false;
+  bool _this = false;
+  int start = 0;
   const char* retval = "";
 
-  if (actuals.n            >  1 &&
-      actuals.head()->type == dtMethodToken) {
+  if (actuals.n > 1 && actuals.head()->type == dtMethodToken) {
     method = true;
-    start  =    2;
+    start = 2;
   }
 
   if (name == astrThis) {
-    _this  =  true;
+    _this = true;
     method = false;
-    start  =     2;
+    start = 2;
   }
 
   if (method == true) {
-    if (actuals.v[1] &&
-        actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
-      retval = astr(retval, "type ",
-                    ::toString(actuals.v[1]->type, false), ".");
+    if (actuals.v[1] && actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE)) {
+      retval =
+        astr(retval, "type ", ::toString(actuals.v[1]->type, false), ".");
 
     } else {
-      retval = astr(retval,
-                    ::toString(actuals.v[1]->type, false), ".");
+      retval = astr(retval, ::toString(actuals.v[1]->type, false), ".");
     }
   }
 
@@ -174,11 +172,11 @@ const char* CallInfo::toString() {
   }
 
   for (int i = start; i < actuals.n; i++) {
-    Symbol*        sym  = actuals.v[i];
-    VarSymbol*     var  = toVarSymbol(sym);
-    Type*          type = sym->type;
-    AggregateType* at   = toAggregateType(type);
-    IteratorInfo*  ii   = (at != NULL) ? at->iteratorInfo : NULL;
+    Symbol* sym = actuals.v[i];
+    VarSymbol* var = toVarSymbol(sym);
+    Type* type = sym->type;
+    AggregateType* at = toAggregateType(type);
+    IteratorInfo* ii = (at != NULL) ? at->iteratorInfo : NULL;
 
     if (i > start) {
       retval = astr(retval, ", ");
@@ -188,7 +186,7 @@ const char* CallInfo::toString() {
       retval = astr(retval, actualNames.v[i], "=");
     }
 
-    if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)   == true &&
+    if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD) == true &&
         ii->iterator->hasFlag(FLAG_PROMOTION_WRAPPER) == true) {
       retval = astr(retval, "promoted expression");
 
@@ -204,17 +202,16 @@ const char* CallInfo::toString() {
 
       } else {
         const size_t bufSize = 512;
-        char         buff[bufSize];
+        char buff[bufSize];
 
         snprint_imm(buff, bufSize, *var->immediate);
 
         std::string s = buff;
-        if (isImagType(type))
-          s += 'i';
+        if (isImagType(type)) s += 'i';
 
         // Add the type if it's not default
-        if (isNumericParamDefaultType(type) == false &&
-            type != dtUnknown && type != dtString && type != dtBytes) {
+        if (isNumericParamDefaultType(type) == false && type != dtUnknown &&
+            type != dtString && type != dtBytes) {
           s += ": ";
           s += ::toString(type);
         }

@@ -107,20 +107,19 @@ static const bool debugOutputOnError = false;
  */
 
 namespace {
-  struct LifetimeState;
+struct LifetimeState;
 }
 
 // Used to communicate lifetime queries between this and
 // the unordered forall optimization
 class LifetimeInformation {
-  public:
-    LifetimeState* lifetimes;
+ public:
+  LifetimeState* lifetimes;
 };
-
 
 namespace {
 
-  /* A Lifetime describes the limits on when a variable is
+/* A Lifetime describes the limits on when a variable is
      usable. It might be infinite (e.g. referring to / borrowing
      a global). It might represent an argument that has
      return scope set on it. Beyond those flags, the key information
@@ -130,40 +129,38 @@ namespace {
      In other words, the lexical scope of fromSymbolScope
      determines the lifetime.
    */
-  struct Lifetime {
-    // if non-NULL, the scope of this symbol represents the lifetime
-    Symbol* fromSymbolScope;
-    // relevant expression for this lifetime, for errors
-    Expr* relevantExpr;
-    // is this lifetime unknown?
-    bool unknown;
-    // is this lifetime infinite?
-    bool infinite;
-    // is this lifetime return scope - i.e. allowing it to be returned?
-    bool returnScope;
-    Lifetime()
-      : fromSymbolScope(NULL), relevantExpr(NULL),
-        unknown(true), infinite(false), returnScope(false)
-    {
-    }
-  };
+struct Lifetime {
+  // if non-NULL, the scope of this symbol represents the lifetime
+  Symbol* fromSymbolScope;
+  // relevant expression for this lifetime, for errors
+  Expr* relevantExpr;
+  // is this lifetime unknown?
+  bool unknown;
+  // is this lifetime infinite?
+  bool infinite;
+  // is this lifetime return scope - i.e. allowing it to be returned?
+  bool returnScope;
+  Lifetime()
+    : fromSymbolScope(NULL), relevantExpr(NULL), unknown(true), infinite(false),
+      returnScope(false) {}
+};
 
-  /* A LifetimePair simply stores the combination of a
+/* A LifetimePair simply stores the combination of a
      ref lifetime and a borrow lifetime. The lifetime analysis
      for refs and borrows is slightly different and so both
      lifetimes are tracked simultaneously in a LifetimePair. */
-  struct LifetimePair {
-    // referent lifetime is the scope of what a ref variable might refer to
-    Lifetime referent;
-    // borrowed lifetime is the scope of what borrowed class instances
-    // might refer to. This might be longer than the referent lifetime.
-    Lifetime borrowed;
-  };
+struct LifetimePair {
+  // referent lifetime is the scope of what a ref variable might refer to
+  Lifetime referent;
+  // borrowed lifetime is the scope of what borrowed class instances
+  // might refer to. This might be longer than the referent lifetime.
+  Lifetime borrowed;
+};
 
-  typedef std::map<Symbol*,LifetimePair> SymbolToLifetimeMap;
-  typedef std::map<CallExpr*,LifetimePair> ReturnToLifetimeMap;
+typedef std::map<Symbol*, LifetimePair> SymbolToLifetimeMap;
+typedef std::map<CallExpr*, LifetimePair> ReturnToLifetimeMap;
 
-  /* A DetempGroup stores a group of Symbols that really refer
+/* A DetempGroup stores a group of Symbols that really refer
      to the same variable. The lifetime analysis uses a `detemp`
      map to find the `canonical` variable for a given Symbol so
      that it doesn't need to concern itself with temporary variables
@@ -175,186 +172,180 @@ namespace {
       2) a `favorite` Symbol - this is the Symbol to return when
          getting the canonical variable.
    */
-  struct DetempGroup {
-    Symbol* favorite;
-    std::vector<Symbol*> elements;
-    DetempGroup() : favorite(NULL), elements() { }
-  };
+struct DetempGroup {
+  Symbol* favorite;
+  std::vector<Symbol*> elements;
+  DetempGroup() : favorite(NULL), elements() {}
+};
 
-  struct DeinitOrderNode {
-    int order; // a kind of statement numbering
-    Expr* ast;
-    DeinitOrderNode* nestedOrder; // nested blocks, if-then blocks
-    DeinitOrderNode* elseOrder;
-    DeinitOrderNode()
-      : order(0), ast(NULL),
-        nestedOrder(NULL), elseOrder(NULL)
-    { }
-    DeinitOrderNode(Expr* e)
-      : order(1), ast(e),
-        nestedOrder(NULL), elseOrder(NULL)
-    { }
-  };
+struct DeinitOrderNode {
+  int order; // a kind of statement numbering
+  Expr* ast;
+  DeinitOrderNode* nestedOrder; // nested blocks, if-then blocks
+  DeinitOrderNode* elseOrder;
+  DeinitOrderNode() : order(0), ast(NULL), nestedOrder(NULL), elseOrder(NULL) {}
+  DeinitOrderNode(Expr* e)
+    : order(1), ast(e), nestedOrder(NULL), elseOrder(NULL) {}
+};
 
-  typedef std::map<Symbol*,DetempGroup*> SymbolToDetempGroupMap;
-  typedef std::set<DetempGroup*> DetempGroupSet;
-  typedef std::set<CallExpr*> CallExprSet;
-  typedef std::set<FnSymbol*> LocalFunctionsSet;
-  typedef std::map<Symbol*, DeinitOrderNode> DeinitOrderMap;
-  typedef std::map<Stmt*, DeinitOrderNode> DeinitOrderBlockMap;
+typedef std::map<Symbol*, DetempGroup*> SymbolToDetempGroupMap;
+typedef std::set<DetempGroup*> DetempGroupSet;
+typedef std::set<CallExpr*> CallExprSet;
+typedef std::set<FnSymbol*> LocalFunctionsSet;
+typedef std::map<Symbol*, DeinitOrderNode> DeinitOrderMap;
+typedef std::map<Stmt*, DeinitOrderNode> DeinitOrderBlockMap;
 
-  enum struct LifetimeComparisonResult {
-    UNKNOWN, // means it could be either/both (possible in a conditional)
-    SHORTER,
-    LONGER,
-  };
+enum struct LifetimeComparisonResult {
+  UNKNOWN, // means it could be either/both (possible in a conditional)
+  SHORTER,
+  LONGER,
+};
 
-  struct LifetimeState {
-    // this mapping allows the pass to ignore certain compiler temps
-    SymbolToDetempGroupMap detemp;
-    CallExprSet callsToIgnore;
+struct LifetimeState {
+  // this mapping allows the pass to ignore certain compiler temps
+  SymbolToDetempGroupMap detemp;
+  CallExprSet callsToIgnore;
 
-    // this mapping stores the order of deinitialization for each variable.
-    // if a and b are variables, and deinitPoint(a) < deinitPoint(b),
-    // then a has shorter lifetime than b.
-    // the mapping intentionally assigns several deinits at the end of a block
-    // the same value.
-    DeinitOrderMap order;
-    DeinitOrderBlockMap blockOrder;
+  // this mapping stores the order of deinitialization for each variable.
+  // if a and b are variables, and deinitPoint(a) < deinitPoint(b),
+  // then a has shorter lifetime than b.
+  // the mapping intentionally assigns several deinits at the end of a block
+  // the same value.
+  DeinitOrderMap order;
+  DeinitOrderBlockMap blockOrder;
 
-    // We try to run the analysis as though task functions didn't
-    // exist. This set is the set of functions we should consider
-    // to be the currently analyzed function and can include task functions.
-    LocalFunctionsSet inFns;
+  // We try to run the analysis as though task functions didn't
+  // exist. This set is the set of functions we should consider
+  // to be the currently analyzed function and can include task functions.
+  LocalFunctionsSet inFns;
 
-    // intrinsic lifetime is normally the scope of a variable.
-    // It might be otherwise for array slices.
-    // Unlike inferred lifetime, it never changes.
-    SymbolToLifetimeMap intrinsicLifetime;
+  // intrinsic lifetime is normally the scope of a variable.
+  // It might be otherwise for array slices.
+  // Unlike inferred lifetime, it never changes.
+  SymbolToLifetimeMap intrinsicLifetime;
 
-    // inferred lifetime is the lifetime the inference pass has assigned
-    // to a variable. It should only be set in the event that the variable
-    // possibly refers to / borrows another variable. When that happens,
-    // one variable's inferred lifetime will become the minimum of the
-    // other variable's intrinsic and inferred lifetimes.
-    SymbolToLifetimeMap inferredLifetime;
+  // inferred lifetime is the lifetime the inference pass has assigned
+  // to a variable. It should only be set in the event that the variable
+  // possibly refers to / borrows another variable. When that happens,
+  // one variable's inferred lifetime will become the minimum of the
+  // other variable's intrinsic and inferred lifetimes.
+  SymbolToLifetimeMap inferredLifetime;
 
-    ~LifetimeState();
+  ~LifetimeState();
 
-    Symbol* getCanonicalSymbol(Symbol* sym);
+  Symbol* getCanonicalSymbol(Symbol* sym);
 
-    LifetimePair intrinsicLifetimeForSymbol(Symbol* sym);
+  LifetimePair intrinsicLifetimeForSymbol(Symbol* sym);
 
-    bool setInferredLifetimeToMin(Symbol* sym, LifetimePair lt);
-    LifetimePair inferredLifetimeForSymbol(Symbol* sym);
+  bool setInferredLifetimeToMin(Symbol* sym, LifetimePair lt);
+  LifetimePair inferredLifetimeForSymbol(Symbol* sym);
 
-    // min of intrinsicLifetimeForSymbol, inferredLifetimeForSymbol
-    LifetimePair combinedLifetimeForSymbol(Symbol* sym);
-    // lifetime for use in inference
-    LifetimePair lifetimeForActual(Symbol* sym,
-                                   bool usedAsRef,
-                                   bool usedAsBorrow);
+  // min of intrinsicLifetimeForSymbol, inferredLifetimeForSymbol
+  LifetimePair combinedLifetimeForSymbol(Symbol* sym);
+  // lifetime for use in inference
+  LifetimePair
+  lifetimeForActual(Symbol* sym, bool usedAsRef, bool usedAsBorrow);
 
-    LifetimePair inferredLifetimeForCall(CallExpr* call);
-    LifetimePair inferredLifetimeForPrimitive(CallExpr* call);
-    LifetimePair inferredLifetimeForExpr(Expr* call, bool usedAsRef, bool usedAsBorrow);
+  LifetimePair inferredLifetimeForCall(CallExpr* call);
+  LifetimePair inferredLifetimeForPrimitive(CallExpr* call);
+  LifetimePair
+  inferredLifetimeForExpr(Expr* call, bool usedAsRef, bool usedAsBorrow);
 
-    bool isLocalVariable(Symbol* sym);
-    bool shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym);
+  bool isLocalVariable(Symbol* sym);
+  bool shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym);
 
-    DeinitOrderNode* deinitOrderNodeFor(Symbol* sym);
-    LifetimeComparisonResult helpIsLifetimeShorter(DeinitOrderNode* aNode,
-                                                   DeinitOrderNode* bNode);
-    bool isLifetimeShorter(Lifetime a, Lifetime b);
-    Lifetime minimumLifetime(Lifetime a, Lifetime b);
-    LifetimePair minimumLifetimePair(LifetimePair a, LifetimePair b);
-    bool isLifetimeUnspecifiedFormalOrdering(Lifetime a, Lifetime b);
-  };
+  DeinitOrderNode* deinitOrderNodeFor(Symbol* sym);
+  LifetimeComparisonResult helpIsLifetimeShorter(DeinitOrderNode* aNode,
+                                                 DeinitOrderNode* bNode);
+  bool isLifetimeShorter(Lifetime a, Lifetime b);
+  Lifetime minimumLifetime(Lifetime a, Lifetime b);
+  LifetimePair minimumLifetimePair(LifetimePair a, LifetimePair b);
+  bool isLifetimeUnspecifiedFormalOrdering(Lifetime a, Lifetime b);
+};
 
-  class DeinitOrderVisitor final : public AstVisitorTraverse {
+class DeinitOrderVisitor final : public AstVisitorTraverse {
 
-    public:
-      LifetimeState* lifetimes;
-      std::vector<DeinitOrderNode*> orderStack;
-      bool debugging;
-      int skipEarlyDeinitsForUnconditionalReturn;
+ public:
+  LifetimeState* lifetimes;
+  std::vector<DeinitOrderNode*> orderStack;
+  bool debugging;
+  int skipEarlyDeinitsForUnconditionalReturn;
 
-      DeinitOrderVisitor(LifetimeState* lifetimes, bool debugging)
-        : lifetimes(lifetimes), debugging(debugging),
-          skipEarlyDeinitsForUnconditionalReturn(0)
-      { }
-      bool enterScope(Expr* block);
-      void exitScope(Expr* block);
+  DeinitOrderVisitor(LifetimeState* lifetimes, bool debugging)
+    : lifetimes(lifetimes), debugging(debugging),
+      skipEarlyDeinitsForUnconditionalReturn(0) {}
+  bool enterScope(Expr* block);
+  void exitScope(Expr* block);
 
-      void noteBlockOrder(BlockStmt* b);
-      void noteUnconditionalReturnInParentBlocks(Expr* ret);
+  void noteBlockOrder(BlockStmt* b);
+  void noteUnconditionalReturnInParentBlocks(Expr* ret);
 
-      // these are all just blocks for the analysis
-      bool enterBlockStmt(BlockStmt* node) override;
-      void exitBlockStmt(BlockStmt* node) override;
-      bool enterForallStmt(ForallStmt* node) override;
-      void exitForallStmt(ForallStmt* node) override;
-      bool enterWhileDoStmt(WhileDoStmt* node) override;
-      void exitWhileDoStmt(WhileDoStmt* node) override;
-      bool enterDoWhileStmt(DoWhileStmt* node) override;
-      void exitDoWhileStmt(DoWhileStmt* node) override;
-      bool enterCForLoop(CForLoop* node) override;
-      void exitCForLoop(CForLoop* node) override;
-      bool enterForLoop(ForLoop* node) override;
-      void exitForLoop(ForLoop* node) override;
+  // these are all just blocks for the analysis
+  bool enterBlockStmt(BlockStmt* node) override;
+  void exitBlockStmt(BlockStmt* node) override;
+  bool enterForallStmt(ForallStmt* node) override;
+  void exitForallStmt(ForallStmt* node) override;
+  bool enterWhileDoStmt(WhileDoStmt* node) override;
+  void exitWhileDoStmt(WhileDoStmt* node) override;
+  bool enterDoWhileStmt(DoWhileStmt* node) override;
+  void exitDoWhileStmt(DoWhileStmt* node) override;
+  bool enterCForLoop(CForLoop* node) override;
+  void exitCForLoop(CForLoop* node) override;
+  bool enterForLoop(ForLoop* node) override;
+  void exitForLoop(ForLoop* node) override;
 
-      bool enterCondStmt(CondStmt* cond) override;
-      bool enterCallExpr(CallExpr* call) override;
-      bool enterGotoStmt(GotoStmt* g) override;
-  };
+  bool enterCondStmt(CondStmt* cond) override;
+  bool enterCallExpr(CallExpr* call) override;
+  bool enterGotoStmt(GotoStmt* g) override;
+};
 
-  class GatherTempsVisitor final : public AstVisitorTraverse {
+class GatherTempsVisitor final : public AstVisitorTraverse {
 
-    public:
-      LifetimeState* lifetimes;
-      bool enterCallExpr(CallExpr* call) override;
-  };
-  class IntrinsicLifetimesVisitor final : public AstVisitorTraverse {
+ public:
+  LifetimeState* lifetimes;
+  bool enterCallExpr(CallExpr* call) override;
+};
+class IntrinsicLifetimesVisitor final : public AstVisitorTraverse {
 
-    public:
-      LifetimeState* lifetimes;
-      bool enterDefExpr(DefExpr* def) override;
-      bool enterCallExpr(CallExpr* call) override;
-  };
-  class InferLifetimesVisitor final : public AstVisitorTraverse {
+ public:
+  LifetimeState* lifetimes;
+  bool enterDefExpr(DefExpr* def) override;
+  bool enterCallExpr(CallExpr* call) override;
+};
+class InferLifetimesVisitor final : public AstVisitorTraverse {
 
-    public:
-      LifetimeState* lifetimes;
-      bool changed;
+ public:
+  LifetimeState* lifetimes;
+  bool changed;
 
-      bool enterCallExpr(CallExpr* call) override;
-      bool enterForLoop(ForLoop* forLoop) override;
+  bool enterCallExpr(CallExpr* call) override;
+  bool enterForLoop(ForLoop* forLoop) override;
 
-      void inferLifetimesForConstraint(CallExpr* forCall);
-      void inferLifetimesForConstraint(CallExpr* forCall, Expr* constraintExpr);
-  };
-  class EmitLifetimeErrorsVisitor final : public AstVisitorTraverse {
+  void inferLifetimesForConstraint(CallExpr* forCall);
+  void inferLifetimesForConstraint(CallExpr* forCall, Expr* constraintExpr);
+};
+class EmitLifetimeErrorsVisitor final : public AstVisitorTraverse {
 
-    public:
-      LifetimeState* lifetimes;
-      std::set<Symbol*> erroredSymbols; // to avoid duplicate errors
+ public:
+  LifetimeState* lifetimes;
+  std::set<Symbol*> erroredSymbols; // to avoid duplicate errors
 
-      bool enterCallExpr(CallExpr* call) override;
+  bool enterCallExpr(CallExpr* call) override;
 
-      void emitBadReturnErrors(CallExpr* call);
-      void emitBadAssignErrors(CallExpr* call);
-      void emitBadSetFieldErrors(CallExpr* call);
-      void emitErrors();
-  };
+  void emitBadReturnErrors(CallExpr* call);
+  void emitBadAssignErrors(CallExpr* call);
+  void emitBadSetFieldErrors(CallExpr* call);
+  void emitErrors();
+};
 
-  typedef enum {
-    CONSTRAINT_LESS = -11,
-    CONSTRAINT_LESS_EQ = -10,
-    CONSTRAINT_UNKNOWN = 0,
-    CONSTRAINT_EQUAL = 1,
-    CONSTRAINT_GREATER_EQ = 10,
-    CONSTRAINT_GREATER = 11,
-  } constraint_t;
+typedef enum {
+  CONSTRAINT_LESS = -11,
+  CONSTRAINT_LESS_EQ = -10,
+  CONSTRAINT_UNKNOWN = 0,
+  CONSTRAINT_EQUAL = 1,
+  CONSTRAINT_GREATER_EQ = 10,
+  CONSTRAINT_GREATER = 11,
+} constraint_t;
 
 } /* end anon namespace */
 
@@ -374,7 +365,8 @@ static Stmt* getDefBlock(Symbol* sym);
 static Expr* getParentExprIncludingTaskFnCalls(Expr* cur);
 static bool isBlockWithinBlock(Stmt* a, Stmt* b);
 static constraint_t orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b);
-static constraint_t orderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b);
+static constraint_t
+orderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b);
 static void printOrderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b);
 static void printOrderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b);
 static Lifetime scopeLifetimeForSymbol(Symbol* sym);
@@ -386,7 +378,7 @@ static bool debuggingLifetimesForFn(FnSymbol* fn);
 static void printLifetime(Lifetime lt);
 static void printLifetimePair(LifetimePair lt);
 static void printLifetimeState(LifetimeState* state);
-static void printDeinitOrderTree(const char* prefix,  DeinitOrderNode* node);
+static void printDeinitOrderTree(const char* prefix, DeinitOrderNode* node);
 static void handleDebugOutputOnError(Expr* e, LifetimeState* state);
 static bool shouldCheckLifetimesInFn(FnSymbol* fn);
 static void markArgumentsReturnScope(FnSymbol* fn);
@@ -437,11 +429,9 @@ static void checkFunction(FnSymbol* fn) {
 void checkLifetimesInFunction(FnSymbol* fn) {
 
   // No need to check lifetimes in string literal module.
-  if (fn->getModule() == stringLiteralModule)
-    return;
+  if (fn->getModule() == stringLiteralModule) return;
   // No need to lifetime check extern functions
-  if (fn->hasFlag(FLAG_EXTERN))
-    return;
+  if (fn->hasFlag(FLAG_EXTERN)) return;
   if (fn->hasFlag(FLAG_RESOLVED_EARLY)) {
     // TODO: temporary hack to avoid lifetime checking while we develop the
     // converter
@@ -512,7 +502,6 @@ void checkLifetimesInFunction(FnSymbol* fn) {
   }
 }
 
-
 static void markArgumentsReturnScope(FnSymbol* fn) {
   // Default for methods is to mark 'this' argument with return scope.
   // Default for everything else is to mark all arguments with return scope.
@@ -521,8 +510,7 @@ static void markArgumentsReturnScope(FnSymbol* fn) {
   // If not, we default to putting it on all of them.
   // If so, we put FLAG_SCOPE on the rest.
   for_formals(formal, fn) {
-    if (formal->hasFlag(FLAG_RETURN_SCOPE))
-      anyReturnScope = true;
+    if (formal->hasFlag(FLAG_RETURN_SCOPE)) anyReturnScope = true;
   }
 
   if (fn->isMethod() && fn->_this != NULL && !anyReturnScope &&
@@ -535,8 +523,7 @@ static void markArgumentsReturnScope(FnSymbol* fn) {
   }
 
   for_formals(formal, fn) {
-    if (formal->hasFlag(FLAG_SCOPE) ||
-        formal->hasFlag(FLAG_RETURN_SCOPE)) {
+    if (formal->hasFlag(FLAG_SCOPE) || formal->hasFlag(FLAG_RETURN_SCOPE)) {
       // OK
     } else {
       // Set it to the default
@@ -553,7 +540,7 @@ static void markArgumentsReturnScope(FnSymbol* fn) {
   }
 }
 
-static Symbol* getSymbolFromLifetimeClause(Expr* expr, bool &isRet) {
+static Symbol* getSymbolFromLifetimeClause(Expr* expr, bool& isRet) {
   if (CallExpr* call = toCallExpr(expr)) {
     if (call->isPrimitive(PRIM_LIFETIME_OF)) {
       SymExpr* se = toSymExpr(call->get(1));
@@ -569,80 +556,59 @@ static Symbol* getSymbolFromLifetimeClause(Expr* expr, bool &isRet) {
   return NULL;
 }
 
-static constraint_t mergeConstraints(constraint_t a, constraint_t b, bool& invalid) {
+static constraint_t
+mergeConstraints(constraint_t a, constraint_t b, bool& invalid) {
   invalid = false;
   switch (a) {
     case CONSTRAINT_LESS:
       switch (b) {
         case CONSTRAINT_LESS:
         case CONSTRAINT_LESS_EQ:
-        case CONSTRAINT_UNKNOWN:
-          return CONSTRAINT_LESS;
+        case CONSTRAINT_UNKNOWN: return CONSTRAINT_LESS;
         case CONSTRAINT_EQUAL:
         case CONSTRAINT_GREATER_EQ:
-        case CONSTRAINT_GREATER:
-          invalid = true;
-          break;
+        case CONSTRAINT_GREATER: invalid = true; break;
       }
       break;
     case CONSTRAINT_LESS_EQ:
       switch (b) {
-        case CONSTRAINT_LESS:
-          return CONSTRAINT_LESS;
+        case CONSTRAINT_LESS: return CONSTRAINT_LESS;
         case CONSTRAINT_LESS_EQ:
-        case CONSTRAINT_UNKNOWN:
-          return CONSTRAINT_LESS_EQ;
+        case CONSTRAINT_UNKNOWN: return CONSTRAINT_LESS_EQ;
         case CONSTRAINT_GREATER_EQ:
-        case CONSTRAINT_EQUAL:
-          return CONSTRAINT_EQUAL;
-        case CONSTRAINT_GREATER:
-          invalid = true;
-          break;
+        case CONSTRAINT_EQUAL: return CONSTRAINT_EQUAL;
+        case CONSTRAINT_GREATER: invalid = true; break;
       }
       break;
-    case CONSTRAINT_UNKNOWN:
-      return b;
+    case CONSTRAINT_UNKNOWN: return b;
     case CONSTRAINT_EQUAL:
       switch (b) {
-        case CONSTRAINT_LESS:
-          invalid = true;
-          break;
+        case CONSTRAINT_LESS: invalid = true; break;
         case CONSTRAINT_LESS_EQ:
         case CONSTRAINT_UNKNOWN:
         case CONSTRAINT_EQUAL:
-        case CONSTRAINT_GREATER_EQ:
-          return CONSTRAINT_EQUAL;
-        case CONSTRAINT_GREATER:
-          invalid = true;
-          break;
+        case CONSTRAINT_GREATER_EQ: return CONSTRAINT_EQUAL;
+        case CONSTRAINT_GREATER: invalid = true; break;
       }
       break;
     case CONSTRAINT_GREATER_EQ:
       switch (b) {
-        case CONSTRAINT_LESS:
-          invalid = true;
-          break;
+        case CONSTRAINT_LESS: invalid = true; break;
         case CONSTRAINT_LESS_EQ:
-        case CONSTRAINT_EQUAL:
-          return CONSTRAINT_EQUAL;
+        case CONSTRAINT_EQUAL: return CONSTRAINT_EQUAL;
         case CONSTRAINT_GREATER_EQ:
-        case CONSTRAINT_UNKNOWN:
-          return CONSTRAINT_GREATER_EQ;
-        case CONSTRAINT_GREATER:
-          return CONSTRAINT_GREATER;
+        case CONSTRAINT_UNKNOWN: return CONSTRAINT_GREATER_EQ;
+        case CONSTRAINT_GREATER: return CONSTRAINT_GREATER;
       }
       break;
     case CONSTRAINT_GREATER:
       switch (b) {
         case CONSTRAINT_LESS:
         case CONSTRAINT_LESS_EQ:
-        case CONSTRAINT_EQUAL:
-          invalid = true;
-          break;
+        case CONSTRAINT_EQUAL: invalid = true; break;
         case CONSTRAINT_GREATER_EQ:
         case CONSTRAINT_UNKNOWN:
-        case CONSTRAINT_GREATER:
-          return CONSTRAINT_GREATER;
+        case CONSTRAINT_GREATER: return CONSTRAINT_GREATER;
       }
       break;
       // no default -> error if one is added
@@ -651,15 +617,14 @@ static constraint_t mergeConstraints(constraint_t a, constraint_t b, bool& inval
   return CONSTRAINT_UNKNOWN;
 }
 
-
 // -1 => isLifetimeShorter(a,b) == true
 //                    lifetime a < lifetime b
 // 0  => isLifetimeShorter(a,b) == false
 //       order unknown or equal
 // 1  => isLifetimeShorter(a,b) == false
 //       lifetime a > lifetime b
-static constraint_t orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
-{
+static constraint_t
+orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b) {
   if (CallExpr* call = toCallExpr(expr)) {
     if (call->isNamedAstr(astrScomma)) {
       constraint_t v1, v2, res;
@@ -668,8 +633,7 @@ static constraint_t orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
       v1 = orderConstraintFromClause(call->get(1), a, b);
       v2 = orderConstraintFromClause(call->get(2), a, b);
       res = mergeConstraints(v1, v2, invalid);
-      if (invalid)
-        USR_FATAL(expr, "Conflicting inequality in lifetime clause");
+      if (invalid) USR_FATAL(expr, "Conflicting inequality in lifetime clause");
       return res;
     } else if (call->isPrimitive(PRIM_RETURN)) {
       // No impact on isLifetimeShorter but could impact inference
@@ -682,8 +646,7 @@ static constraint_t orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
 
       lhs = getSymbolFromLifetimeClause(call->get(1), lhsRet);
       rhs = getSymbolFromLifetimeClause(call->get(2), lhsRet);
-      if (rhsRet)
-        USR_FATAL(call, "Cannot read lifetime of return in clause");
+      if (rhsRet) USR_FATAL(call, "Cannot read lifetime of return in clause");
       if (lhsRet) {
         // return lifetime = rhs
         // No impact on isLifetimeShorter but could impact inference
@@ -692,23 +655,21 @@ static constraint_t orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
 
       INT_ASSERT(lhs && rhs);
 
-      if ((a == lhs && b == rhs) ||
-          (b == lhs && a == rhs)) {
+      if ((a == lhs && b == rhs) || (b == lhs && a == rhs)) {
 
         bool invert = false;
-        if (a == rhs && b == lhs)
-          invert = true;
+        if (a == rhs && b == lhs) invert = true;
 
         if (call->isNamedAstr(astrSeq))
           return CONSTRAINT_EQUAL;
         else if (call->isNamedAstr(astrSlt))
-          return invert?CONSTRAINT_GREATER:CONSTRAINT_LESS;
+          return invert ? CONSTRAINT_GREATER : CONSTRAINT_LESS;
         else if (call->isNamedAstr(astrSlte) || call->isNamedAstr(astrSassign))
-          return invert?CONSTRAINT_GREATER_EQ:CONSTRAINT_LESS_EQ;
+          return invert ? CONSTRAINT_GREATER_EQ : CONSTRAINT_LESS_EQ;
         else if (call->isNamedAstr(astrSgt))
-          return invert?CONSTRAINT_LESS:CONSTRAINT_GREATER;
+          return invert ? CONSTRAINT_LESS : CONSTRAINT_GREATER;
         else if (call->isNamedAstr(astrSgte))
-          return invert?CONSTRAINT_LESS_EQ:CONSTRAINT_GREATER_EQ;
+          return invert ? CONSTRAINT_LESS_EQ : CONSTRAINT_GREATER_EQ;
         else
           INT_FATAL("Unhandled case");
       }
@@ -718,8 +679,8 @@ static constraint_t orderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
   return CONSTRAINT_UNKNOWN;
 }
 
-
-static constraint_t orderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b) {
+static constraint_t
+orderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b) {
   if (fn->lifetimeConstraints) {
     Expr* last = fn->lifetimeConstraints->body.last();
     return orderConstraintFromClause(last, a, b);
@@ -743,7 +704,7 @@ static Symbol* returnLifetimeFromClause(Expr* expr) {
       if (v1 && v2)
         USR_FATAL(expr,
                   "Lifetime clause includes multiple return specifications");
-      return v1?v1:v2;
+      return v1 ? v1 : v2;
     } else {
       if (call->isPrimitive(PRIM_RETURN)) {
         CallExpr* sub = toCallExpr(call->get(1));
@@ -758,34 +719,30 @@ static Symbol* returnLifetimeFromClause(Expr* expr) {
   return NULL;
 }
 
-
 static Symbol* returnLifetimeFromFnClause(FnSymbol* fn) {
-  if (fn->lifetimeConstraints == NULL)
-    return NULL;
+  if (fn->lifetimeConstraints == NULL) return NULL;
 
   Expr* last = fn->lifetimeConstraints->body.last();
   return returnLifetimeFromClause(last);
 }
 
 static bool isOuterVariable(FnSymbol* fn, Symbol* var) {
-  for (Expr* cur = var->defPoint;
-      cur != NULL;
-      cur = getParentExprIncludingTaskFnCalls(cur)) {
-    if (cur->parentSymbol == fn)
-      return false;
+  for (Expr* cur = var->defPoint; cur != NULL;
+       cur = getParentExprIncludingTaskFnCalls(cur)) {
+    if (cur->parentSymbol == fn) return false;
   }
 
   return true;
 }
 
-
-static bool isOuterLifetimeFromClause(LifetimeState& lifetimes, ArgSymbol* arg, Expr* clausePart) {
+static bool isOuterLifetimeFromClause(LifetimeState& lifetimes,
+                                      ArgSymbol* arg,
+                                      Expr* clausePart) {
   if (CallExpr* call = toCallExpr(clausePart)) {
     if (call->isNamedAstr(astrScomma)) {
       bool partOne = isOuterLifetimeFromClause(lifetimes, arg, call->get(1));
       bool partTwo = isOuterLifetimeFromClause(lifetimes, arg, call->get(2));
-      if (partOne || partTwo)
-        return true;
+      if (partOne || partTwo) return true;
     } else if (call->isPrimitive(PRIM_RETURN)) {
       return false;
     } else {
@@ -807,15 +764,13 @@ static bool isOuterLifetimeFromClause(LifetimeState& lifetimes, ArgSymbol* arg, 
 
       // arg > outerVariable
       if (lhs == arg && rhsOuter &&
-          (call->isNamedAstr(astrSeq) ||
-           call->isNamedAstr(astrSgt) ||
+          (call->isNamedAstr(astrSeq) || call->isNamedAstr(astrSgt) ||
            call->isNamedAstr(astrSgte)))
         return true;
 
       // outerVariable > arg
       if (rhs == arg && lhsOuter &&
-          (call->isNamedAstr(astrSeq) ||
-           call->isNamedAstr(astrSlt) ||
+          (call->isNamedAstr(astrSeq) || call->isNamedAstr(astrSlt) ||
            call->isNamedAstr(astrSlte) || call->isNamedAstr(astrSassign)))
         return true;
     }
@@ -823,8 +778,8 @@ static bool isOuterLifetimeFromClause(LifetimeState& lifetimes, ArgSymbol* arg, 
   return false;
 }
 
-static bool isOuterLifetimeFromClause(LifetimeState& lifetimes, ArgSymbol* arg)
-{
+static bool isOuterLifetimeFromClause(LifetimeState& lifetimes,
+                                      ArgSymbol* arg) {
   if (FnSymbol* fn = arg->defPoint->getFunction())
     if (fn->lifetimeConstraints)
       if (Expr* last = fn->lifetimeConstraints->body.last())
@@ -833,8 +788,7 @@ static bool isOuterLifetimeFromClause(LifetimeState& lifetimes, ArgSymbol* arg)
   return false;
 }
 
-static void printOrderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
-{
+static void printOrderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b) {
   if (CallExpr* call = toCallExpr(expr)) {
     if (call->isNamedAstr(astrScomma)) {
       printOrderConstraintFromClause(call->get(1), a, b);
@@ -848,10 +802,9 @@ static void printOrderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
       lhs = getSymbolFromLifetimeClause(call->get(1), lhsRet);
       rhs = getSymbolFromLifetimeClause(call->get(2), lhsRet);
 
-      if ((a == lhs && b == rhs) ||
-          (b == lhs && a == rhs)) {
-        const char* lhsName = lhsRet?"return":lhs->name;
-        const char* rhsName = rhsRet?"return":rhs->name;
+      if ((a == lhs && b == rhs) || (b == lhs && a == rhs)) {
+        const char* lhsName = lhsRet ? "return" : lhs->name;
+        const char* rhsName = rhsRet ? "return" : rhs->name;
         const char* calledName = NULL;
 
         if (SymExpr* base = toSymExpr(call->baseExpr))
@@ -863,17 +816,21 @@ static void printOrderConstraintFromClause(Expr* expr, Symbol* a, Symbol* b)
 
         if (developer || isUser(fn)) {
           USR_PRINT(call, "called function %s", toString(fn));
-          USR_PRINT(call, "includes lifetime constraint %s %s %s",
-                    lhsName, calledName, rhsName);
+          USR_PRINT(call,
+                    "includes lifetime constraint %s %s %s",
+                    lhsName,
+                    calledName,
+                    rhsName);
         } else {
           USR_PRINT("called function %s", toString(fn));
           USR_PRINT("includes lifetime constraint %s %s %s",
-                    lhsName, calledName, rhsName);
+                    lhsName,
+                    calledName,
+                    rhsName);
         }
       }
     }
   }
-
 }
 
 static void printOrderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b) {
@@ -884,8 +841,7 @@ static void printOrderConstraintFromClause(FnSymbol* fn, Symbol* a, Symbol* b) {
 
 static bool definedInTaskFunction(Symbol* sym) {
   if (DefExpr* def = sym->defPoint)
-    if (FnSymbol* fn = def->getFunction())
-      return isTaskFun(fn);
+    if (FnSymbol* fn = def->getFunction()) return isTaskFun(fn);
 
   return false;
 }
@@ -894,34 +850,26 @@ static bool isTaskFunctionFormal(Symbol* sym) {
   return isArgSymbol(sym) && definedInTaskFunction(sym);
 }
 
-
 static bool shouldCheckLifetimesInFn(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_UNSAFE))
-    return false;
-  if (fn->hasFlag(FLAG_SAFE))
-    return true;
+  if (fn->hasFlag(FLAG_UNSAFE)) return false;
+  if (fn->hasFlag(FLAG_SAFE)) return true;
 
   // TODO
-  if (fn->hasFlag(FLAG_COMPILER_GENERATED))
-    return false;
+  if (fn->hasFlag(FLAG_COMPILER_GENERATED)) return false;
 
   // We check task functions when visiting the code
   // calling them, so don't visit them when considering
   // the task function on its own.
-  if (isTaskFun(fn))
-    return false;
+  if (isTaskFun(fn)) return false;
 
   ModuleSymbol* inMod = fn->getModule();
-  if (inMod->hasFlag(FLAG_UNSAFE))
-    return false;
-  if (inMod->hasFlag(FLAG_SAFE))
-    return true;
+  if (inMod->hasFlag(FLAG_UNSAFE)) return false;
+  if (inMod->hasFlag(FLAG_SAFE)) return true;
 
   return !fNoLifetimeChecking;
 }
 
-static bool debuggingLifetimesForFn(FnSymbol* fn)
-{
+static bool debuggingLifetimesForFn(FnSymbol* fn) {
   if (!fn) return false;
   if (fn->id == debugLifetimesForId) return true;
   if (0 == strcmp(debugLifetimesForFn, fn->name)) return true;
@@ -929,16 +877,12 @@ static bool debuggingLifetimesForFn(FnSymbol* fn)
 }
 
 static void printLifetime(Lifetime lt) {
-  if (lt.unknown)
-    printf("unknown ");
-  if (lt.infinite)
-    printf("infinite ");
-  if (lt.returnScope)
-    printf("return_scope ");
+  if (lt.unknown) printf("unknown ");
+  if (lt.infinite) printf("infinite ");
+  if (lt.returnScope) printf("return_scope ");
   if (lt.fromSymbolScope)
     printf("like %s[%i] ", lt.fromSymbolScope->name, lt.fromSymbolScope->id);
-  if (lt.relevantExpr)
-    printf("expr %i ", lt.relevantExpr->id);
+  if (lt.relevantExpr) printf("expr %i ", lt.relevantExpr->id);
 }
 
 static void printLifetimePair(LifetimePair lt) {
@@ -949,8 +893,7 @@ static void printLifetimePair(LifetimePair lt) {
   printf("\n");
 }
 
-static void printLifetimeState(LifetimeState* state)
-{
+static void printLifetimeState(LifetimeState* state) {
   printf("Lifetime state:\n");
   printf("detemps:\n");
   for (SymbolToDetempGroupMap::iterator it = state->detemp.begin();
@@ -961,7 +904,10 @@ static void printLifetimeState(LifetimeState* state)
     Symbol* favorite = value->favorite;
     if (key != favorite) {
       printf("Symbol %s[%i] detemps to %s[%i]\n",
-             key->name, key->id, favorite->name, favorite->id);
+             key->name,
+             key->id,
+             favorite->name,
+             favorite->id);
     }
   }
 
@@ -1015,8 +961,8 @@ static void handleDebugOutputOnError(Expr* e, LifetimeState* state) {
     printf("Stopping due to debugOutputOnError\n");
     printf("Analyzed functions:\n");
     for (LocalFunctionsSet::iterator it = state->inFns.begin();
-       it != state->inFns.end();
-       ++it) {
+         it != state->inFns.end();
+         ++it) {
       FnSymbol* inFn = *it;
       nprint_view(inFn);
     }
@@ -1027,7 +973,6 @@ static void handleDebugOutputOnError(Expr* e, LifetimeState* state) {
     USR_STOP();
   }
 }
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -1040,17 +985,14 @@ LifetimeState::~LifetimeState() {
 
   // First, gather them, not counting duplicates
   DetempGroupSet set;
-  for (SymbolToDetempGroupMap::iterator it = detemp.begin();
-       it != detemp.end();
+  for (SymbolToDetempGroupMap::iterator it = detemp.begin(); it != detemp.end();
        ++it) {
     DetempGroup* value = it->second;
     set.insert(value);
   }
 
   // Now, delete them
-  for (DetempGroupSet::iterator it = set.begin();
-       it != set.end();
-       ++it) {
+  for (DetempGroupSet::iterator it = set.begin(); it != set.end(); ++it) {
     DetempGroup* value = *it;
     delete value;
   }
@@ -1080,8 +1022,7 @@ LifetimePair LifetimeState::intrinsicLifetimeForSymbol(Symbol* sym) {
   } else {
     // global/outer variables aren't gathered into the mapping, but these
     // are considered to have infinite lifetime.
-    if (sym->isRef())
-      lp.referent = infiniteLifetime();
+    if (sym->isRef()) lp.referent = infiniteLifetime();
 
     lp.borrowed = infiniteLifetime();
   }
@@ -1102,35 +1043,29 @@ bool LifetimeState::setInferredLifetimeToMin(Symbol* sym, LifetimePair lt) {
   // This prevents errors based upon "scoped variables" when the
   // variable has no meaningful scope.
   // It would be reasonable to update callers to avoid this situation, too.
-  if (!isSubjectToRefLifetimeAnalysis(sym))
-    lt.referent = unknownLifetime();
-  if (!isSubjectToBorrowLifetimeAnalysis(sym))
-    lt.borrowed = unknownLifetime();
+  if (!isSubjectToRefLifetimeAnalysis(sym)) lt.referent = unknownLifetime();
+  if (!isSubjectToBorrowLifetimeAnalysis(sym)) lt.borrowed = unknownLifetime();
   // TODO -- consider making the above into asserts.
 
   // Don't bother storing unknown.
-  if (lt.referent.unknown && lt.borrowed.unknown)
-    return false;
+  if (lt.referent.unknown && lt.borrowed.unknown) return false;
 
   if (inferredLifetime.count(sym) == 0) {
-    if (sym->id == breakOnId)
-      debuggerBreakHere();
+    if (sym->id == breakOnId) debuggerBreakHere();
 
     inferredLifetime[sym] = lt;
     changed = true;
   } else {
-    LifetimePair & value = inferredLifetime[sym];
+    LifetimePair& value = inferredLifetime[sym];
     // This is just value = minimumLifetimePair(value, lt)
     // with debugging code and change tracking.
     if (isLifetimeShorter(lt.referent, value.referent)) {
-      if (sym->id == breakOnId)
-        debuggerBreakHere();
+      if (sym->id == breakOnId) debuggerBreakHere();
       value.referent = lt.referent;
       changed = true;
     }
     if (isLifetimeShorter(lt.borrowed, value.borrowed)) {
-      if (sym->id == breakOnId)
-        debuggerBreakHere();
+      if (sym->id == breakOnId) debuggerBreakHere();
       value.borrowed = lt.borrowed;
       changed = true;
     }
@@ -1139,18 +1074,15 @@ bool LifetimeState::setInferredLifetimeToMin(Symbol* sym, LifetimePair lt) {
   return changed;
 }
 
-
 static bool intentIsLocalVariable(IntentTag tag) {
   switch (tag) {
     case INTENT_IN:
     case INTENT_OUT:
     case INTENT_INOUT:
-    case INTENT_CONST_IN:
-      return true;
+    case INTENT_CONST_IN: return true;
     case INTENT_CONST:
     case INTENT_REF:
-    case INTENT_CONST_REF:
-      return false;
+    case INTENT_CONST_REF: return false;
     case INTENT_REF_MAYBE_CONST:
     case INTENT_PARAM:
     case INTENT_TYPE:
@@ -1175,7 +1107,6 @@ LifetimePair LifetimeState::inferredLifetimeForSymbol(Symbol* sym) {
   return lp;
 }
 
-
 // Returns the minimum of the intrinsic and inferred lifetimes for sym.
 LifetimePair LifetimeState::combinedLifetimeForSymbol(Symbol* sym) {
   // Ignore reference temporaries
@@ -1195,7 +1126,9 @@ LifetimePair LifetimeState::combinedLifetimeForSymbol(Symbol* sym) {
 // a variable containing a borrow can have an inferred lifetime greater
 // than its intrinsic lifetime.
 
-LifetimePair LifetimeState::lifetimeForActual(Symbol* sym, bool usedAsRef, bool usedAsBorrow) {
+LifetimePair LifetimeState::lifetimeForActual(Symbol* sym,
+                                              bool usedAsRef,
+                                              bool usedAsBorrow) {
 
   // TODO: Should this use the canonical symbol?
   // What if sym is an argument to a task function?
@@ -1212,25 +1145,22 @@ LifetimePair LifetimeState::lifetimeForActual(Symbol* sym, bool usedAsRef, bool 
   return inferredLifetimeForSymbol(sym);
 }
 
-static bool formalArgumentDoesNotImpactReturnLifetime(ArgSymbol* formal)
-{
+static bool formalArgumentDoesNotImpactReturnLifetime(ArgSymbol* formal) {
   // in, out, retarg arguments don't determine the lifetime of
   // a returned variable
-  if (formal->hasFlag(FLAG_RETARG) ||
-      formal->hasFlag(FLAG_ERROR_VARIABLE) ||
+  if (formal->hasFlag(FLAG_RETARG) || formal->hasFlag(FLAG_ERROR_VARIABLE) ||
       (formal->originalIntent & INTENT_FLAG_OUT))
     return true;
 
   // record initializer's this argument doesn't impact return lifetime
   if (formal->hasFlag(FLAG_ARG_THIS) &&
       (formal->getFunction()->name == astrInit ||
-      formal->getFunction()->name == astrInitEquals))
+       formal->getFunction()->name == astrInitEquals))
     return true;
 
   // arguments marked with FLAG_SCOPE don't determine the lifetime
   // of a returned variable, since only return scope returns are allowed.
-  if (formal->hasFlag(FLAG_SCOPE))
-    return true;
+  if (formal->hasFlag(FLAG_SCOPE)) return true;
 
   return false;
 }
@@ -1245,8 +1175,7 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
   //  * the result of 'new' is currently user-managed
   //  * ref fields are not supported in classes
   //    so they can't capture a ref argument
-  if (isClassLike(call->typeInfo()) &&
-      calledFn->hasFlag(FLAG_NEW_WRAPPER)) {
+  if (isClassLike(call->typeInfo()) && calledFn->hasFlag(FLAG_NEW_WRAPPER)) {
     return infiniteLifetimePair();
   }
 
@@ -1255,8 +1184,7 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
   minLifetime.referent.relevantExpr = call;
   minLifetime.borrowed.relevantExpr = call;
 
-  bool returnsRef = call->isRef() ||
-                    calledFn->retTag == RET_REF ||
+  bool returnsRef = call->isRef() || calledFn->retTag == RET_REF ||
                     calledFn->retTag == RET_CONST_REF;
 
   bool returnsBorrow = false;
@@ -1275,8 +1203,7 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
   ArgSymbol* theOnlyOneThatMatters = NULL;
   if (Symbol* sym = returnLifetimeFromFnClause(calledFn)) {
     // lifetime = outer/global variable -> infinite lifetime
-    if (sym->defPoint->getFunction() != calledFn)
-      return infiniteLifetimePair();
+    if (sym->defPoint->getFunction() != calledFn) return infiniteLifetimePair();
 
     INT_ASSERT(isArgSymbol(sym));
     theOnlyOneThatMatters = toArgSymbol(sym);
@@ -1300,7 +1227,8 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
                  isLocalVariable(actualSym)) {
 
         // Use the referent part of the actual's lifetime
-        LifetimePair temp = lifetimeForActual(actualSym, returnsRef, returnsBorrow);
+        LifetimePair temp =
+          lifetimeForActual(actualSym, returnsRef, returnsBorrow);
         argLifetime.referent = temp.referent;
       }
     }
@@ -1319,8 +1247,8 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
 
       if (infer) {
         // Use the borrowed part of the actual's lifetime
-        LifetimePair temp = lifetimeForActual(actualSym, returnsRef,
-                                              returnsBorrow);
+        LifetimePair temp =
+          lifetimeForActual(actualSym, returnsRef, returnsBorrow);
         argLifetime.borrowed = temp.borrowed;
       }
     }
@@ -1350,9 +1278,8 @@ LifetimePair LifetimeState::inferredLifetimeForPrimitive(CallExpr* call) {
 
     LifetimePair temp = lifetimeForActual(actualSym, returnsRef, returnsBorrow);
 
-    if (returnsRef &&
-        (isSubjectToRefLifetimeAnalysis(actualSym) ||
-         isLocalVariable(actualSym))) {
+    if (returnsRef && (isSubjectToRefLifetimeAnalysis(actualSym) ||
+                       isLocalVariable(actualSym))) {
       // Use the referent part of the actual's lifetime
       argLifetime.referent = temp.referent;
     }
@@ -1361,8 +1288,7 @@ LifetimePair LifetimeState::inferredLifetimeForPrimitive(CallExpr* call) {
       // lifetime of the ref == the lifetime of the borrow
       argLifetime.referent = temp.borrowed;
     }
-    if (returnsBorrow &&
-        isSubjectToBorrowLifetimeAnalysis(actualSym)) {
+    if (returnsBorrow && isSubjectToBorrowLifetimeAnalysis(actualSym)) {
       // Use the borrowed part of the actual's lifetime
       argLifetime.borrowed = temp.borrowed;
     }
@@ -1383,17 +1309,17 @@ LifetimePair LifetimeState::inferredLifetimeForPrimitive(CallExpr* call) {
     Symbol* actualSym = actualSe->symbol();
     LifetimePair argLifetime = unknownLifetimePair();
 
-    if (returnsRef &&
-        (isSubjectToRefLifetimeAnalysis(actualSym) ||
-         isLocalVariable(actualSym))) {
+    if (returnsRef && (isSubjectToRefLifetimeAnalysis(actualSym) ||
+                       isLocalVariable(actualSym))) {
       // Use the referent part of the actual's lifetime
-      LifetimePair temp = lifetimeForActual(actualSym, returnsRef, returnsBorrow);
+      LifetimePair temp =
+        lifetimeForActual(actualSym, returnsRef, returnsBorrow);
       argLifetime.referent = temp.referent;
     }
-    if (returnsBorrow &&
-        isSubjectToBorrowLifetimeAnalysis(actualSym)) {
+    if (returnsBorrow && isSubjectToBorrowLifetimeAnalysis(actualSym)) {
       // Use the borrowed part of the actual's lifetime
-      LifetimePair temp = lifetimeForActual(actualSym, returnsRef, returnsBorrow);
+      LifetimePair temp =
+        lifetimeForActual(actualSym, returnsRef, returnsBorrow);
       argLifetime.borrowed = temp.borrowed;
     }
 
@@ -1403,7 +1329,9 @@ LifetimePair LifetimeState::inferredLifetimeForPrimitive(CallExpr* call) {
   return minLifetime;
 }
 
-LifetimePair LifetimeState::inferredLifetimeForExpr(Expr* rhsExpr, bool usedAsRef, bool usedAsBorrow) {
+LifetimePair LifetimeState::inferredLifetimeForExpr(Expr* rhsExpr,
+                                                    bool usedAsRef,
+                                                    bool usedAsBorrow) {
 
   LifetimePair lp = unknownLifetimePair();
 
@@ -1431,14 +1359,11 @@ LifetimePair LifetimeState::inferredLifetimeForExpr(Expr* rhsExpr, bool usedAsRe
   return lp;
 }
 
-
-
 /* Is the sym argument a local variable in the currently analyzed function?
  */
 bool LifetimeState::isLocalVariable(Symbol* sym) {
-  bool isValueArg = isArgSymbol(sym) &&
-                    !definedInTaskFunction(sym) &&
-                    !sym->isRef();
+  bool isValueArg =
+    isArgSymbol(sym) && !definedInTaskFunction(sym) && !sym->isRef();
   bool isLocal = isVarSymbol(sym) || isValueArg;
 
   return isLocal && (inFns.count(sym->defPoint->getFunction()) != 0);
@@ -1509,12 +1434,11 @@ static void addSymbolToDetempGroup(Symbol* sym, DetempGroup* group) {
     }
   }
 
-  if (preferSym)
-    group->favorite = sym;
+  if (preferSym) group->favorite = sym;
 }
 
-static void addPairToDetempMap(Symbol* a, Symbol* b,
-                               SymbolToDetempGroupMap& map) {
+static void
+addPairToDetempMap(Symbol* a, Symbol* b, SymbolToDetempGroupMap& map) {
 
   // Is a in the map? Is b in the map?
   bool aInMap = map.count(a) > 0;
@@ -1548,8 +1472,7 @@ static void addPairToDetempMap(Symbol* a, Symbol* b,
     // This intentionally copies the elements to a local buffer
     std::vector<Symbol*> elts = other->elements;
     // Move each element to the group
-    for (std::vector<Symbol*>::iterator it = elts.begin();
-         it != elts.end();
+    for (std::vector<Symbol*>::iterator it = elts.begin(); it != elts.end();
          ++it) {
       Symbol* value = *it;
       addSymbolToDetempGroup(value, group);
@@ -1559,8 +1482,6 @@ static void addPairToDetempMap(Symbol* a, Symbol* b,
     delete other;
   }
 }
-
-
 
 bool GatherTempsVisitor::enterCallExpr(CallExpr* call) {
   // Traverses into task functions below when also
@@ -1572,8 +1493,7 @@ bool GatherTempsVisitor::enterCallExpr(CallExpr* call) {
     Symbol* lhs = lhsSe->symbol();
 
     // don't de-temp the return value
-    if (lhs->hasFlag(FLAG_RVV))
-      return false;
+    if (lhs->hasFlag(FLAG_RVV)) return false;
 
     Symbol* a = NULL;
     Symbol* b = NULL;
@@ -1589,7 +1509,7 @@ bool GatherTempsVisitor::enterCallExpr(CallExpr* call) {
           rhsCall->isPrimitive(PRIM_SET_REFERENCE)) {
         SymExpr* rhsSe = toSymExpr(rhsCall->get(1));
         Symbol* rhs = rhsSe->symbol();
-        if (lhs->hasEitherFlag(FLAG_TEMP,FLAG_REF_TEMP)) {
+        if (lhs->hasEitherFlag(FLAG_TEMP, FLAG_REF_TEMP)) {
           a = lhs;
           b = rhs;
         }
@@ -1632,22 +1552,18 @@ bool GatherTempsVisitor::enterCallExpr(CallExpr* call) {
 static void printDeinitOrderTree(const char* prefix, DeinitOrderNode* node) {
 
   int astId = 0;
-  if (node->ast != NULL)
-    astId = node->ast->id;
+  if (node->ast != NULL) astId = node->ast->id;
 
   bool anyElse = false;
   for (DeinitOrderNode* cur = node; cur != NULL; cur = cur->nestedOrder) {
-    if (cur->elseOrder)
-      anyElse = true;
+    if (cur->elseOrder) anyElse = true;
   }
 
   if (anyElse == false) {
     printf("%s", prefix);
     for (DeinitOrderNode* cur = node; cur != NULL; cur = cur->nestedOrder) {
-      if (cur->ast)
-        astId = cur->ast->id;
-      if (cur != node)
-        printf(".");
+      if (cur->ast) astId = cur->ast->id;
+      if (cur != node) printf(".");
       printf("%i", cur->order);
     }
     printf(" ast=%i\n", astId);
@@ -1672,8 +1588,7 @@ static void printOrderSummary(std::vector<DeinitOrderNode*>& orderStack) {
   }
 
   for (size_t i = 0; i < orderStack.size(); i++) {
-    if (i != 0)
-      printf(".");
+    if (i != 0) printf(".");
     printf("%i", orderStack[i]->order);
   }
 }
@@ -1701,15 +1616,15 @@ static void addToDeinitOrderTree(DeinitOrderNode* dst, DeinitOrderNode* src) {
   // the update from src. This comes up with chpl__autoDestroy calls
   // added just before the function epilogue even though there was an
   // unconditional return before that.
-  if (dst->order != 0 && dst->order != src->order)
-    return;
+  if (dst->order != 0 && dst->order != src->order) return;
 
   dst->order = src->order;
   dst->ast = src->ast;
 
   // create new nodes for any sub-nodes if they are not present already.
   if (src->nestedOrder != NULL && dst->nestedOrder == NULL) {
-    dst->nestedOrder = new DeinitOrderNode(); // TODO this LEAK is unaccounted for
+    dst->nestedOrder =
+      new DeinitOrderNode(); // TODO this LEAK is unaccounted for
   }
   if (src->elseOrder != NULL && dst->elseOrder == NULL) {
     dst->elseOrder = new DeinitOrderNode(); // TODO this LEAK is unaccounted for
@@ -1763,7 +1678,7 @@ void DeinitOrderVisitor::exitScope(Expr* block) {
     nextDeinitOrderNode(orderStack.back(), NULL);
   } else {
     INT_ASSERT(block->parentExpr == NULL);
-    delete last;  // Frees the node allocated in enterScope when orderStack is empty
+    delete last; // Frees the node allocated in enterScope when orderStack is empty
   }
 }
 
@@ -1806,54 +1721,40 @@ void DeinitOrderVisitor::exitForallStmt(ForallStmt* node) {
 bool DeinitOrderVisitor::enterWhileDoStmt(WhileDoStmt* node) {
   return enterScope(node);
 }
-void DeinitOrderVisitor::exitWhileDoStmt(WhileDoStmt* node) {
-  exitScope(node);
-}
+void DeinitOrderVisitor::exitWhileDoStmt(WhileDoStmt* node) { exitScope(node); }
 bool DeinitOrderVisitor::enterDoWhileStmt(DoWhileStmt* node) {
   return enterScope(node);
 }
-void DeinitOrderVisitor::exitDoWhileStmt(DoWhileStmt* node) {
-  exitScope(node);
-}
+void DeinitOrderVisitor::exitDoWhileStmt(DoWhileStmt* node) { exitScope(node); }
 bool DeinitOrderVisitor::enterCForLoop(CForLoop* node) {
   return enterScope(node);
 }
-void DeinitOrderVisitor::exitCForLoop(CForLoop* node) {
-  exitScope(node);
-}
+void DeinitOrderVisitor::exitCForLoop(CForLoop* node) { exitScope(node); }
 bool DeinitOrderVisitor::enterForLoop(ForLoop* node) {
   return enterScope(node);
 }
-void DeinitOrderVisitor::exitForLoop(ForLoop* node) {
-  exitScope(node);
-}
+void DeinitOrderVisitor::exitForLoop(ForLoop* node) { exitScope(node); }
 
 static Expr* findUnconditionalReturn(BlockStmt* block) {
   // Check, does the block always return?
   for (Expr* cur = block->body.first(); cur != NULL; cur = cur->next) {
     if (GotoStmt* g = toGotoStmt(cur))
-      if (g->gotoTag == GOTO_RETURN ||
-          g->gotoTag == GOTO_ERROR_HANDLING_RETURN)
+      if (g->gotoTag == GOTO_RETURN || g->gotoTag == GOTO_ERROR_HANDLING_RETURN)
         return g;
 
     if (CallExpr* c = toCallExpr(cur))
-      if (c->isPrimitive(PRIM_RETURN))
-        return c;
+      if (c->isPrimitive(PRIM_RETURN)) return c;
 
     if (BlockStmt* b = toBlockStmt(cur))
       if (b->blockTag == BLOCK_NORMAL)
-        if (Expr* e = findUnconditionalReturn(b))
-          return e;
+        if (Expr* e = findUnconditionalReturn(b)) return e;
 
     if (CondStmt* c = toCondStmt(cur)) {
       Expr* thenRet = NULL;
       Expr* elseRet = NULL;
-      if (c->thenStmt != NULL)
-        thenRet = findUnconditionalReturn(c->thenStmt);
-      if (c->elseStmt != NULL)
-        elseRet = findUnconditionalReturn(c->elseStmt);
-      if (thenRet != NULL && elseRet != NULL)
-        return elseRet;
+      if (c->thenStmt != NULL) thenRet = findUnconditionalReturn(c->thenStmt);
+      if (c->elseStmt != NULL) elseRet = findUnconditionalReturn(c->elseStmt);
+      if (thenRet != NULL && elseRet != NULL) return elseRet;
     }
   }
 
@@ -1877,15 +1778,12 @@ bool DeinitOrderVisitor::enterCondStmt(CondStmt* cond) {
 
   Expr* thenRet = NULL;
   Expr* elseRet = NULL;
-  if (cond->thenStmt != NULL)
-    thenRet = findUnconditionalReturn(cond->thenStmt);
-  if (cond->elseStmt != NULL)
-    elseRet = findUnconditionalReturn(cond->elseStmt);
+  if (cond->thenStmt != NULL) thenRet = findUnconditionalReturn(cond->thenStmt);
+  if (cond->elseStmt != NULL) elseRet = findUnconditionalReturn(cond->elseStmt);
 
   if (cond->thenStmt != NULL) {
     bool skip = (thenRet != NULL && elseRet == NULL);
-    if (skip)
-      skipEarlyDeinitsForUnconditionalReturn++;
+    if (skip) skipEarlyDeinitsForUnconditionalReturn++;
 
     DeinitOrderNode* thenNode = new DeinitOrderNode(cond->thenStmt);
     orderStack.back()->nestedOrder = thenNode;
@@ -1893,7 +1791,7 @@ bool DeinitOrderVisitor::enterCondStmt(CondStmt* cond) {
 
     if (debugging) {
       printOrderSummary(orderStack);
-      printf(" cond then %i skip=%i\n", cond->thenStmt->id, (int) skip);
+      printf(" cond then %i skip=%i\n", cond->thenStmt->id, (int)skip);
     }
 
     cond->thenStmt->accept(this);
@@ -1902,14 +1800,12 @@ bool DeinitOrderVisitor::enterCondStmt(CondStmt* cond) {
     clearDeinitOrderNodeSubtree(thenNode);
     orderStack.pop_back();
 
-    if (skip)
-      skipEarlyDeinitsForUnconditionalReturn--;
+    if (skip) skipEarlyDeinitsForUnconditionalReturn--;
   }
   if (cond->elseStmt != NULL) {
     bool skip = (elseRet != NULL && thenRet == NULL);
 
-    if (skip)
-      skipEarlyDeinitsForUnconditionalReturn++;
+    if (skip) skipEarlyDeinitsForUnconditionalReturn++;
 
     DeinitOrderNode* elseNode = new DeinitOrderNode(cond->elseStmt);
     orderStack.back()->elseOrder = elseNode;
@@ -1917,7 +1813,7 @@ bool DeinitOrderVisitor::enterCondStmt(CondStmt* cond) {
 
     if (debugging) {
       printOrderSummary(orderStack);
-      printf(" cond else %i skip=%i\n", cond->elseStmt->id, (int) skip);
+      printf(" cond else %i skip=%i\n", cond->elseStmt->id, (int)skip);
     }
 
     cond->elseStmt->accept(this);
@@ -1926,8 +1822,7 @@ bool DeinitOrderVisitor::enterCondStmt(CondStmt* cond) {
     clearDeinitOrderNodeSubtree(elseNode);
     orderStack.pop_back();
 
-    if (skip)
-      skipEarlyDeinitsForUnconditionalReturn--;
+    if (skip) skipEarlyDeinitsForUnconditionalReturn--;
   }
 
   // any calls after the cond statement should get a new order number
@@ -1949,8 +1844,7 @@ void DeinitOrderVisitor::noteUnconditionalReturnInParentBlocks(Expr* r) {
         return;
     }
 
-    if (isCondStmt(e) || isForallStmt(e) || isLoopStmt(e))
-      return;
+    if (isCondStmt(e) || isForallStmt(e) || isLoopStmt(e)) return;
   }
 }
 
@@ -1964,8 +1858,7 @@ bool DeinitOrderVisitor::enterCallExpr(CallExpr* call) {
   }
 
   // Ignore calls addressed by detemping
-  if (lifetimes->callsToIgnore.count(call))
-    return false;
+  if (lifetimes->callsToIgnore.count(call)) return false;
 
   if (call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY)) {
     SymExpr* se = toSymExpr(call->get(2));
@@ -1982,7 +1875,9 @@ bool DeinitOrderVisitor::enterCallExpr(CallExpr* call) {
     } else if (debugging) {
       printOrderSummary(orderStack);
       printf(" skipping copy elide %s[%i] in call %i\n",
-             sym->name, sym->id, call->id);
+             sym->name,
+             sym->id,
+             call->id);
     }
 
     // no need to consider nested calls
@@ -2010,8 +1905,7 @@ bool DeinitOrderVisitor::enterCallExpr(CallExpr* call) {
 }
 
 bool DeinitOrderVisitor::enterGotoStmt(GotoStmt* g) {
-  if (g->gotoTag == GOTO_RETURN ||
-      g->gotoTag == GOTO_ERROR_HANDLING_RETURN) {
+  if (g->gotoTag == GOTO_RETURN || g->gotoTag == GOTO_ERROR_HANDLING_RETURN) {
     noteUnconditionalReturnInParentBlocks(g);
   }
   return false;
@@ -2023,8 +1917,10 @@ bool DeinitOrderVisitor::enterGotoStmt(GotoStmt* g) {
 *                                                                             *
 ************************************** | *************************************/
 
-
-static bool isRecordInitOrReturn(CallExpr* call, Symbol*& lhs, CallExpr*& initOrCtor, LifetimeState* lifetimes) {
+static bool isRecordInitOrReturn(CallExpr* call,
+                                 Symbol*& lhs,
+                                 CallExpr*& initOrCtor,
+                                 LifetimeState* lifetimes) {
 
   SymExpr* gotLHS = NULL;
   CallExpr* gotCall = NULL;
@@ -2061,8 +1957,7 @@ bool IntrinsicLifetimesVisitor::enterDefExpr(DefExpr* def) {
     lp.borrowed = lt;
 
     if (arg->hasFlag(FLAG_RETURN_SCOPE)) {
-      if (sym->isRef() &&
-          !intentIsLocalVariable(arg->intent) &&
+      if (sym->isRef() && !intentIsLocalVariable(arg->intent) &&
           !intentIsLocalVariable(arg->originalIntent))
         lp.referent.returnScope = true;
       if (isSubjectToBorrowLifetimeAnalysis(sym->type))
@@ -2076,8 +1971,7 @@ bool IntrinsicLifetimesVisitor::enterDefExpr(DefExpr* def) {
     }
   } else if (VarSymbol* var = toVarSymbol(sym)) {
     // Don't bother getting intrinsic lifetime for RVV
-    if (var->hasFlag(FLAG_RVV))
-        lp = unknownLifetimePair();
+    if (var->hasFlag(FLAG_RVV)) lp = unknownLifetimePair();
 
     // For local value variables, set ref lifetime to reachability.
     if (!var->isRef() && lifetimes->isLocalVariable(var)) {
@@ -2092,10 +1986,9 @@ bool IntrinsicLifetimesVisitor::enterDefExpr(DefExpr* def) {
     // Records are handled in the enterCallExpr visitor for
     // wherever they are initialized.
     if (isSubjectToBorrowLifetimeAnalysis(sym->type) &&
-        !isRecord(sym->getValType()) &&
-        !sym->hasFlag(FLAG_TEMP) &&
+        !isRecord(sym->getValType()) && !sym->hasFlag(FLAG_TEMP) &&
         !sym->hasFlag(FLAG_ARG_THIS) // for constructors
-       ) {
+    ) {
       lp.borrowed = scopeLifetimeForSymbol(sym);
     }
   }
@@ -2106,8 +1999,7 @@ bool IntrinsicLifetimesVisitor::enterDefExpr(DefExpr* def) {
     if (sym->type && typeHasInfiniteBorrowLifetime(sym->type))
       lp.borrowed = infiniteLifetime();
 
-    if (sym->id == debugLifetimesForId)
-      debuggerBreakHere();
+    if (sym->id == debugLifetimesForId) debuggerBreakHere();
 
     lifetimes->intrinsicLifetime[sym] = lp;
   }
@@ -2117,8 +2009,7 @@ bool IntrinsicLifetimesVisitor::enterDefExpr(DefExpr* def) {
 
 static bool isFunctionReturningNotOwned(FnSymbol* fn) {
   if (fn &&
-      fn->hasEitherFlag(FLAG_RETURN_NOT_OWNED,
-                        FLAG_RETURNS_ALIASING_ARRAY))
+      fn->hasEitherFlag(FLAG_RETURN_NOT_OWNED, FLAG_RETURNS_ALIASING_ARRAY))
     return true;
 
   return false;
@@ -2129,21 +2020,16 @@ static bool isCallToFunctionReturningNotOwned(CallExpr* call) {
   return isFunctionReturningNotOwned(calledFn);
 }
 
-
-
 bool IntrinsicLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
-  if (call->id == debugLifetimesForId)
-    debuggerBreakHere();
+  if (call->id == debugLifetimesForId) debuggerBreakHere();
 
   // Traverse into task functions
   if (FnSymbol* calledFn = call->resolvedFunction())
-    if (isTaskFun(calledFn))
-      calledFn->body->accept(this);
+    if (isTaskFun(calledFn)) calledFn->body->accept(this);
 
   // Ignore calls that de-temping allows us to ignore
-  if (lifetimes->callsToIgnore.count(call))
-    return false;
+  if (lifetimes->callsToIgnore.count(call)) return false;
 
   Symbol* initSym = NULL;
   CallExpr* initCall = NULL;
@@ -2170,7 +2056,6 @@ bool IntrinsicLifetimesVisitor::enterCallExpr(CallExpr* call) {
         lt = scopeLifetimeForSymbol(initSym);
       }
     }
-
   }
 
   if (call->isPrimitive(PRIM_MOVE)) {
@@ -2180,8 +2065,7 @@ bool IntrinsicLifetimesVisitor::enterCallExpr(CallExpr* call) {
     CallExpr* rhsCall = toCallExpr(rhsExpr);
     initSym = lifetimes->getCanonicalSymbol(lhs);
 
-    if (initSym->hasFlag(FLAG_TEMP) &&
-        rhsCall &&
+    if (initSym->hasFlag(FLAG_TEMP) && rhsCall &&
         lifetimes->shouldPropagateLifetimeTo(rhsCall, initSym)) {
       FnSymbol* calledFn = rhsCall->resolvedOrVirtualFunction();
       // "_new" calls return infinite lifetime. Why?
@@ -2207,8 +2091,7 @@ bool IntrinsicLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
   if (initSym && !lt.unknown) {
 
-    if (initSym->id == debugLifetimesForId)
-      debuggerBreakHere();
+    if (initSym->id == debugLifetimesForId) debuggerBreakHere();
 
     lifetimes->intrinsicLifetime[initSym].borrowed = lt;
   }
@@ -2224,17 +2107,14 @@ bool IntrinsicLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
 bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
-  if (call->id == debugLifetimesForId)
-    debuggerBreakHere();
+  if (call->id == debugLifetimesForId) debuggerBreakHere();
 
   // Traverse into task functions
   if (FnSymbol* calledFn = call->resolvedFunction())
-    if (isTaskFun(calledFn))
-      calledFn->body->accept(this);
+    if (isTaskFun(calledFn)) calledFn->body->accept(this);
 
   // Ignore calls that de-temping allows us to ignore
-  if (lifetimes->callsToIgnore.count(call))
-    return false;
+  if (lifetimes->callsToIgnore.count(call)) return false;
 
   Symbol* initSym = NULL;
   CallExpr* initCall = NULL;
@@ -2263,17 +2143,15 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
       bool usedAsRef = lhs->isRef() && rhsExpr->isRef();
       bool usedAsBorrow = isOrContainsBorrowedClass(lhs->type);
 
-      LifetimePair lp = lifetimes->inferredLifetimeForExpr(rhsExpr,
-                                                           usedAsRef,
-                                                           usedAsBorrow);
+      LifetimePair lp =
+        lifetimes->inferredLifetimeForExpr(rhsExpr, usedAsRef, usedAsBorrow);
 
       if (lhs->isRef() && rhsExpr->isRef() && call->isPrimitive(PRIM_MOVE)) {
         // When setting the reference, set its intrinsic lifetime.
         if (!lp.referent.unknown || !lp.borrowed.unknown) {
-          if (lhs->id == debugLifetimesForId)
-            debuggerBreakHere();
+          if (lhs->id == debugLifetimesForId) debuggerBreakHere();
 
-          LifetimePair & intrinsic = lifetimes->intrinsicLifetime[lhs];
+          LifetimePair& intrinsic = lifetimes->intrinsicLifetime[lhs];
           intrinsic = lifetimes->minimumLifetimePair(intrinsic, lp);
         }
       }
@@ -2293,12 +2171,11 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
       // Additionally, if LHS is a reference to a known aggregate,
       // update that thing's borrow lifetime.
       if (lhs->isRef() && usedAsBorrow && call->isPrimitive(PRIM_MOVE)) {
-        LifetimePair & intrinsic = lifetimes->intrinsicLifetime[lhs];
+        LifetimePair& intrinsic = lifetimes->intrinsicLifetime[lhs];
         if (!intrinsic.referent.unknown && intrinsic.referent.fromSymbolScope) {
           LifetimePair p = lp;
           p.referent = unknownLifetime();
-          if (!p.borrowed.unknown &&
-              !p.borrowed.infinite &&
+          if (!p.borrowed.unknown && !p.borrowed.infinite &&
               p.borrowed.returnScope) {
             Symbol* referredSym = intrinsic.referent.fromSymbolScope;
             changed |= lifetimes->setInferredLifetimeToMin(referredSym, lp);
@@ -2317,8 +2194,7 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
 bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
 
-  if (forLoop->id == debugLifetimesForId)
-    debuggerBreakHere();
+  if (forLoop->id == debugLifetimesForId) debuggerBreakHere();
 
   // Gather the loop details to understand the
   // correspondence between what was iterated over
@@ -2335,8 +2211,8 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
   ForLoop* followerForLoop = NULL;
   std::vector<IteratorDetails> detailsVector;
 
-  gatherLoopDetails(forLoop, isForall, leaderDetails,
-                    followerForLoop, detailsVector);
+  gatherLoopDetails(
+    forLoop, isForall, leaderDetails, followerForLoop, detailsVector);
 
   for (size_t i = 0; i < detailsVector.size(); i++) {
     Expr* iterable = detailsVector[i].iterable;
@@ -2368,8 +2244,7 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
     if (iterable != NULL)
       if (AggregateType* at = toAggregateType(iterable->getValType()))
         if (at->iteratorInfo != NULL)
-          if (FnSymbol* fn = getTheIteratorFn(at))
-            method = (fn->_this != NULL);
+          if (FnSymbol* fn = getTheIteratorFn(at)) method = (fn->_this != NULL);
 
     bool usedAsRef = index->isRef();
     bool usedAsBorrow = isOrContainsBorrowedClass(index->type);
@@ -2406,10 +2281,9 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
     // Set intrinsic lifetime for index here at it's definition point
     if (index->isRef()) {
       if (!lp.referent.unknown || !lp.borrowed.unknown) {
-        if (index->id == debugLifetimesForId)
-          debuggerBreakHere();
+        if (index->id == debugLifetimesForId) debuggerBreakHere();
 
-        LifetimePair & intrinsic = lifetimes->intrinsicLifetime[index];
+        LifetimePair& intrinsic = lifetimes->intrinsicLifetime[index];
         intrinsic = lifetimes->minimumLifetimePair(intrinsic, lp);
       }
     }
@@ -2438,7 +2312,8 @@ void InferLifetimesVisitor::inferLifetimesForConstraint(CallExpr* forCall) {
   }
 }
 
-void InferLifetimesVisitor::inferLifetimesForConstraint(CallExpr* forCall, Expr* constraintExpr) {
+void InferLifetimesVisitor::inferLifetimesForConstraint(CallExpr* forCall,
+                                                        Expr* constraintExpr) {
   if (CallExpr* constraint = toCallExpr(constraintExpr)) {
     if (constraint->isNamedAstr(astrScomma)) {
       inferLifetimesForConstraint(forCall, constraint->get(1));
@@ -2456,10 +2331,8 @@ void InferLifetimesVisitor::inferLifetimesForConstraint(CallExpr* forCall, Expr*
       if (constraintLhs && constraintRhs) {
         for_formals_actuals(formal, actualExpr, forCall) {
           if (SymExpr* actualSe = toSymExpr(actualExpr)) {
-            if (formal == constraintLhs)
-              actualLhs = actualSe->symbol();
-            if (formal == constraintRhs)
-              actualRhs = actualSe->symbol();
+            if (formal == constraintLhs) actualLhs = actualSe->symbol();
+            if (formal == constraintRhs) actualRhs = actualSe->symbol();
           }
         }
       }
@@ -2468,7 +2341,6 @@ void InferLifetimesVisitor::inferLifetimesForConstraint(CallExpr* forCall, Expr*
     }
   }
 }
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -2482,24 +2354,19 @@ static bool isDevOnly(BaseAST* ast) {
 
   if (mod->modTag == MOD_INTERNAL) {
     return true;
-  } else if (fn &&
-             fn->hasFlag(FLAG_LINE_NUMBER_OK) == false &&
+  } else if (fn && fn->hasFlag(FLAG_LINE_NUMBER_OK) == false &&
              fn->hasFlag(FLAG_COMPILER_GENERATED)) {
     return true;
   }
 
   return false;
 }
-static bool isUser(BaseAST* ast) {
-  return !isDevOnly(ast);
-}
+static bool isUser(BaseAST* ast) { return !isDevOnly(ast); }
 
 static BaseAST* findUserPlace(BaseAST* ast) {
-  if (developer)
-    return ast;
+  if (developer) return ast;
 
-  if (isUser(ast))
-    return ast;
+  if (isUser(ast)) return ast;
 
   // Otherwise, look at the call sites to find
   // the user call.
@@ -2521,7 +2388,8 @@ static BaseAST* findUserPlace(BaseAST* ast) {
 }
 
 static void emitError(Expr* inExpr,
-                      const char* msg1, const char* msg2,
+                      const char* msg1,
+                      const char* msg2,
                       Symbol* relevantSymbol,
                       Lifetime relevantLifetime,
                       LifetimeState* lifetimes) {
@@ -2545,20 +2413,16 @@ static void emitError(Expr* inExpr,
   handleDebugOutputOnError(inExpr, lifetimes);
 }
 
-
 bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
 
-  if (call->id == debugLifetimesForId)
-    debuggerBreakHere();
+  if (call->id == debugLifetimesForId) debuggerBreakHere();
 
   // Traverse into task functions
   if (FnSymbol* calledFn = call->resolvedFunction())
-    if (isTaskFun(calledFn))
-      calledFn->body->accept(this);
+    if (isTaskFun(calledFn)) calledFn->body->accept(this);
 
   // Ignore calls that de-temping allows us to ignore
-  if (lifetimes->callsToIgnore.count(call))
-    return false;
+  if (lifetimes->callsToIgnore.count(call)) return false;
 
   if (isAnalyzedMoveOrAssignment(call)) {
 
@@ -2568,7 +2432,7 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
     if (isSubjectToRefLifetimeAnalysis(lhs) ||
         isSubjectToBorrowLifetimeAnalysis(lhs)) {
 
-      if (lhs->hasEitherFlag(FLAG_RVV,FLAG_RETARG)) {
+      if (lhs->hasEitherFlag(FLAG_RVV, FLAG_RETARG)) {
         emitBadReturnErrors(call);
       } else {
         emitBadAssignErrors(call);
@@ -2631,7 +2495,6 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
             if (a2lp.borrowed.unknown)
               a2lp.borrowed = scopeLifetimeForSymbol(actual2sym);
 
-
             // see also
             //   arrays/ferguson/pushback-no-leak.chpl
             if (isOrRefersBorrowedClass(formal1->getValType()) &&
@@ -2655,9 +2518,11 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
 
             if (error) {
               emitError(call,
-                        ref?"Reference actual argument":"Actual argument",
+                        ref ? "Reference actual argument" : "Actual argument",
                         "does not meet called function lifetime constraint",
-                        relevantSymbol, relevantLifetime, lifetimes);
+                        relevantSymbol,
+                        relevantLifetime,
+                        lifetimes);
               printOrderConstraintFromClause(fn, formal1, formal2);
             }
           }
@@ -2685,9 +2550,8 @@ void EmitLifetimeErrorsVisitor::emitBadReturnErrors(CallExpr* call) {
 
   bool usedAsRef = lhs->isRef() && rhsExpr->isRef();
 
-  LifetimePair rhsLt = lifetimes->inferredLifetimeForExpr(rhsExpr,
-                                                          usedAsRef,
-                                                          false);
+  LifetimePair rhsLt =
+    lifetimes->inferredLifetimeForExpr(rhsExpr, usedAsRef, false);
 
   // Check returns
   if (lhs->isRef() && call->isPrimitive(PRIM_MOVE)) {
@@ -2695,19 +2559,22 @@ void EmitLifetimeErrorsVisitor::emitBadReturnErrors(CallExpr* call) {
     if (rhsLt.referent.infinite || rhsLt.referent.unknown) {
       // OK, not an error
     } else {
-      if (inFn &&
-          inFn->hasFlag(FLAG_RETURNS_INFINITE_LIFETIME) &&
+      if (inFn && inFn->hasFlag(FLAG_RETURNS_INFINITE_LIFETIME) &&
           rhsLt.referent.returnScope) {
         emitError(call,
                   "Reference to return scoped variable",
                   "cannot be returned in function "
                   "returning infinite lifetime",
-                  rhsSym, rhsLt.referent, lifetimes);
+                  rhsSym,
+                  rhsLt.referent,
+                  lifetimes);
       } else if (!rhsLt.referent.returnScope) {
         emitError(call,
                   "Reference to scoped variable",
                   "cannot be returned",
-                  rhsSym, rhsLt.referent, lifetimes);
+                  rhsSym,
+                  rhsLt.referent,
+                  lifetimes);
       }
     }
   }
@@ -2722,19 +2589,22 @@ void EmitLifetimeErrorsVisitor::emitBadReturnErrors(CallExpr* call) {
     if (rhsLt.borrowed.infinite || rhsLt.borrowed.unknown) {
       // OK, not an error
     } else {
-      if (inFn &&
-          inFn->hasFlag(FLAG_RETURNS_INFINITE_LIFETIME) &&
+      if (inFn && inFn->hasFlag(FLAG_RETURNS_INFINITE_LIFETIME) &&
           rhsLt.borrowed.returnScope) {
         emitError(call,
                   "Return scope variable",
                   "cannot be returned in function "
                   "returning infinite lifetime",
-                  rhsSym, rhsLt.borrowed, lifetimes);
+                  rhsSym,
+                  rhsLt.borrowed,
+                  lifetimes);
       } else if (!rhsLt.borrowed.returnScope) {
         emitError(call,
                   "Scoped variable",
                   "cannot be returned",
-                  rhsSym, rhsLt.borrowed, lifetimes);
+                  rhsSym,
+                  rhsLt.borrowed,
+                  lifetimes);
       }
     }
   }
@@ -2752,17 +2622,15 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
   bool usedAsRef = lhs->isRef() && rhsExpr->isRef();
   bool usedAsBorrow = isOrContainsBorrowedClass(lhs->type);
 
-
-  LifetimePair rhsLt = lifetimes->inferredLifetimeForExpr(rhsExpr,
-                                                          usedAsRef,
-                                                          usedAsBorrow);
+  LifetimePair rhsLt =
+    lifetimes->inferredLifetimeForExpr(rhsExpr, usedAsRef, usedAsBorrow);
 
   // Raise errors for init/assigning from a value with shorter lifetime
   // I.e. insist RHS lifetime is longer than LHS lifetime.
   // I.e. error if RHS lifetime is shorter than LHS lifetime.
   if (call->isPrimitive(PRIM_MOVE) && lhs->isRef() &&
       !lhs->hasFlag(FLAG_INDEX_VAR) // workaround for forall loop AST
-     ) {
+  ) {
     // Setting a reference so check ref lifetimes
     if (lhsIntrinsic.referent.unknown) {
       // OK, not an error
@@ -2771,17 +2639,20 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
       emitError(call,
                 "Reference to scoped variable",
                 "would outlive the value it refers to",
-                lhs, rhsLt.referent, lifetimes);
+                lhs,
+                rhsLt.referent,
+                lifetimes);
       erroredSymbols.insert(lhs);
-    } else if (lhsInferred.referent.unknown ||
-               lhsInferred.referent.infinite) {
+    } else if (lhsInferred.referent.unknown || lhsInferred.referent.infinite) {
       // OK, not an error
     } else if (lifetimes->isLifetimeShorter(rhsLt.referent,
                                             lhsInferred.referent)) {
       emitError(call,
                 "Reference to scoped variable",
                 "would outlive the value it refers to",
-                lhs, rhsLt.referent, lifetimes);
+                lhs,
+                rhsLt.referent,
+                lifetimes);
       erroredSymbols.insert(lhs);
     }
   }
@@ -2795,33 +2666,38 @@ void EmitLifetimeErrorsVisitor::emitBadAssignErrors(CallExpr* call) {
       emitError(call,
                 "Scoped variable",
                 "would outlive the value it is set to",
-                lhs, rhsLt.borrowed, lifetimes);
+                lhs,
+                rhsLt.borrowed,
+                lifetimes);
       erroredSymbols.insert(lhs);
-    } else if (lifetimes->
-                 isLifetimeUnspecifiedFormalOrdering(rhsLt.borrowed,
-                                                     lhsIntrinsic.borrowed)) {
+    } else if (lifetimes->isLifetimeUnspecifiedFormalOrdering(
+                 rhsLt.borrowed, lhsIntrinsic.borrowed)) {
       emitError(call,
                 "Setting borrowed formal",
                 "illegal without specifying formal lifetime constraint",
-                lhs, rhsLt.borrowed, lifetimes);
+                lhs,
+                rhsLt.borrowed,
+                lifetimes);
       erroredSymbols.insert(lhs);
-    } else if (lhsInferred.borrowed.unknown ||
-               lhsInferred.borrowed.infinite) {
+    } else if (lhsInferred.borrowed.unknown || lhsInferred.borrowed.infinite) {
       // OK, not an error
     } else if (lifetimes->isLifetimeShorter(rhsLt.borrowed,
                                             lhsInferred.borrowed)) {
       emitError(call,
                 "Scoped variable",
                 "would outlive the value it is set to",
-                lhs, rhsLt.borrowed, lifetimes);
+                lhs,
+                rhsLt.borrowed,
+                lifetimes);
       erroredSymbols.insert(lhs);
-    } else if (lifetimes->
-                 isLifetimeUnspecifiedFormalOrdering(rhsLt.borrowed,
-                                                     lhsInferred.borrowed)) {
+    } else if (lifetimes->isLifetimeUnspecifiedFormalOrdering(
+                 rhsLt.borrowed, lhsInferred.borrowed)) {
       emitError(call,
                 "Setting borrowed formal",
                 "illegal without specifying formal lifetime constraint",
-                lhs, rhsLt.borrowed, lifetimes);
+                lhs,
+                rhsLt.borrowed,
+                lifetimes);
       erroredSymbols.insert(lhs);
     }
   }
@@ -2838,9 +2714,8 @@ void EmitLifetimeErrorsVisitor::emitBadSetFieldErrors(CallExpr* call) {
   bool usedAsRef = lhs->isRef() && rhsExpr->isRef();
   bool usedAsBorrow = isOrContainsBorrowedClass(field->type);
 
-  LifetimePair rhsLt = lifetimes->inferredLifetimeForExpr(rhsExpr,
-                                                          usedAsRef,
-                                                          usedAsBorrow);
+  LifetimePair rhsLt =
+    lifetimes->inferredLifetimeForExpr(rhsExpr, usedAsRef, usedAsBorrow);
 
   if (field->isRef() && rhsExpr->isRef()) {
     // Setting a reference so check ref lifetimes
@@ -2851,17 +2726,20 @@ void EmitLifetimeErrorsVisitor::emitBadSetFieldErrors(CallExpr* call) {
       emitError(call,
                 "Reference field",
                 "would outlive the value it refers to",
-                field, rhsLt.referent, lifetimes);
+                field,
+                rhsLt.referent,
+                lifetimes);
       erroredSymbols.insert(lhs);
-    } else if (lhsInferred.referent.unknown ||
-               lhsInferred.referent.infinite) {
+    } else if (lhsInferred.referent.unknown || lhsInferred.referent.infinite) {
       // OK, not an error
     } else if (lifetimes->isLifetimeShorter(rhsLt.referent,
                                             lhsInferred.referent)) {
       emitError(call,
                 "Reference field",
                 "would outlive the value it refers to",
-                field, rhsLt.referent, lifetimes);
+                field,
+                rhsLt.referent,
+                lifetimes);
       erroredSymbols.insert(lhs);
     }
     // TODO unspecified formal lifetimes?
@@ -2876,23 +2754,25 @@ void EmitLifetimeErrorsVisitor::emitBadSetFieldErrors(CallExpr* call) {
       emitError(call,
                 "Field",
                 "would outlive the value it is set to",
-                field, rhsLt.borrowed, lifetimes);
+                field,
+                rhsLt.borrowed,
+                lifetimes);
       erroredSymbols.insert(lhs);
-    } else if (lhsInferred.borrowed.unknown ||
-               lhsInferred.borrowed.infinite) {
+    } else if (lhsInferred.borrowed.unknown || lhsInferred.borrowed.infinite) {
       // OK, not an error
     } else if (lifetimes->isLifetimeShorter(rhsLt.borrowed,
                                             lhsInferred.borrowed)) {
       emitError(call,
                 "Field",
                 "would outlive the value it is set to",
-                field, rhsLt.borrowed, lifetimes);
+                field,
+                rhsLt.borrowed,
+                lifetimes);
       erroredSymbols.insert(lhs);
     }
     // TODO unspecified formal lifetimes?
   }
 }
-
 
 void EmitLifetimeErrorsVisitor::emitErrors() {
   for (SymbolToLifetimeMap::iterator it = lifetimes->inferredLifetime.begin();
@@ -2907,74 +2787,70 @@ void EmitLifetimeErrorsVisitor::emitErrors() {
 
     // Ignore the RVV for this check since that's tested in acceptCall
     // (see test lifetimes/bug-like-timezones.chpl)
-    if (key->hasEitherFlag(FLAG_RVV,FLAG_RETARG))
-      continue;
+    if (key->hasEitherFlag(FLAG_RVV, FLAG_RETARG)) continue;
 
     // Don't emit errors again when we already made an error for that symbol
-    if (erroredSymbols.count(key))
-      continue;
+    if (erroredSymbols.count(key)) continue;
 
     bool user = !key->hasFlag(FLAG_TEMP);
 
     if (key->isRef()) {
-      if (// check if intrinsic lifetime < symbol lifetime
-          (!intrinsic.referent.unknown && user &&
-           lifetimes->isLifetimeShorter(intrinsic.referent, scope)) ||
-          // check if inferred lifetime < symbol lifetime
-          (!inferred.referent.unknown && user &&
-           lifetimes->isLifetimeShorter(inferred.referent, scope)) ||
-          // check if inferred lifetime < intrinsic lifetime
-          (!inferred.referent.unknown &&
-           !intrinsic.referent.unknown &&
-           lifetimes->isLifetimeShorter(inferred.referent,
-                                        intrinsic.referent))) {
+      if ( // check if intrinsic lifetime < symbol lifetime
+        (!intrinsic.referent.unknown && user &&
+         lifetimes->isLifetimeShorter(intrinsic.referent, scope)) ||
+        // check if inferred lifetime < symbol lifetime
+        (!inferred.referent.unknown && user &&
+         lifetimes->isLifetimeShorter(inferred.referent, scope)) ||
+        // check if inferred lifetime < intrinsic lifetime
+        (!inferred.referent.unknown && !intrinsic.referent.unknown &&
+         lifetimes->isLifetimeShorter(inferred.referent, intrinsic.referent))) {
         Expr* at = key->defPoint;
-        if (inferred.referent.relevantExpr)
-          at = inferred.referent.relevantExpr;
+        if (inferred.referent.relevantExpr) at = inferred.referent.relevantExpr;
 
         emitError(at,
                   "Reference to scoped variable",
                   "reachable after lifetime ends",
-                  key, inferred.referent, lifetimes);
+                  key,
+                  inferred.referent,
+                  lifetimes);
       }
     }
 
     if (isOrContainsBorrowedClass(key->type)) {
-      if (// check if intrinsic lifetime < symbol lifetime
-          (!intrinsic.borrowed.unknown && user &&
-           lifetimes->isLifetimeShorter(intrinsic.borrowed, scope)) ||
-          // check if inferred lifetime < symbol lifetime
-          (!inferred.borrowed.unknown && user &&
-           lifetimes->isLifetimeShorter(inferred.borrowed, scope)) ||
-          // check if inferred lifetime < intrinsic lifetime
-          (!inferred.borrowed.unknown &&
-           !intrinsic.borrowed.unknown &&
-           lifetimes->isLifetimeShorter(inferred.borrowed,
-                                        intrinsic.borrowed))) {
+      if ( // check if intrinsic lifetime < symbol lifetime
+        (!intrinsic.borrowed.unknown && user &&
+         lifetimes->isLifetimeShorter(intrinsic.borrowed, scope)) ||
+        // check if inferred lifetime < symbol lifetime
+        (!inferred.borrowed.unknown && user &&
+         lifetimes->isLifetimeShorter(inferred.borrowed, scope)) ||
+        // check if inferred lifetime < intrinsic lifetime
+        (!inferred.borrowed.unknown && !intrinsic.borrowed.unknown &&
+         lifetimes->isLifetimeShorter(inferred.borrowed, intrinsic.borrowed))) {
         Expr* at = key->defPoint;
-        if (inferred.borrowed.relevantExpr)
-          at = inferred.borrowed.relevantExpr;
+        if (inferred.borrowed.relevantExpr) at = inferred.borrowed.relevantExpr;
 
         emitError(at,
                   "Scoped variable",
                   "reachable after lifetime ends",
-                  key, inferred.borrowed, lifetimes);
+                  key,
+                  inferred.borrowed,
+                  lifetimes);
       }
     }
 
     // check refs of borrows
-    if (isOrContainsBorrowedClass(key->type) &&
-        !inferred.borrowed.unknown &&
+    if (isOrContainsBorrowedClass(key->type) && !inferred.borrowed.unknown &&
         !inferred.referent.unknown &&
         lifetimes->isLifetimeShorter(inferred.borrowed, inferred.referent)) {
       Expr* at = key->defPoint;
-      if (inferred.borrowed.relevantExpr)
-        at = inferred.borrowed.relevantExpr;
+      if (inferred.borrowed.relevantExpr) at = inferred.borrowed.relevantExpr;
 
       emitError(at,
                 "reference points to scoped variable",
                 "reachable after lifetime ends",
-                key, inferred.borrowed, lifetimes);
+                key,
+                inferred.borrowed,
+                lifetimes);
     }
   }
 }
@@ -3001,17 +2877,14 @@ bool outlivesBlock(LifetimeInformation* info, Symbol* sym, BlockStmt* block) {
 static bool typeHasInfiniteBorrowLifetime(Type* type) {
 
   // If it has type nil, it has infinite lifetime
-  if (type == dtNil)
-    return true;
+  if (type == dtNil) return true;
 
   // low-level ddata type not subject to analysis
-  if (type->symbol->hasFlag(FLAG_DATA_CLASS))
-    return true;
+  if (type->symbol->hasFlag(FLAG_DATA_CLASS)) return true;
 
   // Types for C compatibility are assumed to have infinite lifetime.
   if (type->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
-      type->symbol->hasFlag(FLAG_EXTERN) ||
-      type == dtCVoidPtr ||
+      type->symbol->hasFlag(FLAG_EXTERN) || type == dtCVoidPtr ||
       type == dtCFnPtr)
     return true;
 
@@ -3026,15 +2899,12 @@ static bool typeHasInfiniteBorrowLifetime(Type* type) {
 static bool isSubjectToRefLifetimeAnalysis(Symbol* sym) {
   bool argOrVar = isArgSymbol(sym) || isVarSymbol(sym);
 
-  if (!argOrVar)
-    return false;
+  if (!argOrVar) return false;
 
-  if (!sym->isRef())
-    return false;
+  if (!sym->isRef()) return false;
 
   // Symbols marked "unsafe" are not subject to analysis.
-  if (sym->hasFlag(FLAG_UNSAFE))
-    return false;
+  if (sym->hasFlag(FLAG_UNSAFE)) return false;
 
   return true;
 }
@@ -3063,9 +2933,7 @@ static bool recordContainsClassFields(AggregateType* at) {
 static bool recordContainsOwnedClassFields(AggregateType* at) {
 
   for_fields(field, at) {
-    if (isClassLike(field->type) &&
-        field->hasFlag(FLAG_OWNED))
-      return true;
+    if (isClassLike(field->type) && field->hasFlag(FLAG_OWNED)) return true;
 
     if (isRecord(field->type) &&
         recordContainsOwnedClassFields(toAggregateType(field->type)))
@@ -3079,8 +2947,7 @@ static bool aggregateContainsBorrowedClassFields(AggregateType* at) {
 
   for_fields(field, at) {
     if (isOrContainsBorrowedClass(field->type) &&
-        !field->hasFlag(FLAG_UNSAFE) &&
-        !field->hasFlag(FLAG_OWNED))
+        !field->hasFlag(FLAG_UNSAFE) && !field->hasFlag(FLAG_OWNED))
       return true;
   }
 
@@ -3100,28 +2967,23 @@ bool isOrContainsBorrowedClass(Type* type) {
   type = type->getValType();
 
   // First check for it is a borrowed class type
-  if (isClassLike(type) &&
-      !typeHasInfiniteBorrowLifetime(type))
+  if (isClassLike(type) && !typeHasInfiniteBorrowLifetime(type))
     return true; // borrow -- `unmanaged` has `infinite lifetime`
 
   // Next check for records containing borrowed class type
   if (AggregateType* at = toAggregateType(type))
-    if (at->isRecord())
-      return aggregateContainsBorrowedClassFields(at);
+    if (at->isRecord()) return aggregateContainsBorrowedClassFields(at);
 
   return false;
 }
 
 static bool isOrRefersBorrowedClass(Type* type) {
-  if (isOrContainsBorrowedClass(type))
-    return true;
+  if (isOrContainsBorrowedClass(type)) return true;
 
-  if (type->symbol->hasFlag(FLAG_ARRAY_OF_BORROWS))
-    return true;
+  if (type->symbol->hasFlag(FLAG_ARRAY_OF_BORROWS)) return true;
 
   if (AggregateType* at = toAggregateType(type))
-    if (aggregateContainsBorrowedClassFields(at))
-      return true;
+    if (aggregateContainsBorrowedClassFields(at)) return true;
 
   return false;
 }
@@ -3129,8 +2991,7 @@ static bool isOrRefersBorrowedClass(Type* type) {
 static bool isSubjectToBorrowLifetimeAnalysis(Type* type) {
   type = type->getValType();
 
-  if (!(isRecord(type) || isClassLikeOrPtr(type)))
-    return false;
+  if (!(isRecord(type) || isClassLikeOrPtr(type))) return false;
 
   bool isRecordContainingFieldsSubjectToAnalysis = false;
   if (isRecord(type)) {
@@ -3146,8 +3007,7 @@ static bool isSubjectToBorrowLifetimeAnalysis(Type* type) {
   //  - a pointer type
   //  - a record containing refs/class pointers
   //    (or an iterator record)
-  if (!(isClassLikeOrPtr(type) ||
-        isRecordContainingFieldsSubjectToAnalysis))
+  if (!(isClassLikeOrPtr(type) || isRecordContainingFieldsSubjectToAnalysis))
     return false;
 
   return true;
@@ -3156,23 +3016,18 @@ static bool isSubjectToBorrowLifetimeAnalysis(Type* type) {
 static bool isSubjectToBorrowLifetimeAnalysis(Symbol* sym) {
   bool argOrVar = isArgSymbol(sym) || isVarSymbol(sym);
 
-  if (!argOrVar)
-    return false;
+  if (!argOrVar) return false;
 
-  if (!isSubjectToBorrowLifetimeAnalysis(sym->type))
-    return false;
+  if (!isSubjectToBorrowLifetimeAnalysis(sym->type)) return false;
 
   // Symbols marked "unsafe" are not subject to analysis.
-  if (sym->hasFlag(FLAG_UNSAFE))
-    return false;
+  if (sym->hasFlag(FLAG_UNSAFE)) return false;
 
   // this is a workaround for non-optimal AST for iteration
-  if (sym->hasFlag(FLAG_INDEX_OF_INTEREST))
-    return false;
+  if (sym->hasFlag(FLAG_INDEX_OF_INTEREST)) return false;
 
   return true;
 }
-
 
 bool LifetimeState::shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym) {
 
@@ -3180,25 +3035,21 @@ bool LifetimeState::shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym) {
         isSubjectToBorrowLifetimeAnalysis(sym)))
     return false;
 
-  if (!isLocalVariable(sym))
-    return false;
+  if (!isLocalVariable(sym)) return false;
 
   // Lifetime for index variables is set by infer's for loop visitor
-  if (sym->hasFlag(FLAG_INDEX_VAR))
-    return false;
+  if (sym->hasFlag(FLAG_INDEX_VAR)) return false;
 
   // Don't propagate lifetime to RVV - we check moves to it
   // separately
-  if (sym->hasEitherFlag(FLAG_RVV,FLAG_RETARG))
-    return false;
+  if (sym->hasEitherFlag(FLAG_RVV, FLAG_RETARG)) return false;
 
   return true;
 }
 
 static bool isAnalyzedMoveOrAssignment(CallExpr* call) {
 
-  if (call->isPrimitive(PRIM_MOVE) ||
-      call->isPrimitive(PRIM_ASSIGN) ||
+  if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN) ||
       call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY))
     return true;
 
@@ -3221,8 +3072,7 @@ static bool isAnalyzedMoveOrAssignment(CallExpr* call) {
         return true;
     if (AggregateType* at = toAggregateType(call->get(1)->getValType()))
       if (isRecord(at) && calledFn->hasFlag(FLAG_COMPILER_GENERATED))
-        if (aggregateContainsBorrowedClassFields(at))
-          return true;
+        if (aggregateContainsBorrowedClassFields(at)) return true;
   }
 
   return false;
@@ -3233,8 +3083,7 @@ static bool isAnalyzedMoveOrAssignment(CallExpr* call) {
  */
 static bool symbolHasInfiniteLifetime(Symbol* sym) {
 
-  if (sym == NULL)
-    return true;
+  if (sym == NULL) return true;
 
   Symbol* parentSymbol = sym->defPoint->parentSymbol;
   if (isModuleSymbol(parentSymbol)) {
@@ -3257,11 +3106,9 @@ static Stmt* getDefBlock(Symbol* sym) {
 
   while (defPoint) {
     if (BlockStmt* block = toBlockStmt(defPoint))
-      if (block->blockTag == BLOCK_NORMAL)
-        return block;
+      if (block->blockTag == BLOCK_NORMAL) return block;
 
-    if (ForallStmt* fs = toForallStmt(defPoint))
-      return fs;
+    if (ForallStmt* fs = toForallStmt(defPoint)) return fs;
 
     if (ShadowVarSymbol* sv = toShadowVarSymbol(defPoint->parentSymbol))
       defPoint = sv->defPoint;
@@ -3295,8 +3142,7 @@ static Expr* getParentExprIncludingTaskFnCalls(Expr* cur) {
 static bool isBlockWithinBlock(Stmt* a, Stmt* b) {
   Expr* findParent = b;
   for (Expr* cur = a; cur; cur = getParentExprIncludingTaskFnCalls(cur)) {
-    if (cur == findParent)
-      return true;
+    if (cur == findParent) return true;
   }
   return false;
 }
@@ -3322,14 +3168,11 @@ bool LifetimeState::isLifetimeUnspecifiedFormalOrdering(Lifetime a,
   INT_ASSERT(fn != NULL && aArg != NULL && bArg != NULL);
 
   constraint_t c = orderConstraintFromClause(fn, aArg, bArg);
-  if (c != CONSTRAINT_UNKNOWN)
-    return false;
+  if (c != CONSTRAINT_UNKNOWN) return false;
   // TODO - make this exception more reasonable
   if (fn->getModule()->modTag != MOD_USER) {
-    if (fn->name == astrSassign)
-      return false;
-    if (fn->name == astrSswap)
-      return false;
+    if (fn->name == astrSassign) return false;
+    if (fn->name == astrSswap) return false;
   }
 
   return true;
@@ -3375,13 +3218,10 @@ bool LifetimeState::isLifetimeShorter(Lifetime a, Lifetime b) {
     bool anyElse = false;
 
     while (aCur != NULL && bCur != NULL) {
-      if (aCur->order < bCur->order)
-        return true;
-      if (aCur->order > bCur->order)
-        return false;
+      if (aCur->order < bCur->order) return true;
+      if (aCur->order > bCur->order) return false;
 
-      if (aCur->elseOrder || bCur->elseOrder)
-        anyElse = true;
+      if (aCur->elseOrder || bCur->elseOrder) anyElse = true;
 
       aCur = aCur->nestedOrder;
       bCur = bCur->nestedOrder;
@@ -3401,15 +3241,15 @@ bool LifetimeState::isLifetimeShorter(Lifetime a, Lifetime b) {
     bool aMaybeDeadEarly = aSym->hasFlag(FLAG_DEAD_LAST_MENTION);
     bool bMaybeDeadEarly = bSym->hasFlag(FLAG_DEAD_LAST_MENTION);
 
-    if      (aMaybeDeadEarly == false && bMaybeDeadEarly == false)
-      return false;  // don't worry about order for end-of-block decls
-                     // doing so would prevent swap from working.
-    else if (aMaybeDeadEarly == true  && bMaybeDeadEarly == true)
-      return false;  // OK: call-temps deinited together
-    else if (aMaybeDeadEarly == true  && bMaybeDeadEarly == false)
-      return true;   // a has shorter lifetime than b
+    if (aMaybeDeadEarly == false && bMaybeDeadEarly == false)
+      return false; // don't worry about order for end-of-block decls
+                    // doing so would prevent swap from working.
+    else if (aMaybeDeadEarly == true && bMaybeDeadEarly == true)
+      return false; // OK: call-temps deinited together
+    else if (aMaybeDeadEarly == true && bMaybeDeadEarly == false)
+      return true; // a has shorter lifetime than b
     else if (aMaybeDeadEarly == false && bMaybeDeadEarly == true)
-      return false;   // b has shorter lifetime than a
+      return false; // b has shorter lifetime than a
   }
 
   return false;
@@ -3419,13 +3259,10 @@ static LifetimeComparisonResult
 combineLifetimeComparisonResult(LifetimeComparisonResult a,
                                 LifetimeComparisonResult b) {
   // If they are the same, go with that
-  if (a == b)
-    return a;
+  if (a == b) return a;
   // If one is unknown, use the other one
-  if (a == LifetimeComparisonResult::UNKNOWN)
-    return b;
-  if (b == LifetimeComparisonResult::UNKNOWN)
-    return a;
+  if (a == LifetimeComparisonResult::UNKNOWN) return b;
+  if (b == LifetimeComparisonResult::UNKNOWN) return a;
 
   // they are not the same, and neither is UNKNOWN. That means
   // it is SHORTER and LONGER. Return UNKNOWN in that case.
@@ -3438,10 +3275,8 @@ LifetimeState::helpIsLifetimeShorter(DeinitOrderNode* aNode,
   DeinitOrderNode* aCur = aNode;
   DeinitOrderNode* bCur = bNode;
 
-  if (aCur->order < bCur->order)
-    return LifetimeComparisonResult::SHORTER;
-  if (aCur->order > bCur->order)
-    return LifetimeComparisonResult::LONGER;
+  if (aCur->order < bCur->order) return LifetimeComparisonResult::SHORTER;
+  if (aCur->order > bCur->order) return LifetimeComparisonResult::LONGER;
 
   auto result = LifetimeComparisonResult::UNKNOWN;
   if (aCur->nestedOrder && bCur->nestedOrder) {
@@ -3458,8 +3293,7 @@ LifetimeState::helpIsLifetimeShorter(DeinitOrderNode* aNode,
 
 DeinitOrderNode* LifetimeState::deinitOrderNodeFor(Symbol* sym) {
   DeinitOrderMap::iterator it = order.find(sym);
-  if (it != order.end())
-    return &it->second;
+  if (it != order.end()) return &it->second;
 
   // otherwise, use the order from the final location in the defining
   // block as recorded in blockOrder
@@ -3478,7 +3312,6 @@ Lifetime LifetimeState::minimumLifetime(Lifetime a, Lifetime b) {
   else
     return b;
 }
-
 
 LifetimePair LifetimeState::minimumLifetimePair(LifetimePair a,
                                                 LifetimePair b) {

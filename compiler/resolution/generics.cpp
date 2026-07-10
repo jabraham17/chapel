@@ -43,31 +43,28 @@
 
 #include <cstdlib>
 
-static int             explainInstantiationLine   = -2;
-static ModuleSymbol*   explainInstantiationModule = NULL;
-static Vec<FnSymbol*>  whereStack;
+static int explainInstantiationLine = -2;
+static ModuleSymbol* explainInstantiationModule = NULL;
+static Vec<FnSymbol*> whereStack;
 
-static
-FnSymbol* instantiateFunction(FnSymbol*  fn,
-                              FnSymbol*  root,
-                              SymbolMap& allSubs,
-                              CallExpr*  call,
-                              SymbolMap& subs,
-                              SymbolMap& map,
-                              bool& hasGenericDefaultExpr,
-                              SymbolMap& allSubsBeforeDefaultExprs);
+static FnSymbol* instantiateFunction(FnSymbol* fn,
+                                     FnSymbol* root,
+                                     SymbolMap& allSubs,
+                                     CallExpr* call,
+                                     SymbolMap& subs,
+                                     SymbolMap& map,
+                                     bool& hasGenericDefaultExpr,
+                                     SymbolMap& allSubsBeforeDefaultExprs);
 
-static bool            fixupDefaultInitCopy(FnSymbol* fn,
-                                            FnSymbol* newFn,
-                                            CallExpr* call);
+static bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
 
-static void
-explainInstantiation(FnSymbol* fn) {
-  if (strcmp(fn->name, fExplainInstantiation) != 0)
+static void explainInstantiation(FnSymbol* fn) {
+  if (strcmp(fn->name, fExplainInstantiation) != 0) return;
+  if (explainInstantiationModule &&
+      explainInstantiationModule != fn->defPoint->getModule())
     return;
-  if (explainInstantiationModule && explainInstantiationModule != fn->defPoint->getModule())
-    return;
-  if (explainInstantiationLine != -1 && explainInstantiationLine != fn->defPoint->linenum())
+  if (explainInstantiationLine != -1 &&
+      explainInstantiationLine != fn->defPoint->linenum())
     return;
 
   SymbolMapVector elts = sortedSymbolMapElts(fn->substitutions);
@@ -76,45 +73,50 @@ explainInstantiation(FnSymbol* fn) {
   int len = snprintf(msg, sizeof(msg), "instantiated %s(", fn->name);
   bool first = true;
   for_formals(formal, fn) {
-    for (auto elem: elts) {
+    for (auto elem : elts) {
       ArgSymbol* arg = toArgSymbol(elem.key);
 
       if (!strcmp(formal->name, arg->name)) {
         if (first)
           first = false;
         else
-          len += snprintf(msg+len, sizeof(msg)-len, ", ");
+          len += snprintf(msg + len, sizeof(msg) - len, ", ");
         INT_ASSERT(arg);
         if (strcmp(fn->name, tupleInitName))
-          len += snprintf(msg+len, sizeof(msg)-len, "%s = ", arg->name);
+          len += snprintf(msg + len, sizeof(msg) - len, "%s = ", arg->name);
         if (VarSymbol* vs = toVarSymbol(elem.value)) {
           if (vs->immediate && vs->immediate->const_kind == NUM_KIND_INT)
-            len += snprintf(msg+len, sizeof(msg)-len, "%" PRId64, vs->immediate->int_value());
-          else if (vs->immediate && vs->immediate->const_kind == CONST_KIND_STRING)
-            len += snprintf(msg+len, sizeof(msg)-len, "\"%s\"", vs->immediate->v_string.c_str());
+            len += snprintf(msg + len,
+                            sizeof(msg) - len,
+                            "%" PRId64,
+                            vs->immediate->int_value());
+          else if (vs->immediate &&
+                   vs->immediate->const_kind == CONST_KIND_STRING)
+            len += snprintf(msg + len,
+                            sizeof(msg) - len,
+                            "\"%s\"",
+                            vs->immediate->v_string.c_str());
           else
-            len += snprintf(msg+len, sizeof(msg)-len, "%s", vs->name);
-        }
-        else if (Symbol* s = toSymbol(elem.value))
-      // For a generic symbol, just print the name.
-      // Additional clauses for specific symbol types should precede this one.
-          len += snprintf(msg+len, sizeof(msg)-len, "%s", s->name);
+            len += snprintf(msg + len, sizeof(msg) - len, "%s", vs->name);
+        } else if (Symbol* s = toSymbol(elem.value))
+          // For a generic symbol, just print the name.
+          // Additional clauses for specific symbol types should precede this one.
+          len += snprintf(msg + len, sizeof(msg) - len, "%s", s->name);
         else
           INT_FATAL("unexpected case using --explain-instantiation");
       }
     }
   }
-  snprintf(msg+len, sizeof(msg)-len, ")");
+  snprintf(msg + len, sizeof(msg) - len, ")");
   if (callStack.n) {
-    USR_PRINT(callStack.v[callStack.n-1], "%s", msg);
+    USR_PRINT(callStack.v[callStack.n - 1], "%s", msg);
   } else {
     USR_PRINT(fn, "%s", msg);
   }
 }
 
-
-static void
-copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbol* value) {
+static void copyGenericSub(
+  SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbol* value) {
   if (root != fn) {
     int i = 1;
     for_formals(formal, fn) {
@@ -130,7 +132,7 @@ copyGenericSub(SymbolMap& subs, FnSymbol* root, FnSymbol* fn, Symbol* key, Symbo
 
 static TypeSymbol*
 getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
-  if (fn->hasEitherFlag(FLAG_TUPLE,FLAG_PARTIAL_TUPLE)) {
+  if (fn->hasEitherFlag(FLAG_TUPLE, FLAG_PARTIAL_TUPLE)) {
     return actualTS;
   } else if (fn->hasFlag(FLAG_ALLOW_REF)) {
     // With FLAG_ALLOW_REF, always use actualTS type, even if it's a ref type
@@ -140,7 +142,8 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
     // for the ref type, so re-instantiate it with whatever actualTS is.
     return actualTS;
   } else if (actualTS->hasFlag(FLAG_REF) &&
-          !(key->hasFlag(FLAG_REF) && isConstrainedType(key->getValType())) ) {
+             !(key->hasFlag(FLAG_REF) &&
+               isConstrainedType(key->getValType()))) {
     // the value is a ref and
     // instantiation of a formal of ref type loses ref
     // except when we are mapping a CG type
@@ -150,47 +153,50 @@ getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS) {
   }
 }
 
-
-void
-checkInfiniteWhereInstantiation(FnSymbol* fn) {
+void checkInfiniteWhereInstantiation(FnSymbol* fn) {
   if (fn->where) {
     forv_Vec(FnSymbol, where, whereStack) {
       if (where == fn) {
-        USR_FATAL_CONT(fn->where, "illegal where clause due"
+        USR_FATAL_CONT(fn->where,
+                       "illegal where clause due"
                        " to infinite instantiation");
         FnSymbol* printOn = NULL;
         forv_Vec(FnSymbol, tmp, whereStack) {
           if (printOn)
-            USR_PRINT(printOn->where, "evaluation of '%s' where clause results"
-                      " in instantiation of '%s'", printOn->name, tmp->name);
-          if (printOn || tmp == where)
-            printOn = tmp;
+            USR_PRINT(printOn->where,
+                      "evaluation of '%s' where clause results"
+                      " in instantiation of '%s'",
+                      printOn->name,
+                      tmp->name);
+          if (printOn || tmp == where) printOn = tmp;
         }
-        USR_PRINT(fn->where, "evaluation of '%s' where clause results"
-                  " in instantiation of '%s'", printOn->name, fn->name);
+        USR_PRINT(fn->where,
+                  "evaluation of '%s' where clause results"
+                  " in instantiation of '%s'",
+                  printOn->name,
+                  fn->name);
         USR_STOP();
       }
     }
   }
 }
 
-
-static Map<FnSymbol*,int> instantiationLimitMap;
-
+static Map<FnSymbol*, int> instantiationLimitMap;
 
 static bool trackInstantiationsForFn(FnSymbol* fn) {
   ModuleSymbol* mod = fn->getModule();
 
-          // Don't count instantiations on internal modules
-  return (mod && mod->modTag != MOD_INTERNAL &&
-          // Nor ones that are compiler-generated (we could, but this
-          // has caused problems for me in some cases and I think it's
-          // reasonable to assume compiler-generated functions won't
-          // result in infinitely recursive instantiations; to
-          // reproduce this, comment out that part of the test and try
-          // test/functions/resolution/instantiateMax/instMaxOKifNonrecursive.chpl).
-          !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
-          !fn->hasFlag(FLAG_EXEMPT_INSTANTIATION_LIMIT));
+  // Don't count instantiations on internal modules
+  return (
+    mod && mod->modTag != MOD_INTERNAL &&
+    // Nor ones that are compiler-generated (we could, but this
+    // has caused problems for me in some cases and I think it's
+    // reasonable to assume compiler-generated functions won't
+    // result in infinitely recursive instantiations; to
+    // reproduce this, comment out that part of the test and try
+    // test/functions/resolution/instantiateMax/instMaxOKifNonrecursive.chpl).
+    !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+    !fn->hasFlag(FLAG_EXEMPT_INSTANTIATION_LIMIT));
 }
 
 //
@@ -202,21 +208,21 @@ static bool trackInstantiationsForFn(FnSymbol* fn) {
 // because folding is done via instantiation; therefore, be careful
 // developing in the base module
 //
-static void
-checkInstantiationLimit(FnSymbol* fn) {
+static void checkInstantiationLimit(FnSymbol* fn) {
   if (trackInstantiationsForFn(fn)) {
     while (fn->instantiatedFrom != NULL) {
       fn = fn->instantiatedFrom;
     }
     if (instantiationLimitMap.get(fn) >= instantiation_limit) {
-      USR_FATAL_CONT(fn, "Function '%s' has been instantiated too many times",
-                     fn->name);
+      USR_FATAL_CONT(
+        fn, "Function '%s' has been instantiated too many times", fn->name);
       USR_PRINT("  If this is intentional, try increasing"
-                " the instantiation limit from %d", instantiation_limit);
+                " the instantiation limit from %d",
+                instantiation_limit);
       USR_STOP();
     }
     // printf("Incrementing instantiation count for %s (%p)\n", fn->name, fn);
-    instantiationLimitMap.put(fn, instantiationLimitMap.get(fn)+1);
+    instantiationLimitMap.put(fn, instantiationLimitMap.get(fn) + 1);
   }
 }
 
@@ -237,7 +243,7 @@ void popInstantiationLimit(FnSymbol* fn) {
     // printf("Decrementing instantiation count for %s (%p)\n", fn->name, fn);
     int count = instantiationLimitMap.get(fn);
     if (count > 0) {
-      instantiationLimitMap.put(fn, instantiationLimitMap.get(fn)-1);
+      instantiationLimitMap.put(fn, instantiationLimitMap.get(fn) - 1);
     } else {
       //
       // varargs functions are not consistently added to the instantiationLimitMap,
@@ -251,21 +257,18 @@ void popInstantiationLimit(FnSymbol* fn) {
   }
 }
 
-
-void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var)
-{
+void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var) {
   const size_t bufSize = 128;
   char immediate[bufSize];
   snprint_imm(immediate, bufSize, *var->immediate);
 
   // escape quote characters in name string
   char name[bufSize];
-  char * name_p = &name[0];
-  char * immediate_p = &immediate[0];
-  for ( ;
-        name_p < &name[bufSize-1] && // don't overflow buffer
-          '\0' != *immediate_p;      // stop at null in source
-        name_p++, immediate_p++) {
+  char* name_p = &name[0];
+  char* immediate_p = &immediate[0];
+  for (; name_p < &name[bufSize - 1] && // don't overflow buffer
+         '\0' != *immediate_p;          // stop at null in source
+       name_p++, immediate_p++) {
     if ('"' == *immediate_p) { // escape quotes
       *name_p++ = '\\';
     }
@@ -275,24 +278,23 @@ void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var)
   sym->name = astr(sym->name, name);
 
   // add ellipsis if too long for buffer
-  if (name_p == &name[bufSize-1]) {
+  if (name_p == &name[bufSize - 1]) {
     sym->name = astr(sym->name, "...");
   }
 
   // filter unacceptable characters for cname string
   char cname[bufSize];
-  char * cname_p = &cname[0];
+  char* cname_p = &cname[0];
   immediate_p = &immediate[0];
   size_t maxNameLength = 32; // add "_etc" after this many characters
 
-  for ( ; immediate_p < &immediate_p[bufSize-1] &&  // don't overflow buffer
-          cname_p < &cname[maxNameLength-1] &&      // stop at max length
-          '\0' != *immediate_p;
-        immediate_p++ ) {
+  for (; immediate_p < &immediate_p[bufSize - 1] && // don't overflow buffer
+         cname_p < &cname[maxNameLength - 1] &&     // stop at max length
+         '\0' != *immediate_p;
+       immediate_p++) {
     if (('A' <= *immediate_p && *immediate_p <= 'Z') ||
         ('a' <= *immediate_p && *immediate_p <= 'z') ||
-        ('0' <= *immediate_p && *immediate_p <= '9') ||
-        ('_' == *immediate_p)) {
+        ('0' <= *immediate_p && *immediate_p <= '9') || ('_' == *immediate_p)) {
       *cname_p = *immediate_p;
       cname_p++;
     }
@@ -301,8 +303,8 @@ void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var)
   sym->cname = astr(sym->cname, cname);
 
   // add _etc if too long
-  if (immediate_p == &immediate[bufSize-1] || // too long for buffer
-      cname_p == &cname[maxNameLength-1]) {   // exceeds max length
+  if (immediate_p == &immediate[bufSize - 1] || // too long for buffer
+      cname_p == &cname[maxNameLength - 1]) {   // exceeds max length
     sym->cname = astr(sym->cname, "_etc");
   }
 }
@@ -355,8 +357,7 @@ collectDetupledFormalComponentsUsedInWhere(FnSymbol* fn) {
   return ret;
 }
 
-static void
-partiallyResolveDetupledFormalComponentsUsedInWhere(FnSymbol* fn) {
+static void partiallyResolveDetupledFormalComponentsUsedInWhere(FnSymbol* fn) {
   auto components = collectDetupledFormalComponentsUsedInWhere(fn);
   if (components.empty()) return;
 
@@ -412,9 +413,8 @@ static void finalizeIfAnyDetupledFormalIsUsedInWhere(FnSymbol* fn) {
  * \param subs Type substitutions to be made during instantiation
  * \param visInfo Contains the call that is being resolved
  */
-FnSymbol* instantiateSignature(FnSymbol*  fn,
-                               SymbolMap& subs,
-                               VisibilityInfo* visInfo) {
+FnSymbol*
+instantiateSignature(FnSymbol* fn, SymbolMap& subs, VisibilityInfo* visInfo) {
   CallExpr* call = visInfo ? visInfo->call : NULL;
 
   //
@@ -422,7 +422,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
   // (_build_tuple, tuple type constructor, tuple default constructor)
   //
 
-  if (fn->hasFlag(FLAG_INIT_TUPLE)       == true ||
+  if (fn->hasFlag(FLAG_INIT_TUPLE) == true ||
       fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) == true) {
     return createTupleSignature(fn, subs, call);
 
@@ -451,7 +451,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 
     // use cached instantiation if possible
     if (FnSymbol* cached = checkCache(genericsCache, root, visInfo, &allSubs)) {
-      if (cached != (FnSymbol*) gVoid) {
+      if (cached != (FnSymbol*)gVoid) {
         checkInfiniteWhereInstantiation(cached);
 
         return cached;
@@ -471,15 +471,21 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
       SymbolMap allSubsBeforeDefaultExprs;
 
       // instantiate function
-      newFn = instantiateFunction(fn, root, allSubs, call, subs, map,
+      newFn = instantiateFunction(fn,
+                                  root,
+                                  allSubs,
+                                  call,
+                                  subs,
+                                  map,
                                   hasGenericDefaultExpr,
                                   allSubsBeforeDefaultExprs);
       if (hasGenericDefaultExpr) {
         // If we computed some substitutions based upon generic
         // arguments with defaults, also check the cache entry
         // with the complete list of substitutions.
-        if (FnSymbol* cached = checkCache(genericsCache, root, visInfo, &allSubs)) {
-          if (cached != (FnSymbol*) gVoid) {
+        if (FnSymbol* cached =
+              checkCache(genericsCache, root, visInfo, &allSubs)) {
+          if (cached != (FnSymbol*)gVoid) {
             checkInfiniteWhereInstantiation(cached);
 
             // If we have a cached function here, also store it in the
@@ -508,13 +514,13 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
       // Apply fixups to the function
       if (fixupTupleFunctions(fn, newFn, call) == false) {
         // Fix up chpl__initCopy for user-defined records
-        if (fn->hasFlag(FLAG_INIT_COPY_FN)       ==  true &&
-            fn->hasFlag(FLAG_COMPILER_GENERATED) ==  true) {
+        if (fn->hasFlag(FLAG_INIT_COPY_FN) == true &&
+            fn->hasFlag(FLAG_COMPILER_GENERATED) == true) {
           fixupDefaultInitCopy(fn, newFn, call);
         }
       }
 
-      if (newFn->numFormals()       >  1 &&
+      if (newFn->numFormals() > 1 &&
           newFn->getFormal(1)->type == dtMethodToken) {
         newFn->getFormal(2)->type->methods.add(newFn);
       }
@@ -538,11 +544,10 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 
 // This function is called by generic instantiation
 // for the default initCopy function in ChapelBase.chpl.
-static bool fixupDefaultInitCopy(FnSymbol* fn,
-                                 FnSymbol* newFn,
-                                 CallExpr* call) {
-  ArgSymbol* arg    = newFn->getFormal(1);
-  bool       retval = false;
+static bool
+fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call) {
+  ArgSymbol* arg = newFn->getFormal(1);
+  bool retval = false;
 
   if (AggregateType* ct = toAggregateType(arg->type)) {
     if (typeNeedsCopyInitDeinit(ct) == true && ct->hasInitializers()) {
@@ -564,8 +569,8 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
       const char* err = NULL;
 
       if (FnSymbol* initFn = findCopyInitFn(ct, err)) {
-        Symbol*   thisTmp  = newTemp(ct);
-        DefExpr*  def      = new DefExpr(thisTmp);
+        Symbol* thisTmp = newTemp(ct);
+        DefExpr* def = new DefExpr(thisTmp);
         CallExpr* initCall = NULL;
 
         initCall = new CallExpr(initFn, gMethodToken, thisTmp, arg);
@@ -642,13 +647,13 @@ FnSymbol* determineRootFunc(FnSymbol* fn) {
   return root;
 }
 
-  //
-  // determine all substitutions (past substitutions in a partial
-  // instantiation plus the current substitutions) and change the
-  // substitutions to refer to the root function's formal arguments
-  //
-void determineAllSubs(FnSymbol*  fn,
-                      FnSymbol*  root,
+//
+// determine all substitutions (past substitutions in a partial
+// instantiation plus the current substitutions) and change the
+// substitutions to refer to the root function's formal arguments
+//
+void determineAllSubs(FnSymbol* fn,
+                      FnSymbol* root,
                       SymbolMap& subs,
                       SymbolMap& allSubs) {
   if (fn->instantiatedFrom) {
@@ -678,11 +683,8 @@ Symbol* getSubstitutionFromDefaultValue(ArgSymbol* formal,
   bool inOutCopy = inOrOutFormalNeedingCopyType(formal);
   if (defType == dtTypeDefaultToken)
     return dtTypeDefaultToken->symbol;
-  else if (Type* type = getInstantiationType(defType, NULL,
-                                             formal->type, NULL,
-                                             ctx,
-                                             true, false,
-                                             inOutCopy)) {
+  else if (Type* type = getInstantiationType(
+             defType, NULL, formal->type, NULL, ctx, true, false, inOutCopy)) {
     return type->symbol;
   } else {
     // At this point, we definitely have an error. There are two cases to consider.
@@ -709,15 +711,14 @@ Symbol* getSubstitutionFromDefaultValue(ArgSymbol* formal,
 //
 // instantiate function
 //
-static
-FnSymbol* instantiateFunction(FnSymbol*  fn,
-                              FnSymbol*  root,
-                              SymbolMap& allSubs,
-                              CallExpr*  call,
-                              SymbolMap& subs,
-                              SymbolMap& map,
-                              bool& hasGenericDefaultExpr,
-                              SymbolMap& allSubsBeforeDefaultExprs) {
+static FnSymbol* instantiateFunction(FnSymbol* fn,
+                                     FnSymbol* root,
+                                     SymbolMap& allSubs,
+                                     CallExpr* call,
+                                     SymbolMap& subs,
+                                     SymbolMap& map,
+                                     bool& hasGenericDefaultExpr,
+                                     SymbolMap& allSubsBeforeDefaultExprs) {
   FnSymbol* newFn = fn->partialCopy(&map);
 
   newFn->clearGeneric();
@@ -758,8 +759,9 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
           if (se->symbol()->isParameter() == false) {
             USR_FATAL(formal, "default value for param is not a param");
 
-          } else if (formal->type->symbol->hasFlag(FLAG_GENERIC)      == true &&
-                     canInstantiate(se->symbol()->type, formal->type) == false) {
+          } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true &&
+                     canInstantiate(se->symbol()->type, formal->type) ==
+                       false) {
             USR_FATAL(formal,
                       "type mismatch between declared formal type "
                       "and default value type");
@@ -786,7 +788,6 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
         newFn->substitutions.put(formal, val);
       }
     }
-
 
     //
     // add parameter instantiations to parameter map
@@ -840,7 +841,7 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
 
       } else {
         newFormal->instantiatedFrom = formal->type;
-        newFormal->type             = value->type;
+        newFormal->type = value->type;
       }
 
       if (!newFormal->defaultExpr || formal->hasFlag(FLAG_TYPE_VARIABLE)) {
@@ -858,9 +859,7 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
           // Empty the block, but leave the original block,
           // in case it is used as a visibility block.
           BlockStmt* block = newFormal->defaultExpr;
-          for_alist(stmt, block->body) {
-            stmt->remove();
-          }
+          for_alist(stmt, block->body) { stmt->remove(); }
           block->insertAtTail(defaultSe);
         } else {
           newFormal->defaultExpr = new BlockStmt(defaultSe);
@@ -893,8 +892,7 @@ void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn) {
 // that was defined without a where-clause, if any.
 static void cleanupWhereClause(BlockStmt* where, SymExpr* last) {
   AList& body = where->body;
-  while (Expr* expr = body.head)
-    expr->remove();
+  while (Expr* expr = body.head) expr->remove();
   body.insertAtTail(last);
 }
 

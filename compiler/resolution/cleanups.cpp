@@ -42,24 +42,20 @@ static void clearDefaultInitFns(FnSymbol* unusedFn) {
     // Ditto for iterator fn in iterator info.
     if (at->iteratorInfo) {
       IteratorInfo* ii = at->iteratorInfo;
-      INT_ASSERT(at->symbol->hasEitherFlag(FLAG_ITERATOR_RECORD,
-                                           FLAG_ITERATOR_CLASS));
+      INT_ASSERT(
+        at->symbol->hasEitherFlag(FLAG_ITERATOR_RECORD, FLAG_ITERATOR_CLASS));
       if (ii) {
-        if (ii->iterator == unusedFn)
-          ii->iterator = NULL;
-        if (ii->getIterator == unusedFn)
-          ii->getIterator = NULL;
+        if (ii->iterator == unusedFn) ii->iterator = NULL;
+        if (ii->getIterator == unusedFn) ii->getIterator = NULL;
       }
     }
   }
 }
 
-
 static void removeUnusedFunction(FnSymbol* unusedFn) {
   // remove the function
   unusedFn->defPoint->remove();
 }
-
 
 static void removeUnusedFunctions() {
   std::set<FnSymbol*> concreteWellKnownFunctionsSet;
@@ -69,7 +65,7 @@ static void removeUnusedFunctions() {
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
 
   for_vector(FnSymbol, fn, fns) {
-    INT_ASSERT(! fn->isGeneric());
+    INT_ASSERT(!fn->isGeneric());
 
     concreteWellKnownFunctionsSet.insert(fn);
   }
@@ -77,8 +73,7 @@ static void removeUnusedFunctions() {
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
     if (concreteWellKnownFunctionsSet.count(fn) == 0) {
       if (fn->defPoint->parentSymbol != stringLiteralModule) {
-        if (! fn->isResolved() || fn->retTag == RET_PARAM)
-        {
+        if (!fn->isResolved() || fn->retTag == RET_PARAM) {
           std::vector<DefExpr*> defExprs;
 
           collectDefExprs(fn, defExprs);
@@ -116,7 +111,7 @@ static void removeUnusedFunctions() {
             removeUnusedFunction(fn);
           }
         } else if (fn->isConstrainedGeneric()) {
-          INT_ASSERT(fn->firstSymExpr() == nullptr);  // these better be unused
+          INT_ASSERT(fn->firstSymExpr() == nullptr); // these better be unused
           removeUnusedFunction(fn);
         }
       }
@@ -150,16 +145,12 @@ static void removeRandomPrimitive(CallExpr* call) {
   if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD))
     call = replaceRuntimeTypeGetField(call);
 
-  switch (call->primitive->tag)
-  {
+  switch (call->primitive->tag) {
     default: /* do nothing */ break;
 
-    case PRIM_NOOP:
-      call->remove();
-      break;
+    case PRIM_NOOP: call->remove(); break;
 
-    case PRIM_TYPEOF:
-    {
+    case PRIM_TYPEOF: {
       // Remove move(x, PRIM_TYPEOF(y)) calls -- useless after this
       CallExpr* parentCall = toCallExpr(call->parentExpr);
       if (parentCall && parentCall->isPrimitive(PRIM_MOVE) &&
@@ -169,19 +160,17 @@ static void removeRandomPrimitive(CallExpr* call) {
         // Replace PRIM_TYPEOF with argument
         call->replace(call->get(1)->remove());
       }
-    }
-    break;
+    } break;
 
     case PRIM_CAST:
       // Remove trivial casts.
       if (call->get(1)->typeInfo() == call->get(2)->typeInfo())
         call->replace(call->get(2)->remove());
-       break;
+      break;
 
     case PRIM_SET_MEMBER:
     case PRIM_GET_MEMBER:
-    case PRIM_GET_MEMBER_VALUE:
-    {
+    case PRIM_GET_MEMBER_VALUE: {
       // Remove member accesses of types
       // Replace string literals with field symbols in member primitives
       Type* baseType = call->get(1)->typeInfo();
@@ -194,7 +183,7 @@ static void removeRandomPrimitive(CallExpr* call) {
 
       SymExpr* memberSE = toSymExpr(call->get(2));
       const char* memberName = NULL;
-      Symbol* sym = NULL;  // the member symbol
+      Symbol* sym = NULL; // the member symbol
 
       if (get_string(memberSE, &memberName)) {
         sym = baseType->getField(memberName);
@@ -204,20 +193,15 @@ static void removeRandomPrimitive(CallExpr* call) {
         // Confirm that this is already a correct field Symbol.
         sym = memberSE->symbol();
         // This used to check for type equality, is this wrong?
-        INT_ASSERT(isSubtypeOrInstantiation(baseType,
-                                            sym->defPoint->parentSymbol->type,
-                                            call));
-
+        INT_ASSERT(isSubtypeOrInstantiation(
+          baseType, sym->defPoint->parentSymbol->type, call));
       }
 
-      if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||
-          sym->isParameter())
+      if (sym->hasFlag(FLAG_TYPE_VARIABLE) || sym->isParameter())
         call->getStmtExpr()->remove();
-    }
-    break;
+    } break;
 
-    case PRIM_MOVE:
-    {
+    case PRIM_MOVE: {
       // Remove types to enable --baseline
       SymExpr* se = toSymExpr(call->get(2));
       if (se && se->symbol()) {
@@ -225,8 +209,8 @@ static void removeRandomPrimitive(CallExpr* call) {
         if (isTypeSymbol(sym) || sym->hasFlag(FLAG_TYPE_VARIABLE))
           call->remove();
 
-      // Remove type construction calls that contain runtime types, now.
-      // They may have been used to default-init but are no longer needed.
+        // Remove type construction calls that contain runtime types, now.
+        // They may have been used to default-init but are no longer needed.
       } else if (auto innerCall = toCallExpr(call->get(2))) {
         auto baseExpr = innerCall->baseExpr;
 
@@ -252,28 +236,23 @@ static void removeRandomPrimitive(CallExpr* call) {
           }
         }
       }
-    }
-    break;
+    } break;
 
     case PRIM_WARNING:
-    case PRIM_ERROR:
-    {
+    case PRIM_ERROR: {
       // Warnings have now been issued, no need to keep the function around.
       // Remove calls to compilerWarning and let dead code elimination handle
       // the rest.
       call->remove();
-    }
-    break;
-
+    } break;
   }
 }
 
 static void removeRandomPrimitives() {
-  for_alive_in_expanding_Vec(CallExpr, call, gCallExprs)
-    if (call->isPrimitive())
-      removeRandomPrimitive(call);
+  for_alive_in_expanding_Vec(
+    CallExpr, call, gCallExprs) if (call->isPrimitive())
+    removeRandomPrimitive(call);
 }
-
 
 // remove ASTs that supported CG (constrained generics / interfaces)
 // see also finishInterfaceChecking()
@@ -282,10 +261,8 @@ static void cleanupConstrainedGenerics() {
   // so we can get at and remove refTypes.
   for_alive_in_Vec(ConstrainedType, ct, gConstrainedTypes) {
     ct->symbol->defPoint->remove();
-    if (Type* ctRef = ct->refType)
-    {
-      if (ctRef->symbol->defPoint->inTree())
-        ctRef->symbol->defPoint->remove();
+    if (Type* ctRef = ct->refType) {
+      if (ctRef->symbol->defPoint->inTree()) ctRef->symbol->defPoint->remove();
     }
   }
 
@@ -303,12 +280,11 @@ static void cleanupConstrainedGenerics() {
   }
 }
 
-
 static void replaceTypeArgsWithFormalTypeTemps() {
   compute_call_sites();
 
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
-    if (! fn->isResolved())
+    if (!fn->isResolved())
       // Don't bother with unresolved functions.
       // They will be removed from the tree.
       continue;
@@ -322,16 +298,12 @@ static void replaceTypeArgsWithFormalTypeTemps() {
     if (fn->hasFlag(FLAG_EXTERN)) {
       // Replace the corresponding actual with a SymExpr TypeSymbol
       // for all the call sites.
-      forv_Vec(CallExpr, call, *fn->calledBy)
-      {
-        for_formals_actuals(formal, actual, call)
-        {
-          if (! formal->hasFlag(FLAG_TYPE_VARIABLE))
-            continue;
+      forv_Vec(CallExpr, call, *fn->calledBy) {
+        for_formals_actuals(formal, actual, call) {
+          if (!formal->hasFlag(FLAG_TYPE_VARIABLE)) continue;
 
           if (SymExpr* se = toSymExpr(actual)) {
-            if (isTypeSymbol(se->symbol()))
-              continue;
+            if (isTypeSymbol(se->symbol())) continue;
             if (se->symbol()->hasFlag(FLAG_EXTERN) &&
                 se->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
               continue;
@@ -345,11 +317,9 @@ static void replaceTypeArgsWithFormalTypeTemps() {
       continue;
     }
 
-    for_formals(formal, fn)
-    {
+    for_formals(formal, fn) {
       // We are only interested in type formals
-      if (! formal->hasFlag(FLAG_TYPE_VARIABLE))
-        continue;
+      if (!formal->hasFlag(FLAG_TYPE_VARIABLE)) continue;
 
       // Replace the formal with a _formal_type_tmp_.
       SET_LINENO(formal);
@@ -358,12 +328,9 @@ static void replaceTypeArgsWithFormalTypeTemps() {
       subSymbol(fn, formal, tmp);
 
       // Remove the corresponding actual from all call sites.
-      forv_Vec(CallExpr, call, *fn->calledBy)
-      {
-        for_formals_actuals(cf, ca, call)
-        {
-          if (cf == formal)
-          {
+      forv_Vec(CallExpr, call, *fn->calledBy) {
+        for_formals_actuals(cf, ca, call) {
+          if (cf == formal) {
             ca->remove();
             break;
           }
@@ -382,32 +349,25 @@ static void replaceTypeArgsWithFormalTypeTemps() {
   }
 }
 
-
 // Remove the method token, parameter and type arguments
 // from function signatures and corresponding calls.
 static void removeParamArgs() {
   compute_call_sites();
 
-  for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
-  {
-    if (! fn->isResolved())
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    if (!fn->isResolved())
       // Don't bother with unresolved functions.
       // They will be removed from the tree.
       continue;
 
-    for_formals(formal, fn)
-    {
+    for_formals(formal, fn) {
       if (formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
-          formal->type == dtMethodToken)
-      {
+          formal->type == dtMethodToken) {
         // Remove the argument from the call site.
-        for_alive_in_Vec(CallExpr, call, *fn->calledBy)
-        {
+        for_alive_in_Vec(CallExpr, call, *fn->calledBy) {
           // Performance note: AList::get(int) also performs a linear search.
-          for_formals_actuals(cf, ca, call)
-          {
-            if (cf == formal)
-            {
+          for_formals_actuals(cf, ca, call) {
+            if (cf == formal) {
               ca->remove();
               break;
             }
@@ -419,23 +379,21 @@ static void removeParamArgs() {
   }
 }
 
-
 static void removeAggTypeFieldInfo() {
   for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
-      // Defined an initializer (so we left its init
-      // and exprType information in the tree)
-      for_fields(field, at) {
-        if (field->defPoint->exprType) {
-          field->defPoint->exprType->remove();
-        }
-
-        if (field->defPoint->init) {
-          field->defPoint->init->remove();
-        }
+    // Defined an initializer (so we left its init
+    // and exprType information in the tree)
+    for_fields(field, at) {
+      if (field->defPoint->exprType) {
+        field->defPoint->exprType->remove();
       }
+
+      if (field->defPoint->init) {
+        field->defPoint->init->remove();
+      }
+    }
   }
 }
-
 
 // Remove module level variables if they are not defined or used
 // With the exception of variables that are defined in the rootModule
@@ -454,7 +412,6 @@ static void removeUnusedModuleVariables() {
   }
 }
 
-
 static bool do_isUnusedClass(Type* t, const std::set<Type*>& wellknown) {
   bool retval = true;
 
@@ -464,25 +421,25 @@ static bool do_isUnusedClass(Type* t, const std::set<Type*>& wellknown) {
   if (t->symbol->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL)) {
     retval = false;
 
-  // Runtime types are assumed to be always used.
+    // Runtime types are assumed to be always used.
   } else if (t->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
     retval = false;
 
-  // Uses of iterator records get inserted in lowerIterators
+    // Uses of iterator records get inserted in lowerIterators
   } else if (t->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     retval = false;
 
-  // FALSE if iterator class's getIterator is used
-  // (this case may not be necessary)
-  } else if (t->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
-             at && at->iteratorInfo->getIterator->isResolved()) {
+    // FALSE if iterator class's getIterator is used
+    // (this case may not be necessary)
+  } else if (t->symbol->hasFlag(FLAG_ITERATOR_CLASS) && at &&
+             at->iteratorInfo->getIterator->isResolved()) {
     retval = false;
 
   } else if (at && at->resolveStatus == RESOLVED) {
     retval = false;
 
-  // FALSE if the type uses an initializer and that initializer was
-  // resolved
+    // FALSE if the type uses an initializer and that initializer was
+    // resolved
   } else if (at && at->initializerResolved) {
     retval = false;
 
@@ -503,7 +460,7 @@ static bool do_isUnusedClass(Type* t, const std::set<Type*>& wellknown) {
 
 std::set<Type*> getWellKnownTypesSet() {
   std::set<Type*> concreteWellKnownTypesSet;
-  std::vector<Type*> wellKnownTypes= getWellKnownTypes();
+  std::vector<Type*> wellKnownTypes = getWellKnownTypes();
 
   for_vector(Type, type, wellKnownTypes) {
     AggregateType* at = toAggregateType(type);
@@ -523,9 +480,7 @@ bool isUnusedClass(Type* t, const std::set<Type*>& wellknown) {
   //  unmanaged class types can have borrow/canonical class type used
   if (AggregateType* at = toAggregateType(t)) {
     if (isClass(at)) {
-      for (int i = 0;
-           i < ClassTypeDecorator::NUM_DECORATORS;
-           i++) {
+      for (int i = 0; i < ClassTypeDecorator::NUM_DECORATORS; i++) {
         ClassTypeDecoratorEnum d = ClassTypeDecorator::getIthDecorator(i);
         if (Type* dt = at->getDecoratedClass(d))
           retval &= do_isUnusedClass(dt, wellknown);
@@ -545,14 +500,13 @@ static void removeUnusedTypes() {
 
   // Remove unused aggregate types.
   for_alive_in_expanding_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (! ts->hasFlag(FLAG_REF)                &&
-        ! ts->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+    if (!ts->hasFlag(FLAG_REF) && !ts->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
       // First collect any unused aggregates.
       if (AggregateType* at = toAggregateType(ts->type)) {
         if (isUnusedClass(at, wellknown)) {
           at->symbol->defPoint->remove();
         }
-      } else if(DecoratedClassType* dt = toDecoratedClassType(ts->type)) {
+      } else if (DecoratedClassType* dt = toDecoratedClassType(ts->type)) {
         if (isUnusedClass(dt->getCanonicalClass(), wellknown)) {
           dt->symbol->defPoint->remove();
         }
@@ -569,8 +523,8 @@ static void removeUnusedTypes() {
           // If the value type is unused, its ref type can also be removed.
           ts->defPoint->remove();
         }
-      } else if(DecoratedClassType* dt =
-                toDecoratedClassType(ts->getValType())) {
+      } else if (DecoratedClassType* dt =
+                   toDecoratedClassType(ts->getValType())) {
         if (isUnusedClass(dt->getCanonicalClass(), wellknown)) {
           ts->defPoint->remove();
         }
@@ -598,30 +552,24 @@ static void removeStaleFunctionTypes() {
   }
 }
 
-
 static void removeActualNames() {
-  for_alive_in_Vec(NamedExpr, named, gNamedExprs)
-  {
+  for_alive_in_Vec(NamedExpr, named, gNamedExprs) {
     Expr* actual = named->actual;
     actual->remove();
     named->replace(actual);
   }
 }
 
-
 static void removeFormalTypeAndInitBlocks() {
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
-      for_formals(formal, fn) {
-        // Remove formal default values
-        if (formal->defaultExpr)
-          formal->defaultExpr->remove();
-        // Remove formal type expressions
-        if (formal->typeExpr)
-          formal->typeExpr->remove();
-      }
+    for_formals(formal, fn) {
+      // Remove formal default values
+      if (formal->defaultExpr) formal->defaultExpr->remove();
+      // Remove formal type expressions
+      if (formal->typeExpr) formal->typeExpr->remove();
+    }
   }
 }
-
 
 //
 // Remove the ref types and the autocopy/autodestroy functions
@@ -635,8 +583,7 @@ static void removeRefAndAutoCopyForDeadTypes(BlockStmt* block) {
     if (DefExpr* def = toDefExpr(stmt)) {
       Symbol* sym = def->sym;
       // Check whether this is the definition of a type.
-      if (sym->hasFlag(FLAG_TYPE_VARIABLE) && sym->type->symbol == sym)
-      {
+      if (sym->hasFlag(FLAG_TYPE_VARIABLE) && sym->type->symbol == sym) {
         if (Type* ref = sym->type->getRefType())
           ref->symbol->defPoint->remove();
 
@@ -649,8 +596,7 @@ static void removeRefAndAutoCopyForDeadTypes(BlockStmt* block) {
 static void removeTypeBlocks() {
   for_alive_in_Vec(BlockStmt, block, gBlockStmts) {
     // Remove type blocks--code that exists only to determine types
-    if (block->blockTag & BLOCK_TYPE_ONLY)
-    {
+    if (block->blockTag & BLOCK_TYPE_ONLY) {
       removeRefAndAutoCopyForDeadTypes(block);
       block->remove();
     }
@@ -659,8 +605,7 @@ static void removeTypeBlocks() {
 
 // Remove moot parts of AST for type a=b
 static void removeTypedefParts() {
-  for_alive_in_Vec(DefExpr, def, gDefExprs)
-  {
+  for_alive_in_Vec(DefExpr, def, gDefExprs) {
     if (def->init &&
         (def->sym->hasFlag(FLAG_TYPE_VARIABLE) ||
          def->sym->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))) {
@@ -687,16 +632,14 @@ static void removeTypedefParts() {
           }
         }
       }
-      if (removeIt)
-        def->remove();
+      if (removeIt) def->remove();
     }
   }
 }
 
 static void removeWhereClausesAndReturnTypeBlocks() {
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->where)
-      fn->where->remove();
+    if (fn->where) fn->where->remove();
 
     if (fn->retExprType) {
       // First, move any defs in the return type block out
@@ -720,8 +663,7 @@ static void removeMootFields() {
   for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (AggregateType* at = toAggregateType(ts->type)) {
       for_fields(field, at) {
-        if (field->hasFlag(FLAG_TYPE_VARIABLE) ||
-            field->isParameter())
+        if (field->hasFlag(FLAG_TYPE_VARIABLE) || field->isParameter())
           field->defPoint->remove();
       }
     }
@@ -737,7 +679,7 @@ static void removeSymbolsWithRemovedTypes() {
   std::vector<Symbol*> removedSyms; // for verification
 
   for_alive_in_Vec(ArgSymbol, arg, gArgSymbols) {
-    if (! arg->type->inTree()) {
+    if (!arg->type->inTree()) {
       if (FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol)) {
         removedSyms.push_back(fn);
         fn->defPoint->remove();
@@ -746,7 +688,7 @@ static void removeSymbolsWithRemovedTypes() {
   }
 
   for_alive_in_Vec(VarSymbol, var, gVarSymbols) {
-    if (! var->type->inTree()) {
+    if (!var->type->inTree()) {
       removedSyms.push_back(var);
       var->defPoint->remove();
     }
@@ -755,7 +697,7 @@ static void removeSymbolsWithRemovedTypes() {
   // Running the asserts after the above guards against potential false alarms
   // when an earlier-removed Fn/VarSymbol refers to a later-removed one.
   for_vector(Symbol, sym, removedSyms)
-    INT_ASSERT(sym->firstSymExpr() == NULL);  // these better be unused
+    INT_ASSERT(sym->firstSymExpr() == NULL); // these better be unused
 }
 
 //
@@ -768,15 +710,12 @@ static void cleanupAfterRemoves() {
 
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
     // Zero the initFn pointer if the function is now dead. Ditto deinitFn.
-    if (mod->initFn && !isAlive(mod->initFn))
-      mod->initFn = NULL;
-    if (mod->deinitFn && !isAlive(mod->deinitFn))
-      mod->deinitFn = NULL;
+    if (mod->initFn && !isAlive(mod->initFn)) mod->initFn = NULL;
+    if (mod->deinitFn && !isAlive(mod->deinitFn)) mod->deinitFn = NULL;
   }
 
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
-    if (arg->instantiatedFrom != NULL)
-      arg->addFlag(FLAG_INSTANTIATED_GENERIC);
+    if (arg->instantiatedFrom != NULL) arg->addFlag(FLAG_INSTANTIATED_GENERIC);
     arg->instantiatedFrom = NULL;
   }
 
@@ -809,111 +748,107 @@ static bool isNothingType(Type* type) {
 static void cleanupNothingVarsAndFields() {
   // Remove most uses of nothing variables and fields
   for_alive_in_expanding_Vec(CallExpr, call, gCallExprs) {
-     if (call->isPrimitive())
-      switch (call->primitive->tag) {
-      case PRIM_MOVE:
-      case PRIM_ASSIGN:
-        if (isNothingType(call->get(2)->typeInfo()) ||
-            call->get(2)->typeInfo() == dtNothing->refType) {
-          INT_ASSERT(call, call->get(1)->typeInfo() == call->get(2)->typeInfo());
-          // Remove moves where the rhs has type nothing. If the rhs is a
-          // call to something other than a few primitives, still make
-          // that call, just don't move the result into anything.
-          if (CallExpr* rhs = toCallExpr(call->get(2))) {
-            if (rhs->isPrimitive(PRIM_DEREF) ||
-                rhs->isPrimitive(PRIM_GET_MEMBER) ||
-                rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+    if (call->isPrimitive()) switch (call->primitive->tag) {
+        case PRIM_MOVE:
+        case PRIM_ASSIGN:
+          if (isNothingType(call->get(2)->typeInfo()) ||
+              call->get(2)->typeInfo() == dtNothing->refType) {
+            INT_ASSERT(call,
+                       call->get(1)->typeInfo() == call->get(2)->typeInfo());
+            // Remove moves where the rhs has type nothing. If the rhs is a
+            // call to something other than a few primitives, still make
+            // that call, just don't move the result into anything.
+            if (CallExpr* rhs = toCallExpr(call->get(2))) {
+              if (rhs->isPrimitive(PRIM_DEREF) ||
+                  rhs->isPrimitive(PRIM_GET_MEMBER) ||
+                  rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+                call->remove();
+              } else {
+                Expr* rmRhs = rhs->remove();
+                call->insertBefore(rmRhs);
+                call->remove();
+              }
+            } else if (isSymExpr(call->get(2))) {
               call->remove();
-            } else {
+            }
+          }
+          break;
+        case PRIM_SET_MEMBER:
+          if (isNothingType(call->get(3)->typeInfo())) {
+            INT_ASSERT(call->get(2)->typeInfo() == call->get(3)->typeInfo());
+            // Remove set_member(a, nothing, nothing) calls
+            if (CallExpr* rhs = toCallExpr(call->get(2))) {
               Expr* rmRhs = rhs->remove();
               call->insertBefore(rmRhs);
               call->remove();
-            }
-          } else if (isSymExpr(call->get(2))) {
-            call->remove();
-          }
-        }
-        break;
-      case PRIM_SET_MEMBER:
-        if (isNothingType(call->get(3)->typeInfo())) {
-          INT_ASSERT(call->get(2)->typeInfo() == call->get(3)->typeInfo());
-          // Remove set_member(a, nothing, nothing) calls
-          if (CallExpr* rhs = toCallExpr(call->get(2))) {
-            Expr* rmRhs = rhs->remove();
-            call->insertBefore(rmRhs);
-            call->remove();
-          } else if (isSymExpr(call->get(2))) {
-            call->remove();
-          }
-        }
-        break;
-      case PRIM_YIELD:
-      case PRIM_RETURN:
-        if (isNothingType(call->get(1)->typeInfo()) ||
-            call->get(1)->typeInfo() == dtNothing->refType) {
-          // Change functions/iterators that return/yield nothing to use the
-          // global nothing value instead of a local nothing.
-          if (SymExpr* ret = toSymExpr(call->get(1))) {
-            if (ret->symbol() != gNone) {
-              SET_LINENO(call);
-              call->replace(new CallExpr(call->primitive->tag, gNone));
+            } else if (isSymExpr(call->get(2))) {
+              call->remove();
             }
           }
-        }
-        break;
-      case PRIM_CALL_DESTRUCTOR:
-        // Remove calls to destructors for homogeneous tuples of nothing
-        if (isNothingType(call->get(1)->typeInfo())) {
-          call->remove();
-        }
-        break;
-      default:
-        break;
+          break;
+        case PRIM_YIELD:
+        case PRIM_RETURN:
+          if (isNothingType(call->get(1)->typeInfo()) ||
+              call->get(1)->typeInfo() == dtNothing->refType) {
+            // Change functions/iterators that return/yield nothing to use the
+            // global nothing value instead of a local nothing.
+            if (SymExpr* ret = toSymExpr(call->get(1))) {
+              if (ret->symbol() != gNone) {
+                SET_LINENO(call);
+                call->replace(new CallExpr(call->primitive->tag, gNone));
+              }
+            }
+          }
+          break;
+        case PRIM_CALL_DESTRUCTOR:
+          // Remove calls to destructors for homogeneous tuples of nothing
+          if (isNothingType(call->get(1)->typeInfo())) {
+            call->remove();
+          }
+          break;
+        default: break;
       } // switch (call->primitive->tag)
-     else
-      if (FnSymbol* fn = call->resolvedFunction()) {
-        bool seenNothing = false;
-        // Remove actual arguments that are nothing from function calls
-        for_actuals(actual, call) {
-          if (isNothingType(actual->typeInfo())) {
-            actual->remove();
-            seenNothing = true;
-          }
-        }
-        if (seenNothing) {
-          // A 0-arg call to autoDestroy would upset later passes.
-          if (fn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
-            INT_ASSERT(call->numActuals() == 0);
-            call->remove();
-          } else if (fn->name == astr_initCopy &&
-                     fn->retType == dtNothing) {
-            SET_LINENO(call);
-            call->replace(new SymExpr(gNone));
-          }
+    else if (FnSymbol* fn = call->resolvedFunction()) {
+      bool seenNothing = false;
+      // Remove actual arguments that are nothing from function calls
+      for_actuals(actual, call) {
+        if (isNothingType(actual->typeInfo())) {
+          actual->remove();
+          seenNothing = true;
         }
       }
+      if (seenNothing) {
+        // A 0-arg call to autoDestroy would upset later passes.
+        if (fn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
+          INT_ASSERT(call->numActuals() == 0);
+          call->remove();
+        } else if (fn->name == astr_initCopy && fn->retType == dtNothing) {
+          SET_LINENO(call);
+          call->replace(new SymExpr(gNone));
+        }
+      }
+    }
   }
 
   // Remove nothing formal arguments from functions.
   // Change functions that return ref(nothing) to just return nothing.
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
-      for_formals(formal, fn) {
-        if (isNothingType(formal->type)) {
-          if (formal == fn->_this) {
-            fn->_this = NULL;
-          }
-          formal->defPoint->remove();
-        }
-      }
-      if (fn->retType == dtNothing->refType ||
-          isNothingType(fn->retType)) {
-        fn->retType = dtNothing;
-      }
-      if (fn->_this) {
-        if (isNothingType(fn->_this->type)) {
+    for_formals(formal, fn) {
+      if (isNothingType(formal->type)) {
+        if (formal == fn->_this) {
           fn->_this = NULL;
         }
+        formal->defPoint->remove();
       }
+    }
+    if (fn->retType == dtNothing->refType || isNothingType(fn->retType)) {
+      fn->retType = dtNothing;
+    }
+    if (fn->_this) {
+      if (isNothingType(fn->_this->type)) {
+        fn->_this = NULL;
+      }
+    }
   }
 
   // Set for loop index variables that are nothing to the global nothing value.
@@ -931,21 +866,17 @@ static void cleanupNothingVarsAndFields() {
   // Now that uses of nothing have been cleaned up, remove the
   // DefExprs for nothing variables.
   for_alive_in_Vec(DefExpr, def, gDefExprs) {
-    if (isNothingType(def->sym->type) ||
-        def->sym->type == dtNothing->refType) {
+    if (isNothingType(def->sym->type) || def->sym->type == dtNothing->refType) {
       if (VarSymbol* var = toVarSymbol(def->sym)) {
         // Avoid removing the "_val" field from refs
         // and forall statements' induction/shadow variables.
-        if (!def->parentSymbol->hasFlag(FLAG_REF) &&
-            !isForallIterVarDef(def) &&
-            !preserveShadowVar(var) &&
-            var != gNone) {
+        if (!def->parentSymbol->hasFlag(FLAG_REF) && !isForallIterVarDef(def) &&
+            !preserveShadowVar(var) && var != gNone) {
           // Otherwise we may be left with SymExpr that point to garbage.
           for_SymbolSymExprs(se, var) se->setSymbol(gNone);
           def->remove();
         }
-      } else if (def->sym->type == dtUninstantiated &&
-                 isVarSymbol(def->sym) &&
+      } else if (def->sym->type == dtUninstantiated && isVarSymbol(def->sym) &&
                  !def->parentSymbol->hasFlag(FLAG_REF)) {
         def->remove();
       }
@@ -1003,7 +934,7 @@ void saveGenericSubstitutions() {
         // come up with compiler-generated tuple functions
         INT_ASSERT(fn->hasFlag(FLAG_INIT_TUPLE));
 
-        for (auto elem: sortedSymbolMapElts(fn->substitutions)) {
+        for (auto elem : sortedSymbolMapElts(fn->substitutions)) {
           NameAndSymbol ns;
           ns.name = elem.key->name;
           ns.value = elem.value;

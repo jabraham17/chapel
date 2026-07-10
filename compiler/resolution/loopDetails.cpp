@@ -33,10 +33,8 @@
 
 static const IteratorDetails emptyDetails;
 
-bool isChplIterOrLoopIterator(Symbol* sym, ForLoop*& loop)
-{
-  if (sym->hasFlag(FLAG_CHPL__ITER))
-    return true;
+bool isChplIterOrLoopIterator(Symbol* sym, ForLoop*& loop) {
+  if (sym->hasFlag(FLAG_CHPL__ITER)) return true;
 
   Symbol* checkSym = sym;
   Symbol* nextSym = NULL;
@@ -53,8 +51,8 @@ bool isChplIterOrLoopIterator(Symbol* sym, ForLoop*& loop)
         }
 
       if ((checkSym->hasFlag(FLAG_EXPR_TEMP) &&
-           checkSym->type->symbol->hasFlag(FLAG_TUPLE))
-          || checkSym->type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+           checkSym->type->symbol->hasFlag(FLAG_TUPLE)) ||
+          checkSym->type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
         // Check for normalized form of this code
         //   sym = build_tuple(...)
         //   _iterator = _getIteratorZip( sym )
@@ -78,8 +76,7 @@ bool isChplIterOrLoopIterator(Symbol* sym, ForLoop*& loop)
 }
 
 // Get the non-fast-follower Follower
-static
-ForLoop* findFollowerForLoop(BlockStmt* block) {
+static ForLoop* findFollowerForLoop(BlockStmt* block) {
   ForLoop* ret = NULL;
   Expr* e = block->body.first();
   while (e) {
@@ -110,8 +107,7 @@ ForLoop* findFollowerForLoop(BlockStmt* block) {
    declared in the same block that is marked with FLAG_CHPL__ITER,
    or NULL if no such variable exists.
  */
-static Symbol* findPrecedingChplIter(Expr* ref)
-{
+static Symbol* findPrecedingChplIter(Expr* ref) {
   Symbol* chpl_iter = NULL;
   Expr* e = ref->prev;
   while (e) {
@@ -158,9 +154,7 @@ static Symbol* findNewIterLF(Expr* ref) {
    to variables marked "index var"
    This handles chpl__saIdxCopy
  */
-static
-Symbol* collapseIndexVarReferences(Symbol* index)
-{
+static Symbol* collapseIndexVarReferences(Symbol* index) {
   bool changed;
   do {
     changed = false;
@@ -231,29 +225,25 @@ static Expr* findExprProducing(Symbol* iterator) {
   return NULL;
 }
 
-
 /* Sets detailsVector[i].index if possible
    Handles syntactically unpacked tuples such as
 
    for (a, b) in zip(A, B) { ... }
  */
-static
-void findZipperedIndexVariables(Symbol* index, std::vector<IteratorDetails>&
-    detailsVector)
-{
+static void
+findZipperedIndexVariables(Symbol* index,
+                           std::vector<IteratorDetails>& detailsVector) {
   // Now, in a zippered-for, the index is actually
   // a tuple (of references typically). We need to find the
   // un-packed elements.
 
   for_SymbolSymExprs(indexSe, index) {
-    if (CallExpr* indexSeParentCall =
-        toCallExpr(indexSe->parentExpr)) {
+    if (CallExpr* indexSeParentCall = toCallExpr(indexSe->parentExpr)) {
       if (indexSeParentCall->isPrimitive(PRIM_GET_MEMBER) ||
           indexSeParentCall->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
         AggregateType* tupleType = toAggregateType(index->type);
 
-        if (CallExpr* gpCall =
-            toCallExpr(indexSeParentCall->parentExpr)) {
+        if (CallExpr* gpCall = toCallExpr(indexSeParentCall->parentExpr)) {
           if (gpCall->isPrimitive(PRIM_MOVE)) {
             SymExpr* lhsSe = toSymExpr(gpCall->get(1));
             if (lhsSe && lhsSe->symbol()->hasFlag(FLAG_INDEX_VAR)) {
@@ -278,10 +268,10 @@ void findZipperedIndexVariables(Symbol* index, std::vector<IteratorDetails>&
   // Set any detailsVector[i].index we didn't figure out to
   // the index variable's tuple element.
   if (index->type->symbol->hasFlag(FLAG_TUPLE)) {
-    for(size_t i = 0; i < detailsVector.size(); i++) {
+    for (size_t i = 0; i < detailsVector.size(); i++) {
       if (detailsVector[i].index == NULL) {
         detailsVector[i].index = index;
-        detailsVector[i].indexTupleElement = i+1;
+        detailsVector[i].indexTupleElement = i + 1;
       }
     }
   }
@@ -303,12 +293,11 @@ the follower loop.
 
 Always uses the non-fast-follower version of the follower loop.
  */
-void gatherLoopDetails(ForLoop*  forLoop,
-                       bool&     isForall,
+void gatherLoopDetails(ForLoop* forLoop,
+                       bool& isForall,
                        IteratorDetails& leaderDetails,
                        ForLoop*& followerForLoop,
-                       std::vector<IteratorDetails>& detailsVector)
-{
+                       std::vector<IteratorDetails>& detailsVector) {
   Symbol* index = forLoop->indexGet()->symbol();
 
   // TODO -- can we use flags for these?
@@ -323,20 +312,19 @@ void gatherLoopDetails(ForLoop*  forLoop,
     Expr* inExpr = forLoop->parentExpr;
     while (inExpr) {
       if (ForLoop* forLoop = toForLoop(inExpr)) {
-        gatherLoopDetails(forLoop,
-                      isForall, leaderDetails, followerForLoop, detailsVector);
+        gatherLoopDetails(
+          forLoop, isForall, leaderDetails, followerForLoop, detailsVector);
         return;
       }
       if (ForallStmt* forall = toForallStmt(inExpr)) {
-        gatherLoopDetails(forall,
-                      isForall, leaderDetails, followerForLoop, detailsVector);
+        gatherLoopDetails(
+          forall, isForall, leaderDetails, followerForLoop, detailsVector);
         return;
       }
       inExpr = inExpr->parentExpr;
     }
     INT_ASSERT(forLoop, false); // couldn't find leader ForLoop or ForallStmt
   }
-
 
   Symbol* iterator = forLoop->iteratorGet()->symbol();
 
@@ -347,10 +335,10 @@ void gatherLoopDetails(ForLoop*  forLoop,
   bool forall = (chpl_iter != NULL);
   // MPF: should be the same as isLoweredForallLoop but it isn't yet
   //INT_ASSERT(forall == forLoop->isLoweredForallLoop());
-  bool zippered = forLoop->zipperedGet() &&
-                  (iterator->type->symbol->hasFlag(FLAG_TUPLE) ||
-                   (chpl_iter != NULL &&
-                    chpl_iter->type->symbol->hasFlag(FLAG_TUPLE)));
+  bool zippered =
+    forLoop->zipperedGet() &&
+    (iterator->type->symbol->hasFlag(FLAG_TUPLE) ||
+     (chpl_iter != NULL && chpl_iter->type->symbol->hasFlag(FLAG_TUPLE)));
 
   // Adjust for new-style forall loops - the counterpart of chpl_iter.
   Symbol* newIterLF = (forall && isPar) ? findNewIterLF(chpl_iter) : NULL;
@@ -358,8 +346,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
     isLeader = true;
     if (SymExpr* useSE = newIterLF->getSingleUse())
       if (CallExpr* useCall = toCallExpr(useSE->parentExpr))
-        if (useCall->isNamed("_toFollowerZip"))
-          zippered = true;
+        if (useCall->isNamed("_toFollowerZip")) zippered = true;
   }
 
   isForall = forall;
@@ -367,7 +354,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
 
   if (!forall) {
     // Handle for loops first
-    if (! zippered) {
+    if (!zippered) {
       // simple case of serial, non-zippered iteration
       // i.e. a non-zippered for loop
       // Find the PRIM_MOVE setting iterator
@@ -421,7 +408,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
 
       SymExpr* tupleIterator = NULL;
       CallExpr* call = toCallExpr(findExprProducing(iterator));
-      FnSymbol* calledFn = call?call->resolvedOrVirtualFunction():NULL;
+      FnSymbol* calledFn = call ? call->resolvedOrVirtualFunction() : NULL;
       if (calledFn && !calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
         // expecting call is e.g. _getIteratorZip
         SymExpr* otherSe = toSymExpr(call->get(1));
@@ -450,7 +437,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
       }
 
       CallExpr* buildTupleCall = call;
-      FnSymbol* buildTupleFn   = NULL;
+      FnSymbol* buildTupleFn = NULL;
 
       if (buildTupleCall) {
         buildTupleFn = buildTupleCall->resolvedOrVirtualFunction();
@@ -461,8 +448,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
         // build up the detailsVector
         for_formals_actuals(formal, actual, buildTupleCall) {
           // Ignore the RETARG
-          if (formal->hasFlag(FLAG_RETARG))
-            continue;
+          if (formal->hasFlag(FLAG_RETARG)) continue;
 
           SymExpr* actualSe = toSymExpr(actual);
           INT_ASSERT(forLoop, actualSe); // otherwise not normalized
@@ -499,7 +485,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
           for_fields(field, tupleItType) {
             IteratorDetails details;
             details.iterable = tupleIterator;
-            details.iterableTupleElement = i+1;
+            details.iterableTupleElement = i + 1;
             detailsVector.push_back(details);
 
             i++;
@@ -578,12 +564,13 @@ void gatherLoopDetails(ForLoop*  forLoop,
         detailsVector.push_back(details);
       } else {
         CallExpr* buildTupleCall = toCallExpr(iterable);
-        INT_ASSERT(forLoop, buildTupleCall && buildTupleCall->resolvedOrVirtualFunction());
+        INT_ASSERT(forLoop,
+                   buildTupleCall &&
+                     buildTupleCall->resolvedOrVirtualFunction());
         // build up the detailsVector
         for_formals_actuals(formal, actual, buildTupleCall) {
           // Ignore the RETARG
-          if (formal->hasFlag(FLAG_RETARG))
-            continue;
+          if (formal->hasFlag(FLAG_RETARG)) continue;
 
           SymExpr* actualSe = toSymExpr(actual);
           INT_ASSERT(forLoop, actualSe); // otherwise not normalized
@@ -612,7 +599,8 @@ void gatherLoopDetails(ForLoop*  forLoop,
         followerIndex = collapseIndexVarReferences(followerIndex);
         detailsVector[0].index = followerIndex;
         detailsVector[0].iteratorClass = followerIterator->typeInfo();
-        detailsVector[0].iterator = getTheIteratorFn(detailsVector[0].iteratorClass);
+        detailsVector[0].iterator =
+          getTheIteratorFn(detailsVector[0].iteratorClass);
       } else {
         // Set detailsVector[i].index
         findZipperedIndexVariables(followerIndex, detailsVector);
@@ -634,7 +622,6 @@ void gatherLoopDetails(ForLoop*  forLoop,
   }
 }
 
-
 //
 // Same as above except for a ForallStmt.
 // Like for forall case above, this could be:
@@ -643,11 +630,10 @@ void gatherLoopDetails(ForLoop*  forLoop,
 //  * leader-follower loop that is zippered
 
 void gatherLoopDetails(ForallStmt* fs,
-                       bool&     isForall,
+                       bool& isForall,
                        IteratorDetails& leaderDetails,
                        ForLoop*& followerForLoop,
-                       std::vector<IteratorDetails>& detailsVector)
-{
+                       std::vector<IteratorDetails>& detailsVector) {
   bool isLeader = false;
   bool zippered = false;
 
@@ -659,23 +645,20 @@ void gatherLoopDetails(ForallStmt* fs,
     isLeader = true;
     if (SymExpr* useSE = newIterLF->getSingleUse())
       if (CallExpr* useCall = toCallExpr(useSE->parentExpr))
-        if (useCall->isNamed("_toFollowerZip"))
-          zippered = true;
+        if (useCall->isNamed("_toFollowerZip")) zippered = true;
   }
   if (fs->zippered()) { // TODO this is not true if zip is over tuple expansion?
     zippered = true;
-
   }
 
   if (fs->zipCall()) {
     zippered = true;
     if (fs->zipCall()->numActuals() > 1) {
-      isLeader = true;  // zipCall implies this
+      isLeader = true; // zipCall implies this
     }
   }
 
-  INT_ASSERT(fs, isLeader ==
-             !strcmp(parIdxVar(fs)->name, "chpl_followThis"));
+  INT_ASSERT(fs, isLeader == !strcmp(parIdxVar(fs)->name, "chpl_followThis"));
 
   isForall = true;
   detailsVector.clear();
@@ -689,8 +672,7 @@ void gatherLoopDetails(ForallStmt* fs,
     // leader-follower loop that is not zippered
     // leader-follower loop that is zippered
 
-    if (!isLeader)
-    {
+    if (!isLeader) {
       IteratorDetails detailsSA;
       detailsSA.iterable = fs->iteratedExpressions().head;
       detailsSA.index = parIdxVar(fs);
@@ -701,9 +683,7 @@ void gatherLoopDetails(ForallStmt* fs,
       followerForLoop = NULL;
       detailsVector.push_back(detailsSA);
       return;
-    }
-    else
-    {
+    } else {
       // Leader-follower iteration
 
       // Find the iterables
@@ -722,7 +702,7 @@ void gatherLoopDetails(ForallStmt* fs,
         for_actuals(actual, fs->zipCall()) {
           SET_LINENO(fs);
 
-          SymExpr *actualSE = toSymExpr(actual);
+          SymExpr* actualSE = toSymExpr(actual);
 
           IteratorDetails details;
           details.iterable = actualSE->copy();
@@ -734,8 +714,8 @@ void gatherLoopDetails(ForallStmt* fs,
       leaderDetails.iterable = detailsVector[0].iterable;
       leaderDetails.index = parIdxVar(fs);
       leaderDetails.iteratorClass = NULL;
-      leaderDetails.iterator = toCallExpr(
-            fs->iteratedExpressions().head)->resolvedFunction();
+      leaderDetails.iterator =
+        toCallExpr(fs->iteratedExpressions().head)->resolvedFunction();
 
       ForLoop* followerFor = findFollowerForLoop(fs->loopBody());
       INT_ASSERT(fs, followerFor);
@@ -749,7 +729,8 @@ void gatherLoopDetails(ForallStmt* fs,
         followerIndex = collapseIndexVarReferences(followerIndex);
         detailsVector[0].index = followerIndex;
         detailsVector[0].iteratorClass = followerIterator->typeInfo();
-        detailsVector[0].iterator = getTheIteratorFn(detailsVector[0].iteratorClass);
+        detailsVector[0].iterator =
+          getTheIteratorFn(detailsVector[0].iteratorClass);
       } else {
         // Set detailsVector[i].index
         findZipperedIndexVariables(followerIndex, detailsVector);

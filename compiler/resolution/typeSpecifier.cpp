@@ -40,123 +40,93 @@ Type* typeForTypeSpecifier(Expr* expr, bool fatalOK) {
           if (SymExpr* arg = toSymExpr(call->get(1))) {
             if (VarSymbol* var = toVarSymbol(arg->symbol())) {
               if (var->immediate) {
-                if (NUM_KIND_INT  == var->immediate->const_kind ||
+                if (NUM_KIND_INT == var->immediate->const_kind ||
                     NUM_KIND_UINT == var->immediate->const_kind) {
                   if (type == dtInt[INT_SIZE_DEFAULT]->symbol) {
                     int size = typeSize(var);
 
                     switch (size) {
-                    case 8:
-                      retval = dtInt[INT_SIZE_8];
-                      break;
+                      case 8: retval = dtInt[INT_SIZE_8]; break;
 
-                    case 16:
-                      retval = dtInt[INT_SIZE_16];
-                      break;
+                      case 16: retval = dtInt[INT_SIZE_16]; break;
 
-                    case 32:
-                      retval = dtInt[INT_SIZE_32];
-                      break;
+                      case 32: retval = dtInt[INT_SIZE_32]; break;
 
-                    case 64:
-                      retval = dtInt[INT_SIZE_64];
-                      break;
+                      case 64: retval = dtInt[INT_SIZE_64]; break;
 
-                    default:
-                      if (fatalOK == true) {
-                        USR_FATAL_CONT(call, "illegal size %d for int", size);
-                      }
-                      break;
+                      default:
+                        if (fatalOK == true) {
+                          USR_FATAL_CONT(call, "illegal size %d for int", size);
+                        }
+                        break;
                     }
-
 
                   } else if (type == dtUInt[INT_SIZE_DEFAULT]->symbol) {
                     int size = typeSize(var);
 
                     switch (size) {
-                    case  8:
-                      retval = dtUInt[INT_SIZE_8];
-                      break;
+                      case 8: retval = dtUInt[INT_SIZE_8]; break;
 
-                    case 16:
-                      retval = dtUInt[INT_SIZE_16];
-                      break;
+                      case 16: retval = dtUInt[INT_SIZE_16]; break;
 
-                    case 32:
-                      retval = dtUInt[INT_SIZE_32];
-                      break;
+                      case 32: retval = dtUInt[INT_SIZE_32]; break;
 
-                    case 64:
-                      retval = dtUInt[INT_SIZE_64];
-                      break;
+                      case 64: retval = dtUInt[INT_SIZE_64]; break;
 
-                    default:
-                      if (fatalOK == true) {
-                        USR_FATAL_CONT(call, "illegal size %d for uint", size);
-                      }
-                      break;
+                      default:
+                        if (fatalOK == true) {
+                          USR_FATAL_CONT(
+                            call, "illegal size %d for uint", size);
+                        }
+                        break;
                     }
-
 
                   } else if (type == dtReal[FLOAT_SIZE_64]->symbol) {
                     int size = typeSize(var);
 
                     switch (size) {
-                    case 32:
-                      retval = dtReal[FLOAT_SIZE_32];
-                      break;
+                      case 32: retval = dtReal[FLOAT_SIZE_32]; break;
 
-                    case 64:
-                      retval = dtReal[FLOAT_SIZE_64];
-                      break;
+                      case 64: retval = dtReal[FLOAT_SIZE_64]; break;
 
-                    default:
-                      if (fatalOK == true) {
-                        USR_FATAL_CONT(call, "illegal size %d for real", size);
-                      }
-                      break;
+                      default:
+                        if (fatalOK == true) {
+                          USR_FATAL_CONT(
+                            call, "illegal size %d for real", size);
+                        }
+                        break;
                     }
-
 
                   } else if (type == dtImag[FLOAT_SIZE_64]->symbol) {
                     int size = typeSize(var);
 
                     switch (size) {
-                    case 32:
-                      retval = dtImag[FLOAT_SIZE_32];
-                      break;
+                      case 32: retval = dtImag[FLOAT_SIZE_32]; break;
 
-                    case 64:
-                      retval = dtImag[FLOAT_SIZE_64];
-                      break;
+                      case 64: retval = dtImag[FLOAT_SIZE_64]; break;
 
-                    default:
-                      if (fatalOK == true) {
-                        USR_FATAL_CONT(call, "illegal size %d for imag", size);
-                      }
-                      break;
+                      default:
+                        if (fatalOK == true) {
+                          USR_FATAL_CONT(
+                            call, "illegal size %d for imag", size);
+                        }
+                        break;
                     }
-
 
                   } else if (type == dtComplex[COMPLEX_SIZE_128]->symbol) {
                     int size = typeSize(var);
 
                     switch (size) {
-                    case 64:
-                      retval = dtComplex[COMPLEX_SIZE_64];
-                      break;
+                      case 64: retval = dtComplex[COMPLEX_SIZE_64]; break;
 
-                    case 128:
-                      retval = dtComplex[COMPLEX_SIZE_128];
-                      break;
+                      case 128: retval = dtComplex[COMPLEX_SIZE_128]; break;
 
-                    default:
-                      if (fatalOK == true) {
-                        USR_FATAL_CONT(call,
-                                       "illegal size %d for complex",
-                                       size);
-                      }
-                      break;
+                      default:
+                        if (fatalOK == true) {
+                          USR_FATAL_CONT(
+                            call, "illegal size %d for complex", size);
+                        }
+                        break;
                     }
                   }
                 }
@@ -170,7 +140,6 @@ Type* typeForTypeSpecifier(Expr* expr, bool fatalOK) {
 
   return retval;
 }
-
 
 static int typeSize(VarSymbol* var) {
   int retval = 0;

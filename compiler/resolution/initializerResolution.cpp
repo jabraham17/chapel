@@ -44,20 +44,22 @@
 #include "wrappers.h"
 #include <llvm/ADT/SmallVector.h>
 
-static void resolveInitCall(CallExpr* call, bool emitCallResolutionErrors,
+static void resolveInitCall(CallExpr* call,
+                            bool emitCallResolutionErrors,
                             AggregateType* newExprAlias = NULL,
                             bool forNewExpr = false);
 
-static void gatherInitCandidates(CallInfo&                  info,
-                                 Vec<FnSymbol*>&            visibleFns,
+static void gatherInitCandidates(CallInfo& info,
+                                 Vec<FnSymbol*>& visibleFns,
                                  Vec<ResolutionCandidate*>& candidates);
 
 static void resolveInitializerMatch(FnSymbol* fn);
 
 static void makeRecordInitWrappers(CallExpr* call);
 
-static void makeActualsVector(const CallInfo&          info,
-                              llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal);
+static void
+makeActualsVector(const CallInfo& info,
+                  llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal);
 
 static AggregateType* resolveNewFindType(CallExpr* newExpr);
 
@@ -67,8 +69,7 @@ static AggregateType* resolveNewFindType(CallExpr* newExpr);
 *                                                                             *
 ************************************** | *************************************/
 
-FnSymbol*
-resolveInitializer(CallExpr* call, bool emitCallResolutionErrors) {
+FnSymbol* resolveInitializer(CallExpr* call, bool emitCallResolutionErrors) {
   FnSymbol* retval = NULL;
 
   callStack.add(call);
@@ -119,16 +120,16 @@ resolveInitializer(CallExpr* call, bool emitCallResolutionErrors) {
 /* This is a helper to buildNewWrapper() that recursively takes care
    of de-initializing fields in the event that an 'init()' or
    'postinit()' throws */
-static void helpDeinitFields(AggregateType* type, VarSymbol* _this,
-                             BlockStmt* body) {
+static void
+helpDeinitFields(AggregateType* type, VarSymbol* _this, BlockStmt* body) {
   if (type == NULL) {
     INT_FATAL("helpDeinitFields() isn't designed to take 'NULL' types");
   }
 
   for_fields(field, type) {
     if (isRecord(field->type) && !field->hasFlag(FLAG_TYPE_VARIABLE)) {
-      body->insertAtHead(new CallExpr("deinit", gMethodToken,
-                           new CallExpr(PRIM_GET_MEMBER, _this, field)));
+      body->insertAtHead(new CallExpr(
+        "deinit", gMethodToken, new CallExpr(PRIM_GET_MEMBER, _this, field)));
     } else if (field->hasFlag(FLAG_SUPER_CLASS) && field->type != dtObject) {
       // explicitly recurse over fields rather than calling super->deinit
       // to avoid re-deinit'ing 'this'
@@ -141,7 +142,7 @@ static void helpDeinitFields(AggregateType* type, VarSymbol* _this,
 // The map is keyed by the FnSymbol of the original initializer and the expr of
 //   the allocator (if any)
 // The value is the '_new' wrapped initializer
-static std::map<std::pair<FnSymbol*,Expr*>,FnSymbol*> newWrapperMap;
+static std::map<std::pair<FnSymbol*, Expr*>, FnSymbol*> newWrapperMap;
 
 // Note: The wrapper for classes always returns unmanaged
 // Note: A wrapper might be generated for records in the case of promotion
@@ -180,7 +181,8 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn, Expr* allocator = nullptr) {
   SymbolMap initToNewMap;
   ArgSymbol* allocatorFormal = nullptr;
   if (isClass(type) && allocator != nullptr) {
-    allocatorFormal = new ArgSymbol(INTENT_BLANK, "allocator_formal", allocator->typeInfo());
+    allocatorFormal =
+      new ArgSymbol(INTENT_BLANK, "allocator_formal", allocator->typeInfo());
     fn->insertFormalAtTail(allocatorFormal);
   }
   for_formals(formal, initFn) {
@@ -206,9 +208,13 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn, Expr* allocator = nullptr) {
   body->insertAtTail(new DefExpr(initTemp));
   if (isClass(type)) {
     if (allocatorFormal != nullptr) {
-      body->insertAtTail(new CallExpr(PRIM_MOVE, initTemp, callChplHereAllocWithAllocator(type, new SymExpr(allocatorFormal))));
+      body->insertAtTail(new CallExpr(
+        PRIM_MOVE,
+        initTemp,
+        callChplHereAllocWithAllocator(type, new SymExpr(allocatorFormal))));
     } else {
-      body->insertAtTail(new CallExpr(PRIM_MOVE, initTemp, callChplHereAlloc(type)));
+      body->insertAtTail(
+        new CallExpr(PRIM_MOVE, initTemp, callChplHereAlloc(type)));
     }
   }
 
@@ -233,9 +239,8 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn, Expr* allocator = nullptr) {
     Expr* castedCurrent = new CallExpr(PRIM_CURRENT_ERROR);
     DefExpr* castedDef = new DefExpr(casted, castedCurrent);
     Expr* nonNilC = new CallExpr(PRIM_TO_NON_NILABLE_CLASS, casted);
-    Expr* toOwned = new CallExpr(PRIM_NEW,
-                                 new CallExpr(new SymExpr(dtOwned->symbol),
-                                              nonNilC));
+    Expr* toOwned = new CallExpr(
+      PRIM_NEW, new CallExpr(new SymExpr(dtOwned->symbol), nonNilC));
 
     // deinitialize fields, including the 'super' field / parent class
     helpDeinitFields(type, initTemp, catchBody);
@@ -244,13 +249,11 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn, Expr* allocator = nullptr) {
     catchBody->insertAtHead(errorDef);
     catchBody->insertAtHead(castedDef);
 
-    CallExpr* rethrow = new CallExpr(PRIM_THROW,
-                                     new SymExpr(error));
+    CallExpr* rethrow = new CallExpr(PRIM_THROW, new SymExpr(error));
     catchBody->insertAtTail(rethrow);
 
-    TryStmt* tryInit = new TryStmt(false, tryBody,
-                                   new BlockStmt(CatchStmt::build(errorName,
-                                                                  catchBody)));
+    TryStmt* tryInit = new TryStmt(
+      false, tryBody, new BlockStmt(CatchStmt::build(errorName, catchBody)));
     body->insertAtTail(tryInit);
 
   } else {
@@ -259,7 +262,6 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn, Expr* allocator = nullptr) {
       body->insertAtTail(new CallExpr("postinit", gMethodToken, initTemp));
     }
   }
-
 
   VarSymbol* result = newTemp();
   Expr* resultExpr = NULL;
@@ -297,22 +299,30 @@ static void insertNamedInstantiationInfo(CallExpr* newExpr,
   AggregateType* rootType = at->getRootInstantiation();
   if (at != rootType) {
     // Insert super class instantiations first
-    if (at->isClass() && at != dtObject && at->dispatchParents.v[0] != dtObject) {
+    if (at->isClass() && at != dtObject &&
+        at->dispatchParents.v[0] != dtObject) {
       insertNamedInstantiationInfo(newExpr, initCall, at->dispatchParents.v[0]);
     }
 
     for_fields(field, at) {
       if (at->symbol->hasFlag(FLAG_GENERIC)) {
-        if (field->type == dtUnknown || field->type->symbol->hasFlag(FLAG_GENERIC)) {
+        if (field->type == dtUnknown ||
+            field->type->symbol->hasFlag(FLAG_GENERIC)) {
           continue;
         }
       }
       if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
-        initCall->insertAtTail(new NamedExpr(field->name, new SymExpr(field->type->symbol)));
+        initCall->insertAtTail(
+          new NamedExpr(field->name, new SymExpr(field->type->symbol)));
       } else if (field->hasFlag(FLAG_PARAM)) {
-        initCall->insertAtTail(new NamedExpr(field->name, new SymExpr(at->getSubstitution(field->name))));
+        initCall->insertAtTail(new NamedExpr(
+          field->name, new SymExpr(at->getSubstitution(field->name))));
       } else if (at->getSubstitution(field->name) != NULL) {
-        USR_FATAL(newExpr, "A type alias of '%s' may not be used in a new-expression because it contains a typeless field ('%s')", rootType->symbol->name, field->name);
+        USR_FATAL(newExpr,
+                  "A type alias of '%s' may not be used in a new-expression "
+                  "because it contains a typeless field ('%s')",
+                  rootType->symbol->name,
+                  field->name);
       }
     }
   }
@@ -325,9 +335,8 @@ static void insertNamedInstantiationInfo(CallExpr* newExpr,
 //
 // Note: Modifies 'newExpr'
 //
-static CallExpr* buildInitCall(CallExpr* newExpr,
-                               AggregateType* at,
-                               BlockStmt* block) {
+static CallExpr*
+buildInitCall(CallExpr* newExpr, AggregateType* at, BlockStmt* block) {
   AggregateType* rootType = at->getRootInstantiation();
 
   Expr* modToken = NULL;
@@ -342,7 +351,8 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
   newExpr->get(1)->remove();
 
   VarSymbol* tmp = newTemp("initTemp", rootType);
-  CallExpr* call = new CallExpr("init", gMethodToken, new NamedExpr("this", new SymExpr(tmp)));
+  CallExpr* call =
+    new CallExpr("init", gMethodToken, new NamedExpr("this", new SymExpr(tmp)));
   call->tryTag = newExpr->tryTag;
 
   insertNamedInstantiationInfo(newExpr, call, at);
@@ -370,7 +380,8 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
   resolveInitCall(call, emitCallResolutionErrors, alias, true);
   resolveInitializerMatch(call->resolvedFunction());
   tmp->type = call->resolvedFunction()->_this->getValType();
-  resolveTypeWithInitializer(toAggregateType(tmp->type), call->resolvedFunction());
+  resolveTypeWithInitializer(toAggregateType(tmp->type),
+                             call->resolvedFunction());
 
   // Check for arguments where the type is not known.
   // These arguments indicate that something needed to be provided
@@ -404,8 +415,8 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
 
 // Creates a new temp and stores the DefExpr for it at the end
 // of block, or, if in a module init fn, in global scope.
-static
-VarSymbol* resolveNewInitializerMakeTemp(const char* name, BlockStmt* block) {
+static VarSymbol* resolveNewInitializerMakeTemp(const char* name,
+                                                BlockStmt* block) {
   VarSymbol* tmp = newTemp(name);
   tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
@@ -441,7 +452,6 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
   BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
   Expr* stmt = newExpr->getStmtExpr();
   stmt->insertBefore(block);
-
 
   // pull out the allocator before `buildInitCall`
   Expr* allocator = nullptr;
@@ -489,7 +499,7 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
 
     // If the default value for a formal is a new-expression, the final
     // statement in the BlockStmt will be a PRIM_NEW.
-    ArgSymbol *argSym = toArgSymbol(stmt->parentSymbol);
+    ArgSymbol* argSym = toArgSymbol(stmt->parentSymbol);
     bool inArgSymbol = stmt == newExpr && argSym != NULL;
 
     VarSymbol* new_temp = newTemp("new_temp");
@@ -527,11 +537,8 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
         VarSymbol* tmpR = resolveNewInitializerMakeTemp("new_temp_r", block);
 
         block->insertAtTail(new CallExpr(PRIM_INIT_VAR, tmpM, new_temp_rhs));
-        block->insertAtTail(new CallExpr(PRIM_MOVE,
-                                         tmpR,
-                                         new CallExpr("borrow",
-                                                      gMethodToken,
-                                                      tmpM)));
+        block->insertAtTail(new CallExpr(
+          PRIM_MOVE, tmpR, new CallExpr("borrow", gMethodToken, tmpM)));
         new_temp_rhs = new SymExpr(tmpR);
       }
 
@@ -557,11 +564,11 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
       Expr* tail = block->body.tail;
       if (tail->typeInfo()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
         VarSymbol* ir_temp = newTemp("ir_temp");
-        Symbol *definedConst = argSym->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
-        CallExpr* tempMove = new CallExpr(PRIM_MOVE, ir_temp,
-                                          new CallExpr(astr_initCopy,
-                                                       tail->copy(),
-                                                       definedConst));
+        Symbol* definedConst = argSym->hasFlag(FLAG_CONST) ? gTrue : gFalse;
+        CallExpr* tempMove =
+          new CallExpr(PRIM_MOVE,
+                       ir_temp,
+                       new CallExpr(astr_initCopy, tail->copy(), definedConst));
         tail->insertBefore(tempMove);
         normalize(tempMove);
         tail->replace(new SymExpr(ir_temp));
@@ -590,7 +597,8 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void resolveInitCall(CallExpr* call, bool emitCallResolutionErrors,
+static void resolveInitCall(CallExpr* call,
+                            bool emitCallResolutionErrors,
                             AggregateType* newExprAlias,
                             bool forNewExpr) {
   CallInfo info;
@@ -602,9 +610,9 @@ static void resolveInitCall(CallExpr* call, bool emitCallResolutionErrors,
   }
 
   if (info.isWellFormed(call) == true) {
-    Vec<FnSymbol*>            visibleFns, mostApplicable;
+    Vec<FnSymbol*> visibleFns, mostApplicable;
     Vec<ResolutionCandidate*> candidates;
-    ResolutionCandidate*      best        = NULL;
+    ResolutionCandidate* best = NULL;
 
     findVisibleFunctionsAllPOIs(info, visibleFns);
 
@@ -632,13 +640,16 @@ static void resolveInitCall(CallExpr* call, bool emitCallResolutionErrors,
           // an already-resolved call.
           bool existingErrors = fatalErrorsEncountered();
           if (newExprAlias != NULL && emitCallResolutionErrors) {
-            USR_FATAL_CONT(call, "Unable to resolve new-expression with type alias '%s'", newExprAlias->symbol->name);
+            USR_FATAL_CONT(
+              call,
+              "Unable to resolve new-expression with type alias '%s'",
+              newExprAlias->symbol->name);
           }
           if (!inGenerousResolutionForErrors()) {
             startGenerousResolutionForErrors();
             const bool forNewExpr = false;
-            resolveInitCall(call, emitCallResolutionErrors, newExprAlias,
-                            forNewExpr);
+            resolveInitCall(
+              call, emitCallResolutionErrors, newExprAlias, forNewExpr);
             FnSymbol* retry = call->resolvedFunction();
             stopGenerousResolutionForErrors();
 
@@ -652,7 +663,7 @@ static void resolveInitCall(CallExpr* call, bool emitCallResolutionErrors,
 
               USR_STOP();
             } else {
-              printResolutionErrorAmbiguous (info, candidates);
+              printResolutionErrorAmbiguous(info, candidates);
             }
           }
         }
@@ -678,9 +689,7 @@ static void resolveInitCall(CallExpr* call, bool emitCallResolutionErrors,
       }
     }
 
-    forv_Vec(ResolutionCandidate*, candidate, candidates) {
-      delete candidate;
-    }
+    forv_Vec(ResolutionCandidate*, candidate, candidates) { delete candidate; }
 
   } else if (emitCallResolutionErrors) {
     info.haltNotWellFormed();
@@ -693,17 +702,17 @@ static void resolveInitCall(CallExpr* call, bool emitCallResolutionErrors,
 *                                                                             *
 ************************************** | *************************************/
 
-static void doGatherInitCandidates(CallInfo&                  info,
-                                   Vec<FnSymbol*>&            visibleFns,
-                                   bool                       generated,
+static void doGatherInitCandidates(CallInfo& info,
+                                   Vec<FnSymbol*>& visibleFns,
+                                   bool generated,
                                    Vec<ResolutionCandidate*>& candidates);
 
-static void filterInitCandidate(CallInfo&                  info,
-                                FnSymbol*                  fn,
+static void filterInitCandidate(CallInfo& info,
+                                FnSymbol* fn,
                                 Vec<ResolutionCandidate*>& candidates);
 
-static void gatherInitCandidates(CallInfo&                  info,
-                                 Vec<FnSymbol*>&            visibleFns,
+static void gatherInitCandidates(CallInfo& info,
+                                 Vec<FnSymbol*>& visibleFns,
                                  Vec<ResolutionCandidate*>& candidates) {
   // Search user-defined (i.e. non-compiler-generated) functions first.
   doGatherInitCandidates(info, visibleFns, false, candidates);
@@ -714,9 +723,9 @@ static void gatherInitCandidates(CallInfo&                  info,
   }
 }
 
-static void doGatherInitCandidates(CallInfo&                  info,
-                                   Vec<FnSymbol*>&            visibleFns,
-                                   bool                       lastResort,
+static void doGatherInitCandidates(CallInfo& info,
+                                   Vec<FnSymbol*>& visibleFns,
+                                   bool lastResort,
                                    Vec<ResolutionCandidate*>& candidates) {
   forv_Vec(FnSymbol, visibleFn, visibleFns) {
     // Only consider functions marked with/without FLAG_LAST_RESORT
@@ -754,8 +763,8 @@ static void doGatherInitCandidates(CallInfo&                  info,
 /** Tests to see if a function is a candidate for resolving a specific call.
  *  If it is a candidate, we add it to the candidate lists.
  */
-static void filterInitCandidate(CallInfo&                  info,
-                                FnSymbol*                  fn,
+static void filterInitCandidate(CallInfo& info,
+                                FnSymbol* fn,
                                 Vec<ResolutionCandidate*>& candidates) {
   ResolutionCandidate* candidate = new ResolutionCandidate(fn);
   VisibilityInfo visInfo(info);
@@ -785,7 +794,9 @@ static void resolveInitializerMatch(FnSymbol* fn) {
 
     if (fn->id == breakOnResolveID) {
       printf("breaking on resolve fn %s[%d] (%d args)\n",
-             fn->name, fn->id, fn->numFormals());
+             fn->name,
+             fn->id,
+             fn->numFormals());
       debuggerBreakHere();
     }
 
@@ -833,14 +844,12 @@ static void makeRecordInitWrappers(CallExpr* call) {
 
   if (info.isWellFormed(call) == true) {
     llvm::SmallVector<ArgSymbol*, 8> actualIdxToFormal;
-    FnSymbol*               wrap = NULL;
+    FnSymbol* wrap = NULL;
 
     makeActualsVector(info, actualIdxToFormal);
 
-    wrap = wrapAndCleanUpActuals(call->resolvedFunction(),
-                                 info,
-                                 actualIdxToFormal,
-                                 true);
+    wrap = wrapAndCleanUpActuals(
+      call->resolvedFunction(), info, actualIdxToFormal, true);
 
     call->baseExpr->replace(new SymExpr(wrap));
 
@@ -859,10 +868,11 @@ static void makeRecordInitWrappers(CallExpr* call) {
 // This work was already performed when we found the right resolution candidate
 // so the "failure" modes should never get triggered.  The information we need
 // was cleaned up, though, so we are just going to recreate the parts we need.
-static void makeActualsVector(const CallInfo&          info,
-                              llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal) {
-  const CallExpr*   call = info.call;
-  FnSymbol*         fn   = call->resolvedFunction();
+static void
+makeActualsVector(const CallInfo& info,
+                  llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal) {
+  const CallExpr* call = info.call;
+  FnSymbol* fn = call->resolvedFunction();
   std::vector<bool> formalIdxToActual;
 
   for (int i = 0; i < fn->numFormals(); i++) {
@@ -875,11 +885,11 @@ static void makeActualsVector(const CallInfo&          info,
   for (int i = 0; i < info.actuals.n; i++) {
     if (info.actualNames.v[i]) {
       bool match = false;
-      int  j     = 0;
+      int j = 0;
 
       for_formals(formal, fn) {
         if (strcmp(info.actualNames.v[i], formal->name) == 0) {
-          match                = true;
+          match = true;
           actualIdxToFormal[i] = formal;
           formalIdxToActual[j] = true;
           break;
@@ -899,7 +909,7 @@ static void makeActualsVector(const CallInfo&          info,
 
   // Fill in unmatched formals in sequence with the remaining actuals.
   // Record successful substitutions.
-  int        j      = 0;
+  int j = 0;
   ArgSymbol* formal = (fn->numFormals()) ? fn->getFormal(1) : NULL;
 
   for (int i = 0; i < info.actuals.n; i++) {
@@ -912,10 +922,10 @@ static void makeActualsVector(const CallInfo&          info,
         }
 
         if (formalIdxToActual[j] == false) {
-          match                = true;
+          match = true;
           actualIdxToFormal[i] = formal;
           formalIdxToActual[j] = true;
-          formal               = next_formal(formal);
+          formal = next_formal(formal);
           j++;
           break;
         }
@@ -937,8 +947,7 @@ static void makeActualsVector(const CallInfo&          info,
   while (formal) {
     if (formalIdxToActual[j] == false && !formal->defaultExpr) {
       // Fail if not.
-      INT_FATAL(call,
-                "Compilation should have verified this action was valid");
+      INT_FATAL(call, "Compilation should have verified this action was valid");
     }
 
     formal = next_formal(formal);
@@ -961,7 +970,7 @@ static AggregateType* resolveNewFindType(CallExpr* newExpr) {
       typeExpr = se;
 
     } else {
-      typeExpr = toSymExpr(newExpr->get(type_index+2));
+      typeExpr = toSymExpr(newExpr->get(type_index + 2));
     }
 
   } else if (CallExpr* partial = toCallExpr(newExpr->get(type_index))) {
@@ -970,7 +979,7 @@ static AggregateType* resolveNewFindType(CallExpr* newExpr) {
     }
   }
 
-  Type*    type     = resolveTypeAlias(typeExpr);
+  Type* type = resolveTypeAlias(typeExpr);
 
   return toAggregateType(type);
 }

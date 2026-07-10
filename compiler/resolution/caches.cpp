@@ -27,7 +27,6 @@
 #include "visibleFunctions.h"
 #include "view.h"
 
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -38,17 +37,15 @@ SymbolMapCache promotionsCache;
 
 static bool isCacheEntryMatch(SymbolMap* s1, SymbolMap* s2);
 
-SymbolMapCacheEntry::SymbolMapCacheEntry(FnSymbol* ifn, SymbolMap* imap) :
-  fn(ifn), map(*imap) { }
+SymbolMapCacheEntry::SymbolMapCacheEntry(FnSymbol* ifn, SymbolMap* imap)
+  : fn(ifn), map(*imap) {}
 
-
-void
-addCache(SymbolMapCache& cache,
-         FnSymbol*       oldFn,
-         FnSymbol*       fn,
-         SymbolMap*      map) {
+void addCache(SymbolMapCache& cache,
+              FnSymbol* oldFn,
+              FnSymbol* fn,
+              SymbolMap* map) {
   Vec<SymbolMapCacheEntry*>* entries = cache.get(oldFn);
-  SymbolMapCacheEntry*       entry   = new SymbolMapCacheEntry(fn, map);
+  SymbolMapCacheEntry* entry = new SymbolMapCacheEntry(fn, map);
 
   if (entries) {
     entries->add(entry);
@@ -60,25 +57,18 @@ addCache(SymbolMapCache& cache,
   }
 }
 
-
-FnSymbol*
-checkCache(SymbolMapCache& cache, FnSymbol* oldFn, SymbolMap* map) {
+FnSymbol* checkCache(SymbolMapCache& cache, FnSymbol* oldFn, SymbolMap* map) {
   if (Vec<SymbolMapCacheEntry*>* entries = cache.get(oldFn)) {
     forv_Vec(SymbolMapCacheEntry, entry, *entries) {
-      if (isCacheEntryMatch(map, &entry->map))
-        return entry->fn;
+      if (isCacheEntryMatch(map, &entry->map)) return entry->fn;
     }
   }
   return NULL;
 }
 
-
-void
-freeCache(SymbolMapCache& cache) {
+void freeCache(SymbolMapCache& cache) {
   form_Map(SymbolMapCacheElem, elem, cache) {
-    forv_Vec(SymbolMapCacheEntry, entry, *elem->value) {
-      delete entry;
-    }
+    forv_Vec(SymbolMapCacheEntry, entry, *elem->value) { delete entry; }
     delete elem->value;
   }
   cache.clear();
@@ -100,7 +90,6 @@ static bool isCacheEntryMatch(SymbolMap* s1, SymbolMap* s2) {
   return true;
 }
 
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -115,9 +104,9 @@ static bool isCacheEntryMatch(SymbolMap* s1, SymbolMap* s2) {
 // when resolving a call within that FnSymbol, then feeds into a CalledFunInfo.
 //
 class CalledFunInfo {
-public:
-  const char* fnName;       // the name being called
-  BlockStmt* declScope;          // the scope where the candidate is declared
+ public:
+  const char* fnName;   // the name being called
+  BlockStmt* declScope; // the scope where the candidate is declared
   std::set<BlockStmt*> visitedScopes; // scopes visited in getVisibleFunctions
 
   // Is this CFI's function defined in the 'scope'?
@@ -135,51 +124,55 @@ public:
     return scopeMayDefineHazard(scope, fnName);
   }
 
-  CalledFunInfo(const char* funName, BlockStmt* dScope,
-                std::vector<BlockStmt*> vScopes):
-    fnName(funName),
-    declScope(dScope),
-    visitedScopes(vScopes.begin(), vScopes.end())
-  { }
+  CalledFunInfo(const char* funName,
+                BlockStmt* dScope,
+                std::vector<BlockStmt*> vScopes)
+    : fnName(funName), declScope(dScope),
+      visitedScopes(vScopes.begin(), vScopes.end()) {}
 };
-
 
 //
 // Information about all best candidates while resolving this fn.
 //
 class GenericsCacheInfo {
-public:
+ public:
   std::vector<CalledFunInfo> infos;
   int size() { return (int)(infos.size()); }
 };
-
 
 //
 // genericsCacheSummary(): summarize various GC-related things for debugging
 //
 
 void genericsCacheSummary(CalledFunInfo* fi) {
-  if (fi == NULL) printf("<NULL>\n");
-  else genericsCacheSummary(*fi);
+  if (fi == NULL)
+    printf("<NULL>\n");
+  else
+    genericsCacheSummary(*fi);
 }
 
 void genericsCacheSummary(CalledFunInfo& fi) {
-  printf("CFI \"%s\"  declScope %d %s  visitedScopes %d:", fi.fnName,
-         fi.declScope->id, debugLoc(fi.declScope),
+  printf("CFI \"%s\"  declScope %d %s  visitedScopes %d:",
+         fi.fnName,
+         fi.declScope->id,
+         debugLoc(fi.declScope),
          (int)fi.visitedScopes.size());
   for_set(BlockStmt, block, fi.visitedScopes) printf(" %d", block->id);
   printf("\n");
 }
 
 void genericsCacheSummary(GenericsCacheInfo* ci) {
-  if (ci == NULL) printf("<NULL>\n");
-  else genericsCacheSummary(*ci);
+  if (ci == NULL)
+    printf("<NULL>\n");
+  else
+    genericsCacheSummary(*ci);
 }
 
 void genericsCacheSummary(GenericsCacheInfo& ci) {
   printf("GenericsCacheInfo {\n");
   for (std::vector<CalledFunInfo>::iterator it = ci.infos.begin();
-       it != ci.infos.end(); it++) {
+       it != ci.infos.end();
+       it++) {
     printf("  ");
     genericsCacheSummary(*it);
   }
@@ -187,45 +180,58 @@ void genericsCacheSummary(GenericsCacheInfo& ci) {
 }
 
 void genericsCacheSummary(VisibilityInfo* visInfo) {
-  if (visInfo == NULL) printf("<NULL>\n");
-  else genericsCacheSummary(*visInfo);
+  if (visInfo == NULL)
+    printf("<NULL>\n");
+  else
+    genericsCacheSummary(*visInfo);
 }
 
 // todo also show visInfo.currStart, visInfo.nextPOI?
 void genericsCacheSummary(VisibilityInfo& visInfo) {
   printf("{visitedScopes %d:", (int)visInfo.visitedScopes.size());
-  for_vector(BlockStmt, block, visInfo.visitedScopes)
-    printf(" %d", block->id);
+  for_vector(BlockStmt, block, visInfo.visitedScopes) printf(" %d", block->id);
   printf("\n");
 
   printf("instnPoints %d:\n", (int)visInfo.instnPoints.size());
   for_vector(BlockStmt, block, visInfo.instnPoints)
     printf("  %d %s\n", block->id, debugLoc(block));
 
-  printf("}  poiDepth %d   call %d %s\n", visInfo.poiDepth,
-         visInfo.call->id, debugLoc(visInfo.call));
+  printf("}  poiDepth %d   call %d %s\n",
+         visInfo.poiDepth,
+         visInfo.call->id,
+         debugLoc(visInfo.call));
 }
 
 void genericsCacheSummary(int id) {
-  if (BaseAST* ast = aid09(id)) genericsCacheSummary(ast);
-  else printf("genericsCacheSummary: id %d"
-              "does not correspond to an AST node\n", id);
+  if (BaseAST* ast = aid09(id))
+    genericsCacheSummary(ast);
+  else
+    printf("genericsCacheSummary: id %d"
+           "does not correspond to an AST node\n",
+           id);
 }
 
 void genericsCacheSummary(BaseAST* ast) {
   if (FnSymbol* fn = toFnSymbol(ast)) {
-    if (GenericsCacheInfo* ci = fn->cacheInfo) genericsCacheSummary(ci);
-    else printf("fn %s[%d] has null cacheInfo\n", fn->name, fn->id);
+    if (GenericsCacheInfo* ci = fn->cacheInfo)
+      genericsCacheSummary(ci);
+    else
+      printf("fn %s[%d] has null cacheInfo\n", fn->name, fn->id);
   } else if (DefExpr* def = toDefExpr(ast)) {
-    if (FnSymbol* fn = toFnSymbol(def->sym)) genericsCacheSummary(fn);
-    else printf("def %d  defines %s[%d] that is a %s, not a fn\n",
-            def->id, def->sym->name, def->sym->id, def->sym->astTagAsString());
+    if (FnSymbol* fn = toFnSymbol(def->sym))
+      genericsCacheSummary(fn);
+    else
+      printf("def %d  defines %s[%d] that is a %s, not a fn\n",
+             def->id,
+             def->sym->name,
+             def->sym->id,
+             def->sym->astTagAsString());
   } else {
     printf("genericsCacheSummary: %d is a %s, not a fn or def\n",
-           ast->id, ast->astTagAsString());
+           ast->id,
+           ast->astTagAsString());
   }
 }
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -235,16 +241,16 @@ void genericsCacheSummary(BaseAST* ast) {
 
 SymbolMapScopeCache genericsCache;
 
-SymbolMapScopeCacheEntry::SymbolMapScopeCacheEntry(FnSymbol* ifn, SymbolMap* imap) :
-  fn(ifn), map(*imap) { }
+SymbolMapScopeCacheEntry::SymbolMapScopeCacheEntry(FnSymbol* ifn,
+                                                   SymbolMap* imap)
+  : fn(ifn), map(*imap) {}
 
-void
-addCache(SymbolMapScopeCache& cache,
-         FnSymbol*       oldFn,
-         FnSymbol*       fn,
-         SymbolMap*      map) {
+void addCache(SymbolMapScopeCache& cache,
+              FnSymbol* oldFn,
+              FnSymbol* fn,
+              SymbolMap* map) {
   Vec<SymbolMapScopeCacheEntry*>* entries = cache.get(oldFn);
-  SymbolMapScopeCacheEntry*       entry = new SymbolMapScopeCacheEntry(fn, map);
+  SymbolMapScopeCacheEntry* entry = new SymbolMapScopeCacheEntry(fn, map);
 
   if (entries) {
     entries->add(entry);
@@ -256,18 +262,16 @@ addCache(SymbolMapScopeCache& cache,
   }
 }
 
+static bool isApplicableInstantiation(VisibilityInfo& visInfo, FnSymbol* cgi);
 
-static bool isApplicableInstantiation(VisibilityInfo& visInfo,
-                                      FnSymbol* cgi);
-
-FnSymbol*
-checkCache(SymbolMapScopeCache& cache, FnSymbol* oldFn,
-           VisibilityInfo* visInfo, SymbolMap* map)
-{
+FnSymbol* checkCache(SymbolMapScopeCache& cache,
+                     FnSymbol* oldFn,
+                     VisibilityInfo* visInfo,
+                     SymbolMap* map) {
   if (Vec<SymbolMapScopeCacheEntry*>* entries = cache.get(oldFn)) {
     forv_Vec(SymbolMapScopeCacheEntry, entry, *entries) {
       if (isCacheEntryMatch(map, &entry->map) &&
-          (visInfo == NULL || isApplicableInstantiation(*visInfo, entry->fn)) )
+          (visInfo == NULL || isApplicableInstantiation(*visInfo, entry->fn)))
         return entry->fn;
     }
   }
@@ -275,13 +279,9 @@ checkCache(SymbolMapScopeCache& cache, FnSymbol* oldFn,
   return NULL;
 }
 
-
-void
-freeCache(SymbolMapScopeCache& cache) {
+void freeCache(SymbolMapScopeCache& cache) {
   form_Map(SymbolMapScopeCacheElem, elem, cache) {
-    forv_Vec(SymbolMapScopeCacheEntry, entry, *elem->value) {
-      delete entry;
-    }
+    forv_Vec(SymbolMapScopeCacheEntry, entry, *elem->value) { delete entry; }
     delete elem->value;
   }
   cache.clear();
@@ -321,8 +321,7 @@ void cleanupCacheInfo(FnSymbol* fn) {
 static bool addOneParentInfo(std::vector<GenericsCacheInfo*>& parentInfos,
                              Expr* expr) {
   FnSymbol* parentFn = expr->getFunction();
-  if (parentFn->cacheInfo == NULL)
-    return false;
+  if (parentFn->cacheInfo == NULL) return false;
 
   parentInfos.push_back(parentFn->cacheInfo);
   return true;
@@ -331,20 +330,20 @@ static bool addOneParentInfo(std::vector<GenericsCacheInfo*>& parentInfos,
 // Generate a CalledFunInfo for 'candidFn' based on 'visInfo'
 // and add it to all cacheInfos in 'parentInfos'.
 static void updateOneCandidate(std::vector<GenericsCacheInfo*>& parentInfos,
-                               FnSymbol* candidFn, VisibilityInfo& visInfo) {
+                               FnSymbol* candidFn,
+                               VisibilityInfo& visInfo) {
   if (candidFn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
-      candidFn->hasFlag(FLAG_BEGIN) ||
-      candidFn->hasFlag(FLAG_ON))
+      candidFn->hasFlag(FLAG_BEGIN) || candidFn->hasFlag(FLAG_ON))
     return; // do not record
 
-  CalledFunInfo cfi(candidFn->name, getVisibilityScope(candidFn->defPoint),
+  CalledFunInfo cfi(candidFn->name,
+                    getVisibilityScope(candidFn->defPoint),
                     visInfo.visitedScopes);
 
   // Performance opt: skip this loop if the previous "best" candidate
   // had the same name and scope. ("scope" means its defPoint->parentExpr.)
 
-  for_vector(GenericsCacheInfo, pInfo, parentInfos)
-    pInfo->infos.push_back(cfi);
+  for_vector(GenericsCacheInfo, pInfo, parentInfos) pInfo->infos.push_back(cfi);
 }
 
 //
@@ -380,8 +379,7 @@ void updateCacheInfosForACall(VisibilityInfo& visInfo,
     return;
 
   for (int depth = 0; depth < visInfo.poiDepth - 1; depth++)
-    if (!addOneParentInfo(parentInfos, visInfo.instnPoints[depth]))
-      break;
+    if (!addOneParentInfo(parentInfos, visInfo.instnPoints[depth])) break;
 
   if (best1) updateOneCandidate(parentInfos, best1->fn, visInfo);
   if (best2) updateOneCandidate(parentInfos, best2->fn, visInfo);
@@ -399,10 +397,9 @@ void updateCacheInfosForACall(VisibilityInfo& visInfo,
 // this cached instantiation not applicable, return false.
 //
 static bool analyzeVisitedScopes(std::vector<CalledFunInfo*>& toProcess,
-                                              VisibilityInfo& visInfo,
-                                                         int& remainingCFIs,
-                                                         int  startVS)
-{
+                                 VisibilityInfo& visInfo,
+                                 int& remainingCFIs,
+                                 int startVS) {
   int sizeCI = (int)toProcess.size(); // usu. at most a couple of elements
   int sizeVS = (int)visInfo.visitedScopes.size();
 
@@ -455,17 +452,16 @@ static bool analyzeVisitedScopes(std::vector<CalledFunInfo*>& toProcess,
 //   test/functions/generic/poi/expBySquaring-repro.chpl
 //
 static void visitMorePOIs(std::vector<CalledFunInfo*>& toProcess,
-                          VisibilityInfo&              visInfoOrig,
-                          int&                         remainingCFIs)
-{
-// Implementation: we call getVisibleFunctions() to get the official order of
-// scope traversal, following the steps in findVisibleFunctionsAndCandidates().
-// All we need from getVisibleFunctions is a vector of scopes,
-// so use a dummy name to avoid useless picking up any visible functions.
-//
-// Also we do not want to modify the original 'visInfo' and 'visited', as they
-// may be needed for further *real* calls to findVisibleFunctions(), ex. if
-// the current candidate ends up not applicable. So, use temporary variables.
+                          VisibilityInfo& visInfoOrig,
+                          int& remainingCFIs) {
+  // Implementation: we call getVisibleFunctions() to get the official order of
+  // scope traversal, following the steps in findVisibleFunctionsAndCandidates().
+  // All we need from getVisibleFunctions is a vector of scopes,
+  // so use a dummy name to avoid useless picking up any visible functions.
+  //
+  // Also we do not want to modify the original 'visInfo' and 'visited', as they
+  // may be needed for further *real* calls to findVisibleFunctions(), ex. if
+  // the current candidate ends up not applicable. So, use temporary variables.
 
   int numVisitedVis = 0;
   const char* dummyName = astr("");
@@ -474,29 +470,26 @@ static void visitMorePOIs(std::vector<CalledFunInfo*>& toProcess,
 
   Vec<FnSymbol*> visibleFns;
   PtrSet<BlockStmt*> visited(visInfoOrig.visitedScopes.begin(),
-                               visInfoOrig.visitedScopes.end());
+                             visInfoOrig.visitedScopes.end());
   do {
     visInfo.poiDepth++;
 
-    getMoreVisibleFunctionsOrMethods(dummyName, visInfoOrig.call,
-                        &visInfo, &visited, visibleFns);
+    getMoreVisibleFunctionsOrMethods(
+      dummyName, visInfoOrig.call, &visInfo, &visited, visibleFns);
 
     if (analyzeVisitedScopes(toProcess, visInfo, remainingCFIs, numVisitedVis))
       return;
 
     numVisitedVis = (int)visInfo.visitedScopes.size();
     advanceCurrStart(visInfo);
-  }
-  while
-    (remainingCFIs > 0 && visInfo.currStart != NULL);
+  } while (remainingCFIs > 0 && visInfo.currStart != NULL);
 }
 
 //
 // Is the cached generic instantiation 'fn' applicable to the call
 // described by 'visInfo' ?
 //
-static bool isApplicableInstantiation(VisibilityInfo& visInfo, FnSymbol* fn)
-{
+static bool isApplicableInstantiation(VisibilityInfo& visInfo, FnSymbol* fn) {
   GenericsCacheInfo* cacheInfo = fn->cacheInfo;
   if (cacheInfo == NULL) return true;
   int sizeCI = cacheInfo->size();
@@ -505,8 +498,7 @@ static bool isApplicableInstantiation(VisibilityInfo& visInfo, FnSymbol* fn)
   std::vector<CalledFunInfo*> toProcess(sizeCI); // working copy
   for (int i = 0; i < sizeCI; i++) toProcess[i] = &(cacheInfo->infos[i]);
 
-  if (analyzeVisitedScopes(toProcess, visInfo, remainingCFIs, 0))
-      return false;
+  if (analyzeVisitedScopes(toProcess, visInfo, remainingCFIs, 0)) return false;
 
   if (remainingCFIs > 0 && visInfo.nextPOI != NULL)
     visitMorePOIs(toProcess, visInfo, remainingCFIs);

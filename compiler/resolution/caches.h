@@ -42,27 +42,24 @@ class ResolutionCandidate;
 //   freeCache(cache): frees memory associated with cache
 //
 class SymbolMapCacheEntry {
-public:
+ public:
   SymbolMapCacheEntry(FnSymbol* ifn, SymbolMap* imap);
 
   FnSymbol* fn;
   SymbolMap map;
 };
 
-typedef Map<FnSymbol*,     Vec<SymbolMapCacheEntry*>*> SymbolMapCache;
+typedef Map<FnSymbol*, Vec<SymbolMapCacheEntry*>*> SymbolMapCache;
 typedef MapElem<FnSymbol*, Vec<SymbolMapCacheEntry*>*> SymbolMapCacheElem;
 
+void addCache(SymbolMapCache& cache,
+              FnSymbol* oldFn,
+              FnSymbol* newFn,
+              SymbolMap* map);
 
-void      addCache(SymbolMapCache& cache,
-                   FnSymbol*       oldFn,
-                   FnSymbol*       newFn,
-                   SymbolMap*      map);
+FnSymbol* checkCache(SymbolMapCache& cache, FnSymbol* oldFn, SymbolMap* map);
 
-FnSymbol* checkCache(SymbolMapCache& cache,
-                     FnSymbol*       oldFn,
-                     SymbolMap*      map);
-
-void      freeCache(SymbolMapCache& cache);
+void freeCache(SymbolMapCache& cache);
 
 //
 // Caches to avoid creating multiple identical wrappers and
@@ -90,29 +87,30 @@ extern SymbolMapCache promotionsCache;
 //   freeCache(cache): frees memory associated with cache
 //
 class SymbolMapScopeCacheEntry {
-public:
+ public:
   SymbolMapScopeCacheEntry(FnSymbol* ifn, SymbolMap* imap);
 
   FnSymbol* fn;
   SymbolMap map;
 };
 
-typedef Map<FnSymbol*,     Vec<SymbolMapScopeCacheEntry*>*> SymbolMapScopeCache;
-typedef MapElem<FnSymbol*, Vec<SymbolMapScopeCacheEntry*>*> SymbolMapScopeCacheElem;
+typedef Map<FnSymbol*, Vec<SymbolMapScopeCacheEntry*>*> SymbolMapScopeCache;
+typedef MapElem<FnSymbol*, Vec<SymbolMapScopeCacheEntry*>*>
+  SymbolMapScopeCacheElem;
 
-void      addCache(SymbolMapScopeCache& cache,
-                   FnSymbol*       oldFn,
-                   FnSymbol*       newFn,
-                   SymbolMap*      map);
+void addCache(SymbolMapScopeCache& cache,
+              FnSymbol* oldFn,
+              FnSymbol* newFn,
+              SymbolMap* map);
 
 FnSymbol* checkCache(SymbolMapScopeCache& cache,
-                     FnSymbol*            oldFn,
-                     VisibilityInfo*      visInfo,
-                     SymbolMap*           map);
+                     FnSymbol* oldFn,
+                     VisibilityInfo* visInfo,
+                     SymbolMap* map);
 
-void      freeCache(SymbolMapScopeCache& cache);
+void freeCache(SymbolMapScopeCache& cache);
 
-void      advanceCurrStart(VisibilityInfo& visInfo);
+void advanceCurrStart(VisibilityInfo& visInfo);
 
 //
 // Caches to avoid creating multiple identical wrappers and

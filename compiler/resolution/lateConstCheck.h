@@ -22,4 +22,4 @@
 
 class BaseAST;
 
-void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst);
+void lateConstCheck(std::map<BaseAST*, BaseAST*>* reasonNotConst);

@@ -63,15 +63,15 @@ static child type could end up calling something in the parent.
 #include <set>
 #include <vector>
 
-bool                            inDynamicDispatchResolution = false;
+bool inDynamicDispatchResolution = false;
 
 typedef MapElem<FnSymbol*, Vec<FnSymbol*>*> VirtualMapElem;
 Map<FnSymbol*, Vec<FnSymbol*>*> virtualRootsMap;
 Map<FnSymbol*, Vec<FnSymbol*>*> virtualParentsMap;
 Map<FnSymbol*, Vec<FnSymbol*>*> virtualChildrenMap;
 
-Map<Type*,     Vec<FnSymbol*>*> virtualMethodTable;
-Map<FnSymbol*, int>             virtualMethodMap;
+Map<Type*, Vec<FnSymbol*>*> virtualMethodTable;
+Map<FnSymbol*, int> virtualMethodMap;
 
 static bool buildVirtualMaps();
 
@@ -122,15 +122,12 @@ void resolveDynamicDispatches() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void addAllToVirtualMaps(FnSymbol*      pfn,
-                                AggregateType* pct);
+static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct);
 
-static void addToVirtualMaps(FnSymbol*      pfn,
-                             AggregateType* ct,
-                             FnSymbol*      cfn);
+static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct, FnSymbol* cfn);
 
-static void collectMethods(FnSymbol*               pfn,
-                           AggregateType*          ct,
+static void collectMethods(FnSymbol* pfn,
+                           AggregateType* ct,
                            std::vector<FnSymbol*>& methods);
 
 static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn);
@@ -179,9 +176,7 @@ static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct) {
 
         collectMethods(pfn, ct, methods);
 
-        for_vector(FnSymbol, cfn, methods) {
-          addToVirtualMaps(pfn, ct, cfn);
-        }
+        for_vector(FnSymbol, cfn, methods) { addToVirtualMaps(pfn, ct, cfn); }
       }
 
       // Recurse over this child's children
@@ -193,12 +188,11 @@ static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct) {
 // Returns cfn if it's not generic
 // if it is generic, returns a function made by instantiating with
 // the same types as pfn.
-static FnSymbol* getInstantiatedFunction(FnSymbol* pfn,
-                                         AggregateType* ct,
-                                         FnSymbol* cfn) {
-  ArgSymbol*     _this   = cfn->getFormal(2);
+static FnSymbol*
+getInstantiatedFunction(FnSymbol* pfn, AggregateType* ct, FnSymbol* cfn) {
+  ArgSymbol* _this = cfn->getFormal(2);
   AggregateType* _thisAt = getReceiverClassType(cfn);
-  SymbolMap      subs;
+  SymbolMap subs;
 
   if (_thisAt->isGeneric() == true) {
     subs.put(_this, ct->symbol);
@@ -238,13 +232,9 @@ static FnSymbol* getInstantiatedFunction(FnSymbol* pfn,
 
     return fn;
   }
-
 }
 
-
-static void addToVirtualMaps(FnSymbol*      pfn,
-                             AggregateType* ct,
-                             FnSymbol*      cfn) {
+static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct, FnSymbol* cfn) {
 
   FnSymbol* fn = getInstantiatedFunction(pfn, ct, cfn);
 
@@ -254,19 +244,18 @@ static void addToVirtualMaps(FnSymbol*      pfn,
 // skips the first 2 formals (for method token and `this`)
 static int getNumUserFormals(FnSymbol* fn) {
   int fnN = fn->numFormals();
-  if (fnN < 2)
-    INT_FATAL("expected method token and this");
-  return fnN-2;
+  if (fnN < 2) INT_FATAL("expected method token and this");
+  return fnN - 2;
 }
 
 // formal index starts from 1 but skips the first 2 formals
 // (for method token and `this`)
 static ArgSymbol* getUserFormal(FnSymbol* fn, int idx) {
-  return fn->getFormal(idx+2);
+  return fn->getFormal(idx + 2);
 }
 
-static void collectMethods(FnSymbol*               pfn,
-                           AggregateType*          ct,
+static void collectMethods(FnSymbol* pfn,
+                           AggregateType* ct,
                            std::vector<FnSymbol*>& methods) {
   AggregateType* fromType = ct;
 
@@ -301,42 +290,35 @@ static void collectMethods(FnSymbol*               pfn,
 
 static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn) {
 
-  if (fn->name != gn->name)
-    return false;
+  if (fn->name != gn->name) return false;
 
   int nFormals = fn->numFormals();
 
-  if (nFormals != gn->numFormals())
-    return false;
+  if (nFormals != gn->numFormals()) return false;
 
   for (int i = 3; i <= nFormals; i++) {
     ArgSymbol* fa = fn->getFormal(i);
     ArgSymbol* ga = gn->getFormal(i);
 
-    if (fa->name != ga->name)
-      return false;
+    if (fa->name != ga->name) return false;
   }
 
   return true;
 }
 
-
 static bool possibleUserSignatureMatch(FnSymbol* fn, FnSymbol* gn) {
 
-  if (fn->name != gn->name)
-    return false;
+  if (fn->name != gn->name) return false;
 
   int nUserFormals = getNumUserFormals(fn);
 
-  if (nUserFormals != getNumUserFormals(gn))
-    return false;
+  if (nUserFormals != getNumUserFormals(gn)) return false;
 
   for (int i = 1; i <= nUserFormals; i++) {
     ArgSymbol* fa = getUserFormal(fn, i);
     ArgSymbol* ga = getUserFormal(gn, i);
 
-    if (fa->name != ga->name)
-      return false;
+    if (fa->name != ga->name) return false;
   }
 
   return true;
@@ -345,15 +327,15 @@ static bool possibleUserSignatureMatch(FnSymbol* fn, FnSymbol* gn) {
 static bool checkOverrides(FnSymbol* fn) {
   ModuleSymbol* parentMod = fn->getModule();
   // check overrides for a given function if any of these are true...
-          // (1) the flag is on and either
-          //     (a) the function is not compiler-generated or
-          //     (b) --devel is on
-          //  or...
+  // (1) the flag is on and either
+  //     (a) the function is not compiler-generated or
+  //     (b) --devel is on
+  //  or...
   return ((fOverrideChecking && (!fn->isCompilerGenerated() || developer)) ||
           // (2) the function is in the modules/ hierarchy
           //     (which we manage and want to keep clean)
           (parentMod && parentMod->modTag != MOD_USER)) &&
-         !fn->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION) ;
+         !fn->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
 }
 
 static bool ignoreOverrides(FnSymbol* fn) {
@@ -361,8 +343,7 @@ static bool ignoreOverrides(FnSymbol* fn) {
     // ignore errors with deinit
     fn->name == astrDeinit ||
     // ignore errors with init
-    fn->isInitializer() ||
-    fn->isCopyInit() ||
+    fn->isInitializer() || fn->isCopyInit() ||
     // ignore errors with postinit
     fn->isPostInitializer();
 }
@@ -375,8 +356,7 @@ static bool ignoreOverrides(FnSymbol* fn) {
 ************************************** | *************************************/
 
 static bool argTypesMatch(ArgSymbol* pa, ArgSymbol* ca) {
-  if (pa->originalIntent == INTENT_OUT &&
-      ca->originalIntent == INTENT_OUT) {
+  if (pa->originalIntent == INTENT_OUT && ca->originalIntent == INTENT_OUT) {
     return isSubType(ca->getValType(), pa->getValType()); // covariant is OK
   } else {
     return (pa->type == ca->type);
@@ -384,24 +364,20 @@ static bool argTypesMatch(ArgSymbol* pa, ArgSymbol* ca) {
 }
 
 static bool signaturesMatch(FnSymbol* pfn, FnSymbol* cfn) {
-  if (pfn->name != cfn->name)
-    return false;
+  if (pfn->name != cfn->name) return false;
 
-  if (pfn->numFormals() != cfn->numFormals())
-    return false;
+  if (pfn->numFormals() != cfn->numFormals()) return false;
 
   for (int i = 3; i <= pfn->numFormals(); i++) {
     ArgSymbol* pa = pfn->getFormal(i);
     ArgSymbol* ca = cfn->getFormal(i);
 
-    if (pa->name != ca->name)
-      return false;
+    if (pa->name != ca->name) return false;
 
     if (pa->originalIntent != ca->originalIntent)
       return false; // intents do not match
 
-    if (!argTypesMatch(pa, ca))
-      return false; // type is not compatible
+    if (!argTypesMatch(pa, ca)) return false; // type is not compatible
   }
 
   // all the checks have passed, so return OK
@@ -428,10 +404,10 @@ static void printMismatchNote(FnSymbol* pfn, FnSymbol* cfn) {
 
     if (pa->originalIntent != ca->originalIntent) {
       USR_PRINT(cfn, "intent for argument '%s' does not match", pa->name);
-      USR_PRINT(pa, "base method uses %s",
-                     intentDescrString(pa->originalIntent));
-      USR_PRINT(ca, "overriding method uses %s",
-                     intentDescrString(ca->originalIntent));
+      USR_PRINT(
+        pa, "base method uses %s", intentDescrString(pa->originalIntent));
+      USR_PRINT(
+        ca, "overriding method uses %s", intentDescrString(ca->originalIntent));
       return;
     }
 
@@ -444,14 +420,12 @@ static void printMismatchNote(FnSymbol* pfn, FnSymbol* cfn) {
   }
 }
 
-
 static void resolveOverrideAndAdjustMaps(FnSymbol* pfn, FnSymbol* cfn) {
   resolveSignature(cfn);
 
-  if (signaturesMatch(pfn, cfn) &&
-      evaluateWhereClause(cfn) &&
+  if (signaturesMatch(pfn, cfn) && evaluateWhereClause(cfn) &&
       evaluateWhereClause(pfn) &&
-      !pfn->isPostInitializer()) {  // postinits don't override
+      !pfn->isPostInitializer()) { // postinits don't override
 
     resolveSpecifiedReturnType(cfn);
     resolveFunction(cfn);
@@ -469,27 +443,31 @@ static void resolveOverrideAndAdjustMaps(FnSymbol* pfn, FnSymbol* cfn) {
         if (cDefFn) {
           if (pFormal->hasFlag(FLAG_INSTANTIATED_PARAM) &&
               cFormal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-            USR_FATAL_CONT(cfn, "param default arguments in overridden methods"
-                                " are not yet supported.");
+            USR_FATAL_CONT(cfn,
+                           "param default arguments in overridden methods"
+                           " are not yet supported.");
           }
           if (pFormal->hasFlag(FLAG_TYPE_VARIABLE) &&
               cFormal->hasFlag(FLAG_TYPE_VARIABLE)) {
-            USR_FATAL_CONT(cfn, "type default arguments in overridden methods"
-                                " are not yet supported.");
+            USR_FATAL_CONT(cfn,
+                           "type default arguments in overridden methods"
+                           " are not yet supported.");
           }
         }
       }
     }
 
-    if (checkOverrides(cfn) &&
-        !ignoreOverrides(cfn) &&
+    if (checkOverrides(cfn) && !ignoreOverrides(cfn) &&
         !cfn->hasFlag(FLAG_OVERRIDE)) {
       const char* ptype = pfn->_this->type->symbol->name;
       const char* ctype = cfn->_this->type->symbol->name;
-      USR_FATAL_CONT(cfn, "%s.%s overrides parent class method %s.%s but "
-                          "missing override keyword",
-                          ctype, cfn->name,
-                          ptype, cfn->name);
+      USR_FATAL_CONT(cfn,
+                     "%s.%s overrides parent class method %s.%s but "
+                     "missing override keyword",
+                     ctype,
+                     cfn->name,
+                     ptype,
+                     cfn->name);
       // Add the flag to avoid duplicate errors
       cfn->addFlag(FLAG_OVERRIDE);
     }
@@ -527,10 +505,8 @@ static void resolveOverrideAndAdjustMaps(FnSymbol* pfn, FnSymbol* cfn) {
 
       USR_FATAL_CONT(pfn, "%s function '%s'", pfnThrowing, toString(pfn));
 
-      USR_FATAL_CONT(cfn,
-                     "overridden by %s function '%s'",
-                     cfnThrowing,
-                     toString(cfn));
+      USR_FATAL_CONT(
+        cfn, "overridden by %s function '%s'", cfnThrowing, toString(cfn));
 
       USR_STOP();
 
@@ -542,34 +518,34 @@ static void resolveOverrideAndAdjustMaps(FnSymbol* pfn, FnSymbol* cfn) {
 
 static void overrideIterator(FnSymbol* pfn, FnSymbol* cfn) {
   AggregateType* pfnRetType = toAggregateType(pfn->retType);
-  IteratorInfo*  pfnInfo    = pfnRetType->iteratorInfo;
-  FnSymbol*      pfnValue   = pfnInfo->getValue;
+  IteratorInfo* pfnInfo = pfnRetType->iteratorInfo;
+  FnSymbol* pfnValue = pfnInfo->getValue;
 
   AggregateType* cfnRetType = toAggregateType(cfn->retType);
-  IteratorInfo*  cfnInfo    = cfnRetType->iteratorInfo;
-  FnSymbol*      cfnValue   = cfnInfo->getValue;
+  IteratorInfo* cfnInfo = cfnRetType->iteratorInfo;
+  FnSymbol* cfnValue = cfnInfo->getValue;
 
   if (isSubType(cfnValue->retType, pfnValue->retType) == true) {
-    AggregateType* pic          = pfnInfo->iclass;
-    AggregateType* cic          = cfnInfo->iclass;
+    AggregateType* pic = pfnInfo->iclass;
+    AggregateType* cic = cfnInfo->iclass;
 
-    Type*          pthisType    = pfnInfo->iterator->_this->typeInfo();
-    Type*          cthisType    = cfnInfo->iterator->_this->typeInfo();
+    Type* pthisType = pfnInfo->iterator->_this->typeInfo();
+    Type* cthisType = cfnInfo->iterator->_this->typeInfo();
 
     AggregateType* atPfnRetType = toAggregateType(pfn->retType);
     AggregateType* atCfnRetType = toAggregateType(cfn->retType);
 
-    AggregateType* atCthisType  = toAggregateType(cthisType);
+    AggregateType* atCthisType = toAggregateType(cthisType);
 
     INT_ASSERT(atPfnRetType != NULL);
     INT_ASSERT(atCfnRetType != NULL);
-    INT_ASSERT(atCthisType  != NULL);
+    INT_ASSERT(atCthisType != NULL);
 
     atPfnRetType->dispatchChildren.add_exclusive(atCfnRetType);
     atCfnRetType->dispatchParents.add_exclusive(atPfnRetType);
 
     INT_ASSERT(cic->symbol->hasFlag(FLAG_ITERATOR_CLASS) == true);
-    INT_ASSERT(atCthisType->dispatchParents.n              == 1);
+    INT_ASSERT(atCthisType->dispatchParents.n == 1);
 
     if (atCthisType->dispatchParents.only() == pthisType) {
       AggregateType* parent = cic->dispatchParents.only();
@@ -581,7 +557,7 @@ static void overrideIterator(FnSymbol* pfn, FnSymbol* cfn) {
 
         INT_ASSERT(atCic != NULL);
 
-        int            item  = parent->dispatchChildren.index(atCic);
+        int item = parent->dispatchChildren.index(atCic);
 
         parent->dispatchChildren.remove(item);
 
@@ -643,19 +619,16 @@ static bool isOverrideableMethod(FnSymbol* fn) {
   if (AggregateType* at = getReceiverClassType(fn)) {
     INT_ASSERT(at->isClass());
 
-    return fn->name != astrInit &&
-           fn->name != astrSuper &&
+    return fn->name != astrInit && fn->name != astrSuper &&
            !fn->hasFlag(FLAG_WRAPPER);
   }
 
   return false;
 }
 
-static bool isVirtualizableMethod(FnSymbol *fn) {
-  return isOverrideableMethod(fn) &&
-         !fn->isTypeMethod() &&
-         !fn->hasFlag(FLAG_NO_PARENS) &&
-         fn->retTag != RET_PARAM &&
+static bool isVirtualizableMethod(FnSymbol* fn) {
+  return isOverrideableMethod(fn) && !fn->isTypeMethod() &&
+         !fn->hasFlag(FLAG_NO_PARENS) && fn->retTag != RET_PARAM &&
          fn->retTag != RET_TYPE;
 }
 
@@ -712,7 +685,7 @@ static void virtualDispatchUpdateRoots(FnSymbol* pfn, FnSymbol* cfn) {
 
       } else if (isVirtualChild(fns->v[i], pfn) == true) {
         fns->v[i] = pfn;
-        added     = true;
+        added = true;
       }
     }
 
@@ -739,8 +712,7 @@ static bool isVirtualChild(FnSymbol* child, FnSymbol* parent) {
 }
 
 static void clearOneMap(Map<FnSymbol*, Vec<FnSymbol*>*>& map) {
-  form_Map(VirtualMapElem, el, map)
-    delete el->value;
+  form_Map(VirtualMapElem, el, map) delete el->value;
   map.clear();
 }
 
@@ -756,9 +728,8 @@ static void clearRootsAndChildren() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void addVirtualMethodTableEntry(Type*     type,
-                                       FnSymbol* fn,
-                                       bool      exclusive);
+static void
+addVirtualMethodTableEntry(Type* type, FnSymbol* fn, bool exclusive);
 
 static void buildVirtualMethodTable() {
   Vec<Type*> ctq;
@@ -810,8 +781,7 @@ static void buildVirtualMethodTable() {
 
     if (AggregateType* at = toAggregateType(t)) {
       forv_Vec(AggregateType, child, at->dispatchChildren) {
-        if (child)
-          ctq.add(child);
+        if (child) ctq.add(child);
       }
     }
   }
@@ -826,12 +796,11 @@ static void buildVirtualMethodTable() {
 
 // If exclusive == true, check for fn already existing in the virtual method
 // table and do not add it a second time if it is already present.
-static void addVirtualMethodTableEntry(Type*     type,
-                                       FnSymbol* fn,
-                                       bool      exclusive) {
+static void
+addVirtualMethodTableEntry(Type* type, FnSymbol* fn, bool exclusive) {
   type = type->getValType();
-  Vec<FnSymbol*>* fns   = virtualMethodTable.get(type);
-  bool            found = false;
+  Vec<FnSymbol*>* fns = virtualMethodTable.get(type);
+  bool found = false;
 
   if (type->symbol->hasFlag(FLAG_GENERIC)) return;
 
@@ -934,10 +903,9 @@ static void printDispatchInfo() {
 
 // Remove from 'toTrim' the FnSymbols not in 'fns_in_vmt'.
 static void trimVirtualMap(std::set<FnSymbol*>& fns_in_vmt,
-                           Map<FnSymbol*, Vec<FnSymbol*>*>& toTrim)
-{
+                           Map<FnSymbol*, Vec<FnSymbol*>*>& toTrim) {
   form_Map(VirtualMapElem, el, toTrim) {
-    if (! fns_in_vmt.count(el->key)) {
+    if (!fns_in_vmt.count(el->key)) {
       // We should not even be looking here.
       delete el->value;
       el->value = NULL;
@@ -954,8 +922,7 @@ static void trimVirtualMap(std::set<FnSymbol*>& fns_in_vmt,
         // Build a new Vec. Redo the scan from the beginning.
         Vec<FnSymbol*>* newV = new Vec<FnSymbol*>();
         forv_Vec(FnSymbol, fn2, *oldV) {
-          if (fns_in_vmt.count(fn2))
-            newV->add(fn2);
+          if (fns_in_vmt.count(fn2)) newV->add(fn2);
         }
         delete oldV;
         el->value = newV;
@@ -968,15 +935,13 @@ static void trimVirtualMap(std::set<FnSymbol*>& fns_in_vmt,
 // removes entries in virtualChildrenMap that are not in virtualMethodTable.
 // such entries could not be called and should be dead-code eliminated.
 static void filterVirtualChildren() {
-  typedef MapElem<Type*,     Vec<FnSymbol*>*> VmtMapElem;
+  typedef MapElem<Type*, Vec<FnSymbol*>*> VmtMapElem;
 
   std::set<FnSymbol*> fns_in_vmt;
 
-  form_Map(VmtMapElem, el,  virtualMethodTable) {
+  form_Map(VmtMapElem, el, virtualMethodTable) {
     if (el->value) {
-      forv_Vec(FnSymbol, fn, *el->value) {
-        fns_in_vmt.insert(fn);
-      }
+      forv_Vec(FnSymbol, fn, *el->value) { fns_in_vmt.insert(fn); }
     }
   }
 
@@ -985,7 +950,7 @@ static void filterVirtualChildren() {
 
   // Assume all "roots" are to stay, so just trim not-to-be-used Vecs.
   form_Map(VirtualMapElem, el, virtualRootsMap) {
-    if (! fns_in_vmt.count(el->key)) {
+    if (!fns_in_vmt.count(el->key)) {
       delete el->value;
       el->value = NULL;
     }
@@ -993,8 +958,8 @@ static void filterVirtualChildren() {
 }
 
 // map from this type -> name -> fns
-typedef std::map<const char*, std::vector<FnSymbol*> > NameToFns;
-typedef std::map<AggregateType*, NameToFns > TypeToNameToFns;
+typedef std::map<const char*, std::vector<FnSymbol*>> NameToFns;
+typedef std::map<AggregateType*, NameToFns> TypeToNameToFns;
 
 // Returns the receiver's canonical class type for a method on a class;
 // excludes methods on owned/shared records as they are not subject to
@@ -1017,14 +982,13 @@ static AggregateType* getReceiverClassType(FnSymbol* fn) {
   return nullptr;
 }
 
-static void findFunctionsProbablyMatching(TypeToNameToFns & map,
+static void findFunctionsProbablyMatching(TypeToNameToFns& map,
                                           FnSymbol* theFn,
                                           AggregateType* ct,
-                                          std::vector<FnSymbol*> & matches) {
+                                          std::vector<FnSymbol*>& matches) {
   // Find sub-map
-  if (map.count(ct) &&
-      map[ct].count(theFn->name)) {
-    std::vector<FnSymbol*> & fns = map[ct][theFn->name];
+  if (map.count(ct) && map[ct].count(theFn->name)) {
+    std::vector<FnSymbol*>& fns = map[ct][theFn->name];
 
     // Find functions probably matching here
     for_vector(FnSymbol, fn, fns) {
@@ -1063,10 +1027,8 @@ static FnSymbol* getOverrideCandidate(FnSymbol* fn) {
 
 // This function helps avoid redundant errors for different
 // instantiations of a generic
-static FnSymbol* getOverrideCandidateGenericFn(FnSymbol* fn)
-{
-  while (fn->instantiatedFrom != NULL)
-    fn = fn->instantiatedFrom;
+static FnSymbol* getOverrideCandidateGenericFn(FnSymbol* fn) {
+  while (fn->instantiatedFrom != NULL) fn = fn->instantiatedFrom;
   return fn;
 }
 
@@ -1097,8 +1059,7 @@ static void checkMethodsOverride() {
     if (aFn->hasFlag(FLAG_OVERRIDE)) {
 
       if (aFn->_this == NULL) {
-        USR_FATAL("'override' cannot be applied to non-method '%s'",
-                  aFn->name);
+        USR_FATAL("'override' cannot be applied to non-method '%s'", aFn->name);
       }
 
       //
@@ -1108,13 +1069,15 @@ static void checkMethodsOverride() {
       Type* thisType = canonicalClassType(aFn->_this->getValType());
       if (!isClass(thisType)) {
         const char* type = "non-class";
-        if (isRecord(thisType))
-          type = "record";
+        if (isRecord(thisType)) type = "record";
         FnSymbol* eFn = getOverrideCandidateGenericFn(aFn);
         if (erroredFunctions.count(eFn) == 0) {
-          USR_FATAL_CONT(aFn, "%s.%s override keyword present but "
+          USR_FATAL_CONT(aFn,
+                         "%s.%s override keyword present but "
                          "%s methods cannot override",
-                         thisType->symbol->name, aFn->name, type);
+                         thisType->symbol->name,
+                         aFn->name,
+                         type);
           erroredFunctions.insert(eFn);
           continue;
         }
@@ -1122,8 +1085,7 @@ static void checkMethodsOverride() {
     }
 
     if (FnSymbol* fn = getOverrideCandidate(aFn)) {
-      if (checkOverrides(fn) &&
-          !ignoreOverrides(fn) &&
+      if (checkOverrides(fn) && !ignoreOverrides(fn) &&
           // ignore duplicate errors
           erroredFunctions.count(fn) == 0) {
 
@@ -1134,14 +1096,16 @@ static void checkMethodsOverride() {
         if (fn->hasFlag(FLAG_OVERRIDE)) {
           const char* msg = NULL;
 
-          if (!isOverrideableMethod(fn))
-            msg = "signature is not overrideable";
+          if (!isOverrideableMethod(fn)) msg = "signature is not overrideable";
 
           if (msg != NULL) {
             FnSymbol* eFn = getOverrideCandidateGenericFn(fn);
             if (erroredFunctions.count(eFn) == 0) {
-              USR_FATAL_CONT(fn, "%s.%s override keyword present but %s",
-                             ct->symbol->name, fn->name, msg);
+              USR_FATAL_CONT(fn,
+                             "%s.%s override keyword present but %s",
+                             ct->symbol->name,
+                             fn->name,
+                             msg);
               erroredFunctions.insert(eFn);
             }
             continue;
@@ -1198,7 +1162,7 @@ static void checkMethodsOverride() {
                     pfn->instantiatedFrom != NULL) {
 
                   int numFormals = fn->numFormals();
-                  for (int i=3; i <= numFormals; i++) {
+                  for (int i = 3; i <= numFormals; i++) {
                     ArgSymbol* fnArg = fn->getFormal(i);
                     ArgSymbol* pfnArg = pfn->getFormal(i);
                     if (fnArg->getValType() != pfnArg->getValType() ||
@@ -1209,8 +1173,7 @@ static void checkMethodsOverride() {
                   }
                 }
 
-                if (typeParamDiffers == false &&
-                    signaturesMatch(pfn, fn) &&
+                if (typeParamDiffers == false && signaturesMatch(pfn, fn) &&
                     evaluateWhereClause(pfn)) {
                   foundMatch = true;
                 }
@@ -1233,7 +1196,8 @@ static void checkMethodsOverride() {
                   if (possibleSignatureMatch(pfn, fn)) {
                     FnSymbol* fnIns = getInstantiatedFunction(pfn, ct, fn);
                     resolveSignature(fnIns);
-                    if (signaturesMatch(pfn, fnIns) && evaluateWhereClause(pfn)) {
+                    if (signaturesMatch(pfn, fnIns) &&
+                        evaluateWhereClause(pfn)) {
                       foundMatch = true;
                     }
                   }
@@ -1270,10 +1234,12 @@ static void checkMethodsOverride() {
             FnSymbol* eFn = getOverrideCandidateGenericFn(fn);
             if (erroredFunctions.count(eFn) == 0) {
               if (fn->hasFlag(FLAG_OVERRIDE)) {
-                USR_FATAL_CONT(fn, "%s.%s override keyword present but "
-                                    "no superclass method matches signature "
-                                    "to override",
-                                     ct->symbol->name, fn->name);
+                USR_FATAL_CONT(fn,
+                               "%s.%s override keyword present but "
+                               "no superclass method matches signature "
+                               "to override",
+                               ct->symbol->name,
+                               fn->name);
 
                 // additionally report an intent mismatch in case
                 // that was the cause of the override mismatch.
@@ -1282,9 +1248,11 @@ static void checkMethodsOverride() {
                   printMismatchNote(pfn, fn);
                 }
               } else {
-                USR_FATAL_CONT(fn, "%s.%s override keyword required for method "
-                                   "matching signature of superclass method",
-                                   ct->symbol->name, fn->name);
+                USR_FATAL_CONT(fn,
+                               "%s.%s override keyword required for method "
+                               "matching signature of superclass method",
+                               ct->symbol->name,
+                               fn->name);
               }
 
               erroredFunctions.insert(eFn);
@@ -1322,9 +1290,9 @@ void insertDynamicDispatchCalls() {
     if (call->inTree()) {
       if (FnSymbol* fn = call->resolvedFunction()) {
 
-        if (virtualChildrenMap.get(fn) != NULL  &&   // There are overrides
-            wasSuperDot(call)          == false &&   // Not super.<foo>()
-            call->isNamed("init")      == false) {   // Not an initializer
+        if (virtualChildrenMap.get(fn) != NULL && // There are overrides
+            wasSuperDot(call) == false &&         // Not super.<foo>()
+            call->isNamed("init") == false) {     // Not an initializer
           SET_LINENO(call);
 
           // The variable <cid> must have the same size as the type
@@ -1332,13 +1300,13 @@ void insertDynamicDispatchCalls() {
           // transmitted correctly for a remote class.
           // See test/classes/sungeun/remoteDynamicDispatch.chpl
           // (on certain machines and configurations).
-          Type*      cidType = dtInt[INT_SIZE_32];
-          VarSymbol* cid     = newTemp("_virtual_method_tmp_", cidType);
+          Type* cidType = dtInt[INT_SIZE_32];
+          VarSymbol* cid = newTemp("_virtual_method_tmp_", cidType);
 
-          Expr*      _this   = call->get(2);
-          CallExpr*  getCid  = new CallExpr(PRIM_GETCID, _this->copy());
+          Expr* _this = call->get(2);
+          CallExpr* getCid = new CallExpr(PRIM_GETCID, _this->copy());
 
-          Expr*      stmt    = call->getStmtExpr();
+          Expr* stmt = call->getStmtExpr();
 
           stmt->insertBefore(new DefExpr(cid));
           stmt->insertBefore(new CallExpr(PRIM_MOVE, cid, getCid));

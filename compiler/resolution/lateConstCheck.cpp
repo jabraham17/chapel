@@ -50,20 +50,18 @@ static const int breakOnId3 = 0;
 
 static const bool doPrintDebugInfo = false;
 
-#define DEBUG_SYMBOL(sym__) \
-  do { \
+#define DEBUG_SYMBOL(sym__)                                   \
+  do {                                                        \
     if (sym__->id == breakOnId1 || sym__->id == breakOnId2 || \
-        sym__->id == breakOnId3) { \
-      debuggerBreakHere(); \
-    } \
+        sym__->id == breakOnId3) {                            \
+      debuggerBreakHere();                                    \
+    }                                                         \
   } while (0)
 
-static void printReason(BaseAST* reason, BaseAST** lastPrintedReason)
-{
+static void printReason(BaseAST* reason, BaseAST** lastPrintedReason) {
   // First, figure out the module and function it's in
   Expr* expr = toExpr(reason);
-  if (Symbol* s = toSymbol(reason))
-    expr = s->defPoint;
+  if (Symbol* s = toSymbol(reason)) expr = s->defPoint;
   ModuleSymbol* inModule = expr->getModule();
   FnSymbol* inFunction = NULL;
 
@@ -80,8 +78,7 @@ static void printReason(BaseAST* reason, BaseAST** lastPrintedReason)
     compilerGenerated = inFunction->hasFlag(FLAG_COMPILER_GENERATED);
 
   BaseAST* last = *lastPrintedReason;
-  bool same = (last != NULL &&
-               reason->fname() == last->fname() &&
+  bool same = (last != NULL && reason->fname() == last->fname() &&
                reason->linenum() == last->linenum());
 
   if (developer || (user && !compilerGenerated && !same)) {
@@ -93,8 +90,7 @@ static void printReason(BaseAST* reason, BaseAST** lastPrintedReason)
       USR_PRINT(reason, "passed as ref here");
 
     // useful for debugging this pass
-    if (developer)
-      USR_PRINT(reason, "id %i", reason->id);
+    if (developer) USR_PRINT(reason, "id %i", reason->id);
   } else {
     if (TypeSymbol* ts = toTypeSymbol(reason))
       USR_PRINT("to formal of type %s", ts->name);
@@ -102,7 +98,6 @@ static void printReason(BaseAST* reason, BaseAST** lastPrintedReason)
 
   *lastPrintedReason = reason;
 }
-
 
 /*
 If 'fn' is a leader iterator, it does not access its formals
@@ -118,8 +113,7 @@ Getting the follower, which is probably more adequate, is tricker.
 */
 static FnSymbol* getSerialIterator(FnSymbol* fn) {
   if (IteratorGroup* igroup = fn->iteratorGroup)
-    if (fn == igroup->leader)
-      return igroup->serial;
+    if (fn == igroup->leader) return igroup->serial;
 
   // Otherwise stick with the original 'fn', ex. for standalone.
   return fn;
@@ -155,9 +149,7 @@ static void printFormalUseChain(ArgSymbol* formal, UseMap* um) {
     return;
   }
 
-  printf("Printing use chain for formal %s [%d]\n",
-            formal->name,
-            formal->id);
+  printf("Printing use chain for formal %s [%d]\n", formal->name, formal->id);
 
   BaseAST* tmp = formal;
   int count = 0;
@@ -171,8 +163,8 @@ static void printFormalUseChain(ArgSymbol* formal, UseMap* um) {
 
 // Are a tuple's field qualifiers ref instead of const? If so, then some
 // code somewhere set a const tuple element...
-static bool checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal,
-                                 UseMap* um) {
+static bool
+checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal, UseMap* um) {
 
   if (isTupleFunctionToSkip(calledFn)) {
     return false;
@@ -199,8 +191,9 @@ static bool checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal,
   }
 
   if (isFormalIntentConst && !formal->qualType().isConst()) {
-    INT_FATAL(formal, "has const intent %s but not a const qualtype",
-                      intentDescrString(formal->intent));
+    INT_FATAL(formal,
+              "has const intent %s but not a const qualtype",
+              intentDescrString(formal->intent));
   }
 
   DEBUG_SYMBOL(formal);
@@ -242,14 +235,14 @@ static bool checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal,
     } else if (isFormalIntentConst) {
       fieldIntent = constIntentForType(ft);
     } else {
-      INT_FATAL(formal, "unhandled intent %s for formal, field %d",
-                        intentDescrString(formal->intent),
-                        fieldIdx);
+      INT_FATAL(formal,
+                "unhandled intent %s for formal, field %d",
+                intentDescrString(formal->intent),
+                fieldIdx);
     }
 
     // Check ref/ref-if-modified fields in "checkTupleFormalToActual".
-    if (fieldIntent == INTENT_REF_MAYBE_CONST ||
-        fieldIntent == INTENT_REF) {
+    if (fieldIntent == INTENT_REF_MAYBE_CONST || fieldIntent == INTENT_REF) {
       INT_ASSERT(!isFormalIntentConst);
       continue;
     }
@@ -264,17 +257,16 @@ static bool checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal,
       }
 
       // Use the DefExpr only once to print the containing function.
-      BaseAST* pin = !result ? (BaseAST*) formal->defPoint : formal;
+      BaseAST* pin = !result ? (BaseAST*)formal->defPoint : formal;
 
-      USR_FATAL_CONT(pin, "tuple formal '%s' of '%s' is const and "
-                          "cannot be modified",
-                          formal->name,
-                          calledFn->name);
+      USR_FATAL_CONT(pin,
+                     "tuple formal '%s' of '%s' is const and "
+                     "cannot be modified",
+                     formal->name,
+                     calledFn->name);
 
       // TODO: Pin IFF the element is a user type.
-      USR_PRINT("tuple element #%d of type %s",
-                fieldIdx-1,
-                ft->symbol->name);
+      USR_PRINT("tuple element #%d of type %s", fieldIdx - 1, ft->symbol->name);
 
       // TODO: Cannot indicate which field was set with the current UseMap.
       // We need to adjust the key type (maybe to GraphNode) to store the
@@ -372,8 +364,10 @@ static Symbol* getOriginalTupleFromCoerceTmp(Symbol* sym) {
 // and compare formals to actuals. If the formal is const and the actual
 // is not, then emit an error. Skip if the tuple formal intent is not
 // REF_IF_MODIFIED.
-static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
-                                     CallExpr* call, UseMap* um) {
+static bool checkTupleFormalToActual(ArgSymbol* formal,
+                                     Expr* actual,
+                                     CallExpr* call,
+                                     UseMap* um) {
 
   FnSymbol* calledFn = call->resolvedFunction();
   INT_ASSERT(calledFn != NULL);
@@ -425,8 +419,7 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
     IntentTag fieldIntent = blankIntentForType(ft);
 
     // Only worry about REF and REF_IF_MODIFIED formals.
-    if (fieldIntent != INTENT_REF_MAYBE_CONST &&
-        fieldIntent != INTENT_REF) {
+    if (fieldIntent != INTENT_REF_MAYBE_CONST && fieldIntent != INTENT_REF) {
       continue;
     }
 
@@ -473,7 +466,7 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
           actualSym = original;
         }
 
-      // Case: Actual is referential tuple built from expression.
+        // Case: Actual is referential tuple built from expression.
       } else if (sym->hasFlag(FLAG_TEMP)) {
         CallExpr* build = NULL;
 
@@ -522,7 +515,7 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
           }
         }
 
-      // Case: Actual is a formal.
+        // Case: Actual is a formal.
       } else if (ArgSymbol* arg = toArgSymbol(sym)) {
 
         // But not _this_ formal...
@@ -555,25 +548,25 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
         use = um->at(formal);
       }
 
-      USR_FATAL_CONT(actual, "const actual element is passed to %s tuple "
-                             "formal '%s' of '%s'",
-                             intentDescrString(INTENT_REF),
-                             formal->name,
-                             calledFn->name);
+      USR_FATAL_CONT(actual,
+                     "const actual element is passed to %s tuple "
+                     "formal '%s' of '%s'",
+                     intentDescrString(INTENT_REF),
+                     formal->name,
+                     calledFn->name);
 
       // TODO: Pin if the element is a user type.
-      USR_PRINT("tuple element #%d of type '%s'",
-                fieldIdx-1,
-                ft->symbol->name);
+      USR_PRINT(
+        "tuple element #%d of type '%s'", fieldIdx - 1, ft->symbol->name);
 
       const char* descriptor = isActualConst ? "tuple" : "element";
-      USR_PRINT(actualSym->defPoint, "const %s declared here",
-                                     descriptor);
+      USR_PRINT(actualSym->defPoint, "const %s declared here", descriptor);
 
       if (fieldIntent == INTENT_REF_MAYBE_CONST) {
-        USR_PRINT(use, "formal element has %s due to modification, "
-                       "possibly here",
-                       intentDescrString(INTENT_REF));
+        USR_PRINT(use,
+                  "formal element has %s due to modification, "
+                  "possibly here",
+                  intentDescrString(INTENT_REF));
 
         if (doPrintDebugInfo) {
           printFormalUseChain(formal, um);
@@ -595,8 +588,7 @@ static bool isFunctionToSkip(FnSymbol* calledFn) {
   }
 
   // A 'const' record should be able to be destroyed.
-  if (calledFn->name == astrDeinit ||
-      calledFn->hasFlag(FLAG_AUTO_DESTROY_FN) ||
+  if (calledFn->name == astrDeinit || calledFn->hasFlag(FLAG_AUTO_DESTROY_FN) ||
       calledFn->hasFlag(FLAG_DESTRUCTOR)) {
     return true;
   }
@@ -623,17 +615,16 @@ static bool isFunctionToSkip(FnSymbol* calledFn) {
 
    TODO: decide if we also need const checking in functionResolution.cpp.
  */
-void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
+void lateConstCheck(std::map<BaseAST*, BaseAST*>* reasonNotConst) {
   std::set<FnSymbol*> visitedFunctions;
 
   forv_Vec(CallExpr, call, gCallExprs) {
 
     // Ignore calls removed earlier by this pass.
-    if (call->parentExpr == NULL)
-      continue;
+    if (call->parentExpr == NULL) continue;
 
     if (FnSymbol* calledFn = call->resolvedFunction()) {
-      char        cn1          = calledFn->name[0];
+      char cn1 = calledFn->name[0];
       const char* calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
       int formalIdx = 0;
 
@@ -653,7 +644,7 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
         bool error = false;
         formalIdx++;
 
-        if (actual->qualType().isConst() && ! formal->qualType().isConst()) {
+        if (actual->qualType().isConst() && !formal->qualType().isConst()) {
           // But... there are exceptions
 
           // If the formal intent is INTENT_REF_MAYBE_CONST,
@@ -663,10 +654,10 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
           if (formal->intent == INTENT_REF_MAYBE_CONST) {
             // OK, not an error
 
-          // it's OK if we're calling a function marked
-          // FLAG_REF_TO_CONST_WHEN_CONST_THIS and the result is
-          // marked const. In that case, we pretend that the `this`
-          // argument would be marked const too.
+            // it's OK if we're calling a function marked
+            // FLAG_REF_TO_CONST_WHEN_CONST_THIS and the result is
+            // marked const. In that case, we pretend that the `this`
+            // argument would be marked const too.
           } else if (calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS) &&
                      formal->hasFlag(FLAG_ARG_THIS)) {
             CallExpr* move = toCallExpr(call->parentExpr);
@@ -681,8 +672,8 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
                 error = true; // l-value error
             }
 
-          // Or, if passing a 'const' thing into an 'in' formal,
-          // that's OK
+            // Or, if passing a 'const' thing into an 'in' formal,
+            // that's OK
           } else if ((formal->intent == INTENT_IN ||
                       formal->originalIntent == INTENT_IN) &&
                      !formal->type->symbol->hasFlag(FLAG_COPY_MUTATES)) {
@@ -717,8 +708,7 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
             USR_FATAL_CONT(actual,
                            "argument %i for tuple construction is const "
                            "but tuple construction takes ownership",
-                           formalIdx
-                          );
+                           formalIdx);
           }
         }
 
@@ -756,24 +746,22 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
           // REF_MAYBE_CONST, but can be removed when that is removed
           //
           bool isArrayFormalOnTaskFunction = false;
-          if(calledFn->hasEitherFlag(FLAG_COBEGIN_OR_COFORALL, FLAG_BEGIN) &&
-             formal->type &&
-             formal->type->symbol &&
-             formal->type->symbol->hasFlag(FLAG_ARRAY)) {
+          if (calledFn->hasEitherFlag(FLAG_COBEGIN_OR_COFORALL, FLAG_BEGIN) &&
+              formal->type && formal->type->symbol &&
+              formal->type->symbol->hasFlag(FLAG_ARRAY)) {
             isArrayFormalOnTaskFunction = true;
-              // this error message is a bit of lie, we are in this code path
-              // because we are passing a const actual to a ref formal, but the
-              // error should say you cannot modify a const formal. This is
-              // because a const actual array has a default intent of const
+            // this error message is a bit of lie, we are in this code path
+            // because we are passing a const actual to a ref formal, but the
+            // error should say you cannot modify a const formal. This is
+            // because a const actual array has a default intent of const
+            USR_FATAL_CONT(actual, "cannot assign to const variable");
+          } else {
             USR_FATAL_CONT(actual,
-                          "cannot assign to const variable");
-          }
-          else {
-            USR_FATAL_CONT(actual,
-                          "const actual is passed to %s formal '%s' of %s%s",
-                          formal->intentDescrString(),
-                          formal->name,
-                          calledName, calleeParens);
+                           "const actual is passed to %s formal '%s' of %s%s",
+                           formal->intentDescrString(),
+                           formal->name,
+                           calledName,
+                           calleeParens);
           }
 
           BaseAST* lastPrintedReason = NULL;
@@ -783,9 +771,8 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
           SymExpr* actSe = toSymExpr(actual);
 
           if (actSe != NULL &&
-              (actSe->symbol()->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)
-               || isArrayFormalOnTaskFunction)
-              ) {
+              (actSe->symbol()->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT) ||
+               isArrayFormalOnTaskFunction)) {
             printTaskOrForallConstErrorNote(actSe->symbol());
           }
 
@@ -797,7 +784,7 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
           printReason(formal, &lastPrintedReason);
 
           if (reasonNotConst != NULL) {
-            BaseAST* reason     = (*reasonNotConst)[formal];
+            BaseAST* reason = (*reasonNotConst)[formal];
 
             BaseAST* lastReason = formal;
 
@@ -808,7 +795,7 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
               // try to figure out what links them by looking at uses
               // of lastReason.
               if (isSymbol(lastReason) && isArgSymbol(reason)) {
-                Symbol*    lastSym   = toSymbol(lastReason);
+                Symbol* lastSym = toSymbol(lastReason);
                 ArgSymbol* curFormal = toArgSymbol(reason);
 
                 for_SymbolSymExprs(se, lastSym) {
@@ -830,8 +817,9 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
                   if (CallExpr* parentCall = toCallExpr(def->parentExpr)) {
                     if (parentCall->isPrimitive(PRIM_MOVE)) {
                       if (CallExpr* rhsCall = toCallExpr(parentCall->get(2))) {
-                        if (FnSymbol* rhsCalledFn = rhsCall->resolvedFunction()) {
-                          printReason(def,         &lastPrintedReason);
+                        if (FnSymbol* rhsCalledFn =
+                              rhsCall->resolvedFunction()) {
+                          printReason(def, &lastPrintedReason);
                           printReason(rhsCalledFn, &lastPrintedReason);
                           printCause = NULL;
 
@@ -850,7 +838,7 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
 
               if (reasonNotConst->count(reason) != 0) {
                 lastReason = reason;
-                reason     = (*reasonNotConst)[reason];
+                reason = (*reasonNotConst)[reason];
               } else {
                 break;
               }
@@ -868,8 +856,7 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
   // don't take it in by `ref`
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_PROMOTION_WRAPPER) &&
-        fn->hasFlag(FLAG_INLINE_ITERATOR)    )
-    {
+        fn->hasFlag(FLAG_INLINE_ITERATOR)) {
       fn = getSerialIterator(fn);
       for_formals(formal, fn) {
         if (formal->intent == INTENT_REF) {
@@ -880,9 +867,10 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
             if (formal == fn->_this)
               USR_FATAL_CONT(fn, "Racy promotion of scalar method receiver");
             else
-              USR_FATAL_CONT(fn,
-                    "Racy promotion of scalar argument for the formal '%s'",
-                    formal->name);
+              USR_FATAL_CONT(
+                fn,
+                "Racy promotion of scalar argument for the formal '%s'",
+                formal->name);
           }
         }
       }

@@ -28,21 +28,21 @@ class CallExpr;
 class Symbol;
 
 class CallInfo {
-public:
-                   CallInfo();
+ public:
+  CallInfo();
 
-  bool             isWellFormed(CallExpr* call);
+  bool isWellFormed(CallExpr* call);
 
-  void             haltNotWellFormed()                                   const;
+  void haltNotWellFormed() const;
 
-  const char*      toString();
+  const char* toString();
 
-  CallExpr*        call;        // call expression
-  BlockStmt*       scope;       // module scope as in M.call
+  CallExpr* call;   // call expression
+  BlockStmt* scope; // module scope as in M.call
 
-  const char*      name;        // function name
+  const char* name; // function name
 
-  Vec<Symbol*>     actuals;     // actual symbols
+  Vec<Symbol*> actuals;         // actual symbols
   Vec<const char*> actualNames; // named arguments
 };
 

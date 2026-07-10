@@ -32,19 +32,16 @@ class Symbol;
 class Type;
 
 struct IteratorDetails {
-  Expr*     iterable;
-  int       iterableTupleElement; // if != 0, iterable(idx) is the iterable
-  Symbol*   index;
-  int       indexTupleElement; // if != 0, index(idx) is the index
-  Type*     iteratorClass;
+  Expr* iterable;
+  int iterableTupleElement; // if != 0, iterable(idx) is the iterable
+  Symbol* index;
+  int indexTupleElement; // if != 0, index(idx) is the index
+  Type* iteratorClass;
   FnSymbol* iterator;
 
   IteratorDetails()
-    : iterable(NULL), iterableTupleElement(0),
-      index(NULL), indexTupleElement(0),
-      iteratorClass(NULL), iterator(NULL)
-  {
-  }
+    : iterable(NULL), iterableTupleElement(0), index(NULL),
+      indexTupleElement(0), iteratorClass(NULL), iterator(NULL) {}
 };
 
 /* Gather important information about a loop.
@@ -63,14 +60,14 @@ the follower loop.
 
 Always uses the non-fast-follower version of the follower loop.
  */
-void gatherLoopDetails(ForLoop*  forLoop,
-                       bool&     isForall,
+void gatherLoopDetails(ForLoop* forLoop,
+                       bool& isForall,
                        IteratorDetails& leaderDetails,
                        ForLoop*& followerForLoop,
                        std::vector<IteratorDetails>& detailsVector);
 
-void gatherLoopDetails(ForallStmt*  fs,
-                       bool&     isForall,
+void gatherLoopDetails(ForallStmt* fs,
+                       bool& isForall,
                        IteratorDetails& leaderDetails,
                        ForLoop*& followerForLoop,
                        std::vector<IteratorDetails>& detailsVector);

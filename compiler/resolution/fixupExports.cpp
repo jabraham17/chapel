@@ -52,11 +52,12 @@ static bool needsFixup(Type* t);
 static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as);
 static bool validateReturnIntent(FnSymbol* fn);
 static FnSymbol* createWrapper(FnSymbol* fn);
-static Type* getTypeForFixup(Type* t, bool ret=false);
+static Type* getTypeForFixup(Type* t, bool ret = false);
 static bool isTypeThatMightRequireCopy(Type* t);
 static VarSymbol* fixupFormal(FnSymbol* wrapper, int idx);
 static void changeRetType(FnSymbol* wrapper);
-static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn,
+static void insertUnwrappedCall(FnSymbol* wrapper,
+                                FnSymbol* fn,
                                 const std::vector<VarSymbol*>& tmps);
 
 //
@@ -90,7 +91,9 @@ Type* getUnwrappedRetType(FnSymbol* fn) {
 
 static void resolveExportWrapperTypeAliases(void) {
   static bool resolved = false;
-  if (resolved) { return; }
+  if (resolved) {
+    return;
+  }
   resolved = true;
 
   const char* mod = "ExportWrappers";
@@ -110,9 +113,7 @@ void fixupExportedFunctions(const std::vector<FnSymbol*>& fns) {
   //
   resolveExportWrapperTypeAliases();
 
-  for_vector(FnSymbol, fn, fns) {
-    fixupExportedFunction(fn);
-  }
+  for_vector(FnSymbol, fn, fns) { fixupExportedFunction(fn); }
 
   return;
 }
@@ -156,7 +157,9 @@ Type* resolveTypeAlias(const char* mod, const char* alias) {
 
   if (asym == NULL) {
     INT_FATAL("Failed to find type alias %s in module %s in %s",
-              alias, mod, __FUNCTION__);
+              alias,
+              mod,
+              __FUNCTION__);
   }
 
   SET_LINENO(asym);
@@ -178,7 +181,9 @@ static void attemptFixups(FnSymbol* fn) {
   std::vector<VarSymbol*> tmps;
   FnSymbol* wrapper = NULL;
 
-  if (!fn->hasFlag(FLAG_EXPORT)) { return; }
+  if (!fn->hasFlag(FLAG_EXPORT)) {
+    return;
+  }
 
   for (int i = 1; i <= fn->numFormals(); i++) {
     ArgSymbol* as = fn->getFormal(i);
@@ -191,7 +196,9 @@ static void attemptFixups(FnSymbol* fn) {
     // clarity.
     //
     if (validateFormalIntent(fn, as) && needsFixup(as->type)) {
-      if (wrapper == NULL) { wrapper = createWrapper(fn); }
+      if (wrapper == NULL) {
+        wrapper = createWrapper(fn);
+      }
       VarSymbol* tmp = fixupFormal(wrapper, i);
       INT_ASSERT(tmp != NULL);
       tmps.push_back(tmp);
@@ -209,7 +216,9 @@ static void attemptFixups(FnSymbol* fn) {
   }
 
   if (needsFixup(fn->retType) && validateReturnIntent(fn)) {
-    if (wrapper == NULL) { wrapper = createWrapper(fn); }
+    if (wrapper == NULL) {
+      wrapper = createWrapper(fn);
+    }
     if (fClientServerLibrary) {
       exportedStrRets.insert(wrapper);
     }
@@ -220,7 +229,9 @@ static void attemptFixups(FnSymbol* fn) {
   }
 
   // If a wrapper hasn't been made yet, there's nothing to do.
-  if (wrapper == NULL) { return; }
+  if (wrapper == NULL) {
+    return;
+  }
 
   // Ensure we didn't break our exported formal default value tracking
   for (int i = 1; i <= fn->numFormals(); i++) {
@@ -237,9 +248,7 @@ static void attemptFixups(FnSymbol* fn) {
   return;
 }
 
-static Type* maybeUnwrapRef(Type* t) {
-  return t->getValType();
-}
+static Type* maybeUnwrapRef(Type* t) { return t->getValType(); }
 
 static bool needsFixup(Type* t) {
   Type* actual = maybeUnwrapRef(t);
@@ -252,16 +261,18 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
   // TODO: If we ever add more types to these fixup routines, we really ought
   // to put these conditions in tables.
   //
-  if (t == dtBytes || t == dtString || t == dtStringC
-                   || t == dtExternalArray || isCPtrConstChar(t)) {
+  if (t == dtBytes || t == dtString || t == dtStringC || t == dtExternalArray ||
+      isCPtrConstChar(t)) {
     IntentTag tag = as->originalIntent;
 
     bool multiloc = fClientServerLibrary || strcmp(CHPL_COMM, "none");
 
     if ((multiloc || fLibraryPython) && isUserRoutine(fn)) {
       // TODO: After resolution, have abstract intents been normalized?
-      if ((t == dtExternalArray && as->intent == INTENT_CONST_REF) || // see #15917
-          tag == INTENT_IN || tag == INTENT_CONST_IN) {
+      if ((t == dtExternalArray &&
+           as->intent == INTENT_CONST_REF) || // see #15917
+          tag == INTENT_IN ||
+          tag == INTENT_CONST_IN) {
         // The intent is OK
       } else {
         std::string libdesc;
@@ -277,28 +288,38 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
         const char* typeName = (t == dtExternalArray) ? "array" : t->name();
         SET_LINENO(fn);
         if (tag == INTENT_BLANK) {
-          USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported "
+          USR_FATAL_CONT(as,
+                         "Formal \'%s\' of type \'%s\' in exported "
                          "routine \'%s\' may not be passed by const ref in "
                          "%s libraries",
-                         as->name, typeName, fn->name, libdesc.c_str());
+                         as->name,
+                         typeName,
+                         fn->name,
+                         libdesc.c_str());
 
         } else {
-          USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported "
+          USR_FATAL_CONT(as,
+                         "Formal \'%s\' of type \'%s\' in exported "
                          "routine \'%s\' may not have the %s in "
                          "%s libraries",
-                         as->name, typeName, fn->name,
-                         intentDescrString(tag), libdesc.c_str());
+                         as->name,
+                         typeName,
+                         fn->name,
+                         intentDescrString(tag),
+                         libdesc.c_str());
         }
         return false;
       }
     } else if (t == dtString || t == dtBytes) {
       // TODO: After resolution, have abstract intents been normalized?
-      if (tag != INTENT_IN &&
-          tag != INTENT_CONST_IN) {
+      if (tag != INTENT_IN && tag != INTENT_CONST_IN) {
         SET_LINENO(fn);
-        USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported routine "
+        USR_FATAL_CONT(as,
+                       "Formal \'%s\' of type \'%s\' in exported routine "
                        "\'%s\' may not have the %s",
-                       as->name, t->name(), fn->name,
+                       as->name,
+                       t->name(),
+                       fn->name,
                        intentDescrString(tag));
         return false;
       }
@@ -315,10 +336,12 @@ static bool validateReturnIntent(FnSymbol* fn) {
   // Both string and bytes must be returned by value.
   if ((t == dtString || t == dtBytes) && tag != RET_VALUE) {
     SET_LINENO(fn);
-    USR_FATAL_CONT(fn,  "Exported routine \'%s\' may only return the \'%s\' "
-                        "type by %s",
-                        fn->userString, t->name(),
-                        retTagDescrString(RET_VALUE));
+    USR_FATAL_CONT(fn,
+                   "Exported routine \'%s\' may only return the \'%s\' "
+                   "type by %s",
+                   fn->userString,
+                   t->name(),
+                   retTagDescrString(RET_VALUE));
     return false;
   }
 
@@ -382,7 +405,7 @@ static VarSymbol* fixupFormal(FnSymbol* wrapper, int idx) {
       newIntent = INTENT_IN;
     }
 
-    as->intent=newIntent;
+    as->intent = newIntent;
   }
 
   // Adjust the wrapper type.
@@ -393,10 +416,8 @@ static VarSymbol* fixupFormal(FnSymbol* wrapper, int idx) {
   wrapper->body->insertAtTail(new DefExpr(result));
 
   // Make a call to the appropriate conversion routine.
-  CallExpr* call = new CallExpr("chpl__exportArg",
-                                new_BoolSymbol(doCopyConversionCall),
-                                as,
-                                origt->symbol);
+  CallExpr* call = new CallExpr(
+    "chpl__exportArg", new_BoolSymbol(doCopyConversionCall), as, origt->symbol);
 
   // Unwrap the wrapped formal using the conversion call, store in temp.
   CallExpr* move = new CallExpr(PRIM_MOVE, result, call);
@@ -417,7 +438,8 @@ static void changeRetType(FnSymbol* wrapper) {
   return;
 }
 
-static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn,
+static void insertUnwrappedCall(FnSymbol* wrapper,
+                                FnSymbol* fn,
                                 const std::vector<VarSymbol*>& tmps) {
   bool isVoid = (fn->retType == dtVoid);
 
@@ -442,7 +464,7 @@ static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn,
     if (tmp != NULL) {
       call->insertAtTail(tmp);
     } else {
-      int idx = (int) i + 1;
+      int idx = (int)i + 1;
       ArgSymbol* as = wrapper->getFormal(idx);
       call->insertAtTail(as);
     }
@@ -472,8 +494,8 @@ static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn,
   if (needsFixup(fn->retType)) {
 
     // Make a call to the appropriate conversion routine.
-    CallExpr* call = new CallExpr("chpl__exportRet", utmp,
-                                  wrapper->retType->symbol);
+    CallExpr* call =
+      new CallExpr("chpl__exportRet", utmp, wrapper->retType->symbol);
 
     // Move the result of the conversion call into the result temp.
     CallExpr* move = new CallExpr(PRIM_MOVE, rtmp, call);
@@ -492,4 +514,3 @@ static void insertUnwrappedCall(FnSymbol* wrapper, FnSymbol* fn,
 
   return;
 }
-

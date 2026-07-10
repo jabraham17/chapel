@@ -34,13 +34,13 @@
 #include "stringutil.h"
 #include "symbol.h"
 
-static ResolutionCandidateFailureReason
-classifyTypeMismatch(Type* actualType, Symbol* formalSym);
+static ResolutionCandidateFailureReason classifyTypeMismatch(Type* actualType,
+                                                             Symbol* formalSym);
 static Type* getInstantiationType(Symbol* actual, ArgSymbol* formal, Expr* ctx);
 static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal);
 static bool shouldAllowCoercionsType(Type* actualType, Type* formalType);
 
-std::map<Type*,std::map<Type*,bool> > actualFormalCoercible;
+std::map<Type*, std::map<Type*, bool>> actualFormalCoercible;
 
 /************************************* | **************************************
 *                                                                             *
@@ -72,12 +72,11 @@ bool ResolutionCandidate::isApplicable(CallInfo& info,
   bool retval = false;
 
   TagGenericResult tagResult = fn->tagIfGeneric(NULL, true);
-  if (tagResult == TGR_TAGGING_ABORTED)
-    return false;
+  if (tagResult == TGR_TAGGING_ABORTED) return false;
 
   resolveConstrainedGenericFun(fn);
 
-  if (! fn->isGeneric()) {
+  if (!fn->isGeneric()) {
     retval = isApplicableConcrete(info, visInfo);
   } else {
     retval = isApplicableGeneric(info, visInfo);
@@ -106,8 +105,7 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info,
 
   resolveTypedefedArgTypes();
 
-  if (computeAlignment(info) == false)
-    return false;
+  if (computeAlignment(info) == false) return false;
 
   return checkResolveFormalsWhereClauses(info, visInfo);
 }
@@ -123,14 +121,11 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
     return false;
   }
 
-  if (computeAlignment(info) == false)
-    return false;
+  if (computeAlignment(info) == false) return false;
 
-  if (checkGenericFormals(info.call) == false)
-    return false;
+  if (checkGenericFormals(info.call) == false) return false;
 
-  if (checkGenericFormalsFromDefaults(info.call) == false)
-    return false;
+  if (checkGenericFormalsFromDefaults(info.call) == false) return false;
 
   // Compute the param/type substitutions for generic arguments.
   if (computeSubstitutions(info.call) == false) {
@@ -138,7 +133,7 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
     return false;
   }
 
-  if (fn->isConstrainedGeneric() && ! isApplicableCG(info, visInfo)) {
+  if (fn->isConstrainedGeneric() && !isApplicableCG(info, visInfo)) {
     reason = RESOLUTION_CANDIDATE_INTERFACE_CONSTRAINTS_NOT_SATISFIED;
     return false;
   }
@@ -180,8 +175,8 @@ bool ResolutionCandidate::isApplicableCG(CallInfo& info,
                                          VisibilityInfo* visInfo) {
   int indx = 0;
   for_alist(iconExpr, fn->interfaceInfo->interfaceConstraints) {
-    ConstraintSat csat = constraintIsSatisfiedAtCallSite(info.call, nullptr,
-                             toIfcConstraint(iconExpr), substitutions);
+    ConstraintSat csat = constraintIsSatisfiedAtCallSite(
+      info.call, nullptr, toIfcConstraint(iconExpr), substitutions);
     if (csat.istm != nullptr) {
       // satisfied with an implements statement
       witnessIstms.push_back(csat.istm);
@@ -195,8 +190,12 @@ bool ResolutionCandidate::isApplicableCG(CallInfo& info,
     } else if (csat.icon != nullptr) {
       // satisfied with a constraint of the enclosing GC function
       isInterimInstantiation = true;
-      cgAddInterimRepsToSubstitutions(fn, substitutions,
-        toIfcConstraint(iconExpr), indx, csat.icon, csat.indx);
+      cgAddInterimRepsToSubstitutions(fn,
+                                      substitutions,
+                                      toIfcConstraint(iconExpr),
+                                      indx,
+                                      csat.icon,
+                                      csat.indx);
 
     } else {
       // not satisfied, making this CG fn not applicable
@@ -209,7 +208,6 @@ bool ResolutionCandidate::isApplicableCG(CallInfo& info,
 
   return true; // all constraints are satisfied
 }
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -229,15 +227,15 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   for (int i = 0; i < info.actuals.n; i++) {
     if (info.actualNames.v[i] != NULL) {
       bool match = false;
-      int  j    = 0;
+      int j = 0;
       for_formals(formal, fn) {
         if (info.actualNames.v[i] == formal->name) {
 
           if (formalIdxToActual[j] != NULL)
-            USR_FATAL(info.call, "named argument '%s' provided twice",
-                      formal->name);
+            USR_FATAL(
+              info.call, "named argument '%s' provided twice", formal->name);
 
-          match                = true;
+          match = true;
           actualIdxToFormal[i] = formal;
           formalIdxToActual[j] = info.actuals.v[i];
           break;
@@ -257,7 +255,7 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
 
   // Fill in unmatched formals in sequence with the remaining actuals.
   // Record successful substitutions.
-  int        j      = 0;
+  int j = 0;
   ArgSymbol* formal = (fn->numFormals()) ? fn->getFormal(1) : NULL;
   bool skipNextActual = false;
   bool skipNextFormal = false;
@@ -287,7 +285,6 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
             j++;
             skipNextFormal = false; // clear
             continue;
-
           }
 
           if (info.actuals.v[i]->typeInfo() == dtMethodToken) {
@@ -306,10 +303,10 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
         }
 
         if (formalIdxToActual[j] == NULL) {
-          match                = true;
+          match = true;
           actualIdxToFormal[i] = formal;
           formalIdxToActual[j] = info.actuals.v[i];
-          formal               = next_formal(formal);
+          formal = next_formal(formal);
           j++;
           break;
 
@@ -325,7 +322,7 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
         // actual wasn't intended for a skippable method token or "this"
         // argument, then we should fail at this actual.
         if (!fn->hasFlag(FLAG_OPERATOR) || !skippedThisActual) {
-          if (! fn->isGeneric()) {
+          if (!fn->isGeneric()) {
             failingArgument = info.actuals.v[i];
             reason = RESOLUTION_CANDIDATE_TOO_MANY_ARGUMENTS;
             return false;
@@ -345,8 +342,8 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
     if (formalIdxToActual[j] == NULL && formal->defaultExpr == NULL) {
       if (fn->hasFlag(FLAG_OPERATOR) && (formal->typeInfo() == dtMethodToken ||
                                          formal->hasFlag(FLAG_ARG_THIS))) {
-      // Operator calls are allowed to skip matching the method token and "this"
-      // arguments
+        // Operator calls are allowed to skip matching the method token and "this"
+        // arguments
       } else {
         failingArgument = formal;
         reason = RESOLUTION_CANDIDATE_TOO_FEW_ARGUMENTS;
@@ -367,8 +364,10 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
 *                                                                             *
 ************************************** | *************************************/
 
-static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
-                                       Type* formalType, Symbol* formalSym,
+static Type* getBasicInstantiationType(Type* actualType,
+                                       Symbol* actualSym,
+                                       Type* formalType,
+                                       Symbol* formalSym,
                                        Expr* ctx,
                                        bool allowCoercion,
                                        bool implicitBang);
@@ -388,8 +387,8 @@ bool ResolutionCandidate::computeSubstitutions(Expr* ctx) {
          formal->type->symbol->hasFlag(FLAG_GENERIC))) {
 
       if (Symbol* actual = formalIdxToActual[i - 1]) {
-        if (actual->type->symbol->hasFlag(FLAG_GENERIC)   == true &&
-            formal->hasFlag(FLAG_ARG_THIS)                == true &&
+        if (actual->type->symbol->hasFlag(FLAG_GENERIC) == true &&
+            formal->hasFlag(FLAG_ARG_THIS) == true &&
             formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true &&
             actual->getValType() == formal->getValType()) {
           // If the "this" arg is generic, we're resolving an initializer, and
@@ -430,11 +429,10 @@ bool ResolutionCandidate::computeSubstitutions(Expr* ctx) {
 bool ResolutionCandidate::verifyGenericFormal(ArgSymbol* formal) const {
   bool retval = true;
 
-  if (formal->intent                      != INTENT_PARAM &&
-      formal->hasFlag(FLAG_TYPE_VARIABLE) == false        &&
-      formal->type                        != dtAny) {
+  if (formal->intent != INTENT_PARAM &&
+      formal->hasFlag(FLAG_TYPE_VARIABLE) == false && formal->type != dtAny) {
     if (fn->isDefaultInit() &&
-        (formal->hasFlag(FLAG_ARG_THIS)                == false ||
+        (formal->hasFlag(FLAG_ARG_THIS) == false ||
          formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == false)) {
       // This is a compiler generated initializer, so the argument with
       // a generic type corresponds with a class field.
@@ -446,12 +444,12 @@ bool ResolutionCandidate::verifyGenericFormal(ArgSymbol* formal) const {
 }
 
 void ResolutionCandidate::computeSubstitution(ArgSymbol* formal,
-                                              Symbol*    actual,
-                                              Expr*      ctx) {
+                                              Symbol* actual,
+                                              Expr* ctx) {
   if (formal->intent == INTENT_PARAM) {
     if (actual->isParameter() == true) {
       if (formal->type->symbol->hasFlag(FLAG_GENERIC) == false ||
-          canInstantiate(actual->type, formal->type)  == true) {
+          canInstantiate(actual->type, formal->type) == true) {
         substitutions.put(formal, actual);
       }
     }
@@ -464,19 +462,16 @@ void ResolutionCandidate::computeSubstitution(ArgSymbol* formal,
       //   extern proc foo(str);
       //   foo("bar");
       // and pass "bar" as a c_string instead of a string
-      if (fn->hasFlag(FLAG_EXTERN)    == true     &&
-          formal->type                == dtAny    &&
-          formal->hasFlag(FLAG_PARAM) == false    &&
+      if (fn->hasFlag(FLAG_EXTERN) == true && formal->type == dtAny &&
+          formal->hasFlag(FLAG_PARAM) == false &&
 
-          type                        == dtString &&
+          type == dtString &&
 
-          actual->type                == dtString &&
-          actual->isImmediate()       == true) {
+          actual->type == dtString && actual->isImmediate() == true) {
         substitutions.put(formal, dtStringC->symbol);
 
       } else {
         substitutions.put(formal, type->symbol);
-
       }
     }
   }
@@ -493,8 +488,7 @@ void ResolutionCandidate::computeSubstitutionForDefaultExpr(ArgSymbol* formal,
     if (isEnumSymbol(sym)) {
       tail = origTail;
     } else if (VarSymbol* v = toVarSymbol(sym)) {
-      if (v->isImmediate())
-        tail = origTail;
+      if (v->isImmediate()) tail = origTail;
     }
   }
 
@@ -504,7 +498,7 @@ void ResolutionCandidate::computeSubstitutionForDefaultExpr(ArgSymbol* formal,
         if (se->symbol()->isParameter() == false) {
           USR_FATAL(formal, "default value for param is not a param");
 
-        } else if (formal->type->symbol->hasFlag(FLAG_GENERIC)      == true &&
+        } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true &&
                    canInstantiate(se->symbol()->type, formal->type) == false) {
           USR_FATAL(formal,
                     "type mismatch between declared formal type "
@@ -536,7 +530,7 @@ static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal) {
     // ... however, make an exception for class subtyping.
     Type* actualType = actual->getValType();
     Type* formalType = formal->getValType();
-    std::map<Type*,bool>& formalCoercible = actualFormalCoercible[actualType];
+    std::map<Type*, bool>& formalCoercible = actualFormalCoercible[actualType];
     if (formalCoercible.count(formalType) > 0) {
       allowCoercions = formalCoercible[formalType];
     } else {
@@ -571,30 +565,36 @@ static bool shouldAllowCoercionsType(Type* actualType, Type* formalType) {
   return false;
 }
 
-void clearCoercibleCache() {
-  actualFormalCoercible.clear();
-}
+void clearCoercibleCache() { actualFormalCoercible.clear(); }
 
 // Uses formalSym and actualSym to compute allowCoercion, implicitBang, and
 // inOutCopy in a way that is appropriate for uses when resolving arguments
-static
-Type* getInstantiationType(Symbol* actual, ArgSymbol* formal, Expr* ctx) {
+static Type*
+getInstantiationType(Symbol* actual, ArgSymbol* formal, Expr* ctx) {
   bool allowCoercions = shouldAllowCoercions(actual, formal);
 
-  bool implicitBang = allowImplicitNilabilityRemoval(actual->type, actual,
-                                                     formal->type, formal);
+  bool implicitBang =
+    allowImplicitNilabilityRemoval(actual->type, actual, formal->type, formal);
 
   bool inOutCopy = inOrOutFormalNeedingCopyType(formal);
 
-  return getInstantiationType(actual->type, actual, formal->type, formal, ctx,
-                              allowCoercions, implicitBang, inOutCopy);
+  return getInstantiationType(actual->type,
+                              actual,
+                              formal->type,
+                              formal,
+                              ctx,
+                              allowCoercions,
+                              implicitBang,
+                              inOutCopy);
 }
 
-
-Type* getInstantiationType(Type* actualType, Symbol* actualSym,
-                           Type* formalType, Symbol* formalSym,
+Type* getInstantiationType(Type* actualType,
+                           Symbol* actualSym,
+                           Type* formalType,
+                           Symbol* formalSym,
                            Expr* ctx,
-                           bool allowCoercion, bool implicitBang,
+                           bool allowCoercion,
+                           bool implicitBang,
                            bool inOrOtherValue) {
 
   // memoize unaliasing for in/inout/out/value return
@@ -611,16 +611,19 @@ Type* getInstantiationType(Type* actualType, Symbol* actualSym,
     }
   }
 
-  Type* ret = getBasicInstantiationType(actualType, actualSym,
-                                        formalType, formalSym, ctx,
-                                        allowCoercion, implicitBang);
+  Type* ret = getBasicInstantiationType(actualType,
+                                        actualSym,
+                                        formalType,
+                                        formalSym,
+                                        ctx,
+                                        allowCoercion,
+                                        implicitBang);
 
   // If that didn't work, try it again with the value type.
   if (ret == NULL) {
     if (Type* vt = actualType->getValType()) {
-      ret = getBasicInstantiationType(vt, actualSym,
-                                      formalType, formalSym, ctx,
-                                      allowCoercion, implicitBang);
+      ret = getBasicInstantiationType(
+        vt, actualSym, formalType, formalSym, ctx, allowCoercion, implicitBang);
     }
   }
 
@@ -628,9 +631,13 @@ Type* getInstantiationType(Type* actualType, Symbol* actualSym,
   // with the promotion type.
   if (ret == NULL) {
     if (Type* st = actualType->getValType()->scalarPromotionType) {
-      ret = getBasicInstantiationType(st->getValType(), actualSym,
-                                      formalType, formalSym, ctx,
-                                      allowCoercion, implicitBang);
+      ret = getBasicInstantiationType(st->getValType(),
+                                      actualSym,
+                                      formalType,
+                                      formalSym,
+                                      ctx,
+                                      allowCoercion,
+                                      implicitBang);
     }
   }
 
@@ -639,12 +646,9 @@ Type* getInstantiationType(Type* actualType, Symbol* actualSym,
 
 bool inOrOutFormalNeedingCopyType(ArgSymbol* formal) {
   // Rule out type/param variables
-  if (formal->hasFlag(FLAG_TYPE_VARIABLE) ||
-      formal->hasFlag(FLAG_PARAM) ||
-      formal->intent == INTENT_TYPE ||
-      formal->originalIntent == INTENT_TYPE ||
-      formal->intent == INTENT_PARAM ||
-      formal->originalIntent == INTENT_PARAM)
+  if (formal->hasFlag(FLAG_TYPE_VARIABLE) || formal->hasFlag(FLAG_PARAM) ||
+      formal->intent == INTENT_TYPE || formal->originalIntent == INTENT_TYPE ||
+      formal->intent == INTENT_PARAM || formal->originalIntent == INTENT_PARAM)
     return false;
 
   FnSymbol* inFn = formal->defPoint->getFunction();
@@ -660,8 +664,10 @@ bool inOrOutFormalNeedingCopyType(ArgSymbol* formal) {
           formal->originalIntent == INTENT_INOUT);
 }
 
-static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
-                                       Type* formalType, Symbol* formalSym,
+static Type* getBasicInstantiationType(Type* actualType,
+                                       Symbol* actualSym,
+                                       Type* formalType,
+                                       Symbol* formalSym,
                                        Expr* ctx,
                                        bool allowCoercion,
                                        bool implicitBang) {
@@ -690,10 +696,8 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
       formalManager = getManagedPtrManagerType(formalType);
 
     if (canInstantiateDecorators(actualDec, formalDec) ||
-        (allowCoercion && canInstantiateOrCoerceDecorators(actualDec,
-                                                           formalDec,
-                                                           true,
-                                                           implicitBang))) {
+        (allowCoercion && canInstantiateOrCoerceDecorators(
+                            actualDec, formalDec, true, implicitBang))) {
       // Can the canonical formal type instantiate with the canonical actual?
 
       // Adjust the formalDec to use when instantiating
@@ -721,11 +725,13 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
             if (at->symbol->hasFlag(FLAG_GENERIC) == true) {
               // The actual type is still somewhat generic, but may still be
               // a subtype of the parent.
-              if (Type* c = getMoreInstantiatedParentForGenericFormal(at, canonicalFormal)) {
+              if (Type* c = getMoreInstantiatedParentForGenericFormal(
+                    at, canonicalFormal)) {
                 useType = c;
               }
             } else if (at->instantiatedFrom != NULL) {
-              if (Type* c = getConcreteParentForGenericFormal(at, canonicalFormal)) {
+              if (Type* c =
+                    getConcreteParentForGenericFormal(at, canonicalFormal)) {
                 useType = c;
               }
             }
@@ -737,9 +743,14 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
         if (isDecoratorUnknownNilability(formalDec) ||
             isDecoratorUnknownManagement(formalDec)) {
           bool promotes = false;
-          if (canCoerce(canonicalActual, actualSym,
-                        canonicalFormal, toArgSymbol(formalSym),
-                        NULL, &promotes, NULL) && !promotes) {
+          if (canCoerce(canonicalActual,
+                        actualSym,
+                        canonicalFormal,
+                        toArgSymbol(formalSym),
+                        NULL,
+                        &promotes,
+                        NULL) &&
+              !promotes) {
             useType = canonicalFormal;
             useManager = formalManager ? formalManager : actualManager;
           }
@@ -773,8 +784,7 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
 
   if (isSyncType(actualType)) {
     Type* baseType = actualType->getField("valType")->type;
-    if (canInstantiate(baseType, formalType))
-      return baseType;
+    if (canInstantiate(baseType, formalType)) return baseType;
   }
 
   return NULL;
@@ -835,7 +845,7 @@ static bool looksLikeCopyInit(ResolutionCandidate* rc) {
   if ((rc->fn->isCopyInit() || rc->fn->isInitializer()) &&
       rc->formalIdxToActual.size() == 3) {
     // First formal/actual is gMethodToken
-    AggregateType* base  = getActualType(rc, 1);
+    AggregateType* base = getActualType(rc, 1);
     AggregateType* other = getActualType(rc, 2);
 
     if (base != NULL && other != NULL) {
@@ -843,7 +853,7 @@ static bool looksLikeCopyInit(ResolutionCandidate* rc) {
         retval = true;
 
       } else {
-        AggregateType* baseRoot  = base->getRootInstantiation();
+        AggregateType* baseRoot = base->getRootInstantiation();
         AggregateType* otherRoot = other->getRootInstantiation();
 
         retval = (baseRoot == otherRoot) ? true : false;
@@ -860,8 +870,8 @@ static bool looksLikeCopyInit(ResolutionCandidate* rc) {
 *                                                                             *
 ************************************** | *************************************/
 
-bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info,
-                                                    VisibilityInfo* visInfo) {
+bool ResolutionCandidate::checkResolveFormalsWhereClauses(
+  CallInfo& info, VisibilityInfo* visInfo) {
   int coindex = -1;
 
   /*
@@ -878,14 +888,14 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info,
       bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
       bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
 
-      bool formalIsParam     = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
-                               formal->intent == INTENT_PARAM;
-      bool isInitThis        = (fn->isInitializer() || fn->isCopyInit()) &&
-                               formal->hasFlag(FLAG_ARG_THIS);
-      bool isNewTypeArg      = strcmp(fn->name,"_new") == 0 &&
-                               coindex == 0; // first formal/actual
+      bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
+                           formal->intent == INTENT_PARAM;
+      bool isInitThis = (fn->isInitializer() || fn->isCopyInit()) &&
+                        formal->hasFlag(FLAG_ARG_THIS);
+      bool isNewTypeArg =
+        strcmp(fn->name, "_new") == 0 && coindex == 0; // first formal/actual
 
-      bool promotes          = false;
+      bool promotes = false;
 
       if (isInitCopy && isString(actual) && formal->getValType() == dtStringC) {
         // Do not allow an initCopy of a string to find the c_string initCopy,
@@ -899,8 +909,7 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info,
         reason = RESOLUTION_CANDIDATE_NOT_TYPE;
         return false;
 
-      } else if (formalIsTypeAlias &&
-                 !shouldAllowCoercions(actual, formal) &&
+      } else if (formalIsTypeAlias && !shouldAllowCoercions(actual, formal) &&
                  actual->getValType() != formal->getValType()) {
         // coercions should not generally be allowed for type variables
         failingArgument = actual;
@@ -915,9 +924,9 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info,
         reason = RESOLUTION_CANDIDATE_ACTUAL_TYPE_NOT_ESTABLISHED;
         return false;
 
-      // MPF TODO: one day, this should use actual/formal getValType,
-      // and canCoerce should be adjusted to consider intents,
-      // rather than depending on ref types at this stage in compilation.
+        // MPF TODO: one day, this should use actual/formal getValType,
+        // and canCoerce should be adjusted to consider intents,
+        // rather than depending on ref types at this stage in compilation.
       } else if (canDispatch(actual->type,
                              actual,
                              formal->type,
@@ -950,8 +959,7 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info,
         return false;
       }
 
-      if (promotes)
-        anyPromotes = true;
+      if (promotes) anyPromotes = true;
     }
   }
 
@@ -982,16 +990,15 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
     if (Symbol* actual = formalIdxToActual[coindex]) {
       bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
       bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
-      bool formalIsParam     = formal->intent == INTENT_PARAM;
-      bool isInitThis        = (fn->isInitializer() || fn->isCopyInit()) &&
-                               formal->hasFlag(FLAG_ARG_THIS);
+      bool formalIsParam = formal->intent == INTENT_PARAM;
+      bool isInitThis = (fn->isInitializer() || fn->isCopyInit()) &&
+                        formal->hasFlag(FLAG_ARG_THIS);
 
       // type independent checks
       if (actualIsTypeAlias != formalIsTypeAlias) {
         failingArgument = actual;
         reason = RESOLUTION_CANDIDATE_NOT_TYPE;
         return false;
-
       }
       if (formalIsParam && !actual->isParameter()) {
         failingArgument = actual;
@@ -1012,8 +1019,7 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
         }
       }
 
-      if (formalIsTypeAlias == false &&
-          isInitThis == false &&
+      if (formalIsTypeAlias == false && isInitThis == false &&
           formal->originalIntent != INTENT_OUT &&
           (actual->type->getValType() == dtSplitInitType ||
            actual->type->symbol->hasFlag(FLAG_GENERIC))) {
@@ -1077,12 +1083,8 @@ bool ResolutionCandidate::checkGenericFormalsFromDefaults(Expr* ctx) {
 }
 
 static bool isNumericType(Type* t) {
-  return isBoolType(t) ||
-         isIntType(t) ||
-         isUIntType(t) ||
-         isRealType(t) ||
-         isImagType(t) ||
-         isComplexType(t);
+  return isBoolType(t) || isIntType(t) || isUIntType(t) || isRealType(t) ||
+         isImagType(t) || isComplexType(t);
 }
 
 static bool isClassLikeOrPtrOrManaged(Type* t) {
@@ -1092,14 +1094,12 @@ static bool isClassLikeOrPtrOrManaged(Type* t) {
 static ResolutionCandidateFailureReason
 classifyTypeMismatch(Type* actualType, Symbol* formalSym) {
   Type* formalType = formalSym->type;
-  if (actualType == formalType)
-    return RESOLUTION_CANDIDATE_MATCH;
+  if (actualType == formalType) return RESOLUTION_CANDIDATE_MATCH;
 
   // From this point, don't consider references
   actualType = actualType->getValType();
   formalType = formalType->getValType();
-  if (actualType == formalType)
-    return RESOLUTION_CANDIDATE_TYPE_RELATED;
+  if (actualType == formalType) return RESOLUTION_CANDIDATE_TYPE_RELATED;
 
   if (canonicalClassType(actualType) == canonicalClassType(formalType))
     return RESOLUTION_CANDIDATE_TYPE_RELATED;
@@ -1108,11 +1108,11 @@ classifyTypeMismatch(Type* actualType, Symbol* formalSym) {
   if (formalSym->hasFlag(FLAG_ARG_THIS))
     return RESOLUTION_CANDIDATE_DIFFERENT_RECEIVER_TYPES;
 
-  if ((isBoolType   (actualType) && isBoolType   (formalType)) ||
-      (isIntType    (actualType) && isIntType    (formalType)) ||
-      (isUIntType   (actualType) && isUIntType   (formalType)) ||
-      (isRealType   (actualType) && isRealType   (formalType)) ||
-      (isImagType   (actualType) && isImagType   (formalType)) ||
+  if ((isBoolType(actualType) && isBoolType(formalType)) ||
+      (isIntType(actualType) && isIntType(formalType)) ||
+      (isUIntType(actualType) && isUIntType(formalType)) ||
+      (isRealType(actualType) && isRealType(formalType)) ||
+      (isImagType(actualType) && isImagType(formalType)) ||
       (isComplexType(actualType) && isComplexType(formalType)))
     return RESOLUTION_CANDIDATE_TYPE_RELATED;
 
@@ -1150,7 +1150,7 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
   int userIndex = 1;
   for (int i = 0; i < info.actuals.n; i++) {
     Symbol* actual = info.actuals.v[i];
-    Symbol* prevActual = (i>0)?(info.actuals.v[i-1]):(NULL);
+    Symbol* prevActual = (i > 0) ? (info.actuals.v[i - 1]) : (NULL);
 
     if (actual == c.failingArgument) {
       failingActual = c.failingArgument;
@@ -1162,15 +1162,14 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
       failingFormal = c.actualIdxToFormal[i];
     }
 
-    if (actual->type == dtMethodToken)
-      callIsMethod = true;
+    if (actual->type == dtMethodToken) callIsMethod = true;
 
     // Don't count method token or this when reporting user errors
     if (!(actual->type == dtMethodToken ||
           (prevActual && prevActual->type == dtMethodToken)))
       userIndex++;
   }
-  int userActualsCount = userIndex-1;
+  int userActualsCount = userIndex - 1;
 
   userIndex = 1;
   ArgSymbol* prevFormal = NULL;
@@ -1181,8 +1180,7 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
       // so no point in trying to find one.
     }
 
-    if (formal->type == dtMethodToken)
-      fnIsMethod = true;
+    if (formal->type == dtMethodToken) fnIsMethod = true;
 
     if (!(formal->type == dtMethodToken ||
           (prevFormal != NULL && prevFormal->type == dtMethodToken)))
@@ -1190,8 +1188,7 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
 
     prevFormal = formal;
   }
-  int userFormalsCount = userIndex-1;
-
+  int userFormalsCount = userIndex - 1;
 
   CallExpr* call = info.call;
 
@@ -1200,8 +1197,7 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
   if (failingActualIsReceiver)
     failingActualDesc = astr("method call receiver");
   else
-    failingActualDesc = astr("actual argument #",
-                             istr(failingActualUserIndex));
+    failingActualDesc = astr("actual argument #", istr(failingActualUserIndex));
 
   if (fnIsMethod && !callIsMethod) {
     USR_PRINT(call, "because call is not written as a method call");
@@ -1219,27 +1215,32 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
     case RESOLUTION_CANDIDATE_TYPE_SAME_CATEGORY:
     case RESOLUTION_CANDIDATE_UNRELATED_TYPE:
     case RESOLUTION_CANDIDATE_DIFFERENT_RECEIVER_TYPES:
-      if (c.failingArgument && c.failingArgument->hasFlag(FLAG_BAD_UNINSTANTIATED_FORMAL)) {
+      if (c.failingArgument &&
+          c.failingArgument->hasFlag(FLAG_BAD_UNINSTANTIATED_FORMAL)) {
         auto failingFormal = toArgSymbol(c.failingArgument);
-        USR_PRINT(failingFormal,
-                  "because the generic formal '%s' of type '%s' cannot be "
-                  "instantiated with default value of type '%s'",
-                  failingFormal->name, toString(failingFormal->type),
-                  toString(failingFormal->defaultExpr->body.tail->getValType()));
+        USR_PRINT(
+          failingFormal,
+          "because the generic formal '%s' of type '%s' cannot be "
+          "instantiated with default value of type '%s'",
+          failingFormal->name,
+          toString(failingFormal->type),
+          toString(failingFormal->defaultExpr->body.tail->getValType()));
         break;
       }
 
-      USR_PRINT(call, "because %s with type '%s'",
-                    failingActualDesc,
-                    toString(failingActual->getValType()));
-      USR_PRINT(failingFormal, "is passed to formal '%s'",
-                               toString(failingFormal, true));
+      USR_PRINT(call,
+                "because %s with type '%s'",
+                failingActualDesc,
+                toString(failingActual->getValType()));
+      USR_PRINT(failingFormal,
+                "is passed to formal '%s'",
+                toString(failingFormal, true));
       if (isNilableClassType(failingActual->getValType()) &&
           isNonNilableClassType(failingFormal->getValType()))
-        USR_PRINT(call, "try to apply the postfix ! operator to %s",
-                  failingActualDesc);
-      maybeSuggestToByteCall(failingActual, failingActual->type,
-                             failingFormal->type, call);
+        USR_PRINT(
+          call, "try to apply the postfix ! operator to %s", failingActualDesc);
+      maybeSuggestToByteCall(
+        failingActual, failingActual->type, failingFormal->type, call);
       break;
     case RESOLUTION_CANDIDATE_WHERE_FAILED:
       USR_PRINT(fn, "because where clause evaluated to false");
@@ -1252,30 +1253,36 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
       USR_PRINT(fn, "because interface constraint(s) were not satisfied");
       break;
     case RESOLUTION_CANDIDATE_INTERFACE_FORMAL_AS_ACTUAL:
-      USR_PRINT(call, "because %s of an interface type %s",
-                    failingActualDesc,
-                    toString(failingActual->getValType()));
+      USR_PRINT(call,
+                "because %s of an interface type %s",
+                failingActualDesc,
+                toString(failingActual->getValType()));
       USR_PRINT(failingFormal, "is passed to a generic formal");
-      USR_PRINT(failingFormal, "passing a constrained-generic formal"
+      USR_PRINT(failingFormal,
+                "passing a constrained-generic formal"
                 " to a non-constrained-generic function is not allowed");
       break;
     case RESOLUTION_CANDIDATE_NOT_PARAM:
       USR_PRINT(call, "because non-param %s", failingActualDesc);
-      USR_PRINT(failingFormal, "is passed to param formal '%s'",
-                               toString(failingFormal, true));
+      USR_PRINT(failingFormal,
+                "is passed to param formal '%s'",
+                toString(failingFormal, true));
       break;
     case RESOLUTION_CANDIDATE_NOT_TYPE:
       if (failingFormal->hasFlag(FLAG_TYPE_VARIABLE)) {
         USR_PRINT(call, "because non-type %s", failingActualDesc);
-        USR_PRINT(failingFormal, "is passed to formal '%s'",
-                                 toString(failingFormal, true));
+        USR_PRINT(failingFormal,
+                  "is passed to formal '%s'",
+                  toString(failingFormal, true));
       } else {
         USR_PRINT(call, "because %s is a type", failingActualDesc);
         if (failingFormal->hasFlag(FLAG_EXPANDED_VARARGS)) {
-          USR_PRINT(fn, "but is passed to non-type varargs formal '%s'",
+          USR_PRINT(fn,
+                    "but is passed to non-type varargs formal '%s'",
                     failingFormal->demungeVarArgName().c_str());
         } else {
-          USR_PRINT(fn, "but is passed to non-type formal '%s'",
+          USR_PRINT(fn,
+                    "but is passed to non-type formal '%s'",
                     toString(failingFormal, true));
         }
       }
@@ -1292,41 +1299,43 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
       }
       break;
     case RESOLUTION_CANDIDATE_TOO_MANY_ARGUMENTS:
-      USR_PRINT(call, "because call includes %i argument%s",
-                userActualsCount, ((userActualsCount == 1) ? "" : "s"));
-      USR_PRINT(fn, "but function can only accept %i argument%s",
-                userFormalsCount, ((userFormalsCount == 1) ? "" : "s"));
+      USR_PRINT(call,
+                "because call includes %i argument%s",
+                userActualsCount,
+                ((userActualsCount == 1) ? "" : "s"));
+      USR_PRINT(fn,
+                "but function can only accept %i argument%s",
+                userFormalsCount,
+                ((userFormalsCount == 1) ? "" : "s"));
       break;
     case RESOLUTION_CANDIDATE_TOO_FEW_ARGUMENTS:
       USR_PRINT(call, "because call does not supply enough arguments");
-      USR_PRINT(failingFormal, "it is missing a value for formal '%s'",
-                               toString(failingFormal, true));
+      USR_PRINT(failingFormal,
+                "it is missing a value for formal '%s'",
+                toString(failingFormal, true));
       break;
-    case RESOLUTION_CANDIDATE_NO_NAMED_ARGUMENT:
-      {
-        const char* name = info.actualNames.v[failingActualRealIndex];
+    case RESOLUTION_CANDIDATE_NO_NAMED_ARGUMENT: {
+      const char* name = info.actualNames.v[failingActualRealIndex];
 
-        if (name != NULL) {
-          USR_PRINT(call, "because call uses named argument %s", name);
-          USR_PRINT(fn, "but function contains no formal named %s", name);
-        }
+      if (name != NULL) {
+        USR_PRINT(call, "because call uses named argument %s", name);
+        USR_PRINT(fn, "but function contains no formal named %s", name);
       }
-      break;
+    } break;
     case RESOLUTION_CANDIDATE_OTHER:
     case RESOLUTION_CANDIDATE_MATCH:
-      if (c.reason == RESOLUTION_CANDIDATE_MATCH &&
-          call->methodTag == true                &&
-          ! fn->hasFlag(FLAG_NO_PARENS)          ) {
+      if (c.reason == RESOLUTION_CANDIDATE_MATCH && call->methodTag == true &&
+          !fn->hasFlag(FLAG_NO_PARENS)) {
         USR_PRINT(call, "because call is written without parentheses");
         USR_PRINT(fn, "but candidate function has parentheses");
       }
       // Print nothing else
       break;
-    // No default -> compiler warning
+      // No default -> compiler warning
   }
 }
 
-void explainGatherCandidate(const CallInfo&            info,
+void explainGatherCandidate(const CallInfo& info,
                             Vec<ResolutionCandidate*>& candidates) {
   CallExpr* call = info.call;
 
@@ -1354,4 +1363,3 @@ bool failedCandidateIsBetterMatch(ResolutionCandidate* a,
                                   ResolutionCandidate* b) {
   return a->reason < b->reason;
 }
-
