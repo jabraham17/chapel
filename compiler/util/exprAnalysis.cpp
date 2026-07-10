@@ -49,14 +49,14 @@ bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e, Expr* exprToMove) {
         }
         return safeFnCache[fnSym];
 
-      // Call to some sort of function type that is not -> function symbol.
-      // Since it's an indirect call, we have to assume it side effects.
+        // Call to some sort of function type that is not -> function symbol.
+        // Since it's an indirect call, we have to assume it side effects.
       } else if (isFunctionType(ce->baseExpr->qualType().type())) {
         safeExprCache[e] = false;
         return false;
       }
     } else {
-      if(!isSafePrimitive(ce)) {
+      if (!isSafePrimitive(ce)) {
         safeExprCache[e] = false;
         return false;
       } else if (exprToMove != NULL) {
@@ -102,15 +102,15 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
   }
 
   const bool cachedSafeFn = safeFnCache.count(fnSym);
-  if(cachedSafeFn) {
+  if (cachedSafeFn) {
     return safeFnCache[fnSym];
   }
 
   //at this point we know that we are analyzing the function for the
   //first time
   const bool cachedGlobalManip = isRegisteredGlobalManip(fnSym);
-  if(cachedGlobalManip) {
-    if(globalManipFuncCache[fnSym]) {
+  if (cachedGlobalManip) {
+    if (globalManipFuncCache[fnSym]) {
       // if we know that this function manipulates globals we must
       // already have analyzed before. so this shouldn't happen
       INT_ASSERT(0);
@@ -118,8 +118,8 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
   }
 
   const bool cachedExternManip = isRegisteredExternManip(fnSym);
-  if(cachedExternManip) {
-    if(externManipFuncCache[fnSym]) {
+  if (cachedExternManip) {
+    if (externManipFuncCache[fnSym]) {
       // if we know that this function manipulates externs we must
       // already have analyzed before. so this shouldn't happen
       INT_ASSERT(0);
@@ -142,23 +142,23 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
   // Initially there were separate loops but chose to fuse those loops
   // for better cache utilization
   for_vector(BaseAST, ast, asts) {
-    if(!cachedGlobalManip || !cachedExternManip) {
-      if(!cachedGlobalManip) {
+    if (!cachedGlobalManip || !cachedExternManip) {
+      if (!cachedGlobalManip) {
         if (SymExpr* se = toSymExpr(ast)) {
           Symbol* var = se->symbol();
 
-          if(!var->isImmediate() &&  isGlobal(var)){
+          if (!var->isImmediate() && isGlobal(var)) {
             safeFnCache[fnSym] = false;
             globalManipFuncCache[fnSym] = true;
             return false;
           }
         }
       }
-      if(!cachedExternManip) {
+      if (!cachedExternManip) {
         if (SymExpr* se = toSymExpr(ast)) {
           Symbol* var = se->symbol();
 
-          if(var->hasFlag(FLAG_EXTERN)) {
+          if (var->hasFlag(FLAG_EXTERN)) {
             safeFnCache[fnSym] = false;
             externManipFuncCache[fnSym] = true;
             return false;
@@ -168,14 +168,14 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
     }
 
     //analyze inner CallExprs
-    if(CallExpr* ce = toCallExpr(ast)) {
-      if(!isNonEssentialPrimitive(ce)) {
-        if(! ce->isPrimitive()) {
+    if (CallExpr* ce = toCallExpr(ast)) {
+      if (!isNonEssentialPrimitive(ce)) {
+        if (!ce->isPrimitive()) {
           FnSymbol* innerFnSym = ce->theFnSymbol();
           INT_ASSERT(innerFnSym || ce->isIndirectCall());
 
           if (innerFnSym) {
-            if(fnSym == innerFnSym) {
+            if (fnSym == innerFnSym) {
               safeFnCache[fnSym] = true;
               return true;
             } else {
@@ -232,12 +232,13 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
   //if (!prim) return false; // or INT_ASSERT(prim);
   INT_ASSERT(prim);
   if (prim->isEssential) return false;
-  switch(prim->tag) {
+  switch (prim->tag) {
     case PRIM_MOVE: {
       // A PRIM_MOVE is not safe if the LHS is a reference and the RHS is not
       // a reference, because we could be modifying memory elsewhere.
       // e.g., this handles the pattern: *(LHS) = RHS;
-      bool isRefStore = ce->get(1)->isRefOrWideRef() && !ce->get(2)->isRefOrWideRef();
+      bool isRefStore =
+        ce->get(1)->isRefOrWideRef() && !ce->get(2)->isRefOrWideRef();
       return !isRefStore;
     }
     case PRIM_SIZEOF_BUNDLE:
@@ -303,16 +304,12 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_GET_DYNAMIC_END_COUNT:
     case PRIM_INVARIANT_START:
     case PRIM_NO_ALIAS_SET:
-    case PRIM_COPIES_NO_ALIAS_SET:
-      return true;
+    case PRIM_COPIES_NO_ALIAS_SET: return true;
     case PRIM_STRING_LENGTH_BYTES:
     case PRIM_STRING_LENGTH_CODEPOINTS:
     case PRIM_OBJECT_TO_INT:
-    case PRIM_REAL_TO_INT:
-      return true;
-    default:
-      INT_FATAL("Unhandled primitive: '%s'", prim->name);
-      break;
+    case PRIM_REAL_TO_INT: return true;
+    default: INT_FATAL("Unhandled primitive: '%s'", prim->name); break;
   }
   return false;
 }
@@ -330,7 +327,7 @@ bool SafeExprAnalysis::getGlobalManip(FnSymbol* fn) {
 }
 void SafeExprAnalysis::registerGlobalManip(FnSymbol* fn, bool manip) {
   globalManipFuncCache[fn] = manip;
-  if(manip) {
+  if (manip) {
     safeFnCache[fn] = false;
   }
 }
@@ -344,7 +341,7 @@ bool SafeExprAnalysis::getExternManip(FnSymbol* fn) {
 }
 void SafeExprAnalysis::registerExternManip(FnSymbol* fn, bool manip) {
   externManipFuncCache[fn] = manip;
-  if(manip) {
+  if (manip) {
     safeFnCache[fn] = false;
   }
 }

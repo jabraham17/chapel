@@ -27,7 +27,7 @@
 
 #include <cstddef>
 
-astlocT currentAstLoc(0,NULL);
+astlocT currentAstLoc(0, NULL);
 
 /************************************* | **************************************
 *                                                                             *
@@ -35,8 +35,10 @@ astlocT currentAstLoc(0,NULL);
 *                                                                             *
 ************************************** | *************************************/
 
-static int compareFileLine(const char* lhsFilename, int lhsLineno,
-                           const char* rhsFilename, int rhsLineno) {
+static int compareFileLine(const char* lhsFilename,
+                           int lhsLineno,
+                           const char* rhsFilename,
+                           int rhsLineno) {
   if (lhsFilename && rhsFilename) {
     int strResult = strcmp(lhsFilename, rhsFilename);
     if (strResult != 0) return strResult;
@@ -53,9 +55,8 @@ int astlocT::compare(const astlocT& other) const {
     // compare IDs
     return this->id_.compare(other.id_);
   } else {
-    return compareFileLine(this->filename_, this->lineno_,
-                           other.filename_,
-                           other.lineno_);
+    return compareFileLine(
+      this->filename_, this->lineno_, other.filename_, other.lineno_);
   }
 }
 
@@ -73,9 +74,7 @@ bool astlocT::hasSameFileLine(const astlocT& other) const {
     other.convertIdToFileLine(rhsFilename, rhsLineno);
   }
 
-  int cmp = compareFileLine(lhsFilename, lhsLineno,
-                            rhsFilename,
-                            rhsLineno);
+  int cmp = compareFileLine(lhsFilename, lhsLineno, rhsFilename, rhsLineno);
   return cmp == 0;
 }
 
@@ -116,38 +115,31 @@ const char* astlocT::stringLineno() const {
 ************************************** | *************************************/
 
 // constructor, invoked upon SET_LINENO
-astlocMarker::astlocMarker(astlocT newAstLoc)
-  : previousAstLoc(currentAstLoc)
-{
+astlocMarker::astlocMarker(astlocT newAstLoc) : previousAstLoc(currentAstLoc) {
   //previousAstLoc = currentAstLoc;
   currentAstLoc = newAstLoc;
 }
 
 // constructor, for special occasions
 astlocMarker::astlocMarker(int lineno, const char* filename)
-  : previousAstLoc(currentAstLoc)
-{
+  : previousAstLoc(currentAstLoc) {
   currentAstLoc = astlocT(lineno, astr(filename));
 }
 
 // constructor, for dyno Locations
 astlocMarker::astlocMarker(chpl::Location location)
-  : previousAstLoc(currentAstLoc)
-{
+  : previousAstLoc(currentAstLoc) {
   currentAstLoc = astlocT(location.line(), astr(location.path().c_str()));
 }
 
 // destructor, invoked upon leaving SET_LINENO's scope
-astlocMarker::~astlocMarker() {
-  currentAstLoc = previousAstLoc;
-}
+astlocMarker::~astlocMarker() { currentAstLoc = previousAstLoc; }
 
 /************************************* | **************************************
 *                                                                             *
 * Functions for finding AST locations                                         *
 *                                                                             *
 ************************************** | *************************************/
-
 
 // find an AST location that is:
 //   not in an inlined/"find user line" function or a
@@ -164,25 +156,22 @@ astlocMarker::~astlocMarker() {
 Expr* findLocationIgnoringInternalInlining(Expr* cur) {
 
   while (true) {
-    if (cur == NULL || cur->parentSymbol == NULL)
-      return cur;
+    if (cur == NULL || cur->parentSymbol == NULL) return cur;
 
     FnSymbol* curFn = cur->getFunction();
     // If we didn't find a function, or it's not in tree, give up
-    if (curFn == NULL || curFn->inTree() == false)
-      return cur;
+    if (curFn == NULL || curFn->inTree() == false) return cur;
 
     // If it's already in user code, use that, because
     // the line number is probably better
-    if (curFn->getModule()->modTag == MOD_USER)
-      return cur;
+    if (curFn->getModule()->modTag == MOD_USER) return cur;
 
-    bool startsWithChpl = developer==false &&
-                          startsWith(curFn->name, "chpl__");
-    bool inlined = curFn->hasFlag(FLAG_FIND_USER_LINE) ||
-                   curFn->hasFlag(FLAG_INLINED_FN);
+    bool startsWithChpl =
+      developer == false && startsWith(curFn->name, "chpl__");
+    bool inlined =
+      curFn->hasFlag(FLAG_FIND_USER_LINE) || curFn->hasFlag(FLAG_INLINED_FN);
     if (preserveInlinedLineNumbers ||
-        (startsWithChpl==false && inlined==false))
+        (startsWithChpl == false && inlined == false))
       return cur;
 
     // If we're in a module init function, we can't go any further
@@ -194,8 +183,7 @@ Expr* findLocationIgnoringInternalInlining(Expr* cur) {
     for_SymbolSymExprs(se, curFn) {
       CallExpr* call = toCallExpr(se->parentExpr);
       if (se == call->baseExpr) {
-        if (anyCall == NULL)
-          anyCall = call;
+        if (anyCall == NULL) anyCall = call;
         if (call->getModule()->modTag == MOD_USER && userCall == NULL)
           userCall = call;
         break;
@@ -218,13 +206,11 @@ bool printsUserLocation(const BaseAST* astIn) {
 
   if (Expr* expr = toExpr(ast)) {
     Expr* foundExpr = findLocationIgnoringInternalInlining(expr);
-    if (foundExpr != NULL)
-      ast = foundExpr;
+    if (foundExpr != NULL) ast = foundExpr;
   }
 
   ModuleSymbol* mod = NULL;
-  if (ast)
-    mod = ast->getModule();
+  if (ast) mod = ast->getModule();
 
   return (ast && mod && mod->modTag == MOD_USER);
 }
@@ -255,13 +241,11 @@ astlocT getUserInstantiationPoint(const BaseAST* ast) {
 
     if (DefExpr* d = toDefExpr(cur)) {
       // Continue with the defined symbol
-      if (d->sym != NULL)
-        cur = d->sym;
+      if (d->sym != NULL) cur = d->sym;
     } else if (Expr* e = toExpr(cur)) {
       // Continue with the expression's parent function
       FnSymbol* parentFn = e->getFunction();
-      if (parentFn != NULL)
-        cur = parentFn;
+      if (parentFn != NULL) cur = parentFn;
     } else if (FnSymbol* fn = toFnSymbol(cur)) {
       // Find the first call to the function within the instantiation point,
       // so that we can have a better error message line number.

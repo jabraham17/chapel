@@ -40,36 +40,29 @@
 
 #include <inttypes.h>
 
-const char*
-astr(const char* s1, const char* s2, const char* s3, const char* s4,
-     const char* s5, const char* s6, const char* s7, const char* s8,
-     const char* s9) {
+const char* astr(const char* s1,
+                 const char* s2,
+                 const char* s3,
+                 const char* s4,
+                 const char* s5,
+                 const char* s6,
+                 const char* s7,
+                 const char* s8,
+                 const char* s9) {
   return gContext->uniqueCStringConcat(s1, s2, s3, s4, s5, s6, s7, s8, s9);
 }
 
-const char* astr(const char* s1)
-{
-  return gContext->uniqueCString(s1);
-}
+const char* astr(const char* s1) { return gContext->uniqueCString(s1); }
 
-const char* astr(const std::string& s)
-{
-  return astr(std::string_view(s));
-}
-const char* astr(std::string_view s)
-{
+const char* astr(const std::string& s) { return astr(std::string_view(s)); }
+const char* astr(std::string_view s) {
   return gContext->uniqueCString(s.data(), s.size());
 }
-const char* astr(UniqueString s)
-{
-  return s.astr(gContext);
-}
+const char* astr(UniqueString s) { return s.astr(gContext); }
 
-const char*
-istr(int i) {
+const char* istr(int i) {
   char s[64];
-  if (snprintf(s, sizeof(s), "%d", i) > 63)
-    INT_FATAL("istr buffer overflow");
+  if (snprintf(s, sizeof(s), "%d", i) > 63) INT_FATAL("istr buffer overflow");
   return astr(s);
 }
 
@@ -79,63 +72,59 @@ istr(int i) {
 // note: e must be a pointer that points within s
 //
 const char* asubstr(const char* s, const char* e) {
-  ssize_t uselen = e-s;
+  ssize_t uselen = e - s;
   assert(0 <= uselen && (size_t)uselen <= strlen(s));
-  if (uselen < 0)
-    return astr("");
+  if (uselen < 0) return astr("");
   return gContext->uniqueCString(s, uselen);
 }
 
-
-#define define_str2Int(type, format)                              \
-  type##_t str2##type(const char* str,                            \
-                      bool userSupplied,                          \
-                      const char* filename,                       \
-                      int line) {                                 \
-    if (!str) {                                                   \
-      INT_FATAL("NULL string passed to strTo_" #type "()");       \
-    }                                                             \
-    int len = strlen(str);                                        \
-    if (len < 1) {                                                \
-      INT_FATAL("empty string passed to strTo_" #type "()");      \
-    }                                                             \
-    type##_t val;                                                 \
-    int numitems = sscanf(str, format, &val);                     \
-    auto checkStr = std::make_unique<char[]>(len+1);              \
-    snprintf(checkStr.get(), len+1, format, val);                 \
-    if (numitems != 1) {                                          \
-      INT_FATAL("Illegal string passed to strTo_" #type "()");    \
-    }                                                             \
-    /* Remove leading 0s */                                       \
-    int startPos = 0;                                             \
-    while (str[startPos] == '0' && startPos < len-1) {            \
-      startPos++;                                                 \
-    }                                                             \
-    if (strcmp(str+startPos, checkStr.get()) != 0) {              \
-      if (userSupplied) {                                         \
-        astlocT astloc(line, filename);                           \
-        USR_FATAL(astloc, "Integer literal overflow: '%s' is too" \
-                  " big for type '" #type "'", str);              \
-      } else {                                                    \
-        INT_FATAL("Integer literal overflow: '%s' is too "        \
-                  "big for type '" #type "'", str);               \
-      }                                                           \
-    }                                                             \
-    return val;                                                   \
+#define define_str2Int(type, format)                                      \
+  type##_t str2##type(                                                    \
+    const char* str, bool userSupplied, const char* filename, int line) { \
+    if (!str) {                                                           \
+      INT_FATAL("NULL string passed to strTo_" #type "()");               \
+    }                                                                     \
+    int len = strlen(str);                                                \
+    if (len < 1) {                                                        \
+      INT_FATAL("empty string passed to strTo_" #type "()");              \
+    }                                                                     \
+    type##_t val;                                                         \
+    int numitems = sscanf(str, format, &val);                             \
+    auto checkStr = std::make_unique<char[]>(len + 1);                    \
+    snprintf(checkStr.get(), len + 1, format, val);                       \
+    if (numitems != 1) {                                                  \
+      INT_FATAL("Illegal string passed to strTo_" #type "()");            \
+    }                                                                     \
+    /* Remove leading 0s */                                               \
+    int startPos = 0;                                                     \
+    while (str[startPos] == '0' && startPos < len - 1) {                  \
+      startPos++;                                                         \
+    }                                                                     \
+    if (strcmp(str + startPos, checkStr.get()) != 0) {                    \
+      if (userSupplied) {                                                 \
+        astlocT astloc(line, filename);                                   \
+        USR_FATAL(astloc,                                                 \
+                  "Integer literal overflow: '%s' is too"                 \
+                  " big for type '" #type "'",                            \
+                  str);                                                   \
+      } else {                                                            \
+        INT_FATAL("Integer literal overflow: '%s' is too "                \
+                  "big for type '" #type "'",                             \
+                  str);                                                   \
+      }                                                                   \
+    }                                                                     \
+    return val;                                                           \
   }
 
-define_str2Int(int8, "%" SCNd8)
-define_str2Int(int16, "%" SCNd16)
-define_str2Int(int32, "%" SCNd32)
-define_str2Int(int64, "%" SCNd64)
-define_str2Int(uint8, "%" SCNu8)
-define_str2Int(uint16, "%" SCNu16)
-define_str2Int(uint32, "%" SCNu32)
-define_str2Int(uint64, "%" SCNu64)
+define_str2Int(int8, "%" SCNd8) define_str2Int(int16, "%" SCNd16)
+  define_str2Int(int32, "%" SCNd32) define_str2Int(int64, "%" SCNd64)
+    define_str2Int(uint8, "%" SCNu8) define_str2Int(uint16, "%" SCNu16)
+      define_str2Int(uint32, "%" SCNu32) define_str2Int(uint64, "%" SCNu64)
 
-
-uint64_t binStr2uint64(const char* str, bool userSupplied,
-                       const char* filename, int line) {
+        uint64_t binStr2uint64(const char* str,
+                               bool userSupplied,
+                               const char* filename,
+                               int line) {
   if (!str) {
     INT_FATAL("NULL string passed to binStrToUint64()");
   }
@@ -146,37 +135,38 @@ uint64_t binStr2uint64(const char* str, bool userSupplied,
   }
   /* Remove leading 0s */
   int startPos = 2;
-  while (str[startPos] == '0' && startPos < len-1) {
+  while (str[startPos] == '0' && startPos < len - 1) {
     startPos++;
   }
-  if (strlen(str+startPos) > 64) {
+  if (strlen(str + startPos) > 64) {
     if (userSupplied) {
       astlocT astloc(line, filename);
-      USR_FATAL(astloc, "Integer literal overflow: '%s' is too big "
-                "for a 64-bit unsigned integer", str);
+      USR_FATAL(astloc,
+                "Integer literal overflow: '%s' is too big "
+                "for a 64-bit unsigned integer",
+                str);
     } else {
       INT_FATAL("Integer literal overflow: '%s' is too big "
-                "for a 64-bit unsigned integer", str);
+                "for a 64-bit unsigned integer",
+                str);
     }
   }
   uint64_t val = 0;
-  for (int i=startPos; i<len; i++) {
+  for (int i = startPos; i < len; i++) {
     val <<= 1;
     switch (str[i]) {
-    case '0':
-      break;
-    case '1':
-      val += 1;
-      break;
-    default:
-      INT_FATAL("illegal character in binary string: '%c'", str[i]);
+      case '0': break;
+      case '1': val += 1; break;
+      default: INT_FATAL("illegal character in binary string: '%c'", str[i]);
     }
   }
   return val;
 }
 
-uint64_t octStr2uint64(const char* str, bool userSupplied,
-                       const char* filename, int line) {
+uint64_t octStr2uint64(const char* str,
+                       bool userSupplied,
+                       const char* filename,
+                       int line) {
   if (!str) {
     INT_FATAL("NULL string passed to octStrToUint64()");
   }
@@ -187,23 +177,26 @@ uint64_t octStr2uint64(const char* str, bool userSupplied,
 
   /* Remove leading 0s */
   int startPos = 2;
-  while (str[startPos] == '0' && startPos < len-1) {
+  while (str[startPos] == '0' && startPos < len - 1) {
     startPos++;
   }
 
-  if (len-startPos > 22 || (len-startPos == 22 && str[startPos] != '1')) {
+  if (len - startPos > 22 || (len - startPos == 22 && str[startPos] != '1')) {
     if (userSupplied) {
       astlocT astloc(line, filename);
-      USR_FATAL(astloc, "Integer literal overflow: '%s' is too big "
-                "for a 64-bit unsigned integer", str);
+      USR_FATAL(astloc,
+                "Integer literal overflow: '%s' is too big "
+                "for a 64-bit unsigned integer",
+                str);
     } else {
       INT_FATAL("Integer literal overflow: '%s' is too big "
-                "for a 64-bit unsigned integer", str);
+                "for a 64-bit unsigned integer",
+                str);
     }
   }
 
   uint64_t val;
-  int numitems = sscanf(str+2, "%" SCNo64, &val);
+  int numitems = sscanf(str + 2, "%" SCNo64, &val);
   if (numitems != 1) {
     INT_FATAL("Illegal string passed to octStrToUint64");
   }
@@ -211,8 +204,10 @@ uint64_t octStr2uint64(const char* str, bool userSupplied,
   return val;
 }
 
-uint64_t hexStr2uint64(const char* str, bool userSupplied,
-                       const char* filename, int line) {
+uint64_t hexStr2uint64(const char* str,
+                       bool userSupplied,
+                       const char* filename,
+                       int line) {
   if (!str) {
     INT_FATAL("NULL string passed to hexStrToUint64()");
   }
@@ -222,33 +217,35 @@ uint64_t hexStr2uint64(const char* str, bool userSupplied,
   }
   /* Remove leading 0s */
   int startPos = 2;
-  while (str[startPos] == '0' && startPos < len-1) {
+  while (str[startPos] == '0' && startPos < len - 1) {
     startPos++;
   }
 
-  if (strlen(str+startPos) > 16) {
+  if (strlen(str + startPos) > 16) {
     if (userSupplied) {
       astlocT astloc(line, filename);
-      USR_FATAL(astloc, "Integer literal overflow: '%s' is too big "
-                "for a 64-bit unsigned integer", str);
+      USR_FATAL(astloc,
+                "Integer literal overflow: '%s' is too big "
+                "for a 64-bit unsigned integer",
+                str);
     } else {
       INT_FATAL("Integer literal overflow: '%s' is too big "
-                "for a 64-bit unsigned integer", str);
+                "for a 64-bit unsigned integer",
+                str);
     }
   }
 
   uint64_t val;
-  int numitems = sscanf(str+2, "%" SCNx64, &val);
+  int numitems = sscanf(str + 2, "%" SCNx64, &val);
   if (numitems != 1) {
     INT_FATAL("Illegal string passed to hexStrToUint64");
   }
   return val;
 }
 
-
 inline int countLeadingSpaces(const std::string& s) {
   int leadingSpaces = 0;
-  for (size_t i=0; i < s.length(); i++) {
+  for (size_t i = 0; i < s.length(); i++) {
     if (std::isspace(s[i]))
       leadingSpaces++;
     else
@@ -267,14 +264,12 @@ inline std::string ltrim(std::string s) {
   return s;
 }
 
-
 /*
  * Return true if 's' is empty or only has whitespace characters.
  */
 inline bool isEmpty(const std::string& s) {
-  return s.end() == s.begin()+countLeadingSpaces(s);
+  return s.end() == s.begin() + countLeadingSpaces(s);
 }
-
 
 /*
  * Erase 'count' number of characters from beginning of each line in 's'. Just
@@ -309,7 +304,6 @@ std::string erasePrefix(std::string s, int count) {
   return result;
 }
 
-
 /*
  * Returns first non empty line of the string after ltrimming it. "Empty lines"
  * are those with no characters or only whitespace characters.
@@ -326,7 +320,6 @@ std::string firstNonEmptyLine(const std::string& s) {
   }
   return result;
 }
-
 
 /*
  * Iterate through string, skipping the first line, finding the minimum amount
@@ -355,7 +348,7 @@ int minimumPrefix(const std::string& s) {
     }
 
     // Find the first non-space character. Record if it is the new minimum.
-    for (size_t i=0; (int)i < minPrefix && i < line.length(); i++) {
+    for (size_t i = 0; (int)i < minPrefix && i < line.length(); i++) {
       if (!std::isspace(line[i])) {
         minPrefix = i;
         break;
@@ -364,7 +357,6 @@ int minimumPrefix(const std::string& s) {
   }
   return minPrefix;
 }
-
 
 /*
  * Find and remove same amount of whitespace from all lines of s.
@@ -376,7 +368,9 @@ std::string ltrimAllLines(std::string s) {
 /*
  * Split a string separated by the given delimiters into a vector of substrings.
  */
-void splitString(const std::string& s, std::vector<std::string>& vec, const char* delimiters) {
+void splitString(const std::string& s,
+                 std::vector<std::string>& vec,
+                 const char* delimiters) {
   if (!s.empty()) {
     char* cStr = strdup(s.c_str());
     char* arg = strtok(cStr, delimiters);
@@ -393,7 +387,8 @@ void splitString(const std::string& s, std::vector<std::string>& vec, const char
 /*
  * Split a string by all whitespace characters into a vector of substrings.
  */
-void splitStringWhitespace(const std::string& s, std::vector<std::string>& vec) {
+void splitStringWhitespace(const std::string& s,
+                           std::vector<std::string>& vec) {
   splitString(s, vec, " \t\n\r\f\v");
 }
 

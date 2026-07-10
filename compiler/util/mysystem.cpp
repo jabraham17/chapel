@@ -38,8 +38,8 @@ bool printSystemCommands = false;
 
 int myshell(const char* command,
             const char* description,
-            bool        ignoreStatus,
-            bool        quiet) {
+            bool ignoreStatus,
+            bool quiet) {
 
   int status = 0;
 
@@ -51,8 +51,7 @@ int myshell(const char* command,
   }
 
   // Treat a '#' at the start of a line as a comment
-  if (command[0] == '#')
-    return 0;
+  if (command[0] == '#') return 0;
 
   status = system(command);
 
@@ -68,21 +67,20 @@ int myshell(const char* command,
 
 int mysystem(const char* command,
              const char* description,
-             bool        ignoreStatus,
-             bool        quiet) {
+             bool ignoreStatus,
+             bool quiet) {
   std::vector<std::string> commandVec;
   std::string commandStr = command;
   splitStringWhitespace(commandStr, commandVec);
   return mysystem(commandVec, description, ignoreStatus, quiet);
 }
 
-
 int mysystem(const std::vector<std::string> commandVec,
              const char* description,
-             bool        ignoreStatus,
-             bool        quiet) {
-  int status = chpl::executeAndWait(commandVec, std::string(description),
-                                    printSystemCommands && !quiet);
+             bool ignoreStatus,
+             bool quiet) {
+  int status = chpl::executeAndWait(
+    commandVec, std::string(description), printSystemCommands && !quiet);
 
   // if there was an error fork/waiting
   if (status == -1) {

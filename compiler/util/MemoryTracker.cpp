@@ -77,19 +77,19 @@ static MemoryTracker::MemoryInBytes getCurrentMemoryUsage() {
 }
 
 void MemoryTracker::clear() {
-  mRefMemoryUsage   = 0;
+  mRefMemoryUsage = 0;
   mAccumMemoryUsage = 0;
-  mRunning          = false;
+  mRunning = false;
 }
 void MemoryTracker::start() {
   INT_ASSERT(!mRunning);
   mRefMemoryUsage = getCurrentMemoryUsage();
-  mRunning        = true;
+  mRunning = true;
 }
 void MemoryTracker::stop() {
   INT_ASSERT(mRunning);
   mAccumMemoryUsage = usedBytes();
-  mRunning          = false;
+  mRunning = false;
 }
 
 MemoryTracker::MemoryInBytes MemoryTracker::usedBytes() const {

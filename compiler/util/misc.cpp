@@ -45,27 +45,27 @@ static const char* help_url = "https://chapel-lang.org/bugs.html";
 
 // Support for internal errors, adopted from ZPL compiler
 
-static bool        exit_immediately = true;
-static bool        exit_eventually  = false;
-static bool        exit_end_of_pass = false;
+static bool exit_immediately = true;
+static bool exit_eventually = false;
+static bool exit_end_of_pass = false;
 
-static const char* err_subdir       = NULL;
-static const char* err_filename     = NULL;
+static const char* err_subdir = NULL;
+static const char* err_filename = NULL;
 
-static int         err_lineno       =    0;
-static int         err_fatal        =    0;
-static int         err_user         =    0;
-static int         err_print        =    0;
-static int         err_ignore       =    0;
+static int err_lineno = 0;
+static int err_fatal = 0;
+static int err_user = 0;
+static int err_print = 0;
+static int err_ignore = 0;
 
-static FnSymbol*   err_fn           = NULL;
-static int         err_fn_id        = 0;
-static bool        err_fn_header_printed = false;
+static FnSymbol* err_fn = NULL;
+static int err_fn_id = 0;
+static bool err_fn_header_printed = false;
 
-static bool        handle_erroneous_fns = true;
+static bool handle_erroneous_fns = true;
 
-astlocT            last_error_loc(0, NULL);
-bool               newErrorRecord = false;
+astlocT last_error_loc(0, NULL);
+bool newErrorRecord = false;
 
 static bool forceWidePtrs();
 static const char* cleanCompilerFilename(const char* name);
@@ -76,16 +76,16 @@ static void recordNewErrorHelper() {
 }
 
 void setupError(const char* subdir, const char* filename, int lineno, int tag) {
-  err_subdir        = subdir;
-  err_filename      = cleanCompilerFilename(filename);
-  err_lineno        = lineno;
-  err_fatal         = tag == 1 || tag == 2 || tag == 3;
-  err_user          = tag != 1;
-  err_print         = tag == 5;
-  err_ignore        = ignore_warnings && tag == 4;
+  err_subdir = subdir;
+  err_filename = cleanCompilerFilename(filename);
+  err_lineno = lineno;
+  err_fatal = tag == 1 || tag == 2 || tag == 3;
+  err_user = tag != 1;
+  err_print = tag == 5;
+  err_ignore = ignore_warnings && tag == 4;
 
-  exit_immediately  = tag == 1 || tag == 2;
-  exit_eventually  |= tag == 3;
+  exit_immediately = tag == 1 || tag == 2;
+  exit_eventually |= tag == 3;
   recordNewErrorHelper();
 }
 
@@ -126,9 +126,7 @@ GpuCodegenType getGpuCodegenType() {
 }
 
 // Return true if the current locale model needs GPU code generation
-bool usingGpuLocaleModel() {
-  return 0 == strcmp(CHPL_LOCALE_MODEL, "gpu");
-}
+bool usingGpuLocaleModel() { return 0 == strcmp(CHPL_LOCALE_MODEL, "gpu"); }
 
 bool isFullGpuCodegen() {
   return usingGpuLocaleModel() && (0 != strcmp(CHPL_GPU, "cpu"));
@@ -139,16 +137,14 @@ bool forceWidePtrsForLocal() {
   // functions (which we consider a local block) but we still want
   // to force wide pointers outside of there so we have `forceWidePtrs`
   // return true but don't want it to kick in for local blocks
-  if(usingGpuLocaleModel()) {
+  if (usingGpuLocaleModel()) {
     return false;
   }
 
   return fLocal && forceWidePtrs();
 }
 
-bool requireWideReferences() {
-  return !fLocal || forceWidePtrs();
-}
+bool requireWideReferences() { return !fLocal || forceWidePtrs(); }
 
 //
 // If the --no-local flag is used, or the locale model is not 'flat'
@@ -156,9 +152,7 @@ bool requireWideReferences() {
 // require on-clauses to be "outlined" (i.e., we should not assume the
 // on-clause is a no-op and execute the associated statement locally.
 //
-bool requireOutlinedOn() {
-  return requireWideReferences();
-}
+bool requireOutlinedOn() { return requireWideReferences(); }
 
 const char* cleanFilename(const char* name) {
   const char* retval = NULL;
@@ -195,13 +189,11 @@ static const char* cleanCompilerFilename(const char* name) {
   return stripdirectories(name);
 }
 
-
 static void cleanup_for_exit() {
   closeCodegenFiles();
 
   stopCatchingSignals();
 }
-
 
 //
 // Chances are that all non-flat locale models will require wide
@@ -211,9 +203,7 @@ static void cleanup_for_exit() {
 // special-case 'flat' with the expectation that most other locale
 // models will not be flat.
 //
-static bool forceWidePtrs() {
-  return (strcmp(CHPL_LOCALE_MODEL, "flat") != 0);
-}
+static bool forceWidePtrs() { return (strcmp(CHPL_LOCALE_MODEL, "flat") != 0); }
 
 static void vprint_error(const char* format, va_list vl) {
   vfprintf(stderr, format, vl);
@@ -235,13 +225,13 @@ static void print_user_internal_error() {
   const char* filename_start = strrchr(err_filename, '/');
   const char* filename_end = NULL;
   const char* directory_start = err_subdir;
-  char        version[128]   = { '\0' };
+  char version[128] = {'\0'};
 
   // Fill error with _
   for (int i = 0; i < (int)sizeof(error) - 1; i++) {
     error[i] = ' ';
   }
-  error[sizeof(error)-1] = '\0';
+  error[sizeof(error) - 1] = '\0';
 
   if (filename_start) {
     filename_start++;
@@ -295,8 +285,7 @@ static void print_user_internal_error() {
 static bool isTaskFunWrapper(FnSymbol* fn) {
   return fn->hasFlag(FLAG_ON_BLOCK) ||
          fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
-         fn->hasFlag(FLAG_BEGIN_BLOCK) ||
-         fn->hasFlag(FLAG_LOCAL_ON);
+         fn->hasFlag(FLAG_BEGIN_BLOCK) || fn->hasFlag(FLAG_LOCAL_ON);
 }
 
 static bool isTaskFnOrWrapper(FnSymbol* fn) {
@@ -310,12 +299,10 @@ static FnSymbol* findNonTaskFn(FnSymbol* fn) {
   FnSymbol* lastFn = fn;
   while (true) {
     // If we ran out of functions in tree, use the last one
-    if (fn == NULL || fn->inTree() == false)
-      return lastFn;
+    if (fn == NULL || fn->inTree() == false) return lastFn;
 
     // If it's not a task function, we are done
-    if (isTaskFnOrWrapper(fn) == false)
-      return fn;
+    if (isTaskFnOrWrapper(fn) == false) return fn;
 
     // Otherwise, find the call site, and continue the search.
     for_SymbolSymExprs(se, fn) {
@@ -353,8 +340,7 @@ static CallExpr* findACallSite(FnSymbol* fn, std::set<FnSymbol*> ignoreFns) {
     CallExpr* call = toCallExpr(se->parentExpr);
     if (se == call->baseExpr) {
       FnSymbol* inFn = call->getFunction();
-      if (inFn && ignoreFns.count(inFn) == 0)
-        return call;
+      if (inFn && ignoreFns.count(inFn) == 0) return call;
     }
   }
 
@@ -363,25 +349,19 @@ static CallExpr* findACallSite(FnSymbol* fn, std::set<FnSymbol*> ignoreFns) {
 
 static bool isModuleInitFunction(FnSymbol* fn) {
   ModuleSymbol* mod = fn->getModule();
-  if (mod && mod->initFn == fn)
-    return true;
-  if (fn->hasFlag(FLAG_MODULE_INIT))
-    return true;
+  if (mod && mod->initFn == fn) return true;
+  if (fn->hasFlag(FLAG_MODULE_INIT)) return true;
 
   return false;
 }
 
-
 static const char* fnKindAndName(FnSymbol* fn) {
-  if (fn == NULL)
-    return "";
+  if (fn == NULL) return "";
 
   ModuleSymbol* mod = fn->getModule();
-  if (mod && mod->initFn == fn)
-    return astr("module ", "'", mod->name, "'");
+  if (mod && mod->initFn == fn) return astr("module ", "'", mod->name, "'");
 
-  if (strcmp(fn->name, "init") == 0)
-    return astr("initializer");
+  if (strcmp(fn->name, "init") == 0) return astr("initializer");
 
   if (fn->hasFlag(FLAG_IMPLEMENTS_WRAPPER))
     return astr("'implements ", interfaceNameForWrapperFn(fn), "' statement");
@@ -403,8 +383,7 @@ static bool isHiddenFunction(FnSymbol* fn) {
 static bool isInternalFunction(FnSymbol* fn) {
   ModuleSymbol* module = fn->getModule();
   return (fn->hasFlag(FLAG_COMPILER_GENERATED) ||
-          strncmp(fn->name, "chpl_", 5) == 0 ||
-          module->modTag == MOD_INTERNAL);
+          strncmp(fn->name, "chpl_", 5) == 0 || module->modTag == MOD_INTERNAL);
 }
 
 static Expr* findBestCallSite(FnSymbol* errFn,
@@ -438,21 +417,20 @@ static Expr* findBestCallSite(FnSymbol* errFn,
 }
 
 // Note - this function is recursive.
-static void printCallstack(FnSymbol* errFn, FnSymbol* prevFn,
+static void printCallstack(FnSymbol* errFn,
+                           FnSymbol* prevFn,
                            std::set<FnSymbol*>& currentFns,
                            bool& printedUnderline,
                            bool& lastHidden) {
 
   // Stop now if it's a module init function
-  if (isModuleInitFunction(errFn))
-    return;
+  if (isModuleInitFunction(errFn)) return;
 
   Expr* bestPoint = findBestCallSite(errFn, currentFns);
 
   if (bestPoint != NULL) {
     FnSymbol* inFn = findNonTaskFn(bestPoint->getFunction());
-    if (inFn == NULL)
-      return;
+    if (inFn == NULL) return;
 
     // Don't print "called from chpl_gen_main"
     bool calledFromGenMain = inFn->hasFlag(FLAG_GEN_MAIN_FUNC);
@@ -471,13 +449,12 @@ static void printCallstack(FnSymbol* errFn, FnSymbol* prevFn,
       // Continue printing stack frames until not generic;
       // or, with --print-callstack-on-error, module/main is reached
       bool recurse = (inFn->instantiatedFrom != NULL ||
-                      inFn->hasFlag(FLAG_INSTANTIATED_GENERIC) ||
-                      hideErrFn || hideInFn ||
-                      fPrintCallStackOnError);
+                      inFn->hasFlag(FLAG_INSTANTIATED_GENERIC) || hideErrFn ||
+                      hideInFn || fPrintCallStackOnError);
 
       if (hideErrFn == false) {
-        std::string nameAndArgs = errFn->nameAndArgsToString(", ", true,
-                                                             printedUnderline);
+        std::string nameAndArgs =
+          errFn->nameAndArgsToString(", ", true, printedUnderline);
         if (errFn->hasFlag(FLAG_IMPLEMENTS_WRAPPER)) {
           print_error("  %s:%d: resolving 'implements %s' statement",
                       cleanFilename(bestPoint),
@@ -514,8 +491,7 @@ static void printCallstack(FnSymbol* errFn, FnSymbol* prevFn,
       }
 
       if (recurse) {
-        printCallstack(inFn, errFn, currentFns,
-                       printedUnderline, lastHidden);
+        printCallstack(inFn, errFn, currentFns, printedUnderline, lastHidden);
       }
     }
   }
@@ -544,10 +520,10 @@ void printCallstackForLastError() {
       std::set<FnSymbol*> currentFns;
       bool printedUnderline = false;
       bool lastHidden = false;
-      printCallstack(fn, NULL, currentFns,
-                     printedUnderline, lastHidden);
+      printCallstack(fn, NULL, currentFns, printedUnderline, lastHidden);
       if (printedUnderline)
-        USR_PRINT("generic instantiations are underlined in the above callstack");
+        USR_PRINT(
+          "generic instantiations are underlined in the above callstack");
     }
   }
 }
@@ -558,17 +534,15 @@ void printCallstackForLastError() {
 // module name matches the name of its file, we consider it not "interesting".
 //
 static bool interestingModuleInit(FnSymbol* fn) {
-  if (! fn->hasFlag(FLAG_MODULE_INIT))
-    return false;
+  if (!fn->hasFlag(FLAG_MODULE_INIT)) return false;
 
   const char* basename = fn->fname();
-  if (basename == nullptr)
-    return false;
+  if (basename == nullptr) return false;
 
-  if (const char* slash = (const char*) strrchr(basename, '/'))
-    basename = slash+1;
+  if (const char* slash = (const char*)strrchr(basename, '/'))
+    basename = slash + 1;
 
-  if (! startsWith(fn->name, "chpl__init_"))
+  if (!startsWith(fn->name, "chpl__init_"))
     return false; // unexpected, so let's stay away from it
 
   const char* modulename = astr(fn->name + 11, ".chpl");
@@ -601,7 +575,7 @@ static FnSymbol* determineIfHeaderIsRedundantWithDyno(FnSymbol* fn) {
       once = true;
       return fn;
 
-    // Otherwise, keep skipping.
+      // Otherwise, keep skipping.
     } else {
       return nullptr;
     }
@@ -628,8 +602,7 @@ static int printErrorHeader(BaseAST* ast, astlocT astloc) {
 
   if (Expr* expr = toExpr(ast)) {
     Expr* use = findLocationIgnoringInternalInlining(expr);
-    if (use != NULL)
-      ast = use;
+    if (use != NULL) ast = use;
   }
 
   if (!err_print) {
@@ -640,8 +613,7 @@ static int printErrorHeader(BaseAST* ast, astlocT astloc) {
 
       // Don't consider functions that aren't in the tree
       if (fn != NULL)
-        if (fn->defPoint == NULL || !fn->inTree())
-          fn = NULL;
+        if (fn->defPoint == NULL || !fn->inTree()) fn = NULL;
 
       fn = determineIfHeaderIsRedundantWithDyno(fn);
 
@@ -662,16 +634,14 @@ static int printErrorHeader(BaseAST* ast, astlocT astloc) {
 
         // If the function is compiler-generated, or inlined, or doesn't match
         // the error function and line number, nothing is printed.
-        if (!err_fn->hasFlag(FLAG_COMPILER_GENERATED) &&
-            err_fn->linenum()) {
+        if (!err_fn->hasFlag(FLAG_COMPILER_GENERATED) && err_fn->linenum()) {
           // In non-developer mode, do not print functions named chpl_....
           // DO print "In module MMM" unless it is obvious.
-          if (developer                              ||
-              strncmp(err_fn->name, "chpl_", 5) != 0 ||
-              interestingModuleInit(err_fn)           )
-          {
+          if (developer || strncmp(err_fn->name, "chpl_", 5) != 0 ||
+              interestingModuleInit(err_fn)) {
             print_error("%s:%d: In %s:\n",
-                        cleanFilename(err_fn), err_fn->linenum(),
+                        cleanFilename(err_fn),
+                        err_fn->linenum(),
                         fnKindAndName(err_fn));
 
             // We printed the header, so can print instantiation notes.
@@ -708,7 +678,7 @@ static int printErrorHeader(BaseAST* ast, astlocT astloc) {
     }
   }
 
-  int guess = -1;  // -1=no filename:line# printed; 0=not guessed; 1=guessed
+  int guess = -1; // -1=no filename:line# printed; 0=not guessed; 1=guessed
 
   if (filename) {
     guess = !have_ast_line;
@@ -746,7 +716,6 @@ static int printErrorHeader(BaseAST* ast, astlocT astloc) {
   return guess;
 }
 
-
 static void printErrorFooter(int guess) {
   //
   // For developers, indicate the compiler source location where an
@@ -769,14 +738,14 @@ static void printErrorFooter(int guess) {
   //
   if (!developer && !err_user) {
     print_error(
-        "\n\n"
-        "Internal errors indicate a bug in the Chapel compiler,\nand we're "
-        "sorry for the hassle.  We would appreciate your reporting this bug "
-        "--\nplease see %s for instructions.%s\n\n",
-        help_url,
-        (guess == -1) ? ""
-                      : "  In the meantime,\nthe filename + line number above "
-                        "may be useful in working around the issue.");
+      "\n\n"
+      "Internal errors indicate a bug in the Chapel compiler,\nand we're "
+      "sorry for the hassle.  We would appreciate your reporting this bug "
+      "--\nplease see %s for instructions.%s\n\n",
+      help_url,
+      (guess == -1) ? ""
+                    : "  In the meantime,\nthe filename + line number above "
+                      "may be useful in working around the issue.");
 
     //
     // and exit if it's fatal (isn't it always?)
@@ -790,29 +759,31 @@ static void printErrorFooter(int guess) {
 
 // another one
 void printCallStackCalls() {
-  printf("\n" "callStack %d elms\n\n", callStack.n);
+  printf("\n"
+         "callStack %d elms\n\n",
+         callStack.n);
 
   for (int i = 0; i < callStack.n; i++) {
     CallExpr* call = callStack.v[i];
-    FnSymbol* cfn  = call->resolvedFunction();
+    FnSymbol* cfn = call->resolvedFunction();
 
     printf("%d  %d %s  <-  %d %s\n",
            i,
-           cfn  ? cfn->id  : 0, cfn  ? cfn->name         : "<no callee>",
-           call ? call->id : 0, call ? call->stringLoc() : "<no call>");
+           cfn ? cfn->id : 0,
+           cfn ? cfn->name : "<no callee>",
+           call ? call->id : 0,
+           call ? call->stringLoc() : "<no call>");
   }
 
   printf("\n");
 }
 
 static bool isErrorInOrCallingErroneousFunction(BaseAST* ast) {
-  if (ast == NULL)
-    return false;
+  if (ast == NULL) return false;
 
   if (CallExpr* call = toCallExpr(ast)) {
     FnSymbol* fn = call->resolvedFunction();
-    if (fn && fn->hasFlag(FLAG_ERRONEOUS_COPY))
-      return true;
+    if (fn && fn->hasFlag(FLAG_ERRONEOUS_COPY)) return true;
   }
 
   FnSymbol* fn = ast->getFunction();
@@ -825,12 +796,10 @@ static void reportErroneousFunctionCall(BaseAST* ast) {
   FnSymbol* fn = NULL;
   if (CallExpr* call = toCallExpr(ast)) {
     FnSymbol* calledFn = call->resolvedFunction();
-    if (calledFn && calledFn->hasFlag(FLAG_ERRONEOUS_COPY))
-      fn = calledFn;
+    if (calledFn && calledFn->hasFlag(FLAG_ERRONEOUS_COPY)) fn = calledFn;
   }
 
-  if (fn == NULL)
-    fn = ast->getFunction();
+  if (fn == NULL) fn = ast->getFunction();
 
   INT_ASSERT(fn && fn->hasFlag(FLAG_ERRONEOUS_COPY));
 
@@ -843,15 +812,12 @@ static void reportErroneousFunctionCall(BaseAST* ast) {
 
   while (true) {
     fn = cur->getFunction();
-    if (fn == NULL)
-      break;
-    if (!fn->hasFlag(FLAG_ERRONEOUS_COPY))
-      break;
+    if (fn == NULL) break;
+    if (!fn->hasFlag(FLAG_ERRONEOUS_COPY)) break;
 
     err = getErroneousCopyError(fn);
     next = findBestCallSite(fn, currentFns);
-    if (next == NULL)
-      break;
+    if (next == NULL) break;
 
     cur = next;
   }
@@ -871,12 +837,10 @@ static void reportErroneousFunctionCall(BaseAST* ast) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void vhandleError(const BaseAST* ast,
-                         astlocT        astloc,
-                         const char*    fmt,
-                         va_list        args);
+static void
+vhandleError(const BaseAST* ast, astlocT astloc, const char* fmt, va_list args);
 
-void handleError(const char *fmt, ...) {
+void handleError(const char* fmt, ...) {
   astlocT astloc(0, NULL);
 
   va_list args;
@@ -888,7 +852,7 @@ void handleError(const char *fmt, ...) {
   va_end(args);
 }
 
-void handleError(const BaseAST* ast, const char *fmt, ...) {
+void handleError(const BaseAST* ast, const char* fmt, ...) {
   astlocT astloc(0, NULL);
 
   va_list args;
@@ -900,7 +864,7 @@ void handleError(const BaseAST* ast, const char *fmt, ...) {
   va_end(args);
 }
 
-void handleError(astlocT astloc, const char *fmt, ...) {
+void handleError(astlocT astloc, const char* fmt, ...) {
   va_list args;
 
   va_start(args, fmt);
@@ -910,7 +874,7 @@ void handleError(astlocT astloc, const char *fmt, ...) {
   va_end(args);
 }
 
-void handleError(chpl::Location loc, const char *fmt, ...) {
+void handleError(chpl::Location loc, const char* fmt, ...) {
   const char* astrPath = astr(loc.path().c_str());
   astlocT astloc(loc.firstLine(), astrPath);
 
@@ -923,11 +887,10 @@ void handleError(chpl::Location loc, const char *fmt, ...) {
   va_end(args);
 }
 
-
 static void vhandleError(const BaseAST* ast,
-                         astlocT        astloc,
-                         const char*    fmt,
-                         va_list        args) {
+                         astlocT astloc,
+                         const char* fmt,
+                         va_list args) {
   if (err_ignore) {
     return;
   }
@@ -989,7 +952,6 @@ static void vhandleError(const BaseAST* ast,
   }
 }
 
-
 void exitIfFatalErrorsEncountered() {
   printCallstackForLastError();
 
@@ -1002,7 +964,6 @@ void exitIfFatalErrorsEncountered() {
   }
 }
 
-
 void considerExitingEndOfPass() {
   if (exit_end_of_pass) {
     if (!ignore_errors && !(ignore_user_errors && err_user)) {
@@ -1011,9 +972,7 @@ void considerExitingEndOfPass() {
   }
 }
 
-bool fatalErrorsEncountered() {
-  return exit_eventually || exit_end_of_pass;
-}
+bool fatalErrorsEncountered() { return exit_eventually || exit_end_of_pass; }
 
 void clearFatalErrors() {
   exit_eventually = false;
@@ -1023,16 +982,14 @@ void clearFatalErrors() {
 bool printsSameLocationAsLastError(const BaseAST* ast) {
   astlocT loc(0, nullptr);
 
-  if ( ast && ast->linenum() ) {
+  if (ast && ast->linenum()) {
     loc = astlocT(ast->linenum(), cleanFilename(ast));
   }
 
   return loc == last_error_loc;
 }
 
-void clearLastErrorLocation() {
-  last_error_loc = astlocT(0, nullptr);
-}
+void clearLastErrorLocation() { last_error_loc = astlocT(0, nullptr); }
 
 static void handleInterrupt(int sig) {
   stopCatchingSignals();
@@ -1043,25 +1000,22 @@ static void handleInterrupt(int sig) {
   clean_exit(1);
 }
 
-
 static void handleSegFault(int sig) {
   stopCatchingSignals();
   INT_FATAL("seg fault");
 }
 
-
 void startCatchingSignals() {
-  signal(SIGINT,  handleInterrupt);
+  signal(SIGINT, handleInterrupt);
   signal(SIGTERM, handleInterrupt);
-  signal(SIGHUP,  handleInterrupt);
+  signal(SIGHUP, handleInterrupt);
   signal(SIGSEGV, handleSegFault);
 }
 
-
 void stopCatchingSignals() {
-  signal(SIGINT,  SIG_DFL);
+  signal(SIGINT, SIG_DFL);
   signal(SIGTERM, SIG_DFL);
-  signal(SIGHUP,  SIG_DFL);
+  signal(SIGHUP, SIG_DFL);
   signal(SIGSEGV, SIG_DFL);
 }
 
