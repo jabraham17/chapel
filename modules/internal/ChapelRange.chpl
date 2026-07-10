@@ -350,7 +350,7 @@ module ChapelRange {
   private
   proc computeParamRangeIndexType(param low, param high) type {
     // The idxType of 'low..high' is the type that '+' would produce.
-    return (low+high).type;
+    return __primitive("imm expr type", low, "+", high);
   }
   proc chpl_isValidRangeIdxType(type t) param {
     return isIntegralType(t) || isEnumType(t) || isBoolType(t);

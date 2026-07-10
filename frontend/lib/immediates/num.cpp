@@ -1091,10 +1091,8 @@ fold_result(Immediate *im1, Immediate *im2, Immediate *imm) {
   }
 }
 
-void
-fold_constant(chpl::Context* context, int op,
+void determine_constant_type(chpl::Context* context, int op,
               Immediate *aim1, Immediate *aim2, Immediate *imm) {
-
   Immediate im1(*aim1), im2, coerce;
   if (aim2)
     im2 = *aim2;
@@ -1184,6 +1182,19 @@ fold_constant(chpl::Context* context, int op,
       im2 = coerce;
     }
   }
+}
+
+void
+fold_constant(chpl::Context* context, int op,
+              Immediate *aim1, Immediate *aim2, Immediate *imm) {
+
+  determine_constant_type(context, op, aim1, aim2, imm);
+
+  Immediate im1(*aim1), im2, coerce;
+  if (aim2)
+    im2 = *aim2;
+  
+
   switch (op) {
     default: CHPL_ASSERT(false && "fold constant op not supported"); break;
     case P_prim_mult: DO_FOLDMUL(); break;

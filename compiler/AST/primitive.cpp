@@ -865,6 +865,8 @@ initPrimitive() {
   prim_def(PRIM_XOR, "^", returnInfoFirstDeref);
   prim_def(PRIM_POW, "**", returnInfoNumericUp);
 
+  prim_def(PRIM_IMMEDIATE_EXPRESSION_TYPE, "imm expr type", returnInfoUnknown);
+
   // dst, src. PRIM_ASSIGN with reference dst sets *dst
   prim_def(PRIM_ASSIGN, "=", returnInfoVoid, true);
   // like PRIM_ASSIGN but indicates an elided copy

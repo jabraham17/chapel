@@ -706,7 +706,36 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
   } else if (call->isPrimitive(PRIM_RSH) == true) {
     FOLD_CALL2(P_prim_rsh);
+  
+  } else if (call->isPrimitive(PRIM_IMMEDIATE_EXPRESSION_TYPE) == true) {
 
+    SymExpr* lhs = toSymExpr(call->get(1));
+    SymExpr* op = toSymExpr(call->get(2));
+    SymExpr* rhs = toSymExpr(call->get(3));
+    INT_ASSERT(lhs && op && rhs);
+
+    auto primTag = chpl::uast::primtags::PRIM_UNKNOWN;
+    if (op->symbol()->isParameter()) {
+      const char* opStr = get_string(op);
+      primTag = chpl::uast::primtags::primNameToTag(opStr);
+    }
+    if (primTag == chpl::uast::primtags::PRIM_UNKNOWN) {
+      INT_FATAL("Unknown primitive in PRIM_IMMEDIATE_EXPRESSION_TYPE");
+    }
+
+
+    auto lhsSe = toSymExpr(call->get(1));
+    auto rhsSe = toSymExpr(call->get(3));
+    INT_ASSERT(lhsSe && rhsSe);
+
+    auto lhsImm = getSymbolImmediate(lhsSe->symbol());
+    auto rhsImm = getSymbolImmediate(rhsSe->symbol());
+    INT_ASSERT(lhsImm && rhsImm);
+
+    Immediate res;
+    determine_constant_type(gContext, primTag, lhsImm, rhsImm, &res);
+    retval = new SymExpr(new_ImmediateSymbol(&res)->type->symbol);
+    call->replace(retval);
   } else if (call->isPrimitive(PRIM_REQUIRE) == true) {
     Expr*       arg = call->argList.only();
     const char* str = NULL;
