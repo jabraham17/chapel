@@ -22,10 +22,7 @@
 namespace chpl {
 namespace uast {
 
-
-Literal::~Literal() {
-}
-
+Literal::~Literal() {}
 
 } // namespace uast
 } // namespace chpl

@@ -50,27 +50,25 @@
 namespace chpl {
 namespace types {
 
-
-Type::~Type() {
-}
+Type::~Type() {}
 
 static void gatherType(Context* context,
-                       std::unordered_map<UniqueString,const Type*>& map,
+                       std::unordered_map<UniqueString, const Type*>& map,
                        const char* c_str,
                        const Type* t) {
   auto name = UniqueString::get(context, c_str);
-  map.insert( {name, t} );
+  map.insert({name, t});
 }
 
-static
-void gatherPrimitiveType(Context* context,
-                         std::unordered_map<UniqueString,const Type*>& map,
-                         const PrimitiveType* p) {
+static void
+gatherPrimitiveType(Context* context,
+                    std::unordered_map<UniqueString, const Type*>& map,
+                    const PrimitiveType* p) {
   gatherType(context, map, p->c_str(), p);
 }
 
 void Type::gatherBuiltins(Context* context,
-                          std::unordered_map<UniqueString,const Type*>& map) {
+                          std::unordered_map<UniqueString, const Type*>& map) {
 
   gatherPrimitiveType(context, map, BoolType::get(context));
 
@@ -111,7 +109,8 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "void", VoidType::get(context));
   gatherType(context, map, "_ddata", HeapBufferType::get(context));
 
-  gatherType(context, map, "RootClass", BasicClassType::getRootClassType(context));
+  gatherType(
+    context, map, "RootClass", BasicClassType::getRootClassType(context));
 
   gatherType(context, map, "_tuple", TupleType::getGenericTupleType(context));
 
@@ -124,7 +123,8 @@ void Type::gatherBuiltins(Context* context,
   auto localeType = CompositeType::getLocaleType(context);
   gatherType(context, map, "locale", localeType);
   gatherType(context, map, "_locale", localeType);
-  gatherType(context, map, "chpl_localeID_t", CompositeType::getLocaleIDType(context));
+  gatherType(
+    context, map, "chpl_localeID_t", CompositeType::getLocaleIDType(context));
 
   auto rangeType = CompositeType::getRangeType(context);
   gatherType(context, map, "range", rangeType);
@@ -138,9 +138,17 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "domain", DomainType::getGenericDomainType(context));
 
   gatherType(context, map, "class", AnyClassType::get(context));
-  auto genericBorrowed = ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::BORROWED));
+  auto genericBorrowed =
+    ClassType::get(context,
+                   AnyClassType::get(context),
+                   nullptr,
+                   ClassTypeDecorator(ClassTypeDecorator::BORROWED));
   gatherType(context, map, "borrowed", genericBorrowed);
-  auto genericUnmanaged = ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::UNMANAGED));
+  auto genericUnmanaged =
+    ClassType::get(context,
+                   AnyClassType::get(context),
+                   nullptr,
+                   ClassTypeDecorator(ClassTypeDecorator::UNMANAGED));
   gatherType(context, map, "unmanaged", genericUnmanaged);
 
   BuiltinType::gatherBuiltins(context, map);
@@ -149,11 +157,9 @@ void Type::gatherBuiltins(Context* context,
 bool Type::completeMatch(const Type* other) const {
   const Type* lhs = this;
   const Type* rhs = other;
-  if (lhs->tag() != rhs->tag())
-    return false;
+  if (lhs->tag() != rhs->tag()) return false;
 
-  if (!lhs->contentsMatchInner(rhs))
-    return false;
+  if (!lhs->contentsMatchInner(rhs)) return false;
 
   return true;
 }
@@ -171,12 +177,15 @@ void Type::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
 
 IMPLEMENT_DUMP(Type);
 
-bool Type::isCArrayType(Context* context, const Type*& outEltType, const IntParam*& outSize) const {
+bool Type::isCArrayType(Context* context,
+                        const Type*& outEltType,
+                        const IntParam*& outSize) const {
   auto rec = toRecordType();
   if (!rec || rec->id().symbolPath() != "CTypes.c_array") return false;
 
   auto rc = resolution::createDummyRC(context);
-  auto fields = resolution::fieldsForTypeDecl(&rc, rec, resolution::DefaultsPolicy::IGNORE_DEFAULTS);
+  auto fields = resolution::fieldsForTypeDecl(
+    &rc, rec, resolution::DefaultsPolicy::IGNORE_DEFAULTS);
   bool foundEltType = false, foundSize = false;
   for (int i = 0; i < fields.numFields(); i++) {
     if (fields.fieldName(i) == "eltType") {
@@ -190,7 +199,9 @@ bool Type::isCArrayType(Context* context, const Type*& outEltType, const IntPara
   }
 
   if (!foundEltType || !foundSize) {
-    context->error(rec->id(), "internal c_array record does not have eltType and size fields");
+    context->error(
+      rec->id(),
+      "internal c_array record does not have eltType and size fields");
     return false;
   }
 
@@ -199,40 +210,35 @@ bool Type::isCArrayType(Context* context, const Type*& outEltType, const IntPara
 
 bool Type::isOwnedRecordType() const {
   if (auto rec = toRecordType()) {
-    if (rec->id().symbolPath() == USTR("OwnedObject._owned"))
-      return true;
+    if (rec->id().symbolPath() == USTR("OwnedObject._owned")) return true;
   }
   return false;
 }
 
 bool Type::isSharedRecordType() const {
   if (auto rec = toRecordType()) {
-    if (rec->id().symbolPath() == USTR("SharedObject._shared"))
-      return true;
+    if (rec->id().symbolPath() == USTR("SharedObject._shared")) return true;
   }
   return false;
 }
 
 bool Type::isStringType() const {
   if (auto rec = toRecordType()) {
-    if (rec->id().symbolPath() == USTR("String._string"))
-      return true;
+    if (rec->id().symbolPath() == USTR("String._string")) return true;
   }
   return false;
 }
 
 bool Type::isBytesType() const {
   if (auto rec = toRecordType()) {
-    if (rec->id().symbolPath() == USTR("Bytes._bytes"))
-      return true;
+    if (rec->id().symbolPath() == USTR("Bytes._bytes")) return true;
   }
   return false;
 }
 
 bool Type::isLocaleType() const {
   if (auto rec = toRecordType()) {
-    if (rec->id().symbolPath() == USTR("ChapelLocale._locale"))
-      return true;
+    if (rec->id().symbolPath() == USTR("ChapelLocale._locale")) return true;
   }
   return false;
 }
@@ -250,8 +256,7 @@ bool Type::isNilablePtrType() const {
   if (isPointerLikeType()) {
 
     if (auto ct = toClassType()) {
-      if (!ct->decorator().isNilable())
-        return false;
+      if (!ct->decorator().isNilable()) return false;
     }
 
     return true;
@@ -263,8 +268,7 @@ bool Type::isNilablePtrType() const {
 bool Type::isUserRecordType() const {
   // iterator types in Dyno are "iterator records" in production and so are
   // records.
-  if (!isRecordType() && !isIteratorType())
-    return false;
+  if (!isRecordType() && !isIteratorType()) return false;
 
   // TODO: add exceptions in here
   // for types implemented as records but where that
@@ -296,7 +300,8 @@ bool Type::isRecordLike() const {
           decorator.isUnknownManagement())) {
       return true;
     }
-  } else if (this->isRecordType() || this->isUnionType() || this->isTupleType()) {
+  } else if (this->isRecordType() || this->isUnionType() ||
+             this->isTupleType()) {
     return true;
   }
 
@@ -304,17 +309,17 @@ bool Type::isRecordLike() const {
 }
 
 const CompositeType* Type::getCompositeType() const {
-  if (auto at = toCompositeType())
-    return at;
+  if (auto at = toCompositeType()) return at;
 
-  if (auto ct = toClassType())
-    return ct->manageableType();
+  if (auto ct = toClassType()) return ct->manageableType();
 
   return nullptr;
 }
 
 template <typename F>
-static bool checkFieldsWithPredicate(resolution::ResolutionContext* rc, const Type* t, F&& pred) {
+static bool checkFieldsWithPredicate(resolution::ResolutionContext* rc,
+                                     const Type* t,
+                                     F&& pred) {
   using namespace resolution;
 
   auto ct = t->getCompositeType();
@@ -334,8 +339,8 @@ static bool checkFieldsWithPredicate(resolution::ResolutionContext* rc, const Ty
   for (int i = 0; i < rf.numFields(); i++) {
     auto qt = rf.fieldType(i);
     if (auto ft = qt.type()) {
-      if (qt.kind() == QualifiedType::PARAM ||
-          qt.kind() == QualifiedType::TYPE) continue;
+      if (qt.kind() == QualifiedType::PARAM || qt.kind() == QualifiedType::TYPE)
+        continue;
       if (!pred(rc, ft)) return false;
     } else {
       return false;
@@ -345,8 +350,8 @@ static bool checkFieldsWithPredicate(resolution::ResolutionContext* rc, const Ty
   return true;
 }
 
-static bool
-compositeTypeIsPod(resolution::ResolutionContext* rc, const Type* t) {
+static bool compositeTypeIsPod(resolution::ResolutionContext* rc,
+                               const Type* t) {
   using namespace resolution;
   auto context = rc->context();
 
@@ -391,8 +396,8 @@ compositeTypeIsPod(resolution::ResolutionContext* rc, const Type* t) {
   return result.result();
 }
 
-static const bool&
-compositeTypeIsPodQuery(resolution::ResolutionContext* rc, const Type* t) {
+static const bool& compositeTypeIsPodQuery(resolution::ResolutionContext* rc,
+                                           const Type* t) {
   CHPL_RESOLUTION_QUERY_BEGIN(compositeTypeIsPodQuery, rc, t);
   bool ret = compositeTypeIsPod(rc, t);
   return CHPL_RESOLUTION_QUERY_END(ret);
@@ -400,8 +405,8 @@ compositeTypeIsPodQuery(resolution::ResolutionContext* rc, const Type* t) {
 
 bool Type::isPod(resolution::ResolutionContext* rc, const Type* t) {
   auto context = rc->context();
-  if (t->isUnknownType() || t->isErroneousType() ||
-      t->isAnyType()) return false;
+  if (t->isUnknownType() || t->isErroneousType() || t->isAnyType())
+    return false;
   if (t->hasPragma(context, uast::PRAGMA_POD)) return true;
   if (t->hasPragma(context, uast::PRAGMA_IGNORE_NOINIT)) return false;
   if (t->hasPragma(context, uast::PRAGMA_ATOMIC_TYPE)) return false;
@@ -421,7 +426,8 @@ bool Type::isPod(resolution::ResolutionContext* rc, const Type* t) {
   return true;
 }
 
-static bool const& isDefaultInitializableQuery(resolution::ResolutionContext* rc, const Type* t) {
+static bool const&
+isDefaultInitializableQuery(resolution::ResolutionContext* rc, const Type* t) {
   CHPL_RESOLUTION_QUERY_BEGIN(isDefaultInitializableQuery, rc, t);
   auto context = rc->context();
 
@@ -448,8 +454,10 @@ static bool const& isDefaultInitializableQuery(resolution::ResolutionContext* rc
     // If the type doesn't have a user-defined initializer or is a tuple, check
     // its fields.
     auto fieldsDefaultInitializable = true;
-    if (resolution::needCompilerGeneratedMethod(context, t, USTR("init"), /* parenless */ false)) {
-      fieldsDefaultInitializable = checkFieldsWithPredicate(rc, t, Type::isDefaultInitializable);
+    if (resolution::needCompilerGeneratedMethod(
+          context, t, USTR("init"), /* parenless */ false)) {
+      fieldsDefaultInitializable =
+        checkFieldsWithPredicate(rc, t, Type::isDefaultInitializable);
     }
 
     if (!fieldsDefaultInitializable) {
@@ -473,7 +481,8 @@ static bool const& isDefaultInitializableQuery(resolution::ResolutionContext* rc
   return CHPL_RESOLUTION_QUERY_END(result);
 }
 
-bool Type::isDefaultInitializable(resolution::ResolutionContext* rc, const Type* t) {
+bool Type::isDefaultInitializable(resolution::ResolutionContext* rc,
+                                  const Type* t) {
   return isDefaultInitializableQuery(rc, t);
 }
 
@@ -491,7 +500,7 @@ bool Type::needsInitDeinitCall(const Type* t) {
   } else if (t->isEnumType()) {
     // OK, can default-initialize enums to first element
     return false;
-  /*
+    /*
   } else if (t->isFunctionType()) {
     return false;
   */

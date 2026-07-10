@@ -24,65 +24,73 @@
 namespace chpl {
 namespace uast {
 
+owned<AttributeGroup>
+AttributeGroup::build(Builder* builder,
+                      Location loc,
+                      std::set<PragmaTag> pragmas,
+                      bool isDeprecated,
+                      bool isUnstable,
+                      bool isParenfulDeprecated,
+                      bool hasEdition,
+                      UniqueString deprecationMessage,
+                      UniqueString unstableMessage,
+                      UniqueString parenfulDeprecationMessage,
+                      UniqueString firstEdition,
+                      UniqueString lastEdition) {
+#ifndef NDEBUG
+  for (auto tag : pragmas) {
+    CHPL_ASSERT(tag >= 0 && tag < NUM_KNOWN_PRAGMAS);
+  }
+#endif
 
-owned<AttributeGroup> AttributeGroup::build(Builder* builder, Location loc,
-                                            std::set<PragmaTag> pragmas,
-                                            bool isDeprecated,
-                                            bool isUnstable,
-                                            bool isParenfulDeprecated,
-                                            bool hasEdition,
-                                            UniqueString deprecationMessage,
-                                            UniqueString unstableMessage,
-                                            UniqueString parenfulDeprecationMessage,
-                                            UniqueString firstEdition,
-                                            UniqueString lastEdition) {
-  #ifndef NDEBUG
-    for (auto tag : pragmas) {
-      CHPL_ASSERT(tag >= 0 && tag < NUM_KNOWN_PRAGMAS);
-    }
-  #endif
-
-  AttributeGroup* ret = new AttributeGroup(std::move(pragmas), isDeprecated,
+  AttributeGroup* ret = new AttributeGroup(std::move(pragmas),
+                                           isDeprecated,
                                            isUnstable,
-                                           isParenfulDeprecated, hasEdition,
+                                           isParenfulDeprecated,
+                                           hasEdition,
                                            deprecationMessage,
                                            unstableMessage,
                                            parenfulDeprecationMessage,
-                                           firstEdition, lastEdition);
+                                           firstEdition,
+                                           lastEdition);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
 
-owned<AttributeGroup> AttributeGroup::build(Builder* builder, Location loc,
-                                            std::set<PragmaTag> pragmas,
-                                            bool isDeprecated,
-                                            bool isUnstable,
-                                            bool isParenfulDeprecated,
-                                            bool hasEdition,
-                                            UniqueString deprecationMessage,
-                                            UniqueString unstableMessage,
-                                            UniqueString parenfulDeprecationMessage,
-                                            UniqueString firstEdition,
-                                            UniqueString lastEdition,
-                                            AstList attributes) {
-  #ifndef NDEBUG
-    for (auto tag : pragmas) {
-      CHPL_ASSERT(tag >= 0 && tag < NUM_KNOWN_PRAGMAS);
-    }
-  #endif
+owned<AttributeGroup>
+AttributeGroup::build(Builder* builder,
+                      Location loc,
+                      std::set<PragmaTag> pragmas,
+                      bool isDeprecated,
+                      bool isUnstable,
+                      bool isParenfulDeprecated,
+                      bool hasEdition,
+                      UniqueString deprecationMessage,
+                      UniqueString unstableMessage,
+                      UniqueString parenfulDeprecationMessage,
+                      UniqueString firstEdition,
+                      UniqueString lastEdition,
+                      AstList attributes) {
+#ifndef NDEBUG
+  for (auto tag : pragmas) {
+    CHPL_ASSERT(tag >= 0 && tag < NUM_KNOWN_PRAGMAS);
+  }
+#endif
 
-  AttributeGroup* ret = new AttributeGroup(std::move(pragmas), isDeprecated,
+  AttributeGroup* ret = new AttributeGroup(std::move(pragmas),
+                                           isDeprecated,
                                            isUnstable,
-                                           isParenfulDeprecated, hasEdition,
+                                           isParenfulDeprecated,
+                                           hasEdition,
                                            deprecationMessage,
                                            unstableMessage,
                                            parenfulDeprecationMessage,
-                                           firstEdition, lastEdition,
+                                           firstEdition,
+                                           lastEdition,
                                            std::move(attributes));
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

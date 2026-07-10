@@ -24,15 +24,12 @@
 namespace chpl {
 namespace uast {
 
-
-owned<WithClause> WithClause::build(Builder* builder,
-                                    Location loc,
-                                    AstList exprs) {
+owned<WithClause>
+WithClause::build(Builder* builder, Location loc, AstList exprs) {
   WithClause* ret = new WithClause(std::move(exprs));
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

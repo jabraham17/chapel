@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 void Interface::dumpFieldsInner(const DumpSettings& s) const {
   if (isFormalListExplicit_) {
     s.out << " explicit-formals";
@@ -43,8 +42,8 @@ std::string Interface::dumpChildLabelInner(int i) const {
   return NamedDecl::dumpChildLabelInner(i);
 }
 
-
-owned<Interface> Interface::build(Builder* builder, Location loc,
+owned<Interface> Interface::build(Builder* builder,
+                                  Location loc,
                                   owned<AttributeGroup> attributeGroup,
                                   Decl::Visibility visibility,
                                   UniqueString name,
@@ -75,7 +74,8 @@ owned<Interface> Interface::build(Builder* builder, Location loc,
     for (auto& ast : body) children.push_back(std::move(ast));
   }
 
-  Interface* ret = new Interface(std::move(children), attributeGroupChildNum,
+  Interface* ret = new Interface(std::move(children),
+                                 attributeGroupChildNum,
                                  visibility,
                                  name,
                                  interfaceFormalsChildNum,
@@ -86,7 +86,6 @@ owned<Interface> Interface::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

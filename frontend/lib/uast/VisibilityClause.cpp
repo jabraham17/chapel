@@ -28,8 +28,8 @@ const char* VisibilityClause::limitationKindToString(LimitationKind kind) {
   switch (kind) {
     case BRACES: return "braces";
     case EXCEPT: return "except";
-    case ONLY:   return "only";
-    case NONE:   return "none";
+    case ONLY: return "only";
+    case NONE: return "none";
   }
   return "<unknown>";
 }
@@ -50,11 +50,11 @@ std::string VisibilityClause::dumpChildLabelInner(int i) const {
   return "";
 }
 
-owned<VisibilityClause>
-VisibilityClause::build(Builder* builder, Location loc,
-                        owned<AstNode> symbol,
-                        LimitationKind limitationKind,
-                        AstList limitations) {
+owned<VisibilityClause> VisibilityClause::build(Builder* builder,
+                                                Location loc,
+                                                owned<AstNode> symbol,
+                                                LimitationKind limitationKind,
+                                                AstList limitations) {
   CHPL_ASSERT(symbol.get() != nullptr);
 
   AstList lst;
@@ -69,19 +69,16 @@ VisibilityClause::build(Builder* builder, Location loc,
     }
   }
 
-  VisibilityClause* ret = new VisibilityClause(std::move(lst),
-                                               limitationKind,
-                                               numLimitations);
+  VisibilityClause* ret =
+    new VisibilityClause(std::move(lst), limitationKind, numLimitations);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
 
 owned<VisibilityClause>
-VisibilityClause::build(Builder* builder, Location loc,
-                        owned<AstNode> symbol) {
-  return build(builder, loc, std::move(symbol),
-               VisibilityClause::NONE,
-               AstList());
+VisibilityClause::build(Builder* builder, Location loc, owned<AstNode> symbol) {
+  return build(
+    builder, loc, std::move(symbol), VisibilityClause::NONE, AstList());
 }
 
 } // namespace uast

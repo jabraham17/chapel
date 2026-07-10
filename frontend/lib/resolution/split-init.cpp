@@ -32,7 +32,6 @@
 namespace chpl {
 namespace resolution {
 
-
 using namespace uast;
 using namespace types;
 
@@ -47,19 +46,19 @@ struct FindSplitInits : VarScopeVisitor {
 
   // methods
   FindSplitInits(Context* context)
-    : VarScopeVisitor(context, QualifiedType()),
-      allSplitInitedVars() {
-  }
+    : VarScopeVisitor(context, QualifiedType()), allSplitInitedVars() {}
 
   SplitInitVarStatus findVarStatus(ID varId);
   static void addInit(VarFrame* frame, ID varId, QualifiedType rhsType);
   void handleInitOrAssign(ID varId, QualifiedType rhsType, RV& rv);
 
-  std::map<ID,QualifiedType> verifyInitOrderAndType(const AstNode * node, 
-                                                    const std::vector<VarFrame*>& frames,
-                                                    const std::set<ID>& splitInitedVars);
+  std::map<ID, QualifiedType>
+  verifyInitOrderAndType(const AstNode* node,
+                         const std::vector<VarFrame*>& frames,
+                         const std::set<ID>& splitInitedVars);
 
-  void propagateChildToParent(VarFrame* frame, VarFrame* parent, const AstNode* ast);
+  void
+  propagateChildToParent(VarFrame* frame, VarFrame* parent, const AstNode* ast);
 
   // overrides
   void handleDeclaration(const VarLikeDecl* ast,
@@ -75,14 +74,17 @@ struct FindSplitInits : VarScopeVisitor {
                     const types::QualifiedType& rhsType,
                     const OpCall* opAst,
                     RV& rv) override;
-  void handleOutFormal(const Call* ast, const AstNode* actual,
+  void handleOutFormal(const Call* ast,
+                       const AstNode* actual,
                        const QualifiedType& formalType,
                        RV& rv) override;
-  void handleInFormal(const Call* ast, const AstNode* actual,
+  void handleInFormal(const Call* ast,
+                      const AstNode* actual,
                       const QualifiedType& formalType,
                       const QualifiedType* actualScalarType,
                       RV& rv) override;
-  void handleInoutFormal(const Call* ast, const AstNode* actual,
+  void handleInoutFormal(const Call* ast,
+                         const AstNode* actual,
                          const QualifiedType& formalType,
                          const QualifiedType* actualScalarType,
                          RV& rv) override;
@@ -92,10 +94,11 @@ struct FindSplitInits : VarScopeVisitor {
   void handleYield(const uast::Yield* ast, RV& rv) override;
   void handleTry(const Try* t, RV& rv) override;
 
-  void handleDisjunction(const AstNode * node, 
-                         VarFrame * currentFrame,
-                         const std::vector<VarFrame*>& frames, 
-                         bool alwaysTaken, RV& rv) override;
+  void handleDisjunction(const AstNode* node,
+                         VarFrame* currentFrame,
+                         const std::vector<VarFrame*>& frames,
+                         bool alwaysTaken,
+                         RV& rv) override;
 
   void handleScope(const AstNode* ast, RV& rv) override;
 };
@@ -130,8 +133,7 @@ SplitInitVarStatus FindSplitInits::findVarStatus(ID varId) {
   return status;
 }
 
-void FindSplitInits::addInit(VarFrame* frame,
-                             ID varId, QualifiedType rhsType) {
+void FindSplitInits::addInit(VarFrame* frame, ID varId, QualifiedType rhsType) {
   bool inserted = frame->addToInitedVars(varId);
   if (inserted) {
     // if it was inserted into the set, also record order and type
@@ -242,8 +244,10 @@ void FindSplitInits::handleAssign(const AstNode* lhsAst,
   }
 }
 
-void FindSplitInits::handleOutFormal(const Call* ast, const AstNode* actual,
-                                     const QualifiedType& formalType, RV& rv) {
+void FindSplitInits::handleOutFormal(const Call* ast,
+                                     const AstNode* actual,
+                                     const QualifiedType& formalType,
+                                     RV& rv) {
   ID toId = refersToId(actual, rv);
   if (!toId.isEmpty()) {
     handleInitOrAssign(toId, formalType, rv);
@@ -253,14 +257,16 @@ void FindSplitInits::handleOutFormal(const Call* ast, const AstNode* actual,
   }
 }
 
-void FindSplitInits::handleInFormal(const Call* ast, const AstNode* actual,
+void FindSplitInits::handleInFormal(const Call* ast,
+                                    const AstNode* actual,
                                     const QualifiedType& formalType,
                                     const QualifiedType* actualScalarType,
                                     RV& rv) {
   processMentions(actual, rv);
 }
 
-void FindSplitInits::handleInoutFormal(const Call* ast, const AstNode* actual,
+void FindSplitInits::handleInoutFormal(const Call* ast,
+                                       const AstNode* actual,
                                        const QualifiedType& formalType,
                                        const QualifiedType* actualScalarType,
                                        RV& rv) {
@@ -283,7 +289,7 @@ void FindSplitInits::handleYield(const uast::Yield* ast, RV& rv) {
   // no action needed
 }
 
-static void propagateMentions(VarFrame * parentFrame, VarFrame* frame) {
+static void propagateMentions(VarFrame* parentFrame, VarFrame* frame) {
   for (const auto& id : frame->mentionedVars) {
     if (frame->declaredVars.count(id) == 0) {
       parentFrame->mentionedVars.insert(id);
@@ -291,20 +297,20 @@ static void propagateMentions(VarFrame * parentFrame, VarFrame* frame) {
   }
 }
 
+std::map<ID, QualifiedType>
+FindSplitInits::verifyInitOrderAndType(const AstNode* node,
+                                       const std::vector<VarFrame*>& frames,
+                                       const std::set<ID>& splitInitedVars) {
 
-std::map<ID,QualifiedType> FindSplitInits::verifyInitOrderAndType(const AstNode * node, 
-                                                                  const std::vector<VarFrame*>& frames,
-                                                                  const std::set<ID>& splitInitedVars) {
-
-  std::vector<std::pair<ID,QualifiedType>> referenceInitOrder;
+  std::vector<std::pair<ID, QualifiedType>> referenceInitOrder;
   std::map<ID, QualifiedType> referenceInitTypes;
   std::map<ID, int> initTypeBranchIdxs;
   int frameCount = 0; // needed to track branches for error reporting
   for (auto frame : frames) {
-    
+
     size_t idx = 0;
 
-    for (auto & pair : frame->initedVarsVec) {
+    for (auto& pair : frame->initedVarsVec) {
       auto& id = pair.first;
       auto& qt = pair.second;
 
@@ -316,23 +322,27 @@ std::map<ID,QualifiedType> FindSplitInits::verifyInitOrderAndType(const AstNode 
         referenceInitTypes[id] = qt;
         initTypeBranchIdxs[id] = frameCount;
       } else if (referenceInitTypes[id] != qt) {
-        CHPL_REPORT(context, SplitInitMismatchedConditionalTypes,
-                    parsing::idToAst(context, id)->toVariable(), node,
-                    qt, referenceInitTypes[id], 
-                    frameCount, initTypeBranchIdxs[id]);
-        return std::map<ID,QualifiedType>();
+        CHPL_REPORT(context,
+                    SplitInitMismatchedConditionalTypes,
+                    parsing::idToAst(context, id)->toVariable(),
+                    node,
+                    qt,
+                    referenceInitTypes[id],
+                    frameCount,
+                    initTypeBranchIdxs[id]);
+        return std::map<ID, QualifiedType>();
       }
 
-      // only check initialization order if the branch 
+      // only check initialization order if the branch
       // does not unconditionally return
       if (frame->controlFlowInfo.returnsOrThrows()) continue;
 
       if (idx >= referenceInitOrder.size()) {
         referenceInitOrder.emplace_back(id, qt);
       } else if (referenceInitOrder[idx].first != id) {
-          context->error(node, 
+        context->error(node,
                        "initialization order does not match between branches");
-          return std::map<ID,QualifiedType>();
+        return std::map<ID, QualifiedType>();
       }
       idx++;
     }
@@ -341,14 +351,15 @@ std::map<ID,QualifiedType> FindSplitInits::verifyInitOrderAndType(const AstNode 
   return referenceInitTypes;
 }
 
-void FindSplitInits::handleDisjunction(const AstNode * node, 
-                                       VarFrame * currentFrame, 
-                                       const std::vector<VarFrame*>& frames, 
-                                       bool alwaysTaken, RV& rv) {
+void FindSplitInits::handleDisjunction(const AstNode* node,
+                                       VarFrame* currentFrame,
+                                       const std::vector<VarFrame*>& frames,
+                                       bool alwaysTaken,
+                                       RV& rv) {
 
   // gather the set of variables inited in any of the branches
   std::set<ID> locallyInitedVars;
-  for(auto frame : frames) {
+  for (auto frame : frames) {
     for (const auto& id : frame->initedVars) {
       if (frame->eligibleVars.count(id) > 0) {
         // variable declared and inited locally. save the result
@@ -361,22 +372,23 @@ void FindSplitInits::handleDisjunction(const AstNode * node,
   }
 
   // remove variables mentioned in other branches, as that means they
-  // were not initialized in that branch. 
-  for(auto frame: frames) {
+  // were not initialized in that branch.
+  for (auto frame : frames) {
     for (const auto& id : frame->mentionedVars) {
       locallyInitedVars.erase(id);
     }
   }
 
-  // calculate the set of variables that are split initialized in at least 
-  // one branch. A variable is split inited if all branches either 
+  // calculate the set of variables that are split initialized in at least
+  // one branch. A variable is split inited if all branches either
   // return/throw or initialize the variable.
   std::set<ID> locallySplitInitedVars;
   for (auto id : locallyInitedVars) {
     bool allFramesInitReturnOrThrow = true;
-    for(auto frame : frames) {
+    for (auto frame : frames) {
       bool thisFrameInits = frame->initedVars.count(id) > 0;
-      allFramesInitReturnOrThrow &= thisFrameInits || frame->controlFlowInfo.returnsOrThrows();
+      allFramesInitReturnOrThrow &=
+        thisFrameInits || frame->controlFlowInfo.returnsOrThrows();
     }
     if (allFramesInitReturnOrThrow) {
       locallySplitInitedVars.insert(id);
@@ -386,22 +398,22 @@ void FindSplitInits::handleDisjunction(const AstNode * node,
   }
 
   if (!alwaysTaken) {
-    for (auto frame: frames) {
+    for (auto frame : frames) {
       propagateMentions(currentFrame, frame);
-    } 
-    for (const auto & id: locallySplitInitedVars) {
+    }
+    for (const auto& id : locallySplitInitedVars) {
       currentFrame->mentionedVars.insert(id);
     }
     return;
   }
-  
-  auto verifiedInits = verifyInitOrderAndType(node, frames, 
-                                              locallySplitInitedVars);
+
+  auto verifiedInits =
+    verifyInitOrderAndType(node, frames, locallySplitInitedVars);
   for (auto& pair : verifiedInits) {
     addInit(currentFrame, pair.first, pair.second);
   }
 
-  for (auto frame: frames) {
+  for (auto frame : frames) {
     propagateMentions(currentFrame, frame);
   }
 }
@@ -500,15 +512,13 @@ void FindSplitInits::handleTry(const Try* t, RV& rv) {
 }
 
 static bool allowsSplitInit(const AstNode* ast) {
-  return ast->isBlock() ||
-         ast->isConditional() ||
-         ast->isLocal() ||
-         ast->isSerial() ||
-         ast->isSelect() ||
-         ast->isTry();
+  return ast->isBlock() || ast->isConditional() || ast->isLocal() ||
+         ast->isSerial() || ast->isSelect() || ast->isTry();
 }
 
-void FindSplitInits::propagateChildToParent(VarFrame* frame, VarFrame* parent, const AstNode* ast) {
+void FindSplitInits::propagateChildToParent(VarFrame* frame,
+                                            VarFrame* parent,
+                                            const AstNode* ast) {
   if (allowsSplitInit(ast)) {
     // a scope that allows split init (e.g. a regular { } block)
 
@@ -556,7 +566,6 @@ void FindSplitInits::propagateChildToParent(VarFrame* frame, VarFrame* parent, c
       }
     }
   }
-
 }
 
 void FindSplitInits::handleScope(const AstNode* ast, RV& rv) {
@@ -581,7 +590,6 @@ computeSplitInits(Context* context,
   splitInitedVars.swap(uv.allSplitInitedVars);
   return splitInitedVars;
 }
-
 
 } // end namespace resolution
 } // end namespace chpl

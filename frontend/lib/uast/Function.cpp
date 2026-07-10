@@ -25,7 +25,6 @@
 namespace chpl {
 namespace uast {
 
-
 void Function::dumpFieldsInner(const DumpSettings& s) const {
   if (inline_) {
     s.out << " inline";
@@ -75,12 +74,12 @@ std::string Function::dumpChildLabelInner(int i) const {
 const char* Function::returnIntentToString(ReturnIntent intent) {
   switch (intent) {
     case Function::DEFAULT_RETURN_INTENT: return "";
-    case Function::OUT:                   return "out";
-    case Function::CONST:                 return "const";
-    case Function::CONST_REF:             return "const ref";
-    case Function::REF:                   return "ref";
-    case Function::PARAM:                 return "param";
-    case Function::TYPE:                  return "type";
+    case Function::OUT: return "out";
+    case Function::CONST: return "const";
+    case Function::CONST_REF: return "const ref";
+    case Function::REF: return "ref";
+    case Function::PARAM: return "param";
+    case Function::TYPE: return "type";
   }
 
   return "<unknown>";
@@ -88,8 +87,8 @@ const char* Function::returnIntentToString(ReturnIntent intent) {
 
 const char* Function::kindToString(Kind kind) {
   switch (kind) {
-    case Function::PROC:     return "proc";
-    case Function::ITER:     return "iter";
+    case Function::PROC: return "proc";
+    case Function::ITER: return "iter";
     case Function::OPERATOR: return "operator";
   }
 
@@ -98,17 +97,17 @@ const char* Function::kindToString(Kind kind) {
 
 const char* Function::iteratorKindToString(IteratorKind kind) {
   switch (kind) {
-    case Function::SERIAL:     return "serial";
+    case Function::SERIAL: return "serial";
     case Function::STANDALONE: return "standalone";
-    case Function::LEADER:     return "leader";
-    case Function::FOLLOWER:   return "follower";
+    case Function::LEADER: return "leader";
+    case Function::FOLLOWER: return "follower";
   }
 
   return "<unknown>";
 }
 
-
-owned<Function> Function::build(Builder* builder, Location loc,
+owned<Function> Function::build(Builder* builder,
+                                Location loc,
                                 owned<AttributeGroup> attributeGroup,
                                 Decl::Visibility vis,
                                 Function::Linkage linkage,
@@ -160,7 +159,7 @@ owned<Function> Function::build(Builder* builder, Location loc,
       numFormals++;
     }
     int nFormals = formals.size();
-    for (auto & formal : formals) {
+    for (auto& formal : formals) {
       lst.push_back(std::move(formal));
     }
     numFormals += nFormals;
@@ -177,7 +176,7 @@ owned<Function> Function::build(Builder* builder, Location loc,
   numLifetimeParts = lifetime.size();
   if (numLifetimeParts != 0) {
     lifetimeChildNum = lst.size();
-    for (auto & part : lifetime) {
+    for (auto& part : lifetime) {
       lst.push_back(std::move(part));
     }
   }
@@ -187,7 +186,9 @@ owned<Function> Function::build(Builder* builder, Location loc,
     lst.push_back(std::move(body));
   }
 
-  Function* ret = new Function(std::move(lst), attributeGroupChildNum, vis,
+  Function* ret = new Function(std::move(lst),
+                               attributeGroupChildNum,
+                               vis,
                                linkage,
                                name,
                                inline_,
@@ -209,7 +210,6 @@ owned<Function> Function::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

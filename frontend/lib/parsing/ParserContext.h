@@ -97,40 +97,48 @@ struct ParserContext {
 
   ParserExprList* parenlessMarker;
 
-  ParserContext(const char* filename, Builder* builder,
-                parsing::ParserStats* parseStats)
-  {
+  ParserContext(const char* filename,
+                Builder* builder,
+                parsing::ParserStats* parseStats) {
     auto uniqueFilename = UniqueString::get(builder->context(), filename);
     YYLTYPE emptyLoc = {0};
 
-    this->scanner                 = nullptr;
-    this->filename                = uniqueFilename;
-    this->builder                 = builder;
-    this->topLevelStatements      = nullptr;
-    this->comments                = nullptr;
-    this->visibility              = Decl::DEFAULT_VISIBILITY;
-    this->linkage                 = Decl::DEFAULT_LINKAGE;
-    this->varDeclLinkageName      = nullptr;
-    this->hasNotedVarDeclKind     = false;
-    this->varDeclKind             = Variable::VAR;
-    this->isBuildingFormal        = false;
-    this->isVarDeclConfig         = false;
-    this->configLoc               = emptyLoc;
-    this->varDestinationExpr      = nullptr;
-    this->attributeGroupParts     = {nullptr, nullptr, false, false, false, false, false, UniqueString(), UniqueString(), UniqueString(), UniqueString(), UniqueString() };
-    this->hasAttributeGroupParts  = false;
-    this->numAttributesBuilt      = 0;
-    this->declStartLocation       = emptyLoc;
-    this->curlyBraceLocation      = emptyLoc;
-    this->atEOF                   = false;
-    this->includeComments =
-      builder->context()->configuration().includeComments;
-    this->parenlessMarker         = new ParserExprList();
-    this->parseStats              = parseStats;
+    this->scanner = nullptr;
+    this->filename = uniqueFilename;
+    this->builder = builder;
+    this->topLevelStatements = nullptr;
+    this->comments = nullptr;
+    this->visibility = Decl::DEFAULT_VISIBILITY;
+    this->linkage = Decl::DEFAULT_LINKAGE;
+    this->varDeclLinkageName = nullptr;
+    this->hasNotedVarDeclKind = false;
+    this->varDeclKind = Variable::VAR;
+    this->isBuildingFormal = false;
+    this->isVarDeclConfig = false;
+    this->configLoc = emptyLoc;
+    this->varDestinationExpr = nullptr;
+    this->attributeGroupParts = {nullptr,
+                                 nullptr,
+                                 false,
+                                 false,
+                                 false,
+                                 false,
+                                 false,
+                                 UniqueString(),
+                                 UniqueString(),
+                                 UniqueString(),
+                                 UniqueString(),
+                                 UniqueString()};
+    this->hasAttributeGroupParts = false;
+    this->numAttributesBuilt = 0;
+    this->declStartLocation = emptyLoc;
+    this->curlyBraceLocation = emptyLoc;
+    this->atEOF = false;
+    this->includeComments = builder->context()->configuration().includeComments;
+    this->parenlessMarker = new ParserExprList();
+    this->parseStats = parseStats;
   }
-  ~ParserContext() {
-    delete this->parenlessMarker;
-  }
+  ~ParserContext() { delete this->parenlessMarker; }
 
   Context* context() { return builder->context(); }
 
@@ -147,11 +155,13 @@ struct ParserContext {
   void storeVarDeclLinkageName(AstNode* linkageName);
   owned<AstNode> consumeVarDeclLinkageName(void);
 
-  void noteAttribute(YYLTYPE loc, AstNode* firstIdent,
+  void noteAttribute(YYLTYPE loc,
+                     AstNode* firstIdent,
                      ParserExprList* toolspace,
                      MaybeNamedActualList* actuals);
 
-  owned<Attribute> buildAttribute(YYLTYPE loc, AstNode* firstIdent,
+  owned<Attribute> buildAttribute(YYLTYPE loc,
+                                  AstNode* firstIdent,
                                   ParserExprList* toolspace,
                                   MaybeNamedActualList* actuals);
   owned<AttributeGroup> popLoopAttributeGroup();
@@ -191,42 +201,34 @@ struct ParserContext {
 
   // Given a location, create a new one pointing to the end of it.
   YYLTYPE makeLocationAtLast(YYLTYPE location) {
-    return {
-      .first_line     = location.last_line,
-      .first_column   = location.last_column,
-      .last_line      = location.last_line,
-      .last_column    = location.last_column
-    };
+    return {.first_line = location.last_line,
+            .first_column = location.last_column,
+            .last_line = location.last_line,
+            .last_column = location.last_column};
   }
 
   // Given two locations, create a new location that spans between them.
   YYLTYPE makeSpannedLocation(YYLTYPE startLoc, YYLTYPE endLoc) {
-    return {
-      .first_line     = startLoc.first_line,
-      .first_column   = startLoc.first_column,
-      .last_line      = endLoc.last_line,
-      .last_column    = endLoc.last_column
-    };
+    return {.first_line = startLoc.first_line,
+            .first_column = startLoc.first_column,
+            .last_line = endLoc.last_line,
+            .last_column = endLoc.last_column};
   }
 
   YYLTYPE locationFromChplLocation(AstNode* ast) {
     auto chapelLoc = builder->getLocation(ast);
-    YYLTYPE ret = {
-      .first_line = chapelLoc.firstLine(),
-      .first_column = chapelLoc.firstColumn(),
-      .last_line = chapelLoc.lastLine(),
-      .last_column = chapelLoc.lastColumn()
-    };
+    YYLTYPE ret = {.first_line = chapelLoc.firstLine(),
+                   .first_column = chapelLoc.firstColumn(),
+                   .last_line = chapelLoc.lastLine(),
+                   .last_column = chapelLoc.lastColumn()};
     return ret;
   }
   YYLTYPE locationFromChplLocation(const AstNode* ast) {
     auto chapelLoc = builder->getLocation(ast);
-    YYLTYPE ret = {
-      .first_line = chapelLoc.firstLine(),
-      .first_column = chapelLoc.firstColumn(),
-      .last_line = chapelLoc.lastLine(),
-      .last_column = chapelLoc.lastColumn()
-    };
+    YYLTYPE ret = {.first_line = chapelLoc.firstLine(),
+                   .first_column = chapelLoc.firstColumn(),
+                   .last_line = chapelLoc.lastLine(),
+                   .last_column = chapelLoc.lastColumn()};
     return ret;
   }
 
@@ -282,7 +284,8 @@ struct ParserContext {
   void discardCommentsFromList(ParserExprList* lst, YYLTYPE location);
   void discardCommentsFromList(ParserExprList* lst);
 
-  void appendComments(CommentsAndStmt*cs, std::vector<ParserComment>* comments);
+  void appendComments(CommentsAndStmt* cs,
+                      std::vector<ParserComment>* comments);
 
   // clears the inner comments that should have already been captured
   // to handle things like this
@@ -298,14 +301,14 @@ struct ParserContext {
     builder->noteLocation(cs.stmt, convertLocation(location));
   }
   void adjustLocation(CommentsAndStmt cs, YYLTYPE start, YYLTYPE end) {
-    builder->noteLocation(cs.stmt, convertLocation(
-      makeSpannedLocation(start, end)));
+    builder->noteLocation(cs.stmt,
+                          convertLocation(makeSpannedLocation(start, end)));
   }
 
   // Create a ParserExprList containing the passed statements, and any
   // comments before the right brace brace location.
-  ParserExprList* blockToParserExprList(YYLTYPE lbrLoc, YYLTYPE rbrLoc,
-                                        ParserExprList* body);
+  ParserExprList*
+  blockToParserExprList(YYLTYPE lbrLoc, YYLTYPE rbrLoc, ParserExprList* body);
 
   // This should consume the comments that occur before
   // and return them. (Including looking at source locations).
@@ -335,13 +338,15 @@ struct ParserContext {
                            AstNode* typeExpression,
                            AstNode* initExpression);
 
-  WithClause* buildWithClause(YYLTYPE location, YYLTYPE locWith,
+  WithClause* buildWithClause(YYLTYPE location,
+                              YYLTYPE locWith,
                               YYLTYPE locLeftParen,
                               YYLTYPE locTaskIntentList,
                               YYLTYPE locRightParen,
                               ParserExprList* exprList);
 
-  CommentsAndStmt buildBeginStmt(YYLTYPE location, YYLTYPE locBegin,
+  CommentsAndStmt buildBeginStmt(YYLTYPE location,
+                                 YYLTYPE locBegin,
                                  YYLTYPE locWithClause,
                                  YYLTYPE locStmt,
                                  WithClause* withClause,
@@ -353,23 +358,26 @@ struct ParserContext {
 
   AstNode* buildPrimCall(YYLTYPE location, MaybeNamedActualList* lst);
 
-  OpCall* buildBinOp(YYLTYPE location,
-                     AstNode* lhs, PODUniqueString op, AstNode* rhs);
-  OpCall* buildUnaryOp(YYLTYPE location,
-                       PODUniqueString op, AstNode* expr);
+  OpCall*
+  buildBinOp(YYLTYPE location, AstNode* lhs, PODUniqueString op, AstNode* rhs);
+  OpCall* buildUnaryOp(YYLTYPE location, PODUniqueString op, AstNode* expr);
 
-  AstNode* buildDot(YYLTYPE location, YYLTYPE locReceiver, YYLTYPE locPeriod,
+  AstNode* buildDot(YYLTYPE location,
+                    YYLTYPE locReceiver,
+                    YYLTYPE locPeriod,
                     YYLTYPE locDotField,
                     AstNode* receiver,
                     UniqueString field,
-                    bool wrapInCall=false);
+                    bool wrapInCall = false);
 
-  AstNode* buildManagerExpr(YYLTYPE location, AstNode* expr,
+  AstNode* buildManagerExpr(YYLTYPE location,
+                            AstNode* expr,
                             Variable::Kind kind,
                             YYLTYPE locResourceName,
                             UniqueString resourceName);
 
-  AstNode* buildManagerExpr(YYLTYPE location, AstNode* expr,
+  AstNode* buildManagerExpr(YYLTYPE location,
+                            AstNode* expr,
                             YYLTYPE locResourceName,
                             UniqueString resourceName);
 
@@ -379,81 +387,68 @@ struct ParserContext {
                                   YYLTYPE locBlockOrDo,
                                   BlockOrDo blockOrDo);
 
-  FunctionParts makeFunctionParts(bool isInline,
-                                  bool isOverride);
+  FunctionParts makeFunctionParts(bool isInline, bool isOverride);
 
-  AstNode*
-  buildFormal(YYLTYPE location,
-              YYLTYPE locName,
-              YYLTYPE locIntent,
-              MaybeIntent intent,
-              PODUniqueString name,
-              AstNode* typeExpr,
-              AstNode* initExpr,
-              bool consumeAttributeGroup=false);
+  AstNode* buildFormal(YYLTYPE location,
+                       YYLTYPE locName,
+                       YYLTYPE locIntent,
+                       MaybeIntent intent,
+                       PODUniqueString name,
+                       AstNode* typeExpr,
+                       AstNode* initExpr,
+                       bool consumeAttributeGroup = false);
 
-  AstNode*
-  buildVarArgFormal(YYLTYPE location,
-                    YYLTYPE locIntent,
-                    MaybeIntent intent,
-                    PODUniqueString name,
-                    YYLTYPE nameLocation,
-                    AstNode* typeExpr,
-                    AstNode* initExpr,
-                    bool consumeAttributeGroup=false);
+  AstNode* buildVarArgFormal(YYLTYPE location,
+                             YYLTYPE locIntent,
+                             MaybeIntent intent,
+                             PODUniqueString name,
+                             YYLTYPE nameLocation,
+                             AstNode* typeExpr,
+                             AstNode* initExpr,
+                             bool consumeAttributeGroup = false);
 
-  AstNode*
-  buildTupleFormal(YYLTYPE location,
-                   YYLTYPE locIntent,
-                   MaybeIntent intent,
-                   ParserExprList* components,
-                   AstNode* typeExpr,
-                   AstNode* initExpr);
+  AstNode* buildTupleFormal(YYLTYPE location,
+                            YYLTYPE locIntent,
+                            MaybeIntent intent,
+                            ParserExprList* components,
+                            AstNode* typeExpr,
+                            AstNode* initExpr);
 
-  AstNode*
-  consumeFormalToAnonFormal(AstNode* formal);
+  AstNode* consumeFormalToAnonFormal(AstNode* formal);
 
-  AstNode*
-  buildFunctionExpr(YYLTYPE location, FunctionParts& fp);
+  AstNode* buildFunctionExpr(YYLTYPE location, FunctionParts& fp);
 
-  AstNode*
-  buildFunctionType(YYLTYPE location, FunctionParts& fp);
+  AstNode* buildFunctionType(YYLTYPE location, FunctionParts& fp);
 
-  AstNode*
-  buildAnonFormal(YYLTYPE location, YYLTYPE locIntent,
-                  MaybeIntent intent,
-                  AstNode* formalType);
+  AstNode* buildAnonFormal(YYLTYPE location,
+                           YYLTYPE locIntent,
+                           MaybeIntent intent,
+                           AstNode* formalType);
 
-  AstNode*
-  buildAnonFormal(YYLTYPE location, PODUniqueString name);
+  AstNode* buildAnonFormal(YYLTYPE location, PODUniqueString name);
 
-  AstNode*
-  buildAnonFormal(YYLTYPE location, AstNode* formalType);
+  AstNode* buildAnonFormal(YYLTYPE location, AstNode* formalType);
 
-  Formal*
-  buildThisFormal(YYLTYPE location,
-                  YYLTYPE locIntent,
-                  MaybeIntent intent,
-                  AstNode* typeExpression,
-                  AstNode* initExpression);
+  Formal* buildThisFormal(YYLTYPE location,
+                          YYLTYPE locIntent,
+                          MaybeIntent intent,
+                          AstNode* typeExpression,
+                          AstNode* initExpression);
 
-  CommentsAndStmt
-  buildExternExportFunctionDecl(YYLTYPE location, FunctionParts& fp);
+  CommentsAndStmt buildExternExportFunctionDecl(YYLTYPE location,
+                                                FunctionParts& fp);
 
-  CommentsAndStmt
-  buildRegularFunctionDecl(YYLTYPE location, FunctionParts& fp);
+  CommentsAndStmt buildRegularFunctionDecl(YYLTYPE location, FunctionParts& fp);
 
   CommentsAndStmt buildFunctionDecl(YYLTYPE location, FunctionParts& fp);
 
   ErroneousExpression* checkForFunctionErrors(FunctionParts& fp,
                                               AstNode* retType);
 
-  void enterScopeForFunctionDecl(FunctionParts& fp,
-                                 AstNode* retType);
+  void enterScopeForFunctionDecl(FunctionParts& fp, AstNode* retType);
   void exitScopeForFunctionDecl(YYLTYPE bodyLocation, FunctionParts& fp);
 
-  AstNode* buildLetExpr(YYLTYPE location, ParserExprList* decls,
-                        AstNode* expr);
+  AstNode* buildLetExpr(YYLTYPE location, ParserExprList* decls, AstNode* expr);
 
   // In certain locations the expression '[a, b]' is interpreted as an
   // array type and not an array literal, e.g., formal types and return
@@ -471,7 +466,8 @@ struct ParserContext {
   AstNode* buildBracketLoopExpr(YYLTYPE location);
 
   // .chpl: '[] int'
-  AstNode* buildBracketLoopExpr(YYLTYPE location, YYLTYPE locRightBracket,
+  AstNode* buildBracketLoopExpr(YYLTYPE location,
+                                YYLTYPE locRightBracket,
                                 AstNode* bodyExpr);
 
   // .chpl: '[i in 1..100] i' (multiple indices is an error in this case)
@@ -514,9 +510,8 @@ struct ParserContext {
   owned<Decl> buildLoopIndexDecl(YYLTYPE location, owned<AstNode> e);
   owned<Decl> buildLoopIndexDecl(YYLTYPE location, ParserExprList* exprLst);
 
-  AstNode* buildNewExpr(YYLTYPE location,
-                           New::Management management,
-                           AstNode* expr);
+  AstNode*
+  buildNewExpr(YYLTYPE location, New::Management management, AstNode* expr);
 
   FnCall* wrapCalledExpressionInNew(YYLTYPE location,
                                     New::Management management,
@@ -588,15 +583,15 @@ struct ParserContext {
                                        CommentsAndStmt cs);
 
   CommentsAndStmt buildGeneralLoopStmt(YYLTYPE locLoop,
-                                      YYLTYPE locIndex,
-                                      YYLTYPE locHeader,
-                                      YYLTYPE locBodyAnchor,
-                                      PODUniqueString loopType,
-                                      AstNode* indexExpr,
-                                      AstNode* iterandExpr,
-                                      WithClause* withClause,
-                                      BlockOrDo blockOrDo);
-                                      // AttributeGroup* attributeGroup);
+                                       YYLTYPE locIndex,
+                                       YYLTYPE locHeader,
+                                       YYLTYPE locBodyAnchor,
+                                       PODUniqueString loopType,
+                                       AstNode* indexExpr,
+                                       AstNode* iterandExpr,
+                                       WithClause* withClause,
+                                       BlockOrDo blockOrDo);
+  // AttributeGroup* attributeGroup);
 
   CommentsAndStmt buildCoforallLoopStmt(YYLTYPE locCoforall,
                                         YYLTYPE locHeader,
@@ -606,16 +601,18 @@ struct ParserContext {
                                         AstNode* iterandExpr,
                                         WithClause* withClause,
                                         BlockOrDo blockOrDo);
-                                        // AttributeGroup* attributeGroup);
+  // AttributeGroup* attributeGroup);
 
-  CommentsAndStmt buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
+  CommentsAndStmt buildConditionalStmt(bool usesThenKeyword,
+                                       YYLTYPE locIf,
                                        // same as locThenBody if no 'then'
                                        YYLTYPE locThenKw,
                                        YYLTYPE locThenBody,
                                        AstNode* condition,
                                        CommentsAndStmt thenCs);
 
-  CommentsAndStmt buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
+  CommentsAndStmt buildConditionalStmt(bool usesThenKeyword,
+                                       YYLTYPE locIf,
                                        // same as locThenBody if no 'then'
                                        YYLTYPE locThenKw,
                                        YYLTYPE locThenBody,
@@ -628,12 +625,11 @@ struct ParserContext {
   CommentsAndStmt buildExternBlockStmt(YYLTYPE locEverything,
                                        SizedStr sizedStr);
 
-  AstNode* buildNumericLiteral(YYLTYPE location,
-                               PODUniqueString str,
-                               int type);
+  AstNode* buildNumericLiteral(YYLTYPE location, PODUniqueString str, int type);
 
   // Returns AstNode because it may build an ErroneousExpression.
-  AstNode* buildAsExpr(YYLTYPE locName, YYLTYPE locRename,
+  AstNode* buildAsExpr(YYLTYPE locName,
+                       YYLTYPE locRename,
                        owned<AstNode> name,
                        owned<AstNode> rename);
 
@@ -641,28 +637,32 @@ struct ParserContext {
   buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol, bool isImport);
 
   AstNode*
-  buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol,
+  buildVisibilityClause(YYLTYPE location,
+                        owned<AstNode> symbol,
                         VisibilityClause::LimitationKind limitationKind,
-                        AstList limitations, bool isImport);
+                        AstList limitations,
+                        bool isImport);
+
+  CommentsAndStmt buildImportStmt(YYLTYPE locEverything,
+                                  Decl::Visibility visibility,
+                                  ParserExprList* visibilityClauses);
+
+  CommentsAndStmt buildMultiUseStmt(YYLTYPE locEverything,
+                                    Decl::Visibility visibility,
+                                    ParserExprList* visibilityClauses);
 
   CommentsAndStmt
-  buildImportStmt(YYLTYPE locEverything, Decl::Visibility visibility,
-                  ParserExprList* visibilityClauses);
-
-  CommentsAndStmt
-  buildMultiUseStmt(YYLTYPE locEverything, Decl::Visibility visibility,
-                    ParserExprList* visibilityClauses);
-
-  CommentsAndStmt
-  buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locVisibilityClause,
+  buildSingleUseStmt(YYLTYPE locEverything,
+                     YYLTYPE locVisibilityClause,
                      Decl::Visibility visibility,
                      owned<AstNode> name,
                      VisibilityClause::LimitationKind limitationKind,
                      ParserExprList* limitationExprs);
 
   // Given a list of vars, build either a single var or a multi-decl.
-  CommentsAndStmt
-  buildVarOrMultiDeclStmt(YYLTYPE locEverything, AttributeGroup* attributeGroup, ParserExprList* vars);
+  CommentsAndStmt buildVarOrMultiDeclStmt(YYLTYPE locEverything,
+                                          AttributeGroup* attributeGroup,
+                                          ParserExprList* vars);
 
   TypeDeclParts enterScopeAndBuildTypeDeclParts(YYLTYPE locStart,
                                                 YYLTYPE locName,
@@ -680,32 +680,35 @@ struct ParserContext {
                                          ParserExprList* contents,
                                          YYLTYPE closingBrace);
 
-  AstNode* buildReduce(YYLTYPE location, YYLTYPE locOp,
+  AstNode* buildReduce(YYLTYPE location,
+                       YYLTYPE locOp,
                        PODUniqueString op,
                        AstNode* iterand);
 
-  AstNode* buildReduce(YYLTYPE location, YYLTYPE locOp,
-                       AstNode* op,
-                       AstNode* iterand);
+  AstNode*
+  buildReduce(YYLTYPE location, YYLTYPE locOp, AstNode* op, AstNode* iterand);
 
-  AstNode* buildReduceIntent(YYLTYPE location, YYLTYPE locOp,
+  AstNode* buildReduceIntent(YYLTYPE location,
+                             YYLTYPE locOp,
                              PODUniqueString op,
-                             AstNode* iterand, YYLTYPE iterandLoc);
+                             AstNode* iterand,
+                             YYLTYPE iterandLoc);
 
-  AstNode* buildReduceIntent(YYLTYPE location, YYLTYPE locOp,
+  AstNode* buildReduceIntent(YYLTYPE location,
+                             YYLTYPE locOp,
                              AstNode* op,
-                             AstNode* iterand, YYLTYPE iterandLoc);
+                             AstNode* iterand,
+                             YYLTYPE iterandLoc);
 
-  AstNode* buildScan(YYLTYPE location, YYLTYPE locOp,
+  AstNode* buildScan(YYLTYPE location,
+                     YYLTYPE locOp,
                      PODUniqueString op,
                      AstNode* iterand);
 
-  AstNode* buildScan(YYLTYPE location, YYLTYPE locOp,
-                     AstNode* op,
-                     AstNode* iterand);
+  AstNode*
+  buildScan(YYLTYPE location, YYLTYPE locOp, AstNode* op, AstNode* iterand);
 
-  AstNode* buildTypeQuery(YYLTYPE location,
-                          PODUniqueString queriedIdent);
+  AstNode* buildTypeQuery(YYLTYPE location, PODUniqueString queriedIdent);
 
   AstNode* buildTypeConstructor(YYLTYPE location,
                                 PODUniqueString baseType,
@@ -719,22 +722,23 @@ struct ParserContext {
                                 PODUniqueString baseType,
                                 MaybeNamedActualList* actuals);
 
-  CommentsAndStmt buildTryExprStmt(YYLTYPE location, AstNode* expr,
-                                   bool isTryBang);
+  CommentsAndStmt
+  buildTryExprStmt(YYLTYPE location, AstNode* expr, bool isTryBang);
 
-  CommentsAndStmt buildTryExprStmt(YYLTYPE location, CommentsAndStmt cs,
-                                   bool isTryBang);
+  CommentsAndStmt
+  buildTryExprStmt(YYLTYPE location, CommentsAndStmt cs, bool isTryBang);
 
-  AstNode* buildTryExpr(YYLTYPE location, AstNode* expr,
-                        bool isTryBang);
+  AstNode* buildTryExpr(YYLTYPE location, AstNode* expr, bool isTryBang);
 
   AstNode* buildEmptyStmt(YYLTYPE location);
 
-  CommentsAndStmt buildTryCatchStmt(YYLTYPE location, CommentsAndStmt block,
+  CommentsAndStmt buildTryCatchStmt(YYLTYPE location,
+                                    CommentsAndStmt block,
                                     ParserExprList* handlers,
                                     bool isTryBang);
 
-  AstNode* buildCatch(YYLTYPE location, AstNode* error,
+  AstNode* buildCatch(YYLTYPE location,
+                      AstNode* error,
                       CommentsAndStmt block,
                       bool hasParensAroundError,
                       YYLTYPE parenLocation);
@@ -750,18 +754,18 @@ struct ParserContext {
                                   ParserExprList* whenStmts);
 
   CommentsAndStmt
-  buildForwardingDecl(YYLTYPE location, owned<AttributeGroup> attributeGroup,
+  buildForwardingDecl(YYLTYPE location,
+                      owned<AttributeGroup> attributeGroup,
                       owned<AstNode> expr,
                       VisibilityClause::LimitationKind limitationKind,
                       ParserExprList* limitations);
 
-  CommentsAndStmt
-  buildForwardingDecl(YYLTYPE location, owned<AttributeGroup> attributeGroup,
-                      CommentsAndStmt cs);
+  CommentsAndStmt buildForwardingDecl(YYLTYPE location,
+                                      owned<AttributeGroup> attributeGroup,
+                                      CommentsAndStmt cs);
 
-  AstNode* buildInterfaceFormal(YYLTYPE location,
-                                YYLTYPE locName,
-                                PODUniqueString name);
+  AstNode*
+  buildInterfaceFormal(YYLTYPE location, YYLTYPE locName, PODUniqueString name);
 
   CommentsAndStmt buildInterfaceStmt(YYLTYPE location,
                                      YYLTYPE headerLoc,
@@ -770,9 +774,9 @@ struct ParserContext {
                                      YYLTYPE locBody,
                                      CommentsAndStmt body);
 
-  owned<AstNode>
-  buildInterfaceExpr(YYLTYPE location, PODUniqueString name,
-                     MaybeNamedActualList* formals);
+  owned<AstNode> buildInterfaceExpr(YYLTYPE location,
+                                    PODUniqueString name,
+                                    MaybeNamedActualList* formals);
 
   CommentsAndStmt buildImplementsStmt(YYLTYPE location,
                                       YYLTYPE locTypeExpr,
@@ -798,8 +802,9 @@ struct ParserContext {
                                      PODUniqueString name,
                                      MaybeNamedActualList* formals);
 
-  CommentsAndStmt buildLabelStmt(YYLTYPE location, PODUniqueString name,
-                                 CommentsAndStmt cs);
+  CommentsAndStmt
+  buildLabelStmt(YYLTYPE location, PODUniqueString name, CommentsAndStmt cs);
 
-  ParserExprList* buildSingleStmtRoutineBody(YYLTYPE location, CommentsAndStmt cs);
+  ParserExprList* buildSingleStmtRoutineBody(YYLTYPE location,
+                                             CommentsAndStmt cs);
 };

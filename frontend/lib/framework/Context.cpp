@@ -45,17 +45,17 @@
 #include "../util/my_aligned_alloc.h" // assumes size_t defined
 
 namespace chpl {
-  namespace detail {
-    GlobalStrings globalStrings;
-    Context rootContext;
+namespace detail {
+GlobalStrings globalStrings;
+Context rootContext;
 
-    static void initGlobalStrings() {
-#define X(field, str) globalStrings.field = UniqueString::get(&rootContext, str);
+static void initGlobalStrings() {
+#define X(field, str)                                         \
+  globalStrings.field = UniqueString::get(&rootContext, str);
 #include "chpl/framework/all-global-strings.h"
 #undef X
-    }
-  } // namespace detail
-
+}
+} // namespace detail
 
 using namespace chpl::querydetail;
 
@@ -111,9 +111,7 @@ void Context::swap(Context& other) {
   std::swap(gcCounter, other.gcCounter);
 }
 
-Context::Context() {
-  setupGlobalStrings();
-}
+Context::Context() { setupGlobalStrings(); }
 Context::Context(Configuration config) {
   // swap the configuration settings in to place
   config_.swap(config);
@@ -136,14 +134,15 @@ Context::CapturingRunResultBase::CapturingRunResultBase() = default;
 
 Context::CapturingRunResultBase::~CapturingRunResultBase() = default;
 
-Context::CapturingRunResultBase::CapturingRunResultBase(const Context::CapturingRunResultBase& other) {
+Context::CapturingRunResultBase::CapturingRunResultBase(
+  const Context::CapturingRunResultBase& other) {
   for (auto& err : other.errors()) {
-      errors_.push_back(err->clone());
+    errors_.push_back(err->clone());
   }
 }
 
 std::vector<owned<ErrorBase>> Context::CapturingRunResultBase::consumeErrors() {
- return std::move(errors_);
+  return std::move(errors_);
 }
 
 bool Context::CapturingRunResultBase::ranWithoutErrors() const {
@@ -159,7 +158,8 @@ Context::ObservingRunResultBase::ObservingRunResultBase() = default;
 
 Context::ObservingRunResultBase::~ObservingRunResultBase() = default;
 
-Context::ObservingRunResultBase::ObservingRunResultBase(const Context::ObservingRunResultBase& other) {
+Context::ObservingRunResultBase::ObservingRunResultBase(
+  const Context::ObservingRunResultBase& other) {
   this->hadErrors_ = other.hadErrors_;
 }
 
@@ -169,21 +169,21 @@ bool Context::ObservingRunResultBase::ranWithoutErrors() const {
 
 Context::ErrorCollectionEntry
 Context::ErrorCollectionEntry::createForTrackingQuery(
-    std::vector<owned<ErrorBase>>* storeInto,
-    const QueryMapResultBase* trackingQuery) {
+  std::vector<owned<ErrorBase>>* storeInto,
+  const QueryMapResultBase* trackingQuery) {
   return Context::ErrorCollectionEntry(storeInto, nullptr, trackingQuery);
 }
 
 Context::ErrorCollectionEntry
 Context::ErrorCollectionEntry::createForTrackingQuery(
-    bool* noteErrorOccurredInto,
-    const QueryMapResultBase* trackingQuery) {
-  return Context::ErrorCollectionEntry(nullptr, noteErrorOccurredInto, trackingQuery);
+  bool* noteErrorOccurredInto, const QueryMapResultBase* trackingQuery) {
+  return Context::ErrorCollectionEntry(
+    nullptr, noteErrorOccurredInto, trackingQuery);
 }
 
 Context::ErrorCollectionEntry
 Context::ErrorCollectionEntry::createForRecomputing(
-    const querydetail::QueryMapResultBase* trackingQuery) {
+  const querydetail::QueryMapResultBase* trackingQuery) {
   return Context::ErrorCollectionEntry(nullptr, nullptr, trackingQuery);
 }
 
@@ -192,8 +192,7 @@ void Context::ErrorCollectionEntry::storeError(owned<ErrorBase> toStore) const {
     storeInto_->push_back(std::move(toStore));
   }
   if (noteErrorOccurredInto_) {
-    *noteErrorOccurredInto_ |=
-      errorKindIsError(toStore->kind());
+    *noteErrorOccurredInto_ |= errorKindIsError(toStore->kind());
   }
 }
 
@@ -201,9 +200,7 @@ void Context::reportError(Context* context, const ErrorBase* err) {
   handler_->report(context, err);
 }
 
-const std::string& Context::chplHome() const {
-  return config_.chplHome;
-}
+const std::string& Context::chplHome() const { return config_.chplHome; }
 
 const std::string& Context::tmpDir() {
   if (tmpDir_.empty()) {
@@ -227,8 +224,8 @@ const std::string& Context::tmpDir() {
   if (!tmpDirExists_) {
     auto err = llvm::sys::fs::create_directories(tmpDir_);
     if (err) {
-      this->error(Location(), "Could not create temp directory %s",
-                  tmpDir_.c_str());
+      this->error(
+        Location(), "Could not create temp directory %s", tmpDir_.c_str());
     } else {
       tmpDirExists_ = true;
     }
@@ -237,9 +234,7 @@ const std::string& Context::tmpDir() {
   return tmpDir_;
 }
 
-bool Context::shouldSaveTmpDirFiles() const {
-  return config_.keepTmpDir;
-}
+bool Context::shouldSaveTmpDirFiles() const { return config_.keepTmpDir; }
 
 std::string Context::tmpDirAnchorFile() {
   std::string path = tmpDir();
@@ -249,8 +244,10 @@ std::string Context::tmpDirAnchorFile() {
     std::string data = "anchor\n";
     std::error_code err = writeFile(path.c_str(), data);
     if (err) {
-      this->error(Location(), "Could not update anchor file %s: %s",
-                  path.c_str(), err.message().c_str());
+      this->error(Location(),
+                  "Could not update anchor file %s: %s",
+                  path.c_str(),
+                  err.message().c_str());
     } else {
       tmpDirAnchorCreated_ = true;
     }
@@ -274,16 +271,16 @@ UniqueString Context::adjustPathForErrorMsg(UniqueString path) {
   size_t chpl_home_len = chpl_home.length();
   if (chpl_home_len > 0 && path.startsWith(chpl_home)) {
     // replace a prefix of the value of CHPL_HOME with $CHPL_HOME
-    return UniqueString::getConcat(this, "$CHPL_HOME",
-                                   path.c_str()+chpl_home_len);
+    return UniqueString::getConcat(
+      this, "$CHPL_HOME", path.c_str() + chpl_home_len);
   }
   return path;
 }
 
 llvm::ErrorOr<const ChplEnvMap&> Context::getChplEnv() {
   if (config_.chplHome.empty() || computedChplEnv) return chplEnv;
-  auto chplEnvResult = ::chpl::getChplEnv(config_.chplEnvOverrides,
-                                          config_.chplHome.c_str());
+  auto chplEnvResult =
+    ::chpl::getChplEnv(config_.chplEnvOverrides, config_.chplHome.c_str());
   if (auto err = chplEnvResult.getError()) {
     // forward error to caller
     return err;
@@ -302,10 +299,10 @@ void Context::defaultReportError(Context* context, const ErrorBase* err) {
     return;
   }
 
-  ErrorWriter ew(context, std::cerr,
-                 context->detailedErrors ?
-                   ErrorWriter::DETAILED :
-                   ErrorWriter::BRIEF,
+  ErrorWriter ew(context,
+                 std::cerr,
+                 context->detailedErrors ? ErrorWriter::DETAILED
+                                         : ErrorWriter::BRIEF,
                  context->currentTerminalSupportsColor_);
   err->write(ew);
   if (context->detailedErrors) {
@@ -317,7 +314,7 @@ void Context::defaultReportError(Context* context, const ErrorBase* err) {
 // unique'd strings are preceded by 4 bytes of length, gcMark and doNotCollectMark
 // this number must be even
 #define UNIQUED_STRING_METADATA_BYTES 6
-#define UNIQUED_STRING_METADATA_LEN 4
+#define UNIQUED_STRING_METADATA_LEN   4
 
 Context::~Context() {
   // free all of the queries to make sure that the query results
@@ -331,8 +328,8 @@ Context::~Context() {
   errorCollectionStack.clear();
 
   // free all the unique'd strings
-  for (auto& item: uniqueStringsTable) {
-    char* buf = (char*) item.str;
+  for (auto& item : uniqueStringsTable) {
+    char* buf = (char*)item.str;
     buf -= UNIQUED_STRING_METADATA_BYTES;
     char doNotCollect = buf[UNIQUED_STRING_METADATA_LEN + 1];
     // Root context  : Free all strings
@@ -346,13 +343,14 @@ Context::~Context() {
   cleanupTmpDirIfNeeded();
 }
 
-#define ALIGN_DN(i, size)  ((i) & ~((size) - 1))
-#define ALIGN_UP(i, size)  ALIGN_DN((i) + (size) - 1, size)
+#define ALIGN_DN(i, size) ((i) & ~((size) - 1))
+#define ALIGN_UP(i, size) ALIGN_DN((i) + (size) - 1, size)
 
 static char* allocateEvenAligned(size_t amt) {
-  char* buf = (char*) malloc(amt);
+  char* buf = (char*)malloc(amt);
   // UNIQUED_STRING_METADATA_BYTES must be even
-  static_assert((UNIQUED_STRING_METADATA_BYTES & 1) == 0, "UniquedString metadata bytes not even");
+  static_assert((UNIQUED_STRING_METADATA_BYTES & 1) == 0,
+                "UniquedString metadata bytes not even");
   // Normally, malloc returns something that is aligned to 16 bytes,
   // but it's technically possible that a platform library
   // could not do so. So, here we check.
@@ -360,9 +358,9 @@ static char* allocateEvenAligned(size_t amt) {
   if ((((uintptr_t)buf) & 1) != 0) {
     free(buf);
     // try again with an aligned allocation
-    size_t alignment = sizeof(void *);
+    size_t alignment = sizeof(void*);
     size_t align_up_len = ALIGN_UP(amt, sizeof(void*));
-    buf = (char*) my_aligned_alloc(alignment, align_up_len);
+    buf = (char*)my_aligned_alloc(alignment, align_up_len);
   }
   CHPL_ASSERT(buf);
   CHPL_ASSERT((((uintptr_t)buf) & 1) == 0);
@@ -380,7 +378,8 @@ char* Context::setupStringMetadata(char* buf, size_t len) {
 
   int32_t len32 = len;
   // these assert should fail if the below code needs to change
-  static_assert(sizeof(len32) + 2 == UNIQUED_STRING_METADATA_BYTES, "Size mismatch");
+  static_assert(sizeof(len32) + 2 == UNIQUED_STRING_METADATA_BYTES,
+                "Size mismatch");
   static_assert(sizeof(len32) == UNIQUED_STRING_METADATA_LEN, "Size mismatch");
 
   // copy the length
@@ -406,7 +405,8 @@ const char* Context::getOrCreateUniqueString(const char* str, size_t len) {
     return ret;
   }
 
-  size_t allocLen = UNIQUED_STRING_METADATA_BYTES+len+1; // metadata, len, null
+  size_t allocLen =
+    UNIQUED_STRING_METADATA_BYTES + len + 1; // metadata, len, null
   char* buf = allocateEvenAligned(allocLen);
   // setup metadata
   char* s = setupStringMetadata(buf, len);
@@ -442,18 +442,28 @@ const char* Context::uniqueCString(const char* str) {
   return this->getOrCreateUniqueString(str, strlen(str));
 }
 
-const char* Context::uniqueCStringConcatLen(const char* s1, size_t len1,
-                                            const char* s2, size_t len2,
-                                            const char* s3, size_t len3,
-                                            const char* s4, size_t len4,
-                                            const char* s5, size_t len5,
-                                            const char* s6, size_t len6,
-                                            const char* s7, size_t len7,
-                                            const char* s8, size_t len8,
-                                            const char* s9, size_t len9) {
+const char* Context::uniqueCStringConcatLen(const char* s1,
+                                            size_t len1,
+                                            const char* s2,
+                                            size_t len2,
+                                            const char* s3,
+                                            size_t len3,
+                                            const char* s4,
+                                            size_t len4,
+                                            const char* s5,
+                                            size_t len5,
+                                            const char* s6,
+                                            size_t len6,
+                                            const char* s7,
+                                            size_t len7,
+                                            const char* s8,
+                                            size_t len8,
+                                            const char* s9,
+                                            size_t len9) {
   size_t len = len1 + len2 + len3 + len4 + len5 + len6 + len7 + len8 + len9;
 
-  size_t allocLen = UNIQUED_STRING_METADATA_BYTES+len+1; // metadata, len, null
+  size_t allocLen =
+    UNIQUED_STRING_METADATA_BYTES + len + 1; // metadata, len, null
   char* buf = allocateEvenAligned(allocLen);
   // setup metadata
   char* s = setupStringMetadata(buf, len);
@@ -547,9 +557,24 @@ const char* Context::uniqueCStringConcat(const char* s1,
   if (s8 != nullptr) len8 = strlen(s8);
   if (s9 != nullptr) len9 = strlen(s9);
 
-  return uniqueCStringConcatLen(s1, len1, s2, len2,
-                                s3, len3, s4, len4, s5, len5, s6, len6,
-                                s7, len7, s8, len8, s9, len9);
+  return uniqueCStringConcatLen(s1,
+                                len1,
+                                s2,
+                                len2,
+                                s3,
+                                len3,
+                                s4,
+                                len4,
+                                s5,
+                                len5,
+                                s6,
+                                len6,
+                                s7,
+                                len7,
+                                s8,
+                                len8,
+                                s9,
+                                len9);
 }
 
 void Context::markUniqueCString(const char* s) {
@@ -560,15 +585,15 @@ void Context::markUniqueCString(const char* s) {
   bool checkMarked = false;
   bool doMark = (currentRevisionNumber == lastPrepareToGCRevisionNumber);
   char gcMark = this->gcCounter & 0xff;
-  char* buf = (char*) s;
+  char* buf = (char*)s;
   buf -= UNIQUED_STRING_METADATA_BYTES; // find start of metadata
   buf += UNIQUED_STRING_METADATA_LEN;   // pass the length
 
-  #ifndef NDEBUG
-    // assertions are enabled, so consider logic about
-    // whether or not current values should already be marked
-    checkMarked = checkStringsAlreadyMarked;
-  #endif
+#ifndef NDEBUG
+  // assertions are enabled, so consider logic about
+  // whether or not current values should already be marked
+  checkMarked = checkStringsAlreadyMarked;
+#endif
 
   if (checkMarked) {
     CHPL_ASSERT(buf[0] == gcMark && "string should already be marked");
@@ -579,7 +604,7 @@ void Context::markUniqueCString(const char* s) {
     buf[0] = gcMark;
   }
 
-  CHPL_ASSERT(0 <= buf[1] && buf[1] <= 1);   // doNotCollectMark bit is 0 or 1
+  CHPL_ASSERT(0 <= buf[1] && buf[1] <= 1); // doNotCollectMark bit is 0 or 1
 }
 
 void Context::doNotCollectUniqueCString(const char* s) {
@@ -590,10 +615,10 @@ void Context::doNotCollectUniqueCString(const char* s) {
   *buf = 1;                             // set doNotCollectMark
 }
 
-
-void Context::gatherRecursionTrace(const querydetail::QueryMapResultBase* root,
-                                   const querydetail::QueryMapResultBase* result,
-                                   std::vector<TraceElement>& trace) const {
+void Context::gatherRecursionTrace(
+  const querydetail::QueryMapResultBase* root,
+  const querydetail::QueryMapResultBase* result,
+  std::vector<TraceElement>& trace) const {
   // Note: do not collect the result, but only its dependency. The reason
   // is that this is initially called with result=root, and including
   // the root in the trace seems unhelpful since it will issue a proper error
@@ -621,7 +646,7 @@ void Context::gatherRecursionTrace(const querydetail::QueryMapResultBase* root,
 }
 
 size_t Context::lengthForUniqueString(const char* s) {
-  const char* buf = (char*) s;
+  const char* buf = (char*)s;
   buf -= UNIQUED_STRING_METADATA_BYTES; // find start of metadata
   int32_t len32 = 0;
   memcpy(&len32, buf, sizeof(len32));
@@ -631,11 +656,11 @@ size_t Context::lengthForUniqueString(const char* s) {
 
 bool Context::shouldMarkUnownedPointer(const void* ptr) {
   // don't bother for nullptr
-  if (ptr == nullptr)
-    return false;
+  if (ptr == nullptr) return false;
 
   // shouldn't run any mark code if the revision is not doing GC
-  CHPL_ASSERT(this->currentRevisionNumber == this->lastPrepareToGCRevisionNumber);
+  CHPL_ASSERT(this->currentRevisionNumber ==
+              this->lastPrepareToGCRevisionNumber);
 
   // check that the unowned pointer refers to an owned
   // pointer that we have already marked
@@ -649,20 +674,18 @@ bool Context::shouldMarkUnownedPointer(const void* ptr) {
 }
 bool Context::shouldMarkOwnedPointer(const void* ptr) {
   // don't bother for nullptr
-  if (ptr == nullptr)
-    return false;
+  if (ptr == nullptr) return false;
 
-  #ifndef NDEBUG
-    // note the pointer value for checking with markUnownedPointer
-    ownedPtrsForThisRevision.insert(ptr);
-  #endif
+#ifndef NDEBUG
+  // note the pointer value for checking with markUnownedPointer
+  ownedPtrsForThisRevision.insert(ptr);
+#endif
 
   return true;
 }
 
-static
-const UniqueString& filePathForModuleIdSymbolPathQuery(Context* context,
-                                                       UniqueString modIdSymP) {
+static const UniqueString&
+filePathForModuleIdSymbolPathQuery(Context* context, UniqueString modIdSymP) {
   QUERY_BEGIN(filePathForModuleIdSymbolPathQuery, context, modIdSymP);
 
   // return the empty string if it wasn't already set
@@ -672,7 +695,8 @@ const UniqueString& filePathForModuleIdSymbolPathQuery(Context* context,
   return QUERY_END(result);
 }
 
-static bool symbolAndFilePathForID(Context* context, const ID& id,
+static bool symbolAndFilePathForID(Context* context,
+                                   const ID& id,
                                    UniqueString& symbolPathOut,
                                    UniqueString& pathOut) {
   UniqueString symbolPath = id.symbolPath();
@@ -681,7 +705,7 @@ static bool symbolAndFilePathForID(Context* context, const ID& id,
     auto tupleOfArgs = std::make_tuple(symbolPath);
 
     bool got = context->hasCurrentResultForQuery(
-                 filePathForModuleIdSymbolPathQuery, tupleOfArgs);
+      filePathForModuleIdSymbolPathQuery, tupleOfArgs);
     if (got) {
       symbolPathOut = symbolPath;
       pathOut = filePathForModuleIdSymbolPathQuery(context, symbolPath);
@@ -706,8 +730,7 @@ bool Context::filePathForId(ID id,
                             UniqueString& parentSymbolPathOut) {
   UniqueString symbolPath;
   bool got = symbolAndFilePathForID(this, id, symbolPath, pathOut);
-  if (got)
-    parentSymbolPathOut = ID::parentSymbolPath(this, symbolPath);
+  if (got) parentSymbolPathOut = ID::parentSymbolPath(this, symbolPath);
 
   return got;
 }
@@ -717,22 +740,25 @@ void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
   auto tupleOfArgs = std::make_tuple(moduleIdSymbolPath);
 
   updateResultForQuery(filePathForModuleIdSymbolPathQuery,
-                       tupleOfArgs, path,
+                       tupleOfArgs,
+                       path,
                        "filePathForModuleIdSymbolPathQuery",
                        /* isInputQuery */ false,
                        /* forSetter */ true,
                        /* markExternallySet */ false);
 
   if (enableDebugTrace) {
-    printf("%i SETTING FILE PATH FOR MODULE %s -> %s\n", queryTraceDepth,
-           moduleIdSymbolPath.c_str(), path.c_str());
+    printf("%i SETTING FILE PATH FOR MODULE %s -> %s\n",
+           queryTraceDepth,
+           moduleIdSymbolPath.c_str(),
+           path.c_str());
   }
   // check that querying the module ID works...
   UniqueString gotPath;
   bool ok = filePathForId(moduleID, gotPath);
-  #ifndef NDEBUG
-    CHPL_ASSERT(ok);
-  #endif
+#ifndef NDEBUG
+  CHPL_ASSERT(ok);
+#endif
 
   // ... and gives the same path
 
@@ -754,13 +780,13 @@ void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
         !parsing::idIsInBundledModule(this, moduleID)) {
       error(moduleID,
             "Redefinition of module '%s' (the original was defined in '%s')",
-            moduleIdSymbolPath.c_str(), path.c_str());
-  }
+            moduleIdSymbolPath.c_str(),
+            path.c_str());
+    }
 }
 
-static
-const UniqueString& pathHasLibraryQuery(Context* context,
-                                        UniqueString filePath) {
+static const UniqueString& pathHasLibraryQuery(Context* context,
+                                               UniqueString filePath) {
   QUERY_BEGIN(pathHasLibraryQuery, context, filePath);
 
   UniqueString result;
@@ -768,12 +794,10 @@ const UniqueString& pathHasLibraryQuery(Context* context,
   return QUERY_END(result);
 }
 
-bool Context::pathIsInLibrary(UniqueString filePath,
-                              UniqueString& pathOut) {
+bool Context::pathIsInLibrary(UniqueString filePath, UniqueString& pathOut) {
   auto tupleOfArgs = std::make_tuple(filePath);
 
-  bool got = hasCurrentResultForQuery(pathHasLibraryQuery,
-                                      tupleOfArgs);
+  bool got = hasCurrentResultForQuery(pathHasLibraryQuery, tupleOfArgs);
 
   if (got) {
     pathOut = pathHasLibraryQuery(this, filePath);
@@ -803,7 +827,8 @@ void Context::registerLibraryForModule(ID moduleId,
   auto tupleOfArgs = std::make_tuple(filePath);
 
   updateResultForQuery(pathHasLibraryQuery,
-                       tupleOfArgs, libPath,
+                       tupleOfArgs,
+                       libPath,
                        "pathHasLibraryQuery",
                        /* isInputQuery */ false,
                        /* forSetter */ true,
@@ -834,15 +859,14 @@ void Context::advanceToNextRevision(bool prepareToGC) {
     gcCounter++;
   }
   if (enableDebugTrace) {
-    printf("%i CURRENT REVISION NUMBER IS NOW %i %s\n", queryTraceDepth,
-           (int) this->currentRevisionNumber,
-           prepareToGC?"PREPARING GC":"");
+    printf("%i CURRENT REVISION NUMBER IS NOW %i %s\n",
+           queryTraceDepth,
+           (int)this->currentRevisionNumber,
+           prepareToGC ? "PREPARING GC" : "");
   }
 }
 
-void Context::setDebugTraceFlag(bool enable)  {
-  enableDebugTrace = enable;
-}
+void Context::setDebugTraceFlag(bool enable) { enableDebugTrace = enable; }
 
 void Context::setBreakOnHash(size_t hashVal) {
   breakSet = true;
@@ -859,7 +883,7 @@ void Context::collectGarbage() {
 
   // clear out the saved old results
   // warning: this loop proceeds in a nondeterministic order
-  for (auto& dbEntry: queryDB) {
+  for (auto& dbEntry : queryDB) {
     QueryMapBase* queryMapBase = dbEntry.second.get();
     queryMapBase->clearOldResults(this->currentRevisionNumber);
   }
@@ -875,7 +899,7 @@ void Context::collectGarbage() {
     UniqueStringsTableType newTable;
     std::vector<char*> toFree;
     // warning: this loop proceeds in a nondeterministic order
-    for (auto& e: uniqueStringsTable) {
+    for (auto& e : uniqueStringsTable) {
       const char* key = e.str;
       char* buf = (char*)key;
       buf -= UNIQUED_STRING_METADATA_BYTES; // find start of allocation
@@ -894,15 +918,16 @@ void Context::collectGarbage() {
         }
       }
     }
-    for (char* allocation: toFree) {
+    for (char* allocation : toFree) {
       free(allocation);
     }
     uniqueStringsTable.swap(newTable);
 
     if (enableDebugTrace) {
       size_t nUniqueStringsAfter = uniqueStringsTable.size();
-      printf("%i COLLECTED %i UniqueStrings\n", queryTraceDepth,
-             (int)(nUniqueStringsBefore-nUniqueStringsAfter));
+      printf("%i COLLECTED %i UniqueStrings\n",
+             queryTraceDepth,
+             (int)(nUniqueStringsBefore - nUniqueStringsAfter));
     }
   }
 }
@@ -955,11 +980,8 @@ static void logErrorInContext(Context* context,
   context->report(std::move(err));
 }
 
-static void logErrorInContext(Context* context,
-                              ErrorBase::Kind kind,
-                              ID id,
-                              const char* fmt,
-                              va_list vl) {
+static void logErrorInContext(
+  Context* context, ErrorBase::Kind kind, ID id, const char* fmt, va_list vl) {
   auto err = GeneralError::vbuild(kind, id, fmt, vl);
   context->report(std::move(err));
 }
@@ -984,13 +1006,12 @@ static void logErrorInContext(Context* context,
   context->report(std::move(err));
 }
 
-
 #define CHPL_CONTEXT_LOG_ERROR_HELPER(context__, kind__, pin__, fmt__) \
-  do { \
-    va_list vl; \
-    va_start(vl, fmt__); \
-    logErrorInContext(context__, kind__, pin__, fmt__, vl); \
-    va_end(vl); \
+  do {                                                                 \
+    va_list vl;                                                        \
+    va_start(vl, fmt__);                                               \
+    logErrorInContext(context__, kind__, pin__, fmt__, vl);            \
+    va_end(vl);                                                        \
   } while (0)
 
 // TODO: Similar overloads for NOTE, WARN, etc.
@@ -1012,7 +1033,8 @@ void Context::error(const uast::AstNode* ast, const char* fmt, ...) {
 
 void Context::error(const resolution::TypedFnSignature* inFn,
                     const uast::AstNode* ast,
-                    const char* fmt, ...) {
+                    const char* fmt,
+                    ...) {
   CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::ERROR, ast, fmt);
   // TODO: add note about instantiation & POI stack
 }
@@ -1068,7 +1090,8 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
   resultEntry->beingTestedForReuse = true;
   for (auto& dependency : resultEntry->dependencies) {
     const QueryMapResultBase* dependencyQuery = dependency.query;
-    if (dependencyQuery->externallySet || dependencyQuery->lastChanged > resultEntry->lastChanged) {
+    if (dependencyQuery->externallySet ||
+        dependencyQuery->lastChanged > resultEntry->lastChanged) {
       useSaved = false;
       break;
     } else if (this->currentRevisionNumber == dependencyQuery->lastChecked) {
@@ -1076,7 +1099,7 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
     } else {
       if (dependency.errorCollectionRoot) {
         errorCollectionStack.push_back(
-            ErrorCollectionEntry::createForRecomputing(resultEntry));
+          ErrorCollectionEntry::createForRecomputing(resultEntry));
       }
       recomputeIfNeeded(dependencyQuery);
       if (dependency.errorCollectionRoot) {
@@ -1110,7 +1133,6 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
              resultEntry->parentQueryMap->queryName);
     }
   }
-
 }
 
 // this should be called once each revision the first time
@@ -1128,15 +1150,14 @@ void Context::updateForReuse(const QueryMapResultBase* resultEntry) {
   // Update error locations if needed and re-report the error
   // Only re-report errors if they are not being silenced.
   if (errorCollectionStack.empty()) {
-    for (auto& err: resultEntry->errors) {
+    for (auto& err : resultEntry->errors) {
       reportError(this, err.get());
     }
   }
 }
 
-bool Context::queryCanUseSavedResult(
-                   const void* queryFunction,
-                   const QueryMapResultBase* resultEntry) {
+bool Context::queryCanUseSavedResult(const void* queryFunction,
+                                     const QueryMapResultBase* resultEntry) {
 
   bool useSaved = false;
 
@@ -1175,7 +1196,7 @@ bool Context::queryCanUseSavedResult(
   } else {
     useSaved = true;
     resultEntry->beingTestedForReuse = true;
-    for (auto& dependency: resultEntry->dependencies) {
+    for (auto& dependency : resultEntry->dependencies) {
       const QueryMapResultBase* dependencyQuery = dependency.query;
 
       if (dependencyQuery->externallySet) {
@@ -1185,7 +1206,7 @@ bool Context::queryCanUseSavedResult(
 
       if (dependency.errorCollectionRoot) {
         errorCollectionStack.push_back(
-            ErrorCollectionEntry::createForRecomputing(resultEntry));
+          ErrorCollectionEntry::createForRecomputing(resultEntry));
       }
       recomputeIfNeeded(dependencyQuery);
       if (dependency.errorCollectionRoot) {
@@ -1208,8 +1229,7 @@ bool Context::queryCanUseSavedResult(
 }
 
 bool Context::queryCanUseSavedResultAndPushIfNot(
-                   const void* queryFunction,
-                   const QueryMapResultBase* resultEntry) {
+  const void* queryFunction, const QueryMapResultBase* resultEntry) {
 
   bool useSaved = queryCanUseSavedResult(queryFunction, resultEntry);
 
@@ -1234,7 +1254,8 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
   return useSaved;
 }
 
-void Context::emitHiddenErrorsFor(const querydetail::QueryMapResultBase* result) {
+void Context::emitHiddenErrorsFor(
+  const querydetail::QueryMapResultBase* result) {
   CHPL_ASSERT(!result->emittedErrors);
   for (auto& error : result->errors) {
     reportError(this, error.get());
@@ -1247,9 +1268,9 @@ void Context::emitHiddenErrorsFor(const querydetail::QueryMapResultBase* result)
   }
 }
 
-void Context::ErrorCollectionEntry::
-storeErrorsFromHelp(const querydetail::QueryMapResultBase* result,
-                    std::unordered_set<const querydetail::QueryMapResultBase*>& visited) {
+void Context::ErrorCollectionEntry::storeErrorsFromHelp(
+  const querydetail::QueryMapResultBase* result,
+  std::unordered_set<const querydetail::QueryMapResultBase*>& visited) {
   auto insertResult = visited.insert(result);
   if (!insertResult.second) return;
   for (auto& error : result->errors) {
@@ -1263,7 +1284,8 @@ storeErrorsFromHelp(const querydetail::QueryMapResultBase* result,
   }
 }
 
-void Context::ErrorCollectionEntry::storeErrorsFrom(const querydetail::QueryMapResultBase* result) {
+void Context::ErrorCollectionEntry::storeErrorsFrom(
+  const querydetail::QueryMapResultBase* result) {
 
   if (storeInto_) {
     std::unordered_set<const querydetail::QueryMapResultBase*> visited;
@@ -1273,7 +1295,6 @@ void Context::ErrorCollectionEntry::storeErrorsFrom(const querydetail::QueryMapR
     *noteErrorOccurredInto_ |= result->errorsPresentInSelfOrDependencies & 0b1;
   }
 }
-
 
 void Context::storeErrorsFor(const querydetail::QueryMapResultBase* result) {
   CHPL_ASSERT(!errorCollectionStack.empty());
@@ -1299,8 +1320,9 @@ void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {
       // Skip adding recursion error triggers to the dependency graph
       // to avoid creating cycles.
     } else {
-      bool errorCollectionRoot = !errorCollectionStack.empty() &&
-                                 errorCollectionStack.back().collectingQuery() == parentQuery;
+      bool errorCollectionRoot =
+        !errorCollectionStack.empty() &&
+        errorCollectionStack.back().collectingQuery() == parentQuery;
       parentQuery->dependencies.emplace_back(resultEntry, errorCollectionRoot);
       if (!errorCollectionRoot) {
         parentQuery->errorsPresentInSelfOrDependencies |=
@@ -1334,15 +1356,16 @@ void Context::endQueryHandleDependency(const QueryMapResultBase* resultEntry) {
   saveDependencyInParent(resultEntry);
 }
 
-void Context::emitErrorForRecursiveQuery(const querydetail::QueryMapResultBase* r) {
-  CHPL_REPORT(this, Recursion,
-              UniqueString::get(this, r->parentQueryMap->queryName));
+void Context::emitErrorForRecursiveQuery(
+  const querydetail::QueryMapResultBase* r) {
+  CHPL_REPORT(
+    this, Recursion, UniqueString::get(this, r->parentQueryMap->queryName));
 }
 
 void Context::queryTimingReport(std::ostream& os) {
   auto elapsed = [](QueryTimingDuration d) {
     double ms =
-        std::chrono::duration_cast<std::chrono::milliseconds>(d).count();
+      std::chrono::duration_cast<std::chrono::milliseconds>(d).count();
     return ms;
   };
 
@@ -1351,7 +1374,7 @@ void Context::queryTimingReport(std::ostream& os) {
   auto w1 = 40;
   auto w2 = 15;
 
-  os << std::setw(w1) << "name"  << std::setw(w2) << "query (ms)"
+  os << std::setw(w1) << "name" << std::setw(w2) << "query (ms)"
      << std::setw(w2) << "calls" << std::setw(w2) << "getMap (ms)"
      << std::setw(w2) << "calls" << std::setw(w2) << "getResult (ms)"
      << std::setw(w2) << "calls" << "\n";
@@ -1360,17 +1383,19 @@ void Context::queryTimingReport(std::ostream& os) {
     QueryMapBase* base = it.second.get();
     const auto& timings = base->timings;
 
-    os << std::setw(w1) << base->queryName
-      // query
-       << std::setw(w2) << elapsed(timings.query.elapsed)
-       << std::setw(w2) << timings.query.count
-      // getMap
+    os << std::setw(w1)
+       << base->queryName
+       // query
+       << std::setw(w2) << elapsed(timings.query.elapsed) << std::setw(w2)
+       << timings.query.count
+       // getMap
        << std::setw(w2) << elapsed(timings.systemGetMap.elapsed)
-       << std::setw(w2) << timings.systemGetMap.count
-      // getResult
+       << std::setw(w2)
+       << timings.systemGetMap.count
+       // getResult
        << std::setw(w2) << elapsed(timings.systemGetResult.elapsed)
        << std::setw(w2) << base->timings.systemGetResult.count << "\n";
-    }
+  }
 }
 
 void Context::finishQueryStopwatch(querydetail::QueryMapBase* base,
@@ -1386,9 +1411,7 @@ void Context::finishQueryStopwatch(querydetail::QueryMapBase* base,
     auto nMicroseconds = asMicros.count();
     auto os = queryTimingTraceOutput.get();
     CHPL_ASSERT(os != nullptr);
-    *os << depth << ' '
-        << base->queryName << ' '
-        << nMicroseconds << ' '
+    *os << depth << ' ' << base->queryName << ' ' << nMicroseconds << ' '
         << args << '\n';
   }
 }
@@ -1406,34 +1429,25 @@ void Context::endQueryTimingTrace() {
 
 namespace querydetail {
 
+void queryArgsPrintSep(std::ostream& s) { s << ", "; }
 
-void queryArgsPrintSep(std::ostream& s) {
-  s << ", ";
-}
+QueryMapResultBase::QueryMapResultBase(
+  RevisionNumber lastChecked,
+  RevisionNumber lastChanged,
+  bool beingTestedForReuse,
+  bool externallySet,
+  bool emittedErrors,
+  size_t oldResultForErrorContents,
+  llvm::SmallPtrSet<const QueryMapResultBase*, 2> recursionErrors,
+  QueryMapBase* parentQueryMap)
+  : lastChecked(lastChecked), lastChanged(lastChanged),
+    beingTestedForReuse(beingTestedForReuse), externallySet(externallySet),
+    emittedErrors(emittedErrors), errorsPresentInSelfOrDependencies(0),
+    oldResultForErrorContents(oldResultForErrorContents), dependencies(),
+    recursionErrors(std::move(recursionErrors)), errors(),
+    parentQueryMap(parentQueryMap) {}
 
-QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,
-                   RevisionNumber lastChanged,
-                   bool beingTestedForReuse,
-                   bool externallySet,
-                   bool emittedErrors,
-                   size_t oldResultForErrorContents,
-                   llvm::SmallPtrSet<const QueryMapResultBase*, 2> recursionErrors,
-                   QueryMapBase* parentQueryMap)
-  : lastChecked(lastChecked),
-    lastChanged(lastChanged),
-    beingTestedForReuse(beingTestedForReuse),
-    externallySet(externallySet),
-    emittedErrors(emittedErrors),
-    errorsPresentInSelfOrDependencies(0),
-    oldResultForErrorContents(oldResultForErrorContents),
-    dependencies(),
-    recursionErrors(std::move(recursionErrors)),
-    errors(),
-    parentQueryMap(parentQueryMap) {
-}
-
-QueryMapResultBase::~QueryMapResultBase() {
-}
+QueryMapResultBase::~QueryMapResultBase() {}
 
 optional<TraceElement> QueryMapResultBase::tryTrace() const {
   if (auto& tracer = parentQueryMap->tracer) {
@@ -1444,12 +1458,9 @@ optional<TraceElement> QueryMapResultBase::tryTrace() const {
   return {};
 }
 
-QueryTracerBase::~QueryTracerBase() {
-}
+QueryTracerBase::~QueryTracerBase() {}
 
-QueryMapBase::~QueryMapBase() {
-}
-
+QueryMapBase::~QueryMapBase() {}
 
 } // end namespace querydetail
 } // end namespace chpl

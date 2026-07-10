@@ -19,13 +19,12 @@
  */
 
 // these helpers can be used in the semantic actions
-#define BUILDER (context->builder)
-#define STMT(LOC,AST) makeCommentsAndStmt(context->gatherComments(LOC), AST)
-#define ENDSTMT() context->clearComments();
+#define BUILDER        (context->builder)
+#define STMT(LOC, AST) makeCommentsAndStmt(context->gatherComments(LOC), AST)
+#define ENDSTMT()      context->clearComments();
 
-#define STR(s) PODUniqueString::get(context->context(), s)
+#define STR(s)   PODUniqueString::get(context->context(), s)
 #define LOC(loc) context->convertLocation(loc)
-#define LOC2(STARTLOC, ENDLOC) \
+#define LOC2(STARTLOC, ENDLOC)                                             \
   context->convertLocation(context->makeSpannedLocation(STARTLOC, ENDLOC))
-#define YLOC2(YSTART, YEND) \
-  context->makeSpannedLocation(YSTART, YEND)
+#define YLOC2(YSTART, YEND) context->makeSpannedLocation(YSTART, YEND)

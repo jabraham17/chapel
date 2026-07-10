@@ -22,10 +22,7 @@
 namespace chpl {
 namespace uast {
 
-
-TypeDecl::~TypeDecl() {
-}
-
+TypeDecl::~TypeDecl() {}
 
 } // namespace uast
 } // namespace chpl

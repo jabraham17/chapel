@@ -35,7 +35,6 @@
 namespace chpl {
 namespace resolution {
 
-
 using namespace uast;
 using namespace types;
 
@@ -58,13 +57,11 @@ static const CompositeType* toCompositeTypeActual(const QualifiedType& type,
   return nullptr;
 }
 
-static const ResolvedFields*
-toCompositeTypeActualFields(ResolutionContext* rc,
-                            const QualifiedType& type,
-                            TypeReq req = TypeReq::IS) {
+static const ResolvedFields* toCompositeTypeActualFields(
+  ResolutionContext* rc, const QualifiedType& type, TypeReq req = TypeReq::IS) {
   if (auto ct = toCompositeTypeActual(type, req)) {
-    auto& resolvedFields = fieldsForTypeDecl(rc, ct,
-                                             DefaultsPolicy::IGNORE_DEFAULTS);
+    auto& resolvedFields =
+      fieldsForTypeDecl(rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
     return &resolvedFields;
   }
   return nullptr;
@@ -87,11 +84,11 @@ static bool toParamIntActual(const QualifiedType& type, int64_t& into) {
 }
 
 static bool paramStringBytesHelper(const QualifiedType& type,
-                                   UniqueString& into, bool isString) {
+                                   UniqueString& into,
+                                   bool isString) {
   if (type.kind() == QualifiedType::PARAM) {
     if (auto t = type.type()) {
-      if ((t->isBytesType() && !isString) ||
-          (t->isStringType() && isString)) {
+      if ((t->isBytesType() && !isString) || (t->isStringType() && isString)) {
         if (auto p = type.param()) {
           if (auto sp = p->toStringParam()) {
             into = sp->value();
@@ -105,7 +102,7 @@ static bool paramStringBytesHelper(const QualifiedType& type,
 }
 
 static bool toParamBytesActual(const QualifiedType& type, UniqueString& into) {
- return paramStringBytesHelper(type, into, false);
+  return paramStringBytesHelper(type, into, false);
 }
 
 static bool toParamStringActual(const QualifiedType& type, UniqueString& into) {
@@ -150,13 +147,15 @@ static QualifiedType primNumFields(ResolutionContext* rc, const CallInfo& ci) {
   return type;
 }
 
-static QualifiedType primFieldNumToName(ResolutionContext* rc, const CallInfo& ci) {
+static QualifiedType primFieldNumToName(ResolutionContext* rc,
+                                        const CallInfo& ci) {
   auto type = QualifiedType();
   if (ci.numActuals() != 2) return type;
 
   auto firstActual = ci.actual(0).type();
   auto secondActual = ci.actual(1).type();
-  if (auto fields = toCompositeTypeActualFields(rc, firstActual, TypeReq::EITHER)) {
+  if (auto fields =
+        toCompositeTypeActualFields(rc, firstActual, TypeReq::EITHER)) {
     int64_t fieldNum = -1;
     if (!toParamIntActual(secondActual, fieldNum)) return type;
     if (fieldNum >= fields->numFields() || fieldNum < 0) return type;
@@ -167,7 +166,8 @@ static QualifiedType primFieldNumToName(ResolutionContext* rc, const CallInfo& c
   return type;
 }
 
-static QualifiedType primFieldNameToNum(ResolutionContext* rc, const CallInfo& ci) {
+static QualifiedType primFieldNameToNum(ResolutionContext* rc,
+                                        const CallInfo& ci) {
   auto type = QualifiedType();
   if (ci.numActuals() != 2) return type;
 
@@ -217,8 +217,9 @@ static QualifiedType primFieldByNum(ResolutionContext* rc, const CallInfo& ci) {
 }
 
 static QualifiedType primCallResolves(ResolutionContext* rc,
-                                      const CallInfo &ci,
-                                      bool forMethod, bool resolveFn,
+                                      const CallInfo& ci,
+                                      bool forMethod,
+                                      bool resolveFn,
                                       const PrimCall* call,
                                       const CallScopeInfo& inScopes) {
   Context* context = rc->context();
@@ -274,8 +275,7 @@ static QualifiedType primCallResolves(ResolutionContext* rc,
                            /* isParenless */ false,
                            std::move(actuals));
   auto callResult = context->runAndDetectErrors([&](Context* context) {
-    return resolveGeneratedCall(rc, call, callInfo,
-                                inScopes);
+    return resolveGeneratedCall(rc, call, callInfo, inScopes);
   });
   const TypedFnSignature* bestCandidate = nullptr;
   for (auto candidate : callResult.result().mostSpecific()) {
@@ -310,10 +310,9 @@ static QualifiedType primImplementsInterface(Context* context,
   auto& type = ci.actual(0).type();
   auto& ifqt = ci.actual(1).type();
 
-  if (ifqt.kind() != QualifiedType::TYPE ||
-      ifqt.isUnknownOrErroneous() ||
-      type.isUnknownOrErroneous() ||
-      !ifqt.type()->isInterfaceType()) return QualifiedType();
+  if (ifqt.kind() != QualifiedType::TYPE || ifqt.isUnknownOrErroneous() ||
+      type.isUnknownOrErroneous() || !ifqt.type()->isInterfaceType())
+    return QualifiedType();
 
   auto ift = ifqt.type()->toInterfaceType();
   if (!ift) return QualifiedType();
@@ -321,8 +320,8 @@ static QualifiedType primImplementsInterface(Context* context,
   ResolutionContext rc(context);
   bool foundExisting;
   auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
-  auto implPoint = findOrImplementInterface(&rc, ift, type.type(), inScopes,
-                                            astForErr->id(), foundExisting);
+  auto implPoint = findOrImplementInterface(
+    &rc, ift, type.type(), inScopes, astForErr->id(), foundExisting);
 
   int returnValue = 2;
   if (implPoint) {
@@ -360,11 +359,13 @@ static QualifiedType primGpuAllocShared(Context* context, const CallInfo& ci) {
 
   auto firstActualType = ci.actual(0).type();
   if (!firstActualType.type() || !firstActualType.type()->isIntType() ||
-      firstActualType.kind() != QualifiedType::PARAM || !firstActualType.param()) {
+      firstActualType.kind() != QualifiedType::PARAM ||
+      !firstActualType.param()) {
     return QualifiedType();
   }
 
-  return QualifiedType(QualifiedType::CONST_VAR, CPtrType::getCVoidPtrType(context));
+  return QualifiedType(QualifiedType::CONST_VAR,
+                       CPtrType::getCVoidPtrType(context));
 }
 
 static QualifiedType primGpuSetBlockSize(Context* context, const CallInfo& ci) {
@@ -379,7 +380,8 @@ static QualifiedType primGpuSetBlockSize(Context* context, const CallInfo& ci) {
 }
 
 // currently this is a copy of primGpuSetBlockSize
-static QualifiedType primGpuSetItersPerThread(Context* context, const CallInfo& ci) {
+static QualifiedType primGpuSetItersPerThread(Context* context,
+                                              const CallInfo& ci) {
   if (ci.numActuals() != 1) return QualifiedType();
 
   auto firstActualType = ci.actual(0).type();
@@ -395,14 +397,16 @@ static QualifiedType primAssertOnGpu(Context* context, const CallInfo& ci) {
 
   auto firstActualType = ci.actual(0).type();
   if (!firstActualType.type() || !firstActualType.type()->isBoolType() ||
-      firstActualType.kind() != QualifiedType::PARAM || !firstActualType.param()) {
+      firstActualType.kind() != QualifiedType::PARAM ||
+      !firstActualType.param()) {
     return QualifiedType();
   }
 
   return QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
 }
 
-static QualifiedType primTypeof(Context* context, PrimitiveTag prim, const CallInfo& ci) {
+static QualifiedType
+primTypeof(Context* context, PrimitiveTag prim, const CallInfo& ci) {
   if (ci.numActuals() != 1) return QualifiedType();
 
   auto actualQt = ci.actual(0).type();
@@ -437,8 +441,8 @@ static QualifiedType primPromotionType(Context* context, const CallInfo& ci) {
   return res;
 }
 
-static QualifiedType primGetSvecMember(Context* context, PrimitiveTag prim,
-                                       const CallInfo& ci) {
+static QualifiedType
+primGetSvecMember(Context* context, PrimitiveTag prim, const CallInfo& ci) {
   CHPL_ASSERT(prim == PRIM_GET_SVEC_MEMBER ||
               prim == PRIM_GET_SVEC_MEMBER_VALUE);
 
@@ -453,7 +457,7 @@ static QualifiedType primGetSvecMember(Context* context, PrimitiveTag prim,
           if (prim == PRIM_GET_SVEC_MEMBER_VALUE) {
             // Return as value for _VALUE variant, maintaining constness.
             retKind =
-                KindProperties::combineKindsMeet(retKind, QualifiedType::PARAM);
+              KindProperties::combineKindsMeet(retKind, QualifiedType::PARAM);
           }
           return QualifiedType(retKind, eltType.type());
         }
@@ -473,8 +477,8 @@ static bool getTypeAndFieldName(Context* context,
   auto typeActualQt = ci.actual(0).type();
   auto fieldActualQt = ci.actual(1).type();
 
-  if (!typeActualQt.type() ||
-      !fieldActualQt.isParam() || !fieldActualQt.type() || !fieldActualQt.param()) {
+  if (!typeActualQt.type() || !fieldActualQt.isParam() ||
+      !fieldActualQt.type() || !fieldActualQt.param()) {
     return false;
   }
 
@@ -520,7 +524,8 @@ static QualifiedType primGetRuntimeTypeField(Context* context,
   return QualifiedType();
 }
 
-static QualifiedType staticFieldType(ResolutionContext* rc, const CallInfo& ci) {
+static QualifiedType staticFieldType(ResolutionContext* rc,
+                                     const CallInfo& ci) {
   // Note: this is slightly different semantically from the primitive in
   // production. In production owned(X) is a type of its own (aliasing _owned(X)),
   // so it would have the fields of _owned accessed by the primitive. Meanwhile,
@@ -536,7 +541,8 @@ static QualifiedType staticFieldType(ResolutionContext* rc, const CallInfo& ci) 
   // unlike the "name to num" primitives and company, static field type looks
   // for fields including the ones in parent classes.
   while (compositeType) {
-    auto& fields = fieldsForTypeDecl(rc, compositeType, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto& fields =
+      fieldsForTypeDecl(rc, compositeType, DefaultsPolicy::IGNORE_DEFAULTS);
     for (int i = 0; i < fields.numFields(); i++) {
       if (fields.fieldName(i) == fieldName) {
         auto returnType = fields.fieldType(i).type();
@@ -551,16 +557,17 @@ static QualifiedType staticFieldType(ResolutionContext* rc, const CallInfo& ci) 
   return QualifiedType();
 }
 
-static QualifiedType arrayGet(ResolutionContext* rc, const PrimCall* call, const CallInfo& ci) {
-  if (ci.numActuals() != 2 ||
-      ci.actual(0).type().isUnknownOrErroneous() ||
+static QualifiedType
+arrayGet(ResolutionContext* rc, const PrimCall* call, const CallInfo& ci) {
+  if (ci.numActuals() != 2 || ci.actual(0).type().isUnknownOrErroneous() ||
       ci.actual(1).type().isUnknownOrErroneous()) {
     return QualifiedType();
   }
 
   if (!ci.actual(1).type().type()->isIntegralType()) {
-    rc->context()->error(call, "bad call to primitive \"%s\": second argument "
-                               "must be an integral type",
+    rc->context()->error(call,
+                         "bad call to primitive \"%s\": second argument "
+                         "must be an integral type",
                          primTagToName(call->prim()));
     return QualifiedType();
   }
@@ -582,9 +589,10 @@ static QualifiedType arrayGet(ResolutionContext* rc, const PrimCall* call, const
       ast->hasPragma(rc->context(), pragmatags::PragmaTag::PRAGMA_C_ARRAY);
 
     if (!hasSupportedPragmas) {
-      rc->context()->error(call, "bad call to primitive \"%s\": first argument "
-          "must be a data class or C array",
-          primTagToName(call->prim()));
+      rc->context()->error(call,
+                           "bad call to primitive \"%s\": first argument "
+                           "must be a data class or C array",
+                           primTagToName(call->prim()));
       return QualifiedType();
     }
 
@@ -637,13 +645,15 @@ struct TestFunctionFinder {
   void exit(const AstNode* node) {}
 };
 
-static const std::vector<const Function*>& gatheredTestsQuery(Context* context) {
+static const std::vector<const Function*>&
+gatheredTestsQuery(Context* context) {
   QUERY_BEGIN_INPUT(gatheredTestsQuery, context);
   std::vector<const Function*> toReturn;
   return QUERY_END(toReturn);
 }
 
-const std::vector<const uast::Function*>& getTestsGatheredViaPrimitive(Context* context) {
+const std::vector<const uast::Function*>&
+getTestsGatheredViaPrimitive(Context* context) {
   return gatheredTestsQuery(context);
 }
 
@@ -661,13 +671,12 @@ static QualifiedType primGatherTests(Context* context, const CallInfo& ci) {
   }
 
   QUERY_STORE_INPUT_RESULT(gatheredTestsQuery, context, finder.fns);
-  auto numFoundFns = (int) gatheredTestsQuery(context).size();
+  auto numFoundFns = (int)gatheredTestsQuery(context).size();
 
   return QualifiedType::makeParamInt(context, numFoundFns);
 }
 
-static QualifiedType primIsTuple(Context* context,
-                                 const CallInfo& ci) {
+static QualifiedType primIsTuple(Context* context, const CallInfo& ci) {
   if (ci.numActuals() != 1) return QualifiedType();
   auto& actualType = ci.actual(0).type();
   if (actualType.kind() != QualifiedType::TYPE) return QualifiedType();
@@ -676,8 +685,7 @@ static QualifiedType primIsTuple(Context* context,
   return QualifiedType::makeParamBool(context, isTupleType);
 }
 
-static QualifiedType primCast(Context* context,
-                              const CallInfo& ci) {
+static QualifiedType primCast(Context* context, const CallInfo& ci) {
   if (ci.numActuals() != 2) return QualifiedType();
 
   auto& castTo = ci.actual(0).type();
@@ -692,11 +700,12 @@ static QualifiedType primCast(Context* context,
   return QualifiedType(castFrom.kind(), castTo.type(), castFrom.param());
 }
 
-static QualifiedType convertClassToDecorator(Context* context,
-                                             const PrimCall* call,
-                                             const CallInfo& ci,
-                                             ClassTypeDecorator::ClassTypeDecoratorEnum cde,
-                                             bool checked) {
+static QualifiedType
+convertClassToDecorator(Context* context,
+                        const PrimCall* call,
+                        const CallInfo& ci,
+                        ClassTypeDecorator::ClassTypeDecoratorEnum cde,
+                        bool checked) {
   if (ci.numActuals() != 1) return QualifiedType();
 
   auto& actualType = ci.actual(0).type();
@@ -721,10 +730,10 @@ static QualifiedType convertClassToDecorator(Context* context,
     manageableType = AnyClassType::get(context);
   }
 
-
   if (manageableType) {
-    return QualifiedType(actualType.kind(),
-                         ClassType::get(context, manageableType, nullptr, decorator));
+    return QualifiedType(
+      actualType.kind(),
+      ClassType::get(context, manageableType, nullptr, decorator));
   } else if (checked) {
     // It wasn't a class-like type, which is also not allowed by the checked
     // primitives.
@@ -737,24 +746,24 @@ static QualifiedType primToUnmanagedClass(Context* context,
                                           const PrimCall* call,
                                           const CallInfo& ci,
                                           bool checked) {
-  return convertClassToDecorator(context, call, ci,
-                                 ClassTypeDecorator::UNMANAGED, checked);
+  return convertClassToDecorator(
+    context, call, ci, ClassTypeDecorator::UNMANAGED, checked);
 }
 
 static QualifiedType primToUndecoratedClass(Context* context,
                                             const PrimCall* call,
                                             const CallInfo& ci,
                                             bool checked) {
-  return convertClassToDecorator(context, call, ci,
-                                 ClassTypeDecorator::GENERIC, checked);
+  return convertClassToDecorator(
+    context, call, ci, ClassTypeDecorator::GENERIC, checked);
 }
 
 static QualifiedType primToBorrowedClass(Context* context,
                                          const PrimCall* call,
                                          const CallInfo& ci,
                                          bool checked) {
-  return convertClassToDecorator(context, call, ci,
-                                 ClassTypeDecorator::BORROWED, checked);
+  return convertClassToDecorator(
+    context, call, ci, ClassTypeDecorator::BORROWED, checked);
 }
 
 static QualifiedType setClassNilability(Context* context,
@@ -793,8 +802,10 @@ static QualifiedType setClassNilability(Context* context,
 
   if (cde) {
     auto decorator = ClassTypeDecorator(*cde);
-    auto newDecorator = nilability ? decorator.addNilable() : decorator.addNonNil();
-    const Type* newType = ClassType::get(context, manageableType, manager, newDecorator);
+    auto newDecorator =
+      nilability ? decorator.addNilable() : decorator.addNonNil();
+    const Type* newType =
+      ClassType::get(context, manageableType, manager, newDecorator);
     return QualifiedType(actualType.kind(), newType);
   } else if (checked) {
     // It wasn't a class-like type, which is also not allowed by the checked
@@ -874,8 +885,8 @@ static QualifiedType primFamilyIsSubtype(Context* context,
     // TODO: Don't count borrowing conversion as implying subtype, since that's
     // not what the spec does.
     bool isSubType =
-      cpr.passes() &&
-      (cpr.conversionKind() & ~(CanPassResult::SUBTYPE | CanPassResult::BORROWS)) == 0;
+      cpr.passes() && (cpr.conversionKind() &
+                       ~(CanPassResult::SUBTYPE | CanPassResult::BORROWS)) == 0;
     if (prim == PRIM_IS_SUBTYPE) {
       result = isSubType;
     } else {
@@ -903,8 +914,10 @@ static QualifiedType primToNonNilableClass(Context* context,
   return setClassNilability(context, call, ci, /* nilability */ false, checked);
 }
 
-template <typename FromParam, typename ToParam,
-          typename FromCppType, typename ToCppType>
+template <typename FromParam,
+          typename ToParam,
+          typename FromCppType,
+          typename ToCppType>
 QualifiedType primNumericTransmute(Context* context,
                                    const PrimCall* call,
                                    const CallInfo& ci,
@@ -922,10 +935,10 @@ QualifiedType primNumericTransmute(Context* context,
     // Note: assuming that the param matches the type here, because we can't
     // call a toWhateverParam. Perform an "unsafe" cast, which should be
     // safe if the param QT is well-formed.
-    FromCppType fromVal = (FromCppType) ((const FromParam*) fromParam)->value();
+    FromCppType fromVal = (FromCppType)((const FromParam*)fromParam)->value();
     ToCppType toVal;
     memcpy(&toVal, &fromVal, sizeof(ToCppType));
-    param = ToParam::get(context, (ToCppType) toVal);
+    param = ToParam::get(context, (ToCppType)toVal);
   }
 
   return QualifiedType(fromQt.kind(), targetType, param);
@@ -954,7 +967,8 @@ static QualifiedType primObjectToInt(Context* context, const CallInfo& ci) {
   return QualifiedType(argType.kind(), IntType::get(context, 64));
 }
 
-static QualifiedType primStringLengthCodepoints(Context* context, const CallInfo& ci) {
+static QualifiedType primStringLengthCodepoints(Context* context,
+                                                const CallInfo& ci) {
   if (ci.numActuals() != 1) return QualifiedType();
 
   auto actualType = ci.actual(0).type();
@@ -968,15 +982,15 @@ static QualifiedType primStringLengthCodepoints(Context* context, const CallInfo
   // Don't bother looking at the first byte.
   // Count it as an initial UTF-8 byte.
   size_t nbytes = sParam.length();
-  size_t ncodepoints  = (nbytes > 0);
+  size_t ncodepoints = (nbytes > 0);
   for (size_t i = 1; i < nbytes; ++i)
-    if (isInitialUTF8Byte(sParam.c_str()[i]))
-      ++ncodepoints;
+    if (isInitialUTF8Byte(sParam.c_str()[i])) ++ncodepoints;
 
   return QualifiedType::makeParamInt(context, ncodepoints);
 }
 
-static QualifiedType primAscii(ResolutionContext* rc, const PrimCall* call, const CallInfo& ci) {
+static QualifiedType
+primAscii(ResolutionContext* rc, const PrimCall* call, const CallInfo& ci) {
   if (ci.numActuals() != 1 && ci.numActuals() != 2) return QualifiedType();
 
   // production's legacy handling of this primitive includes fallbacks for
@@ -994,7 +1008,7 @@ static QualifiedType primAscii(ResolutionContext* rc, const PrimCall* call, cons
     return QualifiedType();
   }
 
-  if (index < 0 || (uint64_t) index >= str.length()) {
+  if (index < 0 || (uint64_t)index >= str.length()) {
     rc->context()->error(call, "index out of range");
     return QualifiedType();
   }
@@ -1004,7 +1018,8 @@ static QualifiedType primAscii(ResolutionContext* rc, const PrimCall* call, cons
                        UintParam::get(rc->context(), str.c_str()[index]));
 }
 
-static QualifiedType primStringItem(Context* context, const PrimCall* call, const CallInfo& ci) {
+static QualifiedType
+primStringItem(Context* context, const PrimCall* call, const CallInfo& ci) {
   if (ci.numActuals() != 1 && ci.numActuals() != 2) return QualifiedType();
 
   UniqueString sParam;
@@ -1015,8 +1030,7 @@ static QualifiedType primStringItem(Context* context, const PrimCall* call, cons
     return QualifiedType();
   }
 
-  if (ci.numActuals() == 2 &&
-      !toParamIntActual(ci.actual(1).type(), index)) {
+  if (ci.numActuals() == 2 && !toParamIntActual(ci.actual(1).type(), index)) {
     return QualifiedType();
   }
 
@@ -1024,12 +1038,14 @@ static QualifiedType primStringItem(Context* context, const PrimCall* call, cons
   // it's defined in a header, and brings in stdlib, so we can use free()
   // and be sure it's the right allocator.
   const char* retStr = chpl_enc_codepoint_at_idx(sParam.c_str(), index);
-  auto toReturn = QualifiedType::makeParamString(context, UniqueString::get(context, retStr));
-  free((void*) retStr);
+  auto toReturn =
+    QualifiedType::makeParamString(context, UniqueString::get(context, retStr));
+  free((void*)retStr);
   return toReturn;
 }
 
-static QualifiedType primBytesItem(Context* context, const PrimCall* call, const CallInfo& ci) {
+static QualifiedType
+primBytesItem(Context* context, const PrimCall* call, const CallInfo& ci) {
   if (ci.numActuals() != 1 && ci.numActuals() != 2) return QualifiedType();
 
   UniqueString sParam;
@@ -1040,28 +1056,28 @@ static QualifiedType primBytesItem(Context* context, const PrimCall* call, const
     return QualifiedType();
   }
 
-  if (ci.numActuals() == 2 &&
-      !toParamIntActual(ci.actual(1).type(), index)) {
+  if (ci.numActuals() == 2 && !toParamIntActual(ci.actual(1).type(), index)) {
     return QualifiedType();
   }
 
-  if (index < 0 || (uint64_t) index >= sParam.length()) {
+  if (index < 0 || (uint64_t)index >= sParam.length()) {
     context->error(call, "index out of range");
     return QualifiedType();
   }
 
-  char result[2] = { sParam.c_str()[index], '\0' };
+  char result[2] = {sParam.c_str()[index], '\0'};
 
-  return QualifiedType(QualifiedType::PARAM,
-                       CompositeType::getBytesType(context),
-                       StringParam::get(context, UniqueString::get(context, result)));
+  return QualifiedType(
+    QualifiedType::PARAM,
+    CompositeType::getBytesType(context),
+    StringParam::get(context, UniqueString::get(context, result)));
 }
 
 /*
   for get real/imag primitives
 */
-static QualifiedType
-primComplexGetComponent(Context* context, const CallInfo& ci) {
+static QualifiedType primComplexGetComponent(Context* context,
+                                             const CallInfo& ci) {
   QualifiedType ret = QualifiedType();
 
   if (ci.numActuals() != 1) return ret;
@@ -1074,8 +1090,7 @@ primComplexGetComponent(Context* context, const CallInfo& ci) {
 }
 
 /* for complex primitives */
-static QualifiedType
-primBuildComplex(Context* context, const CallInfo& ci) {
+static QualifiedType primBuildComplex(Context* context, const CallInfo& ci) {
   QualifiedType ret = QualifiedType();
 
   if (ci.numActuals() != 2) return ret;
@@ -1084,8 +1099,10 @@ primBuildComplex(Context* context, const CallInfo& ci) {
   auto actual1R = ci.actual(1).type().type()->toRealType();
   auto actual0I = ci.actual(0).type().type()->toImagType();
   auto actual1I = ci.actual(1).type().type()->toImagType();
-  auto actual0BW = actual0R ? actual0R->bitwidth() : (actual0I ? actual0I->bitwidth() : 0);
-  auto actual1BW = actual1R ? actual1R->bitwidth() : (actual1I ? actual1I->bitwidth() : 0);
+  auto actual0BW =
+    actual0R ? actual0R->bitwidth() : (actual0I ? actual0I->bitwidth() : 0);
+  auto actual1BW =
+    actual1R ? actual1R->bitwidth() : (actual1I ? actual1I->bitwidth() : 0);
   if (actual0BW != 0 && actual1BW != 0 && actual0BW == actual1BW) {
     int BW = actual0BW * 2;
     ret = QualifiedType(QualifiedType::REF, ComplexType::get(context, BW));
@@ -1094,8 +1111,7 @@ primBuildComplex(Context* context, const CallInfo& ci) {
 }
 
 /* for abs */
-static QualifiedType
-primAbsGetType(Context* context, const CallInfo& ci) {
+static QualifiedType primAbsGetType(Context* context, const CallInfo& ci) {
   QualifiedType ret = QualifiedType();
 
   if (ci.numActuals() != 1) return ret;
@@ -1120,9 +1136,9 @@ static QualifiedType primFamilyCopyableAssignable(ResolutionContext* rc,
                                                   const CallInfo& ci,
                                                   const PrimitiveTag prim) {
   const bool checkCopyable =
-      (prim == PRIM_IS_COPYABLE || prim == PRIM_IS_CONST_COPYABLE);
+    (prim == PRIM_IS_COPYABLE || prim == PRIM_IS_CONST_COPYABLE);
   const bool checkAssignable =
-      (prim == PRIM_IS_ASSIGNABLE || prim == PRIM_IS_CONST_ASSIGNABLE);
+    (prim == PRIM_IS_ASSIGNABLE || prim == PRIM_IS_CONST_ASSIGNABLE);
   CHPL_ASSERT((checkCopyable || checkAssignable) &&
               "incorrect primitive for this handler");
 
@@ -1133,9 +1149,9 @@ static QualifiedType primFamilyCopyableAssignable(ResolutionContext* rc,
 
   // copyable/assignable from const is stricter than from ref
   const bool isFromRefOk =
-      (prim == PRIM_IS_COPYABLE || prim == PRIM_IS_ASSIGNABLE);
+    (prim == PRIM_IS_COPYABLE || prim == PRIM_IS_ASSIGNABLE);
   const bool isCopyableOrAssignable =
-      info.isFromConst() || (info.isFromRef() && isFromRefOk);
+    info.isFromConst() || (info.isFromRef() && isFromRefOk);
 
   return QualifiedType::makeParamBool(rc->context(), isCopyableOrAssignable);
 }
@@ -1158,15 +1174,14 @@ static QualifiedType primIsGenericType(Context* context, const CallInfo& ci) {
   return QualifiedType::makeParamBool(context, eval);
 }
 
-
 static QualifiedType primIsClassType(Context* context, const CallInfo& ci) {
   if (ci.numActuals() < 1) return QualifiedType();
   bool eval = false;
   if (auto t = ci.actual(0).type().type()) {
     const bool isClassLike =
-        t->isClassType()      ||  // E.g., 'owned C' or 'owned class'.
-        t->isBasicClassType() ||  // TODO: This probably shouldn't appear.
-        t->isAnyClassType();      // E.g., 'class'.
+      t->isClassType() ||      // E.g., 'owned C' or 'owned class'.
+      t->isBasicClassType() || // TODO: This probably shouldn't appear.
+      t->isAnyClassType();     // E.g., 'class'.
     // TODO: No to extern types.
     const bool isExtern = false;
     const bool isDdata = t->hasPragma(context, PRAGMA_DATA_CLASS);
@@ -1193,16 +1208,16 @@ actualTypeHasProperty(Context* context, const CallInfo& ci, F&& f) {
   return actualTypeHasProperty(&rc, ci, f);
 }
 
-static QualifiedType
-primIsNilableClassType(Context* context, const CallInfo& ci) {
+static QualifiedType primIsNilableClassType(Context* context,
+                                            const CallInfo& ci) {
   return actualTypeHasProperty(context, ci, [](auto t) {
     auto mt = t->toClassType();
     return mt ? mt->decorator().isNilable() : false;
   });
 }
 
-static QualifiedType
-primIsNonNilableClassType(Context* context, const CallInfo& ci) {
+static QualifiedType primIsNonNilableClassType(Context* context,
+                                               const CallInfo& ci) {
   return actualTypeHasProperty(context, ci, [](auto t) {
     auto mt = t->toClassType();
     return mt ? mt->decorator().isNonNilable() : false;
@@ -1210,9 +1225,8 @@ primIsNonNilableClassType(Context* context, const CallInfo& ci) {
 }
 
 static QualifiedType primIsRecordType(Context* context, const CallInfo& ci) {
-  return actualTypeHasProperty(context, ci, [](auto t) {
-    return t->isUserRecordType();
-  });
+  return actualTypeHasProperty(
+    context, ci, [](auto t) { return t->isUserRecordType(); });
 }
 
 static QualifiedType primIsProcType(Context* context, const CallInfo& ci) {
@@ -1226,9 +1240,8 @@ static QualifiedType primToProcType(Context* context, const CallInfo& ci) {
 }
 
 static QualifiedType primIsUnionType(Context* context, const CallInfo& ci) {
-  return actualTypeHasProperty(context, ci, [](auto t) {
-    return t->isUnionType();
-  });
+  return actualTypeHasProperty(
+    context, ci, [](auto t) { return t->isUnionType(); });
 }
 
 static QualifiedType primIsExternType(Context* context, const CallInfo& ci) {
@@ -1239,37 +1252,34 @@ static QualifiedType primIsExternType(Context* context, const CallInfo& ci) {
   });
 }
 
-static QualifiedType
-primIsExternUnionType(Context* context, const CallInfo& ci) {
+static QualifiedType primIsExternUnionType(Context* context,
+                                           const CallInfo& ci) {
   auto qt1 = primIsExternType(context, ci);
   auto qt2 = primIsUnionType(context, ci);
   const bool eval = qt1.isParamTrue() && qt2.isParamTrue();
   return QualifiedType::makeParamBool(context, eval);
 }
 
-static QualifiedType
-primIsAtomicType(Context* context, const CallInfo& ci) {
+static QualifiedType primIsAtomicType(Context* context, const CallInfo& ci) {
   return actualTypeHasProperty(context, ci, [=](auto t) {
     return t->hasPragma(context, PRAGMA_ATOMIC_TYPE);
   });
 }
 
-static QualifiedType
-primIsRefIterType(Context* context, const CallInfo& ci) {
+static QualifiedType primIsRefIterType(Context* context, const CallInfo& ci) {
   CHPL_UNIMPL("PRIM_IS_REF_ITER_TYPE");
   return QualifiedType();
 }
 
-static QualifiedType
-primIsBorrowedClassType(Context* context, const CallInfo& ci) {
+static QualifiedType primIsBorrowedClassType(Context* context,
+                                             const CallInfo& ci) {
   return actualTypeHasProperty(context, ci, [](auto t) {
     auto mt = t->toClassType();
     return mt ? mt->decorator().isBorrowed() : false;
   });
 }
 
-static QualifiedType
-primIsAbsEnumType(Context* context, const CallInfo& ci) {
+static QualifiedType primIsAbsEnumType(Context* context, const CallInfo& ci) {
   return actualTypeHasProperty(context, ci, [](auto t) {
     auto et = t->toEnumType();
     return et ? et->isAbstract() : false;
@@ -1277,25 +1287,24 @@ primIsAbsEnumType(Context* context, const CallInfo& ci) {
 }
 
 static QualifiedType primIsPod(ResolutionContext* rc, const CallInfo& ci) {
-  return actualTypeHasProperty(rc, ci, [=](auto t) {
-    return Type::isPod(rc, t);
-  });
+  return actualTypeHasProperty(
+    rc, ci, [=](auto t) { return Type::isPod(rc, t); });
 }
 
-static QualifiedType primIsDefaultInitializable(ResolutionContext* rc, const CallInfo& ci) {
-  return actualTypeHasProperty(rc, ci, [=](auto t) {
-    return Type::isDefaultInitializable(rc, t);
-  });
+static QualifiedType primIsDefaultInitializable(ResolutionContext* rc,
+                                                const CallInfo& ci) {
+  return actualTypeHasProperty(
+    rc, ci, [=](auto t) { return Type::isDefaultInitializable(rc, t); });
 }
 
-static QualifiedType primNeedsAutoDestroy(ResolutionContext* rc, const CallInfo& ci) {
+static QualifiedType primNeedsAutoDestroy(ResolutionContext* rc,
+                                          const CallInfo& ci) {
   return actualTypeHasProperty(rc, ci, [=](auto t) {
     return Type::needsInitDeinitCall(t) && !Type::isPod(rc, t);
   });
 }
 
-static QualifiedType
-primIsCoercible(Context* context, const CallInfo& ci) {
+static QualifiedType primIsCoercible(Context* context, const CallInfo& ci) {
   if (ci.numActuals() < 2) return QualifiedType();
 
   // Adjust arguments to have 'INIT_RECEIVER' and 'IN' intents, since coercions between
@@ -1304,7 +1313,8 @@ primIsCoercible(Context* context, const CallInfo& ci) {
   // so that 'childClass' is coercible to 'parentClass' even if the ownership
   // is not known.
   auto qtToAdj = QualifiedType(QualifiedType::IN, ci.actual(0).type().type());
-  auto qtFromAdj = QualifiedType(QualifiedType::INIT_RECEIVER, ci.actual(1).type().type());
+  auto qtFromAdj =
+    QualifiedType(QualifiedType::INIT_RECEIVER, ci.actual(1).type().type());
 
   auto canPass = CanPassResult::canPassScalar(context, qtFromAdj, qtToAdj);
   return QualifiedType::makeParamBool(context, canPass.passes());
@@ -1312,10 +1322,10 @@ primIsCoercible(Context* context, const CallInfo& ci) {
 
 static std::string typeToString(Context* context, const Type* t);
 
-static void
-doRegularCompositeTypeToString(Context* context, const CompositeType* ct,
-                               const ClassType* asClassType,
-                               std::stringstream& ss) {
+static void doRegularCompositeTypeToString(Context* context,
+                                           const CompositeType* ct,
+                                           const ClassType* asClassType,
+                                           std::stringstream& ss) {
   bool shouldAddNilableQuestionMark = false;
 
   // Handle class management and check for nilability.
@@ -1345,7 +1355,7 @@ doRegularCompositeTypeToString(Context* context, const CompositeType* ct,
     for (size_t i = 0; i < sortedSubs.size(); i++) {
       auto& qt = sortedSubs[i].second;
       ss << typeToString(context, qt.type());
-      const bool last = (i+1) == sortedSubs.size();
+      const bool last = (i + 1) == sortedSubs.size();
       if (!last) ss << ", ";
     }
     ss << ")";
@@ -1356,12 +1366,9 @@ static std::string typeToString(Context* context, const Type* t) {
   std::stringstream ss;
 
   // TODO: Should stringify be able to handle everything?
-  const bool canSimpleStringify = t->isPrimitiveType() ||
-                                  t->isBuiltinType() ||
-                                  t->isStringType() ||
-                                  t->isBytesType() ||
-                                  t->isEnumType() ||
-                                  t->isAnyType();
+  const bool canSimpleStringify = t->isPrimitiveType() || t->isBuiltinType() ||
+                                  t->isStringType() || t->isBytesType() ||
+                                  t->isEnumType() || t->isAnyType();
 
   if (canSimpleStringify) {
     t->stringify(ss, CHPL_SYNTAX);
@@ -1380,8 +1387,7 @@ static std::string typeToString(Context* context, const Type* t) {
   return ret;
 }
 
-static QualifiedType
-primTypeToString(Context* context, const CallInfo& ci) {
+static QualifiedType primTypeToString(Context* context, const CallInfo& ci) {
   if (ci.numActuals() < 1) return QualifiedType();
   std::string eval;
   if (auto t = ci.actual(0).type().type()) {
@@ -1390,8 +1396,7 @@ primTypeToString(Context* context, const CallInfo& ci) {
   return QualifiedType::makeParamString(context, eval);
 }
 
-static QualifiedType
-primSimpleTypeName(Context* context, const CallInfo& ci) {
+static QualifiedType primSimpleTypeName(Context* context, const CallInfo& ci) {
   if (ci.numActuals() < 1) return QualifiedType();
   std::string eval;
   if (auto t = ci.actual(0).type().type()) {
@@ -1426,16 +1431,20 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
   auto prim = call->prim();
   if (Param::isParamOpFoldable(prim) && allParam) {
     if (ci.numActuals() == 2) {
-      type = Param::fold(context, call, prim, ci.actual(0).type(), ci.actual(1).type());
+      type = Param::fold(
+        context, call, prim, ci.actual(0).type(), ci.actual(1).type());
     } else if (ci.numActuals() == 1) {
-      type = Param::fold(context, call, prim, ci.actual(0).type(), QualifiedType());
+      type =
+        Param::fold(context, call, prim, ci.actual(0).type(), QualifiedType());
     } else {
       CHPL_ASSERT(false && "unsupported param folding");
     }
     return CallResolutionResult(candidates,
                                 /* rejectedPossibleIteratorCandidates */ false,
-                                type, /* yielded type */ QualifiedType(),
-                                poi, /* specially handled */ true);
+                                type,
+                                /* yielded type */ QualifiedType(),
+                                poi,
+                                /* specially handled */ true);
   }
 
   // otherwise, handle each primitive individually
@@ -1448,45 +1457,25 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       type = primFamilyIsSubtype(context, call, ci);
       break;
 
-    case PRIM_IS_BOUND:
-      type = primIsBound(rc, ci);
-      break;
+    case PRIM_IS_BOUND: type = primIsBound(rc, ci); break;
 
-    case PRIM_IS_COERCIBLE:
-      type = primIsCoercible(context, ci);
-      break;
+    case PRIM_IS_COERCIBLE: type = primIsCoercible(context, ci); break;
 
-    case PRIM_TYPE_TO_STRING:
-      type = primTypeToString(context, ci);
-      break;
+    case PRIM_TYPE_TO_STRING: type = primTypeToString(context, ci); break;
 
-    case PRIM_HAS_LEADER:
-      CHPL_UNIMPL("PRIM_HAS_LEADER");
-      break;
+    case PRIM_HAS_LEADER: CHPL_UNIMPL("PRIM_HAS_LEADER"); break;
 
-    case PRIM_IS_TUPLE_TYPE:
-      type = primIsTuple(context, ci);
-      break;
+    case PRIM_IS_TUPLE_TYPE: type = primIsTuple(context, ci); break;
 
-    case PRIM_SIMPLE_TYPE_NAME:
-      type = primSimpleTypeName(context, ci);
-      break;
+    case PRIM_SIMPLE_TYPE_NAME: type = primSimpleTypeName(context, ci); break;
 
-    case PRIM_NUM_FIELDS:
-      type = primNumFields(rc, ci);
-      break;
+    case PRIM_NUM_FIELDS: type = primNumFields(rc, ci); break;
 
-    case PRIM_FIELD_NUM_TO_NAME:
-      type = primFieldNumToName(rc, ci);
-      break;
+    case PRIM_FIELD_NUM_TO_NAME: type = primFieldNumToName(rc, ci); break;
 
-    case PRIM_FIELD_NAME_TO_NUM:
-      type = primFieldNameToNum(rc, ci);
-      break;
+    case PRIM_FIELD_NAME_TO_NUM: type = primFieldNameToNum(rc, ci); break;
 
-    case PRIM_FIELD_BY_NUM:
-      type = primFieldByNum(rc, ci);
-      break;
+    case PRIM_FIELD_BY_NUM: type = primFieldByNum(rc, ci); break;
 
     case PRIM_IS_COPYABLE:
     case PRIM_IS_CONST_COPYABLE:
@@ -1499,13 +1488,9 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       CHPL_UNIMPL("PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL");
       break;
 
-    case PRIM_IS_GENERIC_TYPE:
-      type = primIsGenericType(context, ci);
-      break;
+    case PRIM_IS_GENERIC_TYPE: type = primIsGenericType(context, ci); break;
 
-    case PRIM_IS_CLASS_TYPE:
-      type = primIsClassType(context, ci);
-      break;
+    case PRIM_IS_CLASS_TYPE: type = primIsClassType(context, ci); break;
 
     case PRIM_IS_NILABLE_CLASS_TYPE:
       type = primIsNilableClassType(context, ci);
@@ -1515,75 +1500,52 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       type = primIsNonNilableClassType(context, ci);
       break;
 
-    case PRIM_IS_RECORD_TYPE:
-      type = primIsRecordType(context, ci);
-      break;
+    case PRIM_IS_RECORD_TYPE: type = primIsRecordType(context, ci); break;
 
-    case PRIM_IS_PROC_TYPE:
-      type = primIsProcType(context, ci);
-      break;
+    case PRIM_IS_PROC_TYPE: type = primIsProcType(context, ci); break;
 
-    case PRIM_TO_PROC_TYPE:
-      type = primToProcType(context, ci);
-      break;
+    case PRIM_TO_PROC_TYPE: type = primToProcType(context, ci); break;
 
-    case PRIM_IS_UNION_TYPE:
-      type = primIsUnionType(context, ci);
-      break;
+    case PRIM_IS_UNION_TYPE: type = primIsUnionType(context, ci); break;
 
     case PRIM_IS_EXTERN_UNION_TYPE:
       type = primIsExternUnionType(context, ci);
       break;
 
-    case PRIM_IS_ATOMIC_TYPE:
-      type = primIsAtomicType(context, ci);
-      break;
+    case PRIM_IS_ATOMIC_TYPE: type = primIsAtomicType(context, ci); break;
 
-    case PRIM_IS_REF_ITER_TYPE:
-      type = primIsRefIterType(context, ci);
-      break;
+    case PRIM_IS_REF_ITER_TYPE: type = primIsRefIterType(context, ci); break;
 
-    case PRIM_IS_EXTERN_TYPE:
-      type = primIsExternType(context, ci);
-      break;
+    case PRIM_IS_EXTERN_TYPE: type = primIsExternType(context, ci); break;
 
     case PRIM_IS_BORROWED_CLASS_TYPE:
       type = primIsBorrowedClassType(context, ci);
       break;
 
-    case PRIM_IS_ABS_ENUM_TYPE:
-      type = primIsAbsEnumType(context, ci);
-      break;
+    case PRIM_IS_ABS_ENUM_TYPE: type = primIsAbsEnumType(context, ci); break;
 
-    case PRIM_IS_POD:
-      type = primIsPod(rc, ci);
-      break;
+    case PRIM_IS_POD: type = primIsPod(rc, ci); break;
 
     case PRIM_HAS_DEFAULT_VALUE:
       type = primIsDefaultInitializable(rc, ci);
       break;
 
-    case PRIM_NEEDS_AUTO_DESTROY:
-      type = primNeedsAutoDestroy(rc, ci);
-      break;
+    case PRIM_NEEDS_AUTO_DESTROY: type = primNeedsAutoDestroy(rc, ci); break;
 
     case PRIM_CALL_RESOLVES:
     case PRIM_CALL_AND_FN_RESOLVES:
     case PRIM_METHOD_CALL_AND_FN_RESOLVES:
     case PRIM_METHOD_CALL_RESOLVES: {
-        bool forMethod = prim == PRIM_METHOD_CALL_RESOLVES ||
-                         prim == PRIM_METHOD_CALL_AND_FN_RESOLVES;
-        bool resolveFn = prim == PRIM_CALL_AND_FN_RESOLVES ||
-                         prim == PRIM_METHOD_CALL_AND_FN_RESOLVES;
+      bool forMethod = prim == PRIM_METHOD_CALL_RESOLVES ||
+                       prim == PRIM_METHOD_CALL_AND_FN_RESOLVES;
+      bool resolveFn = prim == PRIM_CALL_AND_FN_RESOLVES ||
+                       prim == PRIM_METHOD_CALL_AND_FN_RESOLVES;
 
-        auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
-        type = primCallResolves(rc, ci, forMethod, resolveFn, call, inScopes);
-      }
-      break;
+      auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
+      type = primCallResolves(rc, ci, forMethod, resolveFn, call, inScopes);
+    } break;
 
-    case PRIM_RESOLVES:
-      CHPL_UNIMPL("various primitives");
-      break;
+    case PRIM_RESOLVES: CHPL_UNIMPL("various primitives"); break;
 
     case PRIM_IMPLEMENTS_INTERFACE:
       type = primImplementsInterface(context, call, ci, inScope, inPoiScope);
@@ -1593,8 +1555,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       if (ci.numActuals() == 1) {
         bool result = false;
         if (auto t = ci.actual(0).type().type())
-          if (auto tt = t->toTupleType())
-            result = tt->isStarTuple();
+          if (auto tt = t->toTupleType()) result = tt->isStarTuple();
 
         type = QualifiedType::makeParamBool(context, result);
       }
@@ -1602,15 +1563,11 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
 
     /* cast-like things */
     case PRIM_CAST:
-    case PRIM_DYNAMIC_CAST:
-      type = primCast(context, ci);
-      break;
+    case PRIM_DYNAMIC_CAST: type = primCast(context, ci); break;
 
     case PRIM_TO_LEADER:
     case PRIM_TO_FOLLOWER:
-    case PRIM_TO_STANDALONE:
-      CHPL_UNIMPL("iterator casting  primitives");
-      break;
+    case PRIM_TO_STANDALONE: CHPL_UNIMPL("iterator casting  primitives"); break;
 
     case PRIM_CAST_TO_VOID_STAR:
       if (ci.numActuals() == 1) {
@@ -1625,27 +1582,28 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       type = primCast(context, ci);
       break;
 
-    case PRIM_REAL_TO_INT:
-      type = primRealToInt(context, ci);
-      break;
+    case PRIM_REAL_TO_INT: type = primRealToInt(context, ci); break;
 
-    case PRIM_OBJECT_TO_INT:
-      type = primObjectToInt(context, ci);
+    case PRIM_OBJECT_TO_INT: type = primObjectToInt(context, ci);
 
-    case PRIM_COERCE:
-      CHPL_UNIMPL("coerce primitive");
-      break;
+    case PRIM_COERCE: CHPL_UNIMPL("coerce primitive"); break;
 
     case PRIM_TO_UNMANAGED_CLASS_CHECKED:
     case PRIM_TO_UNMANAGED_CLASS:
-      type = primToUnmanagedClass(context, call, ci,
-                                  /* checked */ prim == PRIM_TO_UNMANAGED_CLASS_CHECKED);
+      type = primToUnmanagedClass(context,
+                                  call,
+                                  ci,
+                                  /* checked */ prim ==
+                                    PRIM_TO_UNMANAGED_CLASS_CHECKED);
       break;
 
     case PRIM_TO_BORROWED_CLASS_CHECKED:
     case PRIM_TO_BORROWED_CLASS:
-      type = primToBorrowedClass(context, call, ci,
-                                 /* checked */ prim == PRIM_TO_BORROWED_CLASS_CHECKED);
+      type = primToBorrowedClass(context,
+                                 call,
+                                 ci,
+                                 /* checked */ prim ==
+                                   PRIM_TO_BORROWED_CLASS_CHECKED);
       break;
 
     case PRIM_TO_UNDECORATED_CLASS:
@@ -1654,47 +1612,63 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
 
     case PRIM_TO_NILABLE_CLASS_CHECKED:
     case PRIM_TO_NILABLE_CLASS:
-      type = primToNilableClass(context, call, ci,
-                                /* checked */ prim == PRIM_TO_NILABLE_CLASS_CHECKED);
+      type =
+        primToNilableClass(context,
+                           call,
+                           ci,
+                           /* checked */ prim == PRIM_TO_NILABLE_CLASS_CHECKED);
       break;
 
     case PRIM_TO_NON_NILABLE_CLASS:
       type = primToNonNilableClass(context, call, ci, /* checked */ false);
       break;
 
-    case PRIM_TO_EXTERN_LINKAGE:
-      CHPL_UNIMPL("PRIM_TO_EXTERN_LINKAGE");
-      break;
+    case PRIM_TO_EXTERN_LINKAGE: CHPL_UNIMPL("PRIM_TO_EXTERN_LINKAGE"); break;
 
     case PRIM_UINT32_AS_REAL32:
       type = primNumericTransmute<UintParam, RealParam, uint32_t, float>(
-          context, call, ci, UintType::get(context, 32), RealType::get(context, 32));
+        context,
+        call,
+        ci,
+        UintType::get(context, 32),
+        RealType::get(context, 32));
       break;
 
     case PRIM_UINT64_AS_REAL64:
       type = primNumericTransmute<UintParam, RealParam, uint64_t, double>(
-          context, call, ci, UintType::get(context, 64), RealType::get(context, 64));
+        context,
+        call,
+        ci,
+        UintType::get(context, 64),
+        RealType::get(context, 64));
       break;
 
     case PRIM_REAL32_AS_UINT32:
       type = primNumericTransmute<RealParam, UintParam, float, uint32_t>(
-          context, call, ci, RealType::get(context, 32), UintType::get(context, 32));
+        context,
+        call,
+        ci,
+        RealType::get(context, 32),
+        UintType::get(context, 32));
       break;
 
     case PRIM_REAL64_AS_UINT64:
       type = primNumericTransmute<RealParam, UintParam, double, uint64_t>(
-          context, call, ci, RealType::get(context, 64), UintType::get(context, 64));
+        context,
+        call,
+        ci,
+        RealType::get(context, 64),
+        UintType::get(context, 64));
       break;
 
     /* string operations */
     case PRIM_STRING_COMPARE:
     case PRIM_STRING_CONTAINS:
-    case PRIM_STRING_LENGTH_BYTES:
-    {
+    case PRIM_STRING_LENGTH_BYTES: {
       if (ci.numActuals() > 0) {
         UniqueString sParam;
         auto& actualType = ci.actual(0).type();
-        if (toParamStringActual(actualType, sParam)||
+        if (toParamStringActual(actualType, sParam) ||
             toParamBytesActual(actualType, sParam)) {
           const size_t s = sParam.length();
           type = QualifiedType::makeParamInt(context, s);
@@ -1704,25 +1678,25 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
                    actualType.type()->isCStringType() ||
                    actualType.type()->isCPtrType()) {
           // for non-param string/bytes, the return type is just a default int
-          type = QualifiedType(QualifiedType::CONST_VAR,
-                               IntType::get(context, 0));
+          type =
+            QualifiedType(QualifiedType::CONST_VAR, IntType::get(context, 0));
           break;
         }
       }
     }
-    case PRIM_STRING_CONCAT:
-    {
+    case PRIM_STRING_CONCAT: {
       if (ci.numActuals() == 2) {
         auto lhs = ci.actual(0).type();
         auto rhs = ci.actual(1).type();
 
-        if (lhs.type() == rhs.type() &&
-            lhs.isParam() && rhs.isParam() &&
+        if (lhs.type() == rhs.type() && lhs.isParam() && rhs.isParam() &&
             (lhs.type()->isStringType() || lhs.type()->isBytesType())) {
           auto lstr = lhs.param()->toStringParam()->value();
           auto rstr = rhs.param()->toStringParam()->value();
-          auto concat = UniqueString::getConcat(context, lstr.c_str(), rstr.c_str());
-          type = QualifiedType(QualifiedType::PARAM, lhs.type(),
+          auto concat =
+            UniqueString::getConcat(context, lstr.c_str(), rstr.c_str());
+          type = QualifiedType(QualifiedType::PARAM,
+                               lhs.type(),
                                StringParam::get(context, concat));
         }
       }
@@ -1732,23 +1706,15 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       type = primStringLengthCodepoints(context, ci);
       break;
 
-    case PRIM_ASCII:
-      type = primAscii(rc, call, ci);
-      break;
+    case PRIM_ASCII: type = primAscii(rc, call, ci); break;
 
-    case PRIM_STRING_ITEM:
-      type = primStringItem(context, call, ci);
-      break;
+    case PRIM_STRING_ITEM: type = primStringItem(context, call, ci); break;
 
-    case PRIM_BYTES_ITEM:
-      type = primBytesItem(context, call, ci);
-      break;
+    case PRIM_BYTES_ITEM: type = primBytesItem(context, call, ci); break;
 
     case PRIM_STRING_INDEX:
     case PRIM_STRING_COPY:
-    case PRIM_STRING_SELECT:
-      CHPL_UNIMPL("misc primitives");
-      break;
+    case PRIM_STRING_SELECT: CHPL_UNIMPL("misc primitives"); break;
 
     /* primitives that always return bool */
     case PRIM_EQUAL:
@@ -1771,8 +1737,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_PTR_EQUAL:
     case PRIM_PTR_NOTEQUAL:
     case PRIM_BLOCK_C_FOR_LOOP:
-      type = QualifiedType(QualifiedType::CONST_VAR,
-                           BoolType::get(context));
+      type = QualifiedType(QualifiedType::CONST_VAR, BoolType::get(context));
       break;
 
     /* Primitives that return the type of the 1st operand.
@@ -1805,8 +1770,8 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_STEAL:
     case PRIM_SQRT:
       if (ci.numActuals() > 0) {
-        type = QualifiedType(QualifiedType::CONST_VAR,
-                             ci.actual(0).type().type());
+        type =
+          QualifiedType(QualifiedType::CONST_VAR, ci.actual(0).type().type());
       }
       // Note: PRIM_SQRT primitive is only actually used for params,
       // so this code should probably assert that
@@ -1815,8 +1780,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_GET_UNION_ID:
     case PRIM_GET_REQUESTED_SUBLOC:
     case PRIM_GET_USER_LINE:
-      type = QualifiedType(QualifiedType::CONST_VAR,
-                           IntType::get(context, 0));
+      type = QualifiedType(QualifiedType::CONST_VAR, IntType::get(context, 0));
       break;
     /* primitives that return an int32 */
     case PRIM_GETCID:
@@ -1833,8 +1797,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_GPU_GRIDDIM_X:
     case PRIM_GPU_GRIDDIM_Y:
     case PRIM_GPU_GRIDDIM_Z:
-      type = QualifiedType(QualifiedType::CONST_VAR,
-                           IntType::get(context, 32));
+      type = QualifiedType(QualifiedType::CONST_VAR, IntType::get(context, 32));
       break;
     /* primitives that return void */
     case PRIM_NOOP:
@@ -1920,26 +1883,26 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_GPU_PRIMITIVE_BLOCK:
     case PRIM_GPU_BLOCK_REDUCE:
     case PRIM_GPU_REDUCE_WRAPPER:
-      type = QualifiedType(QualifiedType::CONST_VAR,
-                           VoidType::get(context));
+      type = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
       break;
 
     case PRIM_GET_COMPILER_VAR: {
-        auto chplenv = context->getChplEnv();
-        auto varName = ci.actual(0).type().param()->toStringParam()->value().str();
-        auto it = chplenv->find(varName);
-        std::string ret;
-        if (it != chplenv->end()) {
-          ret = it->second;
-        } else if (varName == "CHPL_DYNO") {
-          ret = "on";
-        } else {
-          context->error(call, "primitive string does not match any environment variable");
-        }
-
-        type = QualifiedType::makeParamString(context, ret);
+      auto chplenv = context->getChplEnv();
+      auto varName =
+        ci.actual(0).type().param()->toStringParam()->value().str();
+      auto it = chplenv->find(varName);
+      std::string ret;
+      if (it != chplenv->end()) {
+        ret = it->second;
+      } else if (varName == "CHPL_DYNO") {
+        ret = "on";
+      } else {
+        context->error(
+          call, "primitive string does not match any environment variable");
       }
-      break;
+
+      type = QualifiedType::makeParamString(context, ret);
+    } break;
     /* primitives that return real parts from a complex */
     case PRIM_GET_REAL:
     case PRIM_GET_IMAG:
@@ -1947,13 +1910,9 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       type = primComplexGetComponent(context, ci);
       break;
     /* primitives to build complex numbers */
-    case PRIM_BUILD_COMPLEX:
-      type = primBuildComplex(context, ci);
-      break;
+    case PRIM_BUILD_COMPLEX: type = primBuildComplex(context, ci); break;
     /* other math primitives */
-    case PRIM_ABS:
-      type = primAbsGetType(context, ci);
-      break;
+    case PRIM_ABS: type = primAbsGetType(context, ci); break;
     /* Getting the wide pointer address */
     case PRIM_WIDE_GET_ADDR:
       type = QualifiedType(QualifiedType::CONST_VAR,
@@ -1962,9 +1921,8 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     /* primitives that return a c_string*/
     case PRIM_LOOKUP_FILENAME:
     case PRIM_CLASS_NAME_BY_ID:
-    case PRIM_REF_TO_STRING:{
-      type = QualifiedType(QualifiedType::CONST_VAR,
-                           CStringType::get(context));
+    case PRIM_REF_TO_STRING: {
+      type = QualifiedType(QualifiedType::CONST_VAR, CStringType::get(context));
       break;
     }
     /* primitives that are not yet handled in dyno */
@@ -1975,45 +1933,33 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_NEW_WITH_ALLOCATOR:
     case PRIM_QUERY:
     case PRIM_QUERY_PARAM_FIELD:
-    case PRIM_QUERY_TYPE_FIELD:
-      CHPL_UNIMPL("misc primitives");
-      break;
+    case PRIM_QUERY_TYPE_FIELD: CHPL_UNIMPL("misc primitives"); break;
 
-    case PRIM_ADDR_OF:
-      type = primAddrOf(context, ci);
-      break;
+    case PRIM_ADDR_OF: type = primAddrOf(context, ci); break;
 
     case PRIM_DEREF:
       if (ci.numActuals() == 1) {
         auto onlyQt = ci.actual(0).type();
         if (onlyQt.isRef()) {
           type = QualifiedType(KindProperties::removeRef(onlyQt.kind()),
-                                onlyQt.type());
+                               onlyQt.type());
         }
       }
       break;
 
     case PRIM_SET_REFERENCE:
     case PRIM_GET_END_COUNT:
-    case PRIM_GET_DYNAMIC_END_COUNT:
-      CHPL_UNIMPL("misc primitives");
-      break;
+    case PRIM_GET_DYNAMIC_END_COUNT: CHPL_UNIMPL("misc primitives"); break;
 
-    case PRIM_GPU_ALLOC_SHARED:
-      type = primGpuAllocShared(context, ci);
-      break;
+    case PRIM_GPU_ALLOC_SHARED: type = primGpuAllocShared(context, ci); break;
 
-    case PRIM_GPU_SET_BLOCKSIZE:
-      type = primGpuSetBlockSize(context, ci);
-      break;
+    case PRIM_GPU_SET_BLOCKSIZE: type = primGpuSetBlockSize(context, ci); break;
 
     case PRIM_GPU_SET_ITERS_PER_THREAD:
       type = primGpuSetItersPerThread(context, ci);
       break;
 
-    case PRIM_ASSERT_ON_GPU:
-      type = primAssertOnGpu(context, ci);
-      break;
+    case PRIM_ASSERT_ON_GPU: type = primAssertOnGpu(context, ci); break;
 
     case PRIM_ASSERT_GPU_ELIGIBLE:
       type = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
@@ -2021,47 +1967,38 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
 
     case PRIM_GPU_INIT_KERNEL_CFG:
     case PRIM_GPU_INIT_KERNEL_CFG_3D:
-      type = QualifiedType(QualifiedType::CONST_VAR, CPtrType::getCVoidPtrType(context));
+      type = QualifiedType(QualifiedType::CONST_VAR,
+                           CPtrType::getCVoidPtrType(context));
       break;
 
     case PRIM_SIZEOF_BUNDLE:
     case PRIM_SIZEOF_DDATA_ELEMENT:
-      type = QualifiedType(QualifiedType::CONST_VAR,
-                           IntType::get(context, 64));
+      type = QualifiedType(QualifiedType::CONST_VAR, IntType::get(context, 64));
       break;
 
-    case PRIM_LIFETIME_OF:
-      CHPL_UNIMPL("misc primitives");
-      break;
+    case PRIM_LIFETIME_OF: CHPL_UNIMPL("misc primitives"); break;
 
     case PRIM_TYPEOF:
-    case PRIM_STATIC_TYPEOF:
-      type = primTypeof(context, prim, ci);
-      break;
+    case PRIM_STATIC_TYPEOF: type = primTypeof(context, prim, ci); break;
 
     case PRIM_SCALAR_PROMOTION_TYPE:
       type = primPromotionType(context, ci);
       break;
-    case PRIM_STATIC_FIELD_TYPE:
-      type = staticFieldType(rc, ci);
-      break;
+    case PRIM_STATIC_FIELD_TYPE: type = staticFieldType(rc, ci); break;
     case PRIM_WIDE_GET_NODE: // NodeIdType is defined as int32
-      type = QualifiedType(QualifiedType::CONST_VAR,
-                           IntType::get(context, 32));
+      type = QualifiedType(QualifiedType::CONST_VAR, IntType::get(context, 32));
       break;
     case PRIM_ON_LOCALE_NUM:
       type = QualifiedType(QualifiedType::CONST_VAR,
                            CompositeType::getLocaleIDType(context));
       break;
 
-    case PRIM_ARRAY_GET:
-      type = arrayGet(rc, call, ci);
-      break;
+    case PRIM_ARRAY_GET: type = arrayGet(rc, call, ci); break;
 
     case PRIM_GET_SVEC_MEMBER:
     case PRIM_GET_SVEC_MEMBER_VALUE:
-        return primGetSvecMember(context, prim, ci);
-        break;
+      return primGetSvecMember(context, prim, ci);
+      break;
 
     case PRIM_USED_MODULES_LIST:
     case PRIM_REFERENCED_MODULES_LIST:
@@ -2095,9 +2032,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_FTABLE_CALL:
     case PRIM_VIRTUAL_METHOD_CALL:
     case PRIM_END_OF_STATEMENT:
-    case PRIM_CURRENT_ERROR:
-      CHPL_UNIMPL("misc primitives");
-      break;
+    case PRIM_CURRENT_ERROR: CHPL_UNIMPL("misc primitives"); break;
 
     case PRIM_GET_RUNTIME_TYPE_FIELD:
       type = primGetRuntimeTypeField(context, ci);
@@ -2112,18 +2047,14 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_CREATE_THUNK:
     case PRIM_THUNK_RESULT:
     case PRIM_FORCE_THUNK:
-    case PRIM_THUNK_RESULT_TYPE:
-      CHPL_UNIMPL("misc primitives");
-      break;
+    case PRIM_THUNK_RESULT_TYPE: CHPL_UNIMPL("misc primitives"); break;
 
     case PRIM_WIDE_GET_LOCALE:
       type = QualifiedType(QualifiedType::CONST_VAR,
                            CompositeType::getLocaleIDType(context));
       break;
 
-    case PRIM_GATHER_TESTS:
-      type = primGatherTests(context, ci);
-      break;
+    case PRIM_GATHER_TESTS: type = primGatherTests(context, ci); break;
 
     case PRIM_VERSION_MAJOR:
       type = QualifiedType::makeParamInt(context, getMajorVersion());
@@ -2162,7 +2093,7 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_TASK_PRIVATE_SVAR_CAPTURE:
       CHPL_UNIMPL("misc primitives");
 
-    // no default to get a warning when new primitives are added
+      // no default to get a warning when new primitives are added
   }
 
   if (type.kind() == QualifiedType::UNKNOWN && !type.isErroneousType()) {
@@ -2172,10 +2103,11 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
 
   return CallResolutionResult(candidates,
                               /* rejectedPossibleIteratorCandidates */ false,
-                              type, /* yielded type */ QualifiedType(),
-                              poi, /* specially handled */ true);
+                              type,
+                              /* yielded type */ QualifiedType(),
+                              poi,
+                              /* specially handled */ true);
 }
-
 
 } // end namespace resolution
 } // end namespace chpl

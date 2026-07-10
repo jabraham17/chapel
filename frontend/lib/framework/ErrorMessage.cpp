@@ -43,9 +43,8 @@ IdOrLocation IdOrLocation::createForCommandLineLocation(Context* context) {
 }
 
 ErrorMessage::ErrorMessage(Kind kind, IdOrLocation idOrLoc, std::string message)
-    : IdOrLocation(std::move(idOrLoc)), kind_(kind), message_(std::move(message)) {
-
-}
+  : IdOrLocation(std::move(idOrLoc)), kind_(kind),
+    message_(std::move(message)) {}
 
 void ErrorMessage::addDetail(ErrorMessage err) {
   details_.push_back(std::move(err));

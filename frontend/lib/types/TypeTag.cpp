@@ -23,15 +23,13 @@ namespace chpl {
 namespace types {
 namespace typetags {
 
-
 static const char* tagToStringTable[NUM_TYPE_TAGS] = {
 // define tag to string conversion
-#define NAMESTR(NAME) \
-  #NAME,
-#define TYPE_NODE(NAME) NAMESTR(NAME)
+#define NAMESTR(NAME)                          #NAME,
+#define TYPE_NODE(NAME)                        NAMESTR(NAME)
 #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) NAMESTR(NAME)
-#define TYPE_BEGIN_SUBCLASSES(NAME) NAMESTR(START_##NAME)
-#define TYPE_END_SUBCLASSES(NAME) NAMESTR(END_##NAME)
+#define TYPE_BEGIN_SUBCLASSES(NAME)            NAMESTR(START_##NAME)
+#define TYPE_END_SUBCLASSES(NAME)              NAMESTR(END_##NAME)
 // Apply the above macros to type-classes-list.h
 #include "chpl/types/type-classes-list.h"
 // clear the macros
@@ -48,7 +46,6 @@ const char* tagToString(TypeTag tag) {
   else
     return "<unknown-tag>";
 }
-
 
 } // end namespace typetags
 } // end namespace types

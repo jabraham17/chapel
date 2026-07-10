@@ -49,10 +49,11 @@ std::string TupleDecl::dumpChildLabelInner(int i) const {
 }
 
 bool TupleDecl::assertAcceptableTupleDecl() {
-  asttags::AstTag firstNonTupleTag = asttags::AST_TAG_UNKNOWN;;
+  asttags::AstTag firstNonTupleTag = asttags::AST_TAG_UNKNOWN;
+  ;
   int i = 0;
 
-  for (const auto& elt: children_) {
+  for (const auto& elt : children_) {
     if (elt.get() == attributeGroup()) {
       // TODO: Make sure it is equivalent to components?
     } else if (i == typeExpressionChildNum_) {
@@ -81,7 +82,8 @@ bool TupleDecl::assertAcceptableTupleDecl() {
   return true;
 }
 
-owned<TupleDecl> TupleDecl::build(Builder* builder, Location loc,
+owned<TupleDecl> TupleDecl::build(Builder* builder,
+                                  Location loc,
                                   owned<AttributeGroup> attributeGroup,
                                   Decl::Visibility vis,
                                   Decl::Linkage linkage,
@@ -117,7 +119,8 @@ owned<TupleDecl> TupleDecl::build(Builder* builder, Location loc,
     list.push_back(std::move(initExpression));
   }
 
-  TupleDecl* ret = new TupleDecl(std::move(list), attributeGroupChildNum,
+  TupleDecl* ret = new TupleDecl(std::move(list),
+                                 attributeGroupChildNum,
                                  vis,
                                  linkage,
                                  intentOrKind,
@@ -127,7 +130,6 @@ owned<TupleDecl> TupleDecl::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

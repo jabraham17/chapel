@@ -35,6 +35,5 @@ const BoolType* BoolType::get(Context* context) {
   return getBoolType(context).get();
 }
 
-
 } // end namespace types
 } // end namespace chpl

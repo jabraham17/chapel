@@ -30,20 +30,19 @@ namespace chpl {
 
 static void parseChplEnv(std::string& output, ChplEnvMap& into) {
   // Lines
-  std::string line= "";
+  std::string line = "";
   std::string lineDelimiter = "\n";
-  size_t linePos = 0;        // Line break position
+  size_t linePos = 0; // Line break position
 
   // Tokens
   std::string tokenDelimiter = "=";
-  size_t delimiterPos = 0;    // Position of delimiter
-  size_t valuePos = 0;        // Position of value
+  size_t delimiterPos = 0; // Position of delimiter
+  size_t valuePos = 0;     // Position of value
 
   std::string key = "";
   std::string value = "";
 
-  while ((linePos = output.find(lineDelimiter)) != std::string::npos)
-  {
+  while ((linePos = output.find(lineDelimiter)) != std::string::npos) {
     line = output.substr(0, linePos);
 
     // Key is substring up until "=" on a given line
@@ -103,13 +102,15 @@ llvm::ErrorOr<ChplEnvMap> getChplEnvImpl(const InputMap& varMap,
 
 llvm::ErrorOr<ChplEnvMap>
 getChplEnv(const std::map<std::string, const char*>& varMap,
-           const char* chplHome, std::string* printchplenvOutput) {
+           const char* chplHome,
+           std::string* printchplenvOutput) {
   return getChplEnvImpl(varMap, chplHome, printchplenvOutput);
 }
 
 llvm::ErrorOr<ChplEnvMap>
 getChplEnv(const std::unordered_map<std::string, std::string>& varMap,
-           const char* chplHome, std::string* printchplenvOutput) {
+           const char* chplHome,
+           std::string* printchplenvOutput) {
   return getChplEnvImpl(varMap, chplHome, printchplenvOutput);
 }
 
@@ -119,12 +120,15 @@ bool isMaybeChplHome(std::string path) {
   return llvm::sys::fs::exists(path);
 }
 
-std::error_code findChplHome(const char* argv0, void* mainAddr,
+std::error_code findChplHome(const char* argv0,
+                             void* mainAddr,
                              std::string& chplHomeOut,
-                             bool& installed, bool& fromEnv,
+                             bool& installed,
+                             bool& fromEnv,
                              std::string& diagnosticMessage) {
   std::string versionString = getMajorMinorVersion();
-  std::string guessFromBinaryPath = argv0 && mainAddr ? getExecutablePath(argv0, mainAddr) : "";
+  std::string guessFromBinaryPath =
+    argv0 && mainAddr ? getExecutablePath(argv0, mainAddr) : "";
   chplHomeOut = std::string();
 
   const char* chplHomeEnv = getenv("CHPL_HOME");
@@ -152,10 +156,8 @@ std::error_code findChplHome(const char* argv0, void* mainAddr,
   //
   // Check for Chapel libraries at installed prefix
   // e.g. /usr/share/chapel/<vers>
-  std::string guessFromPrefix = std::string()
-    + getConfiguredPrefix() + "/"
-    + "share/chapel/"
-    + versionString;
+  std::string guessFromPrefix = std::string() + getConfiguredPrefix() + "/" +
+                                "share/chapel/" + versionString;
   if (!isMaybeChplHome(guessFromPrefix)) {
     guessFromPrefix.clear();
   }
@@ -192,9 +194,9 @@ std::error_code findChplHome(const char* argv0, void* mainAddr,
     // but it's not the same path as the environment variable.
     if (!guessFromBinaryPath.empty() &&
         !isSameFile(chplHomeEnv, guessFromBinaryPath.c_str())) {
-      diagnosticMessage = "$CHPL_HOME=" + std::string(chplHomeEnv) +
-                       " is mismatched with executable home=" +
-                       guessFromBinaryPath;
+      diagnosticMessage =
+        "$CHPL_HOME=" + std::string(chplHomeEnv) +
+        " is mismatched with executable home=" + guessFromBinaryPath;
     }
   } else if (guessFromBinaryPath.empty() && !guessFromPrefix.empty()) {
     // If no environment variable set, and the path-based guess failed,
@@ -216,7 +218,8 @@ std::error_code findChplHome(const char* argv0, void* mainAddr,
 
   // Check that the resulting path is a Chapel distribution.
   if (!isMaybeChplHome(chplHomeOut.c_str())) {
-    diagnosticMessage = "CHPL_HOME=" + chplHomeOut + " is not a Chapel distribution";
+    diagnosticMessage =
+      "CHPL_HOME=" + chplHomeOut + " is not a Chapel distribution";
   }
   return std::error_code();
 }

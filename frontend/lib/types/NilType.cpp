@@ -23,7 +23,6 @@
 namespace chpl {
 namespace types {
 
-
 const owned<NilType>& NilType::getNilType(Context* context) {
   QUERY_BEGIN(getNilType, context);
 
@@ -39,7 +38,6 @@ const NilType* NilType::get(Context* context) {
 void NilType::stringify(std::ostream& ss, StringifyKind stringKind) const {
   ss << "_nilType";
 }
-
 
 } // end namespace types
 } // end namespace chpl

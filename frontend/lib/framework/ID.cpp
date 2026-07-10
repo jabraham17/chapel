@@ -48,8 +48,7 @@ UniqueString ID::symbolPathWithoutRepeats(Context* context) const {
 ssize_t findLastDot(const char* path) {
   ssize_t lastDot = -1;
   for (ssize_t i = 1; path[i]; i++) {
-    if (path[i] == '.' && path[i-1] != '\\')
-      lastDot = i;
+    if (path[i] == '.' && path[i - 1] != '\\') lastDot = i;
   }
 
   return lastDot;
@@ -79,8 +78,7 @@ static ssize_t findPoundOrEnd(const char* path) {
   ssize_t end = 0;
   ssize_t i = 1;
   while (true) {
-    if (path[i] == '\0' ||
-        (path[i] == '#' && path[i-1] != '\\')) {
+    if (path[i] == '\0' || (path[i] == '#' && path[i - 1] != '\\')) {
       end = i;
       break;
     }
@@ -100,8 +98,8 @@ static const char* findPathAfterLastDot(const char* path) {
   return path;
 }
 
-UniqueString ID::innermostSymbolName(Context* context, UniqueString symbolPath)
-{
+UniqueString ID::innermostSymbolName(Context* context,
+                                     UniqueString symbolPath) {
   // If the symbol path is empty, return an empty string
   if (symbolPath.isEmpty()) {
     return UniqueString();
@@ -123,9 +121,7 @@ UniqueString ID::innermostSymbolName(Context* context, UniqueString symbolPath)
   return UniqueString::get(context, s);
 }
 
-UniqueString ID::overloadPart(Context* context,
-                              UniqueString symbolPath)
-{
+UniqueString ID::overloadPart(Context* context, UniqueString symbolPath) {
   if (symbolPath.isEmpty()) {
     return UniqueString();
   }
@@ -158,19 +154,15 @@ ID ID::fabricateId(Context* context,
                    UniqueString name,
                    FabricatedIdKind kind) {
 
-  auto newSymPath = UniqueString::getConcat(context,
-                                            parentSymbolId.symbolPath().c_str(),
-                                            ".",
-                                            name.c_str());
-  auto newId = ID(newSymPath, (int) kind, 0);
+  auto newSymPath = UniqueString::getConcat(
+    context, parentSymbolId.symbolPath().c_str(), ".", name.c_str());
+  auto newId = ID(newSymPath, (int)kind, 0);
   CHPL_ASSERT(newId.isFabricatedId());
   CHPL_ASSERT(newId.fabricatedIdKind() == kind);
   return newId;
 }
 
-ID ID::generatedId(UniqueString symbolPath,
-                 int postOrderId,
-                 int numChildIds) {
+ID ID::generatedId(UniqueString symbolPath, int postOrderId, int numChildIds) {
   int pid;
   if (postOrderId == -1) {
     pid = ID_GEN_START;
@@ -180,7 +172,6 @@ ID ID::generatedId(UniqueString symbolPath,
 
   return ID(symbolPath, pid, numChildIds);
 }
-
 
 ID ID::parentSymbolId(Context* context) const {
   UniqueString pathToUse;
@@ -221,13 +212,12 @@ bool ID::contains(const ID& other) const {
 
   if (thisPath == otherPath) {
     // the nodes have the same parent symbol, so consider the AST ids
-    int thisId  = this->postOrderId();
+    int thisId = this->postOrderId();
     int thisNContained = this->numContainedChildren();
     int otherId = other.postOrderId();
     int thisFirstContained = thisId - thisNContained;
 
-    return thisId == -1 ||
-           (thisFirstContained <= otherId && otherId <= thisId);
+    return thisId == -1 || (thisFirstContained <= otherId && otherId <= thisId);
   } else {
     if (!otherPath.startsWith(thisPath)) {
       // thisPath is not a prefix of otherPath
@@ -251,8 +241,7 @@ int ID::compare(const ID& other) const {
   UniqueString lhsPath = this->symbolPath();
   UniqueString rhsPath = other.symbolPath();
   int pathCmp = lhsPath.compare(rhsPath);
-  if (pathCmp != 0)
-    return pathCmp;
+  if (pathCmp != 0) return pathCmp;
 
   // if that wasn't different, compare the id
   return this->postOrderId() - other.postOrderId();
@@ -260,9 +249,9 @@ int ID::compare(const ID& other) const {
   // numChildIds_ is intentionally not compared
 }
 
-std::vector<std::pair<UniqueString,int>>
+std::vector<std::pair<UniqueString, int>>
 ID::expandSymbolPath(Context* context, UniqueString symbolPath) {
-  std::vector<std::pair<UniqueString,int>> ret;
+  std::vector<std::pair<UniqueString, int>> ret;
 
   const char* s = symbolPath.c_str();
   while (s && s[0] != '\0') {
@@ -332,7 +321,7 @@ ID::expandSymbolPath(Context* context, UniqueString symbolPath) {
     }
 
     // compute the UniqueString containing just the symbol part
-    auto part = UniqueString::get(context, s, partEnd-s);
+    auto part = UniqueString::get(context, s, partEnd - s);
 
     ret.emplace_back(part, repeat);
 
@@ -346,8 +335,7 @@ bool ID::update(chpl::ID& keep, chpl::ID& addin) {
   return defaultUpdate(keep, addin);
 }
 
-void ID::stringify(std::ostream& ss,
-                   chpl::StringifyKind stringKind) const {
+void ID::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
   ss << this->symbolPath().c_str();
 
   if (!(symbolPath().isEmpty()) && this->postOrderId() >= 0) {
@@ -371,8 +359,7 @@ ID ID::fromString(Context* context, const char* idStr) {
 
   int atPos = 0;
   for (atPos = 0; idStr[atPos]; atPos++) {
-    if (idStr[atPos] == '@')
-      break;
+    if (idStr[atPos] == '@') break;
   }
 
   // compute the path part (not counting the '@' part)
@@ -381,11 +368,10 @@ ID ID::fromString(Context* context, const char* idStr) {
   int postorder = -1;
 
   if (idStr[atPos] == '@') {
-    postorder = std::stoi(&idStr[atPos+1]);
+    postorder = std::stoi(&idStr[atPos + 1]);
   }
 
   return ID(symPath, postorder, /* num child IDs */ -1);
 }
-
 
 } // end namespace chpl

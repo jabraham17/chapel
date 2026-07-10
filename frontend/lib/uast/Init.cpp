@@ -32,8 +32,8 @@ std::string Init::dumpChildLabelInner(int i) const {
   return "";
 }
 
-owned<Init> Init::build(Builder* builder, Location loc,
-                          owned<Identifier> target) {
+owned<Init>
+Init::build(Builder* builder, Location loc, owned<Identifier> target) {
   AstList lst;
   int8_t targetChildNum = NO_CHILD;
 
@@ -45,7 +45,6 @@ owned<Init> Init::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

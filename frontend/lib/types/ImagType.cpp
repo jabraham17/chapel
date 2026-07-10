@@ -23,7 +23,6 @@
 namespace chpl {
 namespace types {
 
-
 const owned<ImagType>& ImagType::getImagType(Context* context, int bitwidth) {
   QUERY_BEGIN(getImagType, context, bitwidth);
 
@@ -37,7 +36,6 @@ const ImagType* ImagType::get(Context* context, int bitwidth) {
   if (bitwidth == 0) bitwidth = defaultBitwidth(); // canonicalize default width
   return getImagType(context, bitwidth).get();
 }
-
 
 } // end namespace types
 } // end namespace chpl

@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 std::string VarArgFormal::dumpChildLabelInner(int i) const {
   if (i == countChildNum_) {
     return "count";
@@ -33,7 +32,8 @@ std::string VarArgFormal::dumpChildLabelInner(int i) const {
   return VarLikeDecl::dumpChildLabelInner(i);
 }
 
-owned<VarArgFormal> VarArgFormal::build(Builder* builder, Location loc,
+owned<VarArgFormal> VarArgFormal::build(Builder* builder,
+                                        Location loc,
                                         owned<AttributeGroup> attributeGroup,
                                         UniqueString name,
                                         Formal::Intent intent,
@@ -59,7 +59,8 @@ owned<VarArgFormal> VarArgFormal::build(Builder* builder, Location loc,
     lst.push_back(std::move(count));
   }
 
-  VarArgFormal* ret = new VarArgFormal(std::move(lst), attributeGroupChildNum,
+  VarArgFormal* ret = new VarArgFormal(std::move(lst),
+                                       attributeGroupChildNum,
                                        name,
                                        intent,
                                        typeExpressionChildNum,
@@ -67,7 +68,6 @@ owned<VarArgFormal> VarArgFormal::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

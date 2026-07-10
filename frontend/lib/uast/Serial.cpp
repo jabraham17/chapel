@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 std::string Serial::dumpChildLabelInner(int i) const {
   if (i == condChildNum_) {
     return "cond";
@@ -34,9 +33,9 @@ std::string Serial::dumpChildLabelInner(int i) const {
 }
 
 owned<Serial> Serial::build(Builder* builder,
-                          Location loc,
-                          BlockStyle blockStyle,
-                          AstList stmts) {
+                            Location loc,
+                            BlockStyle blockStyle,
+                            AstList stmts) {
 
   AstList lst;
   int8_t condChildNum = NO_CHILD;
@@ -48,18 +47,17 @@ owned<Serial> Serial::build(Builder* builder,
     lst.push_back(std::move(stmt));
   }
 
-  Serial* ret = new Serial(std::move(lst), condChildNum, blockStyle,
-                           bodyChildNum,
-                           numBodyStmts);
+  Serial* ret = new Serial(
+    std::move(lst), condChildNum, blockStyle, bodyChildNum, numBodyStmts);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
 
 owned<Serial> Serial::build(Builder* builder,
-                          Location loc,
-                          owned<AstNode> condition,
-                          BlockStyle blockStyle,
-                          AstList stmts) {
+                            Location loc,
+                            owned<AstNode> condition,
+                            BlockStyle blockStyle,
+                            AstList stmts) {
   CHPL_ASSERT(condition.get() != nullptr);
 
   AstList lst;
@@ -77,13 +75,11 @@ owned<Serial> Serial::build(Builder* builder,
     lst.push_back(std::move(stmt));
   }
 
-  Serial* ret = new Serial(std::move(lst), condChildNum, blockStyle,
-                           bodyChildNum,
-                           numBodyStmts);
+  Serial* ret = new Serial(
+    std::move(lst), condChildNum, blockStyle, bodyChildNum, numBodyStmts);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

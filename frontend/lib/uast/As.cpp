@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 std::string As::dumpChildLabelInner(int i) const {
   if (i == symbolChildNum_) {
     return "sym";
@@ -34,7 +33,8 @@ std::string As::dumpChildLabelInner(int i) const {
   return "";
 }
 
-owned<As> As::build(Builder* builder, Location loc,
+owned<As> As::build(Builder* builder,
+                    Location loc,
                     owned<AstNode> symbol,
                     owned<AstNode> rename) {
   CHPL_ASSERT(symbol.get() != nullptr);
@@ -49,7 +49,6 @@ owned<As> As::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

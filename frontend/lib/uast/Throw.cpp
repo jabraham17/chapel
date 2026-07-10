@@ -24,9 +24,7 @@
 namespace chpl {
 namespace uast {
 
-
-owned<Throw> Throw::build(Builder* builder, Location loc,
-                          owned<AstNode> expr) {
+owned<Throw> Throw::build(Builder* builder, Location loc, owned<AstNode> expr) {
   AstList lst;
 
   lst.push_back(std::move(expr));
@@ -35,7 +33,6 @@ owned<Throw> Throw::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

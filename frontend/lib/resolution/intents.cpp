@@ -27,7 +27,6 @@
 namespace chpl {
 namespace resolution {
 
-
 using namespace uast;
 using namespace types;
 
@@ -38,14 +37,13 @@ static QualifiedType::Kind constIntentForType(const Type* t) {
     return QualifiedType::UNKNOWN;
 
   if (t->isPrimitiveType() || t->isEnumType() || t->isExternType() ||
-      t->isOpaqueType() || t->isTaskIdType()  || t->isNilType() ||
+      t->isOpaqueType() || t->isTaskIdType() || t->isNilType() ||
       t->isCStringType() || t->isCVoidPtrType() || t->isCFnPtrType() ||
       t->isNothingType() || t->isVoidType() || t->isPtrType())
     return QualifiedType::CONST_IN;
 
-  if (t->isStringType() || t->isBytesType() ||
-      t->isRecordType() || t->isUnionType() || t->isTupleType() ||
-      t->isIteratorType())
+  if (t->isStringType() || t->isBytesType() || t->isRecordType() ||
+      t->isUnionType() || t->isTupleType() || t->isIteratorType())
     return QualifiedType::CONST_REF;
 
   if (auto ct = t->toClassType()) {
@@ -63,23 +61,21 @@ static QualifiedType::Kind constIntentForType(const Type* t) {
   return QualifiedType::CONST_INTENT; // leave the intent generic
 }
 
-static QualifiedType::Kind defaultIntentForType(const Type* t,
-                                                bool isThis,
-                                                bool isInit) {
+static QualifiedType::Kind
+defaultIntentForType(const Type* t, bool isThis, bool isInit) {
 
   // anything we don't know the type of has to have unknown intent
   if (t == nullptr || t->isUnknownType() || t->isErroneousType())
     return QualifiedType::UNKNOWN;
 
   if (t->isPrimitiveType() || t->isEnumType() || t->isExternType() ||
-      t->isOpaqueType() || t->isTaskIdType() ||  t->isNilType() ||
+      t->isOpaqueType() || t->isTaskIdType() || t->isNilType() ||
       t->isCStringType() || t->isCVoidPtrType() || t->isPtrType() ||
       t->isCFnPtrType() || t->isNothingType() || t->isVoidType())
     return QualifiedType::CONST_IN;
 
-  if (t->isStringType() || t->isBytesType() ||
-      t->isRecordType() || t->isUnionType() || t->isTupleType() ||
-      t->isIteratorType()) {
+  if (t->isStringType() || t->isBytesType() || t->isRecordType() ||
+      t->isUnionType() || t->isTupleType() || t->isIteratorType()) {
     if (isThis) {
       if (isInit)
         return QualifiedType::REF;
@@ -99,8 +95,7 @@ static QualifiedType::Kind defaultIntentForType(const Type* t,
       return QualifiedType::CONST_IN;
   }
 
-  if (t->isPlaceholderType())
-    return QualifiedType::DEFAULT_INTENT;
+  if (t->isPlaceholderType()) return QualifiedType::DEFAULT_INTENT;
 
   // Otherwise, it should be a generic type that we will
   // instantiate before computing the final intent.
@@ -108,9 +103,8 @@ static QualifiedType::Kind defaultIntentForType(const Type* t,
   return QualifiedType::DEFAULT_INTENT; // leave the intent generic
 }
 
-QualifiedType::Kind resolveIntent(const QualifiedType& t,
-                                  bool isThis,
-                                  bool isInit) {
+QualifiedType::Kind
+resolveIntent(const QualifiedType& t, bool isThis, bool isInit) {
   auto kind = t.kind();
   auto type = t.type();
 
@@ -153,13 +147,11 @@ QualifiedType::Kind resolveIntent(const QualifiedType& t,
       return defaultIntentForType(type, isThis, isInit);
 
     // compute the const intent if needed
-    case QualifiedType::CONST_INTENT:
-      return constIntentForType(type);
+    case QualifiedType::CONST_INTENT: return constIntentForType(type);
   }
 
   return QualifiedType::UNKNOWN;
 }
-
 
 } // end namespace resolution
 } // end namespace chpl

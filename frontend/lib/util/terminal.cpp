@@ -18,7 +18,6 @@
  * limitations under the License.
  */
 
-
 #include "chpl/util/terminal.h"
 #include <cstring>
 #include <map>
@@ -28,25 +27,23 @@ namespace chpl {
 
 std::string getFgColorCode(TermColorName colorName);
 
-std::map<TermColorName, std::string> termColorMap = {
-    {CLEAR,          "0"},
-    {BLACK,          "30"},
-    {RED,            "31"},
-    {GREEN,          "32"},
-    {YELLOW,         "33"},
-    {BLUE,           "34"},
-    {MAGENTA,        "35"},
-    {CYAN,           "36"},
-    {WHITE,          "37"},
-    {BRIGHT_BLACK,   "90"},
-    {BRIGHT_RED,     "91"},
-    {BRIGHT_GREEN,   "92"},
-    {BRIGHT_YELLOW,  "93"},
-    {BRIGHT_BLUE,    "94"},
-    {BRIGHT_MAGENTA, "95"},
-    {BRIGHT_CYAN,    "96"},
-    {BRIGHT_WHITE, "97"}
-};
+std::map<TermColorName, std::string> termColorMap = {{CLEAR, "0"},
+                                                     {BLACK, "30"},
+                                                     {RED, "31"},
+                                                     {GREEN, "32"},
+                                                     {YELLOW, "33"},
+                                                     {BLUE, "34"},
+                                                     {MAGENTA, "35"},
+                                                     {CYAN, "36"},
+                                                     {WHITE, "37"},
+                                                     {BRIGHT_BLACK, "90"},
+                                                     {BRIGHT_RED, "91"},
+                                                     {BRIGHT_GREEN, "92"},
+                                                     {BRIGHT_YELLOW, "93"},
+                                                     {BRIGHT_BLUE, "94"},
+                                                     {BRIGHT_MAGENTA, "95"},
+                                                     {BRIGHT_CYAN, "96"},
+                                                     {BRIGHT_WHITE, "97"}};
 
 std::string getColorFormat(TermColorName colorName) {
   std::string ret = "\033[";
@@ -89,13 +86,11 @@ bool terminalSupportsColor(const char* term) {
   }
 
   // Check if either output is to a tty.
-  if (isatty(fileno(stderr)) == 0 ||
-      isatty(fileno(stdout)) == 0) {
+  if (isatty(fileno(stderr)) == 0 || isatty(fileno(stdout)) == 0) {
     isColorTerm = false;
   }
 
   return isColorTerm;
 }
-
 
 } //end namespace chpl

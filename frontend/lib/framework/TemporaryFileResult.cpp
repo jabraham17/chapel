@@ -27,25 +27,22 @@
 
 namespace chpl {
 
-
 static int globalTemporaryResultCounter = 1;
 
-TemporaryFileResult::TemporaryFileResult() {
-  hash_.fill(0);
-}
+TemporaryFileResult::TemporaryFileResult() { hash_.fill(0); }
 
-owned<TemporaryFileResult>
-TemporaryFileResult::create(Context* context,
-                            llvm::StringRef prefix,
-                            llvm::StringRef suffix) {
+owned<TemporaryFileResult> TemporaryFileResult::create(Context* context,
+                                                       llvm::StringRef prefix,
+                                                       llvm::StringRef suffix) {
   const std::string& tmpDir = context->tmpDir();
 
   int index = globalTemporaryResultCounter++;
 
   TemporaryFileResult* ret = new TemporaryFileResult();
 
-  ret->path_ = (llvm::Twine(tmpDir) + "/" +
-                prefix + "-" + llvm::Twine(index) + suffix).str();
+  ret->path_ =
+    (llvm::Twine(tmpDir) + "/" + prefix + "-" + llvm::Twine(index) + suffix)
+      .str();
   // delete the file on destruction unless we are saving the tmp dir files
   ret->deleteOnDestroy_ = !context->shouldSaveTmpDirFiles();
 
@@ -133,6 +130,5 @@ void TemporaryFileResult::stringify(std::ostream& ss,
 }
 
 IMPLEMENT_DUMP(TemporaryFileResult);
-
 
 } // end namespace chpl

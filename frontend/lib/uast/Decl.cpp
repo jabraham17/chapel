@@ -22,9 +22,7 @@
 namespace chpl {
 namespace uast {
 
-
-Decl::~Decl() {
-}
+Decl::~Decl() {}
 
 void Decl::dumpFieldsInner(const DumpSettings& s) const {
   const char* v = visibilityToString(visibility_);
@@ -47,24 +45,22 @@ std::string Decl::dumpChildLabelInner(int i) const {
 const char* Decl::visibilityToString(Visibility v) {
   switch (v) {
     case Visibility::DEFAULT_VISIBILITY: return "";
-    case Visibility::PUBLIC:             return "public";
-    case Visibility::PRIVATE:            return "private";
+    case Visibility::PUBLIC: return "public";
+    case Visibility::PRIVATE: return "private";
   }
   CHPL_ASSERT(false);
   return "<unknown>";
 }
-
 
 const char* Decl::linkageToString(Linkage x) {
   switch (x) {
     case Linkage::DEFAULT_LINKAGE: return "";
-    case Linkage::EXTERN:          return "extern";
-    case Linkage::EXPORT:          return "export";
+    case Linkage::EXTERN: return "extern";
+    case Linkage::EXPORT: return "export";
   }
   CHPL_ASSERT(false);
   return "<unknown>";
 }
-
 
 } // namespace uast
 } // namespace chpl

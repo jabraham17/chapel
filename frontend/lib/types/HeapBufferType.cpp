@@ -29,9 +29,10 @@
 namespace chpl {
 namespace types {
 
-const owned<HeapBufferType>& HeapBufferType::getHeapBufferType(Context* context,
-                                             const HeapBufferType* instantiatedFrom,
-                                             const Type* eltType) {
+const owned<HeapBufferType>&
+HeapBufferType::getHeapBufferType(Context* context,
+                                  const HeapBufferType* instantiatedFrom,
+                                  const Type* eltType) {
   QUERY_BEGIN(getHeapBufferType, context, instantiatedFrom, eltType);
   auto result = toOwned(new HeapBufferType(instantiatedFrom, eltType));
   return QUERY_END(result);
@@ -41,26 +42,26 @@ const HeapBufferType* HeapBufferType::get(Context* context) {
   return HeapBufferType::getHeapBufferType(context,
                                            /* instantiatedFrom */ nullptr,
                                            /* eltType */ nullptr)
-      .get();
+    .get();
 }
 
 const HeapBufferType* HeapBufferType::get(Context* context,
                                           const Type* eltType) {
   return HeapBufferType::getHeapBufferType(
-             context,
-             /* instantiatedFrom */ HeapBufferType::get(context), eltType)
-      .get();
+           context,
+           /* instantiatedFrom */ HeapBufferType::get(context),
+           eltType)
+    .get();
 }
 
 const ID& HeapBufferType::getId(Context* context) {
   QUERY_BEGIN(getId, context);
-  ID result =
-      parsing::getDDataIdFromTopLevelChapelBaseModule(context);
+  ID result = parsing::getDDataIdFromTopLevelChapelBaseModule(context);
   return QUERY_END(result);
 }
 
 void HeapBufferType::stringify(std::ostream& ss,
-                         chpl::StringifyKind stringKind) const {
+                               chpl::StringifyKind stringKind) const {
   ss << "_ddata";
 
   if (eltType_) {

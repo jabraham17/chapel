@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 const char* Range::opKindToString(OpKind kind) {
   switch (kind) {
     case DEFAULT: return "";
@@ -50,7 +49,8 @@ std::string Range::dumpChildLabelInner(int i) const {
   return "";
 }
 
-owned<Range> Range::build(Builder* builder, Location loc,
+owned<Range> Range::build(Builder* builder,
+                          Location loc,
                           OpKind opKind,
                           owned<AstNode> lowerBound,
                           owned<AstNode> upperBound) {
@@ -68,14 +68,12 @@ owned<Range> Range::build(Builder* builder, Location loc,
     lst.push_back(std::move(upperBound));
   }
 
-  Range* ret = new Range(std::move(lst), opKind,
-                         lowerBoundChildNum,
-                         upperBoundChildNum);
+  Range* ret =
+    new Range(std::move(lst), opKind, lowerBoundChildNum, upperBoundChildNum);
 
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

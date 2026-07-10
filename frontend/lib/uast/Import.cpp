@@ -24,15 +24,14 @@
 namespace chpl {
 namespace uast {
 
-
-owned<Import> Import::build(Builder* builder, Location loc,
+owned<Import> Import::build(Builder* builder,
+                            Location loc,
                             Decl::Visibility visibility,
                             AstList visibilityClauses) {
   Import* ret = new Import(std::move(visibilityClauses), visibility);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 owned<Foreach> Foreach::build(Builder* builder,
                               Location loc,
                               owned<Decl> index,
@@ -67,7 +66,8 @@ owned<Foreach> Foreach::build(Builder* builder,
   const int loopBodyChildNum = lst.size();
   lst.push_back(std::move(body));
 
-  Foreach* ret = new Foreach(std::move(lst), indexChildNum,
+  Foreach* ret = new Foreach(std::move(lst),
+                             indexChildNum,
                              iterandChildNum,
                              withClauseChildNum,
                              blockStyle,
@@ -78,7 +78,6 @@ owned<Foreach> Foreach::build(Builder* builder,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

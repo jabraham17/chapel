@@ -20,15 +20,12 @@
 #include "chpl/parsing/FileContents.h"
 #include "chpl/framework/ErrorBase.h"
 
-
 namespace chpl {
 namespace parsing {
-
 
 void FileContents::mark(Context* context) const {
   if (error_ != nullptr) error_->mark(context);
 }
-
 
 } // end namespace parsing
 } // end namespace chpl

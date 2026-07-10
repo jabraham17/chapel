@@ -38,10 +38,10 @@ namespace resolution {
 struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   // types used below
   struct ActionInfo {
-    public:
-      AssociatedAction::Action action;
-      ID id;
-      types::QualifiedType type;
+   public:
+    AssociatedAction::Action action;
+    ID id;
+    types::QualifiedType type;
   };
   using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
   using ReceiverScopesVec = SimpleMethodLookupHelper::ReceiverScopesVec;
@@ -68,6 +68,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
     ParenlessOverloadInfo(bool hasMethodCandidates, bool hasNonMethodCandidates)
       : hasMethodCandidates_(hasMethodCandidates),
         hasNonMethodCandidates_(hasNonMethodCandidates) {}
+
    public:
     ParenlessOverloadInfo() = default;
 
@@ -116,8 +117,8 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
    assumption that all type information we could've had is now available.
   */
   enum class CallResolutionEagerness {
-    LAZY,      // for initial resolution; skip iffy-looking calls
-    EAGER,     // for instantiated resolution; resolve most calls
+    LAZY,  // for initial resolution; skip iffy-looking calls
+    EAGER, // for instantiated resolution; resolve most calls
   };
 
   // inputs to the resolution process
@@ -151,7 +152,8 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   const uast::Block* fnBody = nullptr;
   std::set<UniqueString> namesWithErrorsEmitted;
   std::vector<const uast::Call*> callNodeStack;
-  std::vector<std::pair<UniqueString, const uast::AstNode*>> genericReceiverOverrideStack;
+  std::vector<std::pair<UniqueString, const uast::AstNode*>>
+    genericReceiverOverrideStack;
 
   bool allowReceiverScopes = false;
   bool receiverScopesComputed = false;
@@ -195,14 +197,16 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   bool encounteredErrors = false;
 
   static PoiInfo makePoiInfo(const PoiScope* poiScope) {
-    if (poiScope == nullptr)
-      return PoiInfo();
+    if (poiScope == nullptr) return PoiInfo();
 
     return PoiInfo(poiScope);
   }
 
-  const types::Param* determineWhenCaseValue(const uast::AstNode* ast, IgnoredExtraData extraData) override;
-  const types::Param* determineIfValue(const uast::AstNode* ast, IgnoredExtraData extraData) override;
+  const types::Param*
+  determineWhenCaseValue(const uast::AstNode* ast,
+                         IgnoredExtraData extraData) override;
+  const types::Param* determineIfValue(const uast::AstNode* ast,
+                                       IgnoredExtraData extraData) override;
   void traverseNode(const uast::AstNode* ast, IgnoredExtraData rv) override;
 
   const Scope* currentScope() const {
@@ -210,21 +214,18 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
     return scopeStack.back()->scope;
   }
 
-
  private:
   Resolver(Context* context,
            const uast::AstNode* symbol,
            ResolutionResultByPostorderID& byPostorder,
            const PoiScope* poiScope)
-    : context(context),
-      symbol(symbol),
-      poiScope(poiScope),
-      emptyResolutionContext(context),
-      byPostorder(byPostorder),
+    : context(context), symbol(symbol), poiScope(poiScope),
+      emptyResolutionContext(context), byPostorder(byPostorder),
       poiInfo(makePoiInfo(poiScope)) {
     tagTracker.resize(uast::asttags::AstTag::NUM_AST_TAGS);
     enterScope(symbol);
   }
+
  public:
   // Explicitly disable the copy constructor, since a lot of state in a
   // resolver can't/shouldn't be copied, and this will ensure that never
@@ -232,7 +233,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   Resolver(const Resolver& rhs) = delete;
   Resolver& operator=(const Resolver& rhs) = delete;
   Resolver(Resolver&& rhs) = default;
- ~Resolver();
+  ~Resolver();
 
   const ResolvedFunction::ImplicitInitMap& getImplicitInits() {
     static ResolvedFunction::ImplicitInitMap empty;
@@ -245,7 +246,8 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
 
   // set up Resolver to resolve a Module
   static Resolver
-  createForModuleStmt(ResolutionContext* rc, const uast::Module* mod,
+  createForModuleStmt(ResolutionContext* rc,
+                      const uast::Module* mod,
                       const uast::AstNode* modStmt,
                       ResolutionResultByPostorderID& byPostorder);
 
@@ -257,13 +259,12 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
                          const uast::AstNode* stmt,
                          ResolutionResultByPostorderID& byPostorder);
 
-
   // set up Resolver to scope resolve a Module
   static Resolver
-  createForScopeResolvingModuleStmt(
-                      Context* context, const uast::Module* mod,
-                      const uast::AstNode* modStmt,
-                      ResolutionResultByPostorderID& byPostorder);
+  createForScopeResolvingModuleStmt(Context* context,
+                                    const uast::Module* mod,
+                                    const uast::AstNode* modStmt,
+                                    ResolutionResultByPostorderID& byPostorder);
 
   // set up Resolver to resolve a potentially generic Function signature
   static Resolver
@@ -281,12 +282,11 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
 
   // set up Resolver to resolve a Function body/return type after
   // instantiation (if any instantiation was needed)
-  static Resolver
-  createForFunction(ResolutionContext* rc,
-                   const uast::Function* fn,
-                   const PoiScope* poiScope,
-                   const TypedFnSignature* typedFnSignature,
-                   ResolutionResultByPostorderID& byPostorder);
+  static Resolver createForFunction(ResolutionContext* rc,
+                                    const uast::Function* fn,
+                                    const PoiScope* poiScope,
+                                    const TypedFnSignature* typedFnSignature,
+                                    ResolutionResultByPostorderID& byPostorder);
 
   static Resolver
   createForInitializer(ResolutionContext* rc,
@@ -297,18 +297,21 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
 
   // set up Resolver to scope resolve a Function
   static Resolver
-  createForScopeResolvingFunction(Context* context, const uast::Function* fn,
+  createForScopeResolvingFunction(Context* context,
+                                  const uast::Function* fn,
                                   ResolutionResultByPostorderID& byPostorder);
 
-  static Resolver createForScopeResolvingField(Context* context,
-                                         const uast::AggregateDecl* ad,
-                                         const uast::AstNode* fieldStmt,
-                                         ResolutionResultByPostorderID& byPostorder);
+  static Resolver
+  createForScopeResolvingField(Context* context,
+                               const uast::AggregateDecl* ad,
+                               const uast::AstNode* fieldStmt,
+                               ResolutionResultByPostorderID& byPostorder);
 
-  static Resolver createForScopeResolvingEnumConstant(Context* context,
-                                         const uast::Enum* ed,
-                                         const uast::AstNode* fieldStmt,
-                                         ResolutionResultByPostorderID& byPostorder);
+  static Resolver createForScopeResolvingEnumConstant(
+    Context* context,
+    const uast::Enum* ed,
+    const uast::AstNode* fieldStmt,
+    ResolutionResultByPostorderID& byPostorder);
 
   // set up Resolver to initially resolve field declaration types
   static Resolver
@@ -358,15 +361,12 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
                                     const uast::For* loop,
                                     ResolutionResultByPostorderID& bodyResults);
 
-  bool isLazy() const {
-    return callEagerness == CallResolutionEagerness::LAZY;
-  }
+  bool isLazy() const { return callEagerness == CallResolutionEagerness::LAZY; }
 
-  static const PoiScope*
-  poiScopeOrNull(Context* context,
-                 const TypedFnSignature* sig,
-                 const Scope* inScope,
-                 const PoiScope* inPoiScope);
+  static const PoiScope* poiScopeOrNull(Context* context,
+                                        const TypedFnSignature* sig,
+                                        const Scope* inScope,
+                                        const PoiScope* inPoiScope);
 
   /**
     During AST traversal, find the last called expression we entered.
@@ -503,7 +503,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   // helper to compute the intent for formals
   // (including type constructor formals)
   void computeFormalIntent(const uast::NamedDecl* decl,
-                                 types::QualifiedType::Kind& qtKind,
+                           types::QualifiedType::Kind& qtKind,
                            const types::Type* typePtr,
                            const types::Param* paramPtr);
 
@@ -536,11 +536,16 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
                          std::vector<ApplicabilityResult>&,
                          std::vector<const uast::VarLikeDecl*>&)>;
 
-    static void reportNoMatchingCandidates(const CallResultWrapper& r,
-                                           std::vector<ApplicabilityResult>& rejected,
-                                           std::vector<const uast::VarLikeDecl*>& actualDecls) {
-      CHPL_REPORT(r.parent->context, NoMatchingCandidates,
-                  r.astForContext, *r.ci, rejected, actualDecls);
+    static void reportNoMatchingCandidates(
+      const CallResultWrapper& r,
+      std::vector<ApplicabilityResult>& rejected,
+      std::vector<const uast::VarLikeDecl*>& actualDecls) {
+      CHPL_REPORT(r.parent->context,
+                  NoMatchingCandidates,
+                  r.astForContext,
+                  *r.ci,
+                  rejected,
+                  actualDecls);
       r.parent->encounteredErrors = true;
     }
 
@@ -573,12 +578,13 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
     bool noteResultWithoutError(ResolvedExpression* r,
                                 optional<ActionInfo> associatedActionInfo = {});
 
-    static bool noteResultWithoutError(Resolver& resolver,
-                                       ResolvedExpression* r,
-                                       const uast::AstNode* astForContext,
-                                       const CallResolutionResult& c,
-                                       const CallInfo* ci,
-                                       optional<ActionInfo> associatedActionInfo = {});
+    static bool
+    noteResultWithoutError(Resolver& resolver,
+                           ResolvedExpression* r,
+                           const uast::AstNode* astForContext,
+                           const CallResolutionResult& c,
+                           const CallInfo* ci,
+                           optional<ActionInfo> associatedActionInfo = {});
 
     // Same as noteResultWithoutError, but also issues errors.
     void noteResult(ResolvedExpression* r,
@@ -591,8 +597,9 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
 
     // Like noteResult, except attempts to do more work to print fancier errors
     // (see rerunCallAndPrintCandidates).
-    void noteResultPrintCandidates(ResolvedExpression* r,
-                                     optional<ActionInfo> associatedActionInfo = {});
+    void
+    noteResultPrintCandidates(ResolvedExpression* r,
+                              optional<ActionInfo> associatedActionInfo = {});
   };
 
   /* The resolver's wrapper of resolution::resolveGeneratedCall.
@@ -600,9 +607,9 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
      updating the resolver with results of the call if needed.
    */
   CallResultWrapper resolveGeneratedCall(const uast::AstNode* astForContext,
-                                          const CallInfo* ci,
-                                          const CallScopeInfo* inScopes,
-                                          const char* callName = nullptr);
+                                         const CallInfo* ci,
+                                         const CallScopeInfo* inScopes,
+                                         const char* callName = nullptr);
 
   /**
     Similar to resolveGeneratedCall but handles the implicit scope
@@ -712,7 +719,6 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
   lookupIdentifier(const uast::Identifier* ident,
                    bool resolvingCalledIdent,
                    ParenlessOverloadInfo& outParenlessOverloadInfo);
-
 
   void tryResolveParenlessCall(const ParenlessOverloadInfo& info,
                                const uast::Identifier* ident);
@@ -841,8 +847,7 @@ struct Resolver : BranchSensitiveVisitor<DefaultFrame> {
 } // end namespace resolution
 
 namespace uast {
-template <>
-struct AstVisitorPrecondition<resolution::Resolver> {
+template <> struct AstVisitorPrecondition<resolution::Resolver> {
   static bool skipSubtree(const AstNode* node, resolution::Resolver& rv) {
     if (rv.scopeResolveOnly) return false;
     return rv.isDoneExecuting();

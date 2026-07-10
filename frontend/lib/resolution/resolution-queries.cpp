@@ -56,57 +56,60 @@
 #include <iterator>
 
 namespace {
-  struct EvaluatedCandidates {
-    chpl::resolution::CandidatesAndForwardingInfo matching;
-    std::vector<chpl::resolution::ApplicabilityResult> rejected;
-    std::vector<chpl::resolution::ApplicabilityResult> rejectedIteratorsMissingTag;
-    bool evaluatedAnyNestedFunction = false;
+struct EvaluatedCandidates {
+  chpl::resolution::CandidatesAndForwardingInfo matching;
+  std::vector<chpl::resolution::ApplicabilityResult> rejected;
+  std::vector<chpl::resolution::ApplicabilityResult>
+    rejectedIteratorsMissingTag;
+  bool evaluatedAnyNestedFunction = false;
 
-    bool operator==(const EvaluatedCandidates& rhs) const {
-      return this->matching == rhs.matching &&
-        this->rejected == rhs.rejected &&
-        this->rejectedIteratorsMissingTag == rhs.rejectedIteratorsMissingTag &&
-        this->evaluatedAnyNestedFunction == rhs.evaluatedAnyNestedFunction;
-    }
-    bool operator!=(const EvaluatedCandidates& rhs) const {
-      return !(*this == rhs);
-    }
-    void swap(EvaluatedCandidates& rhs) {
-      matching.swap(rhs.matching);
-      std::swap(rejected, rhs.rejected);
-      std::swap(evaluatedAnyNestedFunction, rhs.evaluatedAnyNestedFunction);
-      std::swap(rejectedIteratorsMissingTag, rhs.rejectedIteratorsMissingTag);
-    }
-    static bool update(EvaluatedCandidates& keep, EvaluatedCandidates& addin) {
-      return chpl::defaultUpdate(keep, addin);
-    }
-    void mark(chpl::Context* context) const {
-      matching.mark(context);
-      chpl::mark<decltype(rejected)>{}(context, rejected);
-      chpl::mark<decltype(rejectedIteratorsMissingTag)>{}(context, rejectedIteratorsMissingTag);
-    }
-    size_t hash() const {
-      return chpl::hash(matching, rejected, rejectedIteratorsMissingTag, evaluatedAnyNestedFunction);
-    }
-  };
+  bool operator==(const EvaluatedCandidates& rhs) const {
+    return this->matching == rhs.matching && this->rejected == rhs.rejected &&
+           this->rejectedIteratorsMissingTag ==
+             rhs.rejectedIteratorsMissingTag &&
+           this->evaluatedAnyNestedFunction == rhs.evaluatedAnyNestedFunction;
+  }
+  bool operator!=(const EvaluatedCandidates& rhs) const {
+    return !(*this == rhs);
+  }
+  void swap(EvaluatedCandidates& rhs) {
+    matching.swap(rhs.matching);
+    std::swap(rejected, rhs.rejected);
+    std::swap(evaluatedAnyNestedFunction, rhs.evaluatedAnyNestedFunction);
+    std::swap(rejectedIteratorsMissingTag, rhs.rejectedIteratorsMissingTag);
+  }
+  static bool update(EvaluatedCandidates& keep, EvaluatedCandidates& addin) {
+    return chpl::defaultUpdate(keep, addin);
+  }
+  void mark(chpl::Context* context) const {
+    matching.mark(context);
+    chpl::mark<decltype(rejected)>{}(context, rejected);
+    chpl::mark<decltype(rejectedIteratorsMissingTag)>{}(
+      context, rejectedIteratorsMissingTag);
+  }
+  size_t hash() const {
+    return chpl::hash(matching,
+                      rejected,
+                      rejectedIteratorsMissingTag,
+                      evaluatedAnyNestedFunction);
+  }
+};
 }
 
 namespace std {
-  template <> struct hash<EvaluatedCandidates> {
-    size_t operator()(const EvaluatedCandidates& key) const {
-      return key.hash();
-    }
-  };
+template <> struct hash<EvaluatedCandidates> {
+  size_t operator()(const EvaluatedCandidates& key) const { return key.hash(); }
+};
 } // end namespace std
 
 namespace chpl {
 namespace resolution {
 
-
 using namespace uast;
 using namespace types;
 
-static void updateTypeForModuleLevelSplitInit(Context* context, ID id,
+static void updateTypeForModuleLevelSplitInit(Context* context,
+                                              ID id,
                                               ResolvedExpression& lhs,
                                               const ResolvedExpression& rhs) {
   const QualifiedType lhsType = lhs.type();
@@ -133,8 +136,7 @@ struct ModuleLevelSplitInitCollector {
 
   ModuleLevelSplitInitCollector(ResolutionContext* rc,
                                 ResolutionResultByPostorderID& result)
-    : rc(rc), result(result) {
-  }
+    : rc(rc), result(result) {}
 
   bool enter(const AstNode* node) { return false; }
   void exit(const AstNode* node) {}
@@ -178,8 +180,7 @@ struct ModuleLevelMentionCollector {
   ModuleLevelMentionCollector(ResolutionContext* rc,
                               ResolutionResultByPostorderID const& result,
                               std::set<ID> const& incompleteInitVariables)
-    : rc(rc), result(result),
-      incompleteInitVariables(incompleteInitVariables) {
+    : rc(rc), result(result), incompleteInitVariables(incompleteInitVariables) {
   }
 
   bool enter(const AstNode* node) { return true; }
@@ -208,13 +209,14 @@ struct ModuleLevelMentionCollector {
   void exit(const Identifier* node) {}
 };
 
-static std::map<ID, ID> findSplitInitStatements(ResolutionContext* rc,
-                                                ResolutionResultByPostorderID& result,
-                                                const Module* mod,
-                                                const AstNode* modStmt) {
+static std::map<ID, ID>
+findSplitInitStatements(ResolutionContext* rc,
+                        ResolutionResultByPostorderID& result,
+                        const Module* mod,
+                        const AstNode* modStmt) {
 
   if (!modStmt->isTupleDecl() && !modStmt->isMultiDecl() &&
-             !modStmt->isVariable()) {
+      !modStmt->isVariable()) {
     // if we're not a tuple, not a multi-decl, and not a variable,
     // then we can't be split-init.
     return {};
@@ -255,7 +257,8 @@ static std::map<ID, ID> findSplitInitStatements(ResolutionContext* rc,
   return mentionCollector.firstMentioningStmt;
 }
 
-const ResolutionResultByPostorderID& resolveModuleStmt(Context* context, ID id) {
+const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
+                                                       ID id) {
   QUERY_BEGIN(resolveModuleStmt, context, id);
 
   // the gist: do standalone module resolution, then try resolving any
@@ -281,13 +284,12 @@ const ResolutionResultByPostorderID& resolveModuleStmt(Context* context, ID id) 
   return QUERY_END(copiedResolvedInfo);
 }
 
-
 std::pair<ResolutionResultByPostorderID, std::map<ID, ID>> const&
 resolveModuleStmtStandalone(Context* context, ID id) {
   QUERY_BEGIN(resolveModuleStmtStandalone, context, id);
   QUERY_REGISTER_TRACER(
-    return std::make_pair(std::get<0>(args), "resolving this module statement");
-  );
+    return std::make_pair(std::get<0>(args),
+                          "resolving this module statement"););
 
   CHPL_ASSERT(!id.isSymbolDefiningScope());
 
@@ -301,7 +303,8 @@ resolveModuleStmtStandalone(Context* context, ID id) {
   if (const Module* mod = moduleAst->toModule()) {
     // Resolve just the requested statement
     auto modStmt = parsing::idToAst(context, id);
-    auto visitor = Resolver::createForModuleStmt(rc, mod, modStmt, resolutionResults);
+    auto visitor =
+      Resolver::createForModuleStmt(rc, mod, modStmt, resolutionResults);
     modStmt->traverse(visitor);
 
     // There will be no further calls (it's a top-level statement), so if the
@@ -314,11 +317,12 @@ resolveModuleStmtStandalone(Context* context, ID id) {
       CHPL_REPORT(context, RecursionModuleStmt, modStmt, mod, std::move(*rec));
     }
 
-    splitInitStmts = findSplitInitStatements(rc, resolutionResults, mod, modStmt);
+    splitInitStmts =
+      findSplitInitStatements(rc, resolutionResults, mod, modStmt);
   }
 
-  auto result = std::make_pair(std::move(resolutionResults),
-                               std::move(splitInitStmts));
+  auto result =
+    std::make_pair(std::move(resolutionResults), std::move(splitInitStmts));
   return QUERY_END(result);
 }
 
@@ -335,39 +339,39 @@ scopeResolveModuleStmt(Context* context, ID id) {
   if (const Module* mod = moduleAst->toModule()) {
     // Resolve just the requested statement
     auto modStmt = parsing::idToAst(context, id);
-    auto visitor =
-      Resolver::createForScopeResolvingModuleStmt(context, mod, modStmt,
-                                                  result);
+    auto visitor = Resolver::createForScopeResolvingModuleStmt(
+      context, mod, modStmt, result);
     modStmt->traverse(visitor);
   }
 
   return QUERY_END(result);
 }
 
-static void checkImplementationPoint(ResolutionContext* rc, const ImplementationPoint* implPoint) {
-  if (getTypeGenericity(rc->context(), implPoint->interface()) == types::Type::CONCRETE) {
+static void checkImplementationPoint(ResolutionContext* rc,
+                                     const ImplementationPoint* implPoint) {
+  if (getTypeGenericity(rc->context(), implPoint->interface()) ==
+      types::Type::CONCRETE) {
     auto inScope = scopeForId(rc->context(), implPoint->id());
     auto inScopes = CallScopeInfo::forNormalCall(inScope, nullptr);
-    std::ignore = checkInterfaceConstraints(rc, implPoint->interface(), implPoint->id(), inScopes);
+    std::ignore = checkInterfaceConstraints(
+      rc, implPoint->interface(), implPoint->id(), inScopes);
     // checkInterfaceConstraints emits an error already, nothing to do.
   }
 }
 
 static const std::map<ID, std::vector<const ImplementationPoint*>>&
-collectImplementationPointsInModule(Context* context,
-                                    const Module* mod);
+collectImplementationPointsInModule(Context* context, const Module* mod);
 
-
-const ResolvedExpression& resolveNameInModule(Context* context,
-                                              ID modId,
-                                              UniqueString name) {
+const ResolvedExpression&
+resolveNameInModule(Context* context, ID modId, UniqueString name) {
   QUERY_BEGIN(resolveNameInModule, context, modId, name);
 
   ResolutionResultByPostorderID ignored;
   ResolutionContext rcval(context);
   const AstNode* ast = parsing::idToAst(context, modId);
   CHPL_ASSERT(ast != nullptr && ast->isModule());
-  auto res = Resolver::createForModuleStmt(&rcval, ast->toModule(), /* modStmt */ nullptr, ignored);
+  auto res = Resolver::createForModuleStmt(
+    &rcval, ast->toModule(), /* modStmt */ nullptr, ignored);
   res.allowLocalSearch = false;
   auto result = res.resolveNameInModule(name);
 
@@ -392,16 +396,13 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
 
       auto r = Resolver::createForModuleStmt(rc, mod, nullptr, result);
 
-      for (auto child: mod->children()) {
-        if (child->isComment() ||
-            child->isTypeDecl() ||
-            child->isFunction() ||
-            child->isModule() ||
-            child->isInterface() ||
+      for (auto child : mod->children()) {
+        if (child->isComment() || child->isTypeDecl() || child->isFunction() ||
+            child->isModule() || child->isInterface() ||
             child->isExternBlock()) {
-            // Resolve use/import to find deprecation/unstable warnings.
-            // child->isUse() ||
-            // child->isImport()) {
+          // Resolve use/import to find deprecation/unstable warnings.
+          // child->isUse() ||
+          // child->isImport()) {
           // ignore this statement since it is not relevant to
           // the resolution of module initializers and module-level
           // variables.
@@ -448,8 +449,8 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
   return QUERY_END(result);
 }
 
-const ResolutionResultByPostorderID&
-scopeResolveModule(Context* context, ID id) {
+const ResolutionResultByPostorderID& scopeResolveModule(Context* context,
+                                                        ID id) {
   QUERY_BEGIN(scopeResolveModule, context, id);
 
   const AstNode* ast = parsing::idToAst(context, id);
@@ -464,16 +465,13 @@ scopeResolveModule(Context* context, ID id) {
       emitMultipleDefinedSymbolErrors(context, modScope);
 
       result.setupForSymbol(mod);
-      for (auto child: mod->children()) {
-        if (child->isComment() ||
-            child->isTypeDecl() ||
-            child->isFunction() ||
-            child->isModule() ||
-            child->isInterface() ||
+      for (auto child : mod->children()) {
+        if (child->isComment() || child->isTypeDecl() || child->isFunction() ||
+            child->isModule() || child->isInterface() ||
             child->isExternBlock()) {
-            // Resolve use/import to find deprecation/unstable warnings.
-            // child->isUse() ||
-            // child->isImport()) {
+          // Resolve use/import to find deprecation/unstable warnings.
+          // child->isUse() ||
+          // child->isImport()) {
           // ignore this statement since it is not relevant to
           // the resolution of module initializers and module-level
           // variables.
@@ -499,7 +497,6 @@ scopeResolveModule(Context* context, ID id) {
   }
 
   return QUERY_END(result);
-
 }
 
 const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
@@ -555,13 +552,12 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
   return QUERY_END(result);
 }
 
-const QualifiedType& typeForBuiltin(Context* context,
-                                    UniqueString name) {
+const QualifiedType& typeForBuiltin(Context* context, UniqueString name) {
   QUERY_BEGIN(typeForBuiltin, context, name);
 
   QualifiedType result;
 
-  std::unordered_map<UniqueString,const Type*> typeMap;
+  std::unordered_map<UniqueString, const Type*> typeMap;
   Type::gatherBuiltins(context, typeMap);
   auto& globalMap = getCompilerGeneratedGlobals(context);
 
@@ -580,8 +576,7 @@ const QualifiedType& typeForBuiltin(Context* context,
   } else if (searchGlobals != globalMap.end()) {
     result = searchGlobals->second;
   } else if (name == USTR("nil")) {
-    result = QualifiedType(QualifiedType::CONST_VAR,
-                           NilType::get(context));
+    result = QualifiedType(QualifiedType::CONST_VAR, NilType::get(context));
   } else if (name == USTR("none")) {
     result = QualifiedType(QualifiedType::PARAM,
                            NothingType::get(context),
@@ -628,35 +623,23 @@ QualifiedType typeForLiteral(Context* context, const Literal* literal) {
   const Param* paramPtr = nullptr;
 
   switch (literal->tag()) {
-    case asttags::BoolLiteral:
-      typePtr = BoolType::get(context);
-      break;
-    case asttags::ImagLiteral:
-      typePtr = ImagType::get(context, 0);
-      break;
-    case asttags::IntLiteral:
-      typePtr = IntType::get(context, 0);
-      break;
-    case asttags::RealLiteral:
-      typePtr = RealType::get(context, 0);
-      break;
-    case asttags::UintLiteral:
-      typePtr = UintType::get(context, 0);
-      break;
+    case asttags::BoolLiteral: typePtr = BoolType::get(context); break;
+    case asttags::ImagLiteral: typePtr = ImagType::get(context, 0); break;
+    case asttags::IntLiteral: typePtr = IntType::get(context, 0); break;
+    case asttags::RealLiteral: typePtr = RealType::get(context, 0); break;
+    case asttags::UintLiteral: typePtr = UintType::get(context, 0); break;
     case asttags::BytesLiteral:
       typePtr = CompositeType::getBytesType(context);
       break;
     case asttags::StringLiteral:
       typePtr = CompositeType::getStringType(context);
       break;
-    default:
-      CHPL_ASSERT(false && "case not handled");
+    default: CHPL_ASSERT(false && "case not handled");
   }
   paramPtr = literal->param();
 
   return QualifiedType(QualifiedType::PARAM, typePtr, paramPtr);
 }
-
 
 /////// function resolution
 
@@ -666,9 +649,9 @@ formalNeedsInstantiation(Context* context,
                          const Decl* formalDecl,
                          const SubstitutionsMap* substitutions) {
   if (formalType.isUnknown()) {
-    return formalType.kind() == QualifiedType::OUT ?
-           TypedFnSignature::INST_GENERIC_OUT :
-           TypedFnSignature::INST_GENERIC_OTHER;
+    return formalType.kind() == QualifiedType::OUT
+             ? TypedFnSignature::INST_GENERIC_OUT
+             : TypedFnSignature::INST_GENERIC_OTHER;
   }
 
   bool considerGenericity = true;
@@ -704,8 +687,9 @@ formalNeedsInstantiation(Context* context,
           instantiationState = TypedFnSignature::INST_GENERIC_OTHER;
         }
 
-        return (TypedFnSignature::InstantiationState)
-          ((int) instantiationState | TypedFnSignature::INST_GENERIC_OUT);
+        return (TypedFnSignature::InstantiationState)((int)instantiationState |
+                                                      TypedFnSignature::
+                                                        INST_GENERIC_OUT);
       }
 
       return TypedFnSignature::INST_GENERIC_OTHER;
@@ -728,21 +712,22 @@ anyFormalNeedsInstantiation(Context* context,
       // the 'this' formals of operators aren't really used (lhs and rhs are
       // passed in as the first two formals), do don't check 'this'.
     } else {
-      auto formalNeedsInst =
-        formalNeedsInstantiation(context, qt, untypedSig->formalDecl(i),
-                                 substitutions);
-      genericOrUnknown = (TypedFnSignature::InstantiationState) ((int)genericOrUnknown | (int)formalNeedsInst);
+      auto formalNeedsInst = formalNeedsInstantiation(
+        context, qt, untypedSig->formalDecl(i), substitutions);
+      genericOrUnknown =
+        (TypedFnSignature::InstantiationState)((int)genericOrUnknown |
+                                               (int)formalNeedsInst);
     }
     i++;
   }
   return genericOrUnknown;
 }
 
-static TypedFnSignature::WhereClauseResult whereClauseResult(
-                                     Context* context,
-                                     const Function* fn,
-                                     const ResolutionResultByPostorderID& r,
-                                     bool needsInstantiation) {
+static TypedFnSignature::WhereClauseResult
+whereClauseResult(Context* context,
+                  const Function* fn,
+                  const ResolutionResultByPostorderID& r,
+                  bool needsInstantiation) {
   auto whereClauseResult = TypedFnSignature::WHERE_TBD;
   if (const AstNode* where = fn->whereClause()) {
     const QualifiedType& qt = r.byAst(where).type();
@@ -766,8 +751,8 @@ static TypedFnSignature::WhereClauseResult whereClauseResult(
   return whereClauseResult;
 }
 
-static void
-checkForParenlessMethodFieldRedefinition(Resolver& rv, const Function* fn) {
+static void checkForParenlessMethodFieldRedefinition(Resolver& rv,
+                                                     const Function* fn) {
   Context* context = rv.context;
 
   if (fn->isMethod() && fn->isParenless()) {
@@ -790,12 +775,14 @@ checkForParenlessMethodFieldRedefinition(Resolver& rv, const Function* fn) {
       }
 
       if (compositeId) {
-        if (auto field = parsing::idToFieldWithName(context, compositeId, fn->name())) {
+        if (auto field =
+              parsing::idToFieldWithName(context, compositeId, fn->name())) {
           auto fieldAlsoMakesTypeMethod =
             field->storageKind() == Qualifier::TYPE ||
             field->storageKind() == Qualifier::PARAM;
           if (!isTypeMethod || fieldAlsoMakesTypeMethod) {
-            context->error(fn, "parenless proc redeclares the field '%s'",
+            context->error(fn,
+                           "parenless proc redeclares the field '%s'",
                            fn->name().c_str());
           }
         }
@@ -815,10 +802,11 @@ static bool errorIfParentFramesNotPresent(ResolutionContext* rc,
   // TODO: Becomes a structural issue after we pass in the parent.
   if (ret) {
     const ID& id = usig->id();
-    context->error(id, "stack frames for the parent of '%s' are not "
-                       "present, so outer variables in its signature "
-                       "cannot be typed",
-                       usig->name().c_str());
+    context->error(id,
+                   "stack frames for the parent of '%s' are not "
+                   "present, so outer variables in its signature "
+                   "cannot be typed",
+                   usig->name().c_str());
   }
 
   return ret;
@@ -870,17 +858,18 @@ typedSignatureInitialImpl(ResolutionContext* rc,
     for (auto up = parentSignature; up; up = up->parentFn()) {
       if (up->needsInstantiation()) {
         const ID& id = untypedSig->id();
-        context->error(id, "One or more parent functions was inferred "
-                           "to be generic while constructing the "
-                           "initial signature of '%s'",
-                           untypedSig->name().c_str());
+        context->error(id,
+                       "One or more parent functions was inferred "
+                       "to be generic while constructing the "
+                       "initial signature of '%s'",
+                       untypedSig->name().c_str());
         break;
       }
     }
   }
 
   Bitmap formalsErroredBitmap;
-  formalsErroredBitmap.resize(fn->numFormals()+1);
+  formalsErroredBitmap.resize(fn->numFormals() + 1);
 
   ResolutionResultByPostorderID r;
   auto visitor = Resolver::createForInitialSignature(rc, fn, r);
@@ -902,13 +891,14 @@ typedSignatureInitialImpl(ResolutionContext* rc,
 
     visitor.encounteredErrors = false;
     fn->formal(i)->traverse(visitor);
-    formalsErroredBitmap.setBit((size_t) i, visitor.encounteredErrors);
+    formalsErroredBitmap.setBit((size_t)i, visitor.encounteredErrors);
   }
 
   if (!visitor.outerVariables.isEmpty()) {
     // outer variables can come from a parent function or from
     // an interface containing the function.
-    CHPL_ASSERT(parentSignature || parsing::idToParentInterfaceId(context, fn->id()));
+    CHPL_ASSERT(parentSignature ||
+                parsing::idToParentInterfaceId(context, fn->id()));
 
     // Outer variables can't be typed without stack frames, so give up.
     if (errorIfParentFramesNotPresent(rc, untypedSig)) return nullptr;
@@ -916,9 +906,8 @@ typedSignatureInitialImpl(ResolutionContext* rc,
 
   // now, construct a TypedFnSignature from the result
   std::vector<types::QualifiedType> formalTypes = visitor.getFormalTypes(fn);
-  auto instantiationState = anyFormalNeedsInstantiation(context, formalTypes,
-                                                        untypedSig,
-                                                        nullptr);
+  auto instantiationState =
+    anyFormalNeedsInstantiation(context, formalTypes, untypedSig, nullptr);
 
   // visit the where clause, unless it needs to be instantiated, in
   // which case we will visit the where clause when that happens
@@ -934,12 +923,13 @@ typedSignatureInitialImpl(ResolutionContext* rc,
       whereClause->traverse(visitor);
       whereResult = whereClauseResult(context, fn, r, instantiationState);
     }
-    formalsErroredBitmap.setBit((size_t) fn->numFormals(),
-                                 visitor.encounteredErrors);
+    formalsErroredBitmap.setBit((size_t)fn->numFormals(),
+                                visitor.encounteredErrors);
   }
 
   if (!visitor.outerVariables.isEmpty()) {
-    CHPL_ASSERT(parentSignature || parsing::idToParentInterfaceId(context, fn->id()));
+    CHPL_ASSERT(parentSignature ||
+                parsing::idToParentInterfaceId(context, fn->id()));
 
     // Outer variables can't be typed without stack frames, so give up.
     if (errorIfParentFramesNotPresent(rc, untypedSig)) return nullptr;
@@ -971,7 +961,8 @@ const TypedFnSignature* const&
 typedSignatureInitial(ResolutionContext* rc,
                       const UntypedFnSignature* untypedSig) {
   CHPL_RESOLUTION_QUERY_BEGIN(typedSignatureInitial, rc, untypedSig);
-  auto ret = typedSignatureInitialImpl(rc, untypedSig, /* usePlaceholders */ false);
+  auto ret =
+    typedSignatureInitialImpl(rc, untypedSig, /* usePlaceholders */ false);
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
@@ -980,13 +971,13 @@ typedSignatureInitialForIdQuery(ResolutionContext* rc, ID id) {
   CHPL_RESOLUTION_QUERY_BEGIN(typedSignatureInitialForIdQuery, rc, id);
   Context* context = rc->context();
   const UntypedFnSignature* uSig = UntypedFnSignature::get(context, id);
-  const TypedFnSignature* ret = uSig ? typedSignatureInitial(rc, uSig)
-                                     : nullptr;
+  const TypedFnSignature* ret =
+    uSig ? typedSignatureInitial(rc, uSig) : nullptr;
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
-const TypedFnSignature*
-typedSignatureInitialForId(ResolutionContext* rc, ID id) {
+const TypedFnSignature* typedSignatureInitialForId(ResolutionContext* rc,
+                                                   ID id) {
   return typedSignatureInitialForIdQuery(rc, std::move(id));
 }
 
@@ -995,13 +986,14 @@ typedSignatureTemplateForIdQuery(ResolutionContext* rc, ID id) {
   CHPL_RESOLUTION_QUERY_BEGIN(typedSignatureTemplateForIdQuery, rc, id);
   Context* context = rc->context();
   const UntypedFnSignature* uSig = UntypedFnSignature::get(context, id);
-  const TypedFnSignature* ret = uSig ? typedSignatureInitialImpl(rc, uSig, /* usePlaceholders */ true)
-                                     : nullptr;
+  const TypedFnSignature* ret =
+    uSig ? typedSignatureInitialImpl(rc, uSig, /* usePlaceholders */ true)
+         : nullptr;
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
-const TypedFnSignature*
-typedSignatureTemplateForId(ResolutionContext* rc, ID id) {
+const TypedFnSignature* typedSignatureTemplateForId(ResolutionContext* rc,
+                                                    ID id) {
   return typedSignatureTemplateForIdQuery(rc, id);
 }
 
@@ -1040,13 +1032,14 @@ static void helpSetFieldTypes(const CompositeType* ct,
   } else if (auto fwd = ast->toForwardingDecl()) {
     if (auto fwdTo = fwd->expr()) {
       if (fwdTo->isDecl()) {
-        helpSetFieldTypes(ct, fwd->expr(), r, initedInParent, fields, syntaxOnly);
+        helpSetFieldTypes(
+          ct, fwd->expr(), r, initedInParent, fields, syntaxOnly);
       }
       // If it's a visibility clause, use the type of the symbol rather than
       // the whole clause.
       auto fwdToSymbol = fwdTo->isVisibilityClause()
-                             ? fwdTo->toVisibilityClause()->symbol()
-                             : fwdTo;
+                           ? fwdTo->toVisibilityClause()->symbol()
+                           : fwdTo;
       auto type = syntaxOnly ? QualifiedType() : r.byAst(fwdToSymbol).type();
       fields.addForwarding(fwd->id(), type);
     }
@@ -1056,15 +1049,16 @@ static void helpSetFieldTypes(const CompositeType* ct,
   // and can't contain fields
 }
 
-static const Type* const&
-initialTypeForTypeDeclQuery(Context* context, ID declId) {
+static const Type* const& initialTypeForTypeDeclQuery(Context* context,
+                                                      ID declId) {
   QUERY_BEGIN(initialTypeForTypeDeclQuery, context, declId);
 
   const Type* result = nullptr;
 
   auto ast = parsing::idToAst(context, declId);
   if (auto ad = ast->toAggregateDecl()) {
-    result = helpGetTypeForDecl(context, ad,
+    result = helpGetTypeForDecl(context,
+                                ad,
                                 SubstitutionsMap(),
                                 /* poiScope */ nullptr,
                                 /* instantiatedFrom */ nullptr);
@@ -1088,8 +1082,8 @@ const Type* initialTypeForTypeDecl(Context* context, ID declId) {
   return initialTypeForTypeDeclQuery(context, declId);
 }
 
-static const Type* const&
-initialTypeForInterfaceQuery(Context* context, ID declId) {
+static const Type* const& initialTypeForInterfaceQuery(Context* context,
+                                                       ID declId) {
   QUERY_BEGIN(initialTypeForInterfaceQuery, context, declId);
   const Type* result = nullptr;
   auto ast = parsing::idToAst(context, declId);
@@ -1103,14 +1097,19 @@ const Type* initialTypeForInterface(Context* context, ID declId) {
   return initialTypeForInterfaceQuery(context, declId);
 }
 
-const ResolvedFieldResults&
-resolveFieldResults(ResolutionContext* rc,
-                    const CompositeType* ct,
-                    ID fieldId,
-                    DefaultsPolicy defaultsPolicy,
-                    bool syntaxOnly,
-                    bool fieldTypesOnly) {
-  CHPL_RESOLUTION_QUERY_BEGIN(resolveFieldResults, rc, ct, fieldId, defaultsPolicy, syntaxOnly, fieldTypesOnly);
+const ResolvedFieldResults& resolveFieldResults(ResolutionContext* rc,
+                                                const CompositeType* ct,
+                                                ID fieldId,
+                                                DefaultsPolicy defaultsPolicy,
+                                                bool syntaxOnly,
+                                                bool fieldTypesOnly) {
+  CHPL_RESOLUTION_QUERY_BEGIN(resolveFieldResults,
+                              rc,
+                              ct,
+                              fieldId,
+                              defaultsPolicy,
+                              syntaxOnly,
+                              fieldTypesOnly);
 
   ResolutionResultByPostorderID rr;
   auto context = rc->context();
@@ -1135,14 +1134,18 @@ resolveFieldResults(ResolutionContext* rc,
     // use nullptr for POI scope because POI is not considered
     // when resolving the fields when constructing a type..
     const PoiScope* poiScope = nullptr;
-    auto visitor = isInstantiated ?
-      Resolver::createForInstantiatedFieldStmt(context, ad, fieldAst, ct,
-                                               poiScope, rr,
-                                               defaultsPolicy,
-                                               fieldTypesOnly) :
-      Resolver::createForInitialFieldStmt(rc, ad, fieldAst,
-                                          ct, rr, defaultsPolicy,
-                                          fieldTypesOnly);
+    auto visitor =
+      isInstantiated
+        ? Resolver::createForInstantiatedFieldStmt(context,
+                                                   ad,
+                                                   fieldAst,
+                                                   ct,
+                                                   poiScope,
+                                                   rr,
+                                                   defaultsPolicy,
+                                                   fieldTypesOnly)
+        : Resolver::createForInitialFieldStmt(
+            rc, ad, fieldAst, ct, rr, defaultsPolicy, fieldTypesOnly);
 
     fieldAst->traverse(visitor);
 
@@ -1164,7 +1167,8 @@ const ResolvedFields& resolveFieldDecl(ResolutionContext* rc,
                                        ID fieldId,
                                        DefaultsPolicy defaultsPolicy,
                                        bool syntaxOnly) {
-  CHPL_RESOLUTION_QUERY_BEGIN(resolveFieldDecl, rc, ct, fieldId, defaultsPolicy, syntaxOnly);
+  CHPL_RESOLUTION_QUERY_BEGIN(
+    resolveFieldDecl, rc, ct, fieldId, defaultsPolicy, syntaxOnly);
 
   ResolvedFields result;
   bool isRootClass = false;
@@ -1187,33 +1191,35 @@ const ResolvedFields& resolveFieldDecl(ResolutionContext* rc,
   return CHPL_RESOLUTION_QUERY_END(result);
 }
 
-const ResolvedFields&
-resolvedFieldsFromResults(ResolutionContext* rc,
-                         const ResolvedFieldResults& r) {
+const ResolvedFields& resolvedFieldsFromResults(ResolutionContext* rc,
+                                                const ResolvedFieldResults& r) {
   CHPL_RESOLUTION_QUERY_BEGIN(resolvedFieldsFromResults, rc, r);
   ResolvedFields result;
-  helpSetFieldTypes(r.type(), r.fieldAst(), r.results(), /* initedInParent */ false,
-                    result, r.syntaxOnly());
+  helpSetFieldTypes(r.type(),
+                    r.fieldAst(),
+                    r.results(),
+                    /* initedInParent */ false,
+                    result,
+                    r.syntaxOnly());
   if (!r.syntaxOnly()) result.validateFieldGenericity(rc->context(), r.type());
   return CHPL_RESOLUTION_QUERY_END(result);
 }
 
-static
-const ResolvedFields& fieldsForTypeDeclQuery(ResolutionContext* rc,
-                                             const CompositeType* ct,
-                                             DefaultsPolicy defaultsPolicy,
-                                             bool syntaxOnly) {
-  CHPL_RESOLUTION_QUERY_BEGIN(fieldsForTypeDeclQuery, rc, ct, defaultsPolicy, syntaxOnly);
+static const ResolvedFields&
+fieldsForTypeDeclQuery(ResolutionContext* rc,
+                       const CompositeType* ct,
+                       DefaultsPolicy defaultsPolicy,
+                       bool syntaxOnly) {
+  CHPL_RESOLUTION_QUERY_BEGIN(
+    fieldsForTypeDeclQuery, rc, ct, defaultsPolicy, syntaxOnly);
   auto context = rc->context();
 
   CHPL_RESOLUTION_QUERY_REGISTER_TRACER(
     auto& id = std::get<0>(args)->id();
     auto typeName = std::get<0>(args)->name();
-    auto traceText = std::string("resolving the fields of type '")
-      + typeName.c_str()
-      + "'";
-    return std::make_pair(id, traceText);
-  );
+    auto traceText =
+      std::string("resolving the fields of type '") + typeName.c_str() + "'";
+    return std::make_pair(id, traceText););
 
   ResolvedFields result;
 
@@ -1234,14 +1240,12 @@ const ResolvedFields& fieldsForTypeDeclQuery(ResolutionContext* rc,
     CHPL_ASSERT(ast && ast->isAggregateDecl());
     auto ad = ast->toAggregateDecl();
 
-    for (auto child: ad->children()) {
+    for (auto child : ad->children()) {
       // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
       bool isForwardingField = child->isForwardingDecl() &&
                                child->toForwardingDecl()->expr()->isDecl();
-      if (child->isVarLikeDecl() ||
-          child->isMultiDecl() ||
-          child->isTupleDecl() ||
-          isForwardingField) {
+      if (child->isVarLikeDecl() || child->isMultiDecl() ||
+          child->isTupleDecl() || isForwardingField) {
         const ResolvedFields& resolvedFields =
           resolveFieldDecl(rc, ct, child->id(), defaultsPolicy, syntaxOnly);
         // Copy resolvedFields into result
@@ -1256,7 +1260,8 @@ const ResolvedFields& fieldsForTypeDeclQuery(ResolutionContext* rc,
       }
 
       if (auto rec = context->recoverFromSelfRecursion()) {
-        CHPL_REPORT(context, RecursionFieldDecl, child, ad, ct, std::move(*rec));
+        CHPL_REPORT(
+          context, RecursionFieldDecl, child, ad, ct, std::move(*rec));
       }
     }
 
@@ -1276,19 +1281,25 @@ const ResolvedFields& fieldsForTypeDecl(ResolutionContext* rc,
   // isn't, always set defaults policy to IGNORE_DEFAULTS to avoid memoizing
   // the same result multiple times.
   if (syntaxOnly) {
-    return fieldsForTypeDeclQuery(rc, ct, DefaultsPolicy::IGNORE_DEFAULTS,
+    return fieldsForTypeDeclQuery(rc,
+                                  ct,
+                                  DefaultsPolicy::IGNORE_DEFAULTS,
                                   /* syntaxOnly */ true);
   }
 
-  if (defaultsPolicy == DefaultsPolicy::IGNORE_DEFAULTS){
-    return fieldsForTypeDeclQuery(rc, ct, DefaultsPolicy::IGNORE_DEFAULTS,
+  if (defaultsPolicy == DefaultsPolicy::IGNORE_DEFAULTS) {
+    return fieldsForTypeDeclQuery(rc,
+                                  ct,
+                                  DefaultsPolicy::IGNORE_DEFAULTS,
                                   /* syntaxOnly */ false);
   }
 
   // try first with defaultsPolicy=FOR_OTHER_FIELDS
-  const auto& f = fieldsForTypeDeclQuery(rc, ct,
-                                         DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS,
-                                         /* syntaxOnly */ false);
+  const auto& f =
+    fieldsForTypeDeclQuery(rc,
+                           ct,
+                           DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS,
+                           /* syntaxOnly */ false);
 
   // If defaultsPolicy=USE was requested and the type
   // is generic with defaults, compute the type again.
@@ -1298,10 +1309,12 @@ const ResolvedFields& fieldsForTypeDecl(ResolutionContext* rc,
   if (defaultsPolicy == DefaultsPolicy::USE_DEFAULTS) {
     // if record is not generic with defaults, return its
     // uninstantiated fields. Otherwise, instantiate.
-    auto finalDefaultsPolicy = f.isGenericWithDefaults() ?
-      DefaultsPolicy::USE_DEFAULTS :
-      DefaultsPolicy::IGNORE_DEFAULTS;
-    return fieldsForTypeDeclQuery(rc, ct, finalDefaultsPolicy,
+    auto finalDefaultsPolicy = f.isGenericWithDefaults()
+                                 ? DefaultsPolicy::USE_DEFAULTS
+                                 : DefaultsPolicy::IGNORE_DEFAULTS;
+    return fieldsForTypeDeclQuery(rc,
+                                  ct,
+                                  finalDefaultsPolicy,
                                   /* syntaxOnly */ false);
   }
 
@@ -1310,9 +1323,8 @@ const ResolvedFields& fieldsForTypeDecl(ResolutionContext* rc,
 }
 
 // Resolve all statements like 'forwarding _value;' in 'ct'
-static
-const ResolvedFields& resolveForwardingExprs(ResolutionContext* rc,
-                                             const CompositeType* ct) {
+static const ResolvedFields& resolveForwardingExprs(ResolutionContext* rc,
+                                                    const CompositeType* ct) {
   CHPL_RESOLUTION_QUERY_BEGIN(resolveForwardingExprs, rc, ct);
   auto context = rc->context();
 
@@ -1336,7 +1348,7 @@ const ResolvedFields& resolveForwardingExprs(ResolutionContext* rc,
     auto ad = ast->toAggregateDecl();
 
     // TODO: don't rely on 'ResolvedFields' or 'resolveFieldDecl' here...
-    for (auto child: ad->children()) {
+    for (auto child : ad->children()) {
       if (child->isForwardingDecl() &&
           !child->toForwardingDecl()->expr()->isDecl()) {
         const ResolvedFields& resolvedFields =
@@ -1378,8 +1390,8 @@ checkForwardingCycles(ResolutionContext* rc,
       return true;
     }
 
-    const ResolvedFields& r = fieldsForTypeDecl(rc, ct,
-                                                DefaultsPolicy::USE_DEFAULTS);
+    const ResolvedFields& r =
+      fieldsForTypeDecl(rc, ct, DefaultsPolicy::USE_DEFAULTS);
 
     // Check for cycles. If a cycle is detected, emit an error
     // and return 'true'.
@@ -1399,11 +1411,10 @@ checkForwardingCycles(ResolutionContext* rc,
   return false;
 }
 
-
 // returns a 'true' if there was a cycle and reports an error in that case.
 // otherwise, returns 'false'.
-static const bool&
-forwardingCycleCheckQuery(ResolutionContext* rc, const CompositeType* ct) {
+static const bool& forwardingCycleCheckQuery(ResolutionContext* rc,
+                                             const CompositeType* ct) {
   CHPL_RESOLUTION_QUERY_BEGIN(forwardingCycleCheckQuery, rc, ct);
 
   bool result = false;
@@ -1415,8 +1426,8 @@ forwardingCycleCheckQuery(ResolutionContext* rc, const CompositeType* ct) {
 }
 
 // returns 'true' if a forwarding cycle was detected & error emitted
-static bool
-emitErrorForForwardingCycles(ResolutionContext* rc, const CompositeType* ct) {
+static bool emitErrorForForwardingCycles(ResolutionContext* rc,
+                                         const CompositeType* ct) {
   bool cycleFound = false;
   if (typeUsesForwarding(rc->context(), ct)) {
     // check for cycles
@@ -1429,15 +1440,15 @@ emitErrorForForwardingCycles(ResolutionContext* rc, const CompositeType* ct) {
 static const CompositeType* getTypeWithDefaults(ResolutionContext* rc,
                                                 const CompositeType* ct) {
   // resolve the fields with DefaultsPolicy=FOR_OTHER_FIELDS
-  const ResolvedFields& g = fieldsForTypeDecl(rc, ct,
-                                              DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS);
+  const ResolvedFields& g =
+    fieldsForTypeDecl(rc, ct, DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS);
   if (!g.isGenericWithDefaults()) {
     return ct;
   }
 
   // and with DefaultsPolicy=USE
-  const ResolvedFields& r = fieldsForTypeDecl(rc, ct,
-                                              DefaultsPolicy::USE_DEFAULTS);
+  const ResolvedFields& r =
+    fieldsForTypeDecl(rc, ct, DefaultsPolicy::USE_DEFAULTS);
 
   // for any field that has a different type in r than in g, add
   // a substitution, and get the type with those substitutions.
@@ -1469,13 +1480,12 @@ static const CompositeType* getTypeWithDefaults(ResolutionContext* rc,
   const Type* instantiatedFrom = ct;
 
   // Create the composite type with those substitutions
-  return helpGetTypeForDecl(context, ad, substitutions,
-                            poiScope, instantiatedFrom);
+  return helpGetTypeForDecl(
+    context, ad, substitutions, poiScope, instantiatedFrom);
 }
 
-static
-const CompositeType* const& getTypeWithDefaultsQuery(ResolutionContext* rc,
-                                                     const CompositeType* ct) {
+static const CompositeType* const&
+getTypeWithDefaultsQuery(ResolutionContext* rc, const CompositeType* ct) {
   CHPL_RESOLUTION_QUERY_BEGIN(getTypeWithDefaultsQuery, rc, ct);
 
   auto result = getTypeWithDefaults(rc, ct);
@@ -1492,7 +1502,8 @@ const types::QualifiedType typeWithDefaults(ResolutionContext* rc,
         CHPL_ASSERT(got->isBasicClassType());
         bct = got->toBasicClassType();
 
-        auto r = ClassType::get(rc->context(), bct, clst->manager(), clst->decorator());
+        auto r = ClassType::get(
+          rc->context(), bct, clst->manager(), clst->decorator());
         return QualifiedType(t.kind(), r, t.param());
       }
     } else if (auto ct = t.type()->toCompositeType()) {
@@ -1513,9 +1524,7 @@ struct ReachableTypeFinder {
   std::set<ID>& result;
   ResolutionResultByPostorderID& rr;
 
-  void visitId(const ID& id) {
-
-  }
+  void visitId(const ID& id) {}
 
   // by default, recurse into children
   bool enter(const AstNode* node) { return true; }
@@ -1538,10 +1547,14 @@ struct ReachableTypeFinder {
   }
   void exit(const Identifier* node) {}
 
-  bool enter(const Module* node) { return false;  /* don't recurse into modules */ }
+  bool enter(const Module* node) {
+    return false; /* don't recurse into modules */
+  }
   void exit(const Module* node) {}
 
-  bool enter(const Function* node) { return false;  /* don't recurse into functions */ }
+  bool enter(const Function* node) {
+    return false; /* don't recurse into functions */
+  }
   void exit(const Function* node) {}
 };
 
@@ -1561,11 +1574,10 @@ static void computeTypesReachableFromType(Context* context,
 
     field->traverse(finder);
   }
-
 }
 
 static std::set<ID> const& typesReachableFromType(Context* context,
-                                                   ID aggregateId) {
+                                                  ID aggregateId) {
 
   QUERY_BEGIN(typesReachableFromType, context, aggregateId);
   std::set<ID> result;
@@ -1573,7 +1585,6 @@ static std::set<ID> const& typesReachableFromType(Context* context,
   computeTypesReachableFromType(context, aggregateId, result);
   return QUERY_END(result);
 }
-
 
 // the ignore argument is just to ignore types that we are currently
 // computing the genericity of (we can assume that those are concrete).
@@ -1640,26 +1651,24 @@ static Type::Genericity getFieldsGenericity(Context* context,
   // Some testing code creates CompositeType with empty IDs.
   // Assume these are concrete.
   // Also 'object' has an empty ID and is concrete.
-  if (ct->id().isEmpty())
-    return Type::CONCRETE;
+  if (ct->id().isEmpty()) return Type::CONCRETE;
 
   Type::Genericity g = Type::CONCRETE;
 
   if (auto bct = ct->toBasicClassType()) {
     // RootClass is concrete.
-    if (bct->parentClassType() == nullptr)
-      return Type::CONCRETE;
+    if (bct->parentClassType() == nullptr) return Type::CONCRETE;
 
     g = getFieldsGenericity(context, bct->parentClassType(), ignore);
     CHPL_ASSERT(g != Type::MAYBE_GENERIC);
-    if (g == Type::GENERIC)
-      return Type::GENERIC;
+    if (g == Type::GENERIC) return Type::GENERIC;
   }
 
   DefaultsPolicy defaultsPolicy = DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS;
   // NOTE: Assuming that syntaxOnly means we don't need proper RC from elsewhere
   ResolutionContext rc(context);
-  const ResolvedFields& f = fieldsForTypeDecl(&rc, ct,
+  const ResolvedFields& f = fieldsForTypeDecl(&rc,
+                                              ct,
                                               defaultsPolicy,
                                               /* syntaxOnly */ true);
 
@@ -1667,15 +1676,13 @@ static Type::Genericity getFieldsGenericity(Context* context,
       (g == Type::CONCRETE || g == Type::GENERIC_WITH_DEFAULTS))
     return Type::GENERIC_WITH_DEFAULTS;
 
-  if (f.isGeneric())
-    return Type::GENERIC;
+  if (f.isGeneric()) return Type::GENERIC;
 
   return g;
 }
 
-static Type::Genericity getInterfaceActualsGenericity(Context* context,
-                                                      const InterfaceType* ift,
-                                                      std::set<const Type*>& ignore) {
+static Type::Genericity getInterfaceActualsGenericity(
+  Context* context, const InterfaceType* ift, std::set<const Type*>& ignore) {
   // add the current type to the ignore set, and stop now
   // if it is already in the ignore set.
   auto it = ignore.insert(ift);
@@ -1691,7 +1698,8 @@ static Type::Genericity getInterfaceActualsGenericity(Context* context,
   for (auto formal : itf->formals()) {
     // if the substitutions aren't empty, expect substitutions for all types
     auto& qt = ift->substitutions().at(formal->id());
-    if (getTypeGenericityIgnoring(context, qt.type(), ignore) != Type::CONCRETE) {
+    if (getTypeGenericityIgnoring(context, qt.type(), ignore) !=
+        Type::CONCRETE) {
       return Type::GENERIC;
     }
   }
@@ -1699,25 +1707,24 @@ static Type::Genericity getInterfaceActualsGenericity(Context* context,
   return Type::CONCRETE;
 }
 
-Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
+Type::Genericity getTypeGenericityIgnoring(Context* context,
+                                           const Type* t,
                                            std::set<const Type*>& ignore) {
-  if (t == nullptr)
-    return Type::MAYBE_GENERIC;
+  if (t == nullptr) return Type::MAYBE_GENERIC;
 
   // check if the type knows the full answer
   Type::Genericity ret = t->genericity();
 
-  if (ret != Type::MAYBE_GENERIC)
-    return ret;
+  if (ret != Type::MAYBE_GENERIC) return ret;
 
-  if (t->isUnknownType())
-    return Type::MAYBE_GENERIC;
+  if (t->isUnknownType()) return Type::MAYBE_GENERIC;
 
   if (auto pt = t->toPtrType()) {
     // Mimics the fields logic: if any field is non-concrete, the whole
     // type is generic. Logically, the c_ptr has a single field, the element
     // type.
-    if (getTypeGenericityIgnoring(context, pt->eltType(), ignore) == Type::CONCRETE) {
+    if (getTypeGenericityIgnoring(context, pt->eltType(), ignore) ==
+        Type::CONCRETE) {
       return Type::CONCRETE;
     } else {
       return Type::GENERIC;
@@ -1734,8 +1741,7 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
 
   // the tuple type that isn't an instantiation is a generic type
   if (auto tt = t->toTupleType()) {
-    if (tt->instantiatedFromCompositeType() == nullptr)
-      return Type::GENERIC;
+    if (tt->instantiatedFromCompositeType() == nullptr) return Type::GENERIC;
     if (tt->isKnownSize() == false) {
       return Type::GENERIC;
     }
@@ -1765,18 +1771,20 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
   return getFieldsGenericity(context, compositeType, ignore);
 }
 
-Type::Genericity getTypeGenericityIgnoring(Context* context, QualifiedType qt,
+Type::Genericity getTypeGenericityIgnoring(Context* context,
+                                           QualifiedType qt,
                                            std::set<const Type*>& ignore) {
-   Type::Genericity g = qt.genericity();
-   if (g == Type::MAYBE_GENERIC && qt.type() != nullptr ) {
-     return resolution::getTypeGenericityIgnoring(context, qt.type(), ignore);
-   }
+  Type::Genericity g = qt.genericity();
+  if (g == Type::MAYBE_GENERIC && qt.type() != nullptr) {
+    return resolution::getTypeGenericityIgnoring(context, qt.type(), ignore);
+  }
 
-   // otherwise return whatever we computed
-   return g;
+  // otherwise return whatever we computed
+  return g;
 }
 
-static const Type::Genericity& getTypeGenericityViaPtrQuery(Context* context, const Type* t) {
+static const Type::Genericity& getTypeGenericityViaPtrQuery(Context* context,
+                                                            const Type* t) {
   QUERY_BEGIN(getTypeGenericityViaPtrQuery, context, t);
 
   std::set<const Type*> ignore;
@@ -1789,7 +1797,8 @@ Type::Genericity getTypeGenericity(Context* context, const Type* t) {
   return getTypeGenericityViaPtrQuery(context, t);
 }
 
-static const Type::Genericity& getTypeGenericityViaQualifiedTypeQuery(Context* context, QualifiedType qt) {
+static const Type::Genericity&
+getTypeGenericityViaQualifiedTypeQuery(Context* context, QualifiedType qt) {
   QUERY_BEGIN(getTypeGenericityViaQualifiedTypeQuery, context, qt);
 
   std::set<const Type*> ignore;
@@ -1814,7 +1823,8 @@ static bool callHasQuestionMark(const FnCall* call) {
   return false;
 }
 
-static const AstNode* unwrapClassCall(const Call* call, bool& outConcreteManagement) {
+static const AstNode* unwrapClassCall(const Call* call,
+                                      bool& outConcreteManagement) {
   const AstNode* unwrapped = call;
   outConcreteManagement = false;
 
@@ -1891,9 +1901,11 @@ static bool isScopeResolvedExprGeneric(Context* context,
       // in fields.
       bool isMutuallyRecursive =
         asttags::isAggregateDecl(toTag) &&
-        typesReachableFromType(context, toId).count(expr->id().parentSymbolId(context)) != 0;
+        typesReachableFromType(context, toId)
+            .count(expr->id().parentSymbolId(context)) != 0;
 
-      if (asttags::isClass(toTag) && !isConcreteManagement && !isMutuallyRecursive) {
+      if (asttags::isClass(toTag) && !isConcreteManagement &&
+          !isMutuallyRecursive) {
         // classes without 'shared' or 'owned' are generic (generic management),
         // regardless if whether the class' fields are generic or not.
         //
@@ -1940,12 +1952,13 @@ static bool isScopeResolvedExprGeneric(Context* context,
   on the neighbors of the variable until it returns 'true' should help determine
   the genericity in a multi-decl.
  */
-static bool isVariableDeclWithClearGenericity(Context* context,
-                                              const VarLikeDecl* var,
-                                              bool &outIsGeneric,
-                                              types::QualifiedType* outFormalType,
-                                              bool useResolution,
-                                              bool lastInMultiDecl = false) {
+static bool
+isVariableDeclWithClearGenericity(Context* context,
+                                  const VarLikeDecl* var,
+                                  bool& outIsGeneric,
+                                  types::QualifiedType* outFormalType,
+                                  bool useResolution,
+                                  bool lastInMultiDecl = false) {
   // fields that are 'type' or 'param' are generic
   // and we can use the same type/param intent for the type constructor
   if (var->storageKind() == QualifiedType::TYPE ||
@@ -1968,7 +1981,8 @@ static bool isVariableDeclWithClearGenericity(Context* context,
   // be inheriting their value or type from their neighbor.
   if (var->typeExpression() == nullptr) {
     if (outFormalType)
-      *outFormalType = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
+      *outFormalType =
+        QualifiedType(QualifiedType::TYPE, AnyType::get(context));
     outIsGeneric = true;
 
     // if this is the last declaration in a multi-decl (like 'y' in 'var x, y;'),
@@ -1981,7 +1995,8 @@ static bool isVariableDeclWithClearGenericity(Context* context,
   // concrete. The only "generic" form is a call with a "(?)" actual.
 
   auto aggregateDeclId = var->id().parentSymbolId(context);
-  auto aggregateDecl = parsing::idToAst(context, aggregateDeclId)->toAggregateDecl();
+  auto aggregateDecl =
+    parsing::idToAst(context, aggregateDeclId)->toAggregateDecl();
   CHPL_ASSERT(aggregateDecl);
 
   // Performance: this scope resolution could be put behind a query if it
@@ -1996,8 +2011,7 @@ static bool isVariableDeclWithClearGenericity(Context* context,
   ResolutionResultByPostorderID rr;
   if (useResolution) {
     auto visitor =
-      Resolver::createForScopeResolvingField(context, aggregateDecl,
-                                             var, rr);
+      Resolver::createForScopeResolvingField(context, aggregateDecl, var, rr);
     var->traverse(visitor);
   }
 
@@ -2015,7 +2029,8 @@ bool isFieldSyntacticallyGeneric(Context* context,
   CHPL_ASSERT(var);
 
   bool isGeneric = false;
-  if (isVariableDeclWithClearGenericity(context, var, isGeneric, formalType, useLightResolution)) {
+  if (isVariableDeclWithClearGenericity(
+        context, var, isGeneric, formalType, useLightResolution)) {
     return isGeneric;
   }
 
@@ -2032,7 +2047,7 @@ bool isFieldSyntacticallyGeneric(Context* context,
     // First, seek to the right until we find the field we're looking for.
     auto declIterPair = md->decls();
     auto declIter = declIterPair.begin();
-    for(; declIter != declIterPair.end(); declIter++) {
+    for (; declIter != declIterPair.end(); declIter++) {
       if (*declIter == var) {
         break;
       }
@@ -2048,7 +2063,12 @@ bool isFieldSyntacticallyGeneric(Context* context,
       }
 
       bool lastInMultiDecl = (std::next(declIter) == declIterPair.end());
-      if (isVariableDeclWithClearGenericity(context, neighborVar, isGeneric, formalType, useLightResolution, lastInMultiDecl)) {
+      if (isVariableDeclWithClearGenericity(context,
+                                            neighborVar,
+                                            isGeneric,
+                                            formalType,
+                                            useLightResolution,
+                                            lastInMultiDecl)) {
         break;
       }
     }
@@ -2070,8 +2090,7 @@ bool shouldIncludeFieldInTypeConstructor(Context* context,
 
   // fields that are 'type' or 'param' are generic
   // and we can use the same type/param intent for the type constructor
-  if ((fieldType.isParam() && !fieldType.hasParamPtr()) ||
-      fieldType.isType()) {
+  if ((fieldType.isParam() && !fieldType.hasParamPtr()) || fieldType.isType()) {
     if (formalType) *formalType = fieldType;
     return true;
   }
@@ -2080,8 +2099,7 @@ bool shouldIncludeFieldInTypeConstructor(Context* context,
     auto var = parsing::idToAst(context, fieldId)->toVarLikeDecl();
 
     // non-type/param fields with an init expression aren't generic
-    if (var->initExpression())
-      return false;
+    if (var->initExpression()) return false;
 
     // non-type/param fields that have no declared type and no initializer
     // are generic and these need a type variable for the argument with AnyType.
@@ -2100,8 +2118,8 @@ bool shouldIncludeFieldInTypeConstructor(Context* context,
     const Type* t = fieldType.type();
     // a 'var' field of 'AnyType' isn't itself generic, it just depends on
     // another field that's 'AnyType'. In that case, treat it as unknown.
-    bool isVarOfAnyType = fieldType.kind() != QualifiedType::TYPE &&
-                          t && t->isAnyType();
+    bool isVarOfAnyType =
+      fieldType.kind() != QualifiedType::TYPE && t && t->isAnyType();
     if (t && !isVarOfAnyType && !t->isUnknownType()) {
       Type::Genericity g = getTypeGenericity(context, t);
       if (g == Type::GENERIC) { // and not GENERIC_WITH_DEFAULTS
@@ -2116,8 +2134,7 @@ bool shouldIncludeFieldInTypeConstructor(Context* context,
 }
 
 static const TypedFnSignature* const&
-typeConstructorInitialQuery(Context* context, const Type* t)
-{
+typeConstructorInitialQuery(Context* context, const Type* t) {
   QUERY_BEGIN(typeConstructorInitialQuery, context, t);
 
   const TypedFnSignature* result = nullptr;
@@ -2146,12 +2163,14 @@ typeConstructorInitialQuery(Context* context, const Type* t)
       auto defaultKind = hasDefault ? UntypedFnSignature::DK_DEFAULT
                                     : UntypedFnSignature::DK_NO_DEFAULT;
 
-      auto d = UntypedFnSignature::FormalDetail(formal->name(), defaultKind, decl, decl->isVarArgFormal());
+      auto d = UntypedFnSignature::FormalDetail(
+        formal->name(), defaultKind, decl, decl->isVarArgFormal());
       formals.push_back(d);
     }
 
     auto untyped = UntypedFnSignature::get(context,
-                                           typeCtor->id(), name,
+                                           typeCtor->id(),
+                                           name,
                                            /* isMethod */ false,
                                            /* isTypeConstructor */ true,
                                            /* isCompilerGenerated */ true,
@@ -2222,7 +2241,8 @@ QualifiedType getInstantiationType(Context* context,
       // which BasicClassType to use?
       const BasicClassType* bct = nullptr;
       auto formalBct = formalCt->basicClassType();
-      if (formalBct && getTypeGenericity(context, formalBct) == Type::CONCRETE) {
+      if (formalBct &&
+          getTypeGenericity(context, formalBct) == Type::CONCRETE) {
         bct = formalBct;
       } else if (!formalBct) {
         bct = actualCt->basicClassType();
@@ -2255,9 +2275,8 @@ QualifiedType getInstantiationType(Context* context,
     auto classBuiltinTypeDec = ClassTypeDecorator::GENERIC;
     bool foundClassyBuiltinType = true;
 
-    if (formalT->isAnyOwnedType() &&
-               actualCt->decorator().isManaged() &&
-               actualCt->manager()->isAnyOwnedType()) {
+    if (formalT->isAnyOwnedType() && actualCt->decorator().isManaged() &&
+        actualCt->manager()->isAnyOwnedType()) {
       classBuiltinTypeDec = ClassTypeDecorator::MANAGED;
     } else if (formalT->isAnySharedType() &&
                actualCt->decorator().isManaged() &&
@@ -2277,8 +2296,7 @@ QualifiedType getInstantiationType(Context* context,
 
       // which manager?
       const Type* manager = nullptr;
-      if (dec.isManaged())
-        manager = actualCt->manager();
+      if (dec.isManaged()) manager = actualCt->manager();
 
       // now construct the ClassType
       auto ct = ClassType::get(context, bct, manager, dec);
@@ -2295,8 +2313,9 @@ QualifiedType getInstantiationType(Context* context,
       return QualifiedType(formalType.kind(), pt);
     }
   } else if (actualType.isParam() && formalType.isParam() &&
-             formalType.hasParamPtr() == false ) {
-    return Param::fold(context, nullptr, PrimitiveTag::PRIM_CAST, actualType, formalType);
+             formalType.hasParamPtr() == false) {
+    return Param::fold(
+      context, nullptr, PrimitiveTag::PRIM_CAST, actualType, formalType);
   }
 
   // TODO: sync type -> value type?
@@ -2313,7 +2332,8 @@ initialNumericValueOfEnumElement(Context* context, ID elementId) {
   auto decl = parsing::idToAst(context, declId)->toEnum();
 
   auto one = QualifiedType::makeParamUint(context, 1);
-  auto maxInt = QualifiedType::makeParamInt(context, std::numeric_limits<int64_t>::max());
+  auto maxInt =
+    QualifiedType::makeParamInt(context, std::numeric_limits<int64_t>::max());
 
   ResolutionResultByPostorderID byPostorder;
   Resolver res = Resolver::createForEnumElements(context, decl, byPostorder);
@@ -2328,11 +2348,9 @@ initialNumericValueOfEnumElement(Context* context, ID elementId) {
     // The resolver will try using "local results" (i.e., consult
     // byPostorder) for the enum elements, so give them the type they ought
     // to have.
-    auto paramVal =
-      EnumParam::EnumValue(elem->id(), elem->name().str());
-    auto param =
-        QualifiedType(QualifiedType::PARAM, enumType,
-                      EnumParam::get(context, paramVal));
+    auto paramVal = EnumParam::EnumValue(elem->id(), elem->name().str());
+    auto param = QualifiedType(
+      QualifiedType::PARAM, enumType, EnumParam::get(context, paramVal));
     byPostorder.byAst(elem).setType(param);
 
     prevElem = elem;
@@ -2360,7 +2378,8 @@ initialNumericValueOfEnumElement(Context* context, ID elementId) {
       // we're the first value, without an init expression we're abstract.
       value = empty;
     } else {
-      auto& prevValue = initialNumericValueOfEnumElement(context, prevElem->id());
+      auto& prevValue =
+        initialNumericValueOfEnumElement(context, prevElem->id());
       if (!prevValue.first) {
         // the previous value is abstract, which means so are we.
         value = empty;
@@ -2369,10 +2388,12 @@ initialNumericValueOfEnumElement(Context* context, ID elementId) {
         if (lastQt.isParam()) {
           // Previous value was valid, so add one to it.
           // Except if it overflows, in which case promoted to a uint.
-          if (lastQt.param() == maxInt.param() ){
-            value = QualifiedType::makeParamUint(context, (uint64_t) std::numeric_limits<int64_t>::max() + 1);
+          if (lastQt.param() == maxInt.param()) {
+            value = QualifiedType::makeParamUint(
+              context, (uint64_t)std::numeric_limits<int64_t>::max() + 1);
           } else {
-            value = Param::fold(context, elem, chpl::uast::PRIM_ADD, lastQt, one);
+            value =
+              Param::fold(context, elem, chpl::uast::PRIM_ADD, lastQt, one);
           }
         } else {
           // Previous value was unknown, so we can't add one to it.
@@ -2406,13 +2427,12 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
   if (!enumNode) return QUERY_END(result);
 
   // First collect all the values, no matter what types they are.
-  using ValueVector = std::vector<std::tuple<QualifiedType,
-                                             RequiredSignedness,
-                                             const EnumElement*>>;
+  using ValueVector = std::vector<
+    std::tuple<QualifiedType, RequiredSignedness, const EnumElement*>>;
   ValueVector valuesAndAsts;
   for (auto elem : enumNode->enumElements()) {
     auto [maybeValue, signedness] =
-        initialNumericValueOfEnumElement(context, elem->id());
+      initialNumericValueOfEnumElement(context, elem->id());
     auto value = maybeValue ? *maybeValue : QualifiedType();
     valuesAndAsts.emplace_back(value, signedness, maybeValue ? elem : nullptr);
   }
@@ -2445,8 +2465,13 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
   }
 
   if (needsSigned && needsUnsigned) {
-    CHPL_REPORT(context, NoTypeForEnumElem, enumNode,
-                needsSigned, valueNeedsSigned, needsUnsigned, valueNeedsUnsigned);
+    CHPL_REPORT(context,
+                NoTypeForEnumElem,
+                enumNode,
+                needsSigned,
+                valueNeedsSigned,
+                needsUnsigned,
+                valueNeedsUnsigned);
 
     // Though not all elements of the enum fit in the one type that we'll
     // pick (which will be unsigned), we'll proceed on a best-effort basis,
@@ -2472,26 +2497,27 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
 
     auto resultType = QualifiedType();
     optional<int64_t> signedValue = {};
-    if (needsUnsigned && signedness == RS_SIGNED)  {
+    if (needsUnsigned && signedness == RS_SIGNED) {
       // This value was known before, but it doesn't fit in the type.
       // We'll mark it with 'erroneous type'. The error has already been
       // issued above.
-      resultType = QualifiedType(QualifiedType::UNKNOWN,
-                                 ErroneousType::get(context));
+      resultType =
+        QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
     } else if (!qt.param()) {
       // The value is already unknown, so preserve it.
       resultType = qt;
     } else if (auto intParam = qt.param()->toIntParam()) {
       signedValue = intParam->value();
     } else if (auto uintParam = qt.param()->toUintParam()) {
-      signedValue = (int64_t) uintParam->value();
+      signedValue = (int64_t)uintParam->value();
     }
 
     if (signedValue) {
       if (needsUnsigned) {
-        resultType = QualifiedType(QualifiedType::PARAM,
-                                   UintType::get(context, 0),
-                                   UintParam::get(context, (uint64_t) *signedValue));
+        resultType =
+          QualifiedType(QualifiedType::PARAM,
+                        UintType::get(context, 0),
+                        UintParam::get(context, (uint64_t)*signedValue));
       } else {
         resultType = QualifiedType::makeParamInt(context, *signedValue);
       }
@@ -2503,7 +2529,8 @@ computeNumericValuesOfEnumElements(Context* context, ID node) {
   return QUERY_END(result);
 }
 
-const chpl::optional<QualifiedType>& computeUnderlyingTypeOfEnum(Context* context, ID element) {
+const chpl::optional<QualifiedType>&
+computeUnderlyingTypeOfEnum(Context* context, ID element) {
   QUERY_BEGIN(computeUnderlyingTypeOfEnum, context, element);
 
   chpl::optional<QualifiedType> result;
@@ -2572,19 +2599,21 @@ ID lookupEnumElementByNumericValue(Context* context,
   return ID();
 }
 
-const std::pair<ID, bool>&
-scopeResolveEnumElement(Context* context,
-                        const Enum* enumAst,
-                        UniqueString elementName,
-                        const AstNode* nodeForErr) {
-  QUERY_BEGIN(scopeResolveEnumElement, context, enumAst, elementName, nodeForErr);
+const std::pair<ID, bool>& scopeResolveEnumElement(Context* context,
+                                                   const Enum* enumAst,
+                                                   UniqueString elementName,
+                                                   const AstNode* nodeForErr) {
+  QUERY_BEGIN(
+    scopeResolveEnumElement, context, enumAst, elementName, nodeForErr);
   bool ambiguous = false;
   LookupConfig config = LOOKUP_DECLS | LOOKUP_INNERMOST;
   auto enumScope = scopeForId(context, enumAst->id());
-  auto ids = lookupNameInScope(context, enumScope,
+  auto ids = lookupNameInScope(context,
+                               enumScope,
                                /* methodLookupHelper */ nullptr,
                                /* receiverScopeHelper */ nullptr,
-                               elementName, config);
+                               elementName,
+                               config);
   if (ids.numIds() == 0) {
     // Do not report the error here, because it might not be an error.
     // In particular, we could be in a parenless method call. Callers
@@ -2593,7 +2622,11 @@ scopeResolveEnumElement(Context* context,
     // multiple candidates. report an error, but the expression most likely has a type given by the enum.
     std::vector<ID> redefinedIds(ids.numIds());
     std::copy(ids.begin(), ids.end(), redefinedIds.begin());
-    CHPL_REPORT(context, MultipleEnumElems, nodeForErr, elementName, enumAst,
+    CHPL_REPORT(context,
+                MultipleEnumElems,
+                nodeForErr,
+                elementName,
+                enumAst,
                 std::move(redefinedIds));
     ambiguous = true;
   } else {
@@ -2605,11 +2638,10 @@ scopeResolveEnumElement(Context* context,
   return QUERY_END(ret);
 }
 
-QualifiedType
-typeForScopeResolvedEnumElement(Context* context,
-                                const EnumType* enumType,
-                                const ID& refersToId,
-                                bool ambiguous) {
+QualifiedType typeForScopeResolvedEnumElement(Context* context,
+                                              const EnumType* enumType,
+                                              const ID& refersToId,
+                                              bool ambiguous) {
   if (!refersToId.isEmpty()) {
     // Found a single enum element, the type can be a param.
     auto newParam = Param::getEnumParam(context, refersToId);
@@ -2623,28 +2655,27 @@ typeForScopeResolvedEnumElement(Context* context,
   }
 }
 
-QualifiedType
-typeForScopeResolvedEnumElement(Context* context,
-                                const ID& enumTypeId,
-                                const ID& refersToId,
-                                bool ambiguous) {
+QualifiedType typeForScopeResolvedEnumElement(Context* context,
+                                              const ID& enumTypeId,
+                                              const ID& refersToId,
+                                              bool ambiguous) {
   auto type = initialTypeForTypeDecl(context, enumTypeId);
   CHPL_ASSERT(type && type->isEnumType());
-  return typeForScopeResolvedEnumElement(context, type->toEnumType(),
-                                         refersToId, ambiguous);
+  return typeForScopeResolvedEnumElement(
+    context, type->toEnumType(), refersToId, ambiguous);
 }
 
-const QualifiedType&
-typeForEnumElement(Context* context,
-                   const EnumType* enumType,
-                   UniqueString elementName,
-                   const AstNode* nodeForErr) {
+const QualifiedType& typeForEnumElement(Context* context,
+                                        const EnumType* enumType,
+                                        UniqueString elementName,
+                                        const AstNode* nodeForErr) {
   QUERY_BEGIN(typeForEnumElement, context, enumType, elementName, nodeForErr);
   auto enumAst = parsing::idToAst(context, enumType->id())->toEnum();
   CHPL_ASSERT(enumAst != nullptr);
   auto& [refersToId, ambiguous] =
     scopeResolveEnumElement(context, enumAst, elementName, nodeForErr);
-  auto qt = typeForScopeResolvedEnumElement(context, enumType, refersToId, ambiguous);
+  auto qt =
+    typeForScopeResolvedEnumElement(context, enumType, refersToId, ambiguous);
   if (refersToId.isEmpty() && !ambiguous) {
     // scopeResolveEnumElement doesn't report a "not found" error because
     // not being able to find an enum element isn't always an error. Here,
@@ -2654,7 +2685,6 @@ typeForEnumElement(Context* context,
   }
   return QUERY_END(qt);
 }
-
 
 static bool varArgCountMatch(const VarArgFormal* formal,
                              ResolutionResultByPostorderID& r) {
@@ -2704,8 +2734,8 @@ static Resolver createResolverForAst(ResolutionContext* rc,
                                      const PoiScope* poiScope,
                                      ResolutionResultByPostorderID& r) {
   if (fn != nullptr) {
-    return Resolver::createForInstantiatedSignature(rc, fn, substitutions,
-                                                    poiScope, r);
+    return Resolver::createForInstantiatedSignature(
+      rc, fn, substitutions, poiScope, r);
   } else {
     CHPL_ASSERT(ed != nullptr);
     return Resolver::createForEnumElements(rc->context(), ed, r);
@@ -2723,28 +2753,30 @@ static bool allowPromotionForSig(const TypedFnSignature* sig,
   }
 
   const UntypedFnSignature* untypedSignature = sig->untyped();
-  return
-    untypedSignature->name() != USTR("these") &&
-    untypedSignature->name() != USTR("=");
+  return untypedSignature->name() != USTR("these") &&
+         untypedSignature->name() != USTR("=");
 }
 
-static bool instantiateAcrossManagerRecordConversion(Context* context,
-                                                     const QualifiedType& formal,
-                                                     const QualifiedType& actual,
-                                                     QualifiedType& outInstType) {
+static bool
+instantiateAcrossManagerRecordConversion(Context* context,
+                                         const QualifiedType& formal,
+                                         const QualifiedType& actual,
+                                         QualifiedType& outInstType) {
   auto formalT = formal.type();
   auto actualT = actual.type();
   if (tryConvertClassTypeIntoManagerRecordIfNeeded(context, formalT, actualT)) {
     outInstType = QualifiedType(formal.kind(), actualT);
     return true;
-  } else if (tryConvertClassTypeOutOfManagerRecordIfNeeded(context, actualT, formalT)) {
+  } else if (tryConvertClassTypeOutOfManagerRecordIfNeeded(
+               context, actualT, formalT)) {
     outInstType = QualifiedType(formal.kind(), actualT);
     return true;
   }
   return false;
 }
 
-static bool traverseDetectingErrors(Context* context, const AstNode* toVisit,
+static bool traverseDetectingErrors(Context* context,
+                                    const AstNode* toVisit,
                                     Resolver& visitor) {
   visitor.encounteredErrors = false;
   toVisit->traverse(visitor);
@@ -2753,11 +2785,10 @@ static bool traverseDetectingErrors(Context* context, const AstNode* toVisit,
 
 // TODO: We could remove the 'ResolutionContext' argument if we figure out
 // a different way/decide not to resolve initializer bodies down below.
-static ApplicabilityResult
-instantiateSignatureImpl(ResolutionContext* rc,
-                         const TypedFnSignature* sig,
-                         const CallInfo& call,
-                         const PoiScope* poiScope) {
+static ApplicabilityResult instantiateSignatureImpl(ResolutionContext* rc,
+                                                    const TypedFnSignature* sig,
+                                                    const CallInfo& call,
+                                                    const PoiScope* poiScope) {
   // Performance: Should this query use a similar approach to
   // resolveFunctionByInfoQuery, where the PoiInfo and visibility
   // are consulted?
@@ -2825,8 +2856,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
   int varArgIdx = -1;
 
   ResolutionResultByPostorderID r;
-  auto visitor = createResolverForAst(rc, fn, ed, substitutions,
-                                      poiScope, r);
+  auto visitor = createResolverForAst(rc, fn, ed, substitutions, poiScope, r);
 
   // TODO: Stop copying these back in.
   visitor.outerVariables = sig->outerVariables();
@@ -2878,7 +2908,8 @@ instantiateSignatureImpl(ResolutionContext* rc,
       if (varArgType.isUnknown()) {
         // We haven't yet re-computed the vararg tuple type.
         if (traverseDetectingErrors(context, formal, visitor)) {
-          return ApplicabilityResult::failureErrorInFormal(sig, entry.formalIdx());
+          return ApplicabilityResult::failureErrorInFormal(sig,
+                                                           entry.formalIdx());
         }
         varArgType = r.byAst(formal).type();
         justComputedVarArgType = true;
@@ -2891,11 +2922,13 @@ instantiateSignatureImpl(ResolutionContext* rc,
       // think we know less than we do. So, reset the intent to the var arg
       // declaration's intent.
       if (formalType.kind() == QualifiedType::UNKNOWN) {
-        formalType = QualifiedType(entry.formalType().kind(), formalType.type(), formalType.param());
+        formalType = QualifiedType(
+          entry.formalType().kind(), formalType.type(), formalType.param());
       }
     } else if (formal) {
       if (traverseDetectingErrors(context, formal, visitor)) {
-        return ApplicabilityResult::failureErrorInFormal(sig, entry.formalIdx());
+        return ApplicabilityResult::failureErrorInFormal(sig,
+                                                         entry.formalIdx());
       }
       formalType = r.byAst(formal).type();
     } else {
@@ -2905,7 +2938,8 @@ instantiateSignatureImpl(ResolutionContext* rc,
     }
 
     if (entry.actualIdx() == -1 &&
-        sig->untyped()->formalDefaultKind(entry.formalIdx()) == UntypedFnSignature::DK_MAYBE_DEFAULT &&
+        sig->untyped()->formalDefaultKind(entry.formalIdx()) ==
+          UntypedFnSignature::DK_MAYBE_DEFAULT &&
         !formalType.isType() &&
         getTypeGenericity(context, formalType.type()) != Type::CONCRETE) {
 
@@ -2914,7 +2948,8 @@ instantiateSignatureImpl(ResolutionContext* rc,
       // can't know what its default value is, and none was provided.
       // This indicates failure.
       CHPL_ASSERT(sig->isInit() && sig->isCompilerGenerated());
-      return ApplicabilityResult::failureNoDefaultValueForGenericField(sig, formalIdx);
+      return ApplicabilityResult::failureNoDefaultValueForGenericField(
+        sig, formalIdx);
     }
 
     usedConcreteArrayType |=
@@ -2943,7 +2978,11 @@ instantiateSignatureImpl(ResolutionContext* rc,
       auto got = canPassFn(context, actualType, formalType);
       if (!got.passes()) {
         // Including past type information made this instantiation fail.
-        return ApplicabilityResult::failure(sig, got.reason(), entry.formalIdx(), call.originalActualIdx(entry.actualIdx()));
+        return ApplicabilityResult::failure(
+          sig,
+          got.reason(),
+          entry.formalIdx(),
+          call.originalActualIdx(entry.actualIdx()));
       }
 
       // If promotion was involved, figure out the scalar type. We want to
@@ -2965,7 +3004,8 @@ instantiateSignatureImpl(ResolutionContext* rc,
         // formal type was (e.g., if we're the formal is `_owned(C)`, instantiate
         // with `_owned(C)`).
         if (!got.converts()) {
-          if (instantiateAcrossManagerRecordConversion(context, formalType, actualType, useType)) {
+          if (instantiateAcrossManagerRecordConversion(
+                context, formalType, actualType, useType)) {
             // useType was set as an out parameter of the call in the condition.
             isInstantiated = true;
           } else if (formalType.isType() && !got.instantiates()) {
@@ -2974,10 +3014,11 @@ instantiateSignatureImpl(ResolutionContext* rc,
             // should not consider it instantiated.
             useType = scalarType;
           } else if (formalType.type()->isAnyType() &&
-                     actualType.type()->isStringType() &&
-                     fn && fn->linkage() == Function::EXTERN) {
+                     actualType.type()->isStringType() && fn &&
+                     fn->linkage() == Function::EXTERN) {
             isInstantiated = true;
-            useType = QualifiedType(scalarType.kind(), CStringType::get(context));
+            useType =
+              QualifiedType(scalarType.kind(), CStringType::get(context));
           } else {
             // use the actual type since no conversion/promotion was needed
             isInstantiated = true;
@@ -2986,9 +3027,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
         } else {
           isInstantiated = true;
           // get instantiation type
-          useType = getInstantiationType(context,
-                                         scalarType,
-                                         formalType);
+          useType = getInstantiationType(context, scalarType, formalType);
 
           // Verify that the 'instantiation type' still accepts the actual.
           // This might not be the case based on legal argument mapping rules.
@@ -2999,12 +3038,18 @@ instantiateSignatureImpl(ResolutionContext* rc,
           // 'ref x: shared Parent' formal, because 'ref' requires the types
           // to match exactly, and rules out subtype conversions.
 
-          auto kind = resolveIntent(useType, /* isThis */ false, /* isInit */ false);
-          auto useTypeConcrete = QualifiedType(kind, useType.type(), useType.param());
+          auto kind =
+            resolveIntent(useType, /* isThis */ false, /* isInit */ false);
+          auto useTypeConcrete =
+            QualifiedType(kind, useType.type(), useType.param());
 
           auto got = canPassFn(context, scalarType, useTypeConcrete);
           if (!got.passes()) {
-            return ApplicabilityResult::failure(sig, got.reason(), entry.formalIdx(), call.originalActualIdx(entry.actualIdx()));
+            return ApplicabilityResult::failure(
+              sig,
+              got.reason(),
+              entry.formalIdx(),
+              call.originalActualIdx(entry.actualIdx()));
           }
         }
       }
@@ -3020,7 +3065,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
 
       QualifiedType::Kind qtKind = formalType.kind();
       auto tempQT = QualifiedType(qtKind, useType.type());
-      auto newKind = resolveIntent(tempQT, /*isThis*/ false, /*isInit*/false);
+      auto newKind = resolveIntent(tempQT, /*isThis*/ false, /*isInit*/ false);
 
       auto param = formalType.isParam() ? useType.param() : nullptr;
       useType = QualifiedType(newKind, useType.type(), param);
@@ -3046,7 +3091,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
         }
 
         // note that a substitution was used here
-        if ((size_t) formalIdx >= formalsInstantiated.size()) {
+        if ((size_t)formalIdx >= formalsInstantiated.size()) {
           formalsInstantiated.resize(sig->numFormals());
         }
 
@@ -3081,7 +3126,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
       if (justComputedVarArgType) {
         if (auto vld = formal->toVarLikeDecl()) {
           if (auto te = vld->typeExpression()) {
-              visitor.resolveTypeQueries(te, useType);
+            visitor.resolveTypeQueries(te, useType);
           }
         }
       }
@@ -3089,7 +3134,8 @@ instantiateSignatureImpl(ResolutionContext* rc,
       // Substitutions have been updated; re-run resolution to get better
       // intents, vararg info, and to extract type query info.
       if (traverseDetectingErrors(context, formal, visitor)) {
-        return ApplicabilityResult::failureErrorInFormal(sig, entry.formalIdx());
+        return ApplicabilityResult::failureErrorInFormal(sig,
+                                                         entry.formalIdx());
       }
       formalType = r.byAst(formal).type();
     }
@@ -3107,7 +3153,8 @@ instantiateSignatureImpl(ResolutionContext* rc,
         }
       }
       if (traverseDetectingErrors(context, formal, visitor)) {
-        return ApplicabilityResult::failureErrorInFormal(sig, entry.formalIdx());
+        return ApplicabilityResult::failureErrorInFormal(sig,
+                                                         entry.formalIdx());
       }
       auto qFormalType = r.byAst(formal).type();
       if (entry.isVarArgEntry()) {
@@ -3125,12 +3172,20 @@ instantiateSignatureImpl(ResolutionContext* rc,
       // means the call is ill-formed.
       if (qFormalType.isUnknownKindOrType()) {
         if (entry.hasActual()) {
-          return ApplicabilityResult::failure(sig, FAIL_CANNOT_INSTANTIATE, entry.formalIdx(), call.originalActualIdx(entry.actualIdx()));
+          return ApplicabilityResult::failure(
+            sig,
+            FAIL_CANNOT_INSTANTIATE,
+            entry.formalIdx(),
+            call.originalActualIdx(entry.actualIdx()));
         } else {
           // Something else has gone wrong. Use this failure kind to avoid
           // situations down the line where someone wants to know which
           // actual the failure corresponds to.
-          return ApplicabilityResult::failure(sig, FAIL_UNKNOWN_FORMAL_TYPE, entry.formalIdx(), call.originalActualIdx(entry.actualIdx()));
+          return ApplicabilityResult::failure(
+            sig,
+            FAIL_UNKNOWN_FORMAL_TYPE,
+            entry.formalIdx(),
+            call.originalActualIdx(entry.actualIdx()));
         }
       }
 
@@ -3139,7 +3194,11 @@ instantiateSignatureImpl(ResolutionContext* rc,
       auto passResult = canPassFn(context, checkType, qFormalType);
       if (!passResult.passes()) {
         // Type query constraints were not satisfied
-        return ApplicabilityResult::failure(sig, passResult.reason(), entry.formalIdx(), call.originalActualIdx(entry.actualIdx()));
+        return ApplicabilityResult::failure(
+          sig,
+          passResult.reason(),
+          entry.formalIdx(),
+          call.originalActualIdx(entry.actualIdx()));
       }
 
       // be strict about instantiation type to ensure type query values
@@ -3150,8 +3209,13 @@ instantiateSignatureImpl(ResolutionContext* rc,
         auto vfml = formal->toVarArgFormal();
         CHPL_ASSERT(vfml != nullptr);
         if (vfml->typeExpression() &&
-            !parsing::typeQueriesInExpression(context, vfml->typeExpression()).empty()) {
-          return ApplicabilityResult::failure(sig, FAIL_VARARG_TQ_MISMATCH, entry.formalIdx(), call.originalActualIdx(entry.actualIdx()));
+            !parsing::typeQueriesInExpression(context, vfml->typeExpression())
+               .empty()) {
+          return ApplicabilityResult::failure(
+            sig,
+            FAIL_VARARG_TQ_MISMATCH,
+            entry.formalIdx(),
+            call.originalActualIdx(entry.actualIdx()));
         }
       }
 
@@ -3175,7 +3239,8 @@ instantiateSignatureImpl(ResolutionContext* rc,
     }
 
     if (instantiateVarArgs) {
-      const TupleType* t = TupleType::getQualifiedTuple(context, varargsTypes,
+      const TupleType* t = TupleType::getQualifiedTuple(context,
+                                                        varargsTypes,
                                                         /*isVarArgTuple=*/true);
       auto formal = faMap.byFormalIdx(varArgIdx).formal()->toVarArgFormal();
       QualifiedType vat = QualifiedType(formal->storageKind(), t);
@@ -3184,7 +3249,7 @@ instantiateSignatureImpl(ResolutionContext* rc,
       visitor.resolveVarArgSizeQuery(formal, t->numElements());
 
       // note that a substitution was used here
-      if ((size_t) varArgIdx >= formalsInstantiated.size()) {
+      if ((size_t)varArgIdx >= formalsInstantiated.size()) {
         formalsInstantiated.resize(sig->numFormals());
       }
       formalsInstantiated.setBit(varArgIdx, true);
@@ -3192,7 +3257,8 @@ instantiateSignatureImpl(ResolutionContext* rc,
   }
 
   // use the existing signature if there were no substitutions
-  if (substitutions.size() == 0 && !usedConcreteArrayType && formalTypes.size() == 0) {
+  if (substitutions.size() == 0 && !usedConcreteArrayType &&
+      formalTypes.size() == 0) {
     // Even if no instantiations occurred due to formals, an initializer
     // might end up creating substitutions when we resolve its body
     // and process assignments like `this.someType = bla`. So, do not
@@ -3234,9 +3300,8 @@ instantiateSignatureImpl(ResolutionContext* rc,
 
     auto tmp = visitor.getFormalTypes(fn);
     formalTypes.swap(tmp);
-    instantiationState = anyFormalNeedsInstantiation(context, formalTypes,
-                                                     untypedSignature,
-                                                     &substitutions);
+    instantiationState = anyFormalNeedsInstantiation(
+      context, formalTypes, untypedSignature, &substitutions);
     where = whereClauseResult(context, fn, r, instantiationState);
   } else if (ed) {
     // Fine; formal types were stored into formalTypes earlier since we're
@@ -3269,7 +3334,8 @@ instantiateSignatureQuery(ResolutionContext* rc,
                           const TypedFnSignature* sig,
                           const CallInfo& call,
                           const PoiScope* poiScope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(instantiateSignatureQuery, rc, sig, call, poiScope);
+  CHPL_RESOLUTION_QUERY_BEGIN(
+    instantiateSignatureQuery, rc, sig, call, poiScope);
   auto ret = instantiateSignatureImpl(rc, sig, call, poiScope);
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
@@ -3287,9 +3353,8 @@ ApplicabilityResult instantiateSignature(ResolutionContext* rc,
 // It is possible for the signature recorded in the returned function to
 // be different than the input signature. Right now this happens for
 // initializers.
-static owned<ResolvedFunction>
-resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
-                          PoiInfo poiInfo) {
+static owned<ResolvedFunction> resolveFunctionByInfoImpl(
+  ResolutionContext* rc, const TypedFnSignature* sig, PoiInfo poiInfo) {
   Context* context = rc->context();
   const UntypedFnSignature* untypedSignature = sig->untyped();
   auto& id = untypedSignature->id();
@@ -3300,16 +3365,16 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
   ResolutionResultByPostorderID rr;
 
   // TODO: Make sure the ID is an extern function specifically.
-  bool canResolveWithoutAst = parsing::idIsExtern(context, sig->id()) ||
-                              sig->isInitializer();
+  bool canResolveWithoutAst =
+    parsing::idIsExtern(context, sig->id()) || sig->isInitializer();
   if (!fn && !canResolveWithoutAst) {
     CHPL_ASSERT(false && "Unexpected input to 'resolveFunction'!");
     return nullptr;
   }
 
   auto visitor = sig->isInitializer()
-    ? Resolver::createForInitializer(rc, fn, poiScope, sig, rr)
-    : Resolver::createForFunction(rc, fn, poiScope, sig, rr);
+                   ? Resolver::createForInitializer(rc, fn, poiScope, sig, rr)
+                   : Resolver::createForFunction(rc, fn, poiScope, sig, rr);
 
   if (sig->isInitializer()) {
     CHPL_ASSERT(visitor.initResolver.get());
@@ -3352,7 +3417,7 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
   if (!sig->isInitializer()) {
     computeReturnType(visitor);
 
-  // else, potentially write out a new initializer signature
+    // else, potentially write out a new initializer signature
   } else {
     finalSig = visitor.initResolver->finalize();
   }
@@ -3374,32 +3439,29 @@ resolveFunctionByInfoImpl(ResolutionContext* rc, const TypedFnSignature* sig,
 
   CHPL_ASSERT(sig == finalSig || sig->isInitializer());
 
-  auto ret = toOwned(new ResolvedFunction(finalSig,
-                                  fn->returnIntent(),
-                                  std::move(rr),
-                                  std::move(resolvedPoiInfo),
-                                  linkageNameStr,
-                                  std::move(visitor.returnType),
-                                  std::move(visitor.userDiagnostics),
-                                  std::move(visitor.poiTraceToChild),
-                                  std::move(visitor.sigAndInfoToChildPtr),
-                                  // Performance: should this be heap-allocated
-                                  // in the event that the function is not an
-                                  // initializer?
-                                  visitor.getImplicitInits()));
+  auto ret =
+    toOwned(new ResolvedFunction(finalSig,
+                                 fn->returnIntent(),
+                                 std::move(rr),
+                                 std::move(resolvedPoiInfo),
+                                 linkageNameStr,
+                                 std::move(visitor.returnType),
+                                 std::move(visitor.userDiagnostics),
+                                 std::move(visitor.poiTraceToChild),
+                                 std::move(visitor.sigAndInfoToChildPtr),
+                                 // Performance: should this be heap-allocated
+                                 // in the event that the function is not an
+                                 // initializer?
+                                 visitor.getImplicitInits()));
   return ret;
 }
 
 // Forward declaration so that that query storage actions can be specialized.
-static const ResolvedFunction* const&
-resolveFunctionByInfoQuery(ResolutionContext* rc,
-                           const TypedFnSignature* sig,
-                           PoiInfo poiInfo);
+static const ResolvedFunction* const& resolveFunctionByInfoQuery(
+  ResolutionContext* rc, const TypedFnSignature* sig, PoiInfo poiInfo);
 
-static const ResolvedFunction* const&
-resolveFunctionByResolvedInfoQuery(Context* context,
-                                   const TypedFnSignature* sig,
-                                   PoiInfo poiInfo);
+static const ResolvedFunction* const& resolveFunctionByResolvedInfoQuery(
+  Context* context, const TypedFnSignature* sig, PoiInfo poiInfo);
 
 static const owned<ResolvedFunction>&
 resolveFunctionByPoisQuery(ResolutionContext* rc, PoiInfo::Trace poiTrace);
@@ -3411,19 +3473,17 @@ resolveFunctionByPoisQuery(ResolutionContext* rc, PoiInfo::Trace poiTrace);
 //
 // Right now, this specialization just performs the default behavior.
 //
-template <typename Args> struct
-ResolutionContext::GlobalComputeSetup<resolveFunctionByInfoQuery, Args> {
-  bool enter(ResolutionContext* rc, const Args& args) {
-    return false;
-  }
+template <typename Args>
+struct ResolutionContext::GlobalComputeSetup<resolveFunctionByInfoQuery, Args> {
+  bool enter(ResolutionContext* rc, const Args& args) { return false; }
 
   void leave(ResolutionContext* rc, const Args& args) {}
 };
 
 // Implement unstable caching for 'resolveFunctionByInfoQuery' by looking
 // for an appropriate PoiInfo/function stored within the parent's Resolver.
-template <typename T, typename Args> struct
-ResolutionContext::UnstableCache<resolveFunctionByInfoQuery, T, Args> {
+template <typename T, typename Args>
+struct ResolutionContext::UnstableCache<resolveFunctionByInfoQuery, T, Args> {
 
   const T* fetchOrNull(ResolutionContext* rc, const Args& args) {
     static_assert(std::tuple_size_v<Args> == 2);
@@ -3431,7 +3491,7 @@ ResolutionContext::UnstableCache<resolveFunctionByInfoQuery, T, Args> {
 
     if (auto rv = rc->findParentResolverFor(sig)) {
       auto& m = rv->sigAndInfoToChildPtr;
-      ResolvedFunction::SigAndInfo k = { sig, std::get<1>(args) };
+      ResolvedFunction::SigAndInfo k = {sig, std::get<1>(args)};
       auto it = m.find(k);
       if (it == m.end()) return nullptr;
       return &it->second;
@@ -3446,7 +3506,7 @@ ResolutionContext::UnstableCache<resolveFunctionByInfoQuery, T, Args> {
 
     if (auto rv = rc->findParentResolverFor(sig)) {
       auto& m = rv->sigAndInfoToChildPtr;
-      ResolvedFunction::SigAndInfo k = { sig, std::get<1>(args) };
+      ResolvedFunction::SigAndInfo k = {sig, std::get<1>(args)};
       const ResolvedFunction* v = x;
       auto check = m.insert(std::make_pair(std::move(k), v));
       CHPL_ASSERT(check.second);
@@ -3461,8 +3521,8 @@ ResolutionContext::UnstableCache<resolveFunctionByInfoQuery, T, Args> {
 
 // Implement unstable caching for 'resolveFunctionByPoisQuery' by looking
 // for an appropriate POI trace/function within the parent's Resolver.
-template <typename T, typename Args> struct
-ResolutionContext::UnstableCache<resolveFunctionByPoisQuery, T, Args> {
+template <typename T, typename Args>
+struct ResolutionContext::UnstableCache<resolveFunctionByPoisQuery, T, Args> {
 
   const T* fetchOrNull(ResolutionContext* rc, const Args& args) {
     static_assert(std::tuple_size_v<Args> == 1);
@@ -3557,11 +3617,10 @@ resolveFunctionByPoisQuery(ResolutionContext* rc, PoiInfo::Trace poiTrace) {
 //    Instead, we have '...ByInfoQuery', which includes all the dependencies
 //    of resolving the function, and '...ByResolvedInfoQuery', which is
 //    set and used when possible.
-static const ResolvedFunction* const&
-resolveFunctionByResolvedInfoQuery(Context* context,
-                                   const TypedFnSignature* sig,
-                                   PoiInfo poiInfo) {
-  QUERY_BEGIN_EXTERNALLY_SET(resolveFunctionByResolvedInfoQuery, context, sig, poiInfo);
+static const ResolvedFunction* const& resolveFunctionByResolvedInfoQuery(
+  Context* context, const TypedFnSignature* sig, PoiInfo poiInfo) {
+  QUERY_BEGIN_EXTERNALLY_SET(
+    resolveFunctionByResolvedInfoQuery, context, sig, poiInfo);
 
   // should only ever be SET by 'resolveFunctionByInfoQuery'. Since we got
   // here, something is wrong; return a bogus result.
@@ -3570,10 +3629,8 @@ resolveFunctionByResolvedInfoQuery(Context* context,
   return QUERY_END(ret);
 }
 
-static const ResolvedFunction* const&
-resolveFunctionByInfoQuery(ResolutionContext* rc,
-                           const TypedFnSignature* sig,
-                           PoiInfo poiInfo) {
+static const ResolvedFunction* const& resolveFunctionByInfoQuery(
+  ResolutionContext* rc, const TypedFnSignature* sig, PoiInfo poiInfo) {
   CHPL_RESOLUTION_QUERY_BEGIN(resolveFunctionByInfoQuery, rc, sig, poiInfo);
 
   const ResolvedFunction* ret = nullptr;
@@ -3583,8 +3640,8 @@ resolveFunctionByInfoQuery(ResolutionContext* rc,
   //       decides compatibility in that case. See comment on
   //       resolveFunctionByResolvedInfoQuery, and the implementation
   //       of PoiInfo::operator==.
-  if (rc->context()->hasCurrentResultForQuery(resolveFunctionByResolvedInfoQuery,
-                                              std::make_tuple(sig, poiInfo))) {
+  if (rc->context()->hasCurrentResultForQuery(
+        resolveFunctionByResolvedInfoQuery, std::make_tuple(sig, poiInfo))) {
     ret = resolveFunctionByResolvedInfoQuery(rc->context(), sig, poiInfo);
   } else {
     // Call the implementation which resolves the function body.
@@ -3598,9 +3655,8 @@ resolveFunctionByInfoQuery(ResolutionContext* rc,
     auto resolvedPoiTrace = resolved->poiInfo().createTraceFor(sig);
 
     // Try to store in the generic cache.
-    CHPL_RESOLUTION_QUERY_UNSAFE_STORE_RESULT(resolveFunctionByPoisQuery, rc,
-        std::move(resolved),
-        resolvedPoiTrace);
+    CHPL_RESOLUTION_QUERY_UNSAFE_STORE_RESULT(
+      resolveFunctionByPoisQuery, rc, std::move(resolved), resolvedPoiTrace);
 
     // Initializer signatures can potentially require their body to be
     // resolved in order to complete instantiation. This means that the
@@ -3613,10 +3669,8 @@ resolveFunctionByInfoQuery(ResolutionContext* rc,
     // which links the fully resolved signature to the result.
     if (finalSig != sig) {
       auto& saved = resolveFunctionByPoisQuery(rc, resolvedPoiTrace);
-      CHPL_RESOLUTION_QUERY_UNSAFE_STORE_RESULT(resolveFunctionByInfoQuery, rc,
-          saved.get(),
-          finalSig,
-          poiInfo);
+      CHPL_RESOLUTION_QUERY_UNSAFE_STORE_RESULT(
+        resolveFunctionByInfoQuery, rc, saved.get(), finalSig, poiInfo);
     }
 
     // Return the unique result from the query (that might have been saved
@@ -3629,18 +3683,21 @@ resolveFunctionByInfoQuery(ResolutionContext* rc,
     // "bad" case, a generic parent function can change the types and resolution
     // of 'sig', making caching unsafe.
     if (!sig->parentFn()) {
-      QUERY_STORE_RESULT(resolveFunctionByResolvedInfoQuery, rc->context(),
-                         ret, sig, saved->poiInfo());
+      QUERY_STORE_RESULT(resolveFunctionByResolvedInfoQuery,
+                         rc->context(),
+                         ret,
+                         sig,
+                         saved->poiInfo());
     }
   }
 
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
-static const ResolvedFunction*
-helpResolveFunction(ResolutionContext* rc, const TypedFnSignature* sig,
-                    const PoiScope* poiScope,
-                    bool skipIfRunning) {
+static const ResolvedFunction* helpResolveFunction(ResolutionContext* rc,
+                                                   const TypedFnSignature* sig,
+                                                   const PoiScope* poiScope,
+                                                   bool skipIfRunning) {
   // Forget about any inferred signature (to avoid resolving the
   // same function twice when working with inferred 'out' formals)
   sig = sig->inferredFrom();
@@ -3650,9 +3707,8 @@ helpResolveFunction(ResolutionContext* rc, const TypedFnSignature* sig,
   // For example, range(?) will reach this point.
   if (!sig->isInitializer() && !sig->untyped()->isTypeConstructor() &&
       sig->needsNonOutInstantiation()) {
-    CHPL_ASSERT(false &&
-                "Should only be called on concrete or fully "
-                "instantiated functions");
+    CHPL_ASSERT(false && "Should only be called on concrete or fully "
+                         "instantiated functions");
     return nullptr;
   } else if (sig->untyped()->idIsExternBlockFunction()) {
     CHPL_ASSERT(false && "Should not be called on functions in extern blocks");
@@ -3681,10 +3737,9 @@ helpResolveFunction(ResolutionContext* rc, const TypedFnSignature* sig,
   return resolveFunctionByInfoQuery(rc, sig, std::move(poiInfo));
 }
 
-const TypedFnSignature*
-inferRefMaybeConstFormals(ResolutionContext* rc,
-                          const TypedFnSignature* sig,
-                          const PoiScope* poiScope) {
+const TypedFnSignature* inferRefMaybeConstFormals(ResolutionContext* rc,
+                                                  const TypedFnSignature* sig,
+                                                  const PoiScope* poiScope) {
   Context* context = rc->context();
   if (sig == nullptr) {
     return nullptr;
@@ -3725,9 +3780,7 @@ inferRefMaybeConstFormals(ResolutionContext* rc,
   }
 
   const TypedFnSignature* result = nullptr;
-  result = TypedFnSignature::getInferred(context,
-                                         std::move(formalTypes),
-                                         sig);
+  result = TypedFnSignature::getInferred(context, std::move(formalTypes), sig);
   return result;
 }
 
@@ -3745,17 +3798,21 @@ collectGenericFormals(Context* context, const TypedFnSignature* tfs) {
   for (; formalIdx < tfs->numFormals(); formalIdx++) {
     auto formalType = tfs->formalType(formalIdx);
     auto formalDecl = tfs->untyped()->formalDecl(formalIdx);
-    if (formalNeedsInstantiation(context, formalType, formalDecl, /* substitutions */ nullptr)) {
+    if (formalNeedsInstantiation(
+          context, formalType, formalDecl, /* substitutions */ nullptr)) {
       ret.push_back(std::make_tuple(formalDecl, formalType));
     }
   }
   return ret;
 }
 
-bool checkUninstantiatedFormals(Context* context, const AstNode* astForErr, const TypedFnSignature* sig) {
+bool checkUninstantiatedFormals(Context* context,
+                                const AstNode* astForErr,
+                                const TypedFnSignature* sig) {
   if (!sig->needsInstantiation()) return false;
 
-  CHPL_REPORT(context, MissingFormalInstantiation,
+  CHPL_REPORT(context,
+              MissingFormalInstantiation,
               astForErr,
               collectGenericFormals(context, sig));
   return true;
@@ -3812,7 +3869,8 @@ resolveImplementsStmtQuery(Context* context, ID id) {
     auto genericIft = interfaceQt.type()->toInterfaceType();
     std::vector<QualifiedType> actuals;
 
-    auto addActual = [&byPostorder, &actuals, context, impl](const AstNode* actual) {
+    auto addActual = [&byPostorder, &actuals, context, impl](
+                       const AstNode* actual) {
       auto& actualType = byPostorder.byAst(actual).type();
       if (actualType.isUnknownOrErroneous()) {
         return false;
@@ -3848,8 +3906,7 @@ resolveImplementsStmtQuery(Context* context, ID id) {
   return QUERY_END(result);
 }
 
-const ImplementationPoint* resolveImplementsStmt(Context* context,
-                                                 ID id) {
+const ImplementationPoint* resolveImplementsStmt(Context* context, ID id) {
   return resolveImplementsStmtQuery(context, id);
 }
 
@@ -3877,8 +3934,7 @@ collectImplementationPointsInModule(Context* context,
 }
 
 static const std::map<ID, std::vector<const ImplementationPoint*>>&
-collectImplementationPointsInScope(Context* context,
-                                   const Scope* scope) {
+collectImplementationPointsInScope(Context* context, const Scope* scope) {
   QUERY_BEGIN(collectImplementationPointsInScope, context, scope);
   CHPL_ASSERT(scope->moduleScope() == scope);
 
@@ -3888,11 +3944,11 @@ collectImplementationPointsInScope(Context* context,
   return QUERY_END(result);
 }
 
-static void
-helpCollectVisibileImplementationPoints(Context* context,
-                                        const Scope* scope,
-                                        std::unordered_set<const Scope*>& seen,
-                                        std::map<ID, std::vector<const ImplementationPoint*>>& into) {
+static void helpCollectVisibileImplementationPoints(
+  Context* context,
+  const Scope* scope,
+  std::unordered_set<const Scope*>& seen,
+  std::map<ID, std::vector<const ImplementationPoint*>>& into) {
   auto insertResult = seen.insert(scope);
   if (!insertResult.second) return;
 
@@ -3921,7 +3977,8 @@ visibleImplementationPoints(Context* context,
   QUERY_BEGIN(visibleImplementationPoints, context, scope, poiScope);
   std::map<ID, std::vector<const ImplementationPoint*>> result;
   std::unordered_set<const Scope*> seen;
-  helpCollectVisibileImplementationPoints(context, scope->moduleScope(), seen, result);
+  helpCollectVisibileImplementationPoints(
+    context, scope->moduleScope(), seen, result);
   for (; poiScope; poiScope = poiScope->inFnPoi()) {
     auto inScope = poiScope->inScope()->moduleScope();
     helpCollectVisibileImplementationPoints(context, inScope, seen, result);
@@ -3934,7 +3991,8 @@ visibileImplementationPointsForInterface(Context* context,
                                          const Scope* scope,
                                          const PoiScope* poiScope,
                                          ID id) {
-  auto& allInstantiationPoints = visibleImplementationPoints(context, scope, poiScope);
+  auto& allInstantiationPoints =
+    visibleImplementationPoints(context, scope, poiScope);
   auto it = allInstantiationPoints.find(id);
   if (it != allInstantiationPoints.end()) {
     return &it->second;
@@ -3944,8 +4002,7 @@ visibileImplementationPointsForInterface(Context* context,
 }
 
 const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
-  if (id.isEmpty())
-    return nullptr;
+  if (id.isEmpty()) return nullptr;
 
   ResolutionContext rcval(context);
   auto rc = &rcval;
@@ -3966,8 +4023,8 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
   return ret;
 }
 
-static owned<ResolvedFunction>
-scopeResolveFunctionQueryBody(Context* context, ID id) {
+static owned<ResolvedFunction> scopeResolveFunctionQueryBody(Context* context,
+                                                             ID id) {
   const AstNode* ast = parsing::idToAst(context, id);
   const Function* fn = ast->toFunction();
 
@@ -3982,7 +4039,7 @@ scopeResolveFunctionQueryBody(Context* context, ID id) {
     // visit the children of fn to scope resolve
     // (visiting the children because visiting a function will not
     //  cause it to be scope resolved).
-    for (auto child: fn->children()) {
+    for (auto child : fn->children()) {
       child->traverse(visitor);
     }
 
@@ -3991,12 +4048,16 @@ scopeResolveFunctionQueryBody(Context* context, ID id) {
     sig = visitor.typedSignature;
   }
 
-  result = toOwned(new ResolvedFunction(sig, fn->returnIntent(),
+  result = toOwned(new ResolvedFunction(sig,
+                                        fn->returnIntent(),
                                         std::move(resolutionById),
                                         PoiInfo(),
                                         UniqueString(),
                                         QualifiedType(),
-                                        {}, {}, {}, {}));
+                                        {},
+                                        {},
+                                        {},
+                                        {}));
   return result;
 }
 
@@ -4008,8 +4069,7 @@ scopeResolveFunctionQuery(Context* context, ID id) {
 }
 
 const ResolvedFunction* scopeResolveFunction(Context* context, ID id) {
-  if (id.isEmpty())
-    return nullptr;
+  if (id.isEmpty()) return nullptr;
 
   const owned<ResolvedFunction>& result =
     scopeResolveFunctionQuery(context, id);
@@ -4027,17 +4087,17 @@ const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
   if (ad) {
     // These are children, but are skipped by the is*Decl conditions below.
     for (auto inheritExpr : ad->inheritExprs()) {
-      auto res = Resolver::createForParentClassScopeResolve(context, ad, inheritExpr, result);
+      auto res = Resolver::createForParentClassScopeResolve(
+        context, ad, inheritExpr, result);
       inheritExpr->traverse(res);
     }
 
     // TODO: Use some kind of "ad->fields()" iterator
     for (auto child : ad->children()) {
-      if (child->isVarLikeDecl() ||
-          child->isMultiDecl() ||
-          child->isTupleDecl() ||
-          child->isForwardingDecl()) {
-        auto res = Resolver::createForScopeResolvingField(context, ad, child, result);
+      if (child->isVarLikeDecl() || child->isMultiDecl() ||
+          child->isTupleDecl() || child->isForwardingDecl()) {
+        auto res =
+          Resolver::createForScopeResolvingField(context, ad, child, result);
 
         if (child->isForwardingDecl()) {
           res.allowReceiverScopes = true;
@@ -4051,8 +4111,7 @@ const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
   return QUERY_END(result);
 }
 
-const ResolutionResultByPostorderID& scopeResolveEnum(Context* context,
-                                                      ID id) {
+const ResolutionResultByPostorderID& scopeResolveEnum(Context* context, ID id) {
   QUERY_BEGIN(scopeResolveEnum, context, id);
 
   auto ed = parsing::idToAst(context, id)->toEnum();
@@ -4060,7 +4119,8 @@ const ResolutionResultByPostorderID& scopeResolveEnum(Context* context,
 
   if (ed) {
     for (auto child : ed->enumElements()) {
-      auto res = Resolver::createForScopeResolvingEnumConstant(context, ed, child, result);
+      auto res = Resolver::createForScopeResolvingEnumConstant(
+        context, ed, child, result);
       child->traverse(res);
     }
   }
@@ -4098,7 +4158,8 @@ isInitialTypedSignatureApplicable(Context* context,
                                   const TypedFnSignature* tfs,
                                   const FormalActualMap& faMap,
                                   const CallInfo& ci) {
-  if (auto reasonFailed = isUntypedSignatureApplicable(context, tfs->untyped(), faMap, ci)) {
+  if (auto reasonFailed =
+        isUntypedSignatureApplicable(context, tfs->untyped(), faMap, ci)) {
     return ApplicabilityResult::failure(tfs, *reasonFailed);
   }
 
@@ -4124,7 +4185,8 @@ isInitialTypedSignatureApplicable(Context* context,
       //
       // One other niche case is that the 'this' formal of operators is unused.
       CHPL_ASSERT(tfs->untyped()->isTypeConstructor() || entry.hasDefault() ||
-                  (ci.isOpCall() && tfs->untyped()->formalName(entry.formalIdx()) == USTR("this")));
+                  (ci.isOpCall() && tfs->untyped()->formalName(
+                                      entry.formalIdx()) == USTR("this")));
 
       // use the default value - no need to check it matches formal
       continue;
@@ -4141,7 +4203,11 @@ isInitialTypedSignatureApplicable(Context* context,
     // it has an UnknownType*, or we could short-circuit that, knowing
     // that an unknown actual won't get accepted.
     if (!actualType.type()) {
-      return ApplicabilityResult::failure(tfs, FAIL_UNKNOWN_ACTUAL_TYPE, entry.formalIdx(), ci.originalActualIdx(entry.actualIdx()));
+      return ApplicabilityResult::failure(
+        tfs,
+        FAIL_UNKNOWN_ACTUAL_TYPE,
+        entry.formalIdx(),
+        ci.originalActualIdx(entry.actualIdx()));
     }
 
     const auto& formalType = tfs->formalType(entry.formalIdx());
@@ -4165,14 +4231,18 @@ isInitialTypedSignatureApplicable(Context* context,
       // information that makes the formal concrete. Allow this for now.
     } else {
       CHPL_ASSERT(!got.passes());
-      return ApplicabilityResult::failure(tfs, got.reason(), entry.formalIdx(), ci.originalActualIdx(entry.actualIdx()));
+      return ApplicabilityResult::failure(
+        tfs,
+        got.reason(),
+        entry.formalIdx(),
+        ci.originalActualIdx(entry.actualIdx()));
     }
   }
 
   if (!varArgType.isUnknown()) {
     const TupleType* tup = varArgType.type()->toTupleType();
-    if (tup != nullptr && tup->isVarArgTuple() &&
-        tup->isKnownSize() && numVarArgActuals != tup->numElements()) {
+    if (tup != nullptr && tup->isVarArgTuple() && tup->isKnownSize() &&
+        numVarArgActuals != tup->numElements()) {
       return ApplicabilityResult::failure(tfs, FAIL_VARARG_MISMATCH);
     }
   }
@@ -4194,16 +4264,13 @@ reportCalledTypeWithoutTypeConstructor(const Type* calledT) {
     idForCandidate = et->id();
   }
 
-  return ApplicabilityResult::failure(idForCandidate,
-                                      FAIL_NO_TYPE_CONSTRUCTOR);
+  return ApplicabilityResult::failure(idForCandidate, FAIL_NO_TYPE_CONSTRUCTOR);
 }
 
 // returns nullptr if the candidate is not applicable,
 // or the result of typedSignatureInitial if it is.
-static ApplicabilityResult
-doIsCandidateApplicableInitial(ResolutionContext* rc,
-                               const IdAndFlags& candidate,
-                               const CallInfo& ci) {
+static ApplicabilityResult doIsCandidateApplicableInitial(
+  ResolutionContext* rc, const IdAndFlags& candidate, const CallInfo& ci) {
   Context* context = rc->context();
   bool isParenlessFn = !candidate.isParenfulFunction();
   bool isField = candidate.isMethodOrField() && !candidate.isMethod();
@@ -4234,7 +4301,8 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
   // quickly rule out formals as candidates for method calls
   // by checking that, if it's a method call, the candidate is a method or field
   if (ci.isMethodCall() && !candidate.isMethodOrField()) {
-    return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
+    return ApplicabilityResult::failure(candidateId,
+                                        /* TODO */ FAIL_CANDIDATE_OTHER);
   }
 
   if (isField) {
@@ -4281,7 +4349,8 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
       }
     }
     // not a candidate
-    return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
+    return ApplicabilityResult::failure(candidateId,
+                                        /* TODO */ FAIL_CANDIDATE_OTHER);
   }
 
   if (!candidate.isParenfulFunction()) {
@@ -4290,8 +4359,10 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
       tag = parsing::idToTag(context, candidateId);
     }
     if (!isFunction(tag)) {
-      context->error(candidateId, "Found non-function where function was expected");
-      return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
+      context->error(candidateId,
+                     "Found non-function where function was expected");
+      return ApplicabilityResult::failure(candidateId,
+                                          /* TODO */ FAIL_CANDIDATE_OTHER);
     }
   }
 
@@ -4321,8 +4392,7 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
     if (auto ast = parsing::idToAst(context, candidateId);
         ast && ast->isFunction()) {
       auto fn = ast->toFunction();
-      if (auto attr = fn->attributeGroup();
-          attr && attr->hasEdition()) {
+      if (auto attr = fn->attributeGroup(); attr && attr->hasEdition()) {
         auto first = attr->firstEdition();
         auto last = attr->lastEdition();
         auto two = UniqueString::get(context, "2.0");
@@ -4341,10 +4411,12 @@ doIsCandidateApplicableInitial(ResolutionContext* rc,
   if (!ret) {
     // TODO: Can we reliably return something more specific here?
     if (parsing::idIsNestedFunction(context, candidateId) && rc->isEmpty()) {
-      return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
+      return ApplicabilityResult::failure(candidateId,
+                                          /* TODO */ FAIL_CANDIDATE_OTHER);
     }
 
-    return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
+    return ApplicabilityResult::failure(candidateId,
+                                        /* TODO */ FAIL_CANDIDATE_OTHER);
   }
 
   // If resolving any of the formals, or the where clause, led to errors,
@@ -4369,11 +4441,11 @@ doIsCandidateApplicableInstantiating(ResolutionContext* rc,
                                      const PoiScope* poiScope) {
   auto instantiated = instantiateSignature(rc, typedSignature, call, poiScope);
 
-  if (!instantiated.success())
-    return instantiated;
+  if (!instantiated.success()) return instantiated;
 
   // check that the where clause applies
-  if (instantiated.candidate()->whereClauseResult() == TypedFnSignature::WHERE_FALSE)
+  if (instantiated.candidate()->whereClauseResult() ==
+      TypedFnSignature::WHERE_FALSE)
     return ApplicabilityResult::failure(typedSignature, FAIL_WHERE_CLAUSE);
 
   return instantiated;
@@ -4383,8 +4455,9 @@ doIsCandidateApplicableInstantiating(ResolutionContext* rc,
 // signature errors out, and we end up picking a different candidate
 // that was less specific but didn't error), if we encountered errors
 // in any candidate, we discard all candidates.
-static void failCallResolutionDueToErrors(CandidatesAndForwardingInfo& matching,
-                                          std::vector<ApplicabilityResult>* rejected) {
+static void
+failCallResolutionDueToErrors(CandidatesAndForwardingInfo& matching,
+                              std::vector<ApplicabilityResult>* rejected) {
   if (rejected) {
     for (auto candidate : matching) {
       rejected->push_back(
@@ -4394,7 +4467,8 @@ static void failCallResolutionDueToErrors(CandidatesAndForwardingInfo& matching,
   matching.clear();
 }
 
-static void failCallResolutionDueToErrors(bool gatherRejected, EvaluatedCandidates& ret) {
+static void failCallResolutionDueToErrors(bool gatherRejected,
+                                          EvaluatedCandidates& ret) {
   failCallResolutionDueToErrors(ret.matching,
                                 gatherRejected ? &ret.rejected : nullptr);
 }
@@ -4441,31 +4515,28 @@ filterCandidatesInitialGatherRejectedQuery(ResolutionContext* rc,
                                            CallInfo call,
                                            bool gatherRejected) {
   // TODO: The predicate always loops over the list (best case 2 passes).
-  CHPL_RESOLUTION_QUERY_BEGIN(filterCandidatesInitialGatherRejectedQuery, rc,
-                              lst, call, gatherRejected);
-  auto ret = filterCandidatesInitialGatherRejectedImpl(rc, lst, call,
-                                                       gatherRejected);
+  CHPL_RESOLUTION_QUERY_BEGIN(
+    filterCandidatesInitialGatherRejectedQuery, rc, lst, call, gatherRejected);
+  auto ret =
+    filterCandidatesInitialGatherRejectedImpl(rc, lst, call, gatherRejected);
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
-const CandidatesAndForwardingInfo&
-filterCandidatesInitial(ResolutionContext* rc,
-                        MatchingIdsWithName lst,
-                        CallInfo call) {
+const CandidatesAndForwardingInfo& filterCandidatesInitial(
+  ResolutionContext* rc, MatchingIdsWithName lst, CallInfo call) {
   constexpr auto query = filterCandidatesInitialGatherRejectedQuery;
   bool gatherRejected = false;
   auto& result = query(rc, std::move(lst), call, gatherRejected);
   return result.matching;
 }
 
-void
-filterCandidatesInstantiating(ResolutionContext* rc,
-                              const CandidatesAndForwardingInfo& lst,
-                              const CallInfo& call,
-                              const Scope* inScope,
-                              const PoiScope* inPoiScope,
-                              CandidatesAndForwardingInfo& result,
-                              std::vector<ApplicabilityResult>* rejected) {
+void filterCandidatesInstantiating(ResolutionContext* rc,
+                                   const CandidatesAndForwardingInfo& lst,
+                                   const CallInfo& call,
+                                   const Scope* inScope,
+                                   const PoiScope* inPoiScope,
+                                   CandidatesAndForwardingInfo& result,
+                                   std::vector<ApplicabilityResult>* rejected) {
   Context* context = rc->context();
 
   // Performance: Would it help to make this a query?
@@ -4481,14 +4552,14 @@ filterCandidatesInstantiating(ResolutionContext* rc,
           pointOfInstantiationScope(context, inScope, inPoiScope);
       }
 
-      const auto& instantiated =
-        doIsCandidateApplicableInstantiating(rc, typedSignature, call,
-                                             instantiationPoiScope);
+      const auto& instantiated = doIsCandidateApplicableInstantiating(
+        rc, typedSignature, call, instantiationPoiScope);
       discoveredErrors |= instantiated.reason() == FAIL_ERRORS_THROWN;
 
       if (instantiated.success()) {
         result.addCandidate(instantiated.candidate());
-      } if (rejected) {
+      }
+      if (rejected) {
         rejected->push_back(std::move(instantiated));
       }
 
@@ -4504,11 +4575,10 @@ filterCandidatesInstantiating(ResolutionContext* rc,
   }
 }
 
-static
-void accumulatePoisUsedByResolvingBody(ResolutionContext* rc,
-                                       const TypedFnSignature* signature,
-                                       const PoiScope* poiScope,
-                                       PoiInfo& poiInfo) {
+static void accumulatePoisUsedByResolvingBody(ResolutionContext* rc,
+                                              const TypedFnSignature* signature,
+                                              const PoiScope* poiScope,
+                                              PoiInfo& poiInfo) {
   if (signature == nullptr) {
     return;
   }
@@ -4551,9 +4621,15 @@ static const Type* getManagedClassType(Context* context,
     } else if (name == USTR("shared")) {
       ret = AnySharedType::get(context);
     } else if (name == USTR("unmanaged")) {
-      ret = ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::UNMANAGED));
+      ret = ClassType::get(context,
+                           AnyClassType::get(context),
+                           nullptr,
+                           ClassTypeDecorator(ClassTypeDecorator::UNMANAGED));
     } else if (name == USTR("borrowed")) {
-      ret = ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::BORROWED));
+      ret = ClassType::get(context,
+                           AnyClassType::get(context),
+                           nullptr,
+                           ClassTypeDecorator(ClassTypeDecorator::BORROWED));
     } else {
       // case not handled in here
       return nullptr;
@@ -4590,8 +4666,7 @@ static const Type* getManagedClassType(Context* context,
   auto d = ClassTypeDecorator(de);
 
   const Type* t = nullptr;
-  if (ci.numActuals() > 0)
-    t = ci.actual(0).type().type();
+  if (ci.numActuals() > 0) t = ci.actual(0).type().type();
 
   if (t == nullptr || !(t->isManageableType() || t->isClassType())) {
     if (t != nullptr && !t->isUnknownType()) {
@@ -4606,10 +4681,8 @@ static const Type* getManagedClassType(Context* context,
   if (auto ct = t->toClassType()) {
     mt = ct->manageableType();
     // get nilability from ct
-    if (ct->decorator().isNilable())
-      d = d.addNilable();
-    if (ct->decorator().isNonNilable())
-      d = d.addNonNil();
+    if (ct->decorator().isNilable()) d = d.addNilable();
+    if (ct->decorator().isNonNilable()) d = d.addNonNil();
   } else {
     mt = t->toManageableType();
   }
@@ -4618,15 +4691,13 @@ static const Type* getManagedClassType(Context* context,
   return ClassType::get(context, mt, manager, d);
 }
 
-static const Type* getNumericType(Context* context,
-                                  const AstNode* astForErr,
-                                  const CallInfo& ci) {
+static const Type*
+getNumericType(Context* context, const AstNode* astForErr, const CallInfo& ci) {
   UniqueString name = ci.name();
 
-  bool namedCall =
-      name == USTR("int") || name == USTR("uint") || name == USTR("bool") ||
-      name == USTR("real") || name == USTR("imag") || name == USTR("complex");
-
+  bool namedCall = name == USTR("int") || name == USTR("uint") ||
+                   name == USTR("bool") || name == USTR("real") ||
+                   name == USTR("imag") || name == USTR("complex");
 
   bool calledType = false;
   if (auto ct = ci.calledType().type()) {
@@ -4655,7 +4726,7 @@ static const Type* getNumericType(Context* context,
       QualifiedType qt = ci.actual(0).type();
       if (qt.type() && qt.type()->isAnyType()) {
         useGenericType = true;
-      } else if (qt.isParam() && qt.param() == nullptr)  {
+      } else if (qt.isParam() && qt.param() == nullptr) {
         useGenericType = true;
       }
     }
@@ -4677,7 +4748,8 @@ static const Type* getNumericType(Context* context,
         // handle it here anyway, since it used to be much like "int" and "real",
         // might be that way again, and we can provide a specific error
         // message.
-        context->error(astForErr, "the 'bool' type is not generic and only has one width, "
+        context->error(astForErr,
+                       "the 'bool' type is not generic and only has one width, "
                        "so it cannot be called with a '?' or type query.");
         return ErroneousType::get(context);
       } else {
@@ -4690,8 +4762,10 @@ static const Type* getNumericType(Context* context,
       if (ci.numActuals() > 0) {
         // bool used to support custom widths, but now it doesn't. Now,
         // there's no bool(..) type constructor.
-        context->error(astForErr, "the 'bool' type is not generic and only has one width, so"
-                       " it doen't take type constructor arguments.");
+        context->error(
+          astForErr,
+          "the 'bool' type is not generic and only has one width, so"
+          " it doen't take type constructor arguments.");
         return ErroneousType::get(context);
       }
 
@@ -4700,8 +4774,7 @@ static const Type* getNumericType(Context* context,
     }
 
     QualifiedType qt;
-    if (ci.numActuals() > 0)
-      qt = ci.actual(0).type();
+    if (ci.numActuals() > 0) qt = ci.actual(0).type();
 
     const Type* t = qt.type();
     if (t == nullptr) {
@@ -4745,9 +4818,8 @@ static const Type* getNumericType(Context* context,
 /*
   gets either a c_ptr or c_ptrConst type depending on the name in the CallInfo
 */
-static const Type* getCPtrType(Context* context,
-                               const AstNode* astForErr,
-                               const CallInfo& ci) {
+static const Type*
+getCPtrType(Context* context, const AstNode* astForErr, const CallInfo& ci) {
   UniqueString name = ci.name();
   bool isConst;
 
@@ -4778,7 +4850,7 @@ static const Type* getCPtrType(Context* context,
   } else {
     // handle c_ptr(?t) or c_ptr(eltT)/c_ptrConst(?t) or c_ptrConst(eltT)
     if (ci.numActuals() != 1) {
-      context->error(astForErr,"invalid %s type construction", name.c_str());
+      context->error(astForErr, "invalid %s type construction", name.c_str());
       return ErroneousType::get(context);
     }
 
@@ -4808,17 +4880,16 @@ static const Type* getCPtrType(Context* context,
 
   if (!qt.isType()) {
     // raise an error b/c of type mismatch
-    context->error(astForErr,"invalid %s type construction", name.c_str());
+    context->error(astForErr, "invalid %s type construction", name.c_str());
     return ErroneousType::get(context);
   } else {
-    return isConst ? CPtrType::getConst(context, t) :
-                     CPtrType::get(context, t);
+    return isConst ? CPtrType::getConst(context, t) : CPtrType::get(context, t);
   }
 }
 
 static const Type* getHeapBufferType(Context* context,
-                               const AstNode* astForErr,
-                               const CallInfo& ci) {
+                                     const AstNode* astForErr,
+                                     const CallInfo& ci) {
   UniqueString name = ci.name();
 
   auto called = ci.calledType();
@@ -4839,7 +4910,7 @@ static const Type* getHeapBufferType(Context* context,
     useGenericType = true;
   } else {
     if (ci.numActuals() != 1) {
-      context->error(astForErr,"invalid %s type construction", name.c_str());
+      context->error(astForErr, "invalid %s type construction", name.c_str());
       return ErroneousType::get(context);
     }
 
@@ -4875,8 +4946,7 @@ static const Type* getHeapBufferType(Context* context,
   }
 }
 
-static const Type*
-convertClassTypeToNilable(Context* context, const Type* t) {
+static const Type* convertClassTypeToNilable(Context* context, const Type* t) {
   const ClassType* ct = nullptr;
 
   if (auto bct = t->toManageableType()) {
@@ -4889,7 +4959,7 @@ convertClassTypeToNilable(Context* context, const Type* t) {
   if (ct) {
     // get the nilable version of the class type
     ClassTypeDecorator d = ct->decorator().addNilable();
-    auto ret= ct->withDecorator(context, d);
+    auto ret = ct->withDecorator(context, d);
     return ret;
   }
 
@@ -4921,8 +4991,8 @@ static const Type* resolveBuiltinTypeCtor(Context* context,
     auto second = ci.actual(1).type();
 
     if (second.isType()) {
-      auto expectedParamType = QualifiedType(QualifiedType::PARAM,
-                                             IntType::get(context, 0));
+      auto expectedParamType =
+        QualifiedType(QualifiedType::PARAM, IntType::get(context, 0));
       auto got = canPassScalar(context, first, expectedParamType);
       if (got.passes()) {
         auto instType = getInstantiationType(context, first, expectedParamType);
@@ -4959,10 +5029,10 @@ static const Type* resolveBuiltinTypeCtor(Context* context,
   return nullptr;
 }
 
-static
-bool resolvePostfixNilableAppliedToNew(Context* context, const Call* call,
-                                       const CallInfo& ci,
-                                       QualifiedType& exprTypeOut) {
+static bool resolvePostfixNilableAppliedToNew(Context* context,
+                                              const Call* call,
+                                              const CallInfo& ci,
+                                              QualifiedType& exprTypeOut) {
 
   // First, pattern match to find something like 'new C()?'...
   if (!call || !call->isOpCall()) return false;
@@ -5027,10 +5097,9 @@ static bool resolveSpecialEnumCast(Context* context,
   if (srcQtEnumType && (dstTy->isStringType() || dstTy->isBytesType())) {
     std::ostringstream oss;
     srcQt.param()->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
-    exprTypeOut =
-      dstTy->isStringType()
-        ? QualifiedType::makeParamString(context, oss.str())
-        : QualifiedType::makeParamBytes(context, oss.str());
+    exprTypeOut = dstTy->isStringType()
+                    ? QualifiedType::makeParamString(context, oss.str())
+                    : QualifiedType::makeParamBytes(context, oss.str());
     return true;
   } else if (dstQtEnumType && (srcTy->isStringType() || srcTy->isBytesType())) {
     CHPL_ASSERT(srcQt.param()->isStringParam());
@@ -5040,41 +5109,44 @@ static bool resolveSpecialEnumCast(Context* context,
     auto lastDot = findLastDot(enumName.c_str());
 
     if (lastDot != -1) {
-      path = UniqueString::get(context, enumName.c_str(),lastDot);
+      path = UniqueString::get(context, enumName.c_str(), lastDot);
       enumName = UniqueString::get(context, enumName.c_str() + lastDot + 1);
     }
 
     if (!dstQtEnumType->id().symbolPath().endsWith(path)) {
-      context->error(astForErr,
-                     "invalid qualified name for enum element '%s' in cast to %s",
-                     enumName.c_str(), dstQtEnumType->id().symbolPath().c_str());
-      exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
-                                  ErroneousType::get(context));
+      context->error(
+        astForErr,
+        "invalid qualified name for enum element '%s' in cast to %s",
+        enumName.c_str(),
+        dstQtEnumType->id().symbolPath().c_str());
+      exprTypeOut =
+        QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
     } else {
-      exprTypeOut = typeForEnumElement(context, dstQtEnumType,
-                                       enumName,
-                                       astForErr);
+      exprTypeOut =
+        typeForEnumElement(context, dstQtEnumType, enumName, astForErr);
     }
     return true;
   }
 
   if (srcQtEnumType && srcQtEnumType->isAbstract()) {
-    exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "from", srcQtEnumType, dstTy);
+    exprTypeOut = CHPL_TYPE_ERROR(
+      context, EnumAbstract, astForErr, "from", srcQtEnumType, dstTy);
     return true;
   } else if (dstQtEnumType && dstQtEnumType->isAbstract()) {
-    exprTypeOut = CHPL_TYPE_ERROR(context, EnumAbstract, astForErr, "to", dstQtEnumType, srcTy);
+    exprTypeOut = CHPL_TYPE_ERROR(
+      context, EnumAbstract, astForErr, "to", dstQtEnumType, srcTy);
     return true;
   } else if (srcQtEnumType && dstTy->toNothingType()) {
     auto fromName = tagToString(srcTy->tag());
     context->error(astForErr, "illegal cast from %s to nothing", fromName);
-    exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
-                                ErroneousType::get(context));
+    exprTypeOut =
+      QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
     return true;
   }
 
   if (Param::castAllowed(context, srcQt, dstQt)) {
-    exprTypeOut = Param::fold(context, astForErr,
-                              uast::PrimitiveTag::PRIM_CAST, srcQt, dstQt);
+    exprTypeOut = Param::fold(
+      context, astForErr, uast::PrimitiveTag::PRIM_CAST, srcQt, dstQt);
     return true;
   }
 
@@ -5118,7 +5190,8 @@ static bool resolveSpecialClassCast(Context* context,
   auto dstClass = dstTy->toClassType();
 
   CHPL_ASSERT(srcClass);
-  CHPL_ASSERT(dstClass || (dstTy->isAnyOwnedType() || dstTy->isAnySharedType()));
+  CHPL_ASSERT(dstClass ||
+              (dstTy->isAnyOwnedType() || dstTy->isAnySharedType()));
   // TODO: looks like we just don't have AnyBorrowedType? might need to add it here.
 
   // part (1)
@@ -5174,8 +5247,10 @@ static bool resolveSpecialClassCast(Context* context,
     if (auto newBct = newTargetType->basicClassType()) {
       if (auto srcBct = srcClass->basicClassType()) {
         bool ignoredConverts, ignoredInstantiates;
-        if (!srcBct->isSubtypeOf(context, newBct, ignoredConverts, ignoredInstantiates) &&
-            !newBct->isSubtypeOf(context, srcBct, ignoredConverts, ignoredInstantiates)) {
+        if (!srcBct->isSubtypeOf(
+              context, newBct, ignoredConverts, ignoredInstantiates) &&
+            !newBct->isSubtypeOf(
+              context, srcBct, ignoredConverts, ignoredInstantiates)) {
           return false;
         }
       }
@@ -5189,7 +5264,8 @@ static bool resolveSpecialClassCast(Context* context,
   // takes, production checks if values are coercible (as in during argument
   // passing), and if so, converts the call to `PRIM_CAST`. See our `primCast`
   // implementation; it simply produces the target type. Just do that here.
-  auto got = canPassScalar(context, srcQt, QualifiedType(QualifiedType::IN, newTargetType));
+  auto got = canPassScalar(
+    context, srcQt, QualifiedType(QualifiedType::IN, newTargetType));
   if (got.passes()) {
     exprTypeOut = QualifiedType(srcQt.kind(), newTargetType);
     return true;
@@ -5243,8 +5319,8 @@ static bool resolveSpecialTupleCast(Context* context,
   exprTypeOut = QualifiedType(srcQt.kind(), dstQt.type());
 
   if (srcTuple->numElements() != dstTuple->numElements()) {
-    exprTypeOut = CHPL_TYPE_ERROR(context, TupleCastSizeMismatch, astForErr,
-                                  srcTuple, dstTuple);
+    exprTypeOut = CHPL_TYPE_ERROR(
+      context, TupleCastSizeMismatch, astForErr, srcTuple, dstTuple);
     return true;
   }
 
@@ -5263,10 +5339,12 @@ static bool resolveSpecialTupleCast(Context* context,
       // production directly inserts recursive coercions. Match that,
       // and don't perform additional call resolution.
       QualifiedType nestedExprTypeOut;
-      bool result = resolveSpecialTupleCast(context, astForErr,
+      bool result = resolveSpecialTupleCast(context,
+                                            astForErr,
                                             outerSrcQtForErr,
                                             outerDstQtForErr,
-                                            srcEltType, dstEltType,
+                                            srcEltType,
+                                            dstEltType,
                                             inScopes,
                                             nestedExprTypeOut);
       CHPL_ASSERT(result);
@@ -5294,7 +5372,9 @@ static bool resolveSpecialTupleCast(Context* context,
     auto cr = resolveGeneratedCall(&rc, astForErr, ci, inScopes);
 
     if (cr.mostSpecific().isEmpty()) {
-      exprTypeOut = CHPL_TYPE_ERROR(context, InvalidTupleCast, astForErr,
+      exprTypeOut = CHPL_TYPE_ERROR(context,
+                                    InvalidTupleCast,
+                                    astForErr,
                                     outerSrcQtForErr.type()->toTupleType(),
                                     outerDstQtForErr.type()->toTupleType(),
                                     srcEltType.type(),
@@ -5357,7 +5437,8 @@ static bool resolveFnCallSpecial(ResolutionContext* rc,
     bool isParamTypeCast = srcQt.kind() == QualifiedType::PARAM && isDstType;
 
     if (isParamTypeCast) {
-      if (resolveSpecialEnumCast(context, astForErr, srcQt, dstQt,exprTypeOut)) {
+      if (resolveSpecialEnumCast(
+            context, astForErr, srcQt, dstQt, exprTypeOut)) {
         return true;
       }
     } else if (srcQt.isType() && dstQt.hasTypePtr() && dstTy->isStringType()) {
@@ -5366,30 +5447,37 @@ static bool resolveFnCallSpecial(ResolutionContext* rc,
       srcTy->stringify(oss, chpl::StringifyKind::CHPL_SYNTAX);
       exprTypeOut = QualifiedType::makeParamString(context, oss.str());
       return true;
-    } else if (srcTy->isClassType() && (dstTy->isClassType() ||
-                                        dstTy->isAnyOwnedType() ||
-                                        dstTy->isAnySharedType())) {
-      if (resolveSpecialClassCast(context, astForErr, srcQt, dstQt, inScopes, exprTypeOut)) {
+    } else if (srcTy->isClassType() &&
+               (dstTy->isClassType() || dstTy->isAnyOwnedType() ||
+                dstTy->isAnySharedType())) {
+      if (resolveSpecialClassCast(
+            context, astForErr, srcQt, dstQt, inScopes, exprTypeOut)) {
         return true;
       }
     } else if (srcTy->isTupleType() && dstTy->isTupleType()) {
-      if (resolveSpecialTupleCast(context, astForErr, srcQt, dstQt, srcQt, dstQt, inScopes, exprTypeOut)) {
+      if (resolveSpecialTupleCast(context,
+                                  astForErr,
+                                  srcQt,
+                                  dstQt,
+                                  srcQt,
+                                  dstQt,
+                                  inScopes,
+                                  exprTypeOut)) {
         return true;
       }
-    } else if (!srcQt.isParam() &&
-               srcTy->isStringType() && isDstType &&
+    } else if (!srcQt.isParam() && srcTy->isStringType() && isDstType &&
                dstTy->isStringType()) {
       // supported non-param casts to string
       exprTypeOut =
-          QualifiedType(QualifiedType::VAR, RecordType::getStringType(context));
+        QualifiedType(QualifiedType::VAR, RecordType::getStringType(context));
       return true;
     } else if (!isDstType) {
       // trying to cast to something that's not a type
       auto toName = tagToString(dstTy->tag());
       auto fromName = tagToString(srcTy->tag());
       context->error(astForErr, "illegal cast from %s to %s", fromName, toName);
-      exprTypeOut = QualifiedType(QualifiedType::UNKNOWN,
-                                  ErroneousType::get(context));
+      exprTypeOut =
+        QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
       return true;
     }
   }
@@ -5399,8 +5487,8 @@ static bool resolveFnCallSpecial(ResolutionContext* rc,
       auto lhs = ci.actual(0).type();
       auto rhs = ci.actual(1).type();
 
-      bool bothType = lhs.kind() == QualifiedType::TYPE &&
-                      rhs.kind() == QualifiedType::TYPE;
+      bool bothType =
+        lhs.kind() == QualifiedType::TYPE && rhs.kind() == QualifiedType::TYPE;
       bool bothParam = lhs.kind() == QualifiedType::PARAM &&
                        rhs.kind() == QualifiedType::PARAM;
       if (bothType || bothParam) {
@@ -5435,14 +5523,17 @@ static bool resolveFnCallSpecial(ResolutionContext* rc,
     auto qt = ci.actual(0).type();
     if (qt.kind() == QualifiedType::PARAM && qt.hasParamPtr() &&
         qt.hasTypePtr() && qt.type()->isBoolType()) {
-      exprTypeOut = qt.param()->fold(context, astForErr,
+      exprTypeOut = qt.param()->fold(context,
+                                     astForErr,
                                      chpl::uast::PrimitiveTag::PRIM_UNARY_LNOT,
-                                     qt, QualifiedType());
+                                     qt,
+                                     QualifiedType());
       return true;
     }
   }
 
-  if (ci.name() == USTR("borrow") && ci.numActuals() == 1 && ci.isMethodCall()) {
+  if (ci.name() == USTR("borrow") && ci.numActuals() == 1 &&
+      ci.isMethodCall()) {
     // this is the equivalent of the production compiler's `resolveClassBorrowMethod`.
     // A call to `isClassLike` there rejects handling `owned` and `shared`,
     // so only handle undecorated class types here.
@@ -5450,10 +5541,9 @@ static bool resolveFnCallSpecial(ResolutionContext* rc,
     auto receiver = ci.methodReceiverType();
     const ManageableType* receiverBct = nullptr;
     const ClassType* receiverCt = nullptr;
-    bool handle =
-      (receiverBct = receiver.type()->toBasicClassType()) ||
-      ((receiverCt = receiver.type()->toClassType()) &&
-       !receiverCt->decorator().isManaged());
+    bool handle = (receiverBct = receiver.type()->toBasicClassType()) ||
+                  ((receiverCt = receiver.type()->toClassType()) &&
+                   !receiverCt->decorator().isManaged());
 
     if (handle) {
       auto finalBct = receiverBct ? receiverBct : receiverCt->manageableType();
@@ -5479,7 +5569,8 @@ static bool resolveFnCallSpecial(ResolutionContext* rc,
       auto tup = thisType.type()->toTupleType();
       if (val < 0 || val >= tup->numElements()) {
         CHPL_REPORT(context, TupleIndexOOB, astForErr->toCall(), tup, val);
-        exprTypeOut = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
+        exprTypeOut =
+          QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
       } else {
         auto member = tup->elementType(val);
 
@@ -5497,18 +5588,21 @@ static bool resolveFnCallSpecial(ResolutionContext* rc,
   // In Dyno, we don't have a _ref wrapper type, so we can't distinguish
   // between 'ref' and non-'ref' type formals. Moreover, this function is
   // filled in by the compiler in production.
-  if (!ci.isMethodCall() && (ci.name() == USTR("_build_tuple") ||
-                             ci.name() == USTR("_build_tuple_noref") ||
-                             ci.name() == USTR("_build_tuple_always_allow_ref"))) {
+  if (!ci.isMethodCall() &&
+      (ci.name() == USTR("_build_tuple") ||
+       ci.name() == USTR("_build_tuple_noref") ||
+       ci.name() == USTR("_build_tuple_always_allow_ref"))) {
     bool removeRefs = ci.name() == USTR("_build_tuple_noref");
-    auto intent = ci.name() == USTR("_build_tuple_always_allow_ref") ?
-                  QualifiedType::CONST_VAR : QualifiedType::TYPE;
+    auto intent = ci.name() == USTR("_build_tuple_always_allow_ref")
+                    ? QualifiedType::CONST_VAR
+                    : QualifiedType::TYPE;
     std::vector<QualifiedType> components;
     for (size_t i = 0; i < ci.numActuals(); i++) {
       auto actual = ci.actual(i).type();
       if (removeRefs) {
         CHPL_ASSERT(actual.param() == nullptr);
-        actual = QualifiedType(KindProperties::removeRef(actual.kind()), actual.type());
+        actual = QualifiedType(KindProperties::removeRef(actual.kind()),
+                               actual.type());
       }
       components.push_back(std::move(actual));
     }
@@ -5608,7 +5702,8 @@ resolveFnCallForTypeCtor(Context* context,
   // candidate and give up.
   if (!initial) {
     if (rejected) {
-      rejected->push_back(reportCalledTypeWithoutTypeConstructor(ci.calledType().type()));
+      rejected->push_back(
+        reportCalledTypeWithoutTypeConstructor(ci.calledType().type()));
     }
     return MostSpecificCandidates();
   }
@@ -5620,7 +5715,7 @@ resolveFnCallForTypeCtor(Context* context,
   // concrete constructor may still not match if formals don't map to actuals.
   FormalActualMap faMap = FormalActualMap(initial->untyped(), ci);
   auto initialApplicability =
-      isInitialTypedSignatureApplicable(context, initial, faMap, ci);
+    isInitialTypedSignatureApplicable(context, initial, faMap, ci);
   if (!initialApplicability.success()) {
     if (rejected) {
       rejected->push_back(std::move(initialApplicability));
@@ -5629,15 +5724,13 @@ resolveFnCallForTypeCtor(Context* context,
   }
 
   // if the constructor was generic, see if it applies after instantiation
-  filterCandidatesInstantiating(rc, initialCandidates, ci, inScope,
-                                inPoiScope,
-                                candidates,
-                                rejected);
+  filterCandidatesInstantiating(
+    rc, initialCandidates, ci, inScope, inPoiScope, candidates, rejected);
 
   // find most specific candidates / disambiguate
   // Note: at present there can only be one candidate here
   MostSpecificCandidates mostSpecific =
-      findMostSpecificCandidates(rc, candidates, ci, inScope, inPoiScope);
+    findMostSpecificCandidates(rc, candidates, ci, inScope, inPoiScope);
 
   return mostSpecific;
 }
@@ -5653,13 +5746,13 @@ considerCompilerGeneratedMethods(ResolutionContext* rc,
   auto receiverType = ci.methodReceiverType();
 
   // if we don't need the method, nothing to do.
-  if (!needCompilerGeneratedMethod(rc->context(), receiverType.type(), ci.name(),
-                                   ci.isParenless())) {
+  if (!needCompilerGeneratedMethod(
+        rc->context(), receiverType.type(), ci.name(), ci.isParenless())) {
     return nullptr;
   }
 
-  return getCompilerGeneratedMethod(rc, receiverType, ci.name(),
-                                    ci.isParenless());
+  return getCompilerGeneratedMethod(
+    rc, receiverType, ci.name(), ci.isParenless());
 }
 
 static const TypedFnSignature*
@@ -5697,15 +5790,15 @@ considerCompilerGeneratedOperators(ResolutionContext* rc,
   return getCompilerGeneratedBinaryOp(rc, lhs, rhs, ci.name());
 }
 
-static void
-considerCompilerGeneratedCandidates(ResolutionContext* rc,
-                                    const AstNode* astForErr,
-                                    const CallInfo& ci,
-                                    CandidatesAndForwardingInfo& candidates,
-                                    std::vector<ApplicabilityResult>* rejected) {
+static void considerCompilerGeneratedCandidates(
+  ResolutionContext* rc,
+  const AstNode* astForErr,
+  const CallInfo& ci,
+  CandidatesAndForwardingInfo& candidates,
+  std::vector<ApplicabilityResult>* rejected) {
   std::vector<const TypedFnSignature*> tfss;
 
-  for (auto tfs : considerCompilerGeneratedOperators(rc, ci, candidates)){
+  for (auto tfs : considerCompilerGeneratedOperators(rc, ci, candidates)) {
     tfss.push_back(tfs);
   }
   if (tfss.empty()) {
@@ -5722,7 +5815,8 @@ considerCompilerGeneratedCandidates(ResolutionContext* rc,
   for (auto tfs : tfss) {
     // check if the initial signature matches
     auto faMap = FormalActualMap(tfs->untyped(), ci);
-    if (!isInitialTypedSignatureApplicable(rc->context(), tfs, faMap, ci).success()) {
+    if (!isInitialTypedSignatureApplicable(rc->context(), tfs, faMap, ci)
+           .success()) {
       return;
     }
 
@@ -5744,7 +5838,8 @@ considerCompilerGeneratedCandidates(ResolutionContext* rc,
     }
 
     if (!instantiated.candidate()->isInitializer() &&
-        checkUninstantiatedFormals(rc->context(), astForErr, instantiated.candidate())) {
+        checkUninstantiatedFormals(
+          rc->context(), astForErr, instantiated.candidate())) {
       return; // do not push invalid candidate into list
     }
 
@@ -5752,7 +5847,8 @@ considerCompilerGeneratedCandidates(ResolutionContext* rc,
   }
 }
 
-static const types::QualifiedType& getPromotionTypeQuery(Context* context, types::QualifiedType qt);
+static const types::QualifiedType&
+getPromotionTypeQuery(Context* context, types::QualifiedType qt);
 
 static bool shouldSkipScalarTypes(Context* context,
                                   QualifiedType receiverType) {
@@ -5764,23 +5860,29 @@ static bool shouldSkipScalarTypes(Context* context,
 
   // if we're currently computing the promotion (scalar) type, we can't use said
   // promotion type for computing receivers.
-  return context->isQueryRunning(getPromotionTypeQuery, std::make_tuple(receiverType));
+  return context->isQueryRunning(getPromotionTypeQuery,
+                                 std::make_tuple(receiverType));
 }
 
-static MatchingIdsWithName lookupCalledExprImpl(Context* context,
-                                                const Scope* scope,
-                                                UniqueString name,
-                                                const QualifiedType& receiverType,
-                                                LookupConfig config,
-                                                CheckedScopes& visited) {
+static MatchingIdsWithName
+lookupCalledExprImpl(Context* context,
+                     const Scope* scope,
+                     UniqueString name,
+                     const QualifiedType& receiverType,
+                     LookupConfig config,
+                     CheckedScopes& visited) {
   ReceiverScopeTypedHelper typedHelper;
 
   bool checkScalarTypes = !shouldSkipScalarTypes(context, receiverType);
-  auto lookupHelper = typedHelper.methodLookupForType(context, receiverType, checkScalarTypes);
-  auto ret = lookupNameInScopeWithSet(context, scope,
+  auto lookupHelper =
+    typedHelper.methodLookupForType(context, receiverType, checkScalarTypes);
+  auto ret = lookupNameInScopeWithSet(context,
+                                      scope,
                                       lookupHelper,
                                       /* receiverScopeHelper */ nullptr,
-                                      name, config, visited);
+                                      name,
+                                      config,
+                                      visited);
 
   // At this point, we don't allow "switching gears" to 'proc this'-based
   // resolution of non-function names. The calling code is expected to
@@ -5814,11 +5916,10 @@ static MatchingIdsWithName const& cachedCandidates(Context* context,
   return QUERY_END(ret);
 }
 
-static MatchingIdsWithName
-lookupCalledExpr(Context* context,
-                 const Scope* scope,
-                 const CallInfo& ci,
-                 CheckedScopes& visited) {
+static MatchingIdsWithName lookupCalledExpr(Context* context,
+                                            const Scope* scope,
+                                            const CallInfo& ci,
+                                            CheckedScopes& visited) {
 
   auto receiverType = QualifiedType();
 
@@ -5861,8 +5962,8 @@ lookupCalledExpr(Context* context,
     return cachedCandidates(context, scope, name, receiverType, config);
   }
 
-  return lookupCalledExprImpl(context, scope, name, receiverType, config,
-                           visited);
+  return lookupCalledExprImpl(
+    context, scope, name, receiverType, config, visited);
 }
 
 // Container for ordering groups of last resort candidates by resolution
@@ -5882,8 +5983,7 @@ struct LastResortCandidateGroups {
     }
 
     // merge poi candidate groups and forwarding info at corresponding indexes
-    for (size_t i = 0; i < std::max(this->poi.size(), other.poi.size());
-         i++) {
+    for (size_t i = 0; i < std::max(this->poi.size(), other.poi.size()); i++) {
       if (i < this->poi.size() && i < other.poi.size()) {
         // both have a poi candidates group at this index
         this->poi[i].takeFromOther(other.poi[i]);
@@ -5898,7 +5998,7 @@ struct LastResortCandidateGroups {
     // recurse into other's forwarding groups
     if (forwardingCandidateGroups) {
       forwardingCandidateGroups->mergeWithGroups(
-          std::move(other.getForwardingGroups()));
+        std::move(other.getForwardingGroups()));
     } else {
       forwardingCandidateGroups = std::move(other.forwardingCandidateGroups);
     }
@@ -5920,8 +6020,8 @@ struct LastResortCandidateGroups {
   //   with, and set to the end of the non-poi candidates if they are returned.
   // - forwardingInfo: Forwarding info for the returned group, set if it comes
   //   from forwarding.
-  const CandidatesAndForwardingInfo firstNonEmptyCandidatesGroup(
-      size_t* firstPoiCandidate) const {
+  const CandidatesAndForwardingInfo
+  firstNonEmptyCandidatesGroup(size_t* firstPoiCandidate) const {
     if (nonPoi && !nonPoi->empty()) {
       *firstPoiCandidate = nonPoi->size();
       return *nonPoi;
@@ -5933,7 +6033,7 @@ struct LastResortCandidateGroups {
     }
     if (forwardingCandidateGroups) {
       return forwardingCandidateGroups->firstNonEmptyCandidatesGroup(
-          firstPoiCandidate);
+        firstPoiCandidate);
     }
     return CandidatesAndForwardingInfo();
   }
@@ -5963,12 +6063,14 @@ struct LastResortCandidateGroups {
 // Returns candidates with last resort candidates removed and saved in a
 // separate list. Also removes candidates that are not to be considered
 // due to various pragmas.
-static void filterCandidatesAndSeparateLastResort(
-    Context* context, const CandidatesAndForwardingInfo& list, CandidatesAndForwardingInfo& result,
-    CandidatesAndForwardingInfo& lastResort) {
+static void
+filterCandidatesAndSeparateLastResort(Context* context,
+                                      const CandidatesAndForwardingInfo& list,
+                                      CandidatesAndForwardingInfo& result,
+                                      CandidatesAndForwardingInfo& lastResort) {
   for (auto& candidate : list) {
     auto attrs =
-        parsing::idToAttributeGroup(context, candidate->untyped()->id());
+      parsing::idToAttributeGroup(context, candidate->untyped()->id());
     if (attrs && attrs->hasPragma(PRAGMA_LAST_RESORT)) {
       lastResort.addCandidate(candidate);
     } else if (attrs && attrs->hasPragma(PRAGMA_DOCS_ONLY)) {
@@ -5980,8 +6082,7 @@ static void filterCandidatesAndSeparateLastResort(
       // TODO (Daniel): figure out if we can make the production not be weird about this.
       auto candidateName = candidate->untyped()->name();
       if (parsing::idIsInBundledModule(context, candidate->id()) &&
-          (candidateName == "isSubtype" ||
-           candidateName == "isCoercible" ||
+          (candidateName == "isSubtype" || candidateName == "isCoercible" ||
            candidateName == "isProperSubtype")) {
         result.addCandidate(candidate);
       }
@@ -5999,22 +6100,21 @@ static void filterGatheredCandidates(ResolutionContext* rc,
                                      CandidatesAndForwardingInfo& into,
                                      CandidatesAndForwardingInfo& lastResort) {
   // filter without instantiating yet
-  const auto& initialCandidates =
-    filterCandidatesInitial(rc, std::move(v), ci);
+  const auto& initialCandidates = filterCandidatesInitial(rc, std::move(v), ci);
 
   // find candidates, doing instantiation if necessary
   CandidatesAndForwardingInfo candidatesWithInstantiations;
   filterCandidatesInstantiating(rc,
-      initialCandidates,
-      ci,
-      inScopes.callScope(),
-      inScopes.poiScope(),
-      candidatesWithInstantiations,
-      rejected);
+                                initialCandidates,
+                                ci,
+                                inScopes.callScope(),
+                                inScopes.poiScope(),
+                                candidatesWithInstantiations,
+                                rejected);
 
   // filter out last resort candidates
-  filterCandidatesAndSeparateLastResort(rc->context(), candidatesWithInstantiations,
-      into, lastResort);
+  filterCandidatesAndSeparateLastResort(
+    rc->context(), candidatesWithInstantiations, into, lastResort);
 }
 
 // If the receiver type is promoted, then we might be trying to call
@@ -6034,20 +6134,25 @@ gatherAndFilterScalarFields(ResolutionContext* rc,
   auto receiverType = ci.actual(0).type();
 
   // Limited version of config from lookupCalledExpr
-  LookupConfig config = LOOKUP_DECLS | LOOKUP_ONLY_METHODS_FIELDS | LOOKUP_STOP_NON_FN;
+  LookupConfig config =
+    LOOKUP_DECLS | LOOKUP_ONLY_METHODS_FIELDS | LOOKUP_STOP_NON_FN;
 
   MatchingIdsWithName toReturn;
 
   while (true) {
-    receiverType = getPromotionType(rc->context(), receiverType, /* skipIfRunning */ true);
+    receiverType =
+      getPromotionType(rc->context(), receiverType, /* skipIfRunning */ true);
     if (receiverType.isUnknownOrErroneous()) break;
 
-    auto lookupHelper = typedHelper.methodLookupForType(rc->context(), receiverType);
+    auto lookupHelper =
+      typedHelper.methodLookupForType(rc->context(), receiverType);
     auto ret = lookupNameInScopeWithSet(rc->context(),
-                                        /* scope */nullptr,
+                                        /* scope */ nullptr,
                                         lookupHelper,
                                         /* receiverScopeHelper */ nullptr,
-                                        ci.name(), config, visited);
+                                        ci.name(),
+                                        config,
+                                        visited);
 
     for (int i = 0; i < ret.numIds(); i++) {
       auto& idv = ret.idAndFlags(i);
@@ -6061,8 +6166,13 @@ gatherAndFilterScalarFields(ResolutionContext* rc,
   }
 
   CandidatesAndForwardingInfo lastResort;
-  filterGatheredCandidates(rc, toReturn, ci, inScopes,
-                           /* rejected */ nullptr, candidates, lastResort);
+  filterGatheredCandidates(rc,
+                           toReturn,
+                           ci,
+                           inScopes,
+                           /* rejected */ nullptr,
+                           candidates,
+                           lastResort);
 }
 
 // this function gathers candidates not from POI and candidates
@@ -6071,16 +6181,16 @@ gatherAndFilterScalarFields(ResolutionContext* rc,
 // will have an element for each of the returned candidates &
 // indicates the actual type that is passed as the method receiver
 // when using forwarding.
-static void
-gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
-                                    const AstNode* astContext,
-                                    const Call* call,
-                                    const CallInfo& ci,
-                                    const CallScopeInfo& inScopes,
-                                    CandidatesAndForwardingInfo& nonPoiCandidates,
-                                    CandidatesAndForwardingInfo& poiCandidates,
-                                    LastResortCandidateGroups& lrcGroups,
-                                    std::vector<ApplicabilityResult>* rejected) {
+static void gatherAndFilterCandidatesForwarding(
+  ResolutionContext* rc,
+  const AstNode* astContext,
+  const Call* call,
+  const CallInfo& ci,
+  const CallScopeInfo& inScopes,
+  CandidatesAndForwardingInfo& nonPoiCandidates,
+  CandidatesAndForwardingInfo& poiCandidates,
+  LastResortCandidateGroups& lrcGroups,
+  std::vector<ApplicabilityResult>* rejected) {
   Context* context = rc->context();
   const Type* receiverType = ci.actual(0).type().type();
 
@@ -6093,10 +6203,10 @@ gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
     // these are exempt from forwarding
   } else if (auto ct = receiverType->getCompositeType()) {
     auto useDefaults = DefaultsPolicy::USE_DEFAULTS;
-    const ResolvedFields& fields = fieldsForTypeDecl(rc, ct,
-                                                     useDefaults);
+    const ResolvedFields& fields = fieldsForTypeDecl(rc, ct, useDefaults);
 
-    if (CHPL_RESOLUTION_IS_GLOBAL_QUERY_RUNNING(resolveForwardingExprs, rc, ct)) {
+    if (CHPL_RESOLUTION_IS_GLOBAL_QUERY_RUNNING(
+          resolveForwardingExprs, rc, ct)) {
       // If we are trying to resolve a method call while collecting forwarding
       // candidates, do not try to use forwarding to resolve that method.
       //
@@ -6113,8 +6223,7 @@ gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
       // https://github.com/chapel-lang/chapel/issues/24709
     } else {
       const ResolvedFields& exprs = resolveForwardingExprs(rc, ct);
-      if (fields.numForwards() > 0 ||
-          exprs.numForwards() > 0) {
+      if (fields.numForwards() > 0 || exprs.numForwards() > 0) {
         // and check for cycles
         bool cycleFound = emitErrorForForwardingCycles(rc, ct);
         if (cycleFound == false) {
@@ -6175,9 +6284,8 @@ gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
     for (const auto& fci : forwardingCis) {
       size_t start = nonPoiCandidates.size();
       // consider compiler-generated candidates
-      considerCompilerGeneratedCandidates(rc, astContext, fci,
-                                          nonPoiCandidates,
-                                          rejected);
+      considerCompilerGeneratedCandidates(
+        rc, astContext, fci, nonPoiCandidates, rejected);
       // update forwardingTo
       nonPoiCandidates.helpComputeForwardingTo(fci, start);
 
@@ -6191,10 +6299,11 @@ gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
       for (const auto& fci : forwardingCis) {
         size_t start = nonPoiCandidates.size();
         // compute the potential functions that it could resolve to
-        auto v = lookupCalledExpr(context, inScopes.lookupScope(), fci, visited[i]);
+        auto v =
+          lookupCalledExpr(context, inScopes.lookupScope(), fci, visited[i]);
 
-        filterGatheredCandidates(rc, v, fci, inScopes, rejected,
-                                 nonPoiCandidates, newLrcGroup);
+        filterGatheredCandidates(
+          rc, v, fci, inScopes, rejected, nonPoiCandidates, newLrcGroup);
 
         // update forwardingTo (for candidates and last resort candidates)
         nonPoiCandidates.helpComputeForwardingTo(fci, start);
@@ -6205,15 +6314,13 @@ gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
     }
 
     // next, look for candidates using POI
-    for (const PoiScope* curPoi = inScopes.poiScope();
-         curPoi != nullptr;
+    for (const PoiScope* curPoi = inScopes.poiScope(); curPoi != nullptr;
          curPoi = curPoi->inFnPoi()) {
 
       // stop if any candidate has been found.
       if (nonPoiCandidates.empty() == false || poiCandidates.empty() == false) {
         break;
       }
-
 
       int i = 0;
       CandidatesAndForwardingInfo newLrcGroup;
@@ -6223,8 +6330,8 @@ gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
         // compute the potential functions that it could resolve to
         auto v = lookupCalledExpr(context, curPoi->inScope(), fci, visited[i]);
 
-        filterGatheredCandidates(rc, v, fci, inScopes, rejected,
-                                 poiCandidates, newLrcGroup);
+        filterGatheredCandidates(
+          rc, v, fci, inScopes, rejected, poiCandidates, newLrcGroup);
 
         // update forwardingTo (for candidates and last resort candidates)
         poiCandidates.helpComputeForwardingTo(fci, start);
@@ -6242,7 +6349,10 @@ gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
         if (fci.isMethodCall() && fci.numActuals() >= 1) {
           const Type* receiverType = fci.actual(0).type().type();
           if (typeUsesForwarding(context, receiverType)) {
-            gatherAndFilterCandidatesForwarding(rc, astContext, call, fci,
+            gatherAndFilterCandidatesForwarding(rc,
+                                                astContext,
+                                                call,
+                                                fci,
                                                 inScopes,
                                                 nonPoiCandidates,
                                                 poiCandidates,
@@ -6251,7 +6361,7 @@ gatherAndFilterCandidatesForwarding(ResolutionContext* rc,
           }
         }
         lrcGroups.getForwardingGroups().mergeWithGroups(
-            std::move(thisForwardingLrcGroups));
+          std::move(thisForwardingLrcGroups));
       }
     }
   }
@@ -6294,8 +6404,8 @@ static void doGatherCandidates(ResolutionContext* rc,
                                std::vector<ApplicabilityResult>* rejected,
                                const PoiScope* usePoiScope) {
   Context* context = rc->context();
-  auto lookupScope = usePoiScope ? usePoiScope->inScope()
-                                 : inScopes.lookupScope();
+  auto lookupScope =
+    usePoiScope ? usePoiScope->inScope() : inScopes.lookupScope();
 
   // First, lookup possible candidates in the relevant scope.
   auto v = lookupCalledExpr(context, lookupScope, ci, outVisited);
@@ -6310,9 +6420,8 @@ static void doGatherCandidates(ResolutionContext* rc,
     !initial.rejectedIteratorsMissingTag.empty();
 
   if (rejected != nullptr) {
-    rejected->insert(rejected->end(),
-                     initialRejections.begin(),
-                     initialRejections.end());
+    rejected->insert(
+      rejected->end(), initialRejections.begin(), initialRejections.end());
   }
 
   // Finally, filter with instantiation as necessary.
@@ -6327,8 +6436,8 @@ static void doGatherCandidates(ResolutionContext* rc,
 
   // filter out last resort candidates
   CandidatesAndForwardingInfo lrcGroup;
-  filterCandidatesAndSeparateLastResort(context, candidatesWithInstantiations,
-                             outCandidates, lrcGroup);
+  filterCandidatesAndSeparateLastResort(
+    context, candidatesWithInstantiations, outCandidates, lrcGroup);
   if (usePoiScope) {
     outLrcGroups.addPoiCandidates(std::move(lrcGroup));
   } else {
@@ -6369,21 +6478,26 @@ gatherAndFilterCandidates(ResolutionContext* rc,
   //  the poiInfo from these is not gathered, because such methods should
   //  always be available in any scope that can refer to the type & are
   //  considered part of the custom type)
-  considerCompilerGeneratedCandidates(rc, astContext, ci,
-                                      candidates,
-                                      rejected);
+  considerCompilerGeneratedCandidates(rc, astContext, ci, candidates, rejected);
 
   // don't worry about last resort for compiler generated candidates
 
   // look for candidates without using POI.
-  doGatherCandidates(rc, candidates, lrcGroups, visited,
-                     firstPoiCandidate, outRejectedPossibleIteratorCandidates,
-                     call, ci, inScopes, rejected, nullptr);
+  doGatherCandidates(rc,
+                     candidates,
+                     lrcGroups,
+                     visited,
+                     firstPoiCandidate,
+                     outRejectedPossibleIteratorCandidates,
+                     call,
+                     ci,
+                     inScopes,
+                     rejected,
+                     nullptr);
 
   // next, look for candidates using POIs
   firstPoiCandidate = candidates.size();
-  for (const PoiScope* curPoi = inScopes.poiScope();
-       curPoi != nullptr;
+  for (const PoiScope* curPoi = inScopes.poiScope(); curPoi != nullptr;
        curPoi = curPoi->inFnPoi()) {
 
     // stop if any candidate has been found.
@@ -6391,9 +6505,17 @@ gatherAndFilterCandidates(ResolutionContext* rc,
       break;
     }
 
-    doGatherCandidates(rc, candidates, lrcGroups, visited,
-                       firstPoiCandidate, outRejectedPossibleIteratorCandidates,
-                       call, ci, inScopes, rejected, curPoi);
+    doGatherCandidates(rc,
+                       candidates,
+                       lrcGroups,
+                       visited,
+                       firstPoiCandidate,
+                       outRejectedPossibleIteratorCandidates,
+                       call,
+                       ci,
+                       inScopes,
+                       rejected,
+                       curPoi);
   }
 
   // If no candidates were found and it's a method, try forwarding
@@ -6437,15 +6559,19 @@ gatherAndFilterCandidates(ResolutionContext* rc,
     bool skipForwarding = (ci.name() == "chpl__promotionType");
 
     if (receiverType && typeUsesForwarding(context, receiverType) &&
-        !skipForwarding &&
-        !isInsideForwarding(context, call)) {
+        !skipForwarding && !isInsideForwarding(context, call)) {
       CandidatesAndForwardingInfo nonPoiCandidates;
       CandidatesAndForwardingInfo poiCandidates;
 
-      gatherAndFilterCandidatesForwarding(
-          rc, astContext, call, ci, inScopes, nonPoiCandidates,
-          poiCandidates, lrcGroups.getForwardingGroups(),
-          rejected);
+      gatherAndFilterCandidatesForwarding(rc,
+                                          astContext,
+                                          call,
+                                          ci,
+                                          inScopes,
+                                          nonPoiCandidates,
+                                          poiCandidates,
+                                          lrcGroups.getForwardingGroups(),
+                                          rejected);
 
       // append candidates from forwarding.
       //
@@ -6501,12 +6627,12 @@ findMostSpecificAndCheck(ResolutionContext* rc,
   //
   // If there were no POI candidates found, then the poiScope should not be
   // used. See 'testDistance' in 'testDisambiguation'.
-  auto poiScopeToUse = firstPoiCandidate >= candidates.size() ? nullptr :
-                       inPoiScope;
+  auto poiScopeToUse =
+    firstPoiCandidate >= candidates.size() ? nullptr : inPoiScope;
 
   // find most specific candidates / disambiguate
   MostSpecificCandidates mostSpecific =
-      findMostSpecificCandidates(rc, candidates, ci, inScope, poiScopeToUse);
+    findMostSpecificCandidates(rc, candidates, ci, inScope, poiScopeToUse);
 
   // perform fn signature checking for any instantiated candidates that are used
   for (const MostSpecificCandidate& candidate : mostSpecific) {
@@ -6522,16 +6648,16 @@ findMostSpecificAndCheck(ResolutionContext* rc,
     //
     // Note: this check "normally" only fires for compiler-generated cases,
     // so match that here. See other calls to checkUninstantiatedFormal.
-    if (candidate.fn()->isInitializer() && candidate.fn()->isCompilerGenerated()) {
+    if (candidate.fn()->isInitializer() &&
+        candidate.fn()->isCompilerGenerated()) {
       checkUninstantiatedFormals(rc->context(), astContext, candidate.fn());
     }
   }
 
   // note any most-specific candidates from POI in poiInfo.
-  auto id =
-      call != nullptr ? call->id() :
-      astContext != nullptr ? astContext->id() :
-      ID();
+  auto id = call != nullptr         ? call->id()
+            : astContext != nullptr ? astContext->id()
+                                    : ID();
   size_t n = candidates.size();
   for (size_t i = firstPoiCandidate; i < n; i++) {
     for (const MostSpecificCandidate& candidate : mostSpecific) {
@@ -6544,47 +6670,53 @@ findMostSpecificAndCheck(ResolutionContext* rc,
   return mostSpecific;
 }
 
-
-static MostSpecificCandidates
-resolveFnCallFilterAndFindMostSpecific(ResolutionContext* rc,
-                                       const AstNode* astContext,
-                                       const Call* call,
-                                       const CallInfo& ci,
-                                       const CallScopeInfo& inScopes,
-                                       PoiInfo& poiInfo,
-                                       bool& outRejectedPossibleIteratorCandidates,
-                                       std::vector<ApplicabilityResult>* rejected,
-                                       bool skipForwarding = false) {
+static MostSpecificCandidates resolveFnCallFilterAndFindMostSpecific(
+  ResolutionContext* rc,
+  const AstNode* astContext,
+  const Call* call,
+  const CallInfo& ci,
+  const CallScopeInfo& inScopes,
+  PoiInfo& poiInfo,
+  bool& outRejectedPossibleIteratorCandidates,
+  std::vector<ApplicabilityResult>* rejected,
+  bool skipForwarding = false) {
   // search for candidates at each POI until we have found candidate(s)
   size_t firstPoiCandidate = 0;
-  auto candidates = gatherAndFilterCandidates(rc, astContext, call, ci,
-                                              inScopes,
-                                              firstPoiCandidate,
-                                              outRejectedPossibleIteratorCandidates,
-                                              rejected,
-                                              skipForwarding);
+  auto candidates =
+    gatherAndFilterCandidates(rc,
+                              astContext,
+                              call,
+                              ci,
+                              inScopes,
+                              firstPoiCandidate,
+                              outRejectedPossibleIteratorCandidates,
+                              rejected,
+                              skipForwarding);
   // * find most specific candidates / disambiguate
   // * check signatures
   // * gather POI info
-  auto mostSpecific =
-    findMostSpecificAndCheck(rc, candidates, firstPoiCandidate,
-                             astContext, call, ci, inScopes.callScope(),
-                             inScopes.poiScope(), poiInfo);
+  auto mostSpecific = findMostSpecificAndCheck(rc,
+                                               candidates,
+                                               firstPoiCandidate,
+                                               astContext,
+                                               call,
+                                               ci,
+                                               inScopes.callScope(),
+                                               inScopes.poiScope(),
+                                               poiInfo);
 
   return mostSpecific;
 }
 
-static const PoiScope*
-instantiationPoiScopeForMostSpecificCandidates(Context* context,
-                                               MostSpecificCandidates& mostSpecific,
-                                               const CallScopeInfo& inScopes) {
+static const PoiScope* instantiationPoiScopeForMostSpecificCandidates(
+  Context* context,
+  MostSpecificCandidates& mostSpecific,
+  const CallScopeInfo& inScopes) {
   const PoiScope* instantiationPoiScope = nullptr;
   for (const MostSpecificCandidate& candidate : mostSpecific) {
     if (candidate && candidate.fn()) {
-      instantiationPoiScope =
-          Resolver::poiScopeOrNull(context, candidate.fn(),
-                                   inScopes.callScope(),
-                                   inScopes.poiScope());
+      instantiationPoiScope = Resolver::poiScopeOrNull(
+        context, candidate.fn(), inScopes.callScope(), inScopes.poiScope());
       if (instantiationPoiScope) break;
     }
     if (instantiationPoiScope) break;
@@ -6592,20 +6724,19 @@ instantiationPoiScopeForMostSpecificCandidates(Context* context,
   return instantiationPoiScope;
 }
 
-static void
-accumulatePoiInfoForMostSpecificCandidates(ResolutionContext* rc,
-                                           MostSpecificCandidates& mostSpecific,
-                                           PoiInfo& poiInfo,
-                                           const PoiScope* instantiationPoiScope) {
+static void accumulatePoiInfoForMostSpecificCandidates(
+  ResolutionContext* rc,
+  MostSpecificCandidates& mostSpecific,
+  PoiInfo& poiInfo,
+  const PoiScope* instantiationPoiScope) {
   if (instantiationPoiScope) {
     poiInfo.setPoiScope(instantiationPoiScope);
     for (const MostSpecificCandidate& candidate : mostSpecific) {
       if (candidate) {
         if (candidate.fn()->untyped()->idIsFunction()) {
           // note: following call returns early if candidate not instantiated
-          accumulatePoisUsedByResolvingBody(rc, candidate.fn(),
-                                            instantiationPoiScope,
-                                            poiInfo);
+          accumulatePoisUsedByResolvingBody(
+            rc, candidate.fn(), instantiationPoiScope, poiInfo);
         }
       }
     }
@@ -6619,10 +6750,10 @@ resolutionResultFromMostSpecificCandidate(ResolutionContext* rc,
   auto mscs = MostSpecificCandidates::getOnly(msc);
 
   PoiInfo poiInfo;
-  auto instantiationPoiScope =
-    instantiationPoiScopeForMostSpecificCandidates(rc->context(), mscs, inScopes);
-  accumulatePoiInfoForMostSpecificCandidates(rc, mscs, poiInfo,
-      instantiationPoiScope);
+  auto instantiationPoiScope = instantiationPoiScopeForMostSpecificCandidates(
+    rc->context(), mscs, inScopes);
+  accumulatePoiInfoForMostSpecificCandidates(
+    rc, mscs, poiInfo, instantiationPoiScope);
   QualifiedType exprType;
   QualifiedType yieldedType;
   if (msc.fn()) {
@@ -6631,13 +6762,13 @@ resolutionResultFromMostSpecificCandidate(ResolutionContext* rc,
 
     if (!msc.promotedFormals().empty()) {
       yieldedType = exprType;
-      exprType = QualifiedType(
-          exprType.kind(),
-          PromotionIteratorType::get(rc->context(),
-                                     instantiationPoiScope,
-                                     msc.fn(),
-                                     exprType,
-                                     msc.promotedFormals()));
+      exprType =
+        QualifiedType(exprType.kind(),
+                      PromotionIteratorType::get(rc->context(),
+                                                 instantiationPoiScope,
+                                                 msc.fn(),
+                                                 exprType,
+                                                 msc.promotedFormals()));
     }
 
     if (msc.fn()->isIterator() && yieldedType.isUnknown()) {
@@ -6646,8 +6777,8 @@ resolutionResultFromMostSpecificCandidate(ResolutionContext* rc,
   }
 
   bool rejectedPossibleIteratorCandidates = false;
-  return CallResolutionResult(mscs, rejectedPossibleIteratorCandidates,
-                              exprType, yieldedType, poiInfo);
+  return CallResolutionResult(
+    mscs, rejectedPossibleIteratorCandidates, exprType, yieldedType, poiInfo);
 }
 
 static bool handleReflectionFunction(ResolutionContext* rc,
@@ -6705,7 +6836,8 @@ static bool handleReflectionFunction(ResolutionContext* rc,
 //
 // It seems that this order is also used to pick the return type. Match that
 // logic, and pick the preferred overload for return type purposes.
-static const MostSpecificCandidate* pickOverloadEarlyIfNeeded(const MostSpecificCandidates& mostSpecific) {
+static const MostSpecificCandidate*
+pickOverloadEarlyIfNeeded(const MostSpecificCandidates& mostSpecific) {
   // there's only or less overload, no need to disambiguate early.
   if (mostSpecific.numBest() <= 1) return nullptr;
 
@@ -6714,8 +6846,8 @@ static const MostSpecificCandidate* pickOverloadEarlyIfNeeded(const MostSpecific
   QualifiedType::Kind bestKindIgnored = QualifiedType::UNKNOWN;
   bool ambiguity = false;
 
-  auto preferredIterableOverload =
-    determineBestReturnIntentOverload(mostSpecific, Access::REF, bestKindIgnored, ambiguity);
+  auto preferredIterableOverload = determineBestReturnIntentOverload(
+    mostSpecific, Access::REF, bestKindIgnored, ambiguity);
 
   // ambiguity only happens if we can't infer maybe const, but are asking for
   // a specific overload preference (REF).
@@ -6725,12 +6857,14 @@ static const MostSpecificCandidate* pickOverloadEarlyIfNeeded(const MostSpecific
 }
 
 // handle field access constness and pragmas like REF_TO_CONST_WHEN_CONST_THIS
-static void adjustConstnessBasedOnReceiver(Context* context,
-                                           const MostSpecificCandidate& candidate,
-                                           const CallInfo& ci,
-                                           QualifiedType& rt) {
+static void
+adjustConstnessBasedOnReceiver(Context* context,
+                               const MostSpecificCandidate& candidate,
+                               const CallInfo& ci,
+                               QualifiedType& rt) {
   bool adjustConst = false;
-  if (candidate.fn()->untyped()->idIsFunction() && !candidate.fn()->isCompilerGenerated()) {
+  if (candidate.fn()->untyped()->idIsFunction() &&
+      !candidate.fn()->isCompilerGenerated()) {
     auto fnAst = parsing::idToAst(context, candidate.fn()->id());
     if (auto ag = fnAst->attributeGroup()) {
       if (ag->hasPragma(pragmatags::PRAGMA_REF_TO_CONST_WHEN_CONST_THIS)) {
@@ -6779,7 +6913,8 @@ resolveFnCall(ResolutionContext* rc,
       ci.isMethodCall() == false) {
     // handle invocation of a type constructor from a type
     // (note that we might have the type through a type alias)
-    mostSpecific = resolveFnCallForTypeCtor(context, ci,
+    mostSpecific = resolveFnCallForTypeCtor(context,
+                                            ci,
                                             inScopes.callScope(),
                                             inScopes.poiScope(),
                                             poiInfo,
@@ -6790,8 +6925,10 @@ resolveFnCall(ResolutionContext* rc,
     // * disambiguate
     // * note any most specific candidates from POI in poiInfo.
     mostSpecific =
-      resolveFnCallFilterAndFindMostSpecific(rc, astContext,
-                                             call, ci,
+      resolveFnCallFilterAndFindMostSpecific(rc,
+                                             astContext,
+                                             call,
+                                             ci,
                                              inScopes,
                                              poiInfo,
                                              rejectedPossibleIteratorCandidates,
@@ -6803,18 +6940,17 @@ resolveFnCall(ResolutionContext* rc,
 
   // figure out the poiScope to use
   const PoiScope* instantiationPoiScope =
-    instantiationPoiScopeForMostSpecificCandidates(context, mostSpecific, inScopes);
+    instantiationPoiScopeForMostSpecificCandidates(
+      context, mostSpecific, inScopes);
 
-  accumulatePoiInfoForMostSpecificCandidates(rc, mostSpecific,
-                                             poiInfo, instantiationPoiScope);
-
+  accumulatePoiInfoForMostSpecificCandidates(
+    rc, mostSpecific, poiInfo, instantiationPoiScope);
 
   // infer types of generic 'out' formals from function bodies
   mostSpecific.inferOutFormals(rc, instantiationPoiScope);
 
   // see if we need to only use one overload for return type purposes
-  auto overloadForReturnType =
-    pickOverloadEarlyIfNeeded(mostSpecific);
+  auto overloadForReturnType = pickOverloadEarlyIfNeeded(mostSpecific);
 
   // compute the return types
   optional<QualifiedType> retType;
@@ -6822,8 +6958,8 @@ resolveFnCall(ResolutionContext* rc,
   optional<bool> promoted;
   for (const MostSpecificCandidate& candidate : mostSpecific) {
     if (candidate.fn() == nullptr) continue;
-    bool useForReturnType = overloadForReturnType == nullptr ||
-                            &candidate == overloadForReturnType;
+    bool useForReturnType =
+      overloadForReturnType == nullptr || &candidate == overloadForReturnType;
 
     QualifiedType rt;
     if (handleReflectionFunction(rc, candidate.fn(), call, rt)) {
@@ -6835,10 +6971,8 @@ resolveFnCall(ResolutionContext* rc,
     }
 
     bool isIterator = candidate.fn()->isIterator();
-    auto& yieldAndRet =
-      returnTypes(rc, candidate.fn(), instantiationPoiScope);
+    auto& yieldAndRet = returnTypes(rc, candidate.fn(), instantiationPoiScope);
     rt = yieldAndRet.second;
-
 
     if (ci.isMethodCall()) {
       adjustConstnessBasedOnReceiver(context, candidate, ci, rt);
@@ -6850,14 +6984,21 @@ resolveFnCall(ResolutionContext* rc,
     if (thisPromoted) {
       // this is actually a promotion; construct a promotion type instead.
       yt = rt;
-      rt = QualifiedType(rt.kind(), PromotionIteratorType::get(context, instantiationPoiScope, candidate.fn(), rt, candidate.promotedFormals()));
+      rt =
+        QualifiedType(rt.kind(),
+                      PromotionIteratorType::get(context,
+                                                 instantiationPoiScope,
+                                                 candidate.fn(),
+                                                 rt,
+                                                 candidate.promotedFormals()));
     }
 
     bool promotionMismatch = false;
-    if (((bool) promoted) && *promoted != thisPromoted) {
-      context->error(candidate.fn(),
-                     nullptr,
-                     "some return intent overloads are promoted, but others are not");
+    if (((bool)promoted) && *promoted != thisPromoted) {
+      context->error(
+        candidate.fn(),
+        nullptr,
+        "some return intent overloads are promoted, but others are not");
       promotionMismatch = true;
     } else if (!promoted) {
       promoted = thisPromoted;
@@ -6883,9 +7024,8 @@ resolveFnCall(ResolutionContext* rc,
       // TODO: improve iterators + iterator groups work with return intent
       //       overloading. Currently, we match production and ignore context.
       CHPL_ASSERT(!isIterator); // we picked one preferred overload above.
-      context->error(candidate.fn(),
-                     nullptr,
-                     "return intent overload type does not match");
+      context->error(
+        candidate.fn(), nullptr, "return intent overload type does not match");
     } else if (!retType) {
       retType = rt;
     }
@@ -6909,16 +7049,16 @@ resolveFnCall(ResolutionContext* rc,
   // (e.g., (owned C(?))(typeArg)), adjust the return type to keep
   // the management of the called type.
   const ClassType* calledCt = nullptr;
-  if (ci.calledType().type() && (calledCt = ci.calledType().type()->toClassType())) {
+  if (ci.calledType().type() &&
+      (calledCt = ci.calledType().type()->toClassType())) {
     const ClassType* retCt = nullptr;
     const BasicClassType* retBct = nullptr;
     if (retType && retType->type() &&
         (retCt = retType->type()->toClassType()) &&
         retCt->decorator().isUnknownManagement() && retCt->manageableType() &&
         (retBct = retCt->manageableType()->toBasicClassType())) {
-      auto newCt = ClassType::get(context, retBct,
-                                  calledCt->manager(),
-                                  calledCt->decorator());
+      auto newCt = ClassType::get(
+        context, retBct, calledCt->manager(), calledCt->decorator());
       CHPL_ASSERT(retType->param() == nullptr);
       retType = QualifiedType(retType->kind(), newCt);
     }
@@ -6926,17 +7066,17 @@ resolveFnCall(ResolutionContext* rc,
 
   return CallResolutionResult(mostSpecific,
                               rejectedPossibleIteratorCandidates,
-                              ((bool) retType) ? *retType : QualifiedType(),
-                              ((bool) yieldedType) ? *yieldedType : QualifiedType(),
+                              ((bool)retType) ? *retType : QualifiedType(),
+                              ((bool)yieldedType) ? *yieldedType
+                                                  : QualifiedType(),
                               std::move(poiInfo));
 }
 
-static
-CallResolutionResult resolveTupleExpr(Context* context,
-                                      const Tuple* tuple,
-                                      const CallInfo& ci,
-                                      const Scope* inScope,
-                                      const PoiScope* inPoiScope) {
+static CallResolutionResult resolveTupleExpr(Context* context,
+                                             const Tuple* tuple,
+                                             const CallInfo& ci,
+                                             const Scope* inScope,
+                                             const PoiScope* inPoiScope) {
   // resolve the tuple type from a tuple expression
 
   // per spec:
@@ -6953,7 +7093,8 @@ CallResolutionResult resolveTupleExpr(Context* context,
     const Type* t = q.type();
     if (t == nullptr || t->isUnknownType())
       anyUnknown = true;
-    else if (q.kind() == QualifiedType::TYPE || q.kind() == QualifiedType::TYPE_QUERY)
+    else if (q.kind() == QualifiedType::TYPE ||
+             q.kind() == QualifiedType::TYPE_QUERY)
       allValue = false;
     else
       allType = false;
@@ -6992,17 +7133,13 @@ CallResolutionResult resolveTupleExpr(Context* context,
 
 static bool shouldAttemptImplicitReceiver(const CallInfo& ci,
                                           QualifiedType implicitReceiver) {
-  return !ci.isMethodCall() &&
-         !ci.isOpCall() &&
+  return !ci.isMethodCall() && !ci.isOpCall() &&
          implicitReceiver.type() != nullptr &&
          // Assuming ci.name().isEmpty()==true implies a primitive call.
          // TODO: Add some kind of 'isPrimitive()' to CallInfo
-         !ci.name().isEmpty() &&
-         ci.name() != USTR("?") &&
-         ci.name() != USTR("owned") &&
-         ci.name() != USTR("shared") &&
-         ci.name() != USTR("borrowed") &&
-         ci.name() != USTR("unmanaged");
+         !ci.name().isEmpty() && ci.name() != USTR("?") &&
+         ci.name() != USTR("owned") && ci.name() != USTR("shared") &&
+         ci.name() != USTR("borrowed") && ci.name() != USTR("unmanaged");
 }
 
 CallResolutionResult resolveCall(ResolutionContext* rc,
@@ -7032,11 +7169,14 @@ CallResolutionResult resolveCall(ResolutionContext* rc,
     }
 
     // otherwise do regular call resolution
-    return resolveFnCall(rc, call, call, ci, inScopes, rejected, skipForwarding);
+    return resolveFnCall(
+      rc, call, call, ci, inScopes, rejected, skipForwarding);
   } else if (auto prim = call->toPrimCall()) {
-    return resolvePrimCall(rc, prim, ci, inScopes.callScope(), inScopes.poiScope());
+    return resolvePrimCall(
+      rc, prim, ci, inScopes.callScope(), inScopes.poiScope());
   } else if (auto tuple = call->toTuple()) {
-    return resolveTupleExpr(context, tuple, ci, inScopes.callScope(), inScopes.poiScope());
+    return resolveTupleExpr(
+      context, tuple, ci, inScopes.callScope(), inScopes.poiScope());
   }
 
   if (call) {
@@ -7051,7 +7191,9 @@ CallResolutionResult resolveCall(ResolutionContext* rc,
   PoiInfo emptyPoi;
   return CallResolutionResult(emptyCandidates,
                               /* rejectedPossibleIteratorCandidates */ false,
-                              emptyType, emptyType, emptyPoi);
+                              emptyType,
+                              emptyType,
+                              emptyPoi);
 }
 
 CallResolutionResult
@@ -7062,15 +7204,22 @@ resolveCallInMethod(ResolutionContext* rc,
                     QualifiedType implicitReceiver,
                     std::vector<ApplicabilityResult>* rejected) {
 
-  CallResolutionResult asFunction = resolveCall(rc,call,ci,inScopes,rejected);
+  CallResolutionResult asFunction =
+    resolveCall(rc, call, ci, inScopes, rejected);
 
   CallResolutionResult asMethod;
   if (shouldAttemptImplicitReceiver(ci, implicitReceiver)) {
-    auto methodCi = CallInfo::createWithReceiver(ci, implicitReceiver, /* rename */ UniqueString(), /* isImplicitMethodCall */ true);
+    auto methodCi =
+      CallInfo::createWithReceiver(ci,
+                                   implicitReceiver,
+                                   /* rename */ UniqueString(),
+                                   /* isImplicitMethodCall */ true);
     bool skipForwarding = asFunction.mostSpecific().foundCandidates();
-    asMethod = resolveCall(rc, call, methodCi, inScopes, rejected, skipForwarding);
+    asMethod =
+      resolveCall(rc, call, methodCi, inScopes, rejected, skipForwarding);
   }
-  if (asMethod.mostSpecific().foundCandidates() && asFunction.mostSpecific().foundCandidates()) {
+  if (asMethod.mostSpecific().foundCandidates() &&
+      asFunction.mostSpecific().foundCandidates()) {
     ID methodId = asMethod.mostSpecific().only().fn()->id();
     ID functionId = asFunction.mostSpecific().only().fn()->id();
     CHPL_REPORT(rc->context(), AmbiguousCall, call, methodId, functionId);
@@ -7082,11 +7231,12 @@ resolveCallInMethod(ResolutionContext* rc,
   }
 }
 
-CallResolutionResult resolveGeneratedCall(ResolutionContext* rc,
-                                          const AstNode* astContext,
-                                          const CallInfo& ci,
-                                          const CallScopeInfo& inScopes,
-                                          std::vector<ApplicabilityResult>* rejected) {
+CallResolutionResult
+resolveGeneratedCall(ResolutionContext* rc,
+                     const AstNode* astContext,
+                     const CallInfo& ci,
+                     const CallScopeInfo& inScopes,
+                     std::vector<ApplicabilityResult>* rejected) {
   QualifiedType tmpRetType;
 
   // see if the call is handled directly by the compiler
@@ -7095,7 +7245,8 @@ CallResolutionResult resolveGeneratedCall(ResolutionContext* rc,
   }
 
   CallResolutionResult keywordRes;
-  if (resolveMethodCallSpecial(rc->context(), astContext, ci, inScopes, keywordRes)) {
+  if (resolveMethodCallSpecial(
+        rc->context(), astContext, ci, inScopes, keywordRes)) {
     return keywordRes;
   }
 
@@ -7114,7 +7265,11 @@ resolveGeneratedCallInMethod(ResolutionContext* rc,
   // construct a method call and use that instead. If that resolves,
   // it takes precedence over functions.
   if (shouldAttemptImplicitReceiver(ci, implicitReceiver)) {
-    auto methodCi = CallInfo::createWithReceiver(ci, implicitReceiver, /* rename */ UniqueString(), /* isImplicitMethodCall */ true);
+    auto methodCi =
+      CallInfo::createWithReceiver(ci,
+                                   implicitReceiver,
+                                   /* rename */ UniqueString(),
+                                   /* isImplicitMethodCall */ true);
     auto ret = resolveGeneratedCall(rc, astContext, methodCi, inScopes);
     if (ret.mostSpecific().foundCandidates()) {
       return ret;
@@ -7144,21 +7299,23 @@ const TypedFnSignature* tryResolveInitEq(Context* context,
                      /* calledType */ QualifiedType(),
                      /* isMethodCall */ true,
                      /* hasQuestionArg */ false,
-                     /* isParenless */ false, actuals);
+                     /* isParenless */ false,
+                     actuals);
 
   const Scope* scope = nullptr;
   if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
 
   auto rc = createDummyRC(context);
-  auto c = resolveGeneratedCall(&rc, astForScopeOrErr, ci,
-                                CallScopeInfo::forNormalCall(scope, poiScope));
+  auto c = resolveGeneratedCall(
+    &rc, astForScopeOrErr, ci, CallScopeInfo::forNormalCall(scope, poiScope));
   return c.mostSpecific().only().fn();
 }
 
-bool addExistingSubstitutionsAsActuals(Context* context,
-                                       const types::Type* type,
-                                       std::vector<CallInfoActual>& outActuals,
-                                       std::vector<const uast::AstNode*>& outActualAsts) {
+bool addExistingSubstitutionsAsActuals(
+  Context* context,
+  const types::Type* type,
+  std::vector<CallInfoActual>& outActuals,
+  std::vector<const uast::AstNode*>& outActualAsts) {
   bool addedSubs = false;
   while (auto ct = type->getCompositeType()) {
     if (!ct->instantiatedFromCompositeType()) break;
@@ -7198,19 +7355,21 @@ const TypedFnSignature* tryResolveZeroArgInit(Context* context,
   std::vector<CallInfoActual> actuals;
   std::vector<const uast::AstNode*> ignoredActualAsts;
   actuals.push_back(CallInfoActual(toInitQt, USTR("this")));
-  addExistingSubstitutionsAsActuals(context, toInit, actuals, ignoredActualAsts);
+  addExistingSubstitutionsAsActuals(
+    context, toInit, actuals, ignoredActualAsts);
   auto ci = CallInfo(/* name */ USTR("init"),
                      /* calledType */ QualifiedType(),
                      /* isMethodCall */ true,
                      /* hasQuestionArg */ false,
-                     /* isParenless */ false, actuals);
+                     /* isParenless */ false,
+                     actuals);
 
   const Scope* scope = nullptr;
   if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
 
   auto rc = createDummyRC(context);
-  auto c = resolveGeneratedCall(&rc, astForScopeOrErr, ci,
-                                CallScopeInfo::forNormalCall(scope, poiScope));
+  auto c = resolveGeneratedCall(
+    &rc, astForScopeOrErr, ci, CallScopeInfo::forNormalCall(scope, poiScope));
   return c.mostSpecific().only().fn();
 }
 
@@ -7235,33 +7394,34 @@ const TypedFnSignature* tryResolveDeinit(Context* context,
   if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
 
   auto rc = createDummyRC(context);
-  auto c = resolveGeneratedCall(&rc, astForScopeOrErr, ci,
-                                CallScopeInfo::forNormalCall(scope, poiScope));
+  auto c = resolveGeneratedCall(
+    &rc, astForScopeOrErr, ci, CallScopeInfo::forNormalCall(scope, poiScope));
   return c.mostSpecific().only().fn();
 }
 
-static bool
-matchImplementationPoint(ResolutionContext* rc,
-                         const InterfaceType* ift,
-                         const ImplementationPoint* implPoint,
-                         bool& outIsGeneric) {
+static bool matchImplementationPoint(ResolutionContext* rc,
+                                     const InterfaceType* ift,
+                                     const ImplementationPoint* implPoint,
+                                     bool& outIsGeneric) {
   if (ift->id() != implPoint->interface()->id()) return false;
 
   // Use 'const var' so that canPass doesn't say that a type instantiates
   // itself.
   auto actualT = QualifiedType(QualifiedType::CONST_VAR, ift);
-  auto formalT = QualifiedType(QualifiedType::CONST_VAR, implPoint->interface());
+  auto formalT =
+    QualifiedType(QualifiedType::CONST_VAR, implPoint->interface());
   auto got = canPass(rc->context(), actualT, formalT);
 
   outIsGeneric = got.instantiates();
   return got.passes();
 }
 
-const ImplementationWitness* findMatchingImplementationPoint(ResolutionContext* rc,
-                                                            const types::InterfaceType* ift,
-                                                            const CallScopeInfo& inScopes) {
-  auto implPoints =
-    visibileImplementationPointsForInterface(rc->context(), inScopes.lookupScope(), inScopes.poiScope(), ift->id());
+const ImplementationWitness*
+findMatchingImplementationPoint(ResolutionContext* rc,
+                                const types::InterfaceType* ift,
+                                const CallScopeInfo& inScopes) {
+  auto implPoints = visibileImplementationPointsForInterface(
+    rc->context(), inScopes.lookupScope(), inScopes.poiScope(), ift->id());
 
   // TODO: this matches production, in which the first matching generic
   // implementation is used if no concrete one is found. It's probably
@@ -7280,7 +7440,8 @@ const ImplementationWitness* findMatchingImplementationPoint(ResolutionContext* 
 
           auto implScope = scopeForId(rc->context(), implPoint->id());
           auto checkScope = CallScopeInfo::forNormalCall(implScope, nullptr);
-          if (auto witness = checkInterfaceConstraints(rc, ift, implPoint->id(), checkScope)) {
+          if (auto witness = checkInterfaceConstraints(
+                rc, ift, implPoint->id(), checkScope)) {
             return witness;
           }
         }
@@ -7293,9 +7454,11 @@ const ImplementationWitness* findMatchingImplementationPoint(ResolutionContext* 
     // the current search scope, and use the point's scope for the search.
 
     auto implScope = scopeForId(rc->context(), generic->id());
-    auto poiScope = pointOfInstantiationScope(rc->context(), inScopes.callScope(), inScopes.poiScope());
+    auto poiScope = pointOfInstantiationScope(
+      rc->context(), inScopes.callScope(), inScopes.poiScope());
     auto checkScope = CallScopeInfo::forNormalCall(implScope, poiScope);
-    if (auto witness = checkInterfaceConstraints(rc, ift, generic->id(), checkScope)) {
+    if (auto witness =
+          checkInterfaceConstraints(rc, ift, generic->id(), checkScope)) {
       return witness;
     }
   }
@@ -7334,14 +7497,12 @@ struct InterfaceCheckHelper {
       actuals.emplace_back(templateSig->formalType(i), name);
     }
 
-    CallInfo ci {
-      templateSig->untyped()->name(),
-        /* calledType */ QualifiedType(),
-        /* isMethodCall */ templateFn->isMethod(),
-        /* hasQuestionArg */ false,
-        /* isParenless */ templateFn->isParenless(),
-        std::move(actuals)
-    };
+    CallInfo ci{templateSig->untyped()->name(),
+                /* calledType */ QualifiedType(),
+                /* isMethodCall */ templateFn->isMethod(),
+                /* hasQuestionArg */ false,
+                /* isParenless */ templateFn->isParenless(),
+                std::move(actuals)};
 
     return ci;
   }
@@ -7358,15 +7519,24 @@ struct InterfaceCheckHelper {
     if (failed && c.mostSpecific().isAmbiguous()) {
       // TODO: no way at this time to collected candidates rejected due to
       //       ambiguity, so just report an empty list.
-      CHPL_REPORT(rc->context(), InterfaceAmbiguousFn, ift, implPointId,
-                  templateFn, std::move(ambiguous));
+      CHPL_REPORT(rc->context(),
+                  InterfaceAmbiguousFn,
+                  ift,
+                  implPointId,
+                  templateFn,
+                  std::move(ambiguous));
       return nullptr;
     } else if (failed) {
       // Failed to find a call, not due to ambiguity. Re-run call and gather
       // rejected candidates.
       resolveGeneratedCall(rc, templateFn, ci, inScopes, &rejected);
-      CHPL_REPORT(rc->context(), InterfaceMissingFn, ift, implPointId,
-                  templateSigWithSubs, ci, std::move(rejected));
+      CHPL_REPORT(rc->context(),
+                  InterfaceMissingFn,
+                  ift,
+                  implPointId,
+                  templateSigWithSubs,
+                  ci,
+                  std::move(rejected));
       return nullptr;
     }
 
@@ -7401,9 +7571,10 @@ struct InterfaceCheckHelper {
     return foundFn;
   }
 
-  bool validateFormalOrderForTemplate(const CallInfo& ci,
-                                      const TypedFnSignature* templateSigWithSubs,
-                                      const TypedFnSignature* candidateSig) {
+  bool
+  validateFormalOrderForTemplate(const CallInfo& ci,
+                                 const TypedFnSignature* templateSigWithSubs,
+                                 const TypedFnSignature* candidateSig) {
     // Validate that the formal names are in the right order. We could do this
     // by resolving a generated call with every actual being named, but this
     // will miss some cases, like when the template is:
@@ -7434,8 +7605,12 @@ struct InterfaceCheckHelper {
       if (formalActual.actualIdx() <= lastActualPosition) {
         // the actuals in the call (which are formals from the template)
         // are re-ordered compared to the foundFn. This is an error.
-        CHPL_REPORT(rc->context(), InterfaceReorderedFnFormals, ift,
-                    implPointId, templateSigWithSubs, candidateSig);
+        CHPL_REPORT(rc->context(),
+                    InterfaceReorderedFnFormals,
+                    ift,
+                    implPointId,
+                    templateSigWithSubs,
+                    candidateSig);
         return false;
       }
       lastActualPosition = formalActual.actualIdx();
@@ -7480,7 +7655,8 @@ struct InterfaceCheckHelper {
       // as a frame for the resolver and thus provides 'witness' (which contains
       // associated types) to function resolution.
       ResolutionResultByPostorderID byPostorder;
-      auto resolver = Resolver::createForInterfaceStmt(rc, itf, ift, witness, templateFn, byPostorder);
+      auto resolver = Resolver::createForInterfaceStmt(
+        rc, itf, ift, witness, templateFn, byPostorder);
 
       // Note: want to use the signature without substitutes here, because
       // if we instantiate the signature with the "real" Self types, we
@@ -7490,11 +7666,11 @@ struct InterfaceCheckHelper {
       // instantiated scopes. So, use the signature with placeholders to
       // perform return type resolution, _then_ replace the placeholders
       // with associated types etc. to get the final return type.
-      templateQT =
-        returnType(rc, templateSig, c.poiInfo().poiScope())
-          .substitute(rc->context(), *allPlaceholders);
+      templateQT = returnType(rc, templateSig, c.poiInfo().poiScope())
+                     .substitute(rc->context(), *allPlaceholders);
     } else {
-      templateQT = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(rc->context()));
+      templateQT =
+        QualifiedType(QualifiedType::CONST_VAR, VoidType::get(rc->context()));
     }
 
     if (templateQT.isUnknownOrErroneous()) return false;
@@ -7509,14 +7685,14 @@ struct InterfaceCheckHelper {
       return false;
     }
 
-
     // For iterable things, we need to compare yield types (while there,
     // figure out yield intent)
     bool checkedYield = false;
     if (templateFn->kind() == Function::ITER) {
       CHPL_ASSERT(candidateSig->untyped()->kind() == Function::ITER);
       CHPL_ASSERT(templateT->isFnIteratorType());
-      auto templateYieldT = yieldTypeForIterator(rc, templateT->toFnIteratorType()).type();
+      auto templateYieldT =
+        yieldTypeForIterator(rc, templateT->toFnIteratorType()).type();
       actualKind = c.yieldedType().kind();
       auto yieldT = c.yieldedType().type();
 
@@ -7553,8 +7729,12 @@ struct InterfaceCheckHelper {
       }
 
       if (!silenceReturnIntentError) {
-        CHPL_REPORT(rc->context(), InterfaceInvalidIntent, ift,
-                    implPointId, templateSig, candidateSig);
+        CHPL_REPORT(rc->context(),
+                    InterfaceInvalidIntent,
+                    ift,
+                    implPointId,
+                    templateSig,
+                    candidateSig);
         return false;
       }
     }
@@ -7574,13 +7754,17 @@ struct InterfaceCheckHelper {
       auto yieldT = c.yieldedType().type();
       if (!templateT->isVoidType() && !templateT->isNothingType()) {
         // TODO: special error message about promotion w.r.t. return type
-        rc->context()->error(implPointId, "promotion used but not supported for non-void interface functions");
+        rc->context()->error(
+          implPointId,
+          "promotion used but not supported for non-void interface functions");
         return false;
       }
 
       if (!yieldT->isVoidType() && !yieldT->isNothingType()) {
         // TODO: special error message about promotion w.r.t. return type
-        rc->context()->error(implPointId, "promotion used but scalar function has non-void return type");
+        rc->context()->error(
+          implPointId,
+          "promotion used but scalar function has non-void return type");
         return false;
       }
 
@@ -7591,34 +7775,36 @@ struct InterfaceCheckHelper {
     return true;
   }
 
-  const TypedFnSignature* searchFunctionByTemplate(const Function* templateFn,
-                                                   const TypedFnSignature* templateSig) {
+  const TypedFnSignature*
+  searchFunctionByTemplate(const Function* templateFn,
+                           const TypedFnSignature* templateSig) {
     CHPL_ASSERT(allPlaceholders);
-    auto templateSigWithSubs = templateSig->substitute(rc->context(), *allPlaceholders);
+    auto templateSigWithSubs =
+      templateSig->substitute(rc->context(), *allPlaceholders);
 
     returnIntentOverloads.reset();
 
     auto ci = setupCallForTemplate(templateFn, templateSigWithSubs);
-    if (!ci) return  nullptr;
+    if (!ci) return nullptr;
 
     // TODO: how to note this?
-    auto c =
-      resolveGeneratedCall(rc, templateFn, *ci, inScopes);
+    auto c = resolveGeneratedCall(rc, templateFn, *ci, inScopes);
 
     if (c.exprType().isUnknownOrErroneous() && templateFn->body()) {
       // template has a default implementation; return it, we're good.
       return templateSigWithSubs;
     }
 
-    auto foundFn = findBestCandidateForTemplate(*ci, c, templateFn,
-                                                templateSigWithSubs);
+    auto foundFn =
+      findBestCandidateForTemplate(*ci, c, templateFn, templateSigWithSubs);
     if (!foundFn) return nullptr;
 
     if (!validateFormalOrderForTemplate(*ci, templateSigWithSubs, foundFn)) {
       return nullptr;
     }
 
-    if (!validateReturnTypeForTemplate(*ci, c, templateFn, templateSig, foundFn)) {
+    if (!validateReturnTypeForTemplate(
+          *ci, c, templateFn, templateSig, foundFn)) {
       return nullptr;
     }
 
@@ -7635,18 +7821,15 @@ struct InterfaceCheckHelper {
                                         const Variable* td,
                                         bool& outInferType) {
     // Set up a parenless type-proc call to compute associated type
-    auto ci = CallInfo(
-      td->name(),
-      /* calledType */ QualifiedType(),
-      /* isMethodCall */ true,
-      /* hasQuestionArg */ false,
-      /* isParenless */ true,
-      /* actuals */ { { receiverType, USTR("this") } }
-    );
+    auto ci = CallInfo(td->name(),
+                       /* calledType */ QualifiedType(),
+                       /* isMethodCall */ true,
+                       /* hasQuestionArg */ false,
+                       /* isParenless */ true,
+                       /* actuals */ {{receiverType, USTR("this")}});
 
     // TODO: how to note this?
-    auto c =
-      resolveGeneratedCall(rc, td, ci, inScopes);
+    auto c = resolveGeneratedCall(rc, td, ci, inScopes);
 
     std::vector<ApplicabilityResult> rejected;
     bool failed = c.exprType().isUnknownOrErroneous();
@@ -7654,9 +7837,8 @@ struct InterfaceCheckHelper {
     if (!failed) {
       notType = !c.exprType().isType();
       if (notType) {
-        rejected.push_back(
-            ApplicabilityResult::failure(c.mostSpecific().only().fn(),
-                                         FAIL_INTERFACE_NOT_TYPE_INTENT));
+        rejected.push_back(ApplicabilityResult::failure(
+          c.mostSpecific().only().fn(), FAIL_INTERFACE_NOT_TYPE_INTENT));
       }
     } else {
       resolveGeneratedCall(rc, td, ci, inScopes, &rejected);
@@ -7678,8 +7860,13 @@ struct InterfaceCheckHelper {
         outInferType = true;
       } else {
         // No, sorry, we don't infer this type, and we couldn't find it.
-        CHPL_REPORT(rc->context(), InterfaceMissingAssociatedType, ift,
-                    implPointId, td, ci, std::move(rejected));
+        CHPL_REPORT(rc->context(),
+                    InterfaceMissingAssociatedType,
+                    ift,
+                    implPointId,
+                    td,
+                    ci,
+                    std::move(rejected));
       }
 
       return QualifiedType();
@@ -7695,7 +7882,12 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
                                const ID& implPointIdForErr,
                                const Scope* inScope,
                                const PoiScope* inPoiScope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(checkInterfaceConstraintsQuery, rc, ift, implPointIdForErr, inScope, inPoiScope);
+  CHPL_RESOLUTION_QUERY_BEGIN(checkInterfaceConstraintsQuery,
+                              rc,
+                              ift,
+                              implPointIdForErr,
+                              inScope,
+                              inPoiScope);
 
   auto inScopes = CallScopeInfo::forNormalCall(inScope, inPoiScope);
 
@@ -7708,9 +7900,8 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
   ImplementationWitness::ConstraintMap associatedConstraints;
   bool allGenerated = true;
   bool anyWitnesses = false;
-  auto witness1 =
-    ImplementationWitness::get(rc->context(), associatedConstraints,
-                               {}, {}, {}, allGenerated);
+  auto witness1 = ImplementationWitness::get(
+    rc->context(), associatedConstraints, {}, {}, {}, allGenerated);
 
   // Next, process all the associated types, and create a "phase 2"
   // implementation witness.
@@ -7725,8 +7916,16 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
   }
   auto associatedReceiverType = QualifiedType(); // cached across iterations
   ImplementationWitness::AssociatedTypeMap associatedTypes;
-  InterfaceCheckHelper helper {
-    rc, itf, ift, implPointIdForErr, inScopes, witness1, nullptr, allGenerated, nullptr,
+  InterfaceCheckHelper helper{
+    rc,
+    itf,
+    ift,
+    implPointIdForErr,
+    inScopes,
+    witness1,
+    nullptr,
+    allGenerated,
+    nullptr,
   };
   for (auto stmt : itf->stmts()) {
     auto td = stmt->toVariable();
@@ -7738,7 +7937,8 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
     CHPL_ASSERT(td->storageKind() == QualifiedType::TYPE);
 
     ResolutionResultByPostorderID byPostorder;
-    auto resolver = Resolver::createForInterfaceStmt(rc, itf, ift, witness1, stmt, byPostorder);
+    auto resolver = Resolver::createForInterfaceStmt(
+      rc, itf, ift, witness1, stmt, byPostorder);
     td->traverse(resolver);
     if (associatedReceiverType.kind() != QualifiedType::TYPE) {
       // for associated types of multi-type interfaces, resolve the call
@@ -7758,7 +7958,8 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
     }
 
     bool inferType = false;
-    auto foundQt = helper.searchForAssociatedType(associatedReceiverType, td, inferType);
+    auto foundQt =
+      helper.searchForAssociatedType(associatedReceiverType, td, inferType);
     if (foundQt.isUnknownOrErroneous()) {
 
       // Right now, this is only hit as a special case, so we know we're inferring
@@ -7777,15 +7978,19 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
     }
   }
   auto witness2 =
-    ImplementationWitness::get(rc->context(), associatedConstraints,
-                               associatedTypes, {}, {},
+    ImplementationWitness::get(rc->context(),
+                               associatedConstraints,
+                               associatedTypes,
+                               {},
+                               {},
                                anyWitnesses && helper.allGenerated);
 
   // Next, process all the functions; if all of these are found, we can construct
   // a final witness with all the required information.
   PlaceholderMap allPlaceholders;
   for (auto& [id, t] : associatedTypes) allPlaceholders.emplace(id, t);
-  for (auto& [id, qt] : ift->substitutions()) allPlaceholders.emplace(id, qt.type());
+  for (auto& [id, qt] : ift->substitutions())
+    allPlaceholders.emplace(id, qt.type());
   ImplementationWitness::FunctionMap functions;
   ImplementationWitness::OverloadMap returnIntentOverloads;
   helper.witness = witness2;
@@ -7804,8 +8009,8 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
     // an interface frame onto the ResolutionContext. This is required for
     // resolving typed signatures in the interface.
     ResolutionResultByPostorderID byPostorder;
-    auto resolver = Resolver::createForInterfaceStmt(rc, itf, ift, witness2, stmt, byPostorder);
-
+    auto resolver = Resolver::createForInterfaceStmt(
+      rc, itf, ift, witness2, stmt, byPostorder);
 
     // Construct an initial typed signature, which will have opaque placeholder
     // types for 'Self', associated types, etc. Then, replace the placeholders
@@ -7820,17 +8025,18 @@ checkInterfaceConstraintsQuery(ResolutionContext* rc,
     } else {
       functions.emplace(fn->id(), foundFn);
       if (helper.returnIntentOverloads) {
-        returnIntentOverloads.emplace(fn->id(), std::move(*helper.returnIntentOverloads));
+        returnIntentOverloads.emplace(fn->id(),
+                                      std::move(*helper.returnIntentOverloads));
       }
     }
   }
 
-  result =
-    ImplementationWitness::get(rc->context(), associatedConstraints,
-                               std::move(associatedTypes),
-                               std::move(functions),
-                               std::move(returnIntentOverloads),
-                               anyWitnesses && helper.allGenerated);
+  result = ImplementationWitness::get(rc->context(),
+                                      associatedConstraints,
+                                      std::move(associatedTypes),
+                                      std::move(functions),
+                                      std::move(returnIntentOverloads),
+                                      anyWitnesses && helper.allGenerated);
   return CHPL_RESOLUTION_QUERY_END(result);
 }
 
@@ -7839,26 +8045,24 @@ checkInterfaceConstraints(ResolutionContext* rc,
                           const InterfaceType* ift,
                           const ID& implPointId,
                           const CallScopeInfo& inScopes) {
-  return checkInterfaceConstraintsQuery(rc, ift, implPointId,
-                                        inScopes.callScope(),
-                                        inScopes.poiScope());
+  return checkInterfaceConstraintsQuery(
+    rc, ift, implPointId, inScopes.callScope(), inScopes.poiScope());
 }
 
-const ImplementationWitness* findOrImplementInterface(ResolutionContext* rc,
-                                                      const types::InterfaceType* ift,
-                                                      const types::Type* forType,
-                                                      const CallScopeInfo& inScopes,
-                                                      const ID& implPointId,
-                                                      bool& outFoundExisting) {
+const ImplementationWitness*
+findOrImplementInterface(ResolutionContext* rc,
+                         const types::InterfaceType* ift,
+                         const types::Type* forType,
+                         const CallScopeInfo& inScopes,
+                         const ID& implPointId,
+                         bool& outFoundExisting) {
   outFoundExisting = false;
 
-  auto instantiatedIft =
-    InterfaceType::withTypes(rc->context(), ift,
-                             { QualifiedType(QualifiedType::TYPE, forType) });
+  auto instantiatedIft = InterfaceType::withTypes(
+    rc->context(), ift, {QualifiedType(QualifiedType::TYPE, forType)});
   if (!instantiatedIft) return nullptr;
 
-  auto witness =
-    findMatchingImplementationPoint(rc, instantiatedIft, inScopes);
+  auto witness = findMatchingImplementationPoint(rc, instantiatedIft, inScopes);
 
   if (witness) {
     outFoundExisting = true;
@@ -7868,7 +8072,8 @@ const ImplementationWitness* findOrImplementInterface(ResolutionContext* rc,
   // try automatically satisfy the interface if it's in the standard modules.
   if (parsing::idIsInBundledModule(rc->context(), ift->id())) {
     auto runResult = rc->context()->runAndDetectErrors([&](Context* context) {
-      return checkInterfaceConstraints(rc, instantiatedIft, implPointId, inScopes);
+      return checkInterfaceConstraints(
+        rc, instantiatedIft, implPointId, inScopes);
     });
     witness = runResult.result();
   }
@@ -7902,39 +8107,44 @@ tryResolveAssignHelper(Context* context,
   const Scope* scope = nullptr;
   if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
   auto rc = createDummyRC(context);
-  auto c = resolveGeneratedCall(&rc, astForScopeOrErr, ci,
-                                CallScopeInfo::forNormalCall(scope, /* poiScope */ nullptr));
+  auto c = resolveGeneratedCall(
+    &rc,
+    astForScopeOrErr,
+    ci,
+    CallScopeInfo::forNormalCall(scope, /* poiScope */ nullptr));
   return c.mostSpecific().only().fn();
 }
 
 // Tries to resolve an = that assigns a type from itself, first as a method and
 // then as a standalone operator.
-const TypedFnSignature*
-tryResolveAssign(Context* context,
-                 const uast::AstNode* astForScopeOrErr,
-                 const types::Type* lhsType,
-                 const types::Type* rhsType,
-                 const PoiScope* poiScope) {
-  auto res = tryResolveAssignHelper(context, astForScopeOrErr, lhsType,
+const TypedFnSignature* tryResolveAssign(Context* context,
+                                         const uast::AstNode* astForScopeOrErr,
+                                         const types::Type* lhsType,
+                                         const types::Type* rhsType,
+                                         const PoiScope* poiScope) {
+  auto res = tryResolveAssignHelper(context,
+                                    astForScopeOrErr,
+                                    lhsType,
                                     rhsType,
                                     /* asMethod */ true);
   if (!res) {
-    res = tryResolveAssignHelper(context, astForScopeOrErr, lhsType,
+    res = tryResolveAssignHelper(context,
+                                 astForScopeOrErr,
+                                 lhsType,
                                  rhsType,
                                  /* asMethod */ false);
   }
   return res;
 }
 
-static bool helpFieldNameCheck(const AstNode* ast,
-                               UniqueString name) {
+static bool helpFieldNameCheck(const AstNode* ast, UniqueString name) {
   ID ignoredId;
   return parsing::findFieldIdInDeclaration(ast, name, ignoredId);
 }
 
-static const CompositeType* const&
-isNameOfFieldQuery(Context* context,
-                   UniqueString name, const CompositeType* ct) {
+static const CompositeType* const& isNameOfFieldQuery(Context* context,
+                                                      UniqueString name,
+                                                      const CompositeType* ct) {
   QUERY_BEGIN(isNameOfFieldQuery, context, name, ct);
 
   const CompositeType* result = nullptr;
@@ -7942,12 +8152,10 @@ isNameOfFieldQuery(Context* context,
   CHPL_ASSERT(ast && ast->isAggregateDecl());
   auto ad = ast->toAggregateDecl();
 
-  for (auto child: ad->children()) {
+  for (auto child : ad->children()) {
     // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
-    if (child->isVarLikeDecl() ||
-        child->isMultiDecl() ||
-        child->isTupleDecl() ||
-        child->isForwardingDecl()) {
+    if (child->isVarLikeDecl() || child->isMultiDecl() ||
+        child->isTupleDecl() || child->isForwardingDecl()) {
       bool found = helpFieldNameCheck(child, name);
       if (found) {
         result = ct;
@@ -7970,9 +8178,8 @@ isNameOfFieldQuery(Context* context,
   return QUERY_END(result);
 }
 
-const CompositeType* isNameOfField(Context* context,
-                                   UniqueString name,
-                                   const Type* t) {
+const CompositeType*
+isNameOfField(Context* context, UniqueString name, const Type* t) {
 
   if (t == nullptr) {
     return nullptr;
@@ -7993,14 +8200,16 @@ const CompositeType* isNameOfField(Context* context,
   return isNameOfFieldQuery(context, name, ct);
 }
 
-void getCopyOrAssignableInfo(ResolutionContext* rc, const Type* t,
-                                    bool& fromConst, bool& fromRef,
-                                    bool checkCopyable);
+void getCopyOrAssignableInfo(ResolutionContext* rc,
+                             const Type* t,
+                             bool& fromConst,
+                             bool& fromRef,
+                             bool checkCopyable);
 
 // Determine whether a class type is copyable or assignable, from ref and/or
 // from const.
-static const CopyableAssignableInfo getClassTypeCopyOrAssignable(
-    const ClassType* ct) {
+static const CopyableAssignableInfo
+getClassTypeCopyOrAssignable(const ClassType* ct) {
   CopyableAssignableInfo result;
 
   if (ct->decorator().isManaged() && ct->manager()->isAnyOwnedType()) {
@@ -8019,10 +8228,10 @@ static const CopyableAssignableInfo getClassTypeCopyOrAssignable(
 
 // Set checkCopyable true for copyable, false for assignable.
 static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
-    ResolutionContext* rc, const CompositeType* ct, bool checkCopyable) {
-  CHPL_RESOLUTION_QUERY_BEGIN(getCopyOrAssignableInfoQuery, rc, ct, checkCopyable);
+  ResolutionContext* rc, const CompositeType* ct, bool checkCopyable) {
+  CHPL_RESOLUTION_QUERY_BEGIN(
+    getCopyOrAssignableInfoQuery, rc, ct, checkCopyable);
   auto context = rc->context();
-
 
   CopyableAssignableInfo result = CopyableAssignableInfo::fromNone();
 
@@ -8041,16 +8250,15 @@ static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
     result = CopyableAssignableInfo::fromConst();
     // TODO: add iterator for TupleType element types and use a range-based for
     for (int i = 0; i < tt->numElements(); i++) {
-      result.intersectWith(getCopyOrAssignableInfo(
-          rc, tt->elementType(i).type(), checkCopyable));
+      result.intersectWith(
+        getCopyOrAssignableInfo(rc, tt->elementType(i).type(), checkCopyable));
       if (tt->isStarTuple()) break;
     }
   } else {
     auto ast = parsing::idToAst(context, ct->id());
     const AttributeGroup* attrs = nullptr;
     if (ast) attrs = ast->attributeGroup();
-    if (checkCopyable && attrs &&
-        (attrs->hasPragma(PRAGMA_SYNC))) {
+    if (checkCopyable && attrs && (attrs->hasPragma(PRAGMA_SYNC))) {
       // Syncs are copyable
       // This is a special case to preserve deprecated behavior before
       // sync implicit reads are removed. 12/8/23
@@ -8059,8 +8267,8 @@ static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
       // In general, try to resolve the type's 'init='/'=', and examine it to
       // determine copy/assignability, respectively.
       const TypedFnSignature* testResolvedSig =
-          (checkCopyable ? tryResolveInitEq(context, ast, ct, ct)
-                         : tryResolveAssign(context, ast, ct, ct));
+        (checkCopyable ? tryResolveInitEq(context, ast, ct, ct)
+                       : tryResolveAssign(context, ast, ct, ct));
       if (testResolvedSig) {
         if (testResolvedSig->untyped()->isCompilerGenerated()) {
           // Check for class fields reducing copy/assignability; otherwise it
@@ -8068,7 +8276,7 @@ static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
 
           result = CopyableAssignableInfo::fromConst();
           auto resolvedFields =
-              fieldsForTypeDecl(rc, ct, DefaultsPolicy::USE_DEFAULTS);
+            fieldsForTypeDecl(rc, ct, DefaultsPolicy::USE_DEFAULTS);
           for (int i = 0; i < resolvedFields.numFields(); i++) {
             auto fieldType = resolvedFields.fieldType(i).type();
             if (auto classTy = fieldType->toClassType()) {
@@ -8076,7 +8284,7 @@ static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
             } else if (auto rt = fieldType->toRecordType()) {
               // check record fields recursively
               result.intersectWith(
-                  getCopyOrAssignableInfo(rc, rt, checkCopyable));
+                getCopyOrAssignableInfo(rc, rt, checkCopyable));
             }
           }
         } else {
@@ -8103,8 +8311,8 @@ static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
             result = CopyableAssignableInfo::fromRef();
           } else {
             context->error(
-                testResolvedSig->untyped()->formalDecl(otherFormalNum),
-                "unexpected formal intent for special proc");
+              testResolvedSig->untyped()->formalDecl(otherFormalNum),
+              "unexpected formal intent for special proc");
           }
         }
       }
@@ -8114,7 +8322,8 @@ static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
   return CHPL_RESOLUTION_QUERY_END(result);
 }
 
-CopyableAssignableInfo getCopyOrAssignableInfo(ResolutionContext* rc, const Type* t,
+CopyableAssignableInfo getCopyOrAssignableInfo(ResolutionContext* rc,
+                                               const Type* t,
                                                bool checkCopyable) {
   CopyableAssignableInfo result;
 
@@ -8145,11 +8354,11 @@ getCompilerGeneratedGlobals(Context* context) {
 
   auto& globals = compilerGlobals(context);
   std::unordered_map<UniqueString, QualifiedType> result;
-  #define COMPILER_GLOBAL(TYPE__, IDENT__, NAME__)\
-    result[UniqueString::get(context, IDENT__)] = \
-      paramTypeFromValue<TYPE__>(context, globals.NAME__);
-  #include "chpl/uast/compiler-globals-list.h"
-  #undef COMPILER_GLOBAL
+#define COMPILER_GLOBAL(TYPE__, IDENT__, NAME__)         \
+  result[UniqueString::get(context, IDENT__)] =          \
+    paramTypeFromValue<TYPE__>(context, globals.NAME__);
+#include "chpl/uast/compiler-globals-list.h"
+#undef COMPILER_GLOBAL
 
   return QUERY_END(result);
 }
@@ -8159,29 +8368,32 @@ reportInvalidMultipleInheritanceImpl(Context* context,
                                      const uast::Class* node,
                                      const uast::AstNode* firstParent,
                                      const uast::AstNode* secondParent) {
-  QUERY_BEGIN(reportInvalidMultipleInheritanceImpl, context, node, firstParent, secondParent);
+  QUERY_BEGIN(reportInvalidMultipleInheritanceImpl,
+              context,
+              node,
+              firstParent,
+              secondParent);
   CHPL_REPORT(context, MultipleInheritance, node, firstParent, secondParent);
   auto result = false;
   return QUERY_END(result);
 }
 
-void
-reportInvalidMultipleInheritance(Context* context,
-                                 const uast::Class* node,
-                                 const uast::AstNode* firstParent,
-                                 const uast::AstNode* secondParent) {
+void reportInvalidMultipleInheritance(Context* context,
+                                      const uast::Class* node,
+                                      const uast::AstNode* firstParent,
+                                      const uast::AstNode* secondParent) {
 
-  std::ignore = reportInvalidMultipleInheritanceImpl(context, node,
-                                                     firstParent, secondParent);
+  std::ignore = reportInvalidMultipleInheritanceImpl(
+    context, node, firstParent, secondParent);
 }
 
-static const bool&
-reportDeprecatedSyncReadImpl(Context* context,
-                             const Type* syncT,
-                             const AstNode* astForErr,
-                             const AstNode* source,
-                             const AstNode* dest) {
-  QUERY_BEGIN(reportDeprecatedSyncReadImpl, context, syncT, astForErr, source, dest);
+static const bool& reportDeprecatedSyncReadImpl(Context* context,
+                                                const Type* syncT,
+                                                const AstNode* astForErr,
+                                                const AstNode* source,
+                                                const AstNode* dest) {
+  QUERY_BEGIN(
+    reportDeprecatedSyncReadImpl, context, syncT, astForErr, source, dest);
   CHPL_REPORT(context, DeprecatedSyncRead, syncT, astForErr, source, dest);
   auto result = false;
   return QUERY_END(result);
@@ -8192,7 +8404,8 @@ void reportDeprecatedSyncRead(Context* context,
                               const AstNode* astForErr,
                               const AstNode* source,
                               const AstNode* dest) {
-  std::ignore = reportDeprecatedSyncReadImpl(context, syncT, astForErr, source, dest);
+  std::ignore =
+    reportDeprecatedSyncReadImpl(context, syncT, astForErr, source, dest);
 }
 
 const Decl* findFieldByName(Context* context,
@@ -8230,7 +8443,8 @@ const Decl* findFieldByName(Context* context,
     if (auto bct = ct->toBasicClassType()) {
       if (auto parent = bct->parentClassType()) {
         if (parent->isRootClass() == false) {
-          auto parentAD = parsing::idToAst(context, parent->id())->toAggregateDecl();
+          auto parentAD =
+            parsing::idToAst(context, parent->id())->toAggregateDecl();
           ret = findFieldByName(context, parentAD, parent, name);
         }
       }
@@ -8243,24 +8457,21 @@ const Decl* findFieldByName(Context* context,
 static UniqueString iterKindToUniqueString(Context* context,
                                            Function::IteratorKind kind) {
   switch (kind) {
-    case Function::IteratorKind::SERIAL:
-      return UniqueString();
-    case Function::IteratorKind::STANDALONE:
-      return USTR("standalone");
-    case Function::IteratorKind::FOLLOWER:
-      return USTR("follower");
-    case Function::IteratorKind::LEADER:
-      return USTR("leader");
+    case Function::IteratorKind::SERIAL: return UniqueString();
+    case Function::IteratorKind::STANDALONE: return USTR("standalone");
+    case Function::IteratorKind::FOLLOWER: return USTR("follower");
+    case Function::IteratorKind::LEADER: return USTR("leader");
   }
   CHPL_ASSERT(false && "unhandled iterator kind");
   return UniqueString();
 }
 
 const QualifiedType&
-getIterKindConstantOrUnknown(Context* context, Function::IteratorKind iterKind) {
+getIterKindConstantOrUnknown(Context* context,
+                             Function::IteratorKind iterKind) {
   QUERY_BEGIN(getIterKindConstantOrUnknown, context, iterKind);
 
-  QualifiedType ret = { QualifiedType::UNKNOWN, UnknownType::get(context) };
+  QualifiedType ret = {QualifiedType::UNKNOWN, UnknownType::get(context)};
 
   auto constant = iterKindToUniqueString(context, iterKind);
   if (!constant.isEmpty()) {
@@ -8283,18 +8494,34 @@ findTaggedIterator(ResolutionContext* rc,
                    const Scope* callScope,
                    const Scope* iteratorScope,
                    const PoiScope* poiScope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(findTaggedIterator, rc, name, isMethod, argTypes, tag, callScope, iteratorScope, poiScope);
+  CHPL_RESOLUTION_QUERY_BEGIN(findTaggedIterator,
+                              rc,
+                              name,
+                              isMethod,
+                              argTypes,
+                              tag,
+                              callScope,
+                              iteratorScope,
+                              poiScope);
 
-  auto scopeInfo = CallScopeInfo::forIteratorOverloadSearch(callScope, iteratorScope, poiScope);
+  auto scopeInfo = CallScopeInfo::forIteratorOverloadSearch(
+    callScope, iteratorScope, poiScope);
 
-  CHPL_ASSERT(!isMethod || (argTypes.size() >= 1 && !argTypes[0].isUnknownOrErroneous()));
+  CHPL_ASSERT(!isMethod ||
+              (argTypes.size() >= 1 && !argTypes[0].isUnknownOrErroneous()));
 
   auto followThisType = QualifiedType();
   bool isFollower = tag == Function::FOLLOWER;
   bool isSerial = tag == Function::SERIAL;
   if (isFollower) {
-    auto candidate = findTaggedIterator(rc, name, isMethod, argTypes,
-                                        Function::LEADER, callScope, iteratorScope, poiScope);
+    auto candidate = findTaggedIterator(rc,
+                                        name,
+                                        isMethod,
+                                        argTypes,
+                                        Function::LEADER,
+                                        callScope,
+                                        iteratorScope,
+                                        poiScope);
     if (candidate && candidate.fn()->isIterator()) {
       followThisType = yieldType(rc, candidate.fn(), poiScope);
     }
@@ -8339,13 +8566,15 @@ findTaggedIterator(ResolutionContext* rc,
     actuals.push_back(CallInfoActual(followThisType, USTR("followThis")));
   }
 
-  auto ci = CallInfo(name, QualifiedType(),
+  auto ci = CallInfo(name,
+                     QualifiedType(),
                      /* isMethodCall */ isMethod,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
                      actuals);
 
-  auto c = resolveGeneratedCall(rc, parsing::idToAst(rc->context(), iteratorScope->id()), ci, scopeInfo);
+  auto c = resolveGeneratedCall(
+    rc, parsing::idToAst(rc->context(), iteratorScope->id()), ci, scopeInfo);
   auto ret = c.mostSpecific().only();
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
@@ -8390,7 +8619,8 @@ static CallScopeInfo callScopeInfoForIterator(Context* context,
     poiScope = poiScope->inFnPoi();
   }
 
-  return CallScopeInfo::forIteratorOverloadSearch(callScope, iteratorScope, poiScope);
+  return CallScopeInfo::forIteratorOverloadSearch(
+    callScope, iteratorScope, poiScope);
 }
 
 const MostSpecificCandidate&
@@ -8398,7 +8628,8 @@ findTaggedIteratorForType(ResolutionContext* rc,
                           const FnIteratorType* fnIter,
                           Function::IteratorKind iterKind,
                           const Scope* overrideScope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(findTaggedIteratorForType, rc, fnIter, iterKind, overrideScope);
+  CHPL_RESOLUTION_QUERY_BEGIN(
+    findTaggedIteratorForType, rc, fnIter, iterKind, overrideScope);
 
   auto fn = fnIter->iteratorFn();
   auto name = fnIter->iteratorFn()->untyped()->name();
@@ -8416,10 +8647,17 @@ findTaggedIteratorForType(ResolutionContext* rc,
       argTypes.push_back(fn->formalType(i));
     }
   }
-  auto inScopes = callScopeInfoForIterator(rc->context(), fnIter, overrideScope);
+  auto inScopes =
+    callScopeInfoForIterator(rc->context(), fnIter, overrideScope);
 
-  auto ret = findTaggedIterator(rc, name, fn->isMethod(), argTypes, iterKind,
-                                inScopes.callScope(), inScopes.lookupScope(), inScopes.poiScope());
+  auto ret = findTaggedIterator(rc,
+                                name,
+                                fn->isMethod(),
+                                argTypes,
+                                iterKind,
+                                inScopes.callScope(),
+                                inScopes.lookupScope(),
+                                inScopes.poiScope());
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
@@ -8428,12 +8666,14 @@ taggedYieldTypeForType(ResolutionContext* rc,
                        const types::FnIteratorType* fnIter,
                        uast::Function::IteratorKind iterKind,
                        const Scope* overrideScope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(taggedYieldTypeForType, rc, fnIter, iterKind, overrideScope);
+  CHPL_RESOLUTION_QUERY_BEGIN(
+    taggedYieldTypeForType, rc, fnIter, iterKind, overrideScope);
 
   // building a call resolution result takes care of setting up the
   // PoI scope and doing type inference using that PoI scope, so do it here.
   auto msc = findTaggedIteratorForType(rc, fnIter, iterKind, overrideScope);
-  auto inScopes = callScopeInfoForIterator(rc->context(), fnIter, overrideScope);
+  auto inScopes =
+    callScopeInfoForIterator(rc->context(), fnIter, overrideScope);
   auto c = resolutionResultFromMostSpecificCandidate(rc, msc, inScopes);
 
   QualifiedType ret;
@@ -8445,8 +8685,7 @@ taggedYieldTypeForType(ResolutionContext* rc,
 }
 
 const types::QualifiedType&
-yieldTypeForIterator(ResolutionContext* rc,
-                     const types::IteratorType* iter) {
+yieldTypeForIterator(ResolutionContext* rc, const types::IteratorType* iter) {
   CHPL_RESOLUTION_QUERY_BEGIN(yieldTypeForIterator, rc, iter);
 
   QualifiedType ret;
@@ -8463,10 +8702,8 @@ yieldTypeForIterator(ResolutionContext* rc,
   return CHPL_RESOLUTION_QUERY_END(ret);
 }
 
-static const CallResolutionResult&
-resolveIteratorShapeComputation(Context* context,
-                                const IteratorType* iter,
-                                QualifiedType qt) {
+static const CallResolutionResult& resolveIteratorShapeComputation(
+  Context* context, const IteratorType* iter, QualifiedType qt) {
 
   QUERY_BEGIN(resolveIteratorShapeComputation, context, iter, qt);
   std::vector<CallInfoActual> actuals;
@@ -8478,16 +8715,17 @@ resolveIteratorShapeComputation(Context* context,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
                      /* actuals */ std::move(actuals));
-  auto inScopes = callScopeInfoForIterator(context, iter, /* overrideScopes */ nullptr);
+  auto inScopes =
+    callScopeInfoForIterator(context, iter, /* overrideScopes */ nullptr);
 
   auto rc = createDummyRC(context);
-  auto c = resolveGeneratedCall(&rc, /* astForScopeOrErr */ nullptr, ci, inScopes);
+  auto c =
+    resolveGeneratedCall(&rc, /* astForScopeOrErr */ nullptr, ci, inScopes);
   return QUERY_END(c);
 }
 
 static const Type* const&
-shapeForIteratorQuery(Context* context,
-                      const types::IteratorType* iter) {
+shapeForIteratorQuery(Context* context, const types::IteratorType* iter) {
   QUERY_BEGIN(shapeForIteratorQuery, context, iter);
   // shape is determined by the leader / standalone. In some cases,
   // the iterator doesn't have the notion of a leader, so we will early-return.
@@ -8556,11 +8794,13 @@ const Type* shapeForIterator(Context* context,
 }
 
 static TheseResolutionResult
-callResolutionResultToTheseResolutionResult(CallResolutionResult cr, QualifiedType iterandType) {
+callResolutionResultToTheseResolutionResult(CallResolutionResult cr,
+                                            QualifiedType iterandType) {
   if (cr.exprType().isUnknownOrErroneous() ||
       !cr.exprType().type()->isIteratorType()) {
     auto reason = TheseResolutionResult::THESE_FAIL_NO_ITERATOR_WITH_TAG;
-    return TheseResolutionResult::failure(reason, std::move(iterandType), std::move(cr));
+    return TheseResolutionResult::failure(
+      reason, std::move(iterandType), std::move(cr));
   }
 
   return TheseResolutionResult::success(cr, iterandType);
@@ -8577,12 +8817,13 @@ resolveTheseCallForFnIterator(ResolutionContext* rc,
   if (msc && iterKind == Function::FOLLOWER) {
     // Additionally check that the follower type matches the expected
     // follower type.
-    for (int i = 0; i < msc.fn()->numFormals(); i++){
+    for (int i = 0; i < msc.fn()->numFormals(); i++) {
       if (msc.fn()->formalName(i) == USTR("followThis")) {
         auto formalType = msc.fn()->formalType(i);
         auto got = canPassScalar(rc->context(), followThis, formalType);
         if (!got.passes()) {
-          auto reason = TheseResolutionResult::THESE_FAIL_LEADER_FOLLOWER_MISMATCH;
+          auto reason =
+            TheseResolutionResult::THESE_FAIL_LEADER_FOLLOWER_MISMATCH;
           return TheseResolutionResult::failure(reason, std::move(iterandType));
         }
         break;
@@ -8593,20 +8834,21 @@ resolveTheseCallForFnIterator(ResolutionContext* rc,
   auto inScopes = callScopeInfoForIterator(rc->context(), fnIt, nullptr);
   auto cr = resolutionResultFromMostSpecificCandidate(rc, msc, inScopes);
 
-  return callResolutionResultToTheseResolutionResult(cr, std::move(iterandType));
+  return callResolutionResultToTheseResolutionResult(cr,
+                                                     std::move(iterandType));
 }
 
 // Helper with shared logic between loop expression iterators and promotion,
 // in which several iterables (zippered args to loop, multiple promoted args),
 // are all part of the 'these' call.
-static TheseResolutionResult
-resolveTheseCallForZipperedArguments(ResolutionContext* rc,
-                                     const AstNode* astContext,
-                                     const IteratorType* iterType,
-                                     std::vector<QualifiedType> zippered,
-                                     uast::Function::IteratorKind iterKind,
-                                     const types::QualifiedType& followThis,
-                                     std::vector<QualifiedType>* outYieldTypes = nullptr) {
+static TheseResolutionResult resolveTheseCallForZipperedArguments(
+  ResolutionContext* rc,
+  const AstNode* astContext,
+  const IteratorType* iterType,
+  std::vector<QualifiedType> zippered,
+  uast::Function::IteratorKind iterKind,
+  const types::QualifiedType& followThis,
+  std::vector<QualifiedType>* outYieldTypes = nullptr) {
   bool leaderOnly = iterKind == Function::LEADER;
   bool standalone = iterKind == Function::STANDALONE;
   bool serial = iterKind == Function::SERIAL;
@@ -8615,14 +8857,15 @@ resolveTheseCallForZipperedArguments(ResolutionContext* rc,
   // Loop expressions and promotion only support standalone iterators
   // when there's a single iterand.
   if (standalone && zippered.size() > 1) {
-    auto reason = iterType->isLoopExprIteratorType() ?
-      TheseResolutionResult::THESE_FAIL_NO_LOOP_EXPR_STANDALONE :
-      TheseResolutionResult::THESE_FAIL_NO_PROMO_STANDALONE;
+    auto reason = iterType->isLoopExprIteratorType()
+                    ? TheseResolutionResult::THESE_FAIL_NO_LOOP_EXPR_STANDALONE
+                    : TheseResolutionResult::THESE_FAIL_NO_PROMO_STANDALONE;
     return TheseResolutionResult::failure(reason, std::move(iterandType));
   }
 
-  bool supportsParallel = !iterType->isLoopExprIteratorType() ||
-                          iterType->toLoopExprIteratorType()->supportsParallel();
+  bool supportsParallel =
+    !iterType->isLoopExprIteratorType() ||
+    iterType->toLoopExprIteratorType()->supportsParallel();
 
   // the loop was written as a serial loop expression, so no parallel
   // 'these' calls are allowed.
@@ -8637,8 +8880,8 @@ resolveTheseCallForZipperedArguments(ResolutionContext* rc,
   for (auto receiverType : zippered) {
     index++;
 
-    auto tr = resolveTheseCall(rc, astContext, receiverType,
-                               iterKind, followThis, inScopes);
+    auto tr = resolveTheseCall(
+      rc, astContext, receiverType, iterKind, followThis, inScopes);
 
     if (!tr) {
       failedZipResult = std::make_unique<TheseResolutionResult>(std::move(tr));
@@ -8654,20 +8897,21 @@ resolveTheseCallForZipperedArguments(ResolutionContext* rc,
   CHPL_ASSERT(index != -1);
 
   if (failedZipResult) {
-    return TheseResolutionResult::failure(std::move(failedZipResult), index, std::move(iterandType));
+    return TheseResolutionResult::failure(
+      std::move(failedZipResult), index, std::move(iterandType));
   }
 
   if (auto loopIt = iterType->toLoopExprIteratorType()) {
-    auto cr = CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, loopIt),
-                                   loopIt->yieldType());
+    auto cr = CallResolutionResult(
+      QualifiedType(QualifiedType::CONST_VAR, loopIt), loopIt->yieldType());
     return TheseResolutionResult::success(cr, std::move(iterandType));
   } else {
     CHPL_ASSERT(iterType->isPromotionIteratorType());
     auto promoIt = iterType->toPromotionIteratorType();
 
     auto scalarReturn = promoIt->yieldType();
-    auto cr = CallResolutionResult(QualifiedType(QualifiedType::CONST_VAR, promoIt),
-                                   scalarReturn);
+    auto cr = CallResolutionResult(
+      QualifiedType(QualifiedType::CONST_VAR, promoIt), scalarReturn);
     return TheseResolutionResult::success(cr, std::move(iterandType));
   }
 }
@@ -8695,8 +8939,8 @@ resolveTheseCallForLoopIterator(ResolutionContext* rc,
     receiverTypes.push_back(loopIt->iterand());
   }
 
-  return resolveTheseCallForZipperedArguments(rc, astContext, loopIt,
-                                              receiverTypes, iterKind, followThis);
+  return resolveTheseCallForZipperedArguments(
+    rc, astContext, loopIt, receiverTypes, iterKind, followThis);
 }
 
 static TheseResolutionResult
@@ -8719,8 +8963,8 @@ resolveTheseCallForPromotionIterator(ResolutionContext* rc,
     }
   }
 
-  auto tr = resolveTheseCallForZipperedArguments(rc, astContext, promoIt,
-                                                 receiverTypes, iterKind, followThis, &yieldTypes);
+  auto tr = resolveTheseCallForZipperedArguments(
+    rc, astContext, promoIt, receiverTypes, iterKind, followThis, &yieldTypes);
 
   if (!tr) return tr;
 
@@ -8730,18 +8974,20 @@ resolveTheseCallForPromotionIterator(ResolutionContext* rc,
   // Validate that yield types match the promotion types.
   int index = 0;
   for (auto ri = receiverTypes.begin(), yi = yieldTypes.begin();
-       ri != receiverTypes.end() && yi != yieldTypes.end(); ++ri, ++yi, ++index) {
+       ri != receiverTypes.end() && yi != yieldTypes.end();
+       ++ri, ++yi, ++index) {
     auto promotionType = getPromotionType(rc->context(), *ri);
     if (promotionType.type() != yi->type()) {
-      auto reason = TheseResolutionResult::THESE_FAIL_PROMOTION_TYPE_YIELD_MISMATCH;
+      auto reason =
+        TheseResolutionResult::THESE_FAIL_PROMOTION_TYPE_YIELD_MISMATCH;
       auto failureForIndex = TheseResolutionResult::failure(reason, *ri);
       auto failureForIndexPtr =
         std::make_unique<TheseResolutionResult>(std::move(failureForIndex));
 
-      auto zipperedFailure =
-        TheseResolutionResult::failure(std::move(failureForIndexPtr), index,
-                                       QualifiedType(QualifiedType::CONST_VAR,
-                                         promoIt));
+      auto zipperedFailure = TheseResolutionResult::failure(
+        std::move(failureForIndexPtr),
+        index,
+        QualifiedType(QualifiedType::CONST_VAR, promoIt));
       return zipperedFailure;
     }
   }
@@ -8761,9 +9007,11 @@ TheseResolutionResult resolveTheseCall(ResolutionContext* rc,
     if (auto fnIt = receiverType.type()->toFnIteratorType()) {
       return resolveTheseCallForFnIterator(rc, fnIt, iterKind, followThis);
     } else if (auto loopIt = receiverType.type()->toLoopExprIteratorType()) {
-      return resolveTheseCallForLoopIterator(rc, astContext, loopIt, iterKind, followThis);
+      return resolveTheseCallForLoopIterator(
+        rc, astContext, loopIt, iterKind, followThis);
     } else if (auto promoIt = receiverType.type()->toPromotionIteratorType()) {
-      return resolveTheseCallForPromotionIterator(rc, astContext, promoIt, iterKind, followThis);
+      return resolveTheseCallForPromotionIterator(
+        rc, astContext, promoIt, iterKind, followThis);
     }
   }
 
@@ -8792,7 +9040,8 @@ TheseResolutionResult resolveTheseCall(ResolutionContext* rc,
   return callResolutionResultToTheseResolutionResult(cr, receiverType);
 }
 
-static const types::QualifiedType& getPromotionTypeQuery(Context* context, types::QualifiedType qt) {
+static const types::QualifiedType&
+getPromotionTypeQuery(Context* context, types::QualifiedType qt) {
   QUERY_BEGIN(getPromotionTypeQuery, context, qt);
 
   auto ret = QualifiedType();
@@ -8808,11 +9057,11 @@ static const types::QualifiedType& getPromotionTypeQuery(Context* context, types
     std::vector<CallInfoActual> actuals;
     actuals.push_back(CallInfoActual(qt, USTR("this")));
     auto ci = CallInfo(UniqueString::get(context, "chpl__promotionType"),
-        QualifiedType(),
-        /* isMethodCall */ true,
-        /* hasQuestionArg */ false,
-        /* isParenless */ false,
-        /* actuals */ std::move(actuals));
+                       QualifiedType(),
+                       /* isMethodCall */ true,
+                       /* hasQuestionArg */ false,
+                       /* isParenless */ false,
+                       /* actuals */ std::move(actuals));
 
     auto t = qt.type();
     const AstNode* astContext = nullptr;
@@ -8833,19 +9082,21 @@ static const types::QualifiedType& getPromotionTypeQuery(Context* context, types
 
     // Fix the intent to match original actual
     ret = QualifiedType(qt.kind(), ret.type());
-
   }
 
   return QUERY_END(ret);
 }
 
-const types::QualifiedType& getPromotionType(Context* context, types::QualifiedType qt, bool skipIfRunning) {
+const types::QualifiedType& getPromotionType(Context* context,
+                                             types::QualifiedType qt,
+                                             bool skipIfRunning) {
   // for non-type, non-param intents, normalize to const var.
   if (!qt.isParam() && !qt.isType()) {
     qt = QualifiedType(QualifiedType::CONST_VAR, qt.type());
   }
 
-  if (skipIfRunning && context->isQueryRunning(getPromotionTypeQuery, std::make_tuple(qt))) {
+  if (skipIfRunning &&
+      context->isQueryRunning(getPromotionTypeQuery, std::make_tuple(qt))) {
     static auto empty = QualifiedType();
     return empty;
   }
@@ -8853,20 +9104,24 @@ const types::QualifiedType& getPromotionType(Context* context, types::QualifiedT
   return getPromotionTypeQuery(context, qt);
 }
 
-static const types::RuntimeType* const& getRuntimeTypeQuery(Context* context, const types::CompositeType* ct) {
+static const types::RuntimeType* const&
+getRuntimeTypeQuery(Context* context, const types::CompositeType* ct) {
   QUERY_BEGIN(getRuntimeTypeQuery, context, ct);
 
   CHPL_ASSERT(ct->isArrayType() || ct->isDomainType());
 
-  auto ci = CallInfo(UniqueString::get(context, "chpl__convertValueToRuntimeType"),
+  auto ci = CallInfo(
+    UniqueString::get(context, "chpl__convertValueToRuntimeType"),
     QualifiedType(),
     /* isMethodCall */ false,
     /* hasQuestionArg */ false,
     /* isParenless */ false,
-    /* actuals */ { CallInfoActual(QualifiedType(QualifiedType::VAR, ct), UniqueString()) });
+    /* actuals */
+    {CallInfoActual(QualifiedType(QualifiedType::VAR, ct), UniqueString())});
 
   auto ctAst = parsing::idToAst(context, ct->id());
-  auto scopes = CallScopeInfo::forNormalCall(scopeForId(context, ct->id()), nullptr);
+  auto scopes =
+    CallScopeInfo::forNormalCall(scopeForId(context, ct->id()), nullptr);
   auto rc = createDummyRC(context);
   auto c = resolveGeneratedCall(&rc, ctAst, ci, scopes);
 
@@ -8876,15 +9131,18 @@ static const types::RuntimeType* const& getRuntimeTypeQuery(Context* context, co
     // is the builder. We could be smarter about it (handling control flow,
     // param conditionals, etc.), but why?
 
-    auto fn = parsing::idToAst(context, c.mostSpecific().only().fn()->id())->toFunction();
+    auto fn = parsing::idToAst(context, c.mostSpecific().only().fn()->id())
+                ->toFunction();
     CHPL_ASSERT(fn);
     auto body = fn->stmt(0);
     CHPL_ASSERT(body && body->isReturn() && body->toReturn()->value());
 
     ResolutionContext rcval(context);
-    auto rFn = resolveFunction(&rcval, c.mostSpecific().only().fn(), c.poiInfo().poiScope());
+    auto rFn = resolveFunction(
+      &rcval, c.mostSpecific().only().fn(), c.poiInfo().poiScope());
     if (rFn) {
-      auto returnedRE = rFn->resolutionById().byAstOrNull(body->toReturn()->value());
+      auto returnedRE =
+        rFn->resolutionById().byAstOrNull(body->toReturn()->value());
       if (returnedRE && returnedRE->mostSpecific().only()) {
         auto calledBuilder = returnedRE->mostSpecific().only().fn();
         ret = RuntimeType::get(context, calledBuilder);
@@ -8896,14 +9154,13 @@ static const types::RuntimeType* const& getRuntimeTypeQuery(Context* context, co
   return QUERY_END(ret);
 }
 
-const types::RuntimeType* getRuntimeType(Context* context, const types::CompositeType* ct) {
+const types::RuntimeType* getRuntimeType(Context* context,
+                                         const types::CompositeType* ct) {
   return getRuntimeTypeQuery(context, ct);
 }
 
 Access accessForQualifier(Qualifier q) {
-  if (q == Qualifier::REF ||
-      q == Qualifier::OUT ||
-      q == Qualifier::INOUT) {
+  if (q == Qualifier::REF || q == Qualifier::OUT || q == Qualifier::INOUT) {
     return REF;
   }
 
@@ -8932,29 +9189,44 @@ determineBestReturnIntentOverload(const MostSpecificCandidates& candidates,
     auto& bestConstRef = candidates.bestConstRef();
     auto& bestValue = candidates.bestValue();
     if (access == REF) {
-      if (bestRef) best = &bestRef;
-      else if (bestConstRef) best = &bestConstRef;
-      else best = &bestValue;
+      if (bestRef)
+        best = &bestRef;
+      else if (bestConstRef)
+        best = &bestConstRef;
+      else
+        best = &bestValue;
     } else if (access == CONST_REF) {
-      if (bestConstRef) best = &bestConstRef;
-      else if (bestValue) best = &bestValue;
-      else best = &bestRef;
+      if (bestConstRef)
+        best = &bestConstRef;
+      else if (bestValue)
+        best = &bestValue;
+      else
+        best = &bestRef;
     } else if (access == REF_MAYBE_CONST) {
       // raise an error
       outAmbiguity = true;
-      if (bestConstRef) best = &bestConstRef;
-      else if (bestValue) best = &bestValue;
-      else best = &bestRef;
+      if (bestConstRef)
+        best = &bestConstRef;
+      else if (bestValue)
+        best = &bestValue;
+      else
+        best = &bestRef;
     } else { // access == VALUE
-      if (bestValue) best = &bestValue;
-      else if (bestConstRef) best = &bestConstRef;
-      else best = &bestRef;
+      if (bestValue)
+        best = &bestValue;
+      else if (bestConstRef)
+        best = &bestConstRef;
+      else
+        best = &bestRef;
     }
 
     // set the determined return intent.
-    if (best == &bestRef) outReturnKind = QualifiedType::REF;
-    else if (best == &bestConstRef) outReturnKind = QualifiedType::CONST_REF;
-    else if (best == &bestValue) outReturnKind = QualifiedType::CONST_VAR;
+    if (best == &bestRef)
+      outReturnKind = QualifiedType::REF;
+    else if (best == &bestConstRef)
+      outReturnKind = QualifiedType::CONST_REF;
+    else if (best == &bestValue)
+      outReturnKind = QualifiedType::CONST_VAR;
 
   } else if (candidates.numBest() == 1) {
     best = &candidates.only();
@@ -8971,7 +9243,6 @@ bool const& noteWarningMessage(Context* context, UniqueString message) {
   QUERY_BEGIN(noteWarningMessage, context, message);
   return QUERY_END(true);
 }
-
 
 } // end namespace resolution
 } // end namespace chpl

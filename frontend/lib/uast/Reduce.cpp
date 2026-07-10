@@ -23,7 +23,6 @@
 namespace chpl {
 namespace uast {
 
-
 std::string Reduce::dumpChildLabelInner(int i) const {
   if (i == opChildNum_) {
     return "op";
@@ -46,7 +45,6 @@ owned<Reduce> Reduce::build(Builder* builder,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

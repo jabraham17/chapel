@@ -23,7 +23,6 @@
 namespace chpl {
 namespace types {
 
-
 const owned<AnyType>& AnyType::getAnyType(Context* context) {
   QUERY_BEGIN(getAnyType, context);
 

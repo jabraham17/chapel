@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 void For::dumpFieldsInner(const DumpSettings& s) const {
   IndexableLoop::dumpFieldsInner(s);
   if (isParam_) {
@@ -68,7 +67,8 @@ owned<For> For::build(Builder* builder,
   const int loopBodyChildNum = lst.size();
   lst.push_back(std::move(body));
 
-  For* ret = new For(std::move(lst), indexChildNum,
+  For* ret = new For(std::move(lst),
+                     indexChildNum,
                      iterandChildNum,
                      blockStyle,
                      loopBodyChildNum,
@@ -78,7 +78,6 @@ owned<For> For::build(Builder* builder,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

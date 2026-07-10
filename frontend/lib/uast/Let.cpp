@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 std::string Let::dumpChildLabelInner(int i) const {
   if (0 <= i && i < numDecls_) {
     return "decl " + std::to_string(i);
@@ -35,7 +34,9 @@ std::string Let::dumpChildLabelInner(int i) const {
   return "";
 }
 
-owned<Let> Let::build(Builder* builder, Location loc, AstList decls,
+owned<Let> Let::build(Builder* builder,
+                      Location loc,
+                      AstList decls,
                       owned<AstNode> expression) {
   CHPL_ASSERT(decls.size() >= 1);
   CHPL_ASSERT(expression.get() != nullptr);
@@ -49,7 +50,6 @@ owned<Let> Let::build(Builder* builder, Location loc, AstList decls,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

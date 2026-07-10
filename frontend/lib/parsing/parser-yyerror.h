@@ -23,12 +23,7 @@
 extern const char* yychpl_get_text(yyscan_t scanner);
 
 namespace {
-enum ErrorKind {
-  EMPTY_ERROR_MESSAGE,
-  SYNTAX_ERROR,
-  MEMORY_EXHAUSTED,
-  UNKNOWN
-};
+enum ErrorKind { EMPTY_ERROR_MESSAGE, SYNTAX_ERROR, MEMORY_EXHAUSTED, UNKNOWN };
 } // end anonymous namespace
 
 static enum ErrorKind determineErrorKind(const char* msg) {
@@ -38,9 +33,9 @@ static enum ErrorKind determineErrorKind(const char* msg) {
   return UNKNOWN;
 }
 
-void yychpl_error(YYLTYPE*       loc,
+void yychpl_error(YYLTYPE* loc,
                   ParserContext* context,
-                  const char*    errorMessage) {
+                  const char* errorMessage) {
   auto errorKind = determineErrorKind(errorMessage);
   auto nearestToken = std::string(yychpl_get_text(context->scanner));
 
@@ -50,12 +45,14 @@ void yychpl_error(YYLTYPE*       loc,
       CHPL_PARSER_REPORT(context, BisonSyntaxError, *loc, nearestToken);
       break;
     case UNKNOWN:
-      CHPL_PARSER_REPORT(context, BisonUnknownError, *loc,
-                         std::string(errorMessage), nearestToken);
+      CHPL_PARSER_REPORT(context,
+                         BisonUnknownError,
+                         *loc,
+                         std::string(errorMessage),
+                         nearestToken);
       break;
     case MEMORY_EXHAUSTED:
       CHPL_PARSER_REPORT(context, BisonMemoryExhausted, *loc);
       break;
   }
 }
-

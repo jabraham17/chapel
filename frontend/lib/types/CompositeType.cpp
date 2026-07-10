@@ -36,21 +36,19 @@
 namespace chpl {
 namespace types {
 
-
 using namespace resolution;
 
-bool
-CompositeType::areSubsInstantiationOf(Context* context,
-                                      const CompositeType* partial) const {
+bool CompositeType::areSubsInstantiationOf(Context* context,
+                                           const CompositeType* partial) const {
   // Note: Assumes 'this' and 'partial' share a root instantiation.
-  return canInstantiateSubstitutions(context,
-                                     substitutions(),
-                                     partial->substitutions(),
-                                     /* allowMissing */ !partial->isTupleType());
+  return canInstantiateSubstitutions(
+    context,
+    substitutions(),
+    partial->substitutions(),
+    /* allowMissing */ !partial->isTupleType());
 }
 
-CompositeType::~CompositeType() {
-}
+CompositeType::~CompositeType() {}
 
 using SubstitutionPair = CompositeType::SubstitutionPair;
 
@@ -69,10 +67,11 @@ void CompositeType::stringifyParamSubstitution(std::ostream& ss,
   qt.param()->stringify(ss, StringifyKind::CHPL_SYNTAX);
 }
 
-static void stringifySortedSubstitutions(std::ostream& ss,
-                                         chpl::StringifyKind stringKind,
-                                         const std::vector<SubstitutionPair>& sorted,
-                                         bool& emittedField) {
+static void
+stringifySortedSubstitutions(std::ostream& ss,
+                             chpl::StringifyKind stringKind,
+                             const std::vector<SubstitutionPair>& sorted,
+                             bool& emittedField) {
   for (const auto& sub : sorted) {
     if (sub.second.isParam() && sub.second.param() == nullptr &&
         stringKind == StringifyKind::CHPL_SYNTAX) {
@@ -94,7 +93,8 @@ static void stringifySortedSubstitutions(std::ostream& ss,
         CompositeType::stringifyParamSubstitution(ss, sub.second);
       } else {
         // Some odd configuration; fall back to printing the qualified type.
-        CHPL_UNIMPL("attempting to stringify odd type representation as Chapel syntax");
+        CHPL_UNIMPL(
+          "attempting to stringify odd type representation as Chapel syntax");
         sub.second.stringify(ss, stringKind);
       }
     }
@@ -103,8 +103,7 @@ static void stringifySortedSubstitutions(std::ostream& ss,
   }
 }
 
-static
-std::vector<SubstitutionPair>
+static std::vector<SubstitutionPair>
 sortedSubstitutionsMap(const CompositeType::SubstitutionsMap& subs) {
   // since it's an unordered map, iteration will occur in a
   // nondeterministic order.
@@ -173,45 +172,60 @@ void CompositeType::stringify(std::ostream& ss,
 }
 
 const RecordType* CompositeType::getStringType(Context* context) {
-  auto [id, name] =
-      parsing::getStringTypeFromTopLevelStringModule(context);
-  return RecordType::get(context, id, name,
-                         /* instantiatedFrom */ nullptr, SubstitutionsMap());
+  auto [id, name] = parsing::getStringTypeFromTopLevelStringModule(context);
+  return RecordType::get(context,
+                         id,
+                         name,
+                         /* instantiatedFrom */ nullptr,
+                         SubstitutionsMap());
 }
 
 const RecordType* CompositeType::getRangeType(Context* context) {
-  auto [id, name] =
-      parsing::getRangeTypeFromTopLevelChapelRangeModule(context);
-  return RecordType::get(context, id, name,
-                         /* instantiatedFrom */ nullptr, SubstitutionsMap());
+  auto [id, name] = parsing::getRangeTypeFromTopLevelChapelRangeModule(context);
+  return RecordType::get(context,
+                         id,
+                         name,
+                         /* instantiatedFrom */ nullptr,
+                         SubstitutionsMap());
 }
 
 const RecordType* CompositeType::getBytesType(Context* context) {
-  auto [id, name] =
-      parsing::getBytesTypeFromTopLevelBytesModule(context);
-  return RecordType::get(context, id, name,
-                         /* instantiatedFrom */ nullptr, SubstitutionsMap());
+  auto [id, name] = parsing::getBytesTypeFromTopLevelBytesModule(context);
+  return RecordType::get(context,
+                         id,
+                         name,
+                         /* instantiatedFrom */ nullptr,
+                         SubstitutionsMap());
 }
 
 const RecordType* CompositeType::getLocaleType(Context* context) {
   auto [id, name] =
-      parsing::getLocaleTypeFromTopLevelChapelLocaleModule(context);
-  return RecordType::get(context, id, name,
+    parsing::getLocaleTypeFromTopLevelChapelLocaleModule(context);
+  return RecordType::get(context,
+                         id,
+                         name,
                          /* instantiatedFrom */ nullptr,
                          SubstitutionsMap());
 }
 
 const RecordType* CompositeType::getLocaleIDType(Context* context) {
-  auto [id, name] = parsing::getLocaleIdTypeFromTopLevelChapelRuntimeInterfaceModule(context);
-  return RecordType::get(context, id, name,
+  auto [id, name] =
+    parsing::getLocaleIdTypeFromTopLevelChapelRuntimeInterfaceModule(context);
+  return RecordType::get(context,
+                         id,
+                         name,
                          /* instantiatedFrom */ nullptr,
                          SubstitutionsMap());
 }
 
 const RecordType* CompositeType::getDistributionType(Context* context) {
-  auto [id, name] = parsing::getDistributionTypeFromTopLevelChapelDistributionModule(context);
-  return RecordType::get(context, id, name,
-                         /* instantiatedFrom */ nullptr, SubstitutionsMap());
+  auto [id, name] =
+    parsing::getDistributionTypeFromTopLevelChapelDistributionModule(context);
+  return RecordType::get(context,
+                         id,
+                         name,
+                         /* instantiatedFrom */ nullptr,
+                         SubstitutionsMap());
 }
 
 static const ID getOwnedRecordId(Context* context) {
@@ -222,14 +236,16 @@ static const ID getSharedRecordId(Context* context) {
   return parsing::getSharedTypeFromTopLevelSharedObjectModule(context).id;
 }
 
-static const RecordType* tryCreateManagerRecord(Context* context,
-                                                const ID& recordId,
-                                                const BasicClassType* bct,
-                                                const ClassTypeDecorator& copyNilabilityFrom) {
+static const RecordType*
+tryCreateManagerRecord(Context* context,
+                       const ID& recordId,
+                       const BasicClassType* bct,
+                       const ClassTypeDecorator& copyNilabilityFrom) {
   const RecordType* instantiatedFrom = nullptr;
   SubstitutionsMap subs;
   if (bct != nullptr) {
-    static const auto genericDec = ClassTypeDecorator(ClassTypeDecorator::GENERIC);
+    static const auto genericDec =
+      ClassTypeDecorator(ClassTypeDecorator::GENERIC);
     instantiatedFrom = tryCreateManagerRecord(context,
                                               recordId,
                                               /*bct*/ nullptr,
@@ -238,13 +254,12 @@ static const RecordType* tryCreateManagerRecord(Context* context,
     // Note: We know these types aren't nested, and so don't require a proper
     // ResolutionContext at this time.
     ResolutionContext rc(context);
-    auto fields = fieldsForTypeDecl(&rc,
-                                    instantiatedFrom,
-                                    DefaultsPolicy::IGNORE_DEFAULTS);
+    auto fields =
+      fieldsForTypeDecl(&rc, instantiatedFrom, DefaultsPolicy::IGNORE_DEFAULTS);
     for (int i = 0; i < fields.numFields(); i++) {
       if (fields.fieldName(i) != "chpl_t") continue;
-      auto ctd =
-        ClassTypeDecorator(ClassTypeDecorator::BORROWED).copyNilabilityFrom(copyNilabilityFrom);
+      auto ctd = ClassTypeDecorator(ClassTypeDecorator::BORROWED)
+                   .copyNilabilityFrom(copyNilabilityFrom);
       auto ct = ClassType::get(context, bct, /* manager */ nullptr, ctd);
 
       subs[fields.fieldDeclId(i)] = QualifiedType(QualifiedType::TYPE, ct);
@@ -253,38 +268,45 @@ static const RecordType* tryCreateManagerRecord(Context* context,
   }
 
   auto name = recordId.symbolName(context);
-  return RecordType::get(context, recordId, name,
-                         instantiatedFrom,
-                         std::move(subs));
+  return RecordType::get(
+    context, recordId, name, instantiatedFrom, std::move(subs));
 }
 
-const RecordType*
-CompositeType::getOwnedRecordType(Context* context, const BasicClassType* bct, const ClassTypeDecorator& copyNilabilityFrom) {
-  return tryCreateManagerRecord(context, getOwnedRecordId(context), bct, copyNilabilityFrom);
+const RecordType* CompositeType::getOwnedRecordType(
+  Context* context,
+  const BasicClassType* bct,
+  const ClassTypeDecorator& copyNilabilityFrom) {
+  return tryCreateManagerRecord(
+    context, getOwnedRecordId(context), bct, copyNilabilityFrom);
 }
 
-const RecordType*
-CompositeType::getSharedRecordType(Context* context, const BasicClassType* bct, const ClassTypeDecorator& copyNilabilityFrom) {
-  return tryCreateManagerRecord(context, getSharedRecordId(context), bct, copyNilabilityFrom);
+const RecordType* CompositeType::getSharedRecordType(
+  Context* context,
+  const BasicClassType* bct,
+  const ClassTypeDecorator& copyNilabilityFrom) {
+  return tryCreateManagerRecord(
+    context, getSharedRecordId(context), bct, copyNilabilityFrom);
 }
 
-const RecordType*
-CompositeType::getSyncType(Context* context) {
+const RecordType* CompositeType::getSyncType(Context* context) {
   auto [id, name] =
-      parsing::getSyncVarTypeFromTopLevelChapelSyncvarModule(context);
-  return RecordType::get(context, id, name,
-                         /* instantiatedFrom */ nullptr, SubstitutionsMap());
+    parsing::getSyncVarTypeFromTopLevelChapelSyncvarModule(context);
+  return RecordType::get(context,
+                         id,
+                         name,
+                         /* instantiatedFrom */ nullptr,
+                         SubstitutionsMap());
 }
 
 const ClassType* CompositeType::getErrorType(Context* context) {
-  auto [id, name] =
-      parsing::getErrorTypeFromTopLevelErrorsModule(context);
+  auto [id, name] = parsing::getErrorTypeFromTopLevelErrorsModule(context);
   auto dec = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
-  auto bct = BasicClassType::get(context, id,
-                                name,
-                                BasicClassType::getRootClassType(context),
-                                /* instantiatedFrom */ nullptr,
-                                SubstitutionsMap());
+  auto bct = BasicClassType::get(context,
+                                 id,
+                                 name,
+                                 BasicClassType::getRootClassType(context),
+                                 /* instantiatedFrom */ nullptr,
+                                 SubstitutionsMap());
   return ClassType::get(context, bct, /* manager */ nullptr, dec);
 }
 
@@ -301,8 +323,7 @@ void stringifySubstitutionsMap(std::ostream& streamOut,
                                const CompositeType::SubstitutionsMap& subs) {
   auto sorted = sortedSubstitutionsMap(subs);
   bool first = true;
-  for (auto const& x : sorted)
-  {
+  for (auto const& x : sorted) {
     ID id = x.first;
     QualifiedType qt = x.second;
 
@@ -319,7 +340,6 @@ void stringifySubstitutionsMap(std::ostream& streamOut,
     qt.stringify(streamOut, stringKind);
   }
 }
-
 
 } // end namespace types
 } // end namespace chpl

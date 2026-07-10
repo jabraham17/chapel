@@ -24,8 +24,8 @@
 namespace chpl {
 namespace uast {
 
-
-owned<Coforall> Coforall::build(Builder* builder, Location loc,
+owned<Coforall> Coforall::build(Builder* builder,
+                                Location loc,
                                 owned<Decl> index,
                                 owned<AstNode> iterand,
                                 owned<WithClause> withClause,
@@ -65,7 +65,8 @@ owned<Coforall> Coforall::build(Builder* builder, Location loc,
   const int loopBodyChildNum = lst.size();
   lst.push_back(std::move(body));
 
-  Coforall* ret = new Coforall(std::move(lst), indexChildNum,
+  Coforall* ret = new Coforall(std::move(lst),
+                               indexChildNum,
                                iterandChildNum,
                                withClauseChildNum,
                                blockStyle,
@@ -75,7 +76,6 @@ owned<Coforall> Coforall::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

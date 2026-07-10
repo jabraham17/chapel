@@ -23,7 +23,6 @@
 namespace chpl {
 namespace types {
 
-
 const owned<CStringType>& CStringType::getCStringType(Context* context) {
   QUERY_BEGIN(getCStringType, context);
 
@@ -39,7 +38,6 @@ const CStringType* CStringType::get(Context* context) {
 void CStringType::stringify(std::ostream& ss, StringifyKind stringKind) const {
   ss << "c_string";
 }
-
 
 } // end namespace types
 } // end namespace chpl

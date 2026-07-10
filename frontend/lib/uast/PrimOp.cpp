@@ -25,18 +25,15 @@ namespace chpl {
 namespace uast {
 namespace primtags {
 
-
 const char* primTagToName(PrimitiveTag tag) {
   switch (tag) {
-#define PRIMITIVE(NAME, str) \
-    case PRIM_ ## NAME : \
-      return str;
+#define PRIMITIVE(NAME, str)    \
+  case PRIM_##NAME: return str;
 
 #define PRIMITIVE_G(NAME, str) PRIMITIVE(NAME, str)
 #define PRIMITIVE_R(NAME, str) PRIMITIVE(NAME, str)
 #include "chpl/uast/prim-ops-list.h"
-    case NUM_KNOWN_PRIMS:
-      return "";
+    case NUM_KNOWN_PRIMS: return "";
 #undef PRIMITIVE_G
 #undef PRIMITIVE_R
 #undef PRIMITIVE
@@ -46,9 +43,8 @@ const char* primTagToName(PrimitiveTag tag) {
 }
 
 PrimitiveTag primNameToTag(const char* name) {
-#define PRIMITIVE(NAME, str) \
-  if (0 == strcmp(str, name)) \
-    return PRIM_ ## NAME;
+#define PRIMITIVE(NAME, str)                      \
+  if (0 == strcmp(str, name)) return PRIM_##NAME;
 
 #define PRIMITIVE_G(NAME, str) PRIMITIVE(NAME, str)
 #define PRIMITIVE_R(NAME, str) PRIMITIVE(NAME, str)
@@ -59,7 +55,6 @@ PrimitiveTag primNameToTag(const char* name) {
 #undef PRIMITIVE
   return PRIM_UNKNOWN;
 }
-
 
 } // namespace primtags
 } // namespace uast

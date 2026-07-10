@@ -26,18 +26,15 @@
 namespace chpl {
 namespace uast {
 
-
 bool AggregateDecl::validAggregateChildren(AstListIteratorPair<AstNode> it) {
-  for (auto elt: it) {
+  for (auto elt : it) {
     if (elt->isComment() || elt->isErroneousExpression() ||
         elt->isEmptyStmt()) {
       // OK
     } else if (elt->isDecl()) {
       if (elt->isVariable() || elt->isFunction() || elt->isTupleDecl() ||
-          elt->isMultiDecl() ||
-          elt->isAggregateDecl() ||
-          elt->isForwardingDecl() ||
-          elt->isTypeDecl()) {
+          elt->isMultiDecl() || elt->isAggregateDecl() ||
+          elt->isForwardingDecl() || elt->isTypeDecl()) {
         // OK
       } else {
         return false;
@@ -50,15 +47,15 @@ bool AggregateDecl::validAggregateChildren(AstListIteratorPair<AstNode> it) {
 }
 
 std::string AggregateDecl::aggregateDeclDumpChildLabelInner(int i) const {
-  if (i >= inheritExprChildNum_ && i  < inheritExprChildNum_ + numInheritExprs_) {
+  if (i >= inheritExprChildNum_ &&
+      i < inheritExprChildNum_ + numInheritExprs_) {
     return "inherit-expr";
   }
 
   return "";
 }
 
-AggregateDecl::~AggregateDecl() {
-}
+AggregateDecl::~AggregateDecl() {}
 
 const AstNode* AggregateDecl::getUnwrappedInheritExpr(const AstNode* ast,
                                                       bool& markedGeneric) {
@@ -91,7 +88,6 @@ const AstNode* AggregateDecl::getUnwrappedInheritExpr(const AstNode* ast,
   markedGeneric = false;
   return nullptr;
 }
-
 
 } // namespace uast
 } // namespace chpl

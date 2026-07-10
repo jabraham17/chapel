@@ -27,13 +27,15 @@ namespace types {
 bool PtrType::isEltTypeInstantiationOf(Context* context,
                                        const PtrType* other) const {
   auto r =
-      resolution::canPass(context, QualifiedType(QualifiedType::TYPE, eltType_),
-                          QualifiedType(QualifiedType::TYPE, other->eltType_));
+    resolution::canPass(context,
+                        QualifiedType(QualifiedType::TYPE, eltType_),
+                        QualifiedType(QualifiedType::TYPE, other->eltType_));
   // instantiation and same-type passing are allowed here
   return r.passes() && !r.promotes() && !r.converts();
 }
 
-bool PtrType::isInstantiationOf(Context* context, const PtrType* genericType) const {
+bool PtrType::isInstantiationOf(Context* context,
+                                const PtrType* genericType) const {
   auto thisFrom = instantiatedFromPtrType();
   auto argFrom = genericType->instantiatedFromPtrType();
   if (argFrom == nullptr) {
@@ -49,7 +51,6 @@ bool PtrType::isInstantiationOf(Context* context, const PtrType* genericType) co
 
   return false;
 }
-
 
 } // end namespace types
 } // end namespace chpl

@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 void Implements::dumpFieldsInner(const DumpSettings& s) const {
   if (isExpressionLevel_) {
     s.out << " expr";
@@ -56,11 +55,11 @@ UniqueString Implements::interfaceName() const {
   }
 }
 
-owned<Implements>
-Implements::build(Builder* builder, Location loc,
-                  owned<Identifier> typeExpr,
-                  owned<AstNode> interfaceExpr,
-                  bool isExpressionLevel) {
+owned<Implements> Implements::build(Builder* builder,
+                                    Location loc,
+                                    owned<Identifier> typeExpr,
+                                    owned<AstNode> interfaceExpr,
+                                    bool isExpressionLevel) {
   AstList children;
   int8_t typeExprChildNum = AstNode::NO_CHILD;
 
@@ -73,12 +72,11 @@ Implements::build(Builder* builder, Location loc,
   CHPL_ASSERT(interfaceExpr->isIdentifier() || interfaceExpr->isFnCall());
   children.push_back(std::move(interfaceExpr));
 
-  Implements* ret = new Implements(std::move(children), typeExprChildNum,
-                                   isExpressionLevel);
+  Implements* ret =
+    new Implements(std::move(children), typeExprChildNum, isExpressionLevel);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

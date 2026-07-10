@@ -27,7 +27,6 @@
 namespace chpl {
 namespace types {
 
-
 bool QualifiedType::isParamTrue() const {
   if (kind_ == Kind::PARAM && param_ != nullptr) {
     return param_->isNonZero();
@@ -53,22 +52,24 @@ bool QualifiedType::isParamKnownTuple() const {
 }
 
 QualifiedType QualifiedType::makeParamBool(Context* context, bool b) {
-  return {QualifiedType::PARAM, BoolType::get(context),
-          BoolParam::get(context, b)};
+  return {
+    QualifiedType::PARAM, BoolType::get(context), BoolParam::get(context, b)};
 }
 
 QualifiedType QualifiedType::makeParamInt(Context* context, int64_t i) {
-  return {QualifiedType::PARAM, IntType::get(context, 0),
-          IntParam::get(context, i)};
+  return {
+    QualifiedType::PARAM, IntType::get(context, 0), IntParam::get(context, i)};
 }
 
 QualifiedType QualifiedType::makeParamUint(Context* context, uint64_t i) {
-  return {QualifiedType::PARAM, UintType::get(context, 0),
+  return {QualifiedType::PARAM,
+          UintType::get(context, 0),
           UintParam::get(context, i)};
 }
 
 QualifiedType QualifiedType::makeParamString(Context* context, UniqueString s) {
-  return {QualifiedType::PARAM, RecordType::getStringType(context),
+  return {QualifiedType::PARAM,
+          RecordType::getStringType(context),
           StringParam::get(context, s)};
 }
 
@@ -77,7 +78,8 @@ QualifiedType QualifiedType::makeParamString(Context* context, std::string s) {
 }
 
 QualifiedType QualifiedType::makeParamBytes(Context* context, UniqueString s) {
-  return {QualifiedType::PARAM, RecordType::getBytesType(context),
+  return {QualifiedType::PARAM,
+          RecordType::getBytesType(context),
           StringParam::get(context, s)};
 }
 
@@ -86,9 +88,8 @@ QualifiedType QualifiedType::makeParamBytes(Context* context, std::string s) {
 }
 
 bool QualifiedType::needsSplitInitTypeInfo(Context* context) const {
-  return (isParam() && !hasParamPtr()) ||
-    isUnknownKindOrType() ||
-    resolution::getTypeGenericity(context, type()) != Type::CONCRETE;
+  return (isParam() && !hasParamPtr()) || isUnknownKindOrType() ||
+         resolution::getTypeGenericity(context, type()) != Type::CONCRETE;
 }
 
 QualifiedType QualifiedType::createParamBool(Context* context, bool x) {
@@ -129,7 +130,6 @@ void QualifiedType::stringify(std::ostream& ss,
 }
 
 IMPLEMENT_DUMP(QualifiedType);
-
 
 } // end namespace types
 } // end namespace chpl

@@ -24,14 +24,12 @@
 namespace chpl {
 namespace uast {
 
-
-owned<ExternBlock> ExternBlock::build(Builder* builder, Location loc,
-                                      std::string code) {
+owned<ExternBlock>
+ExternBlock::build(Builder* builder, Location loc, std::string code) {
   ExternBlock* ret = new ExternBlock(std::move(code));
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

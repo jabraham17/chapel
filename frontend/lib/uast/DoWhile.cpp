@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 std::string DoWhile::dumpChildLabelInner(int i) const {
   if (i == conditionChildNum_) {
     return "condition";
@@ -33,7 +32,8 @@ std::string DoWhile::dumpChildLabelInner(int i) const {
   return "";
 }
 
-owned<DoWhile> DoWhile::build(Builder* builder, Location loc,
+owned<DoWhile> DoWhile::build(Builder* builder,
+                              Location loc,
                               BlockStyle blockStyle,
                               owned<Block> body,
                               owned<AstNode> condition,
@@ -57,7 +57,8 @@ owned<DoWhile> DoWhile::build(Builder* builder, Location loc,
   int conditionChildNum = lst.size();
   lst.push_back(std::move(condition));
 
-  DoWhile* ret = new DoWhile(std::move(lst), blockStyle,
+  DoWhile* ret = new DoWhile(std::move(lst),
+                             blockStyle,
                              loopBodyChildNum,
                              conditionChildNum,
                              attributeGroupChildNum);
@@ -65,7 +66,6 @@ owned<DoWhile> DoWhile::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

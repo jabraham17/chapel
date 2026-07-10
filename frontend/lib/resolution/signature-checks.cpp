@@ -25,7 +25,6 @@
 namespace chpl {
 namespace resolution {
 
-
 using namespace uast;
 using namespace types;
 
@@ -62,7 +61,8 @@ static const bool& checkSignatureQuery(Context* context,
     auto rhsIntent = sig->formalType(1).kind();
     // check the intent of the 'this' argument
     if (!(isGenericQualifier(thisIntent) || isRefQualifier(thisIntent) ||
-          (isInQualifier(thisIntent) && sig->formalType(0).type()->isClassType()))) {
+          (isInQualifier(thisIntent) &&
+           sig->formalType(0).type()->isClassType()))) {
       context->error(errId, "Bad 'this' intent for init=");
     }
     bool rhsIntentGenericOrRefOrParam = isGenericQualifier(rhsIntent) ||
@@ -72,7 +72,8 @@ static const bool& checkSignatureQuery(Context* context,
     if (sig->formalType(0).type() == sig->formalType(1).type()) {
       // same-type case: only const/default/ref/const ref RHS is allowed
       // allow 'in' for borrowed RHS, such as when defining init= for a class.
-      if (!rhsIntentGenericOrRefOrParam && !sig->formalType(0).type()->isClassType()) {
+      if (!rhsIntentGenericOrRefOrParam &&
+          !sig->formalType(0).type()->isClassType()) {
         context->error(errId, "Bad intent for same-type init= other argument");
       }
     } else {
@@ -89,7 +90,7 @@ static const bool& checkSignatureQuery(Context* context,
       context->error(errId, "Too many formals for operator =");
     }
     auto lhsIntent = sig->formalType(numThisArgs).kind();
-    auto rhsIntent = sig->formalType(numThisArgs+1).kind();
+    auto rhsIntent = sig->formalType(numThisArgs + 1).kind();
     if (!(isGenericQualifier(lhsIntent) || isRefQualifier(lhsIntent))) {
       context->error(errId, "Bad intent for = LHS formal");
     }
@@ -102,11 +103,9 @@ static const bool& checkSignatureQuery(Context* context,
   return QUERY_END(unusedResult);
 }
 
-
 void checkSignature(Context* context, const TypedFnSignature* sig) {
   checkSignatureQuery(context, sig);
 }
-
 
 } // end namespace resolution
 } // end namespace chpl

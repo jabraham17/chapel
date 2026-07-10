@@ -77,35 +77,30 @@
   needs to be tested. Might have to use 'yyclearin'.
 */
 
-#define CHPL_YYLLOC_DEFAULT(cur__, rhs__, n__) \
-do { \
-  if (n__) { \
-    (cur__).first_line   = YYRHSLOC(rhs__, 1).first_line; \
-    (cur__).first_column = YYRHSLOC(rhs__, 1).first_column; \
-    (cur__).last_line    = YYRHSLOC(rhs__, n__).last_line; \
-    (cur__).last_column  = YYRHSLOC(rhs__, n__).last_column; \
-  } else { \
-    (cur__) = yylloc; \
-  } \
-} while (0)
+#define CHPL_YYLLOC_DEFAULT(cur__, rhs__, n__)                \
+  do {                                                        \
+    if (n__) {                                                \
+      (cur__).first_line = YYRHSLOC(rhs__, 1).first_line;     \
+      (cur__).first_column = YYRHSLOC(rhs__, 1).first_column; \
+      (cur__).last_line = YYRHSLOC(rhs__, n__).last_line;     \
+      (cur__).last_column = YYRHSLOC(rhs__, n__).last_column; \
+    } else {                                                  \
+      (cur__) = yylloc;                                       \
+    }                                                         \
+  } while (0)
 
 // The macro is not mangled, so just override the YY_ symbol directly.
-#define YYLLOC_DEFAULT(cur__, rhs__, n__) \
-  CHPL_YYLLOC_DEFAULT(cur__, rhs__, n__)
-
+#define YYLLOC_DEFAULT(cur__, rhs__, n__) CHPL_YYLLOC_DEFAULT(cur__, rhs__, n__)
 
 /*
   This uses the same GNU definition for the default location computation when
   there is a null reduction. This is useful for something like `IDENT type_opt`,
   where IDENT always has a location, but type_opt may not.
 */
-#define CHPL_NULL_YYLLOC(cur__) \
-do { \
-  (cur__).first_line \
-    = (cur__).last_line \
-    = YYRHSLOC((yylsp - yylen), 0).last_line; \
-  (cur__).first_column \
-    = (cur__).last_column \
-    = YYRHSLOC((yylsp - yylen), 0).last_column; \
-} while (0)
-
+#define CHPL_NULL_YYLLOC(cur__)                  \
+  do {                                           \
+    (cur__).first_line = (cur__).last_line =     \
+      YYRHSLOC((yylsp - yylen), 0).last_line;    \
+    (cur__).first_column = (cur__).last_column = \
+      YYRHSLOC((yylsp - yylen), 0).last_column;  \
+  } while (0)

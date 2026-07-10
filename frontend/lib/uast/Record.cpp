@@ -28,7 +28,8 @@ std::string Record::dumpChildLabelInner(int i) const {
   return aggregateDeclDumpChildLabelInner(i);
 }
 
-owned<Record> Record::build(Builder* builder, Location loc,
+owned<Record> Record::build(Builder* builder,
+                            Location loc,
                             owned<AttributeGroup> attributeGroup,
                             Decl::Visibility vis,
                             Decl::Linkage linkage,
@@ -67,7 +68,9 @@ owned<Record> Record::build(Builder* builder, Location loc,
     lst.push_back(std::move(ast));
   }
 
-  Record* ret = new Record(std::move(lst), attributeGroupChildNum, vis,
+  Record* ret = new Record(std::move(lst),
+                           attributeGroupChildNum,
+                           vis,
                            linkage,
                            linkageNameChildNum,
                            name,
@@ -78,7 +81,6 @@ owned<Record> Record::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

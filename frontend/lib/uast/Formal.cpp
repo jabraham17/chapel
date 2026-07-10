@@ -24,30 +24,29 @@
 namespace chpl {
 namespace uast {
 
-
 const char* Formal::intentToString(Formal::Intent intent) {
   switch (intent) {
     case DEFAULT_INTENT: return "";
-    case CONST:          return "const";
-    case CONST_REF:      return "const ref";
-    case REF:            return "ref";
-    case IN:             return "in";
-    case CONST_IN:       return "const in";
-    case OUT:            return "out";
-    case INOUT:          return "inout";
-    case PARAM:          return "param";
-    case TYPE:           return "type";
+    case CONST: return "const";
+    case CONST_REF: return "const ref";
+    case REF: return "ref";
+    case IN: return "in";
+    case CONST_IN: return "const in";
+    case OUT: return "out";
+    case INOUT: return "inout";
+    case PARAM: return "param";
+    case TYPE: return "type";
   }
   return "<unknown>";
 }
 
-owned<Formal>
-Formal::build(Builder* builder, Location loc,
-              owned<AttributeGroup> attributeGroup,
-              UniqueString name,
-              Formal::Intent intent,
-              owned<AstNode> typeExpression,
-              owned<AstNode> initExpression) {
+owned<Formal> Formal::build(Builder* builder,
+                            Location loc,
+                            owned<AttributeGroup> attributeGroup,
+                            UniqueString name,
+                            Formal::Intent intent,
+                            owned<AstNode> typeExpression,
+                            owned<AstNode> initExpression) {
   AstList lst;
   int attributeGroupChildNum = NO_CHILD;
   int8_t typeExpressionChildNum = NO_CHILD;
@@ -68,7 +67,8 @@ Formal::build(Builder* builder, Location loc,
     lst.push_back(std::move(initExpression));
   }
 
-  Formal* ret = new Formal(std::move(lst), attributeGroupChildNum,
+  Formal* ret = new Formal(std::move(lst),
+                           attributeGroupChildNum,
                            name,
                            intent,
                            typeExpressionChildNum,
@@ -76,7 +76,6 @@ Formal::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

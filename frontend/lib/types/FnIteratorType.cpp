@@ -29,11 +29,11 @@ void FnIteratorType::markUniqueStringsInner(Context* context) const {
   yieldType_.mark(context);
 }
 
-const owned<FnIteratorType>&
-FnIteratorType::getFnIteratorType(Context* context,
-                                  const resolution::PoiScope* poiScope,
-                                  const resolution::TypedFnSignature* iteratorFn,
-                                  QualifiedType retType) {
+const owned<FnIteratorType>& FnIteratorType::getFnIteratorType(
+  Context* context,
+  const resolution::PoiScope* poiScope,
+  const resolution::TypedFnSignature* iteratorFn,
+  QualifiedType retType) {
   QUERY_BEGIN(getFnIteratorType, context, poiScope, iteratorFn, retType);
   auto result = toOwned(new FnIteratorType(poiScope, iteratorFn, retType));
   return QUERY_END(result);
@@ -47,5 +47,5 @@ FnIteratorType::get(Context* context,
   return getFnIteratorType(context, poiScope, iteratorFn, retType).get();
 }
 
-}  // end namespace types
-}  // end namespace chpl
+} // end namespace types
+} // end namespace chpl

@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 void Comment::dumpFieldsInner(const DumpSettings& s) const {
   s.out << " #" << commentId_.index();
 }
@@ -35,7 +34,6 @@ owned<Comment> Comment::build(Builder* builder, Location loc, std::string c) {
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

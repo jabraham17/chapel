@@ -38,7 +38,7 @@ bool InterfaceType::validateSubstitutions(Context* context,
   if (!ifc) return false;
 
   CHPL_ASSERT(ifc->numFormals() >= 0);
-  if (subs.size() != (size_t) ifc->numFormals()) return false;
+  if (subs.size() != (size_t)ifc->numFormals()) return false;
   for (auto fml : ifc->formals()) {
     if (subs.count(fml->id()) == 0) return false;
   }
@@ -46,21 +46,24 @@ bool InterfaceType::validateSubstitutions(Context* context,
   return true;
 }
 
-owned<InterfaceType> const&
-InterfaceType::getInterfaceType(Context* context, ID id, UniqueString name, SubstitutionsMap subs) {
+owned<InterfaceType> const& InterfaceType::getInterfaceType(
+  Context* context, ID id, UniqueString name, SubstitutionsMap subs) {
   QUERY_BEGIN(getInterfaceType, context, id, name, subs);
   CHPL_ASSERT(validateSubstitutions(context, id, subs));
   auto result = toOwned(new InterfaceType(id, name, subs));
   return QUERY_END(result);
 }
 
-const InterfaceType* InterfaceType::get(Context* context, ID id, UniqueString name, SubstitutionsMap subs) {
+const InterfaceType* InterfaceType::get(Context* context,
+                                        ID id,
+                                        UniqueString name,
+                                        SubstitutionsMap subs) {
   return getInterfaceType(context, id, name, subs).get();
 }
 
 const InterfaceType* InterfaceType::getContextManagerType(Context* context) {
   auto [id, name] =
-      parsing::getContextManagerTypeFromTopLevelChapelContextModule(context);
+    parsing::getContextManagerTypeFromTopLevelChapelContextModule(context);
   return InterfaceType::get(context, id, name, SubstitutionsMap());
 }
 
@@ -80,7 +83,7 @@ interfaceTypeWithTypesQuery(Context* context,
     CHPL_ASSERT(itf);
 
     CHPL_ASSERT(itf->numFormals() >= 0);
-    if (types.size() != (size_t) itf->numFormals()) {
+    if (types.size() != (size_t)itf->numFormals()) {
       // not good, wrong instantiation
     } else {
       InterfaceType::SubstitutionsMap subs;
@@ -91,20 +94,24 @@ interfaceTypeWithTypesQuery(Context* context,
         subs.emplace(formal->id(), std::move(newType));
       }
 
-      res = InterfaceType::get(context, itf->id(), itf->name(), std::move(subs));
+      res =
+        InterfaceType::get(context, itf->id(), itf->name(), std::move(subs));
     }
   }
 
   return QUERY_END(res);
 }
 
-const InterfaceType* InterfaceType::withTypes(Context* context,
-                                              const InterfaceType* ift,
-                                              std::vector<types::QualifiedType> types) {
+const InterfaceType*
+InterfaceType::withTypes(Context* context,
+                         const InterfaceType* ift,
+                         std::vector<types::QualifiedType> types) {
   return interfaceTypeWithTypesQuery(context, ift, std::move(types));
 }
 
-static const ID& idForInterfaceAssociatedTypeQuery(Context* context, ID itfId, UniqueString name) {
+static const ID& idForInterfaceAssociatedTypeQuery(Context* context,
+                                                   ID itfId,
+                                                   UniqueString name) {
   QUERY_BEGIN(idForInterfaceAssociatedTypeQuery, context, itfId, name);
   auto ast = parsing::idToAst(context, itfId);
   CHPL_ASSERT(ast);
@@ -125,17 +132,21 @@ static const ID& idForInterfaceAssociatedTypeQuery(Context* context, ID itfId, U
   return QUERY_END(res);
 }
 
-const ID& InterfaceType::idForAssociatedType(Context* context, UniqueString name) const {
+const ID& InterfaceType::idForAssociatedType(Context* context,
+                                             UniqueString name) const {
   return idForInterfaceAssociatedTypeQuery(context, id_, name);
 }
 
-bool InterfaceType::isInstantiationOf(Context* context, const InterfaceType* other) const {
+bool InterfaceType::isInstantiationOf(Context* context,
+                                      const InterfaceType* other) const {
   if (id_ != other->id()) return false;
   CHPL_ASSERT(name_ == other->name());
-  return resolution::canInstantiateSubstitutions(context, subs_, other->substitutions(), /* allowMissing */ false);
+  return resolution::canInstantiateSubstitutions(
+    context, subs_, other->substitutions(), /* allowMissing */ false);
 }
 
-void InterfaceType::stringify(std::ostream& ss, StringifyKind stringKind) const {
+void InterfaceType::stringify(std::ostream& ss,
+                              StringifyKind stringKind) const {
   ss << name_;
   if (!subs_.empty()) {
     ss << "(";

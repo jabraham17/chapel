@@ -25,7 +25,6 @@
 namespace chpl {
 namespace uast {
 
-
 void OpCall::dumpFieldsInner(const DumpSettings& s) const {
   s.out << " " << op_.str();
   Call::dumpFieldsInner(s);
@@ -66,16 +65,14 @@ bool isOpName(UniqueString name) {
          name == USTR("+") || name == USTR("-") || name == USTR("*") ||
          name == USTR("/") || name == USTR("<<") || name == USTR(">>") ||
          name == USTR("%") || name == USTR("**") || name == USTR("!") ||
-         name == USTR("+=") || name == USTR("-=") ||
-         name == USTR("*=") || name == USTR("/=") || name == USTR("%=") ||
-         name == USTR("**=") || name == USTR("&=") || name == USTR("|=") ||
-         name == USTR("^=") || name == USTR("&&=") || name == USTR("||=") ||
-         name == USTR(">>=") || name == USTR("<<=") ||
-         name == USTR("#") || name == USTR("chpl_by") || name == USTR("by") ||
-         name == USTR("align") || name == USTR("chpl_align") ||
-         name == USTR(":");
+         name == USTR("+=") || name == USTR("-=") || name == USTR("*=") ||
+         name == USTR("/=") || name == USTR("%=") || name == USTR("**=") ||
+         name == USTR("&=") || name == USTR("|=") || name == USTR("^=") ||
+         name == USTR("&&=") || name == USTR("||=") || name == USTR(">>=") ||
+         name == USTR("<<=") || name == USTR("#") || name == USTR("chpl_by") ||
+         name == USTR("by") || name == USTR("align") ||
+         name == USTR("chpl_align") || name == USTR(":");
 }
-
 
 } // namespace uast
 } // namespace chpl

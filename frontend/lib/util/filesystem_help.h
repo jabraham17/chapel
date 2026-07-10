@@ -31,7 +31,6 @@
 
 namespace chpl {
 
-
 /**
   Open a file. If the open failed, return nullptr and set errorOut.
  */
@@ -41,7 +40,6 @@ FILE* openfile(const char* path, const char* mode, std::string& errorOut);
   Close a file. If the close failed, return false and set errorOut.
  */
 bool closefile(FILE* fp, const char* path, std::string& errorOut);
-
 
 } // end namespace chpl
 

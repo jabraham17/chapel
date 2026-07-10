@@ -24,31 +24,31 @@
 namespace chpl {
 namespace types {
 
-
 const owned<UnionType>&
-UnionType::getUnionType(Context* context, ID id, UniqueString name,
+UnionType::getUnionType(Context* context,
+                        ID id,
+                        UniqueString name,
                         const UnionType* instantiatedFrom,
                         SubstitutionsMap subs,
                         CompositeType::Linkage linkage) {
-  QUERY_BEGIN(getUnionType, context, id, name, instantiatedFrom, subs,
-              linkage);
+  QUERY_BEGIN(getUnionType, context, id, name, instantiatedFrom, subs, linkage);
 
-  auto result = toOwned(new UnionType(id, name,
-                                      instantiatedFrom, std::move(subs),
-                                      linkage));
+  auto result = toOwned(
+    new UnionType(id, name, instantiatedFrom, std::move(subs), linkage));
 
   return QUERY_END(result);
 }
 
-const UnionType*
-UnionType::get(Context* context, ID id, UniqueString name,
-               const UnionType* instantiatedFrom,
-               SubstitutionsMap subs) {
+const UnionType* UnionType::get(Context* context,
+                                ID id,
+                                UniqueString name,
+                                const UnionType* instantiatedFrom,
+                                SubstitutionsMap subs) {
   auto linkage = parsing::idToDeclLinkage(context, id);
-  return getUnionType(context, id, name,
-                      instantiatedFrom, std::move(subs), linkage).get();
+  return getUnionType(
+           context, id, name, instantiatedFrom, std::move(subs), linkage)
+    .get();
 }
-
 
 } // end namespace types
 } // end namespace chpl

@@ -24,10 +24,9 @@
 
 namespace chpl {
 namespace uast {
-  class AstNode;
+class AstNode;
 }
 namespace resolution {
-
 
 void gatherDeclsWithin(Context* context,
                        const uast::AstNode* ast,
@@ -36,7 +35,6 @@ void gatherDeclsWithin(Context* context,
                        bool& containsFunctionDecls,
                        bool& containsExternBlock,
                        bool& containsRequire);
-
 
 } // end namespace resolution
 } // end namespace chpl

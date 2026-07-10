@@ -30,9 +30,7 @@ void NamedDecl::dumpFieldsInner(const DumpSettings& s) const {
   Decl::dumpFieldsInner(s);
 }
 
-NamedDecl::~NamedDecl() {
-}
-
+NamedDecl::~NamedDecl() {}
 
 } // namespace uast
 } // namespace chpl

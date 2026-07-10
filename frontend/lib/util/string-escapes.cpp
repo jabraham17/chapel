@@ -23,8 +23,7 @@ namespace chpl {
 
 bool stringContainsZeroBytes(const char* s, size_t len) {
   for (size_t i = 0; i < len; i++) {
-    if (s[i] == '\0')
-      return true;
+    if (s[i] == '\0') return true;
   }
   return false;
 }
@@ -45,8 +44,8 @@ static void addCharEscapeNonprint(std::string& s, char c) {
   if (isxdigit(c)) {
     size_t len = s.length();
     if (len >= 4 && s[len - 4] == '\\' &&
-        (s[len - 3] == 'x' || s[len - 3] == 'X') &&
-        isxdigit(s[len - 2]) && isxdigit(s[len - 1])) {
+        (s[len - 3] == 'x' || s[len - 3] == 'X') && isxdigit(s[len - 2]) &&
+        isxdigit(s[len - 1])) {
       escape = 1;
     }
   }
@@ -65,49 +64,47 @@ static void addCharEscapeNonprint(std::string& s, char c) {
 // appends the result of escaping 'c' to 's'
 static void addCharEscapingC(std::string& s, char c) {
   switch (c) {
-    case '\"' :
+    case '\"':
       s.push_back('\\');
       s.push_back('"');
       break;
-    case '?' :
+    case '?':
       s.push_back('\\');
       s.push_back('?');
       break;
-    case '\\' :
+    case '\\':
       s.push_back('\\');
       s.push_back('\\');
       break;
-    case '\a' :
+    case '\a':
       s.push_back('\\');
       s.push_back('a');
       break;
-    case '\b' :
+    case '\b':
       s.push_back('\\');
       s.push_back('b');
       break;
-    case '\f' :
+    case '\f':
       s.push_back('\\');
       s.push_back('f');
       break;
-    case '\n' :
+    case '\n':
       s.push_back('\\');
       s.push_back('n');
       break;
-    case '\r' :
+    case '\r':
       s.push_back('\\');
       s.push_back('r');
       break;
-    case '\t' :
+    case '\t':
       s.push_back('\\');
       s.push_back('t');
       break;
-    case '\v' :
+    case '\v':
       s.push_back('\\');
       s.push_back('v');
       break;
-    default :
-      addCharEscapeNonprint(s, c);
-      break;
+    default: addCharEscapeNonprint(s, c); break;
   }
 }
 
@@ -122,7 +119,7 @@ static ssize_t addCharUnescapingC(std::string& newString, const char* str) {
     return 0;
   }
 
-  if(nextChar != '\\') {
+  if (nextChar != '\\') {
     newString.push_back(nextChar);
     return pos;
   }
@@ -134,44 +131,25 @@ static ssize_t addCharUnescapingC(std::string& newString, const char* str) {
     case '\'':
     case '\"':
     case '?':
-    case '\\':
-      newString.push_back(nextChar);
-      break;
-    case 'a':
-      newString.push_back('\a');
-      break;
-    case 'b':
-      newString.push_back('\b');
-      break;
-    case 'f':
-      newString.push_back('\f');
-      break;
-    case 'n':
-      newString.push_back('\n');
-      break;
-    case 'r':
-      newString.push_back('\r');
-      break;
-    case 't':
-      newString.push_back('\t');
-      break;
-    case 'v':
-      newString.push_back('\v');
-      break;
-    case 'x':
-      {
-        char buf[3];
-        long num;
-        buf[0] = buf[1] = buf[2] = '\0';
-        if (str[pos] && isxdigit(str[pos])) {
-            buf[0] = str[pos++];
-            if( str[pos] && isxdigit(str[pos]))
-              buf[1] = str[pos++];
-        }
-        num = strtol(buf, NULL, 16);
-        newString.push_back((char) num);
+    case '\\': newString.push_back(nextChar); break;
+    case 'a': newString.push_back('\a'); break;
+    case 'b': newString.push_back('\b'); break;
+    case 'f': newString.push_back('\f'); break;
+    case 'n': newString.push_back('\n'); break;
+    case 'r': newString.push_back('\r'); break;
+    case 't': newString.push_back('\t'); break;
+    case 'v': newString.push_back('\v'); break;
+    case 'x': {
+      char buf[3];
+      long num;
+      buf[0] = buf[1] = buf[2] = '\0';
+      if (str[pos] && isxdigit(str[pos])) {
+        buf[0] = str[pos++];
+        if (str[pos] && isxdigit(str[pos])) buf[1] = str[pos++];
       }
-      break;
+      num = strtol(buf, NULL, 16);
+      newString.push_back((char)num);
+    } break;
     default:
       // it's not a valid C escape so just pass it through
       // if this should be an error, it needs to be caught elsewhere
@@ -193,8 +171,7 @@ std::string escapeStringC(const std::string& unescaped) {
 
 std::string escapeStringC(const char* unescaped) {
   std::string ret;
-  if (unescaped == nullptr)
-    return ret;
+  if (unescaped == nullptr) return ret;
 
   for (ssize_t i = 0; unescaped[i] != '\0'; i++) {
     addCharEscapingC(ret, unescaped[i]);
@@ -234,9 +211,7 @@ static void addCharEscapingId(std::string& s, char c) {
       s.push_back('\\');
       s.push_back('#');
       break;
-    default:
-      addCharEscapingC(s, c);
-      break;
+    default: addCharEscapingC(s, c); break;
   }
 }
 
@@ -270,8 +245,7 @@ std::string escapeStringId(const std::string& unescaped) {
 
 std::string escapeStringId(const char* unescaped) {
   std::string ret;
-  if (unescaped == nullptr)
-    return ret;
+  if (unescaped == nullptr) return ret;
 
   for (ssize_t i = 0; unescaped[i] != '\0'; i++) {
     addCharEscapingId(ret, unescaped[i]);
@@ -299,6 +273,5 @@ std::string unescapeStringId(const char* str) {
 std::string unescapeStringId(const std::string& str) {
   return unescapeStringId(str.c_str());
 }
-
 
 } // end namespace chpl

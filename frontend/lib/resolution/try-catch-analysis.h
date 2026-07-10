@@ -25,8 +25,7 @@
 namespace chpl {
 namespace uast {
 
-  class AggregateDecl;
-
+class AggregateDecl;
 
 } // end namespace uast
 namespace resolution {
@@ -37,9 +36,7 @@ void checkThrows(ResolutionContext* rc,
                  ResolutionResultByPostorderID& result,
                  const uast::AstNode* symbol);
 
-
 } // end namespace resolution
-
 
 } // end namespace chpl
 

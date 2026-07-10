@@ -27,7 +27,8 @@ namespace resolution {
 
 using namespace util;
 
-bool externBlockContainsName(Context* context, ID externBlockId,
+bool externBlockContainsName(Context* context,
+                             ID externBlockId,
                              UniqueString name) {
   if (auto& tfr = createClangPrecompiledHeader(context, externBlockId)) {
     return precompiledHeaderContainsName(context, tfr.get(), name);
@@ -35,7 +36,8 @@ bool externBlockContainsName(Context* context, ID externBlockId,
   return false;
 }
 
-bool externBlockContainsFunction(Context* context, ID externBlockId,
+bool externBlockContainsFunction(Context* context,
+                                 ID externBlockId,
                                  UniqueString name) {
   if (auto& tfr = createClangPrecompiledHeader(context, externBlockId)) {
     return precompiledHeaderContainsFunction(context, tfr.get(), name);
@@ -52,19 +54,18 @@ const types::QualifiedType externBlockTypeForSymbol(Context* context,
   return types::QualifiedType();
 }
 
-const TypedFnSignature* externBlockSigForFn(Context* context, ID externBlockId,
-                                            UniqueString name) {
+const TypedFnSignature*
+externBlockSigForFn(Context* context, ID externBlockId, UniqueString name) {
   if (auto& tfr = createClangPrecompiledHeader(context, externBlockId)) {
     ID fnId =
-        ID::fabricateId(context, externBlockId, name, ID::ExternBlockElement);
+      ID::fabricateId(context, externBlockId, name, ID::ExternBlockElement);
     return precompiledHeaderSigForFn(context, tfr.get(), fnId);
   }
   return nullptr;
 }
 
-const types::QualifiedType externBlockRetTypeForFn(Context* context,
-                                                   ID externBlockId,
-                                                   UniqueString name) {
+const types::QualifiedType
+externBlockRetTypeForFn(Context* context, ID externBlockId, UniqueString name) {
   if (auto& tfr = createClangPrecompiledHeader(context, externBlockId)) {
     return precompiledHeaderRetTypeForFn(context, tfr.get(), name);
   }
@@ -72,5 +73,5 @@ const types::QualifiedType externBlockRetTypeForFn(Context* context,
   return types::QualifiedType();
 }
 
-}  // end namespace resolution
-}  // end namespace chpl
+} // end namespace resolution
+} // end namespace chpl

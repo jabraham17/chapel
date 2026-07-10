@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 std::string Manage::dumpChildLabelInner(int i) const {
   if (managerExprChildNum_ <= i &&
       i <= managerExprChildNum_ + numManagerExprs_) {
@@ -33,7 +32,8 @@ std::string Manage::dumpChildLabelInner(int i) const {
   return SimpleBlockLike::dumpChildLabelInner(i);
 }
 
-owned<Manage> Manage::build(Builder* builder, Location loc,
+owned<Manage> Manage::build(Builder* builder,
+                            Location loc,
                             AstList managers,
                             BlockStyle blockStyle,
                             AstList stmts) {
@@ -53,7 +53,8 @@ owned<Manage> Manage::build(Builder* builder, Location loc,
     for (auto& ast : stmts) children.push_back(std::move(ast));
   }
 
-  Manage* ret = new Manage(std::move(children), managerExprChildNum,
+  Manage* ret = new Manage(std::move(children),
+                           managerExprChildNum,
                            numManagerExprs,
                            blockStyle,
                            bodyChildNum,
@@ -62,7 +63,6 @@ owned<Manage> Manage::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

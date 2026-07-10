@@ -24,9 +24,8 @@
 namespace chpl {
 namespace uast {
 
-
-owned<Return> Return::build(Builder* builder, Location loc,
-                            owned<AstNode> value) {
+owned<Return>
+Return::build(Builder* builder, Location loc, owned<AstNode> value) {
   AstList lst;
   int8_t valueChildNum = NO_CHILD;
 
@@ -39,7 +38,6 @@ owned<Return> Return::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

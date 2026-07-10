@@ -24,13 +24,11 @@
 namespace chpl {
 namespace uast {
 
-
 owned<Delete> Delete::build(Builder* builder, Location loc, AstList exprs) {
   Delete* ret = new Delete(std::move(exprs));
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

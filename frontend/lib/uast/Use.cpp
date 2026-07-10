@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 void Use::dumpFieldsInner(const DumpSettings& s) const {
   const char* visStr = Decl::visibilityToString(visibility_);
   if (visStr[0] != '\0') {
@@ -32,14 +31,14 @@ void Use::dumpFieldsInner(const DumpSettings& s) const {
   }
 }
 
-owned<Use> Use::build(Builder* builder, Location loc,
+owned<Use> Use::build(Builder* builder,
+                      Location loc,
                       Decl::Visibility visibility,
                       AstList visibilityClauses) {
   Use* ret = new Use(std::move(visibilityClauses), visibility);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

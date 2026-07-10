@@ -23,7 +23,6 @@
 
 namespace chpl {
 
-
 bool startsWith(const std::string& s, const std::string& prefix) {
   return (0 == s.compare(0, prefix.length(), prefix));
 }
@@ -43,6 +42,5 @@ std::string replacePrefix(const std::string& s,
     return s;
   }
 }
-
 
 } // end namespace chpl

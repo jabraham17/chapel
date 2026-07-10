@@ -17,12 +17,10 @@
  * limitations under the License.
  */
 
-
 #include "chpl/uast/chpl-syntax-printer.h"
 
 #include "chpl/framework/global-strings.h"
 #include "chpl/uast/all-uast.h"
-
 
 using namespace chpl;
 using namespace uast;
@@ -93,8 +91,7 @@ static const char* kindToString(New::Management kind) {
     case New::Management::SHARED: return "shared";
     case New::Management::UNMANAGED: return "unmanaged";
     case New::Management::DEFAULT_MANAGEMENT: CHPL_ASSERT(false);
-    default:
-      CHPL_ASSERT(false);
+    default: CHPL_ASSERT(false);
   }
   CHPL_ASSERT(false);
   return "";
@@ -124,7 +121,6 @@ static std::string pragmaFlagsToString(const Decl* node) {
   return ret;
 }
 
-
 // TODO: AttributeGroup
 
 struct ChplSyntaxVisitor {
@@ -132,7 +128,6 @@ struct ChplSyntaxVisitor {
   int indentDepth_ = 0;
   const int spacesPerIndentDepth_ = 2;
   bool printingType_ = false;
-
 
   void typeExpressionHelper(const AstNode* te) {
     ss_ << ": ";
@@ -177,9 +172,12 @@ struct ChplSyntaxVisitor {
   }
 
   void declHelper(const Decl* decl) {
-    if (auto ast = decl->toVariable()) declHelper(ast);
-    else if (auto ast = decl->toTupleDecl()) declHelper(ast);
-    else if (auto ast = decl->toVarLikeDecl()) declHelper(ast);
+    if (auto ast = decl->toVariable())
+      declHelper(ast);
+    else if (auto ast = decl->toTupleDecl())
+      declHelper(ast);
+    else if (auto ast = decl->toVarLikeDecl())
+      declHelper(ast);
   }
 
   void printIndentation() {
@@ -190,9 +188,7 @@ struct ChplSyntaxVisitor {
     }
   }
 
-  void printAst(const AstNode* node) {
-    node->dispatch<void>(*this);
-  }
+  void printAst(const AstNode* node) { node->dispatch<void>(*this); }
 
   ChplSyntaxVisitor(std::ostringstream ss_ = std::ostringstream()) {}
 
@@ -201,60 +197,69 @@ struct ChplSyntaxVisitor {
    * if not null, `surroundBegin` and `surroundEnd` are output before
    * and after respectively
   */
-  template<typename It>
-  void interpose(It begin, It end, const char* separator,
-                const char* surroundBegin=nullptr,
-                const char* surroundEnd=nullptr,
-                const char* terminator=nullptr,
-                bool doIndent=false) {
+  template <typename It>
+  void interpose(It begin,
+                 It end,
+                 const char* separator,
+                 const char* surroundBegin = nullptr,
+                 const char* surroundEnd = nullptr,
+                 const char* terminator = nullptr,
+                 bool doIndent = false) {
     bool first = true;
     if (doIndent) indentDepth_++;
     if (surroundBegin) ss_ << surroundBegin;
     for (auto it = begin; it != end; it++) {
       if (!first && !it->isComment()) ss_ << separator;
-      if (separator[0]=='\n') printIndentation();
+      if (separator[0] == '\n') printIndentation();
       printAst(*it);
-      if (terminator && isExpressionRequiringSemi(*it))
-        ss_ << terminator;
+      if (terminator && isExpressionRequiringSemi(*it)) ss_ << terminator;
       first = false;
     }
     if (surroundEnd) {
-      if (surroundEnd[0]=='\n') {
+      if (surroundEnd[0] == '\n') {
         ss_ << surroundEnd[0];
         indentDepth_--;
         printIndentation();
         indentDepth_++;
         ss_ << ++surroundEnd;
-      }
-      else
+      } else
         ss_ << surroundEnd;
     }
     if (doIndent) indentDepth_--;
   }
 
-  template<typename T>
-  void interpose(T xs, const char* separator,
-                const char* surroundBegin=nullptr,
-                const char* surroundEnd=nullptr,
-                const char* terminator=nullptr,
-                bool doIndent=false) {
-    interpose(xs.begin(), xs.end(), separator, surroundBegin, surroundEnd,
-              terminator, doIndent);
+  template <typename T>
+  void interpose(T xs,
+                 const char* separator,
+                 const char* surroundBegin = nullptr,
+                 const char* surroundEnd = nullptr,
+                 const char* terminator = nullptr,
+                 bool doIndent = false) {
+    interpose(xs.begin(),
+              xs.end(),
+              separator,
+              surroundBegin,
+              surroundEnd,
+              terminator,
+              doIndent);
   }
 
   /*
    * helper for printing descendants of simpleBlockLike to handle when to print
    * the optional opening keyword and if braces should follow that keyword
   */
-  template<typename It>
-  void printBlockWithStyle(BlockStyle style,  It begin, It end,
-                          const char* implicitOpeningKeyword=nullptr,
-                          const char* terminator=nullptr, bool doIndent=false) {
+  template <typename It>
+  void printBlockWithStyle(BlockStyle style,
+                           It begin,
+                           It end,
+                           const char* implicitOpeningKeyword = nullptr,
+                           const char* terminator = nullptr,
+                           bool doIndent = false) {
     if (implicitOpeningKeyword) {
       ss_ << implicitOpeningKeyword;
     }
     if (style != BlockStyle::IMPLICIT) {
-      interpose(begin, end, "\n", "{\n","\n}", terminator, doIndent);
+      interpose(begin, end, "\n", "{\n", "\n}", terminator, doIndent);
     } else {
       if (implicitOpeningKeyword) {
         ss_ << "\n";
@@ -262,22 +267,24 @@ struct ChplSyntaxVisitor {
       } else {
         interpose(begin, end, "", nullptr, nullptr, terminator, doIndent);
       }
-
-
     }
   }
 
-  template<typename T>
-  void printBlockWithStyle(BlockStyle style,  T xs,
-                          const char* implicitOpeningKeyword=nullptr,
-                          const char* terminator=nullptr,
-                          bool doIndent=false) {
-    printBlockWithStyle(style, xs.begin(), xs.end(), implicitOpeningKeyword,
-                        terminator, doIndent);
+  template <typename T>
+  void printBlockWithStyle(BlockStyle style,
+                           T xs,
+                           const char* implicitOpeningKeyword = nullptr,
+                           const char* terminator = nullptr,
+                           bool doIndent = false) {
+    printBlockWithStyle(style,
+                        xs.begin(),
+                        xs.end(),
+                        implicitOpeningKeyword,
+                        terminator,
+                        doIndent);
   }
 
-  template<typename T>
-  void visitLiteral(const T* node) {
+  template <typename T> void visitLiteral(const T* node) {
     /*
      * TODO: can text() be placed in `Literal.h` so this can be generalized
      * for all literals instead of creating specializations of visit for each
@@ -292,31 +299,22 @@ struct ChplSyntaxVisitor {
   */
   bool isCalleeReservedWord(const AstNode* callee) {
     if (callee->isIdentifier() &&
-      (callee->toIdentifier()->name() == USTR("borrowed")
-       || callee->toIdentifier()->name() == USTR("owned")
-       || callee->toIdentifier()->name() == USTR("unmanaged")
-       || callee->toIdentifier()->name() == USTR("shared")
-       || callee->toIdentifier()->name() == USTR("sync")
-       || callee->toIdentifier()->name() == USTR("atomic")))
-        return true;
-      return false;
+        (callee->toIdentifier()->name() == USTR("borrowed") ||
+         callee->toIdentifier()->name() == USTR("owned") ||
+         callee->toIdentifier()->name() == USTR("unmanaged") ||
+         callee->toIdentifier()->name() == USTR("shared") ||
+         callee->toIdentifier()->name() == USTR("sync") ||
+         callee->toIdentifier()->name() == USTR("atomic")))
+      return true;
+    return false;
   }
 
   bool isExpressionRequiringSemi(const AstNode* node) {
-    return !node->isAggregateDecl()
-           && !node->isCatch()
-           && !node->isCobegin()
-           && !node->isComment()
-           && !node->isConditional()
-           && !node->isEnum()
-           && !node->isFunction()
-           && !node->isLabel()
-           && !node->isLoop()
-           && !node->isModule()
-           && !node->isSelect()
-           && !node->isSimpleBlockLike()
-           && !node->isSync()
-           && !node->isTry();
+    return !node->isAggregateDecl() && !node->isCatch() && !node->isCobegin() &&
+           !node->isComment() && !node->isConditional() && !node->isEnum() &&
+           !node->isFunction() && !node->isLabel() && !node->isLoop() &&
+           !node->isModule() && !node->isSelect() &&
+           !node->isSimpleBlockLike() && !node->isSync() && !node->isTry();
   }
 
   bool isPostfix(const OpCall* op) {
@@ -337,10 +335,10 @@ struct ChplSyntaxVisitor {
   }
 
   void printFunctionHelper(const Function* node) {
-     // storage kind
-    if (node->thisFormal() != nullptr
-        && node->thisFormal()->storageKind() != Qualifier::DEFAULT_INTENT) {
-      ss_ << kindToString(node->thisFormal()->storageKind()) <<" ";
+    // storage kind
+    if (node->thisFormal() != nullptr &&
+        node->thisFormal()->storageKind() != Qualifier::DEFAULT_INTENT) {
+      ss_ << kindToString(node->thisFormal()->storageKind()) << " ";
     }
 
     // print out the receiver type for secondary methods
@@ -389,7 +387,7 @@ struct ChplSyntaxVisitor {
 
     // Print the receiver.
     if (auto thisFormal = node->thisFormal()) {
-      if (thisFormal->intent () != Formal::DEFAULT_INTENT) {
+      if (thisFormal->intent() != Formal::DEFAULT_INTENT) {
         ss_ << kindToString(node->thisFormal()->storageKind()) << " ";
       }
 
@@ -460,9 +458,7 @@ struct ChplSyntaxVisitor {
     CHPL_ASSERT(false && "Unhandled uAST node");
   }
 
-  void visit(const Array* node) {
-    interpose(node->children(), ", ", "[", "]");
-  }
+  void visit(const Array* node) { interpose(node->children(), ", ", "[", "]"); }
 
   void visit(const As* node) {
     printAst(node->symbol());
@@ -482,7 +478,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const Block* node) {
-    printBlockWithStyle(node->blockStyle(), node->stmts(), nullptr,";", true);
+    printBlockWithStyle(node->blockStyle(), node->stmts(), nullptr, ";", true);
   }
 
   void visit(const BoolLiteral* node) {
@@ -495,8 +491,7 @@ struct ChplSyntaxVisitor {
       printAst(node->index());
       ss_ << " in ";
     }
-    if (node->isMaybeArrayType() &&
-        node->iterand()->isDomain() &&
+    if (node->isMaybeArrayType() && node->iterand()->isDomain() &&
         node->iterand()->toDomain()->numExprs() == 1) {
       printAst(node->iterand()->toDomain()->expr(0));
     } else {
@@ -504,20 +499,19 @@ struct ChplSyntaxVisitor {
     }
 
     if (node->withClause()) {
-      ss_<< " ";
+      ss_ << " ";
       printAst(node->withClause());
     }
     ss_ << "]";
     if (node->numStmts() > 0) {
       ss_ << " ";
-      if (node->blockStyle()==BlockStyle::EXPLICIT) {
-        printBlockWithStyle(node->blockStyle(),
-                            node->stmts(), nullptr, ";", true);
+      if (node->blockStyle() == BlockStyle::EXPLICIT) {
+        printBlockWithStyle(
+          node->blockStyle(), node->stmts(), nullptr, ";", true);
       } else {
         if (node->stmt(0)->isOpCall()) {
           interpose(node->stmts(), "", "(", ")");
-          if (!node->isExpressionLevel())
-            ss_ << ";";
+          if (!node->isExpressionLevel()) ss_ << ";";
         } else
           interpose(node->stmts(), "");
       }
@@ -527,7 +521,7 @@ struct ChplSyntaxVisitor {
   void visit(const Break* node) {
     ss_ << "break";
     if (node->target()) {
-      ss_<< " ";
+      ss_ << " ";
       printAst(node->target());
     }
   }
@@ -547,7 +541,7 @@ struct ChplSyntaxVisitor {
       if (node->hasParensAroundError()) ss_ << ")";
       ss_ << " ";
     }
-    interpose(node->stmts(), "\n","{\n", "\n}", ";");
+    interpose(node->stmts(), "\n", "{\n", "\n}", ";");
   }
 
   void visit(const Class* node) {
@@ -570,9 +564,9 @@ struct ChplSyntaxVisitor {
     ss_ << "cobegin ";
     if (node->withClause()) {
       printAst(node->withClause());
-      ss_<< " ";
+      ss_ << " ";
     }
-    interpose(node->taskBodies(), "\n", "{\n","\n}", ";", true);
+    interpose(node->taskBodies(), "\n", "{\n", "\n}", ";", true);
   }
 
   void visit(const Coforall* node) {
@@ -584,7 +578,7 @@ struct ChplSyntaxVisitor {
     }
     printAst(node->iterand());
     if (node->withClause()) {
-      ss_<< " ";
+      ss_ << " ";
       printAst(node->withClause());
     }
     ss_ << " ";
@@ -613,10 +607,9 @@ struct ChplSyntaxVisitor {
         printAst(node->thenStmt(0));
         ss_ << ";";
       } else {
-        printBlockWithStyle(node->thenBlockStyle(), node->thenStmts(), "then ",
-                            ";", true);
+        printBlockWithStyle(
+          node->thenBlockStyle(), node->thenStmts(), "then ", ";", true);
       }
-
     }
     if (node->hasElseBlock()) {
       ss_ << " ";
@@ -626,8 +619,8 @@ struct ChplSyntaxVisitor {
       } else {
         ss_ << "\n";
         printIndentation();
-        printBlockWithStyle(node->elseBlockStyle(), node->elseStmts(), "else ",
-                            ";", true);
+        printBlockWithStyle(
+          node->elseBlockStyle(), node->elseStmts(), "else ", ";", true);
       }
     }
   }
@@ -695,7 +688,7 @@ struct ChplSyntaxVisitor {
   void visit(const EnumElement* node) {
     ss_ << node->name();
     if (const AstNode* ie = node->initExpression()) {
-      ss_ <<  " = ";
+      ss_ << " = ";
       printAst(ie);
     }
   }
@@ -761,11 +754,11 @@ struct ChplSyntaxVisitor {
       printAst(node->stmt(0));
     } else {
       if (node->blockStyle() == BlockStyle::EXPLICIT) {
-        printBlockWithStyle(node->blockStyle(),
-                            node->stmts(), nullptr, ";", true);
+        printBlockWithStyle(
+          node->blockStyle(), node->stmts(), nullptr, ";", true);
       } else {
-        printBlockWithStyle(node->blockStyle(),
-                            node->stmts(), "do ", ";", true);
+        printBlockWithStyle(
+          node->blockStyle(), node->stmts(), "do ", ";", true);
       }
     }
   }
@@ -779,13 +772,13 @@ struct ChplSyntaxVisitor {
     }
     printAst(node->iterand());
     if (node->withClause()) {
-      ss_<< " ";
+      ss_ << " ";
       printAst(node->withClause());
     }
     ss_ << " ";
     if (node->isExpressionLevel()) {
-     ss_ << "do ";
-     printAst(node->stmt(0));
+      ss_ << "do ";
+      printAst(node->stmt(0));
     } else {
       printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";", true);
     }
@@ -805,7 +798,7 @@ struct ChplSyntaxVisitor {
 
   void visit(const AnonFormal* node) {
     if (node->intent() != Formal::DEFAULT_INTENT) {
-      ss_ << kindToString((Qualifier) node->intent()) << " ";
+      ss_ << kindToString((Qualifier)node->intent()) << " ";
     }
 
     if (auto te = node->typeExpression()) {
@@ -817,7 +810,7 @@ struct ChplSyntaxVisitor {
     if (node->attributeGroup()) ss_ << pragmaFlagsToString(node);
 
     if (node->intent() != Formal::DEFAULT_INTENT) {
-      ss_ << kindToString((Qualifier) node->intent()) << " ";
+      ss_ << kindToString((Qualifier)node->intent()) << " ";
     }
     declHelper(node);
   }
@@ -853,7 +846,7 @@ struct ChplSyntaxVisitor {
 
     // Return Intent
     if (node->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
-      ss_ << " " << kindToString((Qualifier) node->returnIntent());
+      ss_ << " " << kindToString((Qualifier)node->returnIntent());
     }
 
     // Return type
@@ -873,10 +866,9 @@ struct ChplSyntaxVisitor {
     if (node->throws()) ss_ << "throws ";
 
     // function body
-    if (node->linkage() != chpl::uast::Decl::EXTERN || node->numStmts() > 0 ) {
+    if (node->linkage() != chpl::uast::Decl::EXTERN || node->numStmts() > 0) {
       interpose(node->stmts(), "\n", "{\n", "\n}", ";", true);
-    }
-    else
+    } else
       ss_ << ";";
   }
 
@@ -889,7 +881,7 @@ struct ChplSyntaxVisitor {
 
     // Return Intent
     if (node->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
-      ss_ << " " << kindToString((Qualifier) node->returnIntent());
+      ss_ << " " << kindToString((Qualifier)node->returnIntent());
     }
 
     // Return type
@@ -903,9 +895,7 @@ struct ChplSyntaxVisitor {
     if (node->throws()) ss_ << "throws ";
   }
 
-  void visit(const chpl::uast::Identifier* node) {
-    ss_ << node->name().str();
-  }
+  void visit(const chpl::uast::Identifier* node) { ss_ << node->name().str(); }
 
   void visit(const ImagLiteral* node) { visitLiteral(node); }
 
@@ -929,7 +919,7 @@ struct ChplSyntaxVisitor {
     ss_ << node->name();
   }
 
-  void visit(const IntLiteral* node)  { visitLiteral(node); }
+  void visit(const IntLiteral* node) { visitLiteral(node); }
 
   void visit(const Label* node) {
     ss_ << "label ";
@@ -973,7 +963,7 @@ struct ChplSyntaxVisitor {
       }
       ss_ << "module ";
       ss_ << node->name() << " ";
-      interpose(node->stmts(), "\n", "{\n", "\n}\n",";", true);
+      interpose(node->stmts(), "\n", "{\n", "\n}\n", ";", true);
     } else {
       interpose(node->stmts(), "\n", nullptr, nullptr, ";", false);
     }
@@ -985,13 +975,10 @@ struct ChplSyntaxVisitor {
     for (auto decl : node->decls()) {
       if (!decl->isComment()) {
         if (auto var = decl->toVariable()) {
-          if (var->isConfig())
-            isConfig = true;
+          if (var->isConfig()) isConfig = true;
           kind = kindToString((Qualifier)var->kind());
-        }
-        else if (auto tup = decl->toTupleDecl()) {
-          if (isTupleDeclConfig(tup))
-            isConfig = true;
+        } else if (auto tup = decl->toTupleDecl()) {
+          if (isTupleDeclConfig(tup)) isConfig = true;
           kind = kindToString((Qualifier)tup->intentOrKind());
         }
       }
@@ -1054,9 +1041,13 @@ struct ChplSyntaxVisitor {
     outerOp = node->op();
     if (node->actual(pos)->isOpCall()) {
       innerOp = node->actual(pos)->toOpCall()->op();
-      needsParens = needParens(outerOp, innerOp, node->isUnaryOp(), postfix,
+      needsParens = needParens(outerOp,
+                               innerOp,
+                               node->isUnaryOp(),
+                               postfix,
                                node->actual(pos)->toOpCall()->isUnaryOp(),
-                               isPostfix(node->actual(pos)->toOpCall()), isRHS);
+                               isPostfix(node->actual(pos)->toOpCall()),
+                               isRHS);
     }
     // handle printing parens around tuples
     // ex: 3*(4*string) != 3*4*string
@@ -1073,18 +1064,14 @@ struct ChplSyntaxVisitor {
   void printBinaryOp(const OpCall* node) {
     CHPL_ASSERT(node->numActuals() == 2);
     bool addSpace = wantSpaces(node->op(), printingType_) ||
-                    node->op() == USTR("by") ||
-                    node->op() == USTR("align") ||
+                    node->op() == USTR("by") || node->op() == USTR("align") ||
                     node->op() == USTR("reduce=") ||
                     node->op() == USTR("reduce") ||
-                    node->op() == USTR("scan") ||
-                    node->op() == USTR("dmapped");
+                    node->op() == USTR("scan") || node->op() == USTR("dmapped");
     opHelper(node, 0, false);
-    if (addSpace)
-      ss_ << " ";
+    if (addSpace) ss_ << " ";
     ss_ << node->op();
-    if (addSpace)
-      ss_ << " ";
+    if (addSpace) ss_ << " ";
     opHelper(node, 1, false);
   }
 
@@ -1110,8 +1097,7 @@ struct ChplSyntaxVisitor {
     }
     ss_ << "..";
     if (auto ub = node->upperBound()) {
-      if (node->opKind() == Range::OPEN_HIGH)
-        ss_ << "<";
+      if (node->opKind() == Range::OPEN_HIGH) ss_ << "<";
       printAst(ub);
     }
   }
@@ -1134,7 +1120,7 @@ struct ChplSyntaxVisitor {
       ss_ << " ";
     }
 
-    interpose(node->decls(), "\n", "{\n", "\n}",";", true);
+    interpose(node->decls(), "\n", "{\n", "\n}", ";", true);
   }
 
   void visit(const Reduce* node) {
@@ -1143,9 +1129,9 @@ struct ChplSyntaxVisitor {
       ss_ << " ";
     }
     ss_ << "reduce ";
-    if (node->iterand()->isOpCall()) ss_<<"(";
+    if (node->iterand()->isOpCall()) ss_ << "(";
     printAst(node->iterand());
-    if (node->iterand()->isOpCall()) ss_<<")";
+    if (node->iterand()->isOpCall()) ss_ << ")";
   }
 
   void visit(const ReduceIntent* node) {
@@ -1198,7 +1184,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const TaskVar* node) {
-    ss_ << kindToString((Qualifier) node->intent());
+    ss_ << kindToString((Qualifier)node->intent());
     ss_ << " ";
     declHelper(node);
   }
@@ -1218,7 +1204,7 @@ struct ChplSyntaxVisitor {
     if (node->isExpressionLevel()) {
       printAst(node->stmt(0));
     } else {
-      interpose(node->stmts(), "\n", "{\n","\n}", ";", true);
+      interpose(node->stmts(), "\n", "{\n", "\n}", ";", true);
     }
     // if try block has catch blocks
     if (!node->isTryBang() && node->numHandlers() > 0) {
@@ -1227,16 +1213,13 @@ struct ChplSyntaxVisitor {
     }
   }
 
-  void visit(const Tuple* node) {
-    interpose(node->children(), ", ", "(", ")");
-  }
+  void visit(const Tuple* node) { interpose(node->children(), ", ", "(", ")"); }
 
   void visit(const TupleDecl* node) {
-    if (isTupleDeclConfig(node))
-      ss_ << "config ";
+    if (isTupleDeclConfig(node)) ss_ << "config ";
     if (node->intentOrKind() != TupleDecl::IntentOrKind::DEFAULT_INTENT &&
         node->intentOrKind() != TupleDecl::IntentOrKind::INDEX) {
-      ss_ << kindToString((Qualifier) node->intentOrKind()) << " ";
+      ss_ << kindToString((Qualifier)node->intentOrKind()) << " ";
     }
     declHelper(node);
   }
@@ -1274,7 +1257,7 @@ struct ChplSyntaxVisitor {
 
   void visit(const VarArgFormal* node) {
     if (node->intent() != Formal::Intent::DEFAULT_INTENT) {
-      ss_ << kindToString((Qualifier) node->intent()) << " ";
+      ss_ << kindToString((Qualifier)node->intent()) << " ";
     }
     // TODO: same pattern as declHelper, in Formal* and TupleDecl*
     declHelper(node);
@@ -1293,7 +1276,7 @@ struct ChplSyntaxVisitor {
     }
 
     if (node->kind() != Variable::Kind::INDEX) {
-      ss_ << kindToString((Qualifier) node->kind()) << " ";
+      ss_ << kindToString((Qualifier)node->kind()) << " ";
     }
     declHelper(node);
   }
@@ -1303,7 +1286,7 @@ struct ChplSyntaxVisitor {
     printAst(node->symbol());
     if (limit == VisibilityClause::LimitationKind::BRACES) {
       ss_ << ".";
-      interpose(node->limitations(), ", ", "{","}");
+      interpose(node->limitations(), ", ", "{", "}");
     } else if (limit == VisibilityClause::LimitationKind::NONE &&
                node->numLimitations() == 1) {
       CHPL_ASSERT(node->limitation(0)->isIdentifier());
@@ -1314,8 +1297,7 @@ struct ChplSyntaxVisitor {
           limit == VisibilityClause::LimitationKind::EXCEPT) {
         ss_ << " ";
         ss_ << kindToString(limit);
-        if (node->numLimitations() > 0)
-          ss_ << " ";
+        if (node->numLimitations() > 0) ss_ << " ";
       }
       interpose(node->limitations(), ", ");
     }
@@ -1329,7 +1311,8 @@ struct ChplSyntaxVisitor {
       interpose(node->caseExprs(), ", ");
       ss_ << " ";
     }
-    printBlockWithStyle(node->blockStyle(), node->body()->stmts(), "do ", ";", true);
+    printBlockWithStyle(
+      node->blockStyle(), node->body()->stmts(), "do ", ";", true);
   }
 
   void visit(const While* node) {
@@ -1351,59 +1334,57 @@ struct ChplSyntaxVisitor {
 
   void visit(const Zip* node) {
     ss_ << "zip";
-    interpose(node->actuals(),", ","(",")");
+    interpose(node->actuals(), ", ", "(", ")");
   }
-
 };
 
 namespace chpl {
-  /* Generic printer calling the above functions */
-  void printChapelSyntax(std::ostream& os, const AstNode* node) {
-    auto visitor = ChplSyntaxVisitor{};
-    node->dispatch<void>(visitor);
-    // when using << with ss_.rdbuf(), if nothing gets added to os, then
-    // os goes into fail state
-    // see: https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt
-    // check for failbit and reset
-    os << visitor.ss_.rdbuf();
-    if (os.fail()) {
-      os.clear();
-    }
-    os.flush();
+/* Generic printer calling the above functions */
+void printChapelSyntax(std::ostream& os, const AstNode* node) {
+  auto visitor = ChplSyntaxVisitor{};
+  node->dispatch<void>(visitor);
+  // when using << with ss_.rdbuf(), if nothing gets added to os, then
+  // os goes into fail state
+  // see: https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt
+  // check for failbit and reset
+  os << visitor.ss_.rdbuf();
+  if (os.fail()) {
+    os.clear();
   }
+  os.flush();
+}
 
-  /***************************************************************
+/***************************************************************
    * Specialization for generating userString when converting
    * from uAST to old AST
   */
-  void printFunctionSignature(std::ostream& os, const Function* node) {
-    auto visitor = ChplSyntaxVisitor{};
-    visitor.printFunctionSignature(node);
-    // when using << with ss_.rdbuf(), if nothing gets added to os, then
-    // os goes into fail state
-    // see: https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt
-    // check for failbit and reset
-    os << visitor.ss_.rdbuf();
-    if (os.fail()) {
-      os.clear();
-    }
-    os.flush();
+void printFunctionSignature(std::ostream& os, const Function* node) {
+  auto visitor = ChplSyntaxVisitor{};
+  visitor.printFunctionSignature(node);
+  // when using << with ss_.rdbuf(), if nothing gets added to os, then
+  // os goes into fail state
+  // see: https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt
+  // check for failbit and reset
+  os << visitor.ss_.rdbuf();
+  if (os.fail()) {
+    os.clear();
   }
+  os.flush();
+}
 
-  void printFunctionSignature(std::ostream& os,
-                              const FunctionSignature* node) {
-    auto v = ChplSyntaxVisitor();
-    v.visit(node);
-    // when using << with ss_.rdbuf(), if nothing gets added to os, then
-    // os goes into fail state
-    // see: https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt
-    // check for failbit and reset
-    os << v.ss_.rdbuf();
-    if (os.fail()) os.clear();
-    os.flush();
-  }
+void printFunctionSignature(std::ostream& os, const FunctionSignature* node) {
+  auto v = ChplSyntaxVisitor();
+  v.visit(node);
+  // when using << with ss_.rdbuf(), if nothing gets added to os, then
+  // os goes into fail state
+  // see: https://en.cppreference.com/w/cpp/io/basic_ostream/operator_ltlt
+  // check for failbit and reset
+  os << v.ss_.rdbuf();
+  if (os.fail()) os.clear();
+  os.flush();
+}
 
-  /*
+/*
    * Operator precedence according to the table in the spec,
    * expressions.rst
    *
@@ -1418,53 +1399,50 @@ namespace chpl {
    *
    * author - Paul Cassella (@cassella)
    */
-   int opToPrecedence(UniqueString op, bool unary, bool postfix) {
-    // new is precedence 19, but doesn't come through this path.
-    if (postfix && (USTR("?") == op || USTR("!") == op))
-      return 18;
-    else if (USTR(":") == op)
-      return 17;
-    else if (USTR("**") == op)
-      return 16;
-    // reduce/scan/dmapped are precedence 15, but don't come through this path.
-    else if (USTR("reduce") == op || USTR("scan") == op || USTR("dmapped") == op)
-      return 15;
-    else if (USTR("!") == op || USTR("~") == op)
-      return 14;
-    else if (USTR("*") == op ||
-             USTR("/") == op || USTR("%") == op)
-      return 13;
-    else if (unary &&
-             (USTR("+") == op || USTR("-") == op))
-      return 12;
-    else if (USTR("<<") == op || USTR(">>") == op)
-      return 11;
-    else if (USTR("&") == op)
-      return 10;
-    else if (USTR("^") == op)
-      return 9;
-    else if (USTR("|") == op)
-      return 8;
-    else if (USTR("+") == op || USTR("-") == op)
-      return 7;
-    // .. and ..< are precedence 6, but don't come through this path.
-    else if (USTR("<") == op || USTR("<=") == op ||
-             USTR(">") == op || USTR(">=") == op ||
-             USTR("<") == op)
-      return 5;
-    else if (USTR("==") == op || USTR("!=") == op)
-      return 4;
-    else if (USTR("&&") == op)
-      return 3;
-    else if (USTR("||") == op)
-      return 2;
-    else if (USTR("#") == op || USTR("by") == op || USTR("align") == op)
-      return 1;
+int opToPrecedence(UniqueString op, bool unary, bool postfix) {
+  // new is precedence 19, but doesn't come through this path.
+  if (postfix && (USTR("?") == op || USTR("!") == op))
+    return 18;
+  else if (USTR(":") == op)
+    return 17;
+  else if (USTR("**") == op)
+    return 16;
+  // reduce/scan/dmapped are precedence 15, but don't come through this path.
+  else if (USTR("reduce") == op || USTR("scan") == op || USTR("dmapped") == op)
+    return 15;
+  else if (USTR("!") == op || USTR("~") == op)
+    return 14;
+  else if (USTR("*") == op || USTR("/") == op || USTR("%") == op)
+    return 13;
+  else if (unary && (USTR("+") == op || USTR("-") == op))
+    return 12;
+  else if (USTR("<<") == op || USTR(">>") == op)
+    return 11;
+  else if (USTR("&") == op)
+    return 10;
+  else if (USTR("^") == op)
+    return 9;
+  else if (USTR("|") == op)
+    return 8;
+  else if (USTR("+") == op || USTR("-") == op)
+    return 7;
+  // .. and ..< are precedence 6, but don't come through this path.
+  else if (USTR("<") == op || USTR("<=") == op || USTR(">") == op ||
+           USTR(">=") == op || USTR("<") == op)
+    return 5;
+  else if (USTR("==") == op || USTR("!=") == op)
+    return 4;
+  else if (USTR("&&") == op)
+    return 3;
+  else if (USTR("||") == op)
+    return 2;
+  else if (USTR("#") == op || USTR("by") == op || USTR("align") == op)
+    return 1;
 
-    return -1;
-  }
+  return -1;
+}
 
-  /*
+/*
    * needParens(outer, inner, ...) is called to evaluate whether we need
    * to add parens around the inner op.  We're here when
    * appendExpr(outer) is calling appendExpr(expr->get(1)) or
@@ -1501,68 +1479,61 @@ namespace chpl {
    *
    * author - Paul Cassella (@cassella)
    */
-  bool needParens(UniqueString outer, UniqueString inner,
-                        bool outerUnary, bool outerPostfix,
-                        bool innerUnary, bool innerPostfix,
-                        bool innerIsRHS) {
-    bool ret = false;
-    int outerprec, innerprec;
+bool needParens(UniqueString outer,
+                UniqueString inner,
+                bool outerUnary,
+                bool outerPostfix,
+                bool innerUnary,
+                bool innerPostfix,
+                bool innerIsRHS) {
+  bool ret = false;
+  int outerprec, innerprec;
 
-    if (outer.isEmpty())
-      return false;
+  if (outer.isEmpty()) return false;
 
-    outerprec = opToPrecedence(outer, outerUnary, outerPostfix);
-    innerprec = opToPrecedence(inner, innerUnary, innerPostfix);
+  outerprec = opToPrecedence(outer, outerUnary, outerPostfix);
+  innerprec = opToPrecedence(inner, innerUnary, innerPostfix);
 
-    // -1 means opToPrecedence wasn't expecting one of these operators.
-    // Conservatively wrap parentheses around the representation of this
-    // AST node.
-    if (outerprec == -1 || innerprec == -1)
-      return true;
+  // -1 means opToPrecedence wasn't expecting one of these operators.
+  // Conservatively wrap parentheses around the representation of this
+  // AST node.
+  if (outerprec == -1 || innerprec == -1) return true;
 
-    // We never need parens around the unary expression on the RHS:
-    // 1**-2 vs 1**(-2)
-    if (innerUnary && innerIsRHS)
-      return false;
+  // We never need parens around the unary expression on the RHS:
+  // 1**-2 vs 1**(-2)
+  if (innerUnary && innerIsRHS) return false;
 
-    if (outerprec > innerprec)
-      ret = true;
+  if (outerprec > innerprec) ret = true;
 
-    // If inner and outer have the same precedence, and inner is the
-    // rhs, it needs parens if a op1 (b op2 c) isn't equivalent to
-    // a op1 b op2 c.  (Note op1 and op2 may be the same op, a - (b - c))
-    if (innerIsRHS &&
-        (USTR("-") == outer ||
-         USTR("/") == outer ||  USTR("%") == outer ||
-         USTR("<<") == outer ||  USTR(">>") == outer)
-        && outerprec == innerprec)
-      ret = true;
+  // If inner and outer have the same precedence, and inner is the
+  // rhs, it needs parens if a op1 (b op2 c) isn't equivalent to
+  // a op1 b op2 c.  (Note op1 and op2 may be the same op, a - (b - c))
+  if (innerIsRHS &&
+      (USTR("-") == outer || USTR("/") == outer || USTR("%") == outer ||
+       USTR("<<") == outer || USTR(">>") == outer) &&
+      outerprec == innerprec)
+    ret = true;
 
-    // ** is right-associative, and a**(b**c) != (a**b)**c.
-    if (!innerIsRHS &&  USTR("**") == outer && outerprec == innerprec)
-      ret = true;
+  // ** is right-associative, and a**(b**c) != (a**b)**c.
+  if (!innerIsRHS && USTR("**") == outer && outerprec == innerprec) ret = true;
 
-    // Like the above checks for equal-precedence ops, but  ==, !=, etc. are
-    // not associative. Since they're not associative, always add parens.
-    if((USTR("==") == outer ||  USTR("!=") == outer ||
-        USTR("<") == outer ||  USTR("<=") == outer ||
-        USTR(">") == outer ||  USTR(">=") == outer) && outerprec == innerprec)
-      ret = true;
+  // Like the above checks for equal-precedence ops, but  ==, !=, etc. are
+  // not associative. Since they're not associative, always add parens.
+  if ((USTR("==") == outer || USTR("!=") == outer || USTR("<") == outer ||
+       USTR("<=") == outer || USTR(">") == outer || USTR(">=") == outer) &&
+      outerprec == innerprec)
+    ret = true;
 
-    return ret;
-  }
+  return ret;
+}
 
-  /*
+/*
    * Do we want to print spaces around this binary operator?
    */
-   bool wantSpaces(UniqueString op, bool printingType)
-  {
-    if (USTR("**") == op)
-      return false;
-    if (printingType)
-      return false;
-    return true;
-  }
-
+bool wantSpaces(UniqueString op, bool printingType) {
+  if (USTR("**") == op) return false;
+  if (printingType) return false;
+  return true;
+}
 
 } // end chpl namespace

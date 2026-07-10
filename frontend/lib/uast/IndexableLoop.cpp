@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 void IndexableLoop::dumpFieldsInner(const DumpSettings& s) const {
   if (isExpressionLevel_) {
     s.out << " expr";
@@ -44,9 +43,7 @@ std::string IndexableLoop::dumpChildLabelInner(int i) const {
   return Loop::dumpChildLabelInner(i);
 }
 
-IndexableLoop::~IndexableLoop(){
-}
-
+IndexableLoop::~IndexableLoop() {}
 
 } // namespace uast
 } // namespace chpl

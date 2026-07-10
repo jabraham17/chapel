@@ -23,9 +23,8 @@
 namespace chpl {
 namespace types {
 
-const owned<ExternType>& ExternType::getExternType(Context* context,
-                                                   UniqueString name,
-                                                   ID id) {
+const owned<ExternType>&
+ExternType::getExternType(Context* context, UniqueString name, ID id) {
   QUERY_BEGIN(getExternType, context, name, id);
   auto result = toOwned(new ExternType(name, id));
   return QUERY_END(result);
@@ -39,7 +38,8 @@ void ExternType::stringify(std::ostream& ss,
   linkageName().stringify(ss, stringKind);
 }
 
-const ExternType* ExternType::get(Context* context, UniqueString linkageName, ID id) {
+const ExternType*
+ExternType::get(Context* context, UniqueString linkageName, ID id) {
   return getExternType(context, linkageName, std::move(id)).get();
 }
 

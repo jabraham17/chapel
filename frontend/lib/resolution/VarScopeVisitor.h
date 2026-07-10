@@ -26,17 +26,17 @@
 
 namespace chpl {
 namespace uast {
-  class AstNode;
-  class Conditional;
-  class FnCall;
-  class Identifier;
-  class OpCall;
-  class Return;
-  class Throw;
-  class Try;
+class AstNode;
+class Conditional;
+class FnCall;
+class Identifier;
+class OpCall;
+class Return;
+class Throw;
+class Try;
 }
 namespace types {
-  class QualifiedType;
+class QualifiedType;
 }
 
 namespace resolution {
@@ -53,7 +53,9 @@ struct ControlFlowSubBlock;
 
     Since it is only used internally for these cases,
     the interface covers whatever these analyses need. */
-class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolvedVisitor<VarScopeVisitor>&> {
+class VarScopeVisitor
+  : public BranchSensitiveVisitor<VarFrame,
+                                  MutatingResolvedVisitor<VarScopeVisitor>&> {
  protected:
   using RV = MutatingResolvedVisitor<VarScopeVisitor>;
 
@@ -67,7 +69,7 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
   // Stack of type and AST node pairs for surrounding tuple inits/assigns.
   // Matches the number and order of tuples/tuple decls in the AST stack.
   llvm::SmallVector<std::pair<types::QualifiedType, const AstNode*>>
-      nestedTupleInfoStack;
+    nestedTupleInfoStack;
   // Tuple assignment we are currently within the LHS of, if any.
   const uast::OpCall* inTupleAssignment = nullptr;
 
@@ -92,7 +94,8 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
   /** Called for an actual passed to an 'out' formal */
   virtual void handleOutFormal(const uast::Call* ast,
                                const uast::AstNode* actual,
-                               const types::QualifiedType& formalType, RV& rv) = 0;
+                               const types::QualifiedType& formalType,
+                               RV& rv) = 0;
   /** Called for an actual passed to an 'in' formal */
   virtual void handleInFormal(const uast::Call* ast,
                               const uast::AstNode* actual,
@@ -131,7 +134,7 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
       their contents. Updates currentFrame based on the frames of the
       possible branching targets stored in frames. 'alwaysTaken' indicates
       whether a branch is taken no matter the input. */
-  virtual void handleDisjunction(const uast::AstNode * node,
+  virtual void handleDisjunction(const uast::AstNode* node,
                                  VarFrame* currentFrame,
                                  const std::vector<VarFrame*>& frames,
                                  bool alwaysTaken,
@@ -141,11 +144,10 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
       Not called for Conditional or Try. */
   virtual void handleScope(const uast::AstNode* ast, RV& rv) = 0;
 
-
   // ----- methods for use by specific analysis subclasses
 
   VarScopeVisitor(Context* context, types::QualifiedType fnReturnType)
-    : context(context), fnReturnType(std::move(fnReturnType)) { }
+    : context(context), fnReturnType(std::move(fnReturnType)) {}
 
  public:
   void process(const uast::AstNode* symbol,
@@ -198,8 +200,10 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
   // ----- overrides for BranchSensitiveVisitor
   void doEnterScope(const uast::AstNode* ast, RV& rv) override;
   void doExitScope(const uast::AstNode* ast, RV& rv) override;
-  const types::Param* determineWhenCaseValue(const uast::AstNode* ast, RV& extraData) override;
-  const types::Param* determineIfValue(const uast::AstNode* ast, RV& extraData) override;
+  const types::Param* determineWhenCaseValue(const uast::AstNode* ast,
+                                             RV& extraData) override;
+  const types::Param* determineIfValue(const uast::AstNode* ast,
+                                       RV& extraData) override;
   void traverseNode(const uast::AstNode* ast, RV& rv) override;
   bool resolvedCallHelper(const Call* callAst, RV& rv);
 
@@ -253,7 +257,7 @@ class VarScopeVisitor : public BranchSensitiveVisitor<VarFrame, MutatingResolved
 /** Per-variable state used by the copy elision implementation */
 struct CopyElisionState {
   bool lastIsCopy = false; // is the last mention (so far) a copy?
-  std::set<ID> points; // uAST IDs of the potentially elided copies?
+  std::set<ID> points;     // uAST IDs of the potentially elided copies?
 };
 
 /** Collects information about a variable declaration frame / scope.
@@ -288,7 +292,7 @@ struct VarFrame : BaseFrame<VarFrame> {
   // for copy elision:
   // Is the last mention of the variable a copy?
   // What are the copy points?
-  std::unordered_map<ID,CopyElisionState> copyElisionState;
+  std::unordered_map<ID, CopyElisionState> copyElisionState;
 
   // for call init deinit:
   // localsAndDefers contains both VarSymbol and DeferStmt in
@@ -307,7 +311,7 @@ struct VarFrame : BaseFrame<VarFrame> {
   // Map of (ID of decl) -> (ID of call after which it is deinited)
   std::unordered_map<ID, ID> deinitedVars;
 
-  VarFrame(const AstNode* scopeAst) : BaseFrame(scopeAst) { }
+  VarFrame(const AstNode* scopeAst) : BaseFrame(scopeAst) {}
 
   // returns 'true' if it was inserted
   bool addToDeclaredVars(ID varId);
@@ -332,22 +336,22 @@ struct VarFrame : BaseFrame<VarFrame> {
   the return intent overloads, this function will issue an error
   in the current query.
  */
-void
-computeActualFormalIntents(Context* context,
-                           const MostSpecificCandidates& candidates,
-                           const CallInfo& ci,
-                           const std::vector<const AstNode*>& actualAsts,
-                           std::vector<uast::Qualifier>& actualFrmlIntents,
-                           std::vector<types::QualifiedType>& actualFrmlTypes,
-                           std::vector<bool>& actualWasPromoted,
-                           const types::PromotionIteratorType* promoCtx);
+void computeActualFormalIntents(
+  Context* context,
+  const MostSpecificCandidates& candidates,
+  const CallInfo& ci,
+  const std::vector<const AstNode*>& actualAsts,
+  std::vector<uast::Qualifier>& actualFrmlIntents,
+  std::vector<types::QualifiedType>& actualFrmlTypes,
+  std::vector<bool>& actualWasPromoted,
+  const types::PromotionIteratorType* promoCtx);
 
 } // end namespace resolution
 
 namespace uast {
-template <>
-struct AstVisitorPrecondition<resolution::VarScopeVisitor> {
-  static bool skipSubtree(const AstNode* node, resolution::VarScopeVisitor& rv) {
+template <> struct AstVisitorPrecondition<resolution::VarScopeVisitor> {
+  static bool skipSubtree(const AstNode* node,
+                          resolution::VarScopeVisitor& rv) {
     return rv.isDoneExecuting() || rv.markedThrow();
   }
 };

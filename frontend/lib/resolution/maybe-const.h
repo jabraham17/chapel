@@ -29,7 +29,6 @@ struct Resolver;
    overloading & ref-maybe-const-ref formals. */
 void adjustReturnIntentOverloadsAndMaybeConstRefs(Resolver& resolver);
 
-
 } // end namespace resolution
 } // end namespace chpl
 

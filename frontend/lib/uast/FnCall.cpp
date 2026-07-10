@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 void FnCall::dumpFieldsInner(const DumpSettings& s) const {
   Call::dumpFieldsInner(s);
 
@@ -55,8 +54,8 @@ owned<FnCall> FnCall::build(Builder* builder,
   }
   actuals.clear();
 
-  FnCall* ret = new FnCall(std::move(lst), std::move(actualNames),
-                           callUsedSquareBrackets);
+  FnCall* ret =
+    new FnCall(std::move(lst), std::move(actualNames), callUsedSquareBrackets);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
@@ -68,7 +67,8 @@ owned<FnCall> FnCall::build(Builder* builder,
                             bool callUsedSquareBrackets) {
   std::vector<UniqueString> emptyActualNames;
 
-  return FnCall::build(builder, loc,
+  return FnCall::build(builder,
+                       loc,
                        std::move(calledExpression),
                        std::move(actuals),
                        std::move(emptyActualNames),
@@ -82,13 +82,13 @@ owned<FnCall> FnCall::build(Builder* builder,
   AstList emptyActuals;
   std::vector<UniqueString> emptyActualNames;
 
-  return FnCall::build(builder, loc,
+  return FnCall::build(builder,
+                       loc,
                        std::move(calledExpression),
                        std::move(emptyActuals),
                        std::move(emptyActualNames),
                        callUsedSquareBrackets);
 }
-
 
 } // namespace uast
 } // namespace chpl

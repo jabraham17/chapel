@@ -23,7 +23,6 @@
 namespace chpl {
 namespace types {
 
-
 const owned<UintType>& UintType::getUintType(Context* context, int bitwidth) {
   QUERY_BEGIN(getUintType, context, bitwidth);
 
@@ -34,11 +33,10 @@ const owned<UintType>& UintType::getUintType(Context* context, int bitwidth) {
 
 const UintType* UintType::get(Context* context, int bitwidth) {
   CHPL_ASSERT(bitwidth == 0 || bitwidth == 8 || bitwidth == 16 ||
-         bitwidth == 32 || bitwidth == 64);
+              bitwidth == 32 || bitwidth == 64);
   if (bitwidth == 0) bitwidth = defaultBitwidth(); // canonicalize default width
   return getUintType(context, bitwidth).get();
 }
-
 
 } // end namespace types
 } // end namespace chpl

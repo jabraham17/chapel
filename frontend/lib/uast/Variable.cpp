@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 void Variable::dumpFieldsInner(const DumpSettings& s) const {
   if (isConfig_) {
     s.out << " config";
@@ -35,18 +34,19 @@ void Variable::dumpFieldsInner(const DumpSettings& s) const {
   VarLikeDecl::dumpFieldsInner(s);
 }
 
-owned<Variable>
-Variable::build(Builder* builder, Location loc, Location nameLoc,
-                owned<AttributeGroup> attributeGroup,
-                Decl::Visibility vis,
-                Decl::Linkage linkage,
-                owned<AstNode> linkageName,
-                UniqueString name,
-                Variable::Kind kind,
-                bool isConfig,
-                bool isField,
-                owned<AstNode> typeExpression,
-                owned<AstNode> initExpression) {
+owned<Variable> Variable::build(Builder* builder,
+                                Location loc,
+                                Location nameLoc,
+                                owned<AttributeGroup> attributeGroup,
+                                Decl::Visibility vis,
+                                Decl::Linkage linkage,
+                                owned<AstNode> linkageName,
+                                UniqueString name,
+                                Variable::Kind kind,
+                                bool isConfig,
+                                bool isField,
+                                owned<AstNode> typeExpression,
+                                owned<AstNode> initExpression) {
   AstList lst;
   int attributeGroupChildNum = NO_CHILD;
   int linkageNameChildNum = NO_CHILD;
@@ -73,7 +73,8 @@ Variable::build(Builder* builder, Location loc, Location nameLoc,
     lst.push_back(std::move(initExpression));
   }
 
-  Variable* ret = new Variable(std::move(lst), attributeGroupChildNum,
+  Variable* ret = new Variable(std::move(lst),
+                               attributeGroupChildNum,
                                vis,
                                linkage,
                                linkageNameChildNum,
@@ -104,7 +105,6 @@ void Variable::setInitExprForConfig(owned<AstNode> ie) {
     }
   }
 }
-
 
 } // namespace uast
 } // namespace chpl

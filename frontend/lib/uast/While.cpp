@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 std::string While::dumpChildLabelInner(int i) const {
   if (i == conditionChildNum_) {
     return "cond";
@@ -33,11 +32,12 @@ std::string While::dumpChildLabelInner(int i) const {
   return Loop::dumpChildLabelInner(i);
 }
 
-owned<While> While::build(Builder* builder, Location loc,
-                      owned<AstNode> condition,
-                      BlockStyle blockStyle,
-                      owned<Block> body,
-                      owned<AttributeGroup> attributeGroup) {
+owned<While> While::build(Builder* builder,
+                          Location loc,
+                          owned<AstNode> condition,
+                          BlockStyle blockStyle,
+                          owned<Block> body,
+                          owned<AttributeGroup> attributeGroup) {
 
   CHPL_ASSERT(condition.get() != nullptr);
   CHPL_ASSERT(body.get() != nullptr);
@@ -56,14 +56,15 @@ owned<While> While::build(Builder* builder, Location loc,
   const int loopBodyChildNum = lst.size();
   lst.push_back(std::move(body));
 
-  While* ret = new While(std::move(lst), conditionChildNum,
+  While* ret = new While(std::move(lst),
+                         conditionChildNum,
                          blockStyle,
-                         loopBodyChildNum, attributeGroupChildNum);
+                         loopBodyChildNum,
+                         attributeGroupChildNum);
 
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

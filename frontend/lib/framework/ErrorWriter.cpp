@@ -20,9 +20,7 @@
 
 namespace chpl {
 
-static bool hiddenPunctuationInBrief(char c) {
-  return c == ':' || c == '.';
-}
+static bool hiddenPunctuationInBrief(char c) { return c == ':' || c == '.'; }
 
 void ErrorWriterBase::tweakErrorString(std::string& str) const {
   if (outputFormat_ == ErrorWriter::DETAILED && !str.empty()) {
@@ -32,8 +30,7 @@ void ErrorWriterBase::tweakErrorString(std::string& str) const {
 
   if (outputFormat_ == ErrorWriter::BRIEF) {
     // Strip punctuation at the end of the error in brief mode
-    while (!str.empty() &&
-        hiddenPunctuationInBrief(str.back())) {
+    while (!str.empty() && hiddenPunctuationInBrief(str.back())) {
       str.pop_back();
     }
   }
@@ -46,7 +43,8 @@ void ErrorWriterBase::writeHeading(ErrorBase::Kind kind,
   writeHeading(kind, type, node->id(), str);
 }
 
-void ErrorWriterBase::writeNote(const uast::AstNode* ast, const std::string& str) {
+void ErrorWriterBase::writeNote(const uast::AstNode* ast,
+                                const std::string& str) {
   writeNote(ast->id(), str);
 }
 
@@ -119,15 +117,19 @@ static void writeFile(Context* context,
   if (outFilePath) *outFilePath = path;
 
   if (!path.empty()) {
-    if (lineno > 0) oss << path << ":" << lineno;
-    else oss << path;
+    if (lineno > 0)
+      oss << path << ":" << lineno;
+    else
+      oss << path;
   } else {
     oss << "(unknown location)";
   }
 }
 
-void ErrorWriter::writeHeading(ErrorBase::Kind kind, ErrorType type,
-                               IdOrLocation loc, const std::string& str) {
+void ErrorWriter::writeHeading(ErrorBase::Kind kind,
+                               ErrorType type,
+                               IdOrLocation loc,
+                               const std::string& str) {
   if (outputFormat_ == DETAILED) {
     // In detailed mode, print some error decoration
     oss_ << "─── ";
@@ -152,7 +154,7 @@ void ErrorWriter::writeHeading(ErrorBase::Kind kind, ErrorType type,
     }
     oss_ << " ───" << std::endl;
     // In detailed mode, the body is indented.
-    oss_  << "  ";
+    oss_ << "  ";
   } else {
     // We printed location, so add a separating colon.
     oss_ << ": ";
@@ -187,19 +189,21 @@ static void printLineNo(std::ostream& os, size_t gutterLength, int line) {
 }
 
 void ErrorWriter::writeCode(const Location& location,
-                           const std::vector<Location>& toHighlight) {
+                            const std::vector<Location>& toHighlight) {
   if (outputFormat_ != DETAILED || context_ == nullptr) return;
 
   auto str = fileText(context_, location);
   if (str.empty()) return;
 
   ssize_t startIndex = posToFileIndex(str.c_str(), location.firstLine(), 1);
-  ssize_t endIndex = posToFileIndex(str.c_str(), location.lastLine()+1, 1);
+  ssize_t endIndex = posToFileIndex(str.c_str(), location.lastLine() + 1, 1);
 
   std::vector<std::pair<ssize_t, ssize_t>> ranges;
   for (auto hlLoc : toHighlight) {
-    ssize_t hlStart = posToFileIndex(str.c_str(), hlLoc.firstLine(), hlLoc.firstColumn());
-    ssize_t hlEnd = posToFileIndex(str.c_str(), hlLoc.lastLine(), hlLoc.lastColumn());
+    ssize_t hlStart =
+      posToFileIndex(str.c_str(), hlLoc.firstLine(), hlLoc.firstColumn());
+    ssize_t hlEnd =
+      posToFileIndex(str.c_str(), hlLoc.lastLine(), hlLoc.lastColumn());
     ranges.push_back(std::make_pair(hlStart, hlEnd));
   }
 
@@ -218,7 +222,7 @@ void ErrorWriter::writeCode(const Location& location,
   size_t gutterSize = std::to_string(location.lastLine()).size() + 2;
   // When not printing the line number, we need to manually print the error
   // message indent and the one extra space of padding.
-  size_t codeIndent = gutterSize+3;
+  size_t codeIndent = gutterSize + 3;
   int lineNumber = location.firstLine();
 
   // Print the file path if it's changed since the last code block. Printing
@@ -273,8 +277,6 @@ void ErrorWriter::writeCode(const Location& location,
   oss_ << std::endl;
 }
 
-void ErrorWriter::writeNewline() {
-  oss_ << std::endl;
-}
+void ErrorWriter::writeNewline() { oss_ << std::endl; }
 
 } // end namespace chpl

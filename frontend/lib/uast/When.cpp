@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 void When::dumpFieldsInner(const DumpSettings& s) const {
   if (isOtherwise()) {
     s.out << " otherwise";
@@ -32,7 +31,8 @@ void When::dumpFieldsInner(const DumpSettings& s) const {
   return AstNode::dumpFieldsInner(s);
 }
 
-owned<When> When::build(Builder* builder, Location loc,
+owned<When> When::build(Builder* builder,
+                        Location loc,
                         AstList caseExprs,
                         BlockStyle blockStyle,
                         AstList stmts) {
@@ -43,14 +43,13 @@ owned<When> When::build(Builder* builder, Location loc,
     lst.push_back(std::move(ast));
   }
 
-  auto bodyBlock = Block::build(builder,loc,std::move(stmts));
+  auto bodyBlock = Block::build(builder, loc, std::move(stmts));
   lst.push_back(std::move(bodyBlock));
 
   When* ret = new When(std::move(lst), numCaseExprs, blockStyle);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

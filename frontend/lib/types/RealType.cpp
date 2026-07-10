@@ -23,7 +23,6 @@
 namespace chpl {
 namespace types {
 
-
 const owned<RealType>& RealType::getRealType(Context* context, int bitwidth) {
   QUERY_BEGIN(getRealType, context, bitwidth);
 
@@ -37,7 +36,6 @@ const RealType* RealType::get(Context* context, int bitwidth) {
   if (bitwidth == 0) bitwidth = defaultBitwidth(); // canonicalize default width
   return getRealType(context, bitwidth).get();
 }
-
 
 } // end namespace types
 } // end namespace chpl

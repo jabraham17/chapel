@@ -23,7 +23,6 @@
 namespace chpl {
 namespace uast {
 
-
 void FunctionSignature::dumpFieldsInner(const DumpSettings& s) const {
   const char* kindStr = Function::kindToString(kind_);
   const char* returnIntentStr = Function::returnIntentToString(returnIntent_);
@@ -53,9 +52,9 @@ std::string FunctionSignature::dumpChildLabelInner(int i) const {
   return "";
 }
 
-
 owned<FunctionSignature>
-FunctionSignature::build(Builder* builder, Location loc,
+FunctionSignature::build(Builder* builder,
+                         Location loc,
                          FunctionSignature::Kind kind,
                          owned<Formal> receiver,
                          FunctionSignature::ReturnIntent returnIntent,
@@ -88,7 +87,9 @@ FunctionSignature::build(Builder* builder, Location loc,
     children.push_back(std::move(returnType));
   }
 
-  auto ret = new FunctionSignature(std::move(children), kind, returnIntent,
+  auto ret = new FunctionSignature(std::move(children),
+                                   kind,
+                                   returnIntent,
                                    throws,
                                    isParenless,
                                    formalsChildNum,
@@ -98,7 +99,6 @@ FunctionSignature::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

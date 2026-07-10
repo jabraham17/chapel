@@ -69,7 +69,7 @@ bool ArrayType::isAliasingArray(Context* context) const {
 }
 
 void ArrayType::stringify(std::ostream& ss,
-                           chpl::StringifyKind stringKind) const {
+                          chpl::StringifyKind stringKind) const {
   if (domainType().isUnknown() && eltType().isUnknown()) {
     ss << "[]";
   } else if (domainType().isUnknown()) {
@@ -88,17 +88,18 @@ static ID getArrayID(Context* context) {
 }
 
 const owned<ArrayType>&
-ArrayType::getArrayTypeQuery(Context* context, ID id, UniqueString name,
-                          const ArrayType* instantiatedFrom,
-                          SubstitutionsMap subs) {
+ArrayType::getArrayTypeQuery(Context* context,
+                             ID id,
+                             UniqueString name,
+                             const ArrayType* instantiatedFrom,
+                             SubstitutionsMap subs) {
   QUERY_BEGIN(getArrayTypeQuery, context, id, name, instantiatedFrom, subs);
-  auto result = toOwned(new ArrayType(id, name, instantiatedFrom,
-                                       std::move(subs)));
+  auto result =
+    toOwned(new ArrayType(id, name, instantiatedFrom, std::move(subs)));
   return QUERY_END(result);
 }
 
-const ArrayType*
-ArrayType::getGenericArrayType(Context* context) {
+const ArrayType* ArrayType::getGenericArrayType(Context* context) {
   auto id = getArrayID(context);
   auto name = id.symbolName(context);
   SubstitutionsMap subs;
@@ -106,11 +107,10 @@ ArrayType::getGenericArrayType(Context* context) {
   return getArrayTypeQuery(context, id, name, instantiatedFrom, subs).get();
 }
 
-const ArrayType*
-ArrayType::getArrayType(Context* context,
-                        const QualifiedType& instance,
-                        const QualifiedType& domainType,
-                        const QualifiedType& eltType) {
+const ArrayType* ArrayType::getArrayType(Context* context,
+                                         const QualifiedType& instance,
+                                         const QualifiedType& domainType,
+                                         const QualifiedType& eltType) {
   auto genericArray = getGenericArrayType(context);
 
   SubstitutionsMap subs;
@@ -122,7 +122,8 @@ ArrayType::getArrayType(Context* context,
 
   // Add substitution for _instance field
   resolution::ResolutionContext rc(context);
-  auto& rf = fieldsForTypeDecl(&rc, genericArray,
+  auto& rf = fieldsForTypeDecl(&rc,
+                               genericArray,
                                resolution::DefaultsPolicy::IGNORE_DEFAULTS,
                                /* syntaxOnly */ true);
   ID instanceFieldId;

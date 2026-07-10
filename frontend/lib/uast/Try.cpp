@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 void Try::dumpFieldsInner(const DumpSettings& s) const {
   if (isTryBang_) {
     s.out << " try!";
@@ -43,7 +42,8 @@ std::string Try::dumpChildLabelInner(int i) const {
   return "";
 }
 
-owned<Try> Try::build(Builder* builder, Location loc,
+owned<Try> Try::build(Builder* builder,
+                      Location loc,
                       owned<Block> body,
                       AstList catches,
                       bool isTryBang) {
@@ -59,16 +59,14 @@ owned<Try> Try::build(Builder* builder, Location loc,
     lst.push_back(std::move(ast));
   }
 
-  Try* ret = new Try(std::move(lst),
-                     numHandlers,
-                     containsBlock,
-                     isExpressionLevel,
-                     isTryBang);
+  Try* ret = new Try(
+    std::move(lst), numHandlers, containsBlock, isExpressionLevel, isTryBang);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
 
-owned<Try> Try::build(Builder* builder, Location loc,
+owned<Try> Try::build(Builder* builder,
+                      Location loc,
                       owned<AstNode> expr,
                       bool isTryBang,
                       bool isExpressionLevel) {
@@ -78,15 +76,11 @@ owned<Try> Try::build(Builder* builder, Location loc,
 
   lst.push_back(std::move(expr));
 
-  Try* ret = new Try(std::move(lst),
-                     numHandlers,
-                     containsBlock,
-                     isExpressionLevel,
-                     isTryBang);
+  Try* ret = new Try(
+    std::move(lst), numHandlers, containsBlock, isExpressionLevel, isTryBang);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

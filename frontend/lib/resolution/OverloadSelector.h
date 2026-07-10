@@ -24,7 +24,9 @@
 namespace chpl {
 namespace resolution {
 
-using BuilderFunc = uast::BuilderResult const&(*)(Context* context, ID typeId, int overloadIdx);
+using BuilderFunc = uast::BuilderResult const& (*)(Context * context,
+                                                   ID typeId,
+                                                   int overloadIdx);
 
 // note: this uses a templated implementation because in modern C++,
 // we should be able to make `dispatch` select the function at
@@ -56,8 +58,7 @@ using BuilderFunc = uast::BuilderResult const&(*)(Context* context, ID typeId, i
   By having the OverloadSelector handle both calls to the builder function
   described above, we ensure a consistent ordering of overloads.
  */
-template <BuilderFunc... Fs>
-struct OverloadSelector {
+template <BuilderFunc... Fs> struct OverloadSelector {
  private:
   static constexpr std::array<BuilderFunc, sizeof...(Fs)> overloads = {{Fs...}};
 
@@ -75,7 +76,8 @@ struct OverloadSelector {
     return overloads[0](context, id, 0); // Fallback to the first overload
   }
 
-  static uast::BuilderResult const& select(Context* context, const ID& id, UniqueString overloadPart) {
+  static uast::BuilderResult const&
+  select(Context* context, const ID& id, UniqueString overloadPart) {
     // note: this should match the way doAssignIDs in Builder.cpp creates
     // the overloadPart from the index of the overload.
     int targetIdx = 0;
@@ -90,7 +92,9 @@ struct OverloadSelector {
       }
       idx++;
     }
-    CHPL_ASSERT(false && "overload not found, was the overloadPart incorrectly constructed?");
+    CHPL_ASSERT(
+      false &&
+      "overload not found, was the overloadPart incorrectly constructed?");
     return overloads[0](context, id, 0); // Fallback to the first overload
   }
 };

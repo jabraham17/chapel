@@ -24,14 +24,12 @@
 namespace chpl {
 namespace uast {
 
-
-owned<TypeQuery> TypeQuery::build(Builder* builder, Location loc,
-                                  UniqueString name) {
+owned<TypeQuery>
+TypeQuery::build(Builder* builder, Location loc, UniqueString name) {
   TypeQuery* ret = new TypeQuery(name);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

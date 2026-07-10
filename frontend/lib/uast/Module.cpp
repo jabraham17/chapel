@@ -24,12 +24,11 @@
 namespace chpl {
 namespace uast {
 
-
 const char* Module::moduleKindToString(Kind kind) {
   switch (kind) {
     case DEFAULT_MODULE_KIND: return "";
-    case PROTOTYPE:           return "prototype";
-    case IMPLICIT:            return "implicit";
+    case PROTOTYPE: return "prototype";
+    case IMPLICIT: return "implicit";
   }
 
   return "<unknown>";
@@ -43,12 +42,13 @@ void Module::dumpFieldsInner(const DumpSettings& s) const {
   NamedDecl::dumpFieldsInner(s);
 }
 
-owned<Module>
-Module::build(Builder* builder, Location loc,
-              owned<AttributeGroup> attributeGroup,
-              Decl::Visibility vis,
-              UniqueString name,
-              Module::Kind kind, AstList stmts) {
+owned<Module> Module::build(Builder* builder,
+                            Location loc,
+                            owned<AttributeGroup> attributeGroup,
+                            Decl::Visibility vis,
+                            UniqueString name,
+                            Module::Kind kind,
+                            AstList stmts) {
   AstList lst;
   int attributeGroupChildNum = NO_CHILD;
 
@@ -61,13 +61,11 @@ Module::build(Builder* builder, Location loc,
     lst.push_back(std::move(ast));
   }
 
-  Module* ret = new Module(std::move(lst), attributeGroupChildNum, vis,
-                           name,
-                           kind);
+  Module* ret =
+    new Module(std::move(lst), attributeGroupChildNum, vis, name, kind);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

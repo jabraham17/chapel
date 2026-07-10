@@ -26,8 +26,8 @@
 namespace chpl {
 namespace uast {
 
-
-owned<StringLiteral> StringLiteral::build(Builder* builder, Location loc,
+owned<StringLiteral> StringLiteral::build(Builder* builder,
+                                          Location loc,
                                           const std::string& value,
                                           StringLiteral::QuoteStyle quotes) {
   // Construct the UniqueString
@@ -39,7 +39,6 @@ owned<StringLiteral> StringLiteral::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

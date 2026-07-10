@@ -24,16 +24,16 @@
 namespace chpl {
 namespace uast {
 
-
-owned<ImagLiteral> ImagLiteral::build(Builder* builder, Location loc,
-                                      double value, UniqueString text) {
+owned<ImagLiteral> ImagLiteral::build(Builder* builder,
+                                      Location loc,
+                                      double value,
+                                      UniqueString text) {
   // construct the Param
   auto p = types::RealParam::get(builder->context(), value);
   ImagLiteral* ret = new ImagLiteral(p, text);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

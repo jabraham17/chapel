@@ -31,7 +31,6 @@
 namespace chpl {
 namespace resolution {
 
-
 using namespace uast;
 using namespace types;
 
@@ -55,19 +54,25 @@ struct DisambiguationCandidate {
                           QualifiedType forwardingTo,
                           const CallInfo& call,
                           int idx)
-    : fn(fn), forwardingTo(forwardingTo), call(call),
-      formalActualMap(fn, call), idx(idx),
-      promotedFormals(), nImplicitConversionsComputed(false),
+    : fn(fn), forwardingTo(forwardingTo), call(call), formalActualMap(fn, call),
+      idx(idx), promotedFormals(), nImplicitConversionsComputed(false),
       anyNegParamToUnsigned(false), nImplicitConversions(0),
-      nParamNarrowingImplicitConversions(0), visibilityDistance(-1)
-  {
-  }
+      nParamNarrowingImplicitConversions(0), visibilityDistance(-1) {}
 
   void computeConversionInfo(Context* context, int numActuals);
   void computeConversionInfo(const DisambiguationContext& dctx);
 
-  MostSpecificCandidate toMostSpecificCandidate(ResolutionContext* rc, const Scope* callInScope, const PoiScope* callInPoiScope) const {
-    return MostSpecificCandidate::fromTypedFnSignature(rc, fn, call, formalActualMap, callInScope, callInPoiScope, promotedFormals);
+  MostSpecificCandidate
+  toMostSpecificCandidate(ResolutionContext* rc,
+                          const Scope* callInScope,
+                          const PoiScope* callInPoiScope) const {
+    return MostSpecificCandidate::fromTypedFnSignature(rc,
+                                                       fn,
+                                                       call,
+                                                       formalActualMap,
+                                                       callInScope,
+                                                       callInPoiScope,
+                                                       promotedFormals);
   }
 };
 
@@ -84,10 +89,8 @@ struct DisambiguationContext {
                         const Scope* callInScope,
                         const PoiScope* callInPoiScope,
                         bool explain)
-    : rc(rc), call(call),
-      callInScope(callInScope), callInPoiScope(callInPoiScope),
-      explain(explain)
-  {
+    : rc(rc), call(call), callInScope(callInScope),
+      callInPoiScope(callInPoiScope), explain(explain) {
     isMethodCall = call->isMethodCall();
 
     // this is a workaround -- a better solution would be preferred
@@ -116,14 +119,14 @@ using CandidatesVec = std::vector<const DisambiguationCandidate*>;
 
 #ifdef ENABLE_TRACING_OF_DISAMBIGUATION
 
-#define EXPLAIN(...) \
-        if (dctx.explain) fprintf(stderr, __VA_ARGS__)
+#define EXPLAIN(...)                             \
+  if (dctx.explain) fprintf(stderr, __VA_ARGS__)
 
-#define EXPLAIN_DUMP(thing) \
-        if (dctx.explain) { \
-          (thing)->dump(StringifyKind::CHPL_SYNTAX); \
-          fprintf(stderr, "\n"); \
-        }
+#define EXPLAIN_DUMP(thing)                    \
+  if (dctx.explain) {                          \
+    (thing)->dump(StringifyKind::CHPL_SYNTAX); \
+    fprintf(stderr, "\n");                     \
+  }
 
 #else
 
@@ -141,7 +144,7 @@ disambiguateByMatch(const DisambiguationContext& dctx,
 static MostSpecificCandidates
 computeMostSpecificCandidates(ResolutionContext* rc,
                               const DisambiguationContext& dctx,
-                              const CandidatesVec& candidates) ;
+                              const CandidatesVec& candidates);
 
 // handle the more complex case where there is > 1 candidate
 // with a particular return intent by disambiguating each group
@@ -168,7 +171,8 @@ static int testArgMapping(const DisambiguationContext& dctx,
 static void testArgMapHelper(const DisambiguationContext& dctx,
                              const FormalActual& fa,
                              const QualifiedType& forwardingTo,
-                             bool* formalPromotes, bool* formalNarrows,
+                             bool* formalPromotes,
+                             bool* formalNarrows,
                              DisambiguationState& ds,
                              int fnNum);
 
@@ -202,7 +206,7 @@ static void discardWorseArgs(const DisambiguationContext& dctx,
 
 static void discardWorsePromoting(const DisambiguationContext& dctx,
                                   const CandidatesVec& candidates,
-                                  std::vector<bool>&  discarded);
+                                  std::vector<bool>& discarded);
 
 static void discardWorseWhereClauses(const DisambiguationContext& dctx,
                                      const CandidatesVec& candidates,
@@ -212,16 +216,16 @@ static void discardWorseConversions(const DisambiguationContext& dctx,
                                     const CandidatesVec& candidates,
                                     std::vector<bool>& discarded);
 
-static void disambiguateDiscarding(const DisambiguationContext&   dctx,
+static void disambiguateDiscarding(const DisambiguationContext& dctx,
                                    const CandidatesVec& candidates,
                                    bool ignoreWhere,
-                                   std::vector<bool>&   discarded);
+                                   std::vector<bool>& discarded);
 
 static int prefersNumericCoercion(const DisambiguationContext& dctx,
                                   QualifiedType f1Qt,
                                   QualifiedType f2Qt,
                                   QualifiedType actualQt,
-                                  std::string &reason);
+                                  std::string& reason);
 
 // count the number of candidates with each return intent
 static void countByReturnIntent(const DisambiguationContext& dctx,
@@ -232,24 +236,17 @@ static void countByReturnIntent(const DisambiguationContext& dctx,
                                 int& nOther) {
   for (auto c : vec) {
     auto fn = c->fn;
-    auto returnIntent = parsing::idToFnReturnIntent(dctx.rc->context(), fn->id());
+    auto returnIntent =
+      parsing::idToFnReturnIntent(dctx.rc->context(), fn->id());
 
     switch (returnIntent) {
       case Function::DEFAULT_RETURN_INTENT:
       case Function::OUT:
-      case Function::CONST:
-        nValue++;
-        break;
-      case Function::CONST_REF:
-        nConstRef++;
-        break;
-      case Function::REF:
-        nRef++;
-        break;
+      case Function::CONST: nValue++; break;
+      case Function::CONST_REF: nConstRef++; break;
+      case Function::REF: nRef++; break;
       case Function::PARAM:
-      case Function::TYPE:
-        nOther++;
-        break;
+      case Function::TYPE: nOther++; break;
     }
   }
 }
@@ -264,22 +261,26 @@ gatherByReturnIntent(ResolutionContext* rc,
 
   for (auto c : vec) {
     auto fn = c->fn;
-    auto returnIntent = parsing::idToFnReturnIntent(dctx.rc->context(), fn->id());
+    auto returnIntent =
+      parsing::idToFnReturnIntent(dctx.rc->context(), fn->id());
 
     switch (returnIntent) {
       case Function::DEFAULT_RETURN_INTENT:
       case Function::OUT:
       case Function::CONST:
         CHPL_ASSERT(!ret.bestValue());
-        ret.setBestValue(c->toMostSpecificCandidate(rc, dctx.callInScope, dctx.callInPoiScope));
+        ret.setBestValue(c->toMostSpecificCandidate(
+          rc, dctx.callInScope, dctx.callInPoiScope));
         break;
       case Function::CONST_REF:
         CHPL_ASSERT(!ret.bestConstRef());
-        ret.setBestConstRef(c->toMostSpecificCandidate(rc, dctx.callInScope, dctx.callInPoiScope));
+        ret.setBestConstRef(c->toMostSpecificCandidate(
+          rc, dctx.callInScope, dctx.callInPoiScope));
         break;
       case Function::REF:
         CHPL_ASSERT(!ret.bestRef());
-        ret.setBestRef(c->toMostSpecificCandidate(rc, dctx.callInScope, dctx.callInPoiScope));
+        ret.setBestRef(c->toMostSpecificCandidate(
+          rc, dctx.callInScope, dctx.callInPoiScope));
         break;
       case Function::PARAM:
       case Function::TYPE:
@@ -300,27 +301,20 @@ static void gatherVecsByReturnIntent(const DisambiguationContext& dctx,
                                      CandidatesVec& valueCandidates) {
   for (auto c : vec) {
     auto fn = c->fn;
-    auto returnIntent = parsing::idToFnReturnIntent(dctx.rc->context(), fn->id());
+    auto returnIntent =
+      parsing::idToFnReturnIntent(dctx.rc->context(), fn->id());
 
     switch (returnIntent) {
       case Function::DEFAULT_RETURN_INTENT:
       case Function::OUT:
-      case Function::CONST:
-        valueCandidates.push_back(c);
-        break;
-      case Function::CONST_REF:
-        constRefCandidates.push_back(c);
-        break;
-      case Function::REF:
-        refCandidates.push_back(c);
-        break;
+      case Function::CONST: valueCandidates.push_back(c); break;
+      case Function::CONST_REF: constRefCandidates.push_back(c); break;
+      case Function::REF: refCandidates.push_back(c); break;
       case Function::PARAM:
-      case Function::TYPE:
-        break;
+      case Function::TYPE: break;
     }
   }
 }
-
 
 static const MostSpecificCandidates&
 findMostSpecificCandidatesQuery(ResolutionContext* rc,
@@ -328,14 +322,16 @@ findMostSpecificCandidatesQuery(ResolutionContext* rc,
                                 CallInfo call,
                                 const Scope* callInScope,
                                 const PoiScope* callInPoiScope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(findMostSpecificCandidatesQuery, rc,
-              lst, call, callInScope, callInPoiScope);
+  CHPL_RESOLUTION_QUERY_BEGIN(findMostSpecificCandidatesQuery,
+                              rc,
+                              lst,
+                              call,
+                              callInScope,
+                              callInPoiScope);
 
   // Construct the DisambiguationContext
   bool explain = true;
-  DisambiguationContext dctx(rc, &call,
-                             callInScope, callInPoiScope,
-                             explain);
+  DisambiguationContext dctx(rc, &call, callInScope, callInPoiScope, explain);
 
   // Compute all of the FormalActualMaps now
   std::vector<const DisambiguationCandidate*> candidates;
@@ -347,7 +343,7 @@ findMostSpecificCandidatesQuery(ResolutionContext* rc,
         forwardingTo = lst.getForwardingInfo(i);
       }
       candidates.push_back(
-          new DisambiguationCandidate(lst.get(i), forwardingTo, call, i));
+        new DisambiguationCandidate(lst.get(i), forwardingTo, call, i));
     }
   }
 
@@ -357,9 +353,12 @@ findMostSpecificCandidatesQuery(ResolutionContext* rc,
 
   if (result.numBest() == 1) {
     MostSpecificCandidate only;
-    if (result.bestRef()) only = result.bestRef();
-    else if (result.bestConstRef()) only = result.bestConstRef();
-    else if (result.bestValue()) only = result.bestValue();
+    if (result.bestRef())
+      only = result.bestRef();
+    else if (result.bestConstRef())
+      only = result.bestConstRef();
+    else if (result.bestValue())
+      only = result.bestValue();
 
     // Ensure that the only result is in the 'ONLY' slot.
     result = MostSpecificCandidates::getOnly(only);
@@ -392,7 +391,8 @@ findMostSpecificCandidates(ResolutionContext* rc,
     // counting logic.
     DisambiguationCandidate candidate(lst.get(0), QualifiedType(), call, 0);
     candidate.computeConversionInfo(rc->context(), call.numActuals());
-    auto msc = candidate.toMostSpecificCandidate(rc, callInScope, callInPoiScope);
+    auto msc =
+      candidate.toMostSpecificCandidate(rc, callInScope, callInPoiScope);
     return MostSpecificCandidates::getOnly(msc);
   }
 
@@ -400,10 +400,9 @@ findMostSpecificCandidates(ResolutionContext* rc,
   // run the query to handle the more complex case
   // TODO: is it worth storing this in a query? Or should
   // we recompute it each time?
-  return findMostSpecificCandidatesQuery(rc, lst, call,
-                                         callInScope, callInPoiScope);
+  return findMostSpecificCandidatesQuery(
+    rc, lst, call, callInScope, callInPoiScope);
 }
-
 
 static MostSpecificCandidates
 computeMostSpecificCandidates(ResolutionContext* rc,
@@ -414,12 +413,14 @@ computeMostSpecificCandidates(ResolutionContext* rc,
 
   // The common case is that there is no ambiguity because the
   // return intent overload feature is not used.
-  auto best = (Dcp)disambiguateByMatch(dctx, candidates,
+  auto best = (Dcp)disambiguateByMatch(dctx,
+                                       candidates,
                                        /* ignoreWhere */ true,
                                        ambiguousBest);
 
   if (best != nullptr) {
-    return MostSpecificCandidates::getOnly(best->toMostSpecificCandidate(rc, dctx.callInScope, dctx.callInPoiScope));
+    return MostSpecificCandidates::getOnly(
+      best->toMostSpecificCandidate(rc, dctx.callInScope, dctx.callInPoiScope));
   }
 
   if (ambiguousBest.size() == 0) {
@@ -444,14 +445,15 @@ computeMostSpecificCandidates(ResolutionContext* rc,
     // If there are *any* type/param candidates, we need to cause ambiguity
     // if they are not selected... including consideration of where clauses.
     ambiguousBest.clear();
-    auto best = (Dcp)disambiguateByMatch(dctx, candidates,
+    auto best = (Dcp)disambiguateByMatch(dctx,
+                                         candidates,
                                          /* ignoreWhere */ false,
                                          ambiguousBest);
 
-    if (ambiguousBest.size() > 1)
-      return MostSpecificCandidates::getAmbiguous();
+    if (ambiguousBest.size() > 1) return MostSpecificCandidates::getAmbiguous();
 
-    return MostSpecificCandidates::getOnly(best->toMostSpecificCandidate(rc, dctx.callInScope, dctx.callInPoiScope));
+    return MostSpecificCandidates::getOnly(
+      best->toMostSpecificCandidate(rc, dctx.callInScope, dctx.callInPoiScope));
   }
 
   if (nRef <= 1 && nConstRef <= 1 && nValue <= 1) {
@@ -476,10 +478,8 @@ computeMostSpecificCandidatesWithVecs(ResolutionContext* rc,
   CandidatesVec ambiguousBest;
 
   // Split candidates into ref, const ref, and value candidates
-  gatherVecsByReturnIntent(dctx, vec,
-                           refCandidates,
-                           constRefCandidates,
-                           valueCandidates);
+  gatherVecsByReturnIntent(
+    dctx, vec, refCandidates, constRefCandidates, valueCandidates);
 
   // Disambiguate each group and update the counts
   int nRef = 0;
@@ -489,8 +489,8 @@ computeMostSpecificCandidatesWithVecs(ResolutionContext* rc,
   bool ignoreWhere = false;
   using Dcp = DisambiguationCandidate*;
   ambiguousBest.clear();
-  auto bestRef = (Dcp)disambiguateByMatch(dctx, refCandidates, ignoreWhere,
-                                          ambiguousBest);
+  auto bestRef =
+    (Dcp)disambiguateByMatch(dctx, refCandidates, ignoreWhere, ambiguousBest);
   if (bestRef != nullptr) {
     nRef = 1;
   } else {
@@ -498,8 +498,8 @@ computeMostSpecificCandidatesWithVecs(ResolutionContext* rc,
   }
 
   ambiguousBest.clear();
-  auto bestCRef = (Dcp)disambiguateByMatch(dctx, constRefCandidates, ignoreWhere,
-                                           ambiguousBest);
+  auto bestCRef = (Dcp)disambiguateByMatch(
+    dctx, constRefCandidates, ignoreWhere, ambiguousBest);
   if (bestCRef != nullptr) {
     nConstRef = 1;
   } else {
@@ -507,8 +507,8 @@ computeMostSpecificCandidatesWithVecs(ResolutionContext* rc,
   }
 
   ambiguousBest.clear();
-  auto bestValue = (Dcp)disambiguateByMatch(dctx, valueCandidates, ignoreWhere,
-                                            ambiguousBest);
+  auto bestValue =
+    (Dcp)disambiguateByMatch(dctx, valueCandidates, ignoreWhere, ambiguousBest);
   if (bestValue != nullptr) {
     nValue = 1;
   } else {
@@ -524,15 +524,17 @@ computeMostSpecificCandidatesWithVecs(ResolutionContext* rc,
   // so there is no ambiguity.
   MostSpecificCandidates ret;
   if (bestRef != nullptr)
-    ret.setBestRef(bestRef->toMostSpecificCandidate(rc, dctx.callInScope, dctx.callInPoiScope));
+    ret.setBestRef(bestRef->toMostSpecificCandidate(
+      rc, dctx.callInScope, dctx.callInPoiScope));
   if (bestCRef != nullptr)
-    ret.setBestConstRef(bestCRef->toMostSpecificCandidate(rc, dctx.callInScope, dctx.callInPoiScope));
+    ret.setBestConstRef(bestCRef->toMostSpecificCandidate(
+      rc, dctx.callInScope, dctx.callInPoiScope));
   if (bestValue != nullptr)
-    ret.setBestValue(bestValue->toMostSpecificCandidate(rc, dctx.callInScope, dctx.callInPoiScope));
+    ret.setBestValue(bestValue->toMostSpecificCandidate(
+      rc, dctx.callInScope, dctx.callInPoiScope));
 
   return ret;
 }
-
 
 /**
 
@@ -575,9 +577,10 @@ static int compareSpecificity(const DisambiguationContext& dctx,
     const FormalActual* fa2 = candidate2.formalActualMap.byActualIdx(k);
 
     if (fa1 == nullptr || fa2 == nullptr) {
-      if (candidate1.fn->untyped()->kind()==Function::Kind::OPERATOR &&
-          candidate2.fn->untyped()->kind()==Function::Kind::OPERATOR) {
-        EXPLAIN("\nSkipping argument %d because could be in an operator call\n", k);
+      if (candidate1.fn->untyped()->kind() == Function::Kind::OPERATOR &&
+          candidate2.fn->untyped()->kind() == Function::Kind::OPERATOR) {
+        EXPLAIN("\nSkipping argument %d because could be in an operator call\n",
+                k);
         continue;
       } else {
         // One of the two candidate functions was not an operator, but one
@@ -589,14 +592,13 @@ static int compareSpecificity(const DisambiguationContext& dctx,
           EXPLAIN("%s: Fn %d is non-param preferred\n", reason.c_str(), i);
         } else if (p == 2) {
           ds.fn2NonParamArgsPreferred = true;
-            EXPLAIN("%s: Fn %d is non-param preferred\n", reason.c_str(), j);
+          EXPLAIN("%s: Fn %d is non-param preferred\n", reason.c_str(), j);
         }
         continue;
       }
     }
 
     bool actualParam = fa1->actualType().isParam();
-
 
     int p = testArgMapping(dctx, candidate1, candidate2, k, ds, reason);
     if (p == -1) {
@@ -632,7 +634,6 @@ static int compareSpecificity(const DisambiguationContext& dctx,
 
     prefer1 = ds.fn1ParamArgsPreferred;
     prefer2 = ds.fn2ParamArgsPreferred;
-
   }
 
   if (prefer1) {
@@ -656,7 +657,6 @@ static int compareSpecificity(const DisambiguationContext& dctx,
   }
 }
 
-
 /*
  * Returns:
  *   0 if there is no preference between them
@@ -664,11 +664,11 @@ static int compareSpecificity(const DisambiguationContext& dctx,
  *   2 if fn2 is preferred
 */
 static int testOpArgMapping(const DisambiguationContext& dctx,
-                           const DisambiguationCandidate& candidate1,
-                           const DisambiguationCandidate& candidate2,
-                           int actualIdx,
-                           DisambiguationState& ds,
-                           std::string& reason) {
+                            const DisambiguationCandidate& candidate1,
+                            const DisambiguationCandidate& candidate2,
+                            int actualIdx,
+                            DisambiguationState& ds,
+                            std::string& reason) {
   // Validate our assumptions in this function - only operator functions should
   // return a NULL for the formal and they should only do so for method token
   // and "this" actuals.
@@ -689,8 +689,13 @@ static int testOpArgMapping(const DisambiguationContext& dctx,
     bool formal2Promotes = false;
     bool formal2Narrows = false;
 
-    testArgMapHelper(dctx, *fa2, candidate2.forwardingTo,
-                     &formal2Promotes, &formal2Narrows, ds, 2);
+    testArgMapHelper(dctx,
+                     *fa2,
+                     candidate2.forwardingTo,
+                     &formal2Promotes,
+                     &formal2Narrows,
+                     ds,
+                     2);
     return 2;
 
   } else {
@@ -699,37 +704,44 @@ static int testOpArgMapping(const DisambiguationContext& dctx,
     bool formal1Promotes = false;
     bool formal1Narrows = false;
 
-    testArgMapHelper(dctx, *fa1, candidate1.forwardingTo,
-                     &formal1Promotes, &formal1Narrows, ds, 1);
+    testArgMapHelper(dctx,
+                     *fa1,
+                     candidate1.forwardingTo,
+                     &formal1Promotes,
+                     &formal1Narrows,
+                     ds,
+                     1);
 
     return 1;
   }
 
   return 0;
-
 }
 
 //
 // helper routines for isMoreVisible (below);
 //
-static bool
-isDefinedInBlock(Context* context, const Scope* scope,
-                 const TypedFnSignature* fn) {
+static bool isDefinedInBlock(Context* context,
+                             const Scope* scope,
+                             const TypedFnSignature* fn) {
   LookupConfig onlyDecls = LOOKUP_DECLS | LOOKUP_METHODS;
-  auto ids = lookupNameInScope(context, scope,
+  auto ids = lookupNameInScope(context,
+                               scope,
                                /* methodLookupHelper */ nullptr,
                                /* receiverScopeHelper */ nullptr,
-                               fn->untyped()->name(), onlyDecls);
+                               fn->untyped()->name(),
+                               onlyDecls);
   for (const auto& id : ids) {
     if (id == fn->id()) return true;
   }
   return false;
 }
 
-static bool
-isDefinedInUseImport(Context* context, const Scope* scope,
-                     const TypedFnSignature* fn,
-                     bool allowPrivateUseImp, bool forShadowScope) {
+static bool isDefinedInUseImport(Context* context,
+                                 const Scope* scope,
+                                 const TypedFnSignature* fn,
+                                 bool allowPrivateUseImp,
+                                 bool forShadowScope) {
   LookupConfig importAndUse = LOOKUP_IMPORT_AND_USE | LOOKUP_METHODS;
 
   if (!forShadowScope) {
@@ -740,10 +752,12 @@ isDefinedInUseImport(Context* context, const Scope* scope,
     importAndUse |= LOOKUP_SKIP_PRIVATE_USE_IMPORT;
   }
 
-  auto ids = lookupNameInScope(context, scope,
+  auto ids = lookupNameInScope(context,
+                               scope,
                                /* methodLookupHelper */ nullptr,
                                /* receiverScopeHelper */ nullptr,
-                               fn->untyped()->name(), importAndUse);
+                               fn->untyped()->name(),
+                               importAndUse);
   for (const auto& id : ids) {
     if (id == fn->id()) return true;
   }
@@ -758,15 +772,18 @@ isDefinedInUseImport(Context* context, const Scope* scope,
 //
 // Returns -1 if the function is not found here
 // or if the scope was already visited.
-static int
-computeVisibilityDistanceInternal(Context* context, const Scope* scope,
-                                  const TypedFnSignature* fn, int distance) {
+static int computeVisibilityDistanceInternal(Context* context,
+                                             const Scope* scope,
+                                             const TypedFnSignature* fn,
+                                             int distance) {
   if (!scope) return -1;
 
   // first, check things in the current block or
   // from use/import that don't use a shadow scope
   bool foundHere = isDefinedInBlock(context, scope, fn) ||
-                   isDefinedInUseImport(context, scope, fn,
+                   isDefinedInUseImport(context,
+                                        scope,
+                                        fn,
                                         /* allowPrivateUseImp */ true,
                                         /* forShadowScope */ false);
   if (foundHere) {
@@ -774,17 +791,19 @@ computeVisibilityDistanceInternal(Context* context, const Scope* scope,
   }
   // next, check anything from a use/import in the
   // current block that uses a shadow scope
-  bool foundShadowHere = isDefinedInUseImport(context, scope, fn,
+  bool foundShadowHere = isDefinedInUseImport(context,
+                                              scope,
+                                              fn,
                                               /* allowPrivateUseImp */ true,
                                               /* forShadowScope */ true);
   if (foundShadowHere) {
-    return distance+1;
+    return distance + 1;
   }
 
   // next, check parent scope, recursively
   if (const Scope* parentScope = scope->parentScope()) {
-    return computeVisibilityDistanceInternal(context, parentScope, fn,
-                                             distance+2);
+    return computeVisibilityDistanceInternal(
+      context, parentScope, fn, distance + 2);
   }
 
   return -1;
@@ -794,7 +813,8 @@ computeVisibilityDistanceInternal(Context* context, const Scope* scope,
 // of two functions.
 //
 // Returns -1 if the function is a method or if the function is not found
-static int computeVisibilityDistance(Context* context, const Scope* scope,
+static int computeVisibilityDistance(Context* context,
+                                     const Scope* scope,
                                      const TypedFnSignature* fn) {
   // is this a method?
   if (fn->untyped()->isMethod()) {
@@ -817,11 +837,13 @@ static void discardWorseVisibility(const DisambiguationContext& dctx,
       continue;
     }
 
-    DisambiguationCandidate* candidate = (DisambiguationCandidate*)candidates[i];
-    auto scope = dctx.callInPoiScope == nullptr ?
-                                        dctx.callInScope :
-                                        dctx.callInPoiScope->inScope();
-    int distance = computeVisibilityDistance(dctx.rc->context(), scope, candidate->fn);
+    DisambiguationCandidate* candidate =
+      (DisambiguationCandidate*)candidates[i];
+    auto scope = dctx.callInPoiScope == nullptr
+                   ? dctx.callInScope
+                   : dctx.callInPoiScope->inScope();
+    int distance =
+      computeVisibilityDistance(dctx.rc->context(), scope, candidate->fn);
     candidate->visibilityDistance = distance;
 
     if (distance >= 0) {
@@ -850,11 +872,10 @@ static void discardWorseVisibility(const DisambiguationContext& dctx,
   }
 }
 
-
-static void disambiguateDiscarding(const DisambiguationContext&   dctx,
+static void disambiguateDiscarding(const DisambiguationContext& dctx,
                                    const CandidatesVec& candidates,
-                                   bool                         ignoreWhere,
-                                   std::vector<bool>&           discarded) {
+                                   bool ignoreWhere,
+                                   std::vector<bool>& discarded) {
   // TODO: Implement commented code
   // if (mixesNonOpMethodsAndFunctions(candidates, DC, discarded)) {
   //   return;
@@ -1001,9 +1022,7 @@ disambiguateByMatch(const DisambiguationContext& dctx,
 
   //   checker.checkResults();
   // }
-
 }
-
 
 // Discard any candidate that has a worse argument mapping than another
 // candidate.
@@ -1057,8 +1076,8 @@ static void discardWorseArgs(const DisambiguationContext& dctx,
       // Note that this part is a partial order;
       // in other words, "incomparable" is an option when comparing
       // two candidates.
-      int cmp = compareSpecificity(dctx, *candidate1, *candidate2, i, j,
-                                   forGenericInit);
+      int cmp = compareSpecificity(
+        dctx, *candidate1, *candidate2, i, j, forGenericInit);
 
       if (cmp == 1) {
         EXPLAIN("X: Fn %d is a better match than Fn %d\n\n\n", i, j);
@@ -1141,31 +1160,33 @@ static bool isNegativeParamToUnsigned(const Param* actualSym,
                                       const Type* actualScalarType,
                                       const Type* formalType) {
   if (actualSym && actualScalarType->isIntType() && formalType->isUintType()) {
-   return isNegative(actualSym);
+    return isNegative(actualSym);
   }
   return false;
 }
 
-static bool isMatchingImagComplex(const Type* actualType, const Type* formalType) {
+static bool isMatchingImagComplex(const Type* actualType,
+                                  const Type* formalType) {
   if (auto fct = formalType->toComplexType()) {
     if (auto ait = actualType->toImagType()) {
-      return ait->bitwidth()*2 == fct->bitwidth();
+      return ait->bitwidth() * 2 == fct->bitwidth();
     } else if (auto art = actualType->toRealType()) {
-      return art->bitwidth()*2 == fct->bitwidth();
+      return art->bitwidth() * 2 == fct->bitwidth();
     }
   }
   return false;
 }
 
-static const Type*
-normalizeTupleTypeToValueTuple(Context* context, const Type* t) {
+static const Type* normalizeTupleTypeToValueTuple(Context* context,
+                                                  const Type* t) {
   if (auto tt = t->toTupleType()) {
     return (const Type*)tt->toValueTuple(context);
   }
   return t;
 }
 
-void DisambiguationCandidate::computeConversionInfo(Context* context, int numActuals) {
+void DisambiguationCandidate::computeConversionInfo(Context* context,
+                                                    int numActuals) {
   // no need to recompute it if it is already computed
   if (this->nImplicitConversionsComputed) {
     return;
@@ -1175,9 +1196,9 @@ void DisambiguationCandidate::computeConversionInfo(Context* context, int numAct
   int numParamNarrowing = 0;
   int nImplicitConversions = 0;
 
-  bool forGenericInit = this->fn->untyped()->name()==USTR("init") ||
-                        this->fn->untyped()->name()==USTR("init=");
-  size_t n = (size_t) numActuals;
+  bool forGenericInit = this->fn->untyped()->name() == USTR("init") ||
+                        this->fn->untyped()->name() == USTR("init=");
+  size_t n = (size_t)numActuals;
   for (size_t k = 0; k < n; k++) {
 
     const FormalActual* fa1 = this->formalActualMap.byActualIdx(k);
@@ -1196,23 +1217,23 @@ void DisambiguationCandidate::computeConversionInfo(Context* context, int numAct
     if (!fa1->actualType().hasTypePtr()) continue;
 
     // if (fa1->formalType().kind() == uast::Qualifier::OUT) {
-      // continue; // type comes from call site so ignore it here
-      // think this is embedded in query
+    // continue; // type comes from call site so ignore it here
+    // think this is embedded in query
     // }
 
     const Type* actualType = fa1->actualType().type();
     const Type* formalType = fa1->formalType().type();
 
-    auto canPass = CanPassResult::canPass(context,
-                                          fa1->actualType(),
-                                          fa1->formalType());
+    auto canPass =
+      CanPassResult::canPass(context, fa1->actualType(), fa1->formalType());
 
     if (canPass.passes() &&
         canPass.conversionKind() == CanPassResult::PARAM_NARROWING) {
       numParamNarrowing++;
     }
 
-    if (isNegativeParamToUnsigned(fa1->actualType().param(), actualType, formalType)) {
+    if (isNegativeParamToUnsigned(
+          fa1->actualType().param(), actualType, formalType)) {
       anyNegParamToUnsigned = true;
     }
 
@@ -1221,8 +1242,7 @@ void DisambiguationCandidate::computeConversionInfo(Context* context, int numAct
       continue;
     }
 
-    if (canPass.passes() &&
-        canPass.conversionKind() == CanPassResult::NONE &&
+    if (canPass.passes() && canPass.conversionKind() == CanPassResult::NONE &&
         !canPass.promotes()) {
       continue;
     }
@@ -1243,10 +1263,10 @@ void DisambiguationCandidate::computeConversionInfo(Context* context, int numAct
 
     // Not counting tuple value vs referential tuple changes
     if (actualType->isTupleType() && formalType->isTupleType()) {
-      auto actualNormTup = normalizeTupleTypeToValueTuple(context,
-                                                          fa1->actualType().type());
-      auto formalNormTup = normalizeTupleTypeToValueTuple(context,
-                                                          fa1->formalType().type());
+      auto actualNormTup =
+        normalizeTupleTypeToValueTuple(context, fa1->actualType().type());
+      auto formalNormTup =
+        normalizeTupleTypeToValueTuple(context, fa1->formalType().type());
       if (actualNormTup == formalNormTup) {
         // it is only a change in the tuple ref-ness
         continue;
@@ -1269,7 +1289,8 @@ void DisambiguationCandidate::computeConversionInfo(Context* context, int numAct
   this->nParamNarrowingImplicitConversions = numParamNarrowing;
 }
 
-void DisambiguationCandidate::computeConversionInfo(const DisambiguationContext& dctx) {
+void DisambiguationCandidate::computeConversionInfo(
+  const DisambiguationContext& dctx) {
   computeConversionInfo(dctx.rc->context(), dctx.call->numActuals());
 }
 
@@ -1284,7 +1305,8 @@ static void discardWorseConversions(const DisambiguationContext& dctx,
       continue;
     }
 
-    DisambiguationCandidate* candidate = (DisambiguationCandidate*)candidates[i];
+    DisambiguationCandidate* candidate =
+      (DisambiguationCandidate*)candidates[i];
     candidate->computeConversionInfo(dctx);
     int impConv = candidate->nImplicitConversions;
     if (impConv < minImpConv) {
@@ -1317,7 +1339,8 @@ static void discardWorseConversions(const DisambiguationContext& dctx,
       continue;
     }
 
-    DisambiguationCandidate* candidate = (DisambiguationCandidate*)candidates[i];
+    DisambiguationCandidate* candidate =
+      (DisambiguationCandidate*)candidates[i];
     candidate->computeConversionInfo(dctx);
     if (candidate->anyNegParamToUnsigned) {
       numWithNegParamToSigned++;
@@ -1334,7 +1357,8 @@ static void discardWorseConversions(const DisambiguationContext& dctx,
 
       const DisambiguationCandidate* candidate = candidates[i];
       if (candidate->anyNegParamToUnsigned) {
-        EXPLAIN("X: Fn %lu has negative param to signed and others do not\n", i);
+        EXPLAIN("X: Fn %lu has negative param to signed and others do not\n",
+                i);
         discarded[i] = true;
       }
     }
@@ -1347,7 +1371,8 @@ static void discardWorseConversions(const DisambiguationContext& dctx,
       continue;
     }
 
-    DisambiguationCandidate* candidate = (DisambiguationCandidate*)candidates[i];
+    DisambiguationCandidate* candidate =
+      (DisambiguationCandidate*)candidates[i];
     candidate->computeConversionInfo(dctx);
     int narrowing = candidate->nParamNarrowingImplicitConversions;
     if (narrowing < minNarrowing) {
@@ -1377,8 +1402,8 @@ static void discardWorseConversions(const DisambiguationContext& dctx,
 // If any candidate does not require promotion,
 // eliminate candidates that do require promotion.
 static void discardWorsePromoting(const DisambiguationContext& dctx,
-                                   const CandidatesVec& candidates,
-                                   std::vector<bool>&  discarded) {
+                                  const CandidatesVec& candidates,
+                                  std::vector<bool>& discarded) {
   int nPromoting = 0;
   int nNotPromoting = 0;
   for (size_t i = 0; i < candidates.size(); ++i) {
@@ -1411,7 +1436,6 @@ static void discardWorsePromoting(const DisambiguationContext& dctx,
   }
 }
 
-
 /**
   Compare two argument mappings, given a set of actual arguments, and set the
   disambiguation state appropriately.
@@ -1442,7 +1466,8 @@ static int testArgMapping(const DisambiguationContext& dctx,
 
   if (fa1 == nullptr || fa2 == nullptr) {
 
-    return testOpArgMapping(dctx, candidate1, candidate2, actualIdx, ds, reason);
+    return testOpArgMapping(
+      dctx, candidate1, candidate2, actualIdx, ds, reason);
   }
 
   QualifiedType f1QualType = fa1->formalType();
@@ -1454,8 +1479,10 @@ static int testArgMapping(const DisambiguationContext& dctx,
   CHPL_ASSERT(actualQualType == fa2->actualType());
 
   // To ensure '==' and '!=' checks work below, normalize 'owned C' into '_owned(C)'.
-  tryConvertClassTypeIntoManagerRecordIfNeeded(dctx.rc->context(), f1Type, f2Type);
-  tryConvertClassTypeIntoManagerRecordIfNeeded(dctx.rc->context(), f2Type, f1Type);
+  tryConvertClassTypeIntoManagerRecordIfNeeded(
+    dctx.rc->context(), f1Type, f2Type);
+  tryConvertClassTypeIntoManagerRecordIfNeeded(
+    dctx.rc->context(), f2Type, f1Type);
 
   if (!actualQualType.hasTypePtr()) return -1;
 
@@ -1470,9 +1497,15 @@ static int testArgMapping(const DisambiguationContext& dctx,
   // and value tuples.
   // TODO: not sure how to reproduce this code in Dyno
   if (actualType->isTupleType()) {
-    f1QualType = QualifiedType(QualifiedType::Kind::IN, normalizeTupleTypeToValueTuple(dctx.rc->context(), f1Type));
-    f2QualType = QualifiedType(QualifiedType::Kind::IN, normalizeTupleTypeToValueTuple(dctx.rc->context(), f2Type));
-    actualQualType = QualifiedType(QualifiedType::Kind::IN, normalizeTupleTypeToValueTuple(dctx.rc->context(), actualType));
+    f1QualType =
+      QualifiedType(QualifiedType::Kind::IN,
+                    normalizeTupleTypeToValueTuple(dctx.rc->context(), f1Type));
+    f2QualType =
+      QualifiedType(QualifiedType::Kind::IN,
+                    normalizeTupleTypeToValueTuple(dctx.rc->context(), f2Type));
+    actualQualType = QualifiedType(
+      QualifiedType::Kind::IN,
+      normalizeTupleTypeToValueTuple(dctx.rc->context(), actualType));
   }
   // TODO: Not sure we still need this here, based on production
   // Initializer work-around: Skip 'this' for generic initializers
@@ -1531,16 +1564,25 @@ static int testArgMapping(const DisambiguationContext& dctx,
   bool actualParam = actualQualType.isParam();
   EXPLAIN("Actual's type: ");
   EXPLAIN_DUMP(&actualQualType);
-  if (actualParam)
-    EXPLAIN(" (param)");
+  if (actualParam) EXPLAIN(" (param)");
   EXPLAIN("\n");
 
   // do some EXPLAIN calls
-  testArgMapHelper(dctx, *fa1, candidate1.forwardingTo,
-                   &formal1Promotes, &formal1Narrows, ds, 1);
+  testArgMapHelper(dctx,
+                   *fa1,
+                   candidate1.forwardingTo,
+                   &formal1Promotes,
+                   &formal1Narrows,
+                   ds,
+                   1);
 
-  testArgMapHelper(dctx, *fa2, candidate2.forwardingTo,
-                   &formal2Promotes, &formal2Narrows, ds, 2);
+  testArgMapHelper(dctx,
+                   *fa2,
+                   candidate2.forwardingTo,
+                   &formal2Promotes,
+                   &formal2Narrows,
+                   ds,
+                   2);
 
   // Figure out scalar type for candidate matching
   if (formal1Promotes || formal2Promotes) {
@@ -1640,7 +1682,8 @@ static int testArgMapping(const DisambiguationContext& dctx,
     //   proc f(complex(128), complex(128))
     //   f(1.0, 1.0i) calling the complex(128) version
 
-    int p = prefersNumericCoercion(dctx, f1QualType, f2QualType, actualScalarT, reason);
+    int p = prefersNumericCoercion(
+      dctx, f1QualType, f2QualType, actualScalarT, reason);
 
     if (p == 1) {
       return 1;
@@ -1669,7 +1712,6 @@ static int testArgMapping(const DisambiguationContext& dctx,
       return 2;
     }
 
-
     bool fn1Dispatches = moreSpecificCanDispatch(dctx, f1QualType, f2QualType);
     bool fn2Dispatches = moreSpecificCanDispatch(dctx, f2QualType, f1QualType);
     if (fn1Dispatches && !fn2Dispatches) {
@@ -1691,11 +1733,11 @@ static int testArgMapping(const DisambiguationContext& dctx,
   return -1;
 }
 
-
 static void testArgMapHelper(const DisambiguationContext& dctx,
                              const FormalActual& fa,
                              const QualifiedType& forwardingTo,
-                             bool* formalPromotes, bool* formalNarrows,
+                             bool* formalPromotes,
+                             bool* formalNarrows,
                              DisambiguationState& ds,
                              int fnNum) {
 
@@ -1722,12 +1764,9 @@ static void testArgMapHelper(const DisambiguationContext& dctx,
 
   EXPLAIN("Formal %d's type: ", fnNum);
   EXPLAIN_DUMP(&formalType);
-  if (*formalPromotes)
-    EXPLAIN(" (promotes)");
-  if (formalType.hasParamPtr())
-    EXPLAIN(" (instantiated param)");
-  if (*formalNarrows)
-    EXPLAIN(" (narrows param)");
+  if (*formalPromotes) EXPLAIN(" (promotes)");
+  if (formalType.hasParamPtr()) EXPLAIN(" (instantiated param)");
+  if (*formalNarrows) EXPLAIN(" (narrows param)");
   EXPLAIN("\n");
 
   if (actualType.type() != formalType.type()) {
@@ -1738,7 +1777,6 @@ static void testArgMapHelper(const DisambiguationContext& dctx,
     }
   }
 }
-
 
 /** Is the formal an instantiation of the any-type, e.g.
 
@@ -1758,11 +1796,10 @@ static bool isFormalInstantiatedAny(const DisambiguationCandidate& candidate,
     int formalIdx = fa->formalIdx();
     const QualifiedType& qt = initial->formalType(formalIdx);
 
-    if (qt.type() && qt.type()->isAnyType())
-      return true;
+    if (qt.type() && qt.type()->isAnyType()) return true;
 
-    if (initial->untyped()->formalIsVarArgs(formalIdx) &&
-        qt.type() && qt.type()->isTupleType()) {
+    if (initial->untyped()->formalIsVarArgs(formalIdx) && qt.type() &&
+        qt.type()->isTupleType()) {
       auto tt = qt.type()->toTupleType();
       CHPL_ASSERT(tt && tt->isStarTuple());
       return tt->starType().type() && tt->starType().type()->isAnyType();
@@ -1824,8 +1861,8 @@ static bool isFormalPartiallyGeneric(const DisambiguationCandidate& candidate,
   } else if (auto op = faTypeExpr->toOpCall()) {
     if (op->isBinaryOp() && op->op() == USTR("*")) return true;
   } else if (auto fnCall = faTypeExpr->toFnCall()) {
-    if (parsing::isCallToClassManager(fnCall) &&
-        fnCall->numActuals() >= 1) return true;
+    if (parsing::isCallToClassManager(fnCall) && fnCall->numActuals() >= 1)
+      return true;
 
     for (auto actual : fnCall->actuals()) {
       if (actual->isTypeQuery() || isQuestionMark(actual)) continue;
@@ -1838,9 +1875,8 @@ static bool isFormalPartiallyGeneric(const DisambiguationCandidate& candidate,
     // Assume we're an array expression.
     if (le->isExpressionLevel()) {
       auto body = le->body();
-      auto elemTypeExpr = body && body->numStmts() > 0
-                          ? body->stmt(0)
-                          : nullptr;
+      auto elemTypeExpr =
+        body && body->numStmts() > 0 ? body->stmt(0) : nullptr;
 
       if (elemTypeExpr && !elemTypeExpr->isTypeQuery() &&
           !isQuestionMark(elemTypeExpr)) {
@@ -1869,8 +1905,7 @@ typedef enum {
   NUMERIC_TYPE_COMPLEX
 } numeric_type_t;
 
-static numeric_type_t classifyNumericType(const Type* t)
-{
+static numeric_type_t classifyNumericType(const Type* t) {
   if (t->isBoolType()) return NUMERIC_TYPE_BOOL;
   if (t->isEnumType()) return NUMERIC_TYPE_ENUM;
   if (t->isIntType()) return NUMERIC_TYPE_INT_UINT;
@@ -1883,43 +1918,37 @@ static numeric_type_t classifyNumericType(const Type* t)
 }
 
 static bool isDefaultInt(const Type* t) {
-  if (auto tt = t->toIntType())
-    return tt->isDefaultWidth();
+  if (auto tt = t->toIntType()) return tt->isDefaultWidth();
 
   return false;
 }
 
 static bool isDefaultUint(const Type* t) {
-  if (auto tt = t->toUintType())
-    return tt->isDefaultWidth();
+  if (auto tt = t->toUintType()) return tt->isDefaultWidth();
 
   return false;
 }
 
 static bool isDefaultImag(const Type* t) {
-  if (auto tt = t->toImagType())
-    return tt->isDefaultWidth();
+  if (auto tt = t->toImagType()) return tt->isDefaultWidth();
 
   return false;
 }
 
 static bool isDefaultReal(const Type* t) {
-  if (auto tt = t->toRealType())
-    return tt->isDefaultWidth();
+  if (auto tt = t->toRealType()) return tt->isDefaultWidth();
 
   return false;
 }
 
 static bool isDefaultComplex(const Type* t) {
-  if (auto tt = t->toComplexType())
-    return tt->isDefaultWidth();
+  if (auto tt = t->toComplexType()) return tt->isDefaultWidth();
 
   return false;
 }
 
 static int bitwidth(const Type* t) {
-  if (auto tt = t->toPrimitiveType())
-    return tt->bitwidth();
+  if (auto tt = t->toPrimitiveType()) return tt->bitwidth();
 
   return 0;
 }
@@ -1928,31 +1957,22 @@ static int bitwidth(const Type* t) {
 //   -1 if 't' is not a numeric type
 //   0 if 't' is a default numeric type ('int' 'bool' etc)
 //   n a positive integer width if 't' is a non-default numeric type
-static int classifyNumericWidth(QualifiedType* qt)
-{
+static int classifyNumericWidth(QualifiedType* qt) {
   const Type* t = qt->type();
   // The default size counts as 0
-  if (isDefaultInt(t)     ||
-      isDefaultUint(t)    ||
-      isDefaultReal(t)    ||
-      isDefaultImag(t)    ||
-      isDefaultComplex(t))
+  if (isDefaultInt(t) || isDefaultUint(t) || isDefaultReal(t) ||
+      isDefaultImag(t) || isDefaultComplex(t))
     return 0;
 
   // Bool size 64 should be considered the same as int 64
   // and just treat all bools the same
   // to prefer the default size (i.e. int)
-  if (t->isBoolType())
-    return 0;
+  if (t->isBoolType()) return 0;
 
-  if (t->isIntType()  ||
-      t->isUintType() ||
-      t->isRealType() ||
-      t->isImagType() )
+  if (t->isIntType() || t->isUintType() || t->isRealType() || t->isImagType())
     return bitwidth(t);
 
-  if (t->isComplexType())
-    return bitwidth(t) / 2;
+  if (t->isComplexType()) return bitwidth(t) / 2;
 
   return -1;
 }
@@ -1967,7 +1987,7 @@ static int prefersNumericCoercion(const DisambiguationContext& dctx,
                                   QualifiedType f1Qt,
                                   QualifiedType f2Qt,
                                   QualifiedType actualQt,
-                                  std::string &reason) {
+                                  std::string& reason) {
 
   const Type* actualType = actualQt.type();
   const Type* f1Type = f1Qt.type();
@@ -2036,16 +2056,14 @@ static QualifiedType computeActualScalarType(Context* context,
   return getPromotionType(context, actualType);
 }
 
-
 static bool moreSpecificCanDispatch(const DisambiguationContext& dctx,
-                         QualifiedType actualType, QualifiedType formalType) {
+                                    QualifiedType actualType,
+                                    QualifiedType formalType) {
   CanPassResult result = canPass(dctx.rc->context(), actualType, formalType);
 
   return result.passes();
 }
 
-
 } // end namespace resolution
-
 
 } // end namespace chpl

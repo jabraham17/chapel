@@ -26,23 +26,31 @@ namespace chpl {
 namespace types {
 
 const owned<BasicClassType>&
-BasicClassType::getBasicClassType(Context* context, ID id, UniqueString name,
+BasicClassType::getBasicClassType(Context* context,
+                                  ID id,
+                                  UniqueString name,
                                   const BasicClassType* parentType,
                                   const BasicClassType* instantiatedFrom,
                                   SubstitutionsMap subs,
                                   CompositeType::Linkage linkage) {
-  QUERY_BEGIN(getBasicClassType, context, id, name,
-              parentType, instantiatedFrom, subs,
+  QUERY_BEGIN(getBasicClassType,
+              context,
+              id,
+              name,
+              parentType,
+              instantiatedFrom,
+              subs,
               linkage);
 
-  auto result = toOwned(new BasicClassType(id, name,
-                                           parentType, instantiatedFrom,
-                                           std::move(subs), linkage));
+  auto result = toOwned(new BasicClassType(
+    id, name, parentType, instantiatedFrom, std::move(subs), linkage));
   return QUERY_END(result);
 }
 
 const BasicClassType*
-BasicClassType::get(Context* context, ID id, UniqueString name,
+BasicClassType::get(Context* context,
+                    ID id,
+                    UniqueString name,
                     const BasicClassType* parentType,
                     const BasicClassType* instantiatedFrom,
                     SubstitutionsMap subs) {
@@ -50,35 +58,44 @@ BasicClassType::get(Context* context, ID id, UniqueString name,
   // everything else should have a parent type.
   CHPL_ASSERT(parentType != nullptr || name == USTR("RootClass"));
   auto linkage = parsing::idToDeclLinkage(context, id);
-  return getBasicClassType(context, id, name,
-                           parentType, instantiatedFrom,
+  return getBasicClassType(context,
+                           id,
+                           name,
+                           parentType,
+                           instantiatedFrom,
                            std::move(subs),
-                           linkage).get();
+                           linkage)
+    .get();
 }
 
-const BasicClassType*
-BasicClassType::getRootClassType(Context* context) {
+const BasicClassType* BasicClassType::getRootClassType(Context* context) {
   auto id = parsing::getRootClassIdFromTopLevelChapelBaseModule(context);
 
   auto linkage = uast::Decl::DEFAULT_LINKAGE;
-  return getBasicClassType(context, id, USTR("RootClass"),
+  return getBasicClassType(context,
+                           id,
+                           USTR("RootClass"),
                            /* parentType */ nullptr,
                            /* instantiatedFrom */ nullptr,
                            SubstitutionsMap(),
-                           linkage).get();
+                           linkage)
+    .get();
 }
 
-const BasicClassType*
-BasicClassType::getReduceScanOpType(Context* context) {
-  auto [id, name] = parsing::getReduceScanOpTypeFromTopLevelChapelReduceModule(context);
+const BasicClassType* BasicClassType::getReduceScanOpType(Context* context) {
+  auto [id, name] =
+    parsing::getReduceScanOpTypeFromTopLevelChapelReduceModule(context);
   auto objectType = getRootClassType(context);
 
   auto linkage = uast::Decl::DEFAULT_LINKAGE;
-  return getBasicClassType(context, id, name,
+  return getBasicClassType(context,
+                           id,
+                           name,
                            /* parentType */ objectType,
                            /* instantiatedFrom */ nullptr,
                            SubstitutionsMap(),
-                           linkage).get();
+                           linkage)
+    .get();
 }
 
 bool BasicClassType::isSubtypeOf(Context* context,
@@ -108,7 +125,6 @@ bool BasicClassType::isSubtypeOf(Context* context,
 
   return false;
 }
-
 
 } // end namespace types
 } // end namespace chpl

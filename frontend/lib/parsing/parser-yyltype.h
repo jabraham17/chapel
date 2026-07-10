@@ -46,10 +46,10 @@ struct TextLocation {
 
   static TextLocation create() {
     return {
-      .first_line   = -1,
+      .first_line = -1,
       .first_column = -1,
-      .last_line    = -1,
-      .last_column  = -1,
+      .last_line = -1,
+      .last_column = -1,
     };
   }
 };
@@ -63,7 +63,7 @@ static_assert(std::is_trivial<TextLocation>::value,
 
 // Conditional because this will usually be done for us by Bison.
 #ifndef YYLTYPE
-  #define YYLTYPE YYCHPL_LTYPE 
+#define YYLTYPE YYCHPL_LTYPE
 #endif
 
 // Declare this so that Bison can grow its stack.

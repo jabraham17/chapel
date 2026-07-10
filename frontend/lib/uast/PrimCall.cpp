@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 void PrimCall::dumpFieldsInner(const DumpSettings& s) const {
   const char* primName = primtags::primTagToName(prim_);
   if (primName[0] != '\0') {
@@ -41,7 +40,6 @@ owned<PrimCall> PrimCall::build(Builder* builder,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

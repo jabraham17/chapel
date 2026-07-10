@@ -24,11 +24,10 @@
 namespace chpl {
 namespace uast {
 
-
-owned<AnonFormal>
-AnonFormal::build(Builder* builder, Location loc,
-                  AnonFormal::Intent intent,
-                  owned<AstNode> typeExpression) {
+owned<AnonFormal> AnonFormal::build(Builder* builder,
+                                    Location loc,
+                                    AnonFormal::Intent intent,
+                                    owned<AstNode> typeExpression) {
   AstList children;
   int8_t typeExpressionChildNum = AstNode::NO_CHILD;
 
@@ -37,13 +36,11 @@ AnonFormal::build(Builder* builder, Location loc,
     children.push_back(std::move(typeExpression));
   }
 
-  AnonFormal* ret = new AnonFormal(std::move(children),
-                                   intent,
-                                   typeExpressionChildNum);
+  AnonFormal* ret =
+    new AnonFormal(std::move(children), intent, typeExpressionChildNum);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

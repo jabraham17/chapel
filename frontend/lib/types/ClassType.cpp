@@ -32,23 +32,18 @@ void ClassType::stringify(std::ostream& ss,
   switch (decorator_.val()) {
     case ClassTypeDecorator::BORROWED:
     case ClassTypeDecorator::BORROWED_NONNIL:
-    case ClassTypeDecorator::BORROWED_NILABLE:
-      prefix = "borrowed";
-      break;
+    case ClassTypeDecorator::BORROWED_NILABLE: prefix = "borrowed"; break;
     case ClassTypeDecorator::UNMANAGED:
     case ClassTypeDecorator::UNMANAGED_NONNIL:
-    case ClassTypeDecorator::UNMANAGED_NILABLE:
-      prefix = "unmanaged";
-      break;
+    case ClassTypeDecorator::UNMANAGED_NILABLE: prefix = "unmanaged"; break;
     case ClassTypeDecorator::MANAGED:
     case ClassTypeDecorator::MANAGED_NONNIL:
-    case ClassTypeDecorator::MANAGED_NILABLE:
-      prefix = "";
-      break;
+    case ClassTypeDecorator::MANAGED_NILABLE: prefix = ""; break;
     case ClassTypeDecorator::GENERIC:
     case ClassTypeDecorator::GENERIC_NONNIL:
     case ClassTypeDecorator::GENERIC_NILABLE:
-      prefix = stringKind == StringifyKind::CHPL_SYNTAX ? "" : "<any-management>";
+      prefix =
+        stringKind == StringifyKind::CHPL_SYNTAX ? "" : "<any-management>";
       break;
   }
 
@@ -109,7 +104,6 @@ const ClassType* ClassType::get(Context* context,
   return getClassType(context, manageableType, manager, decorator).get();
 }
 
-
 const ClassType* ClassType::withDecorator(Context* context,
                                           ClassTypeDecorator decorator) const {
   return ClassType::get(context, manageableType(), manager(), decorator);
@@ -121,9 +115,11 @@ const RecordType* ClassType::managerRecordType(Context* context) const {
   //      for `shared C`, produce `_shared(C)`
   if (auto myManager = manager()) {
     if (myManager->isAnyOwnedType()) {
-      return CompositeType::getOwnedRecordType(context, basicClassType(), decorator());
+      return CompositeType::getOwnedRecordType(
+        context, basicClassType(), decorator());
     } else if (myManager->isAnySharedType()) {
-      return CompositeType::getSharedRecordType(context, basicClassType(), decorator());
+      return CompositeType::getSharedRecordType(
+        context, basicClassType(), decorator());
     } else if (auto mgr = myManager->toRecordType()) {
       return mgr;
     }

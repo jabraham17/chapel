@@ -27,7 +27,6 @@
 namespace chpl {
 namespace resolution {
 
-
 struct Resolver;
 
 std::tuple<CallInfo, CallScopeInfo>
@@ -42,7 +41,6 @@ setupCallForCopyOrMove(Resolver& resolver,
 /* Add calls to default init, copy init, deinit, etc to the Resolver's
    results after analyzing for split-init and copy-elision. */
 void callInitDeinit(Resolver& resolver);
-
 
 } // end namespace resolution
 } // end namespace chpl

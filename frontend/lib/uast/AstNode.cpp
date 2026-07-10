@@ -20,7 +20,6 @@
 #include "chpl/uast/all-uast.h"
 #include "chpl/uast/AstNode.h"
 
-
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Conditional.h"
@@ -34,7 +33,6 @@
 
 namespace chpl {
 namespace uast {
-
 
 bool AstNode::hasPragma(Context* context, pragmatags::PragmaTag p) const {
   if (auto& id = this->id()) {
@@ -54,8 +52,7 @@ bool AstNode::hasAttribute(Context* context, UniqueString attributeName) const {
   return false;
 }
 
-void AstNode::dumpFieldsInner(const DumpSettings& s) const {
-}
+void AstNode::dumpFieldsInner(const DumpSettings& s) const {}
 
 std::string AstNode::dumpChildLabelInner(int i) const {
   if (i == attributeGroupChildNum_) {
@@ -65,27 +62,24 @@ std::string AstNode::dumpChildLabelInner(int i) const {
   return "";
 }
 
-AstNode::~AstNode() {
-}
+AstNode::~AstNode() {}
 
 bool AstNode::isLeaf() const {
   bool ret = false;
   switch (this->tag()) {
-  #define AST_NODE(NAME__)
-  #define AST_BEGIN_SUBCLASSES(NAME__)
-  #define AST_END_SUBCLASSES(NAME__)
-  #define AST_LEAF(NAME__) \
-    case asttags::NAME__: \
-      ret = true; \
-      break;
-    #include "chpl/uast/uast-classes-list.h"
+#define AST_NODE(NAME__)
+#define AST_BEGIN_SUBCLASSES(NAME__)
+#define AST_END_SUBCLASSES(NAME__)
+#define AST_LEAF(NAME__)                   \
+  case asttags::NAME__: ret = true; break;
+#include "chpl/uast/uast-classes-list.h"
     AST_NODE(NUM_AST_TAGS)
     AST_NODE(AST_TAG_UNKNOWN)
     default: break;
-  #undef AST_NODE
-  #undef AST_BEGIN_SUBCLASSES
-  #undef AST_END_SUBCLASSES
-  #undef AST_LEAF
+#undef AST_NODE
+#undef AST_BEGIN_SUBCLASSES
+#undef AST_END_SUBCLASSES
+#undef AST_LEAF
   }
 
   if (ret) {
@@ -160,8 +154,7 @@ bool AstNode::mayContainStatements(AstTag tag) {
     case asttags::VarArgFormal:
     case asttags::Variable:
     case asttags::END_VarLikeDecl:
-    case asttags::Enum:
-      return false;
+    case asttags::Enum: return false;
 
     // can contain statements
     case asttags::Catch:
@@ -206,15 +199,14 @@ bool AstNode::mayContainStatements(AstTag tag) {
     case asttags::END_AggregateDecl:
     case asttags::END_Decl:
     case asttags::END_NamedDecl:
-    case asttags::END_TypeDecl:
-      return true;
+    case asttags::END_TypeDecl: return true;
 
     // implementation details
     case asttags::NUM_AST_TAGS:
     case asttags::AST_TAG_UNKNOWN:
       return true;
 
-    // no default to get compiler warning if any are added
+      // no default to get compiler warning if any are added
   }
 
   CHPL_ASSERT(false && "should not be reachable");
@@ -286,15 +278,12 @@ bool AstNode::isInherentlyStatement() const {
     case asttags::VarArgFormal:
     case asttags::Variable:
     case asttags::END_VarLikeDecl:
-    case asttags::Enum:
-      return false;
+    case asttags::Enum: return false;
 
     // might be a statement and might be an expr
-    case asttags::Conditional:
-      return !toConditional()->isExpressionLevel();
+    case asttags::Conditional: return !toConditional()->isExpressionLevel();
 
-    case asttags::Try:
-      return !toTry()->isExpressionLevel();
+    case asttags::Try: return !toTry()->isExpressionLevel();
 
     case asttags::START_IndexableLoop:
     case asttags::BracketLoop:
@@ -339,33 +328,28 @@ bool AstNode::isInherentlyStatement() const {
     case asttags::END_AggregateDecl:
     case asttags::END_Decl:
     case asttags::END_NamedDecl:
-    case asttags::END_TypeDecl:
-      return true;
+    case asttags::END_TypeDecl: return true;
 
     // implementation details
     case asttags::NUM_AST_TAGS:
     case asttags::AST_TAG_UNKNOWN:
       return true;
 
-    // no default to get compiler warning if any are added
+      // no default to get compiler warning if any are added
   }
 
   CHPL_ASSERT(false && "should not be reachable");
   return true;
 }
 
-
 bool AstNode::shallowMatch(const AstNode* other) const {
   const AstNode* lhs = this;
   const AstNode* rhs = other;
-  if (lhs->tag() != rhs->tag())
-    return false;
-  if (lhs->id().symbolPath() != rhs->id().symbolPath())
-    return false;
+  if (lhs->tag() != rhs->tag()) return false;
+  if (lhs->id().symbolPath() != rhs->id().symbolPath()) return false;
   if (lhs->attributeGroupChildNum() != rhs->attributeGroupChildNum())
     return false;
-  if (!lhs->contentsMatchInner(rhs))
-    return false;
+  if (!lhs->contentsMatchInner(rhs)) return false;
 
   return true;
 }
@@ -463,8 +447,7 @@ static std::string getIdStr(const AstNode* ast) {
 
 static void dumpMaxIdLen(const AstNode* ast, int& maxIdLen) {
   std::string idStr = getIdStr(ast);
-  if ((int) idStr.length() > maxIdLen)
-    maxIdLen = idStr.length();
+  if ((int)idStr.length() > maxIdLen) maxIdLen = idStr.length();
 
   if (ast != nullptr) {
     for (const AstNode* child : ast->children()) {
@@ -527,7 +510,7 @@ void AstNode::dumpHelper(const DumpSettings& s,
   int i = 0;
   for (const AstNode* child : ast->children()) {
     if (child != nullptr) {
-      dumpHelper(s, child, indent+1, ast, i);
+      dumpHelper(s, child, indent + 1, ast, i);
     } else {
       s.out << "nullptr";
     }
@@ -537,8 +520,7 @@ void AstNode::dumpHelper(const DumpSettings& s,
   return;
 }
 
-void AstNode::stringify(std::ostream& ss,
-                        StringifyKind stringKind) const {
+void AstNode::stringify(std::ostream& ss, StringifyKind stringKind) const {
 
   switch (stringKind) {
     case StringifyKind::CHPL_SYNTAX:
@@ -549,17 +531,15 @@ void AstNode::stringify(std::ostream& ss,
       // just print the ID
       this->id().stringify(ss, stringKind);
       break;
-    case StringifyKind::DEBUG_DETAIL:
-      {
-        auto s = DumpSettings(ss);
-        s.kind = stringKind;
-        s.printId = true;
-        // compute the maximum id width so it's a nice column
-        int maxIdLen = computeMaxIdStringWidth();
-        s.idWidth = maxIdLen;
-        dumpHelper(s, this, 0, /*parent*/ nullptr, /*parentIdx*/NO_CHILD);
-      }
-      break;
+    case StringifyKind::DEBUG_DETAIL: {
+      auto s = DumpSettings(ss);
+      s.kind = stringKind;
+      s.printId = true;
+      // compute the maximum id width so it's a nice column
+      int maxIdLen = computeMaxIdStringWidth();
+      s.idWidth = maxIdLen;
+      dumpHelper(s, this, 0, /*parent*/ nullptr, /*parentIdx*/ NO_CHILD);
+    } break;
   }
 }
 
@@ -573,8 +553,7 @@ void AstNode::serialize(Serializer& ser) const {
   ser.endAst(this);
 }
 
-AstNode::AstNode(AstTag tag, Deserializer& des)
-  : tag_(tag) {
+AstNode::AstNode(AstTag tag, Deserializer& des) : tag_(tag) {
   // Note: Assumes that the tag was already deserialized in order to invoke
   // the correct class' deserializer.
   attributeGroupChildNum_ = des.readVInt();
@@ -626,54 +605,51 @@ owned<AstNode> AstNode::deserializeWithoutIds(Deserializer& des) {
   // Finally, deserialize the children with deserializeChildren.
 
   switch (tag) {
-    #define CASE_LEAF(NAME) \
-      case asttags::NAME: \
-      { \
-        auto ret = toOwned(new NAME(des)); \
-        des.registerAst(ret.get(), pos); \
-        ret->deserializeChildren(des); \
-        return ret; \
-      }
+#define CASE_LEAF(NAME)                \
+  case asttags::NAME: {                \
+    auto ret = toOwned(new NAME(des)); \
+    des.registerAst(ret.get(), pos);   \
+    ret->deserializeChildren(des);     \
+    return ret;                        \
+  }
 
-    #define CASE_NODE(NAME) \
-      case asttags::NAME: \
-      { \
-        auto ret = toOwned(new NAME(des)); \
-        des.registerAst(ret.get(), pos); \
-        ret->deserializeChildren(des); \
-        return ret; \
-      }
+#define CASE_NODE(NAME)                \
+  case asttags::NAME: {                \
+    auto ret = toOwned(new NAME(des)); \
+    des.registerAst(ret.get(), pos);   \
+    ret->deserializeChildren(des);     \
+    return ret;                        \
+  }
 
-    #define CASE_OTHER(NAME) \
-      case asttags::NAME: \
-      { \
-        assert(false && "this code should never be run"); \
-        break; \
-      }
+#define CASE_OTHER(NAME)                              \
+  case asttags::NAME: {                               \
+    assert(false && "this code should never be run"); \
+    break;                                            \
+  }
 
-    #define AST_NODE(NAME) CASE_NODE(NAME)
-    #define AST_LEAF(NAME) CASE_LEAF(NAME)
-    #define AST_BEGIN_SUBCLASSES(NAME) CASE_OTHER(START_##NAME)
-    #define AST_END_SUBCLASSES(NAME) CASE_OTHER(END_##NAME)
+#define AST_NODE(NAME)             CASE_NODE(NAME)
+#define AST_LEAF(NAME)             CASE_LEAF(NAME)
+#define AST_BEGIN_SUBCLASSES(NAME) CASE_OTHER(START_##NAME)
+#define AST_END_SUBCLASSES(NAME)   CASE_OTHER(END_##NAME)
 
-    // Apply the above macros to uast-classes-list.h
-    // to fill in the cases
-    #include "chpl/uast/uast-classes-list.h"
+// Apply the above macros to uast-classes-list.h
+// to fill in the cases
+#include "chpl/uast/uast-classes-list.h"
     // and also for NUM_AST_TAGS
     CASE_OTHER(NUM_AST_TAGS)
     CASE_OTHER(AST_TAG_UNKNOWN)
 
-    // clear the macros
-    #undef AST_NODE
-    #undef AST_LEAF
-    #undef AST_BEGIN_SUBCLASSES
-    #undef AST_END_SUBCLASSES
-    #undef CASE_LEAF
-    #undef CASE_NODE
-    #undef CASE_OTHER
+// clear the macros
+#undef AST_NODE
+#undef AST_LEAF
+#undef AST_BEGIN_SUBCLASSES
+#undef AST_END_SUBCLASSES
+#undef CASE_LEAF
+#undef CASE_NODE
+#undef CASE_OTHER
   }
 
-  assert(false && "this code should never be run"); \
+  assert(false && "this code should never be run");
 
   owned<AstNode> ret = nullptr;
   return ret;
@@ -681,56 +657,53 @@ owned<AstNode> AstNode::deserializeWithoutIds(Deserializer& des) {
 
 owned<AstNode> AstNode::copy() const {
   switch (this->tag()) {
-    #define CASE_LEAF(NAME) \
-      case asttags::NAME: \
-      { \
-        const NAME* casted = (const NAME*) this; \
-        auto ret = toOwned(new NAME(*casted)); \
-        ret->setID(ID()); \
-        return ret; \
-        break; \
-      }
+#define CASE_LEAF(NAME)                     \
+  case asttags::NAME: {                     \
+    const NAME* casted = (const NAME*)this; \
+    auto ret = toOwned(new NAME(*casted));  \
+    ret->setID(ID());                       \
+    return ret;                             \
+    break;                                  \
+  }
 
-    #define CASE_NODE(NAME) \
-      case asttags::NAME: \
-      { \
-        const NAME* casted = (const NAME*) this; \
-        auto ret = toOwned(new NAME(*casted)); \
-        ret->setID(ID()); \
-        for (auto& child : ret->children_) { \
-          child = child->copy(); \
-        } \
-        return ret; \
-        break; \
-      }
+#define CASE_NODE(NAME)                     \
+  case asttags::NAME: {                     \
+    const NAME* casted = (const NAME*)this; \
+    auto ret = toOwned(new NAME(*casted));  \
+    ret->setID(ID());                       \
+    for (auto& child : ret->children_) {    \
+      child = child->copy();                \
+    }                                       \
+    return ret;                             \
+    break;                                  \
+  }
 
-    #define CASE_OTHER(NAME) \
-      case asttags::NAME: \
-      { \
-        CHPL_ASSERT(false && "this code should never be run"); \
-        break; \
-      }
+#define CASE_OTHER(NAME)                                   \
+  case asttags::NAME: {                                    \
+    CHPL_ASSERT(false && "this code should never be run"); \
+    break;                                                 \
+  }
 
-    #define AST_NODE(NAME) CASE_NODE(NAME)
-    #define AST_LEAF(NAME) CASE_LEAF(NAME)
-    #define AST_BEGIN_SUBCLASSES(NAME) CASE_OTHER(START_##NAME)
-    #define AST_END_SUBCLASSES(NAME) CASE_OTHER(END_##NAME)
+#define AST_NODE(NAME)             CASE_NODE(NAME)
+#define AST_LEAF(NAME)             CASE_LEAF(NAME)
+#define AST_BEGIN_SUBCLASSES(NAME) CASE_OTHER(START_##NAME)
+#define AST_END_SUBCLASSES(NAME)   CASE_OTHER(END_##NAME)
 
-    // Apply the above macros to uast-classes-list.h
-    // to fill in the cases
-    #include "chpl/uast/uast-classes-list.h"
+// Apply the above macros to uast-classes-list.h
+// to fill in the cases
+#include "chpl/uast/uast-classes-list.h"
     // and also for NUM_AST_TAGS
     CASE_OTHER(NUM_AST_TAGS)
     CASE_OTHER(AST_TAG_UNKNOWN)
 
-    // clear the macros
-    #undef AST_NODE
-    #undef AST_LEAF
-    #undef AST_BEGIN_SUBCLASSES
-    #undef AST_END_SUBCLASSES
-    #undef CASE_LEAF
-    #undef CASE_NODE
-    #undef CASE_OTHER
+// clear the macros
+#undef AST_NODE
+#undef AST_LEAF
+#undef AST_BEGIN_SUBCLASSES
+#undef AST_END_SUBCLASSES
+#undef CASE_LEAF
+#undef CASE_NODE
+#undef CASE_OTHER
   }
 
   owned<AstNode> ret;

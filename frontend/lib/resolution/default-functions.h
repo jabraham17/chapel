@@ -24,11 +24,10 @@
 
 namespace chpl {
 namespace types {
-  class CompositeType;
-  class Type;
+class CompositeType;
+class Type;
 }
 namespace resolution {
-
 
 /**
   Computes a field accessor
@@ -42,8 +41,10 @@ const TypedFnSignature* fieldAccessor(Context* context,
   determine if the type needs a method with such a name to be
   generated for it.
 */
-bool needCompilerGeneratedMethod(Context* context, const types::Type* type,
-                                 UniqueString name, bool parenless);
+bool needCompilerGeneratedMethod(Context* context,
+                                 const types::Type* type,
+                                 UniqueString name,
+                                 bool parenless);
 
 /**
   Same as getCompilerGeneratedMethod, but for operators. Here, we are more
@@ -66,7 +67,8 @@ bool needCompilerGeneratedBinaryOp(Context* context,
 const TypedFnSignature*
 getCompilerGeneratedMethod(ResolutionContext* rc,
                            const types::QualifiedType receiverType,
-                           UniqueString name, bool parenless);
+                           UniqueString name,
+                           bool parenless);
 
 /**
   Given the name of a binary operation and the types of its operands,
@@ -89,14 +91,14 @@ getCompilerGeneratedBinaryOp(ResolutionContext* rc,
   be deduced from the type of the receiver itself; inspecting all arguments
   to the call is necessary.
 */
-const TypedFnSignature*
-getCompilerGeneratedFunction(ResolutionContext* context,
-                             const CallInfo& ci);
+const TypedFnSignature* getCompilerGeneratedFunction(ResolutionContext* context,
+                                                     const CallInfo& ci);
 
 const uast::BuilderResult& buildInitializer(Context* context, ID typeID);
 const uast::BuilderResult& buildInitEquals(Context* context, ID typeID);
 const uast::BuilderResult& buildRecordComparison(Context* context, ID typeID);
-const uast::BuilderResult& buildRecordInequalityComparison(Context* context, ID typeID);
+const uast::BuilderResult& buildRecordInequalityComparison(Context* context,
+                                                           ID typeID);
 const uast::BuilderResult& buildRecordCompareLt(Context* context, ID typeID);
 const uast::BuilderResult& buildRecordCompareLe(Context* context, ID typeID);
 const uast::BuilderResult& buildRecordCompareGt(Context* context, ID typeID);
@@ -105,13 +107,18 @@ const uast::BuilderResult& buildRecordAssign(Context* context, ID typeID);
 const uast::BuilderResult& buildRecordHash(Context* context, ID typeID);
 const uast::BuilderResult& buildTypeConstructor(Context* context, ID typeID);
 const uast::BuilderResult& buildDeinit(Context* context, ID typeID);
-const uast::BuilderResult& buildDeSerialize(Context* context, ID typeID, bool isSerializer);
+const uast::BuilderResult&
+buildDeSerialize(Context* context, ID typeID, bool isSerializer);
 const uast::BuilderResult& buildEnumToOrder(Context* context, ID typeID);
-const uast::BuilderResult& buildEnumToStringCastImpl(Context* context, ID typeID, int overloadIdx);
-const uast::BuilderResult& buildEnumToBytesCastImpl(Context* context, ID typeID, int overloadIdx);
+const uast::BuilderResult&
+buildEnumToStringCastImpl(Context* context, ID typeID, int overloadIdx);
+const uast::BuilderResult&
+buildEnumToBytesCastImpl(Context* context, ID typeID, int overloadIdx);
 const uast::BuilderResult& buildOrderToEnum(Context* context, ID typeID);
-const uast::BuilderResult& buildStringToEnumCastImpl(Context* context, ID typeID, int overloadIdx);
-const uast::BuilderResult& buildBytesToEnumCastImpl(Context* context, ID typeID, int overloadIdx);
+const uast::BuilderResult&
+buildStringToEnumCastImpl(Context* context, ID typeID, int overloadIdx);
+const uast::BuilderResult&
+buildBytesToEnumCastImpl(Context* context, ID typeID, int overloadIdx);
 
 } // end namespace resolution
 } // end namespace chpl

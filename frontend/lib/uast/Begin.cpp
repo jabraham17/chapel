@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 std::string Begin::dumpChildLabelInner(int i) const {
   if (withClauseChildNum_ >= 0 && i == withClauseChildNum_) {
     return "with";
@@ -53,13 +52,11 @@ owned<Begin> Begin::build(Builder* builder,
     lst.push_back(std::move(stmt));
   }
 
-  Begin* ret = new Begin(std::move(lst), withClauseChildNum, blockStyle,
-                         bodyChildNum,
-                         numBodyStmts);
+  Begin* ret = new Begin(
+    std::move(lst), withClauseChildNum, blockStyle, bodyChildNum, numBodyStmts);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

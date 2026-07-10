@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 owned<Block> Block::build(Builder* builder, Location loc, AstList stmts) {
   const int bodyChildNum = 0;
   const int numBodyStmts = stmts.size();
@@ -33,7 +32,6 @@ owned<Block> Block::build(Builder* builder, Location loc, AstList stmts) {
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

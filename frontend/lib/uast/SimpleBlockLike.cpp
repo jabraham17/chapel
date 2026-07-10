@@ -24,10 +24,7 @@
 namespace chpl {
 namespace uast {
 
-
-SimpleBlockLike::~SimpleBlockLike() {
-}
-
+SimpleBlockLike::~SimpleBlockLike() {}
 
 } // namespace uast
 } // namespace chpl

@@ -24,21 +24,26 @@
 namespace chpl {
 namespace uast {
 
-
-owned<ForwardingDecl> ForwardingDecl::build(Builder* builder, Location loc,
-                                            owned<AttributeGroup> attributeGroup,
-                                            owned<AstNode> expr) {
+owned<ForwardingDecl>
+ForwardingDecl::build(Builder* builder,
+                      Location loc,
+                      owned<AttributeGroup> attributeGroup,
+                      owned<AstNode> expr) {
   CHPL_ASSERT(expr.get() != nullptr);
 
-  return ForwardingDecl::build(builder, loc, std::move(attributeGroup),
+  return ForwardingDecl::build(builder,
+                               loc,
+                               std::move(attributeGroup),
                                std::move(expr),
                                Decl::DEFAULT_VISIBILITY);
 }
 
-owned<ForwardingDecl> ForwardingDecl::build(Builder* builder, Location loc,
-                                            owned<AttributeGroup> attributeGroup,
-                                            owned<AstNode> expr,
-                                            Decl::Visibility visibility) {
+owned<ForwardingDecl>
+ForwardingDecl::build(Builder* builder,
+                      Location loc,
+                      owned<AttributeGroup> attributeGroup,
+                      owned<AstNode> expr,
+                      Decl::Visibility visibility) {
   CHPL_ASSERT(expr.get() != nullptr);
   int attributeGroupChildNum = NO_CHILD;
   AstList lst;
@@ -52,13 +57,11 @@ owned<ForwardingDecl> ForwardingDecl::build(Builder* builder, Location loc,
   // store the child node
   lst.push_back(std::move(expr));
 
-  ForwardingDecl* ret = new ForwardingDecl(std::move(lst),
-                                           visibility,
-                                           attributeGroupChildNum);
+  ForwardingDecl* ret =
+    new ForwardingDecl(std::move(lst), visibility, attributeGroupChildNum);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

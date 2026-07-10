@@ -26,23 +26,13 @@ namespace chpl {
 
 extern const char* GIT_SHA;
 
-const char* getCommitHash() {
-  return GIT_SHA;
-}
+const char* getCommitHash() { return GIT_SHA; }
 
-int getMajorVersion() {
-  return CHPL_COMPILER_LIB_VERSION_MAJOR;
-}
-int getMinorVersion() {
-  return CHPL_COMPILER_LIB_VERSION_MINOR;
-}
-int getUpdateVersion() {
-  return CHPL_COMPILER_LIB_VERSION_PATCH;
-}
+int getMajorVersion() { return CHPL_COMPILER_LIB_VERSION_MAJOR; }
+int getMinorVersion() { return CHPL_COMPILER_LIB_VERSION_MINOR; }
+int getUpdateVersion() { return CHPL_COMPILER_LIB_VERSION_PATCH; }
 
-const char* getConfiguredPrefix() {
-  return CHPL_CONFIGURED_PREFIX;
-}
+const char* getConfiguredPrefix() { return CHPL_CONFIGURED_PREFIX; }
 
 std::string getMajorMinorVersion() {
   std::string version = std::to_string(getMajorVersion());
@@ -71,9 +61,6 @@ std::string getVersion() {
   return ret;
 }
 
-bool getIsOfficialRelease() {
-  return CHPL_OFFICIAL_RELEASE;
-}
-
+bool getIsOfficialRelease() { return CHPL_OFFICIAL_RELEASE; }
 
 } // namespace chpl

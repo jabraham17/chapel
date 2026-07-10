@@ -24,8 +24,8 @@
 namespace chpl {
 namespace uast {
 
-
-owned<BracketLoop> BracketLoop::build(Builder* builder, Location loc,
+owned<BracketLoop> BracketLoop::build(Builder* builder,
+                                      Location loc,
                                       owned<Decl> index,
                                       owned<AstNode> iterand,
                                       owned<WithClause> withClause,
@@ -66,7 +66,8 @@ owned<BracketLoop> BracketLoop::build(Builder* builder, Location loc,
   const int loopBodyChildNum = lst.size();
   lst.push_back(std::move(body));
 
-  BracketLoop* ret = new BracketLoop(std::move(lst), indexChildNum,
+  BracketLoop* ret = new BracketLoop(std::move(lst),
+                                     indexChildNum,
                                      iterandChildNum,
                                      withClauseChildNum,
                                      blockStyle,
@@ -85,7 +86,6 @@ bool BracketLoop::isMaybeArrayType() const {
   if (index() && stmt(0)->isConditional()) return false;
   return true;
 }
-
 
 } // namespace uast
 } // namespace chpl

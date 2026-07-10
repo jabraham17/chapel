@@ -24,8 +24,8 @@
 namespace chpl {
 namespace uast {
 
-
-owned<Union> Union::build(Builder* builder, Location loc,
+owned<Union> Union::build(Builder* builder,
+                          Location loc,
                           owned<AttributeGroup> attributeGroup,
                           Decl::Visibility vis,
                           Decl::Linkage linkage,
@@ -64,7 +64,9 @@ owned<Union> Union::build(Builder* builder, Location loc,
     lst.push_back(std::move(ast));
   }
 
-  Union* ret = new Union(std::move(lst), attributeGroupChildNum, vis,
+  Union* ret = new Union(std::move(lst),
+                         attributeGroupChildNum,
+                         vis,
                          linkage,
                          linkageNameChildNum,
                          name,
@@ -75,7 +77,6 @@ owned<Union> Union::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

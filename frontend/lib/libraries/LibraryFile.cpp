@@ -40,14 +40,13 @@
 namespace chpl {
 namespace libraries {
 
-
 std::pair<size_t, const char*>
 LibraryFileDeserializationHelper::getString(int id) const {
   if (0 < id && id < nStrings) {
     uint64_t offset = stringOffsetsTable[id];
-    uint64_t nextOffset = stringOffsetsTable[id+1];
-    return std::make_pair(nextOffset-offset,
-                          (const char*) (stringSectionData + offset));
+    uint64_t nextOffset = stringOffsetsTable[id + 1];
+    return std::make_pair(nextOffset - offset,
+                          (const char*)(stringSectionData + offset));
   } else {
     return std::make_pair(0, nullptr);
   }
@@ -61,82 +60,83 @@ void LibraryFileDeserializationHelper::registerAst(const uast::AstNode* ast,
   }
 }
 
-
 void LibraryFile::LocationMaps::clear() {
   astToLocation.clear();
 
-  #define LOCATION_MAP(ast__, location__) { \
-      auto& m = CHPL_ID_LOC_MAP(ast__, location__); \
-      m.clear(); \
-    }
-  #include "chpl/uast/all-location-maps.h"
-  #undef LOCATION_MAP
+#define LOCATION_MAP(ast__, location__)           \
+  {                                               \
+    auto& m = CHPL_ID_LOC_MAP(ast__, location__); \
+    m.clear();                                    \
+  }
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
 }
 
 const LibraryFile::LocationMaps::MapType*
 LibraryFile::LocationMaps::getLocationMap(int tag) const {
   switch (tag) {
 
-    case (int) uast::BuilderResult::LocationMapTag::BaseMap:
+    case (int)uast::BuilderResult::LocationMapTag::BaseMap:
       return &astToLocation;
 
-    #define LOCATION_MAP(ast__, location__) \
-      case (int) uast::BuilderResult::LocationMapTag::location__: \
-        return &CHPL_ID_LOC_MAP(ast__, location__); \
+#define LOCATION_MAP(ast__, location__)                      \
+  case (int)uast::BuilderResult::LocationMapTag::location__: \
+    return &CHPL_ID_LOC_MAP(ast__, location__);
 
-    #include "chpl/uast/all-location-maps.h"
-    #undef LOCATION_MAP
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
 
-    default:
-      return nullptr;
+    default: return nullptr;
   }
 
   return nullptr;
 }
 LibraryFile::LocationMaps::MapType*
 LibraryFile::LocationMaps::getLocationMap(int tag) {
-   return const_cast<MapType*>(
-       const_cast<const LocationMaps*>(this)->getLocationMap(tag));
+  return const_cast<MapType*>(
+    const_cast<const LocationMaps*>(this)->getLocationMap(tag));
 }
 
 void LibraryFile::LocationMaps::swap(LocationMaps& other) {
   astToLocation.swap(other.astToLocation);
 
-  #define LOCATION_MAP(ast__, location__) { \
-    auto& m1 = CHPL_ID_LOC_MAP(ast__, location__); \
+#define LOCATION_MAP(ast__, location__)                  \
+  {                                                      \
+    auto& m1 = CHPL_ID_LOC_MAP(ast__, location__);       \
     auto& m2 = other.CHPL_ID_LOC_MAP(ast__, location__); \
-    m1.swap(m2); \
+    m1.swap(m2);                                         \
   }
-  #include "chpl/uast/all-location-maps.h"
-  #undef LOCATION_MAP
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
 }
 bool LibraryFile::LocationMaps::update(LocationMaps& keep,
                                        LocationMaps& addin) {
   bool changed = false;
   changed |= defaultUpdate(keep.astToLocation, addin.astToLocation);
 
-  #define LOCATION_MAP(ast__, location__) { \
-    auto& m1 = keep.CHPL_ID_LOC_MAP(ast__, location__); \
+#define LOCATION_MAP(ast__, location__)                  \
+  {                                                      \
+    auto& m1 = keep.CHPL_ID_LOC_MAP(ast__, location__);  \
     auto& m2 = addin.CHPL_ID_LOC_MAP(ast__, location__); \
-    changed |= defaultUpdate(m1, m2); \
+    changed |= defaultUpdate(m1, m2);                    \
   }
-  #include "chpl/uast/all-location-maps.h"
-  #undef LOCATION_MAP
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
 
   return changed;
 }
 void LibraryFile::LocationMaps::mark(Context* context) const {
-  #define LOCATION_MAP(ast__, location__) { \
+#define LOCATION_MAP(ast__, location__)           \
+  {                                               \
     auto& m = CHPL_ID_LOC_MAP(ast__, location__); \
-    for (const auto& p : m) { \
-      context->markPointer(p.first); \
-      p.second.mark(context); \
-    } \
+    for (const auto& p : m) {                     \
+      context->markPointer(p.first);              \
+      p.second.mark(context);                     \
+    }                                             \
   }
-  #include "chpl/uast/all-location-maps.h"
-  #undef LOCATION_MAP
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
 }
-
 
 LibraryFile::~LibraryFile() {
   if (mappedFile) delete mappedFile;
@@ -161,35 +161,35 @@ std::error_code LibraryFile::openAndMap() {
 
   // memory map the file
   auto mode = llvm::sys::fs::mapped_file_region::readonly;
-  mappedFile =
-    new llvm::sys::fs::mapped_file_region(fd, mode, fileSize, /* offset */ 0,
-                                          err);
+  mappedFile = new llvm::sys::fs::mapped_file_region(
+    fd, mode, fileSize, /* offset */ 0, err);
   if (err) return err;
 
   fileLen = fileSize;
-  fileData = (const unsigned char*) mappedFile->const_data();
+  fileData = (const unsigned char*)mappedFile->const_data();
 
   // if we get here, return the no-error error code
   return std::error_code();
 }
 
-
 bool LibraryFile::readHeaders(Context* context) {
   std::error_code err = openAndMap();
   if (err) {
-    context->error(Location(), "Could not open file %s: %s",
-                   libPath.c_str(), err.message().c_str());
+    context->error(Location(),
+                   "Could not open file %s: %s",
+                   libPath.c_str(),
+                   err.message().c_str());
     return false;
   }
 
-  if (fd < 0 || fileLen < sizeof(FileHeader) ||
-      fileData == nullptr || fileData == (unsigned char*) -1) {
+  if (fd < 0 || fileLen < sizeof(FileHeader) || fileData == nullptr ||
+      fileData == (unsigned char*)-1) {
     // note: mmap can return -1 as a pointer upon failure
     context->error(Location(), "Could not read file %s", libPath.c_str());
   }
 
   // inspect the file header
-  const FileHeader* header = (const FileHeader*) fileData;
+  const FileHeader* header = (const FileHeader*)fileData;
 
   if (header->magic != FILE_HEADER_MAGIC) {
     invalidFileError(context);
@@ -202,7 +202,7 @@ bool LibraryFile::readHeaders(Context* context) {
   uint32_t nModules = header->nModules;
 
   if (nModules >= MAX_NUM_MODULES ||
-      sizeof(FileHeader) + (nModules+1)*sizeof(uint64_t) > fileLen) {
+      sizeof(FileHeader) + (nModules + 1) * sizeof(uint64_t) > fileLen) {
     invalidFileError(context);
     return false;
   }
@@ -210,10 +210,10 @@ bool LibraryFile::readHeaders(Context* context) {
   // populate modulePathToSection and moduleIdsAndFilePaths
   // module offsets are stored just after the file header
   const uint64_t* moduleOffsets =
-    (const uint64_t*) (fileData + sizeof(FileHeader));
+    (const uint64_t*)(fileData + sizeof(FileHeader));
   for (uint32_t i = 0; i < nModules; i++) {
     uint64_t offset = moduleOffsets[i];
-    uint64_t nextOffset = moduleOffsets[i+1];
+    uint64_t nextOffset = moduleOffsets[i + 1];
     uint64_t modLen = nextOffset - offset;
 
     if (nextOffset > fileLen || nextOffset < offset) {
@@ -221,7 +221,7 @@ bool LibraryFile::readHeaders(Context* context) {
       return false;
     }
 
-    const ModuleHeader* mod = (const ModuleHeader*) (fileData + offset);
+    const ModuleHeader* mod = (const ModuleHeader*)(fileData + offset);
 
     if (mod->magic != MODULE_SECTION_MAGIC ||
         mod->symbolTable.start + sizeof(SymbolTableHeader) > modLen ||
@@ -263,7 +263,7 @@ bool LibraryFile::readHeaders(Context* context) {
     modules.push_back(std::move(info));
 
     // and update the map to store the appropriate index
-    moduleSymPathToIdx[info.moduleSymPath] = modules.size()-1;
+    moduleSymPathToIdx[info.moduleSymPath] = modules.size() - 1;
   }
 
   return true;
@@ -291,7 +291,7 @@ bool LibraryFile::readModuleSection(Context* context,
                                     UniqueString moduleSymPath,
                                     ModuleSection& mod) const {
 
-  const ModuleHeader* modHdr = (const ModuleHeader*) (fileData + r.start);
+  const ModuleHeader* modHdr = (const ModuleHeader*)(fileData + r.start);
   // from the module header, find the longStringsTable offset
   // and the symbol table offset
   Region symTable = modHdr->symbolTable;
@@ -304,8 +304,8 @@ bool LibraryFile::readModuleSection(Context* context,
   uint64_t locSectionLen = locations.end - locations.start;
   Region genCodeSection = modHdr->genCodeSection;
   uint64_t genCodeSectionLen = genCodeSection.end - genCodeSection.start;
-  if (modHdr->magic != MODULE_SECTION_MAGIC ||
-      r.start > fileLen || r.end > fileLen || r.start >= r.end ||
+  if (modHdr->magic != MODULE_SECTION_MAGIC || r.start > fileLen ||
+      r.end > fileLen || r.start >= r.end ||
       r.start + symTable.start + sizeof(SymbolTableHeader) > r.end ||
       r.start + symTable.end > r.end ||
       r.start + astSection.start + sizeof(AstSectionHeader) > r.end ||
@@ -321,18 +321,18 @@ bool LibraryFile::readModuleSection(Context* context,
   }
 
   const SymbolTableHeader* symTableHeader =
-    (const SymbolTableHeader*) (fileData + r.start + symTable.start);
+    (const SymbolTableHeader*)(fileData + r.start + symTable.start);
 
-  size_t symMinSize = symTableHeader->nEntries*sizeof(SymbolTableEntry);
+  size_t symMinSize = symTableHeader->nEntries * sizeof(SymbolTableEntry);
   if (symTableHeader->magic != SYMBOL_TABLE_MAGIC ||
       symTable.start + symMinSize > symTable.end ||
-      symTableHeader->nEntries >= MAX_NUM_SYMBOLS ) {
+      symTableHeader->nEntries >= MAX_NUM_SYMBOLS) {
     invalidFileError(context);
     return false;
   }
 
   const AstSectionHeader* astSectionHeader =
-    (const AstSectionHeader*) (fileData + r.start + astSection.start);
+    (const AstSectionHeader*)(fileData + r.start + astSection.start);
   if (astSectionHeader->magic != UAST_SECTION_MAGIC ||
       astSectionHeader->nEntries > MAX_NUM_ASTS) {
     invalidFileError(context);
@@ -340,9 +340,9 @@ bool LibraryFile::readModuleSection(Context* context,
   }
 
   const LongStringsTableHeader* strTableHeader =
-    (const LongStringsTableHeader*) (fileData + r.start + longStrings.start);
+    (const LongStringsTableHeader*)(fileData + r.start + longStrings.start);
 
-  size_t stringOffsetsSize = strTableHeader->nLongStrings*sizeof(uint64_t);
+  size_t stringOffsetsSize = strTableHeader->nLongStrings * sizeof(uint64_t);
   if (strTableHeader->magic != LONG_STRINGS_TABLE_MAGIC ||
       longStrings.start + stringOffsetsSize > longStrings.end) {
     invalidFileError(context);
@@ -350,7 +350,7 @@ bool LibraryFile::readModuleSection(Context* context,
   }
 
   const LocationSectionHeader* locHeader =
-    (const LocationSectionHeader*) (fileData + r.start + locations.start);
+    (const LocationSectionHeader*)(fileData + r.start + locations.start);
   if (locHeader->magic != LOCATION_SECTION_MAGIC ||
       locHeader->nFilePaths > MAX_NUM_FILES ||
       locHeader->nGroups > MAX_NUM_SYMBOLS) {
@@ -359,32 +359,32 @@ bool LibraryFile::readModuleSection(Context* context,
   }
 
   const GenCodeSectionHeader* genHeader =
-    (const GenCodeSectionHeader*) (fileData + r.start + genCodeSection.start);
+    (const GenCodeSectionHeader*)(fileData + r.start + genCodeSection.start);
   if (genHeader->magic != GEN_CODE_SECTION_MAGIC) {
     return false;
   }
 
-  mod.symbolTableData = (const unsigned char*) symTableHeader;
+  mod.symbolTableData = (const unsigned char*)symTableHeader;
   mod.symbolTableLen = symTableSectionLen;
 
-  mod.astSectionData = (const unsigned char*) astSectionHeader;
+  mod.astSectionData = (const unsigned char*)astSectionHeader;
   mod.astSectionLen = astSectionLen;
 
-  mod.stringSectionData = (const unsigned char*) (strTableHeader);
+  mod.stringSectionData = (const unsigned char*)(strTableHeader);
   mod.stringSectionLen = longStringsSectionLen;
 
-  mod.locationSectionData = (const unsigned char*) locHeader;
+  mod.locationSectionData = (const unsigned char*)locHeader;
   mod.locationSectionLen = locSectionLen;
 
-  mod.genCodeSectionData = (const unsigned char*) genHeader;
+  mod.genCodeSectionData = (const unsigned char*)genHeader;
   mod.genCodeSectionLen = genCodeSectionLen;
 
   mod.nStrings = strTableHeader->nLongStrings;
   // string offsets start just after the header
-  mod.stringOffsetsTable = (const uint32_t*) (strTableHeader+1);
+  mod.stringOffsetsTable = (const uint32_t*)(strTableHeader + 1);
 
   // LLVM IR data just after the header
-  mod.llvmIrData = (const unsigned char*)(genHeader+1);
+  mod.llvmIrData = (const unsigned char*)(genHeader + 1);
   mod.llvmIrDataLen = genCodeSectionLen - sizeof(GenCodeSectionHeader);
 
   LibraryFileDeserializationHelper helper = setupHelper(context, &mod);
@@ -415,19 +415,19 @@ bool LibraryFile::readModuleSection(Context* context,
       unsigned int nCommonPrefix = des.readVUint();
       // shorten lastSymId to the first nCommonPrefix bytes
       if (lastSymId.size() > nCommonPrefix) {
-        lastSymId.erase(nCommonPrefix, lastSymId.size()-nCommonPrefix);
+        lastSymId.erase(nCommonPrefix, lastSymId.size() - nCommonPrefix);
       }
       // read the variable-byte encoded suffix length
       unsigned int nSuffix = des.readVUint();
 
-      if (!des.checkStringLength(nCommonPrefix+nSuffix) ||
+      if (!des.checkStringLength(nCommonPrefix + nSuffix) ||
           !des.checkStringLengthAvailable(nSuffix)) {
         invalidFileError(context);
         return false;
       }
 
       // expand lastSymId to have room to store the suffix
-      lastSymId.resize(nCommonPrefix+nSuffix);
+      lastSymId.resize(nCommonPrefix + nSuffix);
       // read the string data
       des.readData(&lastSymId[nCommonPrefix], nSuffix);
     }
@@ -443,19 +443,19 @@ bool LibraryFile::readModuleSection(Context* context,
       unsigned int nCommonPrefix = des.readVUint();
       // shorten lastCname to the first nCommonPrefix bytes
       if (lastCname.size() > nCommonPrefix) {
-        lastCname.erase(nCommonPrefix, lastCname.size()-nCommonPrefix);
+        lastCname.erase(nCommonPrefix, lastCname.size() - nCommonPrefix);
       }
       // read the variable-byte encoded suffix length
       unsigned int nSuffix = des.readVUint();
 
-      if (!des.checkStringLength(nCommonPrefix+nSuffix) ||
+      if (!des.checkStringLength(nCommonPrefix + nSuffix) ||
           !des.checkStringLengthAvailable(nSuffix)) {
         invalidFileError(context);
         return false;
       }
 
       // expand lastCname to have room to store the suffix
-      lastCname.resize(nCommonPrefix+nSuffix);
+      lastCname.resize(nCommonPrefix + nSuffix);
       // read the string data
       des.readData(&lastCname[nCommonPrefix], nSuffix);
       // note the cname
@@ -478,13 +478,10 @@ bool LibraryFile::readModuleSection(Context* context,
     mod.symbols.push_back(info);
     mod.offsetToSymIdx[info.astOffset] = i;
 
-
     // check that the deserializer did not encounter an error
     // check that the SymbolTableEntry offsets are realistic
-    if (!des.ok() ||
-        info.symbolEntryOffset > symTableSectionLen ||
-        info.astOffset > astSectionLen ||
-        info.locationOffset > locSectionLen) {
+    if (!des.ok() || info.symbolEntryOffset > symTableSectionLen ||
+        info.astOffset > astSectionLen || info.locationOffset > locSectionLen) {
       invalidFileError(context);
       return false;
     }
@@ -493,21 +490,19 @@ bool LibraryFile::readModuleSection(Context* context,
   return true;
 }
 
-const owned<LibraryFile::ModuleSection>&
-LibraryFile::loadModuleSectionQuery(Context* context,
-                                    const LibraryFile* f,
-                                    int moduleIndex) {
+const owned<LibraryFile::ModuleSection>& LibraryFile::loadModuleSectionQuery(
+  Context* context, const LibraryFile* f, int moduleIndex) {
   QUERY_BEGIN(loadModuleSectionQuery, context, f, moduleIndex);
 
   owned<ModuleSection> result;
 
-  if (0 <= moduleIndex && (size_t) moduleIndex < f->modules.size()) {
+  if (0 <= moduleIndex && (size_t)moduleIndex < f->modules.size()) {
     // figure out which module
     const ModuleInfo& info = f->modules[moduleIndex];
     Region moduleRegion = info.moduleRegion;
     result = toOwned(new ModuleSection());
-    bool ok = f->readModuleSection(context, moduleRegion, info.moduleSymPath,
-                                   *result.get());
+    bool ok = f->readModuleSection(
+      context, moduleRegion, info.moduleSymPath, *result.get());
     if (!ok) {
       // should have already raised an error.
       // clear 'result' so we don't return a partial result.
@@ -544,7 +539,7 @@ bool LibraryFile::readModuleAst(Context* context,
                                 Region mod,
                                 LibraryFileDeserializationHelper& helper,
                                 uast::Builder& builder) const {
-  const ModuleHeader* modHdr = (const ModuleHeader*) (fileData + mod.start);
+  const ModuleHeader* modHdr = (const ModuleHeader*)(fileData + mod.start);
 
   if (modHdr->magic != MODULE_SECTION_MAGIC) {
     invalidFileError(context);
@@ -560,10 +555,9 @@ bool LibraryFile::readModuleAst(Context* context,
   }
 
   const AstSectionHeader* astHdr =
-    (const AstSectionHeader*) (fileData + mod.start + ast.start);
+    (const AstSectionHeader*)(fileData + mod.start + ast.start);
 
-  if (astHdr->magic != UAST_SECTION_MAGIC ||
-      astHdr->nEntries > MAX_NUM_ASTS) {
+  if (astHdr->magic != UAST_SECTION_MAGIC || astHdr->nEntries > MAX_NUM_ASTS) {
     invalidFileError(context);
     return false;
   }
@@ -585,10 +579,8 @@ bool LibraryFile::readModuleAst(Context* context,
   return true;
 }
 
-const uast::BuilderResult&
-LibraryFile::loadAstQuery(Context* context,
-                          const LibraryFile* f,
-                          UniqueString fromSourceFilePath) {
+const uast::BuilderResult& LibraryFile::loadAstQuery(
+  Context* context, const LibraryFile* f, UniqueString fromSourceFilePath) {
   QUERY_BEGIN(loadAstQuery, context, f, fromSourceFilePath);
 
   // The parentSymbolPath should be the same for all modules from
@@ -596,7 +588,7 @@ LibraryFile::loadAstQuery(Context* context,
   // within the same Builder or return them in the same BuilderResult).
   UniqueString parentSymbolPath;
   bool parentSymbolPathSet = false;
-  for (const auto& modInfo: f->modules) {
+  for (const auto& modInfo : f->modules) {
     if (modInfo.sourceFilePath == fromSourceFilePath) {
       auto locParentSymbolPath =
         ID::parentSymbolPath(context, modInfo.moduleSymPath);
@@ -607,16 +599,14 @@ LibraryFile::loadAstQuery(Context* context,
     }
   }
 
-  auto builder = uast::Builder::createForLibraryFileModule(context,
-                                                           f->libPath,
-                                                           parentSymbolPath,
-                                                           f);
+  auto builder = uast::Builder::createForLibraryFileModule(
+    context, f->libPath, parentSymbolPath, f);
 
   uast::Builder::SymbolTableVec combined;
 
   bool ok = true;
   int moduleIdx = 0;
-  for (const auto& modInfo: f->modules) {
+  for (const auto& modInfo : f->modules) {
     if (modInfo.sourceFilePath == fromSourceFilePath) {
       const ModuleSection* m = f->loadModuleSection(context, moduleIdx);
       if (m == nullptr) {
@@ -627,7 +617,7 @@ LibraryFile::loadAstQuery(Context* context,
       ok = f->readModuleAst(context, modInfo.moduleRegion, helper, *builder);
       if (!ok) break;
       // save the symbol table from the helper into the combined map
-      for (const auto& pair: helper.astToSymIdx) {
+      for (const auto& pair : helper.astToSymIdx) {
         uast::Builder::SymbolTableInfo info;
         info.ast = pair.first;
         info.moduleIndex = moduleIdx;
@@ -649,7 +639,6 @@ LibraryFile::loadAstQuery(Context* context,
 
   return QUERY_END(result);
 }
-
 
 bool LibraryFile::operator==(const LibraryFile& other) const {
   // Handle empty paths
@@ -675,9 +664,9 @@ bool LibraryFile::operator==(const LibraryFile& other) const {
 
 size_t LibraryFile::hash() {
   size_t total = 0;
-  size_t arr[HASH_SIZE/sizeof(size_t)];
+  size_t arr[HASH_SIZE / sizeof(size_t)];
   memcpy(&arr[0], &fileHash[0], sizeof(arr));
-  int n = HASH_SIZE/sizeof(size_t);
+  int n = HASH_SIZE / sizeof(size_t);
   for (int i = 0; i < n; i++) {
     total = hash_combine(total, arr[i]);
   }
@@ -685,9 +674,7 @@ size_t LibraryFile::hash() {
   return total;
 }
 
-void LibraryFile::mark(Context* context) const {
-  libPath.mark(context);
-}
+void LibraryFile::mark(Context* context) const { libPath.mark(context); }
 
 bool LibraryFile::update(owned<LibraryFile>& keep, owned<LibraryFile>& addin) {
   return defaultUpdateOwned(keep, addin);
@@ -718,7 +705,7 @@ std::vector<UniqueString> LibraryFile::containedFilePaths() const {
   }
 
   std::vector<UniqueString> ret;
-  for (auto path: paths) {
+  for (auto path : paths) {
     ret.push_back(path);
   }
 
@@ -728,17 +715,14 @@ std::vector<UniqueString> LibraryFile::containedFilePaths() const {
 void LibraryFile::summarize(Context* context, std::ostream& s) const {
   s << "# Summary of library file " << libPath.str() << "\n";
 
-  const FileHeader* fileHeader = (const FileHeader*) fileData;
-  if (fileHeader->magic != FILE_HEADER_MAGIC)
-    return;
+  const FileHeader* fileHeader = (const FileHeader*)fileData;
+  if (fileHeader->magic != FILE_HEADER_MAGIC) return;
 
-  s << "  file format version = "
-       << fileHeader->fileFormatVersionMajor
-       << "." << fileHeader->fileFormatVersionMinor << "\n";
-  s << "  chpl version = "
-       << fileHeader->chplVersionMajor
-       << "." << fileHeader->chplVersionMinor
-       << "." << fileHeader->chplVersionUpdate << "\n";
+  s << "  file format version = " << fileHeader->fileFormatVersionMajor << "."
+    << fileHeader->fileFormatVersionMinor << "\n";
+  s << "  chpl version = " << fileHeader->chplVersionMajor << "."
+    << fileHeader->chplVersionMinor << "." << fileHeader->chplVersionUpdate
+    << "\n";
   s << "  nModules = " << fileHeader->nModules << "\n";
   s << "  file hash = " << llvm::toHex(fileHash) << "\n";
   s << "  file size = " << fileLen << "\n";
@@ -766,7 +750,8 @@ void LibraryFile::summarize(Context* context, std::ostream& s) const {
         UniqueString symPath = symInfo.symbolPath;
         s << "         " << symPath.str();
         for (auto cname : symInfo.cnames) {
-          s << " " << cname;;
+          s << " " << cname;
+          ;
 #ifdef HAVE_LLVM
           if (!cname.isEmpty() && llvmMod->getFunction(cname.str())) {
             s << "[llvm]";
@@ -776,7 +761,6 @@ void LibraryFile::summarize(Context* context, std::ostream& s) const {
         s << "\n";
       }
 
-
 #ifdef HAVE_LLVM
       s << "     ### LLVM IR\n";
       if (llvmMod.get()) {
@@ -785,7 +769,7 @@ void LibraryFile::summarize(Context* context, std::ostream& s) const {
           CHPL_ASSERT(false && "Failure to materialize a module");
         }
         auto llvmStream = llvm::raw_os_ostream(s);
-        llvmMod->print(llvmStream, /*AssemblyAnnotationWriter*/nullptr);
+        llvmMod->print(llvmStream, /*AssemblyAnnotationWriter*/ nullptr);
       }
 #endif
     }
@@ -802,8 +786,7 @@ LibraryFile::loadSourceAst(Context* context,
 }
 
 const uast::Module*
-LibraryFile::loadModuleAst(Context* context,
-                           UniqueString moduleSymPath) const {
+LibraryFile::loadModuleAst(Context* context, UniqueString moduleSymPath) const {
   // figure out which source file has the requested module
   UniqueString sourceFilePath;
   auto search = moduleSymPathToIdx.find(moduleSymPath);
@@ -837,7 +820,7 @@ bool LibraryFile::readLocationPaths(Context* context,
                                     std::vector<UniqueString>& paths,
                                     const ModuleSection* m) const {
   const LocationSectionHeader* locHdr =
-    (const LocationSectionHeader*) m->locationSectionData;
+    (const LocationSectionHeader*)m->locationSectionData;
 
   // read the location group paths
   auto helper = setupHelper(context, m);
@@ -866,13 +849,12 @@ bool LibraryFile::readLocationPaths(Context* context,
   return true;
 }
 
-bool LibraryFile::readLocationGroup(
-                        Context* context,
-                        LocationMaps& maps,
-                        Deserializer& des,
-                        const uast::AstNode* symbolTableSymbolAst,
-                        const std::vector<UniqueString>& paths,
-                        const uast::BuilderResult& br) const {
+bool LibraryFile::readLocationGroup(Context* context,
+                                    LocationMaps& maps,
+                                    Deserializer& des,
+                                    const uast::AstNode* symbolTableSymbolAst,
+                                    const std::vector<UniqueString>& paths,
+                                    const uast::BuilderResult& br) const {
   unsigned int filePathIdx = des.readVUint();
   unsigned int startLine = des.readVInt();
 
@@ -885,8 +867,8 @@ bool LibraryFile::readLocationGroup(
   }
 
   int lastEntryLastLine = startLine;
-  return readLocationEntries(context, maps, des, symbolTableSymbolAst, path, br,
-                             lastEntryLastLine);
+  return readLocationEntries(
+    context, maps, des, symbolTableSymbolAst, path, br, lastEntryLastLine);
 }
 
 static int zeroNegToNegOne(unsigned int arg) {
@@ -897,14 +879,13 @@ static int zeroNegToNegOne(unsigned int arg) {
   return arg;
 }
 
-bool LibraryFile::readLocationEntries(
-                        Context* context,
-                        LocationMaps& maps,
-                        Deserializer& des,
-                        const uast::AstNode* cur,
-                        UniqueString path,
-                        const uast::BuilderResult& br,
-                        int& lastEntryLastLine) const {
+bool LibraryFile::readLocationEntries(Context* context,
+                                      LocationMaps& maps,
+                                      Deserializer& des,
+                                      const uast::AstNode* cur,
+                                      UniqueString path,
+                                      const uast::BuilderResult& br,
+                                      int& lastEntryLastLine) const {
 
   int firstLineDiff = des.readVInt();
   int firstLine = zeroNegToNegOne(lastEntryLastLine + firstLineDiff);
@@ -915,8 +896,8 @@ bool LibraryFile::readLocationEntries(
   int firstCol = zeroNegToNegOne(des.readVUint());
   int lastCol = zeroNegToNegOne(des.readVUint());
 
-  maps.astToLocation[cur] = Location(path, firstLine, firstCol,
-                                     lastLine, lastCol);
+  maps.astToLocation[cur] =
+    Location(path, firstLine, firstCol, lastLine, lastCol);
 
   // read the additional locations
   unsigned int nAddnlLocs = des.readVUint();
@@ -931,8 +912,8 @@ bool LibraryFile::readLocationEntries(
     int otherFirstCol = zeroNegToNegOne(des.readVUint());
     int otherLastCol = zeroNegToNegOne(des.readVUint());
     if (aMap) {
-      (*aMap)[cur] = Location(path, otherFirstLine, otherFirstCol,
-                              otherLastLine, otherLastCol);
+      (*aMap)[cur] = Location(
+        path, otherFirstLine, otherFirstCol, otherLastLine, otherLastCol);
     }
   }
 
@@ -946,8 +927,8 @@ bool LibraryFile::readLocationEntries(
       // it's in the symbol table, so will be read separately
       // when reading a location group
     } else {
-      bool ok = readLocationEntries(context, maps, des, child,
-                                    path, br, lastEntryLastLine);
+      bool ok = readLocationEntries(
+        context, maps, des, child, path, br, lastEntryLastLine);
       if (!ok) {
         return false;
       }
@@ -966,7 +947,7 @@ bool LibraryFile::doLoadLocations(Context* context,
                                   int symbolTableEntryIndex,
                                   const uast::AstNode* symbolTableEntryAst,
                                   LocationMaps& result) const {
-  if (moduleIndex < 0 || (size_t) moduleIndex >= modules.size()) {
+  if (moduleIndex < 0 || (size_t)moduleIndex >= modules.size()) {
     invalidFileError(context);
     return false;
   }
@@ -979,7 +960,7 @@ bool LibraryFile::doLoadLocations(Context* context,
   }
 
   if (symbolTableEntryIndex < 0 ||
-      (size_t) symbolTableEntryIndex >= m->symbols.size()) {
+      (size_t)symbolTableEntryIndex >= m->symbols.size()) {
     invalidFileError(context);
     return false;
   }
@@ -1017,21 +998,23 @@ bool LibraryFile::doLoadLocations(Context* context,
   return true;
 }
 
-
 const LibraryFile::LocationMaps&
 LibraryFile::loadLocationsQuery(Context* context,
                                 const LibraryFile* f,
                                 int moduleIndex,
                                 int symbolTableEntryIndex,
                                 const uast::AstNode* symbolTableEntryAst) {
-  QUERY_BEGIN(loadLocationsQuery, context, f,
-              moduleIndex, symbolTableEntryIndex, symbolTableEntryAst);
+  QUERY_BEGIN(loadLocationsQuery,
+              context,
+              f,
+              moduleIndex,
+              symbolTableEntryIndex,
+              symbolTableEntryAst);
 
   LocationMaps result;
 
-  bool ok = f->doLoadLocations(context, moduleIndex,
-                               symbolTableEntryIndex, symbolTableEntryAst,
-                               result);
+  bool ok = f->doLoadLocations(
+    context, moduleIndex, symbolTableEntryIndex, symbolTableEntryAst, result);
   if (!ok) {
     // do not return a partial result on failure
     result.clear();
@@ -1040,43 +1023,39 @@ LibraryFile::loadLocationsQuery(Context* context,
   return QUERY_END(result);
 }
 
-
-
-
 const LibraryFile::LocationMaps&
 LibraryFile::loadLocations(Context* context,
                            int moduleIndex,
                            int symbolTableEntryIndex,
                            const uast::AstNode* symbolTableEntryAst) const {
-  return loadLocationsQuery(context, this, moduleIndex,
-                            symbolTableEntryIndex, symbolTableEntryAst);
+  return loadLocationsQuery(
+    context, this, moduleIndex, symbolTableEntryIndex, symbolTableEntryAst);
 }
 
 #ifdef HAVE_LLVM
-owned<llvm::Module>
-LibraryFile::loadLlvmModuleImpl(Context* context,
-                                const LibraryFile* f,
-                                int moduleIndex) {
+owned<llvm::Module> LibraryFile::loadLlvmModuleImpl(Context* context,
+                                                    const LibraryFile* f,
+                                                    int moduleIndex) {
   owned<llvm::Module> result;
 
-  if (0 <= moduleIndex && (size_t) moduleIndex < f->modules.size()) {
+  if (0 <= moduleIndex && (size_t)moduleIndex < f->modules.size()) {
     const ModuleSection* ms = f->loadModuleSection(context, moduleIndex);
     if (ms != nullptr && ms->llvmIrData != nullptr && ms->llvmIrDataLen != 0) {
-      auto inputData = llvm::StringRef((const char*)ms->llvmIrData,
-                                       ms->llvmIrDataLen);
-      std::string bufferName =
-        f->libPath.str() + "-" +
-        f->modules[moduleIndex].moduleSymPath.str() + "-llvm";
-      bool reqNullTerm = false; /* RequiresNullTerminator */;
+      auto inputData =
+        llvm::StringRef((const char*)ms->llvmIrData, ms->llvmIrDataLen);
+      std::string bufferName = f->libPath.str() + "-" +
+                               f->modules[moduleIndex].moduleSymPath.str() +
+                               "-llvm";
+      bool reqNullTerm = false; /* RequiresNullTerminator */
+      ;
       auto ownedMemBuf =
         llvm::MemoryBuffer::getMemBuffer(inputData, bufferName, reqNullTerm);
       llvm::SMDiagnostic err;
 
-      result =
-        llvm::getLazyIRModule(std::move(ownedMemBuf),
-                              err,
-                              context->llvmContext(),
-                              /*ShouldLazyLoadMetadata*/ false);
+      result = llvm::getLazyIRModule(std::move(ownedMemBuf),
+                                     err,
+                                     context->llvmContext(),
+                                     /*ShouldLazyLoadMetadata*/ false);
     }
   }
 
@@ -1100,7 +1079,6 @@ LibraryFile::loadGenCodeModule(Context* context,
   return nullptr;
 }
 #endif
-
 
 } // end namespace libraries
 } // end namespace chpl

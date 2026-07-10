@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 std::string Catch::dumpChildLabelInner(int i) const {
   if (i == errorChildNum_) {
     return "error";
@@ -35,7 +34,8 @@ std::string Catch::dumpChildLabelInner(int i) const {
   return "";
 }
 
-owned<Catch> Catch::build(Builder* builder, Location loc,
+owned<Catch> Catch::build(Builder* builder,
+                          Location loc,
                           owned<Variable> error,
                           owned<Block> body,
                           bool hasParensAroundError) {
@@ -54,12 +54,11 @@ owned<Catch> Catch::build(Builder* builder, Location loc,
   bodyChildNum = lst.size();
   lst.push_back(std::move(body));
 
-  Catch* ret = new Catch(std::move(lst), errorChildNum, bodyChildNum,
-                         hasParensAroundError);
+  Catch* ret = new Catch(
+    std::move(lst), errorChildNum, bodyChildNum, hasParensAroundError);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

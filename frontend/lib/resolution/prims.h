@@ -33,7 +33,6 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
                                      const Scope* inScope,
                                      const PoiScope* inPoiScope);
 
-
 } // end namespace resolution
 } // end namespace chpl
 

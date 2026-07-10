@@ -31,9 +31,13 @@
 namespace chpl {
 namespace resolution {
 
-IdAndFlags::IdAndFlags(ID id, bool isPublic, bool isMethodOrField,
-                       bool isParenfulFunction, bool isMethod,
-                       bool isModule, bool isType)
+IdAndFlags::IdAndFlags(ID id,
+                       bool isPublic,
+                       bool isMethodOrField,
+                       bool isParenfulFunction,
+                       bool isMethod,
+                       bool isModule,
+                       bool isType)
   : id_(std::move(id)) {
 
   // setup the flags
@@ -74,22 +78,22 @@ IdAndFlags::IdAndFlags(ID id, bool isPublic, bool isMethodOrField,
 
 std::string IdAndFlags::flagsToString(Flags flags) {
   std::string ret;
-  if ((flags & PUBLIC) != 0)                ret += "public ";
-  if ((flags & NOT_PUBLIC) != 0)            ret += "!public ";
+  if ((flags & PUBLIC) != 0) ret += "public ";
+  if ((flags & NOT_PUBLIC) != 0) ret += "!public ";
 
-  if ((flags & METHOD_FIELD) != 0)          ret += "method/field ";
-  if ((flags & NOT_METHOD_FIELD) != 0)      ret += "!method/field ";
+  if ((flags & METHOD_FIELD) != 0) ret += "method/field ";
+  if ((flags & NOT_METHOD_FIELD) != 0) ret += "!method/field ";
 
-  if ((flags & PARENFUL_FUNCTION) != 0)     ret += "parenful-fn ";
+  if ((flags & PARENFUL_FUNCTION) != 0) ret += "parenful-fn ";
   if ((flags & NOT_PARENFUL_FUNCTION) != 0) ret += "!parenful-fn ";
 
-  if ((flags & METHOD) != 0)     ret += "method ";
+  if ((flags & METHOD) != 0) ret += "method ";
   if ((flags & NOT_METHOD) != 0) ret += "!method ";
 
-  if ((flags & MODULE) != 0)     ret += "module ";
+  if ((flags & MODULE) != 0) ret += "module ";
   if ((flags & NOT_MODULE) != 0) ret += "!module ";
 
-  if ((flags & TYPE) != 0)     ret += "type ";
+  if ((flags & TYPE) != 0) ret += "type ";
   if ((flags & NOT_TYPE) != 0) ret += "!type ";
   return ret;
 }
@@ -111,9 +115,7 @@ FlagSet FlagSet::singleton(Flags flags) {
   return toReturn;
 }
 
-FlagSet FlagSet::empty() {
-  return FlagSet();
-}
+FlagSet FlagSet::empty() { return FlagSet(); }
 
 void FlagSet::addDisjunction(Flags excludeFlags) {
   // booleans, like all lattices, follow the absorption law:
@@ -199,11 +201,10 @@ void FlagSet::mark(Context* context) const {
   // nothing, because flags don't need to be marked.
 }
 
-LookupResult
-OwnedIdsWithName::gatherMatches(MatchingIdsWithName& dst,
-                                IdAndFlags::Flags filterFlags,
-                                const IdAndFlags::FlagSet& excludeFlagSet) const
-{
+LookupResult OwnedIdsWithName::gatherMatches(
+  MatchingIdsWithName& dst,
+  IdAndFlags::Flags filterFlags,
+  const IdAndFlags::FlagSet& excludeFlagSet) const {
   const OwnedIdsWithName& ownedIds = *this;
 
   // Are all of the filter flags present in flagsOr?
@@ -235,8 +236,8 @@ OwnedIdsWithName::gatherMatches(MatchingIdsWithName& dst,
     }
   }
 
-  return LookupResult(/* found */ anyAppended, /* nonFunctions */ anyNonFunctions);
-
+  return LookupResult(/* found */ anyAppended,
+                      /* nonFunctions */ anyNonFunctions);
 }
 
 void OwnedIdsWithName::stringify(std::ostream& ss,
@@ -253,7 +254,8 @@ void OwnedIdsWithName::stringify(std::ostream& ss,
   }
 }
 
-void MatchingIdsWithName::removeDuplicateIds(std::vector<ResultVisibilityTrace>* traces) {
+void MatchingIdsWithName::removeDuplicateIds(
+  std::vector<ResultVisibilityTrace>* traces) {
   std::unordered_set<IdAndFlags> s;
 
   CHPL_ASSERT(!traces || traces->size() == idvs_.size());
@@ -278,7 +280,7 @@ void MatchingIdsWithName::removeDuplicateIds(std::vector<ResultVisibilityTrace>*
   }
 
   if (cur != end) {
-    truncate((int) cur);
+    truncate((int)cur);
     if (traces) {
       traces->resize(cur);
     }
@@ -286,13 +288,11 @@ void MatchingIdsWithName::removeDuplicateIds(std::vector<ResultVisibilityTrace>*
 }
 
 void MatchingIdsWithName::truncate(int sz) {
-  CHPL_ASSERT(0 <= sz && sz <= (int) idvs_.size());
+  CHPL_ASSERT(0 <= sz && sz <= (int)idvs_.size());
   idvs_.truncate(sz);
 }
 
-void MatchingIdsWithName::clear() {
-  idvs_.clear();
-}
+void MatchingIdsWithName::clear() { idvs_.clear(); }
 
 bool MatchingIdsWithName::containsOnlyMethodsOrFields() const {
   for (const auto& idv : idvs_) {
@@ -323,9 +323,9 @@ LookupResult lookupInDeclMap(const DeclMap& declared,
   return LookupResult::empty();
 }
 
-
 Scope::Scope(Context* context,
-             const uast::AstNode* ast, const Scope* parentScope,
+             const uast::AstNode* ast,
+             const Scope* parentScope,
              bool autoUsesModules) {
   bool containsUseImport = false;
   bool containsFunctionDecls = false;
@@ -346,7 +346,9 @@ Scope::Scope(Context* context,
     // an implicit 'this' receiver, so create a method scope.
     isMethodScope = true;
   }
-  gatherDeclsWithin(context, ast, declared_,
+  gatherDeclsWithin(context,
+                    ast,
+                    declared_,
                     containsUseImport,
                     containsFunctionDecls,
                     containsExternBlock,
@@ -354,12 +356,24 @@ Scope::Scope(Context* context,
 
   // compute the flags storing a few settings
   ScopeFlags flags = 0;
-  if (containsFunctionDecls) { flags |= CONTAINS_FUNCTION_DECLS; }
-  if (containsUseImport) {     flags |= CONTAINS_USE_IMPORT; }
-  if (containsRequire) {       flags |= CONTAINS_REQUIRE; }
-  if (autoUsesModules) {       flags |= AUTO_USES_MODULES; }
-  if (isMethodScope) {         flags |= METHOD_SCOPE; }
-  if (containsExternBlock) {   flags |= CONTAINS_EXTERN_BLOCK; }
+  if (containsFunctionDecls) {
+    flags |= CONTAINS_FUNCTION_DECLS;
+  }
+  if (containsUseImport) {
+    flags |= CONTAINS_USE_IMPORT;
+  }
+  if (containsRequire) {
+    flags |= CONTAINS_REQUIRE;
+  }
+  if (autoUsesModules) {
+    flags |= AUTO_USES_MODULES;
+  }
+  if (isMethodScope) {
+    flags |= METHOD_SCOPE;
+  }
+  if (containsExternBlock) {
+    flags |= CONTAINS_EXTERN_BLOCK;
+  }
   flags_ = flags;
 }
 
@@ -378,13 +392,13 @@ void Scope::addBuiltinType(UniqueString name) {
 }
 
 void Scope::addBuiltinFunction(UniqueString name) {
-  declared_.emplace(name, OwnedIdsWithName(IdAndFlags::createForBuiltinFunction()));
+  declared_.emplace(name,
+                    OwnedIdsWithName(IdAndFlags::createForBuiltinFunction()));
 }
 
 const Scope* Scope::moduleScope() const {
   const Scope* cur;
-  for (cur = this;
-       cur != nullptr && !isModule(cur->tag());
+  for (cur = this; cur != nullptr && !isModule(cur->tag());
        cur = cur->parentScope()) {
     ; // search for the containing module
   }
@@ -440,20 +454,16 @@ bool VisibilitySymbols::mightHaveName(UniqueString name) const {
 
   switch (kind_) {
     case SYMBOL_ONLY:
-    case ONLY_CONTENTS:
-      return lookupName(name, unused);
-    case ALL_CONTENTS:
-      return true;
-    case CONTENTS_EXCEPT:
-      return !lookupName(name, unused);
+    case ONLY_CONTENTS: return lookupName(name, unused);
+    case ALL_CONTENTS: return true;
+    case CONTENTS_EXCEPT: return !lookupName(name, unused);
   }
   return false;
 }
 
-
 bool VisibilitySymbols::lookupName(UniqueString name,
-                                   UniqueString &declared) const {
-  for (const auto &p : names_) {
+                                   UniqueString& declared) const {
+  for (const auto& p : names_) {
     if (p.second == name) {
       declared = p.first;
       return true;
@@ -462,7 +472,7 @@ bool VisibilitySymbols::lookupName(UniqueString name,
   return false;
 }
 
-const std::vector<std::pair<UniqueString,UniqueString>>&
+const std::vector<std::pair<UniqueString, UniqueString>>&
 VisibilitySymbols::names() const {
   return names_;
 }
@@ -477,18 +487,10 @@ void VisibilitySymbols::stringify(std::ostream& ss,
   }
   const char* kindStr = "<unknown>";
   switch (kind_) {
-    case SYMBOL_ONLY:
-      kindStr = "symbol-only";
-      break;
-    case ALL_CONTENTS:
-      kindStr = "all-contents";
-      break;
-    case ONLY_CONTENTS:
-      kindStr = "only-contents";
-      break;
-    case CONTENTS_EXCEPT:
-      kindStr = "contents-except";
-      break;
+    case SYMBOL_ONLY: kindStr = "symbol-only"; break;
+    case ALL_CONTENTS: kindStr = "all-contents"; break;
+    case ONLY_CONTENTS: kindStr = "only-contents"; break;
+    case CONTENTS_EXCEPT: kindStr = "contents-except"; break;
   }
   ss << " kind=" << kindStr;
 
@@ -500,15 +502,9 @@ void VisibilitySymbols::stringify(std::ostream& ss,
 
   const char* shadowStr = "<unknown>";
   switch (shadowScopeLevel_) {
-    case REGULAR_SCOPE:
-      shadowStr = "regular";
-      break;
-    case SHADOW_SCOPE_ONE:
-      shadowStr = "shadow-scope-one";
-      break;
-    case SHADOW_SCOPE_TWO:
-      shadowStr = "shadow-scope-two";
-      break;
+    case REGULAR_SCOPE: shadowStr = "regular"; break;
+    case SHADOW_SCOPE_ONE: shadowStr = "shadow-scope-one"; break;
+    case SHADOW_SCOPE_TWO: shadowStr = "shadow-scope-two"; break;
   }
 
   if (shadowScopeLevel_ != REGULAR_SCOPE) {
@@ -548,7 +544,7 @@ void ResolvedVisibilityScope::stringify(std::ostream& ss,
 void ModulePublicSymbols::stringify(std::ostream& ss,
                                     chpl::StringifyKind stringKind) const {
   ss << "ModulePublicSymbols {";
-  for (const auto& pair: syms_) {
+  for (const auto& pair : syms_) {
     ss << pair.first.str() << " ";
     pair.second.stringify(ss, stringKind);
     ss << "\n";
@@ -556,10 +552,9 @@ void ModulePublicSymbols::stringify(std::ostream& ss,
   ss << "}\n";
 }
 
-MethodLookupHelper::~MethodLookupHelper() { }
+MethodLookupHelper::~MethodLookupHelper() {}
 
-ReceiverScopeHelper::~ReceiverScopeHelper() { }
-
+ReceiverScopeHelper::~ReceiverScopeHelper() {}
 
 IMPLEMENT_DUMP(IdAndFlags);
 IMPLEMENT_DUMP(OwnedIdsWithName);
@@ -570,7 +565,6 @@ IMPLEMENT_DUMP(ResolvedVisibilityScope);
 IMPLEMENT_DUMP(PoiScope);
 IMPLEMENT_DUMP(InnermostMatch);
 IMPLEMENT_DUMP(ModulePublicSymbols);
-
 
 } // end namespace resolution
 } // end namespace chpl

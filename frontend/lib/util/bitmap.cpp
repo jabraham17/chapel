@@ -21,7 +21,6 @@
 
 namespace chpl {
 
-
 size_t Bitmap::hash() const {
   std::hash<std::vector<bool>> hasher;
   return hasher(bits_);
@@ -34,6 +33,5 @@ void Bitmap::stringify(std::ostream& s, StringifyKind stringKind) const {
   }
   s << "]";
 }
-
 
 }

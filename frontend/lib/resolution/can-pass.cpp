@@ -35,14 +35,10 @@ using namespace types;
 static bool fitsInIntHelper(int width, int64_t val) {
   switch (width) {
     default: CHPL_ASSERT(false && "bad width in fits_in_int_helper");
-    case 1:
-      return (val == 0 || val == 1);
-    case 8:
-      return (INT8_MIN <= val && val <= INT8_MAX);
-    case 16:
-      return (INT16_MIN <= val && val <= INT16_MAX);
-    case 32:
-      return (INT32_MIN <= val && val <= INT32_MAX);
+    case 1: return (val == 0 || val == 1);
+    case 8: return (INT8_MIN <= val && val <= INT8_MAX);
+    case 16: return (INT16_MIN <= val && val <= INT16_MAX);
+    case 32: return (INT32_MIN <= val && val <= INT32_MAX);
     case 64:
       // As an int64_t will always fit within a 64 bit int.
       return true;
@@ -55,8 +51,7 @@ static bool paramFitsInInt(int width, const Param* p) {
     return fitsInIntHelper(width, i);
   } else if (auto up = p->toUintParam()) {
     uint64_t u = up->value();
-    if (u > INT64_MAX)
-      return false;
+    if (u > INT64_MAX) return false;
     return fitsInIntHelper(width, (int64_t)u);
   }
   return false;
@@ -64,24 +59,20 @@ static bool paramFitsInInt(int width, const Param* p) {
 
 static bool fitsInUintHelper(int width, uint64_t val) {
   switch (width) {
-  default: CHPL_ASSERT(false && "bad width in fits_in_uint_helper");
-  case 8:
-    return (val <= UINT8_MAX);
-  case 16:
-    return (val <= UINT16_MAX);
-  case 32:
-    return (val <= UINT32_MAX);
-  case 64:
-    // As a uint64_t will always fit inside a 64 bit uint.
-    return true;
+    default: CHPL_ASSERT(false && "bad width in fits_in_uint_helper");
+    case 8: return (val <= UINT8_MAX);
+    case 16: return (val <= UINT16_MAX);
+    case 32: return (val <= UINT32_MAX);
+    case 64:
+      // As a uint64_t will always fit inside a 64 bit uint.
+      return true;
   }
 }
 
 static bool paramFitsInUint(int width, const Param* p) {
   if (auto ip = p->toIntParam()) {
     int64_t i = ip->value();
-    if (i < 0)
-      return false;
+    if (i < 0) return false;
     return fitsInUintHelper(width, (uint64_t)i);
   } else if (auto up = p->toUintParam()) {
     uint64_t u = up->value();
@@ -92,15 +83,14 @@ static bool paramFitsInUint(int width, const Param* p) {
 
 // numbers between -2**mantissa .. 2**mantissa
 // will fit exactly in a floating-point representation.
-static void getMantissaExponentWidth(const Type *t,
-                                     int& mantissa,
-                                     int& exponent) {
+static void
+getMantissaExponentWidth(const Type* t, int& mantissa, int& exponent) {
   // a 16 bit float would have 11 bits of precision
   // a 16 bit float would have 5 bits of exponent
   const int mantissa_64 = 53; // mantissa for 64-bit float
   const int exponent_64 = 15; // exponent bits for 64-bit float
   const int mantissa_32 = 24; // mantissa for 32-bit float
-  const int exponent_32 = 8; // exponent bits for 32-bit float
+  const int exponent_32 = 8;  // exponent bits for 32-bit float
 
   if (auto rt = t->toRealType()) {
     if (rt->bitwidth() == 32) {
@@ -157,10 +147,10 @@ static bool fitsInTwosComplement(int width, int64_t i) {
   CHPL_ASSERT(width < 64);
 
   int64_t max_pos = 1;
-  max_pos <<= width-1;
+  max_pos <<= width - 1;
   max_pos--;
 
-  int64_t min_neg = 1+max_pos;
+  int64_t min_neg = 1 + max_pos;
   return -min_neg <= i && i <= max_pos;
 }
 
@@ -174,8 +164,7 @@ static bool fitsInMantissa(int mantissaWidth, const Param* p) {
     return fitsInBitsNoSign(mantissaWidth, i);
   } else if (auto up = p->toUintParam()) {
     uint64_t u = up->value();
-    if (u > INT64_MAX)
-      return false;
+    if (u > INT64_MAX) return false;
     return fitsInBitsNoSign(mantissaWidth, (int64_t)u);
   }
 
@@ -206,7 +195,7 @@ static bool fitsInMantissaExponent(int mantissaWidth,
 
   frac = frexp(v, &exp);
 
-  int64_t intpart = 2*frac;
+  int64_t intpart = 2 * frac;
 
   if (fitsInBitsNoSign(mantissaWidth, intpart) &&
       fitsInTwosComplement(exponentWidth, exp))
@@ -217,13 +206,10 @@ static bool fitsInMantissaExponent(int mantissaWidth,
 
 static bool isConsideredGeneric(Type::Genericity g) {
   switch (g) {
-    case Type::CONCRETE:
-      return false;
+    case Type::CONCRETE: return false;
     case Type::GENERIC_WITH_DEFAULTS:
-    case Type::GENERIC:
-      return true;
-    case Type::MAYBE_GENERIC:
-      CHPL_ASSERT(false && "Should not be reachable");
+    case Type::GENERIC: return true;
+    case Type::MAYBE_GENERIC: CHPL_ASSERT(false && "Should not be reachable");
   }
 
   return false;
@@ -248,33 +234,27 @@ bool CanPassResult::canConvertNumeric(Context* context,
     return false;
 
   // any bool type can convert to any other bool type
-  if (actualT->isBoolType() && formalT->isBoolType())
-    return true;
+  if (actualT->isBoolType() && formalT->isBoolType()) return true;
 
   if (auto formalIntT = formalT->toIntType()) {
     // convert any bool to int
-    if (actualT->isBoolType())
-      return true;
+    if (actualT->isBoolType()) return true;
 
     // convert from int/uint of smaller size
     if (auto actualIntT = actualT->toIntType())
-      if (actualIntT->bitwidth() < formalIntT->bitwidth())
-        return true;
+      if (actualIntT->bitwidth() < formalIntT->bitwidth()) return true;
 
     if (auto actualUintT = actualT->toUintType())
-      if (actualUintT->bitwidth() < formalIntT->bitwidth())
-        return true;
+      if (actualUintT->bitwidth() < formalIntT->bitwidth()) return true;
   }
 
   if (auto formalUintT = formalT->toUintType()) {
     // convert any bool to uint
-    if (actualT->isBoolType())
-      return true;
+    if (actualT->isBoolType()) return true;
 
     // convert from uint of smaller size
     if (auto actualUintT = actualT->toUintType())
-      if (actualUintT->bitwidth() < formalUintT->bitwidth())
-        return true;
+      if (actualUintT->bitwidth() < formalUintT->bitwidth()) return true;
 
     if (auto actualIntT = actualT->toIntType()) {
       if (actualIntT->bitwidth() <= formalUintT->bitwidth()) {
@@ -288,52 +268,44 @@ bool CanPassResult::canConvertNumeric(Context* context,
     // don't convert bools to reals (per spec: "unintended by programmer")
 
     // coerce any integer type to any width real
-    if (actualT->isIntegralType())
-      return true;
+    if (actualT->isIntegralType()) return true;
 
     // convert real from smaller size
     if (auto actualRealT = actualT->toRealType())
-      if (actualRealT->bitwidth() < formalRealT->bitwidth())
-        return true;
-
+      if (actualRealT->bitwidth() < formalRealT->bitwidth()) return true;
   }
 
   if (auto formalImagT = formalT->toImagType()) {
     // convert imag from smaller size
     if (auto actualImagT = actualT->toImagType())
-      if (actualImagT->bitwidth() < formalImagT->bitwidth())
-        return true;
+      if (actualImagT->bitwidth() < formalImagT->bitwidth()) return true;
   }
 
   if (auto formalComplexT = formalT->toComplexType()) {
     // don't convert bools to complexes (per spec: "unintended by programmer")
 
     // coerce any integer type to any width complex
-    if (actualT->isIntegralType())
-      return true;
+    if (actualT->isIntegralType()) return true;
 
     // convert smaller complex types
     if (auto actualComplexT = actualT->toComplexType())
-      if (actualComplexT->bitwidth() < formalComplexT->bitwidth())
-        return true;
+      if (actualComplexT->bitwidth() < formalComplexT->bitwidth()) return true;
 
     // convert real/imag from smaller size
     if (auto actualRealT = actualT->toRealType())
-      if (actualRealT->bitwidth() <= formalComplexT->bitwidth()/2)
+      if (actualRealT->bitwidth() <= formalComplexT->bitwidth() / 2)
         return true;
     if (auto actualImagT = actualT->toImagType())
-      if (actualImagT->bitwidth() <= formalComplexT->bitwidth()/2)
+      if (actualImagT->bitwidth() <= formalComplexT->bitwidth() / 2)
         return true;
-
   }
 
   return false;
 }
 
-bool
-CanPassResult::canConvertCPtr(Context* context,
-                              const Type* actualT,
-                              const Type* formalT) {
+bool CanPassResult::canConvertCPtr(Context* context,
+                                   const Type* actualT,
+                                   const Type* formalT) {
   if (auto actualPtr = actualT->toCPtrType()) {
     if (auto formalPtr = formalT->toCPtrType()) {
       // Allow constness casts: an int* can be a const int*.
@@ -352,21 +324,18 @@ CanPassResult::canConvertCPtr(Context* context,
   return false;
 }
 
-bool
-CanPassResult::canConvertParamNarrowing(Context* context,
-                                        const QualifiedType& actualQT,
-                                        const QualifiedType& formalQT) {
+bool CanPassResult::canConvertParamNarrowing(Context* context,
+                                             const QualifiedType& actualQT,
+                                             const QualifiedType& formalQT) {
   const Type* actualT = actualQT.type();
   const Param* actualP = actualQT.param();
   const Type* formalT = formalQT.type();
 
   // return early if actual is not a param
-  if (actualP == nullptr)
-    return false;
+  if (actualP == nullptr) return false;
 
   // return early if formal is not numeric or stringlike
-  if (!formalT->isNumericType() && !formalT->isStringLikeType())
-    return false;
+  if (!formalT->isNumericType() && !formalT->isStringLikeType()) return false;
 
   if (auto formalIntT = formalT->toIntType()) {
     //
@@ -393,8 +362,7 @@ CanPassResult::canConvertParamNarrowing(Context* context,
 
     // convert literal/param ints that are exactly representable
     if (actualT->isIntegralType())
-      if (fitsInMantissa(mantissaW, actualP))
-        return true;
+      if (fitsInMantissa(mantissaW, actualP)) return true;
 
     if (actualT->isRealType())
       if (fitsInMantissaExponent(mantissaW, exponentW, actualP, true))
@@ -420,8 +388,7 @@ CanPassResult::canConvertParamNarrowing(Context* context,
     // convert literal/param complexes that are exactly representable
     if (auto actualP = actualQT.param()) {
       if (actualT->isIntegralType())
-        if (fitsInMantissa(mantissaW, actualP))
-          return true;
+        if (fitsInMantissa(mantissaW, actualP)) return true;
       if (actualT->isRealType())
         if (fitsInMantissaExponent(mantissaW, exponentW, actualP, true))
           return true;
@@ -471,7 +438,7 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
     if (formalNily.isUnknownNilability())
       instantiates = true; // instantiating with passed nilability
     else if (actualNily.isNonNilable() && formalNily.isNilable())
-      conversion = SUBTYPE;  // non-nil to nil conversion
+      conversion = SUBTYPE; // non-nil to nil conversion
     else
       fails = FAIL_INCOMPATIBLE_NILABILITY; // all other nilability cases
   }
@@ -479,7 +446,7 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
   // consider management.
   if (actualMgmt != formalMgmt) {
     if (formalMgmt.isUnknownManagement())
-      instantiates = true;  // instantiating with passed management
+      instantiates = true; // instantiating with passed management
     else if (formalMgmt.isBorrowed()) {
       // management can convert to borrowed
       conversion |= BORROWS;
@@ -487,8 +454,7 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
       fails = FAIL_INCOMPATIBLE_MGMT;
   }
 
-  if (fails)
-    return fail(*fails);
+  if (fails) return fail(*fails);
 
   return CanPassResult(/* no fail reason, passes */ {},
                        instantiates,
@@ -510,8 +476,8 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
 // It's returning CanPassResult in order to also reflect if instantiation
 // was necessary.
 CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
-                                            const Type* actualT,
-                                            const Type* formalT) {
+                                                        const Type* actualT,
+                                                        const Type* formalT) {
   // nil -> pointers
   if (actualT->isNilType() && formalT->isNilablePtrType() &&
       !formalT->isCStringType()) {
@@ -523,14 +489,16 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
 
   // implement conversions to and from chpl_c_string and c_ptr(c_char)
   auto charType = typeForSysCType(context, USTR("c_char"));
-  auto checkCStringCPtr = [&charType](const Type* maybeCString, const Type* maybeCPtr) {
+  auto checkCStringCPtr = [&charType](const Type* maybeCString,
+                                      const Type* maybeCPtr) {
     if (!maybeCString->isCStringType()) return false;
     if (auto cptr = maybeCPtr->toCPtrType()) {
       return cptr->isConst() && cptr->eltType() == charType.type();
     }
     return false;
   };
-  if (checkCStringCPtr(actualT, formalT) || checkCStringCPtr(formalT, actualT)) {
+  if (checkCStringCPtr(actualT, formalT) ||
+      checkCStringCPtr(formalT, actualT)) {
     return CanPassResult(/* no fail reason */ {},
                          /* instantiates */ false,
                          /*promotes*/ false,
@@ -545,9 +513,8 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
       // owned Child? -> owned Parent?
 
       // check decorators allow passing
-      CanPassResult decResult = canPassDecorators(context,
-                                                  actualCt->decorator(),
-                                                  formalCt->decorator());
+      CanPassResult decResult = canPassDecorators(
+        context, actualCt->decorator(), formalCt->decorator());
       if (!decResult.passes()) return decResult;
       CHPL_ASSERT(!decResult.promotes_);
 
@@ -581,7 +548,8 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
         // From the previous conditional, we know the formal isn't another
         // 'any' class, so this actual cannot be passed.
         pass = false;
-      } else if (actualBct->isSubtypeOf(context, formalBct, converts, instantiates)) {
+      } else if (actualBct->isSubtypeOf(
+                   context, formalBct, converts, instantiates)) {
         // the basic class types are the same
         // or there was a subclass relationship
         // or there was instantiation
@@ -602,7 +570,8 @@ CanPassResult CanPassResult::canPassSubtypeNonBorrowing(Context* context,
 
   const Type* eltType = nullptr;
   const IntParam* sizeParam = nullptr;
-  if (formalT->isCPtrType() && actualT->isCArrayType(context, eltType, sizeParam)) {
+  if (formalT->isCPtrType() &&
+      actualT->isCArrayType(context, eltType, sizeParam)) {
     auto formalPtr = formalT->toCPtrType();
 
     // any C array can be passed to a void pointer
@@ -644,7 +613,7 @@ CanPassResult CanPassResult::canPassSubtypeOrBorrowing(Context* context,
     if (auto actualCt = actualT->toClassType()) {
       if (auto formalCt = formalT->toClassType()) {
         CanPassResult decResult = canPassDecorators(
-            context, actualCt->decorator(), formalCt->decorator());
+          context, actualCt->decorator(), formalCt->decorator());
         CHPL_ASSERT(decResult.passes() && "expected types known to pass");
         borrowingConversion = decResult.conversionKind();
       }
@@ -653,7 +622,8 @@ CanPassResult CanPassResult::canPassSubtypeOrBorrowing(Context* context,
     result.conversionKind_ = subtypingConversion | borrowingConversion;
 
     // the only two flags that should be set are 'SUBTYPE' or 'BORROWS'
-    CHPL_ASSERT((result.conversionKind_ & ~(result.SUBTYPE | result.BORROWS)) == 0);
+    CHPL_ASSERT((result.conversionKind_ & ~(result.SUBTYPE | result.BORROWS)) ==
+                0);
     return result;
   } else {
     return fail(FAIL_EXPECTED_SUBTYPE);
@@ -684,8 +654,7 @@ CanPassResult CanPassResult::canConvertTuples(Context* context,
   }
 
   int n = aT->numElements();
-  if (aT->isStarTuple())
-    n = 1; // only need to consider one type
+  if (aT->isStarTuple()) n = 1; // only need to consider one type
 
   bool instantiates = false;
   bool converts = false;
@@ -697,7 +666,7 @@ CanPassResult CanPassResult::canConvertTuples(Context* context,
 
     if (aElt != fElt) {
       auto got = canPassScalar(context, aElt, fElt);
-      if (!got.passes()){
+      if (!got.passes()) {
         // TODO: figure out how to propagate this information.
         return fail(FAIL_FORMAL_OTHER);
       } else if (got.promotes()) {
@@ -736,8 +705,7 @@ CanPassResult CanPassResult::canConvert(Context* context,
   }
 
   // can we convert with a numeric conversion?
-  if (canConvertNumeric(context, actualT, formalT))
-    return convert(NUMERIC);
+  if (canConvertNumeric(context, actualT, formalT)) return convert(NUMERIC);
 
   // can we convert with param narrowing?
   if (canConvertParamNarrowing(context, actualQT, formalQT))
@@ -774,7 +742,8 @@ CanPassResult CanPassResult::canConvert(Context* context,
   if (actualQT.type()->isSyncType()) {
     auto rc = createDummyRC(context);
     CHPL_ASSERT(actualQT.type()->isCompositeType());
-    auto fields = fieldsForTypeDecl(&rc, actualQT.type()->toCompositeType(), DefaultsPolicy::IGNORE_DEFAULTS);
+    auto fields = fieldsForTypeDecl(
+      &rc, actualQT.type()->toCompositeType(), DefaultsPolicy::IGNORE_DEFAULTS);
     for (int i = 0; i < fields.numFields(); i++) {
       if (fields.fieldName(i) != USTR("valType")) continue;
 
@@ -788,7 +757,8 @@ CanPassResult CanPassResult::canConvert(Context* context,
         return CanPassResult(/* no fail reason, passes */ {},
                              /* instantiates */ got.instantiates(),
                              /* promotes */ got.promotes(),
-                             /* conversion kind */ got.conversionKind() | READS);
+                             /* conversion kind */ got.conversionKind() |
+                               READS);
       }
       break;
     }
@@ -805,23 +775,17 @@ CanPassResult CanPassResult::canConvert(Context* context,
 bool CanPassResult::canInstantiateBuiltin(Context* context,
                                           const Type* actualT,
                                           const Type* formalT) {
-  if (formalT->isAnyType())
-    return true;
+  if (formalT->isAnyType()) return true;
 
-  if (formalT->isAnyComplexType() && actualT->isComplexType())
-    return true;
+  if (formalT->isAnyComplexType() && actualT->isComplexType()) return true;
 
-  if (formalT->isAnyEnumType() && actualT->isEnumType())
-    return true;
+  if (formalT->isAnyEnumType() && actualT->isEnumType()) return true;
 
-  if (formalT->isAnyImagType() && actualT->isImagType())
-    return true;
+  if (formalT->isAnyImagType() && actualT->isImagType()) return true;
 
-  if (formalT->isAnyIntType() && actualT->isIntType())
-    return true;
+  if (formalT->isAnyIntType() && actualT->isIntType()) return true;
 
-  if (formalT->isAnyIntegralType() && actualT->isIntegralType())
-    return true;
+  if (formalT->isAnyIntegralType() && actualT->isIntegralType()) return true;
 
   if (formalT->isAnyIteratorClassType()) {
     // TODO: represent iterators
@@ -832,45 +796,36 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
     return actualT->isIteratorType();
   }
 
-  if (formalT->isAnyNumericType() && actualT->isNumericType())
-    return true;
+  if (formalT->isAnyNumericType() && actualT->isNumericType()) return true;
 
   if (formalT->isAnyOwnedType())
     if (auto ct = actualT->toClassType())
       if (ct->decorator().isManaged())
         if (auto manager = ct->manager())
-          if (manager->isAnyOwnedType())
-            return true;
+          if (manager->isAnyOwnedType()) return true;
 
   if (formalT->isAnyPodType()) {
     auto rc = createDummyRC(context);
     return Type::isPod(&rc, actualT);
   }
 
-  if (formalT->isAnyRealType() && actualT->isRealType())
-    return true;
+  if (formalT->isAnyRealType() && actualT->isRealType()) return true;
 
-  if (formalT->isAnyRecordType() && actualT->isUserRecordType())
-    return true;
+  if (formalT->isAnyRecordType() && actualT->isUserRecordType()) return true;
 
   if (formalT->isAnySharedType())
     if (auto ct = actualT->toClassType())
       if (ct->decorator().isManaged())
         if (auto manager = ct->manager())
-          if (manager->isAnySharedType())
-            return true;
+          if (manager->isAnySharedType()) return true;
 
-  if (formalT->isAnyUintType() && actualT->isUintType())
-    return true;
+  if (formalT->isAnyUintType() && actualT->isUintType()) return true;
 
   if (formalT->isAnyUninstantiatedType()) {
-    if (isTypeGeneric(context, actualT))
-      return true;
+    if (isTypeGeneric(context, actualT)) return true;
   }
 
-
-  if (formalT->isAnyUnionType() && actualT->isUnionType())
-    return true;
+  if (formalT->isAnyUnionType() && actualT->isUnionType()) return true;
 
   return false;
 }
@@ -883,10 +838,10 @@ static bool classTypeIsManagedAndDecorated(Context* context,
   return false;
 }
 
-bool
-tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
-                                             const Type* const & mightBeManagerRecord,
-                                             const Type*& mightBeClass) {
+bool tryConvertClassTypeIntoManagerRecordIfNeeded(
+  Context* context,
+  const Type* const& mightBeManagerRecord,
+  const Type*& mightBeClass) {
   if (!mightBeManagerRecord || !mightBeClass) return false;
 
   auto mr = mightBeManagerRecord->toRecordType();
@@ -896,9 +851,9 @@ tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
 
   bool isCtManagedAndDecorated = classTypeIsManagedAndDecorated(context, ct);
   // if mightBeManagerRecord is a record type and (mightBeClass is a class type
-  // that is managed and decorated or mightBeClass is the generic 'owned' or 
+  // that is managed and decorated or mightBeClass is the generic 'owned' or
   // 'shared' type) we can continue
-  if (!mr || (!isCtManagedAndDecorated && !aot && !ast )) return false;
+  if (!mr || (!isCtManagedAndDecorated && !aot && !ast)) return false;
 
   if (!parsing::idIsInBundledModule(context, mr->id())) return false;
 
@@ -910,11 +865,14 @@ tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
   // Override the class type to the manager record type
   // mightBeClass used to be `owned` of type ClassType,
   // now it's `_owned` of type RecordType
-  static const auto genericDec = ClassTypeDecorator(ClassTypeDecorator::GENERIC);
+  static const auto genericDec =
+    ClassTypeDecorator(ClassTypeDecorator::GENERIC);
   if (aot) {
-    mightBeClass = CompositeType::getOwnedRecordType(context, /*bct*/ nullptr, genericDec);
+    mightBeClass =
+      CompositeType::getOwnedRecordType(context, /*bct*/ nullptr, genericDec);
   } else if (ast) {
-    mightBeClass = CompositeType::getSharedRecordType(context, /*bct*/ nullptr, genericDec);
+    mightBeClass =
+      CompositeType::getSharedRecordType(context, /*bct*/ nullptr, genericDec);
   } else {
     mightBeClass = ct->managerRecordType(context);
   }
@@ -922,18 +880,16 @@ tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
   return true;
 }
 
-bool
-tryConvertClassTypeOutOfManagerRecordIfNeeded(Context* context,
-                                              const types::Type*& mightBeManagerRecord,
-                                              const types::Type* const& mightBeClass) {
+bool tryConvertClassTypeOutOfManagerRecordIfNeeded(
+  Context* context,
+  const types::Type*& mightBeManagerRecord,
+  const types::Type* const& mightBeClass) {
   if (!mightBeManagerRecord || !mightBeClass) return false;
 
   auto mr = mightBeManagerRecord->toRecordType();
   bool otherClassLike =
-    mightBeClass->isClassType() ||
-    mightBeClass->isAnyOwnedType() ||
-    mightBeClass->isAnySharedType() ||
-    mightBeClass->isAnyClassType();
+    mightBeClass->isClassType() || mightBeClass->isAnyOwnedType() ||
+    mightBeClass->isAnySharedType() || mightBeClass->isAnyClassType();
 
   if (!mr || !otherClassLike) return false;
 
@@ -952,9 +908,7 @@ tryConvertClassTypeOutOfManagerRecordIfNeeded(Context* context,
   // and nilability, and create the target class type.
 
   auto rc = createDummyRC(context);
-  auto fields =
-    fieldsForTypeDecl(&rc, mr,
-                      DefaultsPolicy::IGNORE_DEFAULTS);
+  auto fields = fieldsForTypeDecl(&rc, mr, DefaultsPolicy::IGNORE_DEFAULTS);
 
   for (int i = 0; i < fields.numFields(); i++) {
     if (fields.fieldName(i) != "chpl_t") continue;
@@ -964,7 +918,9 @@ tryConvertClassTypeOutOfManagerRecordIfNeeded(Context* context,
     // Otherwise, it better be a class type.
     if (fieldType.isUnknown()) {
       mightBeManagerRecord =
-        ClassType::get(context, AnyClassType::get(context), targetManager,
+        ClassType::get(context,
+                       AnyClassType::get(context),
+                       targetManager,
                        ClassTypeDecorator(ClassTypeDecorator::MANAGED));
       return true;
     } else if (!fieldType.isUnknownOrErroneous() &&
@@ -973,9 +929,8 @@ tryConvertClassTypeOutOfManagerRecordIfNeeded(Context* context,
       auto ct = fieldType.type()->toClassType();
       // _owned(borrowed C) -> owned C
       // _shared(borrowed C?) -> shared C?
-      auto targetDec =
-        ClassTypeDecorator(ClassTypeDecorator::MANAGED)
-        .copyNilabilityFrom(ct->decorator());
+      auto targetDec = ClassTypeDecorator(ClassTypeDecorator::MANAGED)
+                         .copyNilabilityFrom(ct->decorator());
       mightBeManagerRecord =
         ClassType::get(context, ct->basicClassType(), targetManager, targetDec);
       return true;
@@ -997,8 +952,10 @@ shouldHandleManagerRecordConversion(Context* context,
     CHPL_ASSERT(formalT->isRecordType() && actualT->isRecordType());
     return std::make_pair(actualT, formalT);
   }
-  if (tryConvertClassTypeOutOfManagerRecordIfNeeded(context, formalT, actualT) ||
-      tryConvertClassTypeOutOfManagerRecordIfNeeded(context, actualT, formalT)) {
+  if (tryConvertClassTypeOutOfManagerRecordIfNeeded(
+        context, formalT, actualT) ||
+      tryConvertClassTypeOutOfManagerRecordIfNeeded(
+        context, actualT, formalT)) {
     CHPL_ASSERT(formalT->isClassType() && actualT->isClassType());
     return std::make_pair(actualT, formalT);
   }
@@ -1006,7 +963,8 @@ shouldHandleManagerRecordConversion(Context* context,
   return empty;
 }
 
-CanPassResult CanPassResult::ensureSubtypeConversionInstantiates(CanPassResult got) {
+CanPassResult
+CanPassResult::ensureSubtypeConversionInstantiates(CanPassResult got) {
   if (got.instantiates()) {
     return got;
   }
@@ -1063,7 +1021,8 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
   if (auto actualCt = actualT->toClassType()) {
     // check for instantiating classes
     if (auto formalCt = formalT->toClassType()) {
-      CanPassResult got = canPassSubtypeOrBorrowing(context, actualCt, formalCt);
+      CanPassResult got =
+        canPassSubtypeOrBorrowing(context, actualCt, formalCt);
       if (got.passes()) {
         return ensureSubtypeConversionInstantiates(got);
       }
@@ -1123,7 +1082,7 @@ CanPassResult CanPassResult::canPassScalar(Context* context,
   const Type* formalT = formalQT.type();
   CHPL_ASSERT(actualT && formalT);
   if (auto managerRecordPair =
-           shouldHandleManagerRecordConversion(context, actualT, formalT)) {
+        shouldHandleManagerRecordConversion(context, actualT, formalT)) {
     actualT = managerRecordPair->first;
     formalT = managerRecordPair->second;
     actualQT = QualifiedType(actualQT.kind(), actualT, actualQT.param());
@@ -1227,7 +1186,8 @@ CanPassResult CanPassResult::canPassScalar(Context* context,
       actualQT.kind() == QualifiedType::INIT_RECEIVER;
 
     if (isTypeGeneric(context, actualQT) && !canAcceptGenericActuals)
-      return fail(FAIL_GENERIC_TO_NONTYPE); // generic types can only be passed to type actuals
+      return fail(
+        FAIL_GENERIC_TO_NONTYPE); // generic types can only be passed to type actuals
 
     auto got = canInstantiate(context, actualQT, formalQT);
     if (got.passes() && formalQT.kind() == QualifiedType::TYPE &&
@@ -1235,8 +1195,8 @@ CanPassResult CanPassResult::canPassScalar(Context* context,
       // 'type x: borrowed' should not be instantiate-able with 'owned C'.
       return fail(FAIL_INCOMPATIBLE_MGMT);
     }
-    if (!got.passes() &&
-         got.reason() == FAIL_DID_NOT_INSTANTIATE && canAcceptGenericActuals) {
+    if (!got.passes() && got.reason() == FAIL_DID_NOT_INSTANTIATE &&
+        canAcceptGenericActuals) {
       // No instantiation occurred, but the actual isn't incompatible with
       // the formal. This suggests a generic actual being passed to the
       // formal; this is typically not allowed, but in this case
@@ -1277,53 +1237,50 @@ CanPassResult CanPassResult::canPassScalar(Context* context,
 
     case QualifiedType::CONST_REF:
     case QualifiedType::REF_MAYBE_CONST:
-    case QualifiedType::TYPE:
-      {
-        auto actualTup = actualT->toTupleType();
-        if (actualTup != nullptr  && formalT->isTupleType()) {
-          if (formalQT.kind() == QualifiedType::TYPE &&
-                actualTup->toValueTuple(context) == formalT) {
-            return passAsIs();
-          } else if (formalQT.kind() != QualifiedType::TYPE) {
-            auto got = canConvert(context, actualQT, formalQT);
-            if (got.passes()) {
-              return got;
-            }
-          }
-        }
-
-        // See ResolutionCandidate::shouldAllowCoercions: for TYPE
-        // formals, only class type coercions are allowed.
+    case QualifiedType::TYPE: {
+      auto actualTup = actualT->toTupleType();
+      if (actualTup != nullptr && formalT->isTupleType()) {
         if (formalQT.kind() == QualifiedType::TYPE &&
-            (!actualT->isClassType() || !formalT->isClassType())) {
-          break;
-        }
-
-        return canPassSubtypeNonBorrowing(context, actualT, formalT);
-      }
-
-    case QualifiedType::PARAM:
-      {
-        auto got = canConvert(context, actualQT, formalQT);
-        if (got.passes()) {
-          // if the formal parameter value is unknown, we need
-          // to instantiate as well.
-          if (formalQT.param() == nullptr) {
-            got.instantiates_ = true;
+            actualTup->toValueTuple(context) == formalT) {
+          return passAsIs();
+        } else if (formalQT.kind() != QualifiedType::TYPE) {
+          auto got = canConvert(context, actualQT, formalQT);
+          if (got.passes()) {
+            return got;
           }
         }
-        return got;
       }
+
+      // See ResolutionCandidate::shouldAllowCoercions: for TYPE
+      // formals, only class type coercions are allowed.
+      if (formalQT.kind() == QualifiedType::TYPE &&
+          (!actualT->isClassType() || !formalT->isClassType())) {
+        break;
+      }
+
+      return canPassSubtypeNonBorrowing(context, actualT, formalT);
+    }
+
+    case QualifiedType::PARAM: {
+      auto got = canConvert(context, actualQT, formalQT);
+      if (got.passes()) {
+        // if the formal parameter value is unknown, we need
+        // to instantiate as well.
+        if (formalQT.param() == nullptr) {
+          got.instantiates_ = true;
+        }
+      }
+      return got;
+    }
 
     case QualifiedType::IN:
     case QualifiedType::CONST_IN:
     case QualifiedType::INOUT:
     case QualifiedType::VAR:       // var/const var don't really make sense
     case QualifiedType::CONST_VAR: // as formals but we allow it for testing
-    case QualifiedType::INIT_RECEIVER:
-      {
-        return canConvert(context, actualQT, formalQT);
-      }
+    case QualifiedType::INIT_RECEIVER: {
+      return canConvert(context, actualQT, formalQT);
+    }
   }
 
   return fail(FAIL_FORMAL_OTHER);
@@ -1340,7 +1297,8 @@ CanPassResult CanPassResult::canPass(Context* context,
   // Scalar passing failing, but promotion may be possible.
   if (formalQtIn.kind() != QualifiedType::TYPE &&
       formalQtIn.kind() != QualifiedType::PARAM) {
-    auto promotionType = getPromotionType(context, actualQtIn, /*skipIfRunning */ true);
+    auto promotionType =
+      getPromotionType(context, actualQtIn, /*skipIfRunning */ true);
 
     if (!promotionType.isUnknownOrErroneous()) {
       auto got = canPassScalar(context, promotionType, formalQtIn);
@@ -1411,7 +1369,6 @@ bool canInstantiateSubstitutions(Context* context,
   }
 
   return true;
-
 }
 
 void KindProperties::invalidate() {
@@ -1430,17 +1387,11 @@ KindProperties KindProperties::fromKind(QualifiedType::Kind kind) {
   return KindProperties(isConst, isRef, false, false);
 }
 
-void KindProperties::setRef(bool isRef) {
-  this->isRef = isRef;
-}
+void KindProperties::setRef(bool isRef) { this->isRef = isRef; }
 
-void KindProperties::setParam(bool isParam) {
-  this->isParam = isParam;
-}
+void KindProperties::setParam(bool isParam) { this->isParam = isParam; }
 
-void KindProperties::setConst(bool isConst) {
-  this->isConst = isConst;
-}
+void KindProperties::setConst(bool isConst) { this->isConst = isConst; }
 
 bool KindProperties::checkValidCombine(const KindProperties& other) const {
   if (!isValid || !other.isValid) {
@@ -1488,23 +1439,22 @@ void KindProperties::strictCombineWith(const KindProperties& other) {
   // We could do some checking now, but that might be a bit premature.
 }
 
-types::QualifiedType::Kind KindProperties::combineKindsMeet(
-    types::QualifiedType::Kind kind1, types::QualifiedType::Kind kind2) {
+types::QualifiedType::Kind
+KindProperties::combineKindsMeet(types::QualifiedType::Kind kind1,
+                                 types::QualifiedType::Kind kind2) {
   auto kp1 = KindProperties::fromKind(kind1);
   auto kp2 = KindProperties::fromKind(kind2);
   kp1.combineWithMeet(kp2);
   return kp1.toKind();
 }
 
-QualifiedType::Kind
-KindProperties::addConstness(QualifiedType::Kind kind) {
+QualifiedType::Kind KindProperties::addConstness(QualifiedType::Kind kind) {
   auto kp = KindProperties::fromKind(kind);
   kp.setConst(true);
   return kp.toKind();
 }
 
-QualifiedType::Kind
-KindProperties::addRefness(QualifiedType::Kind kind) {
+QualifiedType::Kind KindProperties::addRefness(QualifiedType::Kind kind) {
   auto kp = KindProperties::fromKind(kind);
   kp.setRef(true);
   return kp.toKind();
@@ -1515,35 +1465,35 @@ QualifiedType::Kind KindProperties::toKind() const {
   if (isType) return QualifiedType::TYPE;
   if (isParam) return QualifiedType::PARAM;
   if (isConst) {
-    return isRef ? QualifiedType::CONST_REF : QualifiedType::CONST_VAR ;
+    return isRef ? QualifiedType::CONST_REF : QualifiedType::CONST_VAR;
   } else {
-    return isRef ? QualifiedType::REF : QualifiedType::VAR ;
+    return isRef ? QualifiedType::REF : QualifiedType::VAR;
   }
 }
 
-types::QualifiedType::Kind KindProperties::makeConst(types::QualifiedType::Kind kind) {
+types::QualifiedType::Kind
+KindProperties::makeConst(types::QualifiedType::Kind kind) {
   auto props = KindProperties::fromKind(kind);
   props.setConst(true);
   return props.toKind();
 }
 
-types::QualifiedType::Kind KindProperties::removeRef(types::QualifiedType::Kind kind) {
+types::QualifiedType::Kind
+KindProperties::removeRef(types::QualifiedType::Kind kind) {
   auto props = KindProperties::fromKind(kind);
   props.setRef(false);
   return props.toKind();
 }
 
 types::QualifiedType KindProperties::removeRef(types::QualifiedType type) {
-  return QualifiedType(
-      removeRef(type.kind()),
-      type.type(),
-      type.param());
+  return QualifiedType(removeRef(type.kind()), type.type(), type.param());
 }
 
 // Try finding a common ancestor type between class types
-static optional<QualifiedType> findByAncestor(
-    Context* context, const std::vector<QualifiedType>& types,
-    const KindRequirement& requiredKind) {
+static optional<QualifiedType>
+findByAncestor(Context* context,
+               const std::vector<QualifiedType>& types,
+               const KindRequirement& requiredKind) {
   // disallow subtype conversions for ref intents
   if (requiredKind && isRefQualifier(*requiredKind)) return chpl::empty;
 
@@ -1558,8 +1508,8 @@ static optional<QualifiedType> findByAncestor(
     if (!pct || pct->isRootClass()) return chpl::empty;
 
     parentTypes.emplace_back(QualifiedType(
-        type.kind(),
-        ClassType::get(context, pct, ct->manager(), ct->decorator())));
+      type.kind(),
+      ClassType::get(context, pct, ct->manager(), ct->decorator())));
   }
 
   if (parentTypes.empty()) return chpl::empty;
@@ -1568,8 +1518,7 @@ static optional<QualifiedType> findByAncestor(
 }
 
 static optional<QualifiedType>
-findByPassing(Context* context,
-              const std::vector<QualifiedType>& types) {
+findByPassing(Context* context, const std::vector<QualifiedType>& types) {
   for (auto& type : types) {
     bool fitsOthers = true;
     for (auto& otherType : types) {
@@ -1585,10 +1534,9 @@ findByPassing(Context* context,
   return chpl::empty;
 }
 
-optional<QualifiedType>
-commonType(Context* context,
-           const std::vector<QualifiedType>& types,
-           KindRequirement requiredKind) {
+optional<QualifiedType> commonType(Context* context,
+                                   const std::vector<QualifiedType>& types,
+                                   KindRequirement requiredKind) {
   CHPL_ASSERT(types.size() > 0);
 
   // figure out the kind
@@ -1621,8 +1569,7 @@ commonType(Context* context,
   //
   // If a param is not required and there is a mismatch continue on without
   // param-ness.
-  bool paramRequired = requiredKind &&
-                       *requiredKind == QualifiedType::PARAM;
+  bool paramRequired = requiredKind && *requiredKind == QualifiedType::PARAM;
   if (bestKind == QualifiedType::PARAM || paramRequired) {
     auto firstParam = types.front().param();
     bool mismatch = false;

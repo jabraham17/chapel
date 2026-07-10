@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 std::string Local::dumpChildLabelInner(int i) const {
   if (i == condChildNum_) {
     return "cond";
@@ -48,9 +47,8 @@ owned<Local> Local::build(Builder* builder,
     lst.push_back(std::move(stmt));
   }
 
-  Local* ret = new Local(std::move(lst), condChildNum, blockStyle,
-                         bodyChildNum,
-                         numBodyStmts);
+  Local* ret = new Local(
+    std::move(lst), condChildNum, blockStyle, bodyChildNum, numBodyStmts);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
@@ -77,13 +75,11 @@ owned<Local> Local::build(Builder* builder,
     lst.push_back(std::move(stmt));
   }
 
-  Local* ret = new Local(std::move(lst), condChildNum, blockStyle,
-                         bodyChildNum,
-                         numBodyStmts);
+  Local* ret = new Local(
+    std::move(lst), condChildNum, blockStyle, bodyChildNum, numBodyStmts);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

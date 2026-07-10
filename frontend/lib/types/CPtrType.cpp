@@ -42,14 +42,16 @@ const CPtrType* CPtrType::get(Context* context) {
   return CPtrType::getCPtrType(context,
                                /* instantiatedFrom */ nullptr,
                                /* eltType */ nullptr,
-                               /* isConst */ false).get();
+                               /* isConst */ false)
+    .get();
 }
 
 const CPtrType* CPtrType::get(Context* context, const Type* eltType) {
   return CPtrType::getCPtrType(context,
                                /* instantiatedFrom */ CPtrType::get(context),
                                eltType,
-                               /* isConst */ false).get();
+                               /* isConst */ false)
+    .get();
 }
 
 // TODO: need to treat the elttype kind as const
@@ -57,15 +59,18 @@ const CPtrType* CPtrType::getConst(Context* context) {
   return CPtrType::getCPtrType(context,
                                /* instantiatedFrom */ nullptr,
                                /* eltType */ nullptr,
-                               /* isConst */ true).get();
+                               /* isConst */ true)
+    .get();
 }
 
 // TODO: need to treat the elt type kind as const
 const CPtrType* CPtrType::getConst(Context* context, const Type* eltType) {
-  return CPtrType::getCPtrType(context,
-                               /* instantiatedFrom */ CPtrType::getConst(context),
-                               eltType,
-                               /*isConst*/ true).get();
+  return CPtrType::getCPtrType(
+           context,
+           /* instantiatedFrom */ CPtrType::getConst(context),
+           eltType,
+           /*isConst*/ true)
+    .get();
 }
 
 const CPtrType* CPtrType::getCVoidPtrType(Context* context) {
@@ -74,8 +79,7 @@ const CPtrType* CPtrType::getCVoidPtrType(Context* context) {
 
 const ID& CPtrType::getId(Context* context) {
   QUERY_BEGIN(getId, context);
-  ID result =
-      parsing::getCPtrIdFromTopLevelCTypesModule(context);
+  ID result = parsing::getCPtrIdFromTopLevelCTypesModule(context);
   return QUERY_END(result);
 }
 
@@ -85,13 +89,13 @@ const CPtrType* CPtrType::withoutConst(Context* context) const {
     instFrom = instantiatedFrom_->toCPtrType()->withoutConst(context);
   }
 
-  return CPtrType::getCPtrType(context, instFrom, eltType_, /* isConst */ false).get();
+  return CPtrType::getCPtrType(context, instFrom, eltType_, /* isConst */ false)
+    .get();
 }
 
 const ID& CPtrType::getConstId(Context* context) {
   QUERY_BEGIN(getConstId, context);
-  ID result =
-      parsing::getCPtrConstIdFromTopLevelCTypesModule(context);
+  ID result = parsing::getCPtrConstIdFromTopLevelCTypesModule(context);
   return QUERY_END(result);
 }
 

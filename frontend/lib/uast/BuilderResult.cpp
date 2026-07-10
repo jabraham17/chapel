@@ -37,25 +37,17 @@
 namespace chpl {
 namespace uast {
 
-BuilderResult::BuilderResult()
-  : filePath_()
-{
-}
-
+BuilderResult::BuilderResult() : filePath_() {}
 
 BuilderResult::BuilderResult(UniqueString filePath,
                              const libraries::LibraryFile* lib)
-  : filePath_(filePath), libraryFile_(lib)
-{
-}
+  : filePath_(filePath), libraryFile_(lib) {}
 
 // Computes idToAst and idToParent maps by visiting all uAST nodes
-static
-void computeIdMaps(
-    const AstNode* ast,
-    const AstNode* parentAst,
-    llvm::DenseMap<ID, const AstNode*>& idToAst,
-    llvm::DenseMap<ID, ID>& idToParentId) {
+static void computeIdMaps(const AstNode* ast,
+                          const AstNode* parentAst,
+                          llvm::DenseMap<ID, const AstNode*>& idToAst,
+                          llvm::DenseMap<ID, ID>& idToParentId) {
 
   for (const AstNode* child : ast->children()) {
     computeIdMaps(child, ast, idToAst, idToParentId);
@@ -85,14 +77,15 @@ void BuilderResult::swap(BuilderResult& other) {
   idToParentId_.swap(other.idToParentId_);
   idToLocation_.swap(other.idToLocation_);
 
-  // Swap additional location maps.
-  #define LOCATION_MAP(ast__, location__) { \
-    auto& m1 = CHPL_ID_LOC_MAP(ast__, location__); \
+// Swap additional location maps.
+#define LOCATION_MAP(ast__, location__)                  \
+  {                                                      \
+    auto& m1 = CHPL_ID_LOC_MAP(ast__, location__);       \
     auto& m2 = other.CHPL_ID_LOC_MAP(ast__, location__); \
-    m1.swap(m2); \
+    m1.swap(m2);                                         \
   }
-  #include "chpl/uast/all-location-maps.h"
-  #undef LOCATION_MAP
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
 
   commentIdToLocation_.swap(other.commentIdToLocation_);
 
@@ -107,8 +100,8 @@ bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
   changed |= defaultUpdate(keep.filePath_, addin.filePath_);
 
   // update the ASTs
-  changed |= updateAstList(keep.topLevelExpressions_,
-                           addin.topLevelExpressions_);
+  changed |=
+    updateAstList(keep.topLevelExpressions_, addin.topLevelExpressions_);
 
   llvm::DenseMap<ID, const AstNode*> newIdToAst;
   llvm::DenseMap<ID, ID> newIdToParent;
@@ -123,17 +116,18 @@ bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
   changed |= defaultUpdate(keep.idToParentId_, newIdToParent);
   changed |= defaultUpdate(keep.idToLocation_, addin.idToLocation_);
 
-  // Also update additional location maps.
-  #define LOCATION_MAP(ast__, location__) { \
-    auto& m1 = keep.CHPL_ID_LOC_MAP(ast__, location__); \
+// Also update additional location maps.
+#define LOCATION_MAP(ast__, location__)                  \
+  {                                                      \
+    auto& m1 = keep.CHPL_ID_LOC_MAP(ast__, location__);  \
     auto& m2 = addin.CHPL_ID_LOC_MAP(ast__, location__); \
-    changed |= defaultUpdate(m1, m2); \
+    changed |= defaultUpdate(m1, m2);                    \
   }
-  #include "chpl/uast/all-location-maps.h"
-  #undef LOCATION_MAP
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
 
-  changed |= defaultUpdate(keep.commentIdToLocation_,
-                           addin.commentIdToLocation_);
+  changed |=
+    defaultUpdate(keep.commentIdToLocation_, addin.commentIdToLocation_);
   changed |= defaultUpdateBasic(keep.libraryFile_, addin.libraryFile_);
   changed |= defaultUpdate(keep.libraryFileSymbols_, addin.libraryFileSymbols_);
 
@@ -167,14 +161,15 @@ void BuilderResult::mark(Context* context) const {
     context->markPointer(pair.second);
   }
 
-  // Also mark locations in the additional location maps. No need to mark
-  // IDs since they should already be marked as explained above.
-  #define LOCATION_MAP(ast__, location__) { \
-    auto& m = CHPL_ID_LOC_MAP(ast__, location__); \
+// Also mark locations in the additional location maps. No need to mark
+// IDs since they should already be marked as explained above.
+#define LOCATION_MAP(ast__, location__)             \
+  {                                                 \
+    auto& m = CHPL_ID_LOC_MAP(ast__, location__);   \
     for (const auto& p : m) p.second.mark(context); \
   }
-  #include "chpl/uast/all-location-maps.h"
-  #undef LOCATION_MAP
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
 
   for (const Location& loc : commentIdToLocation_) {
     loc.mark(context);
@@ -183,7 +178,7 @@ void BuilderResult::mark(Context* context) const {
   context->markPointer(libraryFile_);
 
   // libraryFileSymbols_ only has IDs that should have been marked above
-  (void) libraryFileSymbols_;
+  (void)libraryFileSymbols_;
 
   // update the filePathForModuleName query
   BuilderResult::updateFilePaths(context, *this);
@@ -198,7 +193,7 @@ void BuilderResult::updateFilePaths(Context* context,
                                     const BuilderResult& keep) {
   UniqueString path = keep.filePath_;
   // Update the filePathForModuleName query
-  for (auto & ast : keep.topLevelExpressions_) {
+  for (auto& ast : keep.topLevelExpressions_) {
     if (const Module* mod = ast->toModule()) {
       context->setFilePathForModuleId(mod->id(), path);
     }
@@ -246,11 +241,8 @@ bool BuilderResult::findContainingSymbol(ID id,
   return false;
 }
 
-Location BuilderResult::computeLocationFromLibraryFile(Context* context,
-                                                       ID id,
-                                                       UniqueString path,
-                                                       LocationMapTag tag) const
-{
+Location BuilderResult::computeLocationFromLibraryFile(
+  Context* context, ID id, UniqueString path, LocationMapTag tag) const {
   CHPL_ASSERT(libraryFile_ != nullptr);
   if (libraryFile_ == nullptr) {
     return Location(path);
@@ -280,8 +272,8 @@ Location BuilderResult::computeLocationFromLibraryFile(Context* context,
 
   // read the appropriate Locations from the library file and get
   // the appropriate Location from it
-  const auto& maps = libraryFile_->loadLocations(context, inModuleIdx,
-                                                 inSymbolIdx, symbolAst);
+  const auto& maps =
+    libraryFile_->loadLocations(context, inModuleIdx, inSymbolIdx, symbolAst);
 
   const auto* map = maps.getLocationMap((int)tag);
   if (map != nullptr) {
@@ -294,12 +286,11 @@ Location BuilderResult::computeLocationFromLibraryFile(Context* context,
   return Location(path);
 }
 
-Location BuilderResult::idToLocation(Context* context,
-                                     ID id,
-                                     UniqueString path) const {
+Location
+BuilderResult::idToLocation(Context* context, ID id, UniqueString path) const {
   if (libraryFile_) {
-    return computeLocationFromLibraryFile(context, id, path,
-                                          LocationMapTag::BaseMap);
+    return computeLocationFromLibraryFile(
+      context, id, path, LocationMapTag::BaseMap);
   }
 
   // Look in astToLocation
@@ -310,7 +301,7 @@ Location BuilderResult::idToLocation(Context* context,
   return Location(path);
 }
 
-Location BuilderResult::commentToLocation(const Comment *c) const {
+Location BuilderResult::commentToLocation(const Comment* c) const {
   if (libraryFile_) {
     // library files don't store comments
     CHPL_ASSERT(false && "should not be reachable");
@@ -332,18 +323,17 @@ ID BuilderResult::idToParentId(ID id) const {
   return ID();
 }
 
-
 // Add getters for additional locations that go from AST or ID to location.
-#define LOCATION_MAP(ast__, location__) \
-  Location BuilderResult:: \
-  idTo##location__##Location(Context* context, ID id, UniqueString path) const { \
-    if (!id) return Location(path); \
-    if (libraryFile_ != nullptr) { \
-      return computeLocationFromLibraryFile(context, id, path, \
-                                            LocationMapTag::location__); \
-    } \
-    auto& m = CHPL_ID_LOC_MAP(ast__, location__); \
-    auto it = m.find(id); \
+#define LOCATION_MAP(ast__, location__)                   \
+  Location BuilderResult::idTo##location__##Location(     \
+    Context* context, ID id, UniqueString path) const {   \
+    if (!id) return Location(path);                       \
+    if (libraryFile_ != nullptr) {                        \
+      return computeLocationFromLibraryFile(              \
+        context, id, path, LocationMapTag::location__);   \
+    }                                                     \
+    auto& m = CHPL_ID_LOC_MAP(ast__, location__);         \
+    auto it = m.find(id);                                 \
     return (it != m.end()) ? it->second : Location(path); \
   }
 #include "chpl/uast/all-location-maps.h"
@@ -391,18 +381,18 @@ bool BuilderResult::equals(const BuilderResult& other) const {
     }
   }
 
-  // Check that all the additional location maps match.
-  #define LOCATION_MAP(ast__, location__) { \
-      auto& m1 = CHPL_ID_LOC_MAP(ast__, location__); \
-      auto& m2 = other.CHPL_ID_LOC_MAP(ast__, location__); \
-      if (m1 != m2) return false; \
-    }
-  #include "chpl/uast/all-location-maps.h"
-  #undef LOCATION_MAP
+// Check that all the additional location maps match.
+#define LOCATION_MAP(ast__, location__)                  \
+  {                                                      \
+    auto& m1 = CHPL_ID_LOC_MAP(ast__, location__);       \
+    auto& m2 = other.CHPL_ID_LOC_MAP(ast__, location__); \
+    if (m1 != m2) return false;                          \
+  }
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
 
   return true;
 }
-
 
 } // namespace uast
 } // namespace chpl

@@ -23,7 +23,6 @@
 namespace chpl {
 namespace types {
 
-
 const owned<VoidType>& VoidType::getVoidType(Context* context) {
   QUERY_BEGIN(getVoidType, context);
 
@@ -39,7 +38,6 @@ const VoidType* VoidType::get(Context* context) {
 void VoidType::stringify(std::ostream& ss, StringifyKind stringKind) const {
   ss << "void";
 }
-
 
 } // end namespace types
 } // end namespace chpl

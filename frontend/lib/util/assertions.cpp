@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 
-
 #include "chpl/util/assertions.h"
 #include "chpl/framework/Context.h"
 
@@ -30,32 +29,25 @@ bool assertionsAreOn_ = true;
 // Whether to warn about unimplemented features
 bool unimplementedWarningsAreOn_ = true;
 
-void setAssertions(bool enable) {
-  assertionsAreOn_ = enable;
-}
+void setAssertions(bool enable) { assertionsAreOn_ = enable; }
 
-void setAssertionsFatal(bool enable) {
-  assertionsAreFatal_ = enable;
-}
+void setAssertionsFatal(bool enable) { assertionsAreFatal_ = enable; }
 
 void setUnimplementedWarnings(bool enable) {
   unimplementedWarningsAreOn_ = enable;
 }
 
-bool assertionsAreOn() {
-  return assertionsAreOn_;
-}
+bool assertionsAreOn() { return assertionsAreOn_; }
 
-bool assertionsAreFatal() {
-  return assertionsAreFatal_;
-}
+bool assertionsAreFatal() { return assertionsAreFatal_; }
 
-bool unimplementedWarningsAreOn() {
-  return unimplementedWarningsAreOn_;
-}
+bool unimplementedWarningsAreOn() { return unimplementedWarningsAreOn_; }
 
-void assertion(bool expr, const char* filename, const char* func,
-               int lineno, const char* exprText) {
+void assertion(bool expr,
+               const char* filename,
+               const char* func,
+               int lineno,
+               const char* exprText) {
   // assertions OFF: skip all checks
   if (!assertionsAreOn()) {
     return;
@@ -64,8 +56,12 @@ void assertion(bool expr, const char* filename, const char* func,
   // assertions ON: perform check, conditionally exit if assertionsAreFatal
   if (!expr) {
     // assertion failed: write out error
-    fprintf(stderr, "[%s:%d in %s] Assertion failed: %s\n",
-            filename, lineno, func, exprText);
+    fprintf(stderr,
+            "[%s:%d in %s] Assertion failed: %s\n",
+            filename,
+            lineno,
+            func,
+            exprText);
     if (assertionsAreFatal()) {
       debuggerBreakHere();
       std::abort();
@@ -74,7 +70,9 @@ void assertion(bool expr, const char* filename, const char* func,
   // assertions active and passed
 }
 
-void chpl_unimpl(const char* filename, const char* func, int lineno,
+void chpl_unimpl(const char* filename,
+                 const char* func,
+                 int lineno,
                  const char* msg) {
   if (!unimplementedWarningsAreOn()) {
     return;
@@ -86,9 +84,12 @@ void chpl_unimpl(const char* filename, const char* func, int lineno,
   if (frontPos != std::string::npos) {
     shortName = fname.substr(frontPos, std::string::npos);
   }
-  fprintf(stderr, "[%s:%d in %s] Unimplemented: %s\n",
-                  shortName.c_str(), lineno, func, msg);
+  fprintf(stderr,
+          "[%s:%d in %s] Unimplemented: %s\n",
+          shortName.c_str(),
+          lineno,
+          func,
+          msg);
 };
-
 
 } // end namespace chpl

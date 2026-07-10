@@ -37,7 +37,7 @@ std::string vprintToString(const char* format, va_list vl) {
   va_copy(vlCopy, vl);
 
   int size = 128;
-  char* buf = (char*) malloc(size);
+  char* buf = (char*)malloc(size);
   // this call destructively consumes 'vlCopy'
   int got = vsnprintf(buf, size, format, vlCopy);
   // each va_copy should be matched to a va_end
@@ -46,8 +46,8 @@ std::string vprintToString(const char* format, va_list vl) {
   // 'got' is number of characters to write not including terminating null byte
   if (got >= size) {
     // output was truncated, so try again
-    size = got+1; // include '\0' terminator
-    char* newbuf = (char*) realloc(buf, size);
+    size = got + 1; // include '\0' terminator
+    char* newbuf = (char*)realloc(buf, size);
     CHPL_ASSERT(newbuf != nullptr);
     if (newbuf == nullptr) {
       free(buf);

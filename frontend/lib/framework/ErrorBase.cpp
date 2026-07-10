@@ -38,7 +38,8 @@ const char* ErrorBase::getKindName(ErrorBase::Kind kind) {
 
 const char* ErrorBase::getTypeName(ErrorType type) {
   switch (type) {
-#define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) case NAME: return #NAME;
+#define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) \
+  case NAME: return #NAME;
 #include "chpl/framework/error-classes-list.h"
 #undef DIAGNOSTIC_CLASS
     default: return nullptr;
@@ -67,16 +68,14 @@ ErrorMessage ErrorBase::toErrorMessage(Context* context) const {
     case NOTE: kind = ErrorMessage::NOTE; break;
     case SYNTAX: kind = ErrorMessage::SYNTAX; break;
   }
-  auto message = ew.id().isEmpty() ?
-    ErrorMessage(kind, ew.location(), ew.message()) :
-    ErrorMessage(kind, ew.id(), ew.message());
+  auto message = ew.id().isEmpty()
+                   ? ErrorMessage(kind, ew.location(), ew.message())
+                   : ErrorMessage(kind, ew.id(), ew.message());
   for (const auto& note : ew.notes()) {
     auto detailKind = ErrorMessage::NOTE;
     auto detailmessage = std::get<std::string>(note);
-    message.addDetail(
-        ErrorMessage(detailKind,
-                     std::get<IdOrLocation>(note),
-                     std::get<std::string>(note)));
+    message.addDetail(ErrorMessage(
+      detailKind, std::get<IdOrLocation>(note), std::get<std::string>(note)));
   }
   return message;
 }
@@ -87,7 +86,8 @@ ErrorBase::Kind errorKindForErrorType(ErrorType type) {
       CHPL_ASSERT(false && "general error can be of any kind");
       return ErrorBase::Kind::ERROR;
     }
-#define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) case NAME: return ErrorBase::Kind::KIND;
+#define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) \
+  case NAME: return ErrorBase::Kind::KIND;
 #include "chpl/framework/error-classes-list.h"
 #undef DIAGNOSTIC_CLASS
     default: {
@@ -121,23 +121,31 @@ void BasicError::mark(Context* context) const {
   }
 }
 
-owned<GeneralError> GeneralError::vbuild(Kind kind, ID id, const char* fmt, va_list vl) {
+owned<GeneralError>
+GeneralError::vbuild(Kind kind, ID id, const char* fmt, va_list vl) {
   auto message = vprintToString(fmt, vl);
-  return owned<GeneralError>(new GeneralError(kind, std::move(id), std::move(message), {}));
+  return owned<GeneralError>(
+    new GeneralError(kind, std::move(id), std::move(message), {}));
 }
 
-owned<GeneralError> GeneralError::vbuild(Kind kind, Location loc, const char* fmt, va_list vl) {
+owned<GeneralError>
+GeneralError::vbuild(Kind kind, Location loc, const char* fmt, va_list vl) {
   auto message = vprintToString(fmt, vl);
-  return owned<GeneralError>(new GeneralError(kind, std::move(loc), std::move(message), {}));
+  return owned<GeneralError>(
+    new GeneralError(kind, std::move(loc), std::move(message), {}));
 }
 
-owned<GeneralError> GeneralError::vbuild(Kind kind, IdOrLocation loc, const char* fmt, va_list vl) {
+owned<GeneralError>
+GeneralError::vbuild(Kind kind, IdOrLocation loc, const char* fmt, va_list vl) {
   auto message = vprintToString(fmt, vl);
-  return owned<GeneralError>(new GeneralError(kind, std::move(loc), std::move(message), {}));
+  return owned<GeneralError>(
+    new GeneralError(kind, std::move(loc), std::move(message), {}));
 }
 
-owned<GeneralError> GeneralError::get(Kind kind, Location loc, std::string msg) {
-  return owned<GeneralError>(new GeneralError(kind, std::move(loc), std::move(msg), {}));
+owned<GeneralError>
+GeneralError::get(Kind kind, Location loc, std::string msg) {
+  return owned<GeneralError>(
+    new GeneralError(kind, std::move(loc), std::move(msg), {}));
 }
 
 owned<GeneralError> GeneralError::error(Location loc, std::string msg) {

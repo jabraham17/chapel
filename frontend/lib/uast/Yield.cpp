@@ -24,9 +24,8 @@
 namespace chpl {
 namespace uast {
 
-
-owned<Yield> Yield::build(Builder* builder, Location loc,
-                          owned<AstNode> value) {
+owned<Yield>
+Yield::build(Builder* builder, Location loc, owned<AstNode> value) {
   CHPL_ASSERT(value.get() != nullptr);
 
   AstList lst;
@@ -37,7 +36,6 @@ owned<Yield> Yield::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

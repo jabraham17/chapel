@@ -28,23 +28,23 @@ bool CompilerGlobals::update(CompilerGlobals& keep, CompilerGlobals& addin) {
 }
 
 void CompilerGlobals::swap(CompilerGlobals& other) {
-  #define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) \
-    std::swap(this->FIELD__, other.FIELD__);
-  #include "chpl/uast/compiler-globals-list.h"
-  #undef COMPILER_GLOBAL
+#define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) \
+  std::swap(this->FIELD__, other.FIELD__);
+#include "chpl/uast/compiler-globals-list.h"
+#undef COMPILER_GLOBAL
 }
 
 bool CompilerGlobals::operator==(const CompilerGlobals& other) const {
-  #define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) \
-    this->FIELD__ == other.FIELD__&&
+#define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) \
+  this->FIELD__ == other.FIELD__&&
   return
-  #include "chpl/uast/compiler-globals-list.h"
-  #undef COMPILER_GLOBAL
+#include "chpl/uast/compiler-globals-list.h"
+#undef COMPILER_GLOBAL
     true;
 }
 
 bool CompilerGlobals::operator!=(const CompilerGlobals& other) const {
-  return !(*this==other);
+  return !(*this == other);
 }
 
 const CompilerGlobals& compilerGlobals(Context* context) {
@@ -71,6 +71,5 @@ bool isCompilerFlagSet(Context* context, CompilerFlags::Name flag) {
   auto& list = chpl::compilerFlags(context);
   return list.get(flag);
 }
-
 
 } // end namespace chpl

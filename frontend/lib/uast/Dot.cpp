@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 void Dot::dumpFieldsInner(const DumpSettings& s) const {
   s.out << " ." << fieldName_.str();
 }
@@ -43,7 +42,6 @@ owned<Dot> Dot::build(Builder* builder,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

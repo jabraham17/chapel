@@ -22,7 +22,6 @@
 namespace chpl {
 namespace uast {
 
-
 std::string Loop::dumpChildLabelInner(int i) const {
   if (i == loopBodyChildNum_) {
     return "body";
@@ -30,9 +29,7 @@ std::string Loop::dumpChildLabelInner(int i) const {
   return "";
 }
 
-Loop::~Loop() {
-}
-
+Loop::~Loop() {}
 
 } // namespace uast
 } // namespace chpl

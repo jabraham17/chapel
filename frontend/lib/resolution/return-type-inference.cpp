@@ -50,7 +50,6 @@
 namespace chpl {
 namespace resolution {
 
-
 using namespace uast;
 using namespace types;
 
@@ -59,10 +58,8 @@ static QualifiedType adjustForReturnIntent(Context* context,
                                            uast::Function::ReturnIntent ri,
                                            QualifiedType retType);
 
-
 /* pair (interface ID, implementation point ID) */
-using ImplementedInterface =
-  std::pair<const InterfaceType*, ID>;
+using ImplementedInterface = std::pair<const InterfaceType*, ID>;
 
 /* (parent class, implemented interfaces) tuple resulting from processing
    the inheritance expressions of a class/record. */
@@ -74,7 +71,11 @@ processInheritanceExpressionsForAggregateQuery(Context* context,
                                                const AggregateDecl* ad,
                                                SubstitutionsMap substitutions,
                                                const PoiScope* poiScope) {
-  QUERY_BEGIN(processInheritanceExpressionsForAggregateQuery, context, ad, substitutions, poiScope);
+  QUERY_BEGIN(processInheritanceExpressionsForAggregateQuery,
+              context,
+              ad,
+              substitutions,
+              poiScope);
   const BasicClassType* parentClassType = nullptr;
   const AstNode* parentClassNode = nullptr;
   std::vector<ImplementedInterface> implementationPoints;
@@ -83,10 +84,8 @@ processInheritanceExpressionsForAggregateQuery(Context* context,
   for (auto inheritExpr : ad->inheritExprs()) {
     // Resolve the parent class type expression
     ResolutionResultByPostorderID r;
-    auto visitor =
-      Resolver::createForParentClass(context, ad, inheritExpr,
-                                     substitutions,
-                                     poiScope, r);
+    auto visitor = Resolver::createForParentClass(
+      context, ad, inheritExpr, substitutions, poiScope, r);
     inheritExpr->traverse(visitor);
 
     auto& rr = r.byAst(inheritExpr);
@@ -103,12 +102,14 @@ processInheritanceExpressionsForAggregateQuery(Context* context,
 
     bool foundParentClass = qt.isType() && newParentClassType != nullptr;
     if (!c && foundParentClass) {
-      CHPL_REPORT(context, NonClassInheritance, ad, inheritExpr, newParentClassType);
+      CHPL_REPORT(
+        context, NonClassInheritance, ad, inheritExpr, newParentClassType);
     } else if (foundParentClass) {
       // It's a valid parent class; is it the only one? (error otherwise).
       if (parentClassType) {
         CHPL_ASSERT(parentClassNode);
-        reportInvalidMultipleInheritance(context, c, parentClassNode, inheritExpr);
+        reportInvalidMultipleInheritance(
+          context, c, parentClassNode, inheritExpr);
       } else {
         parentClassType = newParentClassType;
         parentClassNode = inheritExpr;
@@ -118,7 +119,9 @@ processInheritanceExpressionsForAggregateQuery(Context* context,
     } else if (qt.isType() && qt.type() && qt.type()->isInterfaceType()) {
       auto ift = qt.type()->toInterfaceType();
       if (!ift->substitutions().empty()) {
-        context->error(inheritExpr, "cannot specify instantiated interface type in inheritance expression");
+        context->error(inheritExpr,
+                       "cannot specify instantiated interface type in "
+                       "inheritance expression");
       } else {
         implementationPoints.emplace_back(ift, inheritExpr->id());
       }
@@ -129,15 +132,13 @@ processInheritanceExpressionsForAggregateQuery(Context* context,
     }
   }
 
-  InheritanceExprResolutionResult result {
-    parentClassType, std::move(implementationPoints)
-  };
+  InheritanceExprResolutionResult result{parentClassType,
+                                         std::move(implementationPoints)};
   return QUERY_END(result);
 }
 
 static const std::vector<const ImplementationPoint*>&
-getImplementedInterfacesQuery(Context* context,
-                              const AggregateDecl* ad) {
+getImplementedInterfacesQuery(Context* context, const AggregateDecl* ad) {
   QUERY_BEGIN(getImplementedInterfacesQuery, context, ad);
   std::vector<const ImplementationPoint*> result;
   std::map<const InterfaceType*, ID> seen;
@@ -149,21 +150,28 @@ getImplementedInterfacesQuery(Context* context,
                                    initialTypeForTypeDecl(context, ad->id()));
 
   for (auto& implementedInterface : implementationPoints) {
-    auto insertionResult = seen.insert({ implementedInterface.first, implementedInterface.second });
+    auto insertionResult =
+      seen.insert({implementedInterface.first, implementedInterface.second});
 
     if (!insertionResult.second) {
       // We already saw an 'implements' for this interface
-      CHPL_REPORT(context, InterfaceMultipleImplements, ad,
-                  implementedInterface.first, insertionResult.first->second,
+      CHPL_REPORT(context,
+                  InterfaceMultipleImplements,
+                  ad,
+                  implementedInterface.first,
+                  insertionResult.first->second,
                   implementedInterface.second);
     } else {
-      auto ift = InterfaceType::withTypes(context, implementedInterface.first,
-                                          { initialType });
+      auto ift = InterfaceType::withTypes(
+        context, implementedInterface.first, {initialType});
       if (!ift) {
         // we gave it a single type, but got null back, which means it's
         // not a unary interface.
-        CHPL_REPORT(context, InterfaceNaryInInherits, ad,
-                    implementedInterface.first, implementedInterface.second);
+        CHPL_REPORT(context,
+                    InterfaceNaryInInherits,
+                    ad,
+                    implementedInterface.first,
+                    implementedInterface.second);
       } else {
         auto implPoint =
           ImplementationPoint::get(context, ift, implementedInterface.second);
@@ -176,8 +184,7 @@ getImplementedInterfacesQuery(Context* context,
 }
 
 const std::vector<const ImplementationPoint*>&
-getImplementedInterfaces(Context* context,
-                         const AggregateDecl* ad) {
+getImplementedInterfaces(Context* context, const AggregateDecl* ad) {
   return getImplementedInterfacesQuery(context, ad);
 }
 
@@ -210,9 +217,9 @@ const CompositeType* helpGetTypeForDecl(Context* context,
     UniqueString name = c->name();
 
     const BasicClassType* parentClassType =
-      processInheritanceExpressionsForAggregateQuery(context, ad,
-                                                     substitutions,
-                                                     poiScope).first;
+      processInheritanceExpressionsForAggregateQuery(
+        context, ad, substitutions, poiScope)
+        .first;
 
     // All the parent expressions could've been interfaces, and we just
     // inherit from object. Unless we are object itself.
@@ -227,17 +234,15 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       }
     }
 
-    if (parentClassType && !parentClassType->isRootClass() && !substitutions.empty()) {
+    if (parentClassType && !parentClassType->isRootClass() &&
+        !substitutions.empty()) {
       // recompute the parent class type with substitutions
       auto parentAst = parsing::idToAst(context, parentClassType->id());
       CHPL_ASSERT(parentAst);
       auto parentAd = parentAst->toAggregateDecl();
       CHPL_ASSERT(parentAd);
-      auto got = helpGetTypeForDecl(context,
-                                    parentAd,
-                                    substitutions,
-                                    poiScope,
-                                    parentClassType);
+      auto got = helpGetTypeForDecl(
+        context, parentAd, substitutions, poiScope, parentClassType);
       auto gotBct = got->toBasicClassType();
       CHPL_ASSERT(gotBct);
       parentClassType = gotBct;
@@ -247,7 +252,8 @@ const CompositeType* helpGetTypeForDecl(Context* context,
     // even if the filtered substitutions are empty. Keep that invariant
     // here, and set instantiatedFrom for this class because its parent
     // was instantiated.
-    if (parentClassType && parentClassType->instantiatedFrom() && !instantiatedFrom) {
+    if (parentClassType && parentClassType->instantiatedFrom() &&
+        !instantiatedFrom) {
       instantiatedFrom = initialTypeForTypeDecl(context, ad->id());
     }
 
@@ -265,9 +271,12 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       }
     }
 
-    ret = BasicClassType::get(context, c->id(), name,
+    ret = BasicClassType::get(context,
+                              c->id(),
+                              name,
                               parentClassType,
-                              insnFromBct, std::move(filteredSubs));
+                              insnFromBct,
+                              std::move(filteredSubs));
 
   } else if (auto r = ad->toRecord()) {
     if (r->id() == DomainType::getGenericDomainType(context)->id()) {
@@ -285,8 +294,8 @@ const CompositeType* helpGetTypeForDecl(Context* context,
           CHPL_ASSERT(false && "unexpected instantiatedFrom type");
       }
 
-      ret = RecordType::get(context, r->id(), r->name(),
-                            insnFromRec, std::move(filteredSubs));
+      ret = RecordType::get(
+        context, r->id(), r->name(), insnFromRec, std::move(filteredSubs));
     }
 
   } else if (auto u = ad->toUnion()) {
@@ -298,8 +307,8 @@ const CompositeType* helpGetTypeForDecl(Context* context,
         CHPL_ASSERT(false && "unexpected instantiatedFrom type");
     }
 
-    ret = UnionType::get(context, u->id(), u->name(),
-                         insnFromUni, std::move(filteredSubs));
+    ret = UnionType::get(
+      context, u->id(), u->name(), insnFromUni, std::move(filteredSubs));
 
   } else {
     CHPL_ASSERT(false && "case not handled");
@@ -308,7 +317,8 @@ const CompositeType* helpGetTypeForDecl(Context* context,
   return ret;
 }
 
-struct ReturnTypeInferrer : BranchSensitiveVisitor<DefaultFrame, ResolvedVisitor<ReturnTypeInferrer>&> {
+struct ReturnTypeInferrer
+  : BranchSensitiveVisitor<DefaultFrame, ResolvedVisitor<ReturnTypeInferrer>&> {
   using RV = ResolvedVisitor<ReturnTypeInferrer>;
 
   // input
@@ -325,12 +335,8 @@ struct ReturnTypeInferrer : BranchSensitiveVisitor<DefaultFrame, ResolvedVisitor
   ReturnTypeInferrer(ResolutionContext* rc,
                      const Function* fn,
                      const Type* declaredReturnType)
-    : rc(rc),
-      fnAst(fn),
-      returnIntent(fn->returnIntent()),
-      functionKind(fn->kind()),
-      declaredReturnType(declaredReturnType) {
-  }
+    : rc(rc), fnAst(fn), returnIntent(fn->returnIntent()),
+      functionKind(fn->kind()), declaredReturnType(declaredReturnType) {}
 
   void process(const uast::AstNode* symbol,
                ResolutionResultByPostorderID& byPostorder);
@@ -344,8 +350,10 @@ struct ReturnTypeInferrer : BranchSensitiveVisitor<DefaultFrame, ResolvedVisitor
 
   void doEnterScope(const uast::AstNode* node, RV& rv) override;
   void doExitScope(const uast::AstNode* node, RV& rv) override;
-  const types::Param* determineWhenCaseValue(const uast::AstNode* ast, RV& rv) override;
-  const types::Param* determineIfValue(const uast::AstNode* ast, RV& rv) override;
+  const types::Param* determineWhenCaseValue(const uast::AstNode* ast,
+                                             RV& rv) override;
+  const types::Param* determineIfValue(const uast::AstNode* ast,
+                                       RV& rv) override;
   void traverseNode(const uast::AstNode* ast, RV& rv) override;
 
   bool enter(const FnCall* ast, RV& rv);
@@ -383,9 +391,9 @@ struct ReturnTypeInferrer : BranchSensitiveVisitor<DefaultFrame, ResolvedVisitor
 
 namespace uast {
 
-template <>
-struct AstVisitorPrecondition<resolution::ReturnTypeInferrer> {
-  static bool skipSubtree(const AstNode* node, resolution::ReturnTypeInferrer& visitor) {
+template <> struct AstVisitorPrecondition<resolution::ReturnTypeInferrer> {
+  static bool skipSubtree(const AstNode* node,
+                          resolution::ReturnTypeInferrer& visitor) {
     return visitor.isDoneExecuting();
   }
 };
@@ -400,8 +408,7 @@ void ReturnTypeInferrer::process(const uast::AstNode* symbol,
   symbol->traverse(rv);
 }
 
-void ReturnTypeInferrer::checkReturn(const AstNode* inExpr,
-                                     QualifiedType& qt) {
+void ReturnTypeInferrer::checkReturn(const AstNode* inExpr, QualifiedType& qt) {
   if (!qt.type()) {
     return;
   }
@@ -415,9 +422,8 @@ void ReturnTypeInferrer::checkReturn(const AstNode* inExpr,
     }
   } else {
     bool ok = true;
-    if ((qt.isType() || qt.isParam()) &&
-        (returnIntent == Function::CONST_REF ||
-         returnIntent == Function::REF)) {
+    if ((qt.isType() || qt.isParam()) && (returnIntent == Function::CONST_REF ||
+                                          returnIntent == Function::REF)) {
       ok = false;
     } else if (returnIntent == Function::TYPE && !qt.isType()) {
       ok = false;
@@ -440,7 +446,8 @@ void ReturnTypeInferrer::checkReturn(const AstNode* inExpr,
 }
 
 void ReturnTypeInferrer::noteVoidReturnType(const AstNode* inExpr) {
-  auto voidType = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
+  auto voidType =
+    QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
   returnedTypes.push_back(voidType);
 
   checkReturn(inExpr, voidType);
@@ -470,14 +477,15 @@ QualifiedType ReturnTypeInferrer::returnedType() {
   if (returnedTypes.size() == 0) {
     return QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
   } else {
-    auto retType = commonType(context, returnedTypes,
-                              (QualifiedType::Kind) returnIntent);
+    auto retType =
+      commonType(context, returnedTypes, (QualifiedType::Kind)returnIntent);
     if (!retType) {
       // Couldn't find common type, so return type is incorrect.
       // TODO: replace with custom error class, and give more information about
       // why we couldn't determine a return type
       context->error(fnAst, "could not determine return type for function");
-      retType = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
+      retType =
+        QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
     }
     auto adjType = adjustForReturnIntent(context, returnIntent, *retType);
     return adjType;
@@ -509,14 +517,16 @@ void ReturnTypeInferrer::doExitScope(const uast::AstNode* node, RV& rv) {
   }
 }
 
-const types::Param* ReturnTypeInferrer::determineWhenCaseValue(const uast::AstNode* ast, RV& rv) {
+const types::Param*
+ReturnTypeInferrer::determineWhenCaseValue(const uast::AstNode* ast, RV& rv) {
   if (auto action = rv.byAst(ast).getAction(AssociatedAction::COMPARE)) {
     return action->type().param();
   } else {
     return nullptr;
   }
 }
-const types::Param* ReturnTypeInferrer::determineIfValue(const uast::AstNode* ast, RV& rv) {
+const types::Param*
+ReturnTypeInferrer::determineIfValue(const uast::AstNode* ast, RV& rv) {
   return rv.byAst(ast).type().param();
 }
 void ReturnTypeInferrer::traverseNode(const uast::AstNode* ast, RV& rv) {
@@ -535,16 +545,10 @@ bool ReturnTypeInferrer::enter(const FnCall* ast, RV& rv) {
   return true;
 }
 
-void ReturnTypeInferrer::exit(const FnCall* ast, RV& rv) {
-  exitScope(ast, rv);
-}
+void ReturnTypeInferrer::exit(const FnCall* ast, RV& rv) { exitScope(ast, rv); }
 
-bool ReturnTypeInferrer::enter(const Function* fn, RV& rv) {
-  return false;
-}
-void ReturnTypeInferrer::exit(const Function* fn, RV& rv) {
-}
-
+bool ReturnTypeInferrer::enter(const Function* fn, RV& rv) { return false; }
+void ReturnTypeInferrer::exit(const Function* fn, RV& rv) {}
 
 bool ReturnTypeInferrer::enter(const Conditional* cond, RV& rv) {
   enterScope(cond, rv);
@@ -558,9 +562,7 @@ bool ReturnTypeInferrer::enter(const Select* sel, RV& rv) {
   enterScope(sel, rv);
   return branchSensitivelyTraverse(sel, rv);
 }
-void ReturnTypeInferrer::exit(const Select* sel, RV& rv) {
-  exitScope(sel, rv);
-}
+void ReturnTypeInferrer::exit(const Select* sel, RV& rv) { exitScope(sel, rv); }
 
 bool ReturnTypeInferrer::enter(const For* forLoop, RV& rv) {
   enterScope(forLoop, rv);
@@ -609,15 +611,13 @@ bool ReturnTypeInferrer::enter(const Return* ret, RV& rv) {
   }
   return false;
 }
-void ReturnTypeInferrer::exit(const Return* ret, RV& rv) {
-}
+void ReturnTypeInferrer::exit(const Return* ret, RV& rv) {}
 
 bool ReturnTypeInferrer::enter(const Yield* ret, RV& rv) {
   noteReturnType(ret->value(), ret, rv);
   return false;
 }
-void ReturnTypeInferrer::exit(const Yield* ret, RV& rv) {
-}
+void ReturnTypeInferrer::exit(const Yield* ret, RV& rv) {}
 
 bool ReturnTypeInferrer::enter(const AstNode* ast, RV& rv) {
   enterScope(ast, rv);
@@ -628,10 +628,8 @@ void ReturnTypeInferrer::exit(const AstNode* ast, RV& rv) {
 }
 
 // For a class type construction, returns a BasicClassType
-static const Type* const&
-returnTypeForTypeCtorQuery(Context* context,
-                           const TypedFnSignature* sig,
-                           const PoiScope* poiScope) {
+static const Type* const& returnTypeForTypeCtorQuery(
+  Context* context, const TypedFnSignature* sig, const PoiScope* poiScope) {
   QUERY_BEGIN(returnTypeForTypeCtorQuery, context, sig, poiScope);
 
   const UntypedFnSignature* untyped = sig->untyped();
@@ -642,7 +640,8 @@ returnTypeForTypeCtorQuery(Context* context,
   const AggregateDecl* ad = nullptr;
   const Interface* itf = nullptr;
   if (!untyped->id().isEmpty()) {
-    if (auto ast = parsing::idToAst(context, untyped->compilerGeneratedOrigin())) {
+    if (auto ast =
+          parsing::idToAst(context, untyped->compilerGeneratedOrigin())) {
       ad = ast->toAggregateDecl();
       itf = ast->toInterface();
     }
@@ -658,7 +657,8 @@ returnTypeForTypeCtorQuery(Context* context,
       // ignore decorators etc for finding instantiatedFrom
       if (auto ct = t->toClassType()) {
         t = ct->basicClassType();
-        CHPL_ASSERT(t && "Expecting initial type for type declaration to be concrete");
+        CHPL_ASSERT(
+          t && "Expecting initial type for type declaration to be concrete");
       }
 
       instantiatedFrom = t->toCompositeType();
@@ -678,7 +678,8 @@ returnTypeForTypeCtorQuery(Context* context,
         // but these formals oughtn't count as existing substitutions.
         if (!sig->formalIsInstantiated(i)) continue;
 
-        auto field = findFieldByName(context, ad, instantiatedFrom, untyped->formalName(i));
+        auto field = findFieldByName(
+          context, ad, instantiatedFrom, untyped->formalName(i));
         const QualifiedType& formalType = sig->formalType(i);
         // Note that the formalDecl should already be a fieldDecl
         // based on typeConstructorInitialQuery.
@@ -709,17 +710,15 @@ returnTypeForTypeCtorQuery(Context* context,
           // as generic-with-default and substituting in AnyType does that.
         } else {
           auto useQt =
-              QualifiedType(useKind, formalType.type(), formalType.param());
+            QualifiedType(useKind, formalType.type(), formalType.param());
           subs.insert({field->id(), useQt});
         }
       }
     }
 
     // get a type using the substitutions
-    const CompositeType* theType = helpGetTypeForDecl(context, ad,
-                                                      subs,
-                                                      poiScope,
-                                                      instantiatedFrom);
+    const CompositeType* theType =
+      helpGetTypeForDecl(context, ad, subs, poiScope, instantiatedFrom);
 
     result = theType;
 
@@ -735,7 +734,8 @@ returnTypeForTypeCtorQuery(Context* context,
       subs.emplace(formalId, formalType);
     }
 
-    result = InterfaceType::get(context, itf->id(), itf->name(), std::move(subs));
+    result =
+      InterfaceType::get(context, itf->id(), itf->name(), std::move(subs));
   } else {
     // built-in type construction should be handled
     // by resolveFnCallSpecialType and not reach this point.
@@ -745,17 +745,16 @@ returnTypeForTypeCtorQuery(Context* context,
   return QUERY_END(result);
 }
 
-static QualifiedType computeTypeOfField(ResolutionContext* rc,
-                                        const Type* t,
-                                        ID fieldId) {
+static QualifiedType
+computeTypeOfField(ResolutionContext* rc, const Type* t, ID fieldId) {
   auto context = rc->context();
   if (const CompositeType* ct = t->getCompositeType()) {
     // Figure out the parent MultiDecl / TupleDecl
     ID declId = parsing::idToContainingMultiDeclId(context, fieldId);
 
     // Resolve the type of that field (or MultiDecl/TupleDecl)
-    const auto& fields = resolveFieldDecl(rc, ct, declId,
-                                          DefaultsPolicy::IGNORE_DEFAULTS);
+    const auto& fields =
+      resolveFieldDecl(rc, ct, declId, DefaultsPolicy::IGNORE_DEFAULTS);
     int n = fields.numFields();
     for (int i = 0; i < n; i++) {
       if (fields.fieldDeclId(i) == fieldId) {
@@ -772,15 +771,16 @@ static QualifiedType adjustForReturnIntent(Context* context,
                                            uast::Function::ReturnIntent ri,
                                            QualifiedType retType) {
 
-  QualifiedType::Kind kind = (QualifiedType::Kind) ri;
+  QualifiedType::Kind kind = (QualifiedType::Kind)ri;
   // adjust const return intent to 'var'
   if (kind == QualifiedType::VAR) {
     kind = QualifiedType::CONST_VAR;
-  // do the same for default intent, except for aliasing arrays, which
-  // are non-const by default.
+    // do the same for default intent, except for aliasing arrays, which
+    // are non-const by default.
   } else if (kind == QualifiedType::DEFAULT_INTENT) {
     const ArrayType* at = nullptr;
-    if (retType.type() && (at = retType.type()->toArrayType()) && at->isAliasingArray(context)) {
+    if (retType.type() && (at = retType.type()->toArrayType()) &&
+        at->isAliasingArray(context)) {
       kind = QualifiedType::VAR;
     } else {
       kind = QualifiedType::CONST_VAR;
@@ -788,7 +788,6 @@ static QualifiedType adjustForReturnIntent(Context* context,
   }
   return QualifiedType(kind, retType.type(), retType.param());
 }
-
 
 struct CountReturns {
   // input
@@ -802,8 +801,7 @@ struct CountReturns {
   const AstNode* firstWithoutValue = nullptr;
 
   CountReturns(Context* context, const Function* fn)
-    : context(context), functionKind(fn->kind()) {
-  }
+    : context(context), functionKind(fn->kind()) {}
 
   void countWithValue(const AstNode* ast);
   void countWithoutValue(const AstNode* ast);
@@ -835,11 +833,8 @@ void CountReturns::countWithoutValue(const AstNode* ast) {
   nReturnsWithoutValue++;
 }
 
-bool CountReturns::enter(const Function* fn) {
-  return false;
-}
-void CountReturns::exit(const Function* fn) {
-}
+bool CountReturns::enter(const Function* fn) { return false; }
+void CountReturns::exit(const Function* fn) {}
 
 bool CountReturns::enter(const Return* ret) {
   if (ret->value() != nullptr) {
@@ -855,8 +850,7 @@ bool CountReturns::enter(const Return* ret) {
   }
   return false;
 }
-void CountReturns::exit(const Return* ret) {
-}
+void CountReturns::exit(const Return* ret) {}
 
 bool CountReturns::enter(const Yield* ret) {
   if (ret->value() != nullptr) {
@@ -866,14 +860,10 @@ bool CountReturns::enter(const Yield* ret) {
   }
   return false;
 }
-void CountReturns::exit(const Yield* ret) {
-}
+void CountReturns::exit(const Yield* ret) {}
 
-bool CountReturns::enter(const AstNode* ast) {
-  return true;
-}
-void CountReturns::exit(const AstNode* ast) {
-}
+bool CountReturns::enter(const AstNode* ast) { return true; }
+void CountReturns::exit(const AstNode* ast) {}
 
 // vs. just returning 'void'
 static const bool& fnAstReturnsNonVoid(Context* context, ID fnId) {
@@ -934,8 +924,7 @@ static bool helpComputeOrderToEnumReturnType(Context* context,
       CHPL_ASSERT(false && "param value should've been integral");
     }
 
-    auto ast =
-      parsing::idToAst(context, et->id())->toEnum();
+    auto ast = parsing::idToAst(context, et->id())->toEnum();
     uint64_t counter = 0;
     for (auto elem : ast->enumElements()) {
       if (counter == whichValue) {
@@ -971,8 +960,7 @@ static bool helpComputeEnumToOrderReturnType(Context* context,
     CHPL_ASSERT(inputParam);
     kind = QualifiedType::PARAM;
 
-    auto ast =
-      parsing::idToAst(context, et->id())->toEnum();
+    auto ast = parsing::idToAst(context, et->id())->toEnum();
     int counter = 0;
     for (auto elem : ast->enumElements()) {
       if (elem->id() == inputParam->value().id) {
@@ -989,24 +977,22 @@ static bool helpComputeEnumToOrderReturnType(Context* context,
   return true;
 }
 
-static bool helpComputeCompilerGeneratedReturnType(ResolutionContext* rc,
-                                                   const TypedFnSignature* sig,
-                                                   const PoiScope* poiScope,
-                                                   QualifiedType& result,
-                                                   const UntypedFnSignature* untyped) {
+static bool
+helpComputeCompilerGeneratedReturnType(ResolutionContext* rc,
+                                       const TypedFnSignature* sig,
+                                       const PoiScope* poiScope,
+                                       QualifiedType& result,
+                                       const UntypedFnSignature* untyped) {
   auto context = rc->context();
-  if (untyped->name() == USTR("init") ||
-      untyped->name() == USTR("init=") ||
-      untyped->name() == USTR("deinit") ||
-      untyped->name() == USTR("=") ||
+  if (untyped->name() == USTR("init") || untyped->name() == USTR("init=") ||
+      untyped->name() == USTR("deinit") || untyped->name() == USTR("=") ||
       untyped->name() == USTR("serialize") ||
       untyped->name() == USTR("deserialize")) {
-      result = QualifiedType(QualifiedType::CONST_VAR,
-                             VoidType::get(context));
-      return true;
+    result = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
+    return true;
   } else if (untyped->name() == USTR("==")) {
-      result = QualifiedType(QualifiedType::CONST_VAR, BoolType::get(context));
-      return true;
+    result = QualifiedType(QualifiedType::CONST_VAR, BoolType::get(context));
+    return true;
   } else if (untyped->name() == USTR(":")) {
     // Assume that compiler-generated casts are actually cast.
     auto input = sig->formalType(0);
@@ -1014,7 +1000,8 @@ static bool helpComputeCompilerGeneratedReturnType(ResolutionContext* rc,
 
     result = QualifiedType(input.kind(), outputType.type());
     return true;
-  } else if (untyped->isMethod() && sig->formalType(0).type()->isIteratorType() &&
+  } else if (untyped->isMethod() &&
+             sig->formalType(0).type()->isIteratorType() &&
              untyped->name() == "_shape_") {
     auto it = sig->formalType(0).type()->toIteratorType();
     auto shape = shapeForIterator(context, it);
@@ -1023,9 +1010,8 @@ static bool helpComputeCompilerGeneratedReturnType(ResolutionContext* rc,
     return true;
   } else if (untyped->idIsField() && untyped->isMethod()) {
     // method accessor - compute the type of the field
-    QualifiedType ft = computeTypeOfField(rc,
-                                          sig->formalType(0).type(),
-                                          untyped->id());
+    QualifiedType ft =
+      computeTypeOfField(rc, sig->formalType(0).type(), untyped->id());
     if (ft.isType() || ft.isParam()) {
       // return the type as-is (preserving param/type-ness)
       result = ft;
@@ -1125,8 +1111,8 @@ static bool helpComputeReturnType(ResolutionContext* rc,
 
       // resolve the return type
       ResolutionResultByPostorderID resolutionById;
-      auto visitor = Resolver::createForFunction(rc, fn, poiScope, sig,
-                                                 resolutionById);
+      auto visitor =
+        Resolver::createForFunction(rc, fn, poiScope, sig, resolutionById);
       retType->traverse(visitor);
       result = resolutionById.byAst(retType).type();
 
@@ -1140,13 +1126,15 @@ static bool helpComputeReturnType(ResolutionContext* rc,
     // if there are no returns with a value, use void return type
     if (fn->linkage() == Decl::EXTERN) {
       if (fn->returnType() == nullptr) {
-        result = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
+        result =
+          QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
         return true;
       } else {
         // TODO: This is a workaround for a bug where the return type was
         // not found for some reason. By returning a type we prevent an attempt
         // to resolve the non-existent function body.
-        result = QualifiedType(QualifiedType::CONST_VAR, UnknownType::get(context));
+        result =
+          QualifiedType(QualifiedType::CONST_VAR, UnknownType::get(context));
         return true;
       }
     } else if (fnAstReturnsNonVoid(context, ast->id()) == false) {
@@ -1166,8 +1154,8 @@ static bool helpComputeReturnType(ResolutionContext* rc,
     // if method call and the receiver points to a composite type definition,
     // then it's some sort of compiler-generated method
   } else if (untyped->isCompilerGenerated()) {
-    return helpComputeCompilerGeneratedReturnType(rc, sig, poiScope,
-                                                  result, untyped);
+    return helpComputeCompilerGeneratedReturnType(
+      rc, sig, poiScope, result, untyped);
   } else {
     CHPL_ASSERT(false && "case not handled");
     return true;
@@ -1202,8 +1190,9 @@ returnTypes(ResolutionContext* rc,
 
   result.second = result.first;
   if (sig->isIterator() && !result.second.isUnknownOrErroneous()) {
-    result.second = QualifiedType(result.second.kind(),
-                                  FnIteratorType::get(context, poiScope, sig, result.second));
+    result.second =
+      QualifiedType(result.second.kind(),
+                    FnIteratorType::get(context, poiScope, sig, result.second));
   }
 
   return CHPL_RESOLUTION_QUERY_END(result);
@@ -1226,8 +1215,8 @@ static const TypedFnSignature* const&
 inferOutFormalsQuery(ResolutionContext* rc,
                      const TypedFnSignature* sig,
                      const PoiScope* instantiationPoiScope) {
-  CHPL_RESOLUTION_QUERY_BEGIN(inferOutFormalsQuery, rc, sig,
-                              instantiationPoiScope);
+  CHPL_RESOLUTION_QUERY_BEGIN(
+    inferOutFormalsQuery, rc, sig, instantiationPoiScope);
 
   Context* context = rc->context();
   const UntypedFnSignature* untyped = sig->untyped();
@@ -1249,9 +1238,7 @@ inferOutFormalsQuery(ResolutionContext* rc,
   }
 
   const TypedFnSignature* result = nullptr;
-  result = TypedFnSignature::getInferred(context,
-                                         std::move(formalTypes),
-                                         sig);
+  result = TypedFnSignature::getInferred(context, std::move(formalTypes), sig);
 
   return CHPL_RESOLUTION_QUERY_END(result);
 }
@@ -1262,7 +1249,6 @@ const TypedFnSignature* inferOutFormals(ResolutionContext* rc,
   if (sig == nullptr) {
     return nullptr;
   }
-
 
   // if there are no 'out' formals with generic type, just return 'sig'.
   // also just return 'sig' if the function needs instantiation for non-'out' reasons;
@@ -1276,10 +1262,8 @@ const TypedFnSignature* inferOutFormals(ResolutionContext* rc,
 
 void computeReturnType(Resolver& resolver) {
   QualifiedType returnType;
-  bool computed = helpComputeReturnType(resolver.rc,
-                                        resolver.typedSignature,
-                                        resolver.poiScope,
-                                        returnType);
+  bool computed = helpComputeReturnType(
+    resolver.rc, resolver.typedSignature, resolver.poiScope, returnType);
   if (computed) {
     resolver.returnType = returnType;
   } else if (auto fn = resolver.symbol->toFunction()) {
@@ -1301,7 +1285,6 @@ void computeReturnType(Resolver& resolver) {
     }
   }
 }
-
 
 } // end namespace resolution
 } // end namespace chpl

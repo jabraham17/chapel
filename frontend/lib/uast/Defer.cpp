@@ -24,19 +24,18 @@
 namespace chpl {
 namespace uast {
 
-
-owned<Defer> Defer::build(Builder* builder, Location loc,
+owned<Defer> Defer::build(Builder* builder,
+                          Location loc,
                           BlockStyle blockStyle,
                           AstList stmts) {
   const int bodyChildNum = 0;
   const int numBodyStmts = stmts.size();
 
-  Defer* ret = new Defer(std::move(stmts), blockStyle, bodyChildNum,
-                         numBodyStmts);
+  Defer* ret =
+    new Defer(std::move(stmts), blockStyle, bodyChildNum, numBodyStmts);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

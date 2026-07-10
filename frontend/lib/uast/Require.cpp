@@ -24,14 +24,11 @@
 namespace chpl {
 namespace uast {
 
-
-owned<Require> Require::build(Builder* builder, Location loc,
-                              AstList actuals) {
+owned<Require> Require::build(Builder* builder, Location loc, AstList actuals) {
   Require* ret = new Require(std::move(actuals));
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

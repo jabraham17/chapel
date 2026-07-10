@@ -23,7 +23,6 @@
 namespace chpl {
 namespace types {
 
-
 const owned<UnknownType>& UnknownType::getUnknownType(Context* context) {
   QUERY_BEGIN(getUnknownType, context);
 
@@ -35,7 +34,6 @@ const owned<UnknownType>& UnknownType::getUnknownType(Context* context) {
 const UnknownType* UnknownType::get(Context* context) {
   return getUnknownType(context).get();
 }
-
 
 } // end namespace types
 } // end namespace chpl

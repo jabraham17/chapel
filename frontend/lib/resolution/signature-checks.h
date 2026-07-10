@@ -26,14 +26,12 @@ class Context;
 namespace resolution {
 class TypedFnSignature;
 
-
 /**
   Check for errors with the passed signature.
   This is supported by a query so that errors are only
   reported once per signature.
  */
 void checkSignature(Context* context, const TypedFnSignature* sig);
-
 
 } // end namespace resolution
 } // end namespace chpl

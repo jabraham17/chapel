@@ -24,7 +24,6 @@
 
 namespace chpl {
 
-
 void Serializer::writeUnsignedVarint(uint64_t num) {
   for (int i = 0; i < 10; i++) {
     uint8_t byte = num & 0x7f;
@@ -56,7 +55,6 @@ void Serializer::endAst(const uast::AstNode* ast) {
   }
 }
 
-
 void Deserializer::registerAst(const uast::AstNode* ast, uint64_t startOffset) {
   if (libraryFileHelper_ != nullptr) {
     libraryFileHelper_->registerAst(ast, startOffset);
@@ -68,7 +66,7 @@ uint64_t Deserializer::readUnsignedVarint() {
   for (int i = 0; i < 10; i++) {
     auto byte = readByte();
     uint64_t part = byte & 0x7f;
-    num |= part << (7*i);
+    num |= part << (7 * i);
     if (byte & 0x80) {
       // continue
     } else {
@@ -94,8 +92,7 @@ std::pair<size_t, const char*> Deserializer::getString(int id) {
     return table[id];
   }
 
-  return std::make_pair((size_t) 0, (const char*) nullptr);
+  return std::make_pair((size_t)0, (const char*)nullptr);
 }
-
 
 } // end namespace chpl

@@ -24,13 +24,11 @@
 namespace chpl {
 namespace uast {
 
-
 owned<ArrayRow> ArrayRow::build(Builder* builder, Location loc, AstList exprs) {
   ArrayRow* ret = new ArrayRow(std::move(exprs));
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

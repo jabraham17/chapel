@@ -45,9 +45,9 @@ class InitResolver {
   };
 
   enum Phase {
-    PHASE_NEED_SUPER_INIT,  // Need super.init() calls on all paths.
-    PHASE_NEED_COMPLETE,    // Need this.complete() calls on all paths.
-    PHASE_COMPLETE          // Fully resolved type past this point.
+    PHASE_NEED_SUPER_INIT, // Need super.init() calls on all paths.
+    PHASE_NEED_COMPLETE,   // Need this.complete() calls on all paths.
+    PHASE_COMPLETE         // Fully resolved type past this point.
   };
 
   Context* ctx_;
@@ -80,13 +80,11 @@ class InitResolver {
 
   ResolvedFunction::ImplicitInitMap implicitInits_;
 
-  InitResolver(Context* ctx, Resolver& visitor,
+  InitResolver(Context* ctx,
+               Resolver& visitor,
                const uast::Function* fn,
                const types::Type* recvType)
-      : ctx_(ctx),
-        initResolver_(visitor),
-        fn_(fn),
-        initialRecvType_(recvType) {
+    : ctx_(ctx), initResolver_(visitor), fn_(fn), initialRecvType_(recvType) {
     auto typeID = initialRecvType_->getCompositeType()->id();
     aggregateDecl_ = parsing::idToAst(ctx_, typeID)->toAggregateDecl();
     return;
@@ -102,9 +100,7 @@ class InitResolver {
 
   types::QualifiedType::Kind determineReceiverIntent(void);
 
-  const TypedFnSignature*
-  computeTypedSignature(const types::Type* newRecvType);
-
+  const TypedFnSignature* computeTypedSignature(const types::Type* newRecvType);
 
   void updateResolverVisibleReceiverType(void);
   bool implicitlyResolveFieldType(ID id, const ID initBefore = ID());
@@ -116,26 +112,28 @@ class InitResolver {
   FieldInitState* fieldStateFromId(ID id);
   FieldInitState* fieldStateFromIndex(int idx);
   bool isMentionOfNodeInLhsOfAssign(const uast::AstNode* node);
-  std::pair<ID,bool> fieldIdFromPossibleMentionOfField(const uast::AstNode* node);
+  std::pair<ID, bool>
+  fieldIdFromPossibleMentionOfField(const uast::AstNode* node);
   bool isFieldInitialized(ID fieldId);
 
   // handle a call to this.complete() or init this.
   void handleInitMarker(const uast::AstNode* node);
   bool handleCallToThisComplete(const uast::FnCall* node);
 
-  bool handleCallToSuperInit(const uast::FnCall* node, const CallResolutionResult* c);
+  bool handleCallToSuperInit(const uast::FnCall* node,
+                             const CallResolutionResult* c);
   void resolveImplicitSuperInit();
   void updateSuperType(const CallResolutionResult* c);
 
-  bool handleCallToInit(const uast::FnCall* node, const CallResolutionResult* c);
+  bool handleCallToInit(const uast::FnCall* node,
+                        const CallResolutionResult* c);
   bool handleAssignmentToField(const uast::OpCall* node);
   ID solveNameConflictByIgnoringField(const MatchingIdsWithName& vec);
 
   static Phase getMaxPhase(Phase A, Phase B);
   void copyState(InitResolver& other);
 
-public:
-
+ public:
   static owned<InitResolver>
   create(Context* context, Resolver& visitor, const uast::Function* fn);
 
@@ -150,7 +148,8 @@ public:
   // want to circumvent "regular" call resolution; the second is for when
   // we want to use the results of resolving a call normally.
   bool handleResolvingCall(const uast::Call* node);
-  bool handleResolvedCall(const uast::Call* node, const CallResolutionResult* c);
+  bool handleResolvedCall(const uast::Call* node,
+                          const CallResolutionResult* c);
 
   // Call on exit for 'init this'
   bool handleInitStatement(const uast::Init* node);
@@ -166,9 +165,7 @@ public:
   // Returns true if the AST node is an initialization point
   bool isInitPoint(const uast::AstNode* node);
 
-  ResolvedFunction::ImplicitInitMap& implicitInits() {
-    return implicitInits_;
-  }
+  ResolvedFunction::ImplicitInitMap& implicitInits() { return implicitInits_; }
 };
 
 } // end namespace resolution

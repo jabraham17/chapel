@@ -25,7 +25,7 @@
 
 namespace chpl {
 namespace uast {
-  class AggregateDecl;
+class AggregateDecl;
 }
 namespace resolution {
 struct Resolver;
@@ -34,8 +34,7 @@ struct Resolver;
 // are implemented by the given decl. It's defined here because this list
 // is computed as part of 'helpGetTypeForDecl'.
 const std::vector<const ImplementationPoint*>&
-getImplementedInterfaces(Context* context,
-                         const uast::AggregateDecl* ad);
+getImplementedInterfaces(Context* context, const uast::AggregateDecl* ad);
 
 // this helper function computes a CompositeType based upon
 // a decl and some substitutions
@@ -49,7 +48,6 @@ helpGetTypeForDecl(Context* context,
 /* Compute or infer the return type for this function
    and store the result in resolver.returnType. */
 void computeReturnType(Resolver& resolver);
-
 
 } // end namespace resolution
 } // end namespace chpl

@@ -24,13 +24,12 @@ namespace chpl {
 namespace uast {
 namespace pragmatags {
 
-
 const char* pragmaTagToName(PragmaTag tag) {
   const char* ret = "";
   switch (tag) {
     default: break;
 #define PRAGMA(name__, canParse__, parseStr__, desc__) \
-    case PRAGMA_ ## name__: ret = parseStr__; break;
+  case PRAGMA_##name__: ret = parseStr__; break;
 #include "chpl/uast/PragmaList.h"
 #undef PRAGMA
   }
@@ -39,14 +38,12 @@ const char* pragmaTagToName(PragmaTag tag) {
 }
 
 PragmaTag pragmaNameToTag(const char* name) {
-#define PRAGMA(name__, canParse__, parseStr__, desc__) \
-  if (0 == strcmp(name, parseStr__)) \
-    return PRAGMA_ ## name__;
+#define PRAGMA(name__, canParse__, parseStr__, desc__)       \
+  if (0 == strcmp(name, parseStr__)) return PRAGMA_##name__;
 #include "chpl/uast/PragmaList.h"
 #undef PRAGMA
   return PRAGMA_UNKNOWN;
 }
-
 
 } // namespace primtags
 } // namespace uast

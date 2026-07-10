@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 void Include::dumpFieldsInner(const DumpSettings& s) const {
   const char* vis = Decl::visibilityToString(visibility_);
   if (vis[0]) {
@@ -36,16 +35,17 @@ void Include::dumpFieldsInner(const DumpSettings& s) const {
   s.out << " " << name_.str();
 }
 
-owned<Include> Include::build(Builder* builder, Location loc,
+owned<Include> Include::build(Builder* builder,
+                              Location loc,
                               Decl::Visibility visibility,
                               bool isPrototype,
-                              UniqueString name, Location nameLoc) {
+                              UniqueString name,
+                              Location nameLoc) {
   Include* ret = new Include(visibility, isPrototype, name);
   builder->noteLocation(ret, loc);
   builder->noteIncludeNameLocation(ret, nameLoc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

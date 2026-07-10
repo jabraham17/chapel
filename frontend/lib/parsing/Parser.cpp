@@ -39,12 +39,10 @@
 namespace chpl {
 namespace parsing {
 
-
 using namespace chpl::uast;
 
 Parser::Parser(Context* context, UniqueString parentSymbolPath)
-  : context_(context), parentSymbolPath_(parentSymbolPath) {
-}
+  : context_(context), parentSymbolPath_(parentSymbolPath) {}
 
 Parser Parser::createForTopLevelModule(Context* context) {
   UniqueString emptySymbolPath;
@@ -76,14 +74,13 @@ static void updateParseResult(ParserContext* parserContext) {
   }
 }
 
-
 BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
   owned<Builder> builder;
   if (parentSymbolPath_.isEmpty()) {
     builder = Builder::createForTopLevelModule(this->context(), path);
   } else {
-    builder = Builder::createForIncludedModule(this->context(), path,
-                                               parentSymbolPath_);
+    builder = Builder::createForIncludedModule(
+      this->context(), path, parentSymbolPath_);
   }
   std::string fileError;
 
@@ -96,22 +93,21 @@ BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
   // Otherwise, we have successfully opened the file.
 
   // Set the (global) parser debug state
-  if (DEBUG_PARSER)
-    yychpl_debug = DEBUG_PARSER;
+  if (DEBUG_PARSER) yychpl_debug = DEBUG_PARSER;
 
   // State for the lexer
-  int           lexerStatus  = 100;
+  int lexerStatus = 100;
 
   // State for the parser
   yychpl_pstate* parser = yychpl_pstate_new();
-  int           parserStatus = YYPUSH_MORE;
-  YYLTYPE       my_yylloc;
+  int parserStatus = YYPUSH_MORE;
+  YYLTYPE my_yylloc;
   ParserContext parserContext(path, builder.get(), parseStats);
 
-  my_yylloc.first_line             = 1;
-  my_yylloc.first_column           = 1;
-  my_yylloc.last_line              = 1;
-  my_yylloc.last_column            = 1;
+  my_yylloc.first_line = 1;
+  my_yylloc.first_column = 1;
+  my_yylloc.last_line = 1;
+  my_yylloc.last_column = 1;
 
   yychpl_lex_init_extra(&parserContext, &parserContext.scanner);
 
@@ -131,11 +127,8 @@ BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
     }
 
     if (lexerStatus >= 0) {
-      parserStatus          = yychpl_push_parse(parser,
-                                                lexerStatus,
-                                                &my_yylval,
-                                                &my_yylloc,
-                                                &parserContext);
+      parserStatus = yychpl_push_parse(
+        parser, lexerStatus, &my_yylval, &my_yylloc, &parserContext);
 
     } else if (lexerStatus == YYLEX_BLOCK_COMMENT) {
       // comment should already be noted in processBlockComment
@@ -149,8 +142,7 @@ BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
       if (parserContext.atEOF) continue;
     }
 
-    if (lexerStatus == 0 || parserContext.atEOF)
-      break;
+    if (lexerStatus == 0 || parserContext.atEOF) break;
   }
 
   // Cleanup after the parser
@@ -169,39 +161,38 @@ BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
   return builder->result();
 }
 
-
-BuilderResult Parser::parseString(const char* path, const char* str,
+BuilderResult Parser::parseString(const char* path,
+                                  const char* str,
                                   ParserStats* parseStats) {
   owned<Builder> builder;
   if (parentSymbolPath_.isEmpty()) {
     builder = Builder::createForTopLevelModule(this->context(), path);
   } else {
-    builder = Builder::createForIncludedModule(this->context(), path,
-                                               parentSymbolPath_);
+    builder = Builder::createForIncludedModule(
+      this->context(), path, parentSymbolPath_);
   }
 
   // Set the (global) parser debug state
-  if (DEBUG_PARSER)
-    yychpl_debug = DEBUG_PARSER;
+  if (DEBUG_PARSER) yychpl_debug = DEBUG_PARSER;
 
   // State for the lexer
-  YY_BUFFER_STATE handle       =   0;
-  int             lexerStatus  = 100;
-  YYLTYPE         my_yylloc;
+  YY_BUFFER_STATE handle = 0;
+  int lexerStatus = 100;
+  YYLTYPE my_yylloc;
 
   // State for the parser
   yychpl_pstate* parser = yychpl_pstate_new();
-  int           parserStatus = YYPUSH_MORE;
+  int parserStatus = YYPUSH_MORE;
   ParserContext parserContext(path, builder.get(), parseStats);
 
   yychpl_lex_init_extra(&parserContext, &parserContext.scanner);
 
   handle = yychpl__scan_string(str, parserContext.scanner);
 
-  my_yylloc.first_line   = 1;
+  my_yylloc.first_line = 1;
   my_yylloc.first_column = 1;
-  my_yylloc.last_line    = 1;
-  my_yylloc.last_column  = 1;
+  my_yylloc.last_line = 1;
+  my_yylloc.last_column = 1;
 
   while (parserStatus == YYPUSH_MORE) {
     YYSTYPE my_yylval;
@@ -217,11 +208,8 @@ BuilderResult Parser::parseString(const char* path, const char* str,
     }
 
     if (lexerStatus >= 0) {
-      parserStatus          = yychpl_push_parse(parser,
-                                                lexerStatus,
-                                                &my_yylval,
-                                                &my_yylloc,
-                                                &parserContext);
+      parserStatus = yychpl_push_parse(
+        parser, lexerStatus, &my_yylval, &my_yylloc, &parserContext);
 
     } else if (lexerStatus == YYLEX_BLOCK_COMMENT) {
       // comment should already be noted in processBlockComment
@@ -235,8 +223,7 @@ BuilderResult Parser::parseString(const char* path, const char* str,
       if (parserContext.atEOF) continue;
     }
 
-    if (lexerStatus == 0 || parserContext.atEOF)
-      break;
+    if (lexerStatus == 0 || parserContext.atEOF) break;
   }
 
   // Cleanup after the parser
@@ -250,7 +237,6 @@ BuilderResult Parser::parseString(const char* path, const char* str,
 
   return builder->result();
 }
-
 
 } // namespace parsing
 } // namespace chpl

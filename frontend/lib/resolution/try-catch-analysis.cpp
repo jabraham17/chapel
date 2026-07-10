@@ -29,14 +29,11 @@
 #include "chpl/resolution/can-pass.h"
 #include "Resolver.h"
 
-
 namespace chpl {
 namespace resolution {
 
-
 using namespace uast;
 using namespace types;
-
 
 enum class ErrorCheckingMode {
   UNKNOWN,
@@ -51,7 +48,8 @@ struct TryCatchState {
   bool catchesAreExhaustive;
 };
 
-struct TryCatchAnalyzer : BranchSensitiveVisitor<DefaultFrame, ResolvedVisitor<TryCatchAnalyzer>&> {
+struct TryCatchAnalyzer
+  : BranchSensitiveVisitor<DefaultFrame, ResolvedVisitor<TryCatchAnalyzer>&> {
   using RV = ResolvedVisitor<TryCatchAnalyzer>;
 
   // input
@@ -70,10 +68,7 @@ struct TryCatchAnalyzer : BranchSensitiveVisitor<DefaultFrame, ResolvedVisitor<T
   TryCatchAnalyzer(ResolutionContext* rc,
                    const AstNode* symbol,
                    ErrorCheckingMode mode)
-    : rc(rc),
-      astForErr(symbol),
-      mode(mode) {
-  }
+    : rc(rc), astForErr(symbol), mode(mode) {}
 
   void checkCatchallIsLast(const Try* node, RV& rv) {
     bool hasCatchAll = false;
@@ -87,13 +82,13 @@ struct TryCatchAnalyzer : BranchSensitiveVisitor<DefaultFrame, ResolvedVisitor<T
     }
   }
 
-  static const  ClassType*
+  static const ClassType*
   getClassTypeForError(Context* context, const Variable* error, RV& rv) {
-      auto errType = CompositeType::getErrorType(context);
-      auto dec = ClassTypeDecorator(ClassTypeDecorator::MANAGED_NONNIL);
-      auto manager = AnyOwnedType::get(context);
-      CHPL_ASSERT(errType->basicClassType());
-      return ClassType::get(context, errType->basicClassType(), manager, dec);
+    auto errType = CompositeType::getErrorType(context);
+    auto dec = ClassTypeDecorator(ClassTypeDecorator::MANAGED_NONNIL);
+    auto manager = AnyOwnedType::get(context);
+    CHPL_ASSERT(errType->basicClassType());
+    return ClassType::get(context, errType->basicClassType(), manager, dec);
   }
 
   // Returns true if the catch is a catchall statement.
@@ -136,9 +131,7 @@ struct TryCatchAnalyzer : BranchSensitiveVisitor<DefaultFrame, ResolvedVisitor<T
     return hasCatchAll;
   }
 
-  bool canThrow() {
-    return currentFn && currentFn->throws();
-  }
+  bool canThrow() { return currentFn && currentFn->throws(); }
 
   void enterTry(const Try* ast, RV& rv) {
     TryCatchState tca;
@@ -148,12 +141,12 @@ struct TryCatchAnalyzer : BranchSensitiveVisitor<DefaultFrame, ResolvedVisitor<T
     tryStack.push_back(tca);
   }
 
-  void exitTry() {
-    tryStack.pop_back();
-  }
+  void exitTry() { tryStack.pop_back(); }
 
-  const types::Param* determineWhenCaseValue(const uast::AstNode* ast, RV& rv) override;
-  const types::Param* determineIfValue(const uast::AstNode* ast, RV& rv) override;
+  const types::Param* determineWhenCaseValue(const uast::AstNode* ast,
+                                             RV& rv) override;
+  const types::Param* determineIfValue(const uast::AstNode* ast,
+                                       RV& rv) override;
   void traverseNode(const uast::AstNode* ast, RV& rv) override;
 
   void process(const uast::AstNode* symbol,
@@ -204,9 +197,9 @@ struct TryCatchAnalyzer : BranchSensitiveVisitor<DefaultFrame, ResolvedVisitor<T
 } // end namespace resolution
 
 namespace uast {
-template <>
-struct AstVisitorPrecondition<resolution::TryCatchAnalyzer> {
-  static bool skipSubtree(const AstNode* node, resolution::TryCatchAnalyzer& rv) {
+template <> struct AstVisitorPrecondition<resolution::TryCatchAnalyzer> {
+  static bool skipSubtree(const AstNode* node,
+                          resolution::TryCatchAnalyzer& rv) {
     return rv.isDoneExecuting();
   }
 };
@@ -215,252 +208,234 @@ struct AstVisitorPrecondition<resolution::TryCatchAnalyzer> {
 
 namespace resolution {
 
-  const types::Param* TryCatchAnalyzer::determineWhenCaseValue(const uast::AstNode* ast, RV& rv) {
-    if (auto action = rv.byAst(ast).getAction(AssociatedAction::COMPARE)) {
-      return action->type().param();
-    } else {
-      return nullptr;
-    }
+const types::Param*
+TryCatchAnalyzer::determineWhenCaseValue(const uast::AstNode* ast, RV& rv) {
+  if (auto action = rv.byAst(ast).getAction(AssociatedAction::COMPARE)) {
+    return action->type().param();
+  } else {
+    return nullptr;
   }
-  const types::Param* TryCatchAnalyzer::determineIfValue(const uast::AstNode* ast, RV& rv) {
-    return rv.byAst(ast).type().param();
-  }
-  void TryCatchAnalyzer::traverseNode(const uast::AstNode* ast, RV& rv) {
-    ast->traverse(rv);
-  }
+}
+const types::Param* TryCatchAnalyzer::determineIfValue(const uast::AstNode* ast,
+                                                       RV& rv) {
+  return rv.byAst(ast).type().param();
+}
+void TryCatchAnalyzer::traverseNode(const uast::AstNode* ast, RV& rv) {
+  ast->traverse(rv);
+}
 
-  bool TryCatchAnalyzer::enter(const Try* ast, RV& rv) {
-    enterScope(ast, rv);
-    enterTry(ast, rv);
-    return true;
-  }
+bool TryCatchAnalyzer::enter(const Try* ast, RV& rv) {
+  enterScope(ast, rv);
+  enterTry(ast, rv);
+  return true;
+}
 
-  void TryCatchAnalyzer::exit(const Try* ast, RV& rv) {
-    checkCatchallIsLast(ast, rv);
-    // is it an exhaustive catch?
-    bool exhaustive = tryStack.back().catchesAreExhaustive;
-    exitTry();
-    exitScope(ast, rv);
-    // check for a catchall, or this is a try! or the parent function throws
-    if (tryStack.size() == 0 && !exhaustive && !this->canThrow()) {
-      CHPL_REPORT(context, TryNoCatchAll, ast);
-    }
+void TryCatchAnalyzer::exit(const Try* ast, RV& rv) {
+  checkCatchallIsLast(ast, rv);
+  // is it an exhaustive catch?
+  bool exhaustive = tryStack.back().catchesAreExhaustive;
+  exitTry();
+  exitScope(ast, rv);
+  // check for a catchall, or this is a try! or the parent function throws
+  if (tryStack.size() == 0 && !exhaustive && !this->canThrow()) {
+    CHPL_REPORT(context, TryNoCatchAll, ast);
   }
+}
 
-  bool TryCatchAnalyzer::enter(const Function* fn, RV& rv) {
-    return false;
-  }
-  void TryCatchAnalyzer::exit(const Function* fn, RV& rv) {
-  }
+bool TryCatchAnalyzer::enter(const Function* fn, RV& rv) { return false; }
+void TryCatchAnalyzer::exit(const Function* fn, RV& rv) {}
 
-  bool TryCatchAnalyzer::enter(const FnCall* ast, RV& rv) {
-    // sometimes we don't have the resolved expression for the ast,
-    // For now we just skip those
-    // TODO: determine what to do in the cases skipped by this check
-    if (rv.hasAst(ast)) {
-      const ResolvedExpression& r = rv.byAst(ast);
-      if (auto bestResMsc = r.mostSpecific().only()) {
-        auto bestResFn = bestResMsc.fn();
-        if (bestResFn->untyped()->throws()) {
-          // are we in a throwing function or a try?
-          if (!this->canThrow() && tryStack.size() == 0) {
-            if (mode == ErrorCheckingMode::RELAXED) {
-              CHPL_REPORT(context, CallToThrowingFunctionRelaxed, ast, bestResFn->untyped());
-            } else if (mode == ErrorCheckingMode::FATAL) {
-              // do nothing - we'll let the program halt if it throws
-            } else {
-              CHPL_REPORT(context, CallToThrowingFunctionFromNon, ast, bestResFn->untyped());
+bool TryCatchAnalyzer::enter(const FnCall* ast, RV& rv) {
+  // sometimes we don't have the resolved expression for the ast,
+  // For now we just skip those
+  // TODO: determine what to do in the cases skipped by this check
+  if (rv.hasAst(ast)) {
+    const ResolvedExpression& r = rv.byAst(ast);
+    if (auto bestResMsc = r.mostSpecific().only()) {
+      auto bestResFn = bestResMsc.fn();
+      if (bestResFn->untyped()->throws()) {
+        // are we in a throwing function or a try?
+        if (!this->canThrow() && tryStack.size() == 0) {
+          if (mode == ErrorCheckingMode::RELAXED) {
+            CHPL_REPORT(context,
+                        CallToThrowingFunctionRelaxed,
+                        ast,
+                        bestResFn->untyped());
+          } else if (mode == ErrorCheckingMode::FATAL) {
+            // do nothing - we'll let the program halt if it throws
+          } else {
+            CHPL_REPORT(context,
+                        CallToThrowingFunctionFromNon,
+                        ast,
+                        bestResFn->untyped());
+          }
+        } else if (mode == ErrorCheckingMode::STRICT && this->canThrow()) {
+          // In strict mode, even in throwing functions, all throwing calls must be directly marked
+          if (tryStack.size() == 0) {
+            CHPL_REPORT(
+              context, CallToThrowingFunctionStrict, ast, bestResFn->untyped());
+          }
+        } else if (tryStack.size() > 0) {
+          // check if any of the enclosing try blocks have a catchall
+          bool foundCatchAll = false;
+          for (auto it = tryStack.rbegin(); it != tryStack.rend(); it++) {
+            if (it->catchesAreExhaustive) {
+              foundCatchAll = true;
+              break;
             }
-          } else if (mode == ErrorCheckingMode::STRICT && this->canThrow()) {
-            // In strict mode, even in throwing functions, all throwing calls must be directly marked
-            if (tryStack.size() == 0) {
-              CHPL_REPORT(context, CallToThrowingFunctionStrict, ast, bestResFn->untyped());
-            }
-          } else if (tryStack.size() > 0) {
-            // check if any of the enclosing try blocks have a catchall
-            bool foundCatchAll = false;
-            for (auto it = tryStack.rbegin(); it != tryStack.rend(); it++) {
-              if (it->catchesAreExhaustive) {
-                foundCatchAll = true;
-                break;
-              }
-            }
-            if (!foundCatchAll && !canThrow()) {
-              CHPL_REPORT(context, ThrowUnhandled, ast, bestResFn->untyped());
-            }
+          }
+          if (!foundCatchAll && !canThrow()) {
+            CHPL_REPORT(context, ThrowUnhandled, ast, bestResFn->untyped());
           }
         }
       }
-      if (r.causedFatalError()) markFatalError();
     }
-    return true;
+    if (r.causedFatalError()) markFatalError();
   }
-  void TryCatchAnalyzer::exit(const FnCall* ast, RV& rv) {
+  return true;
+}
+void TryCatchAnalyzer::exit(const FnCall* ast, RV& rv) {}
+
+bool TryCatchAnalyzer::enter(const Comment* ast, RV& rv) { return false; }
+void TryCatchAnalyzer::exit(const Comment* ast, RV& rv) {}
+
+bool TryCatchAnalyzer::enter(const Module* ast, RV& rv) { return false; }
+
+void TryCatchAnalyzer::exit(const Module* ast, RV& rv) {}
+
+bool TryCatchAnalyzer::enter(const TypeDecl* ast, RV& rv) { return false; }
+
+void TryCatchAnalyzer::exit(const TypeDecl* ast, RV& rv) {}
+
+bool TryCatchAnalyzer::enter(const Throw* ast, RV& rv) {
+  // check that we are in a function that is marked as throwing or inside
+  // a try
+  enterScope(ast, rv);
+  bool canThrow = tryStack.size() > 0 || this->canThrow();
+  if (!canThrow && mode != ErrorCheckingMode::FATAL) {
+    CHPL_REPORT(context, ThrowInNonThrowingFunction, ast, currentFn);
   }
+  return true;
+}
+void TryCatchAnalyzer::exit(const Throw* ast, RV& rv) { exitScope(ast, rv); }
 
+bool TryCatchAnalyzer::enter(const Break* brk, RV& rv) {
+  markBreak(rv.getBreakOrContinueTarget(brk));
+  return false;
+}
+void TryCatchAnalyzer::exit(const Break* brk, RV& rv) {}
 
-  bool TryCatchAnalyzer::enter(const Comment* ast, RV& rv) {
-    return false;
-  }
-  void TryCatchAnalyzer::exit(const Comment* ast, RV& rv) {
-  }
+bool TryCatchAnalyzer::enter(const Continue* cont, RV& rv) {
+  markContinue(rv.getBreakOrContinueTarget(cont));
+  return false;
+}
+void TryCatchAnalyzer::exit(const Continue* cont, RV& rv) {}
 
-  bool TryCatchAnalyzer::enter(const Module* ast, RV& rv) {
-    return false;
-  }
+bool TryCatchAnalyzer::enter(const Return* ret, RV& rv) { return true; }
+void TryCatchAnalyzer::exit(const Return* ret, RV& rv) { markReturn(); }
 
-  void TryCatchAnalyzer::exit(const Module* ast, RV& rv) {
-  }
+bool TryCatchAnalyzer::enter(const Conditional* cond, RV& rv) {
+  enterScope(cond, rv);
+  return branchSensitivelyTraverse(cond, rv);
+}
+void TryCatchAnalyzer::exit(const Conditional* cond, RV& rv) {
+  exitScope(cond, rv);
+}
 
-  bool TryCatchAnalyzer::enter(const TypeDecl* ast, RV& rv) {
-    return false;
-  }
+bool TryCatchAnalyzer::enter(const Select* sel, RV& rv) {
+  enterScope(sel, rv);
+  return branchSensitivelyTraverse(sel, rv);
+}
+void TryCatchAnalyzer::exit(const Select* sel, RV& rv) { exitScope(sel, rv); }
 
-  void TryCatchAnalyzer::exit(const TypeDecl* ast, RV& rv) {
-  }
+bool TryCatchAnalyzer::enter(const AstNode* ast, RV& rv) {
+  enterScope(ast, rv);
+  return true;
+}
+void TryCatchAnalyzer::exit(const AstNode* ast, RV& rv) { exitScope(ast, rv); }
 
-
-  bool TryCatchAnalyzer::enter(const Throw* ast, RV& rv) {
-    // check that we are in a function that is marked as throwing or inside
-    // a try
-    enterScope(ast, rv);
-    bool canThrow = tryStack.size() > 0 || this->canThrow();
-    if (!canThrow && mode != ErrorCheckingMode::FATAL) {
-      CHPL_REPORT(context, ThrowInNonThrowingFunction, ast, currentFn);
+void TryCatchAnalyzer::process(const uast::AstNode* symbol,
+                               ResolutionResultByPostorderID& byPostorder) {
+  ResolvedVisitor<TryCatchAnalyzer> rv(rc, symbol, *this, byPostorder);
+  // Traverse formals and then the body. This is done here rather
+  // than in enter(Function) because nested functions will have
+  // 'process' called on them separately.
+  if (auto fn = symbol->toFunction()) {
+    currentFn = fn;
+    if (fn->throws() && fn->name() == UniqueString::get(context, "deinit")) {
+      context->error(fn, "deinit is not permitted to throw");
     }
-    return true;
-  }
-  void TryCatchAnalyzer::exit(const Throw* ast, RV& rv) {
-    exitScope(ast, rv);
-  }
-
-  bool TryCatchAnalyzer::enter(const Break* brk, RV& rv) {
-    markBreak(rv.getBreakOrContinueTarget(brk));
-    return false;
-  }
-  void TryCatchAnalyzer::exit(const Break* brk, RV& rv) {}
-
-  bool TryCatchAnalyzer::enter(const Continue* cont, RV& rv) {
-    markContinue(rv.getBreakOrContinueTarget(cont));
-    return false;
-  }
-  void TryCatchAnalyzer::exit(const Continue* cont, RV& rv) {}
-
-  bool TryCatchAnalyzer::enter(const Return* ret, RV& rv) {
-    return true;
-  }
-  void TryCatchAnalyzer::exit(const Return* ret, RV& rv) {
-    markReturn();
-  }
-
-  bool TryCatchAnalyzer::enter(const Conditional* cond, RV& rv) {
-    enterScope(cond, rv);
-    return branchSensitivelyTraverse(cond, rv);
-  }
-  void TryCatchAnalyzer::exit(const Conditional* cond, RV& rv) {
-    exitScope(cond, rv);
-  }
-
-  bool TryCatchAnalyzer::enter(const Select* sel, RV& rv) {
-    enterScope(sel, rv);
-    return branchSensitivelyTraverse(sel, rv);
-  }
-  void TryCatchAnalyzer::exit(const Select* sel, RV& rv) {
-    exitScope(sel, rv);
-  }
-
-  bool TryCatchAnalyzer::enter(const AstNode* ast, RV& rv) {
-    enterScope(ast, rv);
-    return true;
-  }
-  void TryCatchAnalyzer::exit(const AstNode* ast, RV& rv) {
-    exitScope(ast, rv);
-  }
-
-  void TryCatchAnalyzer::process(const uast::AstNode* symbol,
-                                 ResolutionResultByPostorderID& byPostorder) {
-    ResolvedVisitor<TryCatchAnalyzer> rv(rc, symbol, *this, byPostorder);
-    // Traverse formals and then the body. This is done here rather
-    // than in enter(Function) because nested functions will have
-    // 'process' called on them separately.
-    if (auto fn = symbol->toFunction()) {
-      currentFn = fn;
-      if (fn->throws() && fn->name() == UniqueString::get(context,"deinit")) {
-        context->error(fn, "deinit is not permitted to throw");
+    if (auto body = fn->body()) {
+      // traverse the formals
+      for (auto formal : fn->formals()) {
+        formal->traverse(rv);
       }
-      if (auto body = fn->body()) {
-        // traverse the formals
-        for (auto formal : fn->formals()) {
-          formal->traverse(rv);
-        }
-        // traverse the real body
-        body->traverse(rv);
-      }
-    } else if (auto mod = symbol->toModule()) {
-      // module, comment, typedecl do same thing
-      // probably need a helper/adapter that we can re-use for this purpose
-      for (auto stmt : mod->stmts()) {
-        stmt->traverse(rv);
-      }
+      // traverse the real body
+      body->traverse(rv);
+    }
+  } else if (auto mod = symbol->toModule()) {
+    // module, comment, typedecl do same thing
+    // probably need a helper/adapter that we can re-use for this purpose
+    for (auto stmt : mod->stmts()) {
+      stmt->traverse(rv);
     }
   }
+}
 
-  // Compute the error handling mode to use by looking for modules whose kind is
-  // prototype or implicit. If neither of those apply, look for the value of the
-  // PERMIT_UNHANDLED_MODULE_ERRORS compiler flag to determine the handling mode
-  static ErrorCheckingMode computeErrorCheckingMode(Context* context,
-                                                    const AstNode* node) {
-    // pragmas on modules override the default error checking mode.
-    auto moduleId = parsing::idToModule(context, node->id());
-    while (!moduleId.isEmpty()) {
-      auto ag = parsing::idToAttributeGroup(context, moduleId);
-      if (!ag) {
-        // no attibute group on this module; is there a parent module?
-      } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_FATAL)) {
-        return ErrorCheckingMode::FATAL;
-      } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_STRICT)) {
-        return ErrorCheckingMode::STRICT;
-      } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_RELAXED)) {
-        return ErrorCheckingMode::RELAXED;
-      }
-
-      moduleId = parsing::idToParentModule(context, moduleId);
+// Compute the error handling mode to use by looking for modules whose kind is
+// prototype or implicit. If neither of those apply, look for the value of the
+// PERMIT_UNHANDLED_MODULE_ERRORS compiler flag to determine the handling mode
+static ErrorCheckingMode computeErrorCheckingMode(Context* context,
+                                                  const AstNode* node) {
+  // pragmas on modules override the default error checking mode.
+  auto moduleId = parsing::idToModule(context, node->id());
+  while (!moduleId.isEmpty()) {
+    auto ag = parsing::idToAttributeGroup(context, moduleId);
+    if (!ag) {
+      // no attibute group on this module; is there a parent module?
+    } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_FATAL)) {
+      return ErrorCheckingMode::FATAL;
+    } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_STRICT)) {
+      return ErrorCheckingMode::STRICT;
+    } else if (ag->hasPragma(pragmatags::PRAGMA_ERROR_MODE_RELAXED)) {
+      return ErrorCheckingMode::RELAXED;
     }
-    // fall through to figuring out the mode from the module kind
 
-    auto mode = ErrorCheckingMode::UNKNOWN;
-    auto moduleKind = parsing::idToModuleKind(context, node->id());
-    if (moduleKind == Module::Kind::PROTOTYPE ||
-        moduleKind == Module::Kind::IMPLICIT) {
+    moduleId = parsing::idToParentModule(context, moduleId);
+  }
+  // fall through to figuring out the mode from the module kind
+
+  auto mode = ErrorCheckingMode::UNKNOWN;
+  auto moduleKind = parsing::idToModuleKind(context, node->id());
+  if (moduleKind == Module::Kind::PROTOTYPE ||
+      moduleKind == Module::Kind::IMPLICIT) {
+    mode = ErrorCheckingMode::FATAL;
+  }
+
+  if (mode == ErrorCheckingMode::UNKNOWN) {
+    // No mode was chosen explicitly, see if the compiler flag sets the
+    // handling mode or use the default.
+    if (isCompilerFlagSet(context,
+                          CompilerFlags::PERMIT_UNHANDLED_MODULE_ERRORS)) {
       mode = ErrorCheckingMode::FATAL;
-    }
-
-    if (mode == ErrorCheckingMode::UNKNOWN) {
-      // No mode was chosen explicitly, see if the compiler flag sets the
-      // handling mode or use the default.
-      if (isCompilerFlagSet(context,
-                            CompilerFlags::PERMIT_UNHANDLED_MODULE_ERRORS)) {
-        mode = ErrorCheckingMode::FATAL;
-      } else {
-        mode = ErrorCheckingMode::RELAXED;
-      }
-    }
-    CHPL_ASSERT(mode != ErrorCheckingMode::UNKNOWN);
-    return mode;
-  }
-
-  void checkThrows(ResolutionContext* rc,
-                   ResolutionResultByPostorderID& result,
-                   const AstNode* symbol) {
-    if (symbol->isFunction() || symbol->isModule()) {
-      auto mode = computeErrorCheckingMode(rc->context(), symbol);
-      auto v = TryCatchAnalyzer(rc, symbol, mode);
-      v.process(symbol, result);
+    } else {
+      mode = ErrorCheckingMode::RELAXED;
     }
   }
+  CHPL_ASSERT(mode != ErrorCheckingMode::UNKNOWN);
+  return mode;
+}
 
+void checkThrows(ResolutionContext* rc,
+                 ResolutionResultByPostorderID& result,
+                 const AstNode* symbol) {
+  if (symbol->isFunction() || symbol->isModule()) {
+    auto mode = computeErrorCheckingMode(rc->context(), symbol);
+    auto v = TryCatchAnalyzer(rc, symbol, mode);
+    v.process(symbol, result);
+  }
+}
 
 } // end namespace resolution
-
 
 } // end namespace chpl

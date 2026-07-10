@@ -23,7 +23,8 @@
 namespace chpl {
 namespace types {
 
-const owned<ComplexType>& ComplexType::getComplexType(Context* context, int bitwidth) {
+const owned<ComplexType>& ComplexType::getComplexType(Context* context,
+                                                      int bitwidth) {
   QUERY_BEGIN(getComplexType, context, bitwidth);
 
   auto result = toOwned(new ComplexType(bitwidth));
@@ -36,7 +37,6 @@ const ComplexType* ComplexType::get(Context* context, int bitwidth) {
   if (bitwidth == 0) bitwidth = defaultBitwidth(); // canonicalize default width
   return getComplexType(context, bitwidth).get();
 }
-
 
 } // end namespace types
 } // end namespace chpl

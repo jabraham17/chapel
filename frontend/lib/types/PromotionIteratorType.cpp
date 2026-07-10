@@ -33,13 +33,20 @@ void PromotionIteratorType::markUniqueStringsInner(Context* context) const {
 }
 
 const owned<PromotionIteratorType>&
-PromotionIteratorType::getPromotionIteratorType(Context* context,
-                                                const resolution::PoiScope* poiScope,
-                                                const resolution::TypedFnSignature* scalarFn,
-                                                QualifiedType retType,
-                                                resolution::PromotedFormalMap promotedFormals) {
-  QUERY_BEGIN(getPromotionIteratorType, context, poiScope, scalarFn, retType, promotedFormals);
-  auto result = toOwned(new PromotionIteratorType(poiScope, scalarFn, std::move(retType), std::move(promotedFormals)));
+PromotionIteratorType::getPromotionIteratorType(
+  Context* context,
+  const resolution::PoiScope* poiScope,
+  const resolution::TypedFnSignature* scalarFn,
+  QualifiedType retType,
+  resolution::PromotedFormalMap promotedFormals) {
+  QUERY_BEGIN(getPromotionIteratorType,
+              context,
+              poiScope,
+              scalarFn,
+              retType,
+              promotedFormals);
+  auto result = toOwned(new PromotionIteratorType(
+    poiScope, scalarFn, std::move(retType), std::move(promotedFormals)));
   return QUERY_END(result);
 }
 
@@ -49,8 +56,13 @@ PromotionIteratorType::get(Context* context,
                            const resolution::TypedFnSignature* scalarFn,
                            QualifiedType retType,
                            resolution::PromotedFormalMap promotedFormals) {
-  return getPromotionIteratorType(context, poiScope, scalarFn, std::move(retType), std::move(promotedFormals)).get();
+  return getPromotionIteratorType(context,
+                                  poiScope,
+                                  scalarFn,
+                                  std::move(retType),
+                                  std::move(promotedFormals))
+    .get();
 }
 
-}  // end namespace types
-}  // end namespace chpl
+} // end namespace types
+} // end namespace chpl

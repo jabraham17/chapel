@@ -24,8 +24,8 @@
 namespace chpl {
 namespace uast {
 
-
-owned<Forall> Forall::build(Builder* builder, Location loc,
+owned<Forall> Forall::build(Builder* builder,
+                            Location loc,
                             owned<Decl> index,
                             owned<AstNode> iterand,
                             owned<WithClause> withClause,
@@ -65,7 +65,8 @@ owned<Forall> Forall::build(Builder* builder, Location loc,
   const int loopBodyChildNum = lst.size();
   lst.push_back(std::move(body));
 
-  Forall* ret = new Forall(std::move(lst), indexChildNum,
+  Forall* ret = new Forall(std::move(lst),
+                           indexChildNum,
                            iterandChildNum,
                            withClauseChildNum,
                            blockStyle,
@@ -75,7 +76,6 @@ owned<Forall> Forall::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

@@ -32,10 +32,8 @@
 namespace chpl {
 namespace resolution {
 
-
 using namespace uast;
 using namespace types;
-
 
 bool VarFrame::addToDeclaredVars(ID varId) {
   auto pair = declaredVars.insert(std::move(varId));
@@ -46,14 +44,11 @@ bool VarFrame::addToInitedVars(ID varId) {
   return pair.second;
 }
 
-void
-VarScopeVisitor::process(const uast::AstNode* symbol,
-                         ResolutionResultByPostorderID& byPostorder) {
+void VarScopeVisitor::process(const uast::AstNode* symbol,
+                              ResolutionResultByPostorderID& byPostorder) {
   ResolutionContext rcval(context);
-  MutatingResolvedVisitor<VarScopeVisitor> rv(&rcval,
-                                              symbol,
-                                              *this,
-                                              byPostorder);
+  MutatingResolvedVisitor<VarScopeVisitor> rv(
+    &rcval, symbol, *this, byPostorder);
 
   // Traverse formals and then the body. This is done here rather
   // than in enter(Function) because nested functions will have
@@ -110,7 +105,7 @@ const AstNode* VarScopeVisitor::currentStatement() {
     const AstNode* ast = inAstStack[i];
     const AstNode* parent = nullptr;
     if (i > 0) {
-      parent = inAstStack[i-1];
+      parent = inAstStack[i - 1];
     }
 
     if (ast->isInherentlyStatement()) {
@@ -149,10 +144,8 @@ void VarScopeVisitor::processMentions(const AstNode* ast, RV& rv) {
   }
 }
 
-bool
-VarScopeVisitor::processSplitInitAssign(const AstNode* lhsAst,
-                                        const std::set<ID>& allSplitInitedVars,
-                                        RV& rv) {
+bool VarScopeVisitor::processSplitInitAssign(
+  const AstNode* lhsAst, const std::set<ID>& allSplitInitedVars, RV& rv) {
   bool inserted = false;
   auto frame = currentFrame();
   ID lhsVarId = refersToId(lhsAst, rv);
@@ -162,11 +155,11 @@ VarScopeVisitor::processSplitInitAssign(const AstNode* lhsAst,
   return inserted;
 }
 
-bool
-VarScopeVisitor::processSplitInitOut(const Call* ast,
-                                     const AstNode* actual,
-                                     const std::set<ID>& allSplitInitedVars,
-                                     RV& rv) {
+bool VarScopeVisitor::processSplitInitOut(
+  const Call* ast,
+  const AstNode* actual,
+  const std::set<ID>& allSplitInitedVars,
+  RV& rv) {
   bool inserted = false;
   auto frame = currentFrame();
   ID actualVarId = refersToId(actual, rv);
@@ -176,7 +169,9 @@ VarScopeVisitor::processSplitInitOut(const Call* ast,
   return inserted;
 }
 
-bool VarScopeVisitor::processDeclarationInit(const NamedDecl* lhsAst, const AstNode* initExpression, RV& rv) {
+bool VarScopeVisitor::processDeclarationInit(const NamedDecl* lhsAst,
+                                             const AstNode* initExpression,
+                                             RV& rv) {
   auto frame = currentFrame();
   bool inserted = false;
   if (initExpression) {
@@ -252,15 +247,9 @@ void VarScopeVisitor::doExitScope(const uast::AstNode* ast, RV& rv) {
     case chpl::uast::asttags::Conditional:
       handleConditional(ast->toConditional(), rv);
       break;
-    case chpl::uast::asttags::Try:
-      handleTry(ast->toTry(), rv);
-      break;
-    case chpl::uast::asttags::Select:
-      handleSelect(ast->toSelect(), rv);
-      break;
-    default:
-      handleScope(ast, rv);
-      break;
+    case chpl::uast::asttags::Try: handleTry(ast->toTry(), rv); break;
+    case chpl::uast::asttags::Select: handleSelect(ast->toSelect(), rv); break;
+    default: handleScope(ast, rv); break;
   }
 }
 
@@ -269,14 +258,17 @@ static const types::Param* determineParamValue(const ResolvedExpression& rr) {
   return nullptr;
 }
 
-const types::Param* VarScopeVisitor::determineWhenCaseValue(const uast::AstNode* ast, RV& extraData) {
+const types::Param*
+VarScopeVisitor::determineWhenCaseValue(const uast::AstNode* ast,
+                                        RV& extraData) {
   if (auto action = extraData.byAst(ast).getAction(AssociatedAction::COMPARE)) {
     return action->type().param();
   }
   return nullptr;
 }
 
-const types::Param* VarScopeVisitor::determineIfValue(const uast::AstNode* ast, RV& extraData) {
+const types::Param* VarScopeVisitor::determineIfValue(const uast::AstNode* ast,
+                                                      RV& extraData) {
   return determineParamValue(extraData.byAst(ast));
 }
 
@@ -309,7 +301,7 @@ void VarScopeVisitor::handleSelect(const Select* sel, RV& rv) {
 
   std::vector<VarFrame*> frames;
   bool alwaysTaken = sel->hasOtherwise();
-  for(int i = 0; i < sel->numWhenStmts(); i++) {
+  for (int i = 0; i < sel->numWhenStmts(); i++) {
     auto whenFrame = currentWhenFrame(i);
     if (!whenFrame) continue;
     frames.push_back(whenFrame);
@@ -361,7 +353,6 @@ bool VarScopeVisitor::enter(const TupleDecl* ast, RV& rv) {
   }
   nestedTupleInfoStack.emplace_back(initType, initPart);
 
-
   // Loop index variables don't need default-initialization and aren't
   // subject to split init etc., so skip them.
   //
@@ -402,8 +393,11 @@ void VarScopeVisitor::exit(const TupleDecl* ast, RV& rv) {
     for (auto action : re.associatedActions()) {
       auto useId = action.id();
       auto useTupleEltIdx = i;
-      subActions.emplace_back(action.action(), action.fn(), useId,
-                              action.type(), useTupleEltIdx,
+      subActions.emplace_back(action.action(),
+                              action.fn(),
+                              useId,
+                              action.type(),
+                              useTupleEltIdx,
                               action.subActions());
     }
 
@@ -487,7 +481,7 @@ void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
           auto parentInitType = nestedTupleInfoStack.back().first;
           if (!parentInitType.isUnknown()) {
             if (auto parentInitTupleType =
-                    parentInitType.type()->toTupleType()) {
+                  parentInitType.type()->toTupleType()) {
               auto eltIdx = indexWithinContainingTuple(ast);
               if (eltIdx < parentInitTupleType->numElements()) {
                 initType = parentInitTupleType->elementType(eltIdx);
@@ -502,8 +496,8 @@ void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
       }
 
       if (!skipHandling) {
-        handleDeclaration(vld, parent, initExpr, initType, intentOrKind,
-                          isFormal, rv);
+        handleDeclaration(
+          vld, parent, initExpr, initType, intentOrKind, isFormal, rv);
       }
     }
   }
@@ -511,7 +505,6 @@ void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
   exitScope(ast, rv);
   exitAst(ast);
 }
-
 
 bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
   enterAst(ast);
@@ -549,9 +542,7 @@ static bool isUnderscoreIdent(const AstNode* ast) {
   return ident && ident->name() == USTR("_");
 }
 
-void VarScopeVisitor::exit(const OpCall* ast, RV& rv) {
-  exitAst(ast);
-}
+void VarScopeVisitor::exit(const OpCall* ast, RV& rv) { exitAst(ast); }
 
 bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
   enterAst(ast);
@@ -563,11 +554,11 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
   std::vector<const Type*> eltTypes;
   for (const auto& actual : ast->actuals()) {
     eltTypes.push_back(isUnderscoreIdent(actual)
-                           ? NothingType::get(context)
-                           : rv.byAst(actual).type().type());
+                         ? NothingType::get(context)
+                         : rv.byAst(actual).type().type());
   }
   rv.byPostorder().byAst(ast).setType(QualifiedType(
-      QualifiedType::VAR, TupleType::getValueTuple(context, eltTypes)));
+    QualifiedType::VAR, TupleType::getValueTuple(context, eltTypes)));
 
   // Gather info for this assignment (at whatever level of nesting)
   // Determine RHS (init expr) and type for this assign, either directly if
@@ -626,8 +617,11 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
 
     for (auto action : re.associatedActions()) {
       auto useTupleEltIdx = i;
-      subActions.emplace_back(action.action(), action.fn(), action.id(),
-                              action.type(), useTupleEltIdx,
+      subActions.emplace_back(action.action(),
+                              action.fn(),
+                              action.id(),
+                              action.type(),
+                              useTupleEltIdx,
                               action.subActions());
     }
     re.clearAssociatedActions();
@@ -642,9 +636,7 @@ bool VarScopeVisitor::enter(const Tuple* ast, RV& rv) {
   return false;
 }
 
-void VarScopeVisitor::exit(const Tuple* ast, RV& rv) {
-  exitAst(ast);
-}
+void VarScopeVisitor::exit(const Tuple* ast, RV& rv) { exitAst(ast); }
 
 bool VarScopeVisitor::resolvedCallHelper(const Call* callAst, RV& rv) {
   auto rr = rv.byPostorder().byAstOrNull(callAst);
@@ -671,9 +663,8 @@ bool VarScopeVisitor::resolvedCallHelper(const Call* callAst, RV& rv) {
       for (int i = 0; i < n; i++) {
         const QualifiedType& formalQt = fn->formalType(i);
         auto kind = formalQt.kind();
-        if (kind == QualifiedType::OUT ||
-            kind == QualifiedType::IN || kind == QualifiedType::CONST_IN ||
-            kind == QualifiedType::INOUT) {
+        if (kind == QualifiedType::OUT || kind == QualifiedType::IN ||
+            kind == QualifiedType::CONST_IN || kind == QualifiedType::INOUT) {
           anyInOutInout = true;
           break;
         }
@@ -726,7 +717,9 @@ bool VarScopeVisitor::resolvedCallHelper(const Call* callAst, RV& rv) {
     // TODO: Should we store the resolved CallInfo so we don't need to build
     // it back up here?
     std::vector<const AstNode*> actualAsts;
-    auto ci = CallInfo::create(context, callAst, rv.byPostorder(),
+    auto ci = CallInfo::create(context,
+                               callAst,
+                               rv.byPostorder(),
                                /* raiseErrors */ false,
                                &actualAsts);
 
@@ -735,7 +728,6 @@ bool VarScopeVisitor::resolvedCallHelper(const Call* callAst, RV& rv) {
       ci = ci.createWithReceiver(ci, QualifiedType());
       actualAsts.insert(actualAsts.begin(), nullptr);
     }
-
 
     // compute a vector indicating which actuals are passed to
     // an 'out' formal in all return intent overloads
@@ -746,9 +738,14 @@ bool VarScopeVisitor::resolvedCallHelper(const Call* callAst, RV& rv) {
     std::vector<QualifiedType> actualFormalTypes;
     std::vector<Qualifier> actualFormalIntents;
     std::vector<bool> actualPromoted;
-    computeActualFormalIntents(context, candidates, ci, actualAsts,
-                               actualFormalIntents, actualFormalTypes,
-                               actualPromoted, promoCtx);
+    computeActualFormalIntents(context,
+                               candidates,
+                               ci,
+                               actualAsts,
+                               actualFormalIntents,
+                               actualFormalTypes,
+                               actualPromoted,
+                               promoCtx);
 
     // for a given actual index, returns:
     // * nullptr if no promotion ocurred
@@ -759,14 +756,13 @@ bool VarScopeVisitor::resolvedCallHelper(const Call* callAst, RV& rv) {
     // of the scalar type.
     auto getScalarType = [&](int idx) {
       auto& actualQt = ci.actual(idx).type();
-      return
-        promoCtx == nullptr ? nullptr :
-        actualPromoted[idx] ? &getPromotionType(context, actualQt) :
-        &actualQt;
+      return promoCtx == nullptr   ? nullptr
+             : actualPromoted[idx] ? &getPromotionType(context, actualQt)
+                                   : &actualQt;
     };
     int actualIdx = 0;
     for (auto actual : ci.actuals()) {
-      (void) actual; // avoid compilation error about unused variable
+      (void)actual; // avoid compilation error about unused variable
 
       const AstNode* actualAst = actualAsts[actualIdx];
       Qualifier kind = actualFormalIntents[actualIdx];
@@ -775,18 +771,23 @@ bool VarScopeVisitor::resolvedCallHelper(const Call* callAst, RV& rv) {
       if (actualAst == nullptr) {
         CHPL_ASSERT(ci.isMethodCall() && actualIdx == 0);
       } else if (kind == Qualifier::OUT) {
-        handleOutFormal(callAst, actualAst,
-                        actualFormalTypes[actualIdx], rv);
+        handleOutFormal(callAst, actualAst, actualFormalTypes[actualIdx], rv);
       } else if ((kind == Qualifier::IN || kind == Qualifier::CONST_IN) &&
                  !(ci.name() == "init" && actualIdx == 0)) {
         // don't do this for the 'this' argument to 'init', because it
         // is not getting copied.
 
-        handleInFormal(callAst, actualAst,
-                       actualFormalTypes[actualIdx], getScalarType(actualIdx), rv);
+        handleInFormal(callAst,
+                       actualAst,
+                       actualFormalTypes[actualIdx],
+                       getScalarType(actualIdx),
+                       rv);
       } else if (kind == Qualifier::INOUT) {
-        handleInoutFormal(callAst, actualAst,
-                          actualFormalTypes[actualIdx], getScalarType(actualIdx), rv);
+        handleInoutFormal(callAst,
+                          actualAst,
+                          actualFormalTypes[actualIdx],
+                          getScalarType(actualIdx),
+                          rv);
       } else {
         // otherwise, visit the actuals to gather mentions
         actualAst->traverse(rv);
@@ -805,11 +806,7 @@ bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
   return resolvedCallHelper(callAst, rv);
 }
 
-
-void VarScopeVisitor::exit(const FnCall* ast, RV& rv) {
-  exitAst(ast);
-}
-
+void VarScopeVisitor::exit(const FnCall* ast, RV& rv) { exitAst(ast); }
 
 bool VarScopeVisitor::enter(const Return* ast, RV& rv) {
   enterAst(ast);
@@ -917,33 +914,27 @@ void VarScopeVisitor::exit(const AstNode* ast, RV& rv) {
   exitAst(ast);
 }
 
-
 static Qualifier normalizeFormalIntent(Qualifier intent) {
   switch (intent) {
-    case Qualifier::OUT:
-      return Qualifier::OUT;
+    case Qualifier::OUT: return Qualifier::OUT;
 
     case Qualifier::IN:
-    case Qualifier::CONST_IN:
-      return Qualifier::IN;
+    case Qualifier::CONST_IN: return Qualifier::IN;
 
-    case Qualifier::INOUT:
-      return Qualifier::INOUT;
+    case Qualifier::INOUT: return Qualifier::INOUT;
 
-    default:
-      return Qualifier::UNKNOWN;
+    default: return Qualifier::UNKNOWN;
   }
 }
 
-void
-computeActualFormalIntents(Context* context,
-                           const MostSpecificCandidates& candidates,
-                           const CallInfo& ci,
-                           const std::vector<const AstNode*>& actualAsts,
-                           std::vector<Qualifier>& actualFormalIntents,
-                           std::vector<QualifiedType>& actualFormalTypes,
-                           std::vector<bool>& actualPromoted,
-                           const types::PromotionIteratorType* promoCtx) {
+void computeActualFormalIntents(Context* context,
+                                const MostSpecificCandidates& candidates,
+                                const CallInfo& ci,
+                                const std::vector<const AstNode*>& actualAsts,
+                                std::vector<Qualifier>& actualFormalIntents,
+                                std::vector<QualifiedType>& actualFormalTypes,
+                                std::vector<bool>& actualPromoted,
+                                const types::PromotionIteratorType* promoCtx) {
 
   int nActuals = ci.numActuals();
   actualFormalIntents.clear();
@@ -965,8 +956,9 @@ computeActualFormalIntents(Context* context,
     if (candidate) {
       auto& formalActualMap = candidate.formalActualMap();
       for (int actualIdx = methodOpOffset; actualIdx < nActuals; actualIdx++) {
-        const FormalActual* fa = formalActualMap.byActualIdx(actualIdx-methodOpOffset);
-        auto intent  = normalizeFormalIntent(fa->formalType().kind());
+        const FormalActual* fa =
+          formalActualMap.byActualIdx(actualIdx - methodOpOffset);
+        auto intent = normalizeFormalIntent(fa->formalType().kind());
         QualifiedType& aft = actualFormalTypes[actualIdx];
 
         // all actualPromoted are guaranteed to be the same IF all the
@@ -984,14 +976,16 @@ computeActualFormalIntents(Context* context,
           // check that the intent and types match
           if (actualFormalIntents[actualIdx] != intent) {
             // TODO: fix this error once return intent overloading implemented.
-            context->error(actualAsts[actualIdx],
-                  "return intent overloading but intent does not match");
+            context->error(
+              actualAsts[actualIdx],
+              "return intent overloading but intent does not match");
             actualFormalIntents[actualIdx] = Qualifier::UNKNOWN;
           } else if (intent != Qualifier::UNKNOWN && aft != fa->formalType()) {
             // TODO: fix this error once return intent overloading implemented.
-            context->error(actualAsts[actualIdx],
-                "using return intent overloads but the return "
-                "intent overloads do not have matching formal types");
+            context->error(
+              actualAsts[actualIdx],
+              "using return intent overloads but the return "
+              "intent overloads do not have matching formal types");
           }
         }
       }
@@ -999,8 +993,6 @@ computeActualFormalIntents(Context* context,
     }
   }
 }
-
-
 
 } // end namespace resolution
 } // end namespace chpl

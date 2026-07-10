@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 const char* New::managementToString(New::Management management) {
   switch (management) {
     case DEFAULT_MANAGEMENT: return ""; // TODO: "default"?
@@ -66,7 +65,6 @@ owned<New> New::build(Builder* builder,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

@@ -24,19 +24,19 @@
 namespace chpl {
 namespace uast {
 
-owned<Attribute> Attribute::build(Builder* builder, Location loc,
+owned<Attribute> Attribute::build(Builder* builder,
+                                  Location loc,
                                   UniqueString name,
                                   AstList actuals,
                                   std::vector<UniqueString> actualNames) {
   int numActuals = actuals.size();
 
-  Attribute* ret = new Attribute(name, numActuals, std::move(actuals),
-                                 std::move(actualNames));
+  Attribute* ret =
+    new Attribute(name, numActuals, std::move(actuals), std::move(actualNames));
 
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 void Attribute::dumpFieldsInner(const DumpSettings& s) const {
   s.out << " " << fullyQualifiedAttributeName();
@@ -50,6 +50,5 @@ void Attribute::dumpFieldsInner(const DumpSettings& s) const {
 }
 
 } // end namespace uast
-
 
 } // end namespace chpl

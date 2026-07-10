@@ -35,7 +35,8 @@ bool MultiDecl::isAcceptableMultiDecl() {
   return true;
 }
 
-owned<MultiDecl> MultiDecl::build(Builder* builder, Location loc,
+owned<MultiDecl> MultiDecl::build(Builder* builder,
+                                  Location loc,
                                   owned<AttributeGroup> attributeGroup,
                                   Decl::Visibility vis,
                                   Decl::Linkage linkage,
@@ -52,14 +53,11 @@ owned<MultiDecl> MultiDecl::build(Builder* builder, Location loc,
     lst.push_back(std::move(ast));
   }
 
-
-  MultiDecl* ret = new MultiDecl(std::move(lst), attributeGroupChildNum,
-                                 vis,
-                                 linkage);
+  MultiDecl* ret =
+    new MultiDecl(std::move(lst), attributeGroupChildNum, vis, linkage);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

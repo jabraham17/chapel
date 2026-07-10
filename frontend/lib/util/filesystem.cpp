@@ -43,18 +43,14 @@
 
 namespace chpl {
 
-
-static void removeSpacesBackslashesFromString(char* str)
-{
- char* src = str;
- char* dst = str;
- while (*src != '\0')
- {
-   *dst = *src++;
-   if (*dst != ' ' && *dst != '\\')
-       dst++;
- }
- *dst = '\0';
+static void removeSpacesBackslashesFromString(char* str) {
+  char* src = str;
+  char* dst = str;
+  while (*src != '\0') {
+    *dst = *src++;
+    if (*dst != ' ' && *dst != '\\') dst++;
+  }
+  *dst = '\0';
 }
 
 static std::string my_strerror(int errno_) {
@@ -62,8 +58,7 @@ static std::string my_strerror(int errno_) {
   int rc;
   errbuf[0] = '\0';
   rc = my_strerror_r(errno_, errbuf, sizeof(errbuf));
-  if (rc != 0)
-    strncpy(errbuf, "<unknown error>", sizeof(errbuf));
+  if (rc != 0) strncpy(errbuf, "<unknown error>", sizeof(errbuf));
   return std::string(errbuf);
 }
 
@@ -76,7 +71,8 @@ static std::error_code errorCodeFromCError(int err) {
  * 9945 env var options first, then P_tmpdir, then "/tmp".
  */
 static std::string getTempDir() {
-  std::vector<std::string> possibleDirsInEnv = {"TMPDIR", "TMP", "TEMP", "TEMPDIR"};
+  std::vector<std::string> possibleDirsInEnv = {
+    "TMPDIR", "TMP", "TEMP", "TEMPDIR"};
   for (unsigned int i = 0; i < possibleDirsInEnv.size(); i++) {
     auto curDir = getenv(possibleDirsInEnv[i].c_str());
     if (curDir != NULL) {
@@ -165,10 +161,7 @@ std::error_code writeFile(const char* path, const std::string& data) {
   return std::error_code();
 }
 
-
-bool pathExists(std::string_view path){
-  return llvm::sys::fs::exists(path);
-}
+bool pathExists(std::string_view path) { return llvm::sys::fs::exists(path); }
 
 bool directoryExists(std::string_view path) {
   return llvm::sys::fs::is_directory(path);
@@ -208,8 +201,10 @@ std::error_code makeTempDir(llvm::StringRef prefix,
     return ret;
   }
 
-  free(myuserid); myuserid = NULL;
-  free(tmpDirMut); tmpDirMut = NULL;
+  free(myuserid);
+  myuserid = NULL;
+  free(tmpDirMut);
+  tmpDirMut = NULL;
 
   tmpDirPathOut = dirRes;
   return std::error_code();
@@ -253,8 +248,7 @@ std::string getExecutablePath(const char* argv0, void* MainExecAddr) {
 
 static llvm::SmallVector<char> normalizePath(llvm::StringRef path) {
   // return an empty string instead of cwd for an empty input path
-  if (path.empty())
-    return llvm::SmallVector<char>();
+  if (path.empty()) return llvm::SmallVector<char>();
 
   std::error_code err;
   llvm::SmallVector<char> abspath(path.begin(), path.end());
@@ -279,10 +273,8 @@ static llvm::SmallVector<char> normalizePath(llvm::StringRef path) {
 
 bool isSameFile(llvm::StringRef path1, llvm::StringRef path2) {
   // first, handle "" as documented for this function
-  if (path1.empty() && path2.empty())
-    return true;
-  if (path1.empty() || path2.empty())
-    return false;
+  if (path1.empty() && path2.empty()) return true;
+  if (path1.empty() || path2.empty()) return false;
 
   // next, consider the filesystem
   std::error_code err;
@@ -300,8 +292,7 @@ bool isSameFile(llvm::StringRef path1, llvm::StringRef path2) {
 }
 
 std::vector<std::string>
-deduplicateSamePaths(const std::vector<std::string>& paths)
-{
+deduplicateSamePaths(const std::vector<std::string>& paths) {
   std::vector<std::string> ret;
   std::set<llvm::sys::fs::UniqueID> idsSet;
   std::set<std::string> pathsSet;
@@ -347,33 +338,31 @@ std::string cleanLocalPath(std::string path) {
   return path;
 }
 
-static bool filePathInDirPath(const char* filePathPtr, size_t filePathLen,
-                              const char* dirPathPtr, size_t dirPathLen) {
+static bool filePathInDirPath(const char* filePathPtr,
+                              size_t filePathLen,
+                              const char* dirPathPtr,
+                              size_t dirPathLen) {
   if (dirPathLen == 0)
     return false; // documented behavior; use "." for the current dir.
 
   // create SmallVectors for the relevant paths so we can use LLVM Path stuff
-  auto path = llvm::SmallVector<char>(filePathPtr, filePathPtr+filePathLen);
-  auto dirPath = llvm::SmallVector<char>(dirPathPtr, dirPathPtr+dirPathLen);
+  auto path = llvm::SmallVector<char>(filePathPtr, filePathPtr + filePathLen);
+  auto dirPath = llvm::SmallVector<char>(dirPathPtr, dirPathPtr + dirPathLen);
 
   // set 'path' to filePath without the filename (i.e. the directory)
   auto style = llvm::sys::path::Style::posix;
   llvm::sys::path::remove_filename(path, style);
   llvm::sys::path::remove_dots(path, /* remove_dot_dot */ false, style);
   // remove_dots on foo.chpl returns "" but we want to match "." in that case
-  if (path.size() == 0)
-    path.push_back('.');
+  if (path.size() == 0) path.push_back('.');
 
   // also normalize dirPath
   llvm::sys::path::remove_dots(dirPath, /* remove_dot_dot */ false, style);
-  if (dirPath.size() == 0)
-    dirPath.push_back('.');
+  if (dirPath.size() == 0) dirPath.push_back('.');
 
   // add / to the end of path and dirPath if they are not present already
-  if (path.back() != '/')
-    path.push_back('/');
-  if (dirPath.back() != '/')
-    dirPath.push_back('/');
+  if (path.back() != '/') path.push_back('/');
+  if (dirPath.back() != '/') dirPath.push_back('/');
 
   // now, check that 'dirPath' is a prefix or equal to 'path'
   return dirPath.size() <= path.size() &&
@@ -381,13 +370,13 @@ static bool filePathInDirPath(const char* filePathPtr, size_t filePathLen,
 }
 
 bool filePathInDirPath(llvm::StringRef filePath, llvm::StringRef dirPath) {
-  return filePathInDirPath(filePath.data(), filePath.size(),
-                           dirPath.data(), dirPath.size());
+  return filePathInDirPath(
+    filePath.data(), filePath.size(), dirPath.data(), dirPath.size());
 }
 
 bool filePathInDirPath(UniqueString filePath, UniqueString dirPath) {
-  return filePathInDirPath(filePath.c_str(), filePath.length(),
-                           dirPath.c_str(), dirPath.length());
+  return filePathInDirPath(
+    filePath.c_str(), filePath.length(), dirPath.c_str(), dirPath.length());
 }
 
 std::string fileHashToHex(const HashFileResult& hash) {
@@ -440,8 +429,8 @@ std::error_code copyModificationTime(const llvm::Twine& srcPath,
   auto time = status.getLastModificationTime();
   //std::cout << "Copying time from " << time.time_since_epoch().count() << "\n";
   int fd = 0;
-  err = llvm::sys::fs::openFileForWrite(dstPath, fd,
-                                        llvm::sys::fs::CD_OpenExisting);
+  err = llvm::sys::fs::openFileForWrite(
+    dstPath, fd, llvm::sys::fs::CD_OpenExisting);
   if (!err) {
     err = llvm::sys::fs::setLastAccessAndModificationTime(fd, time);
     llvm::sys::Process::SafelyCloseFileDescriptor(fd);
@@ -450,7 +439,7 @@ std::error_code copyModificationTime(const llvm::Twine& srcPath,
 }
 
 std::error_code moveFile(const llvm::Twine& srcPath,
-              const llvm::Twine& dstPath) {
+                         const llvm::Twine& dstPath) {
   auto err = llvm::sys::fs::rename(srcPath, dstPath);
   if (err) {
     // rename may have failed (especially across filesystems)
@@ -478,6 +467,5 @@ std::error_code moveFile(const llvm::Twine& srcPath,
   }
   return std::error_code();
 }
-
 
 } // namespace chpl

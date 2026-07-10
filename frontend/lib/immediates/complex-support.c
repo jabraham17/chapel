@@ -28,15 +28,15 @@ static double complex makeDoubleComplex(double re, double im) {
   return CMPLX(re, im);
 #else
 #ifndef CHPL_DONT_USE_CMPLX_PTR_ALIASING
-#define cmplx_re64(c) (((double *)&(c))[0])
-#define cmplx_im64(c) (((double *)&(c))[1])
+#define cmplx_re64(c) (((double*)&(c))[0])
+#define cmplx_im64(c) (((double*)&(c))[1])
   double complex val;
   cmplx_re64(val) = re;
   cmplx_im64(val) = im;
   return val;
 #else
   // This can generate bad values in the face of inf/nan values
-  return re + im*_Complex_I;
+  return re + im * _Complex_I;
 #endif
 #endif
 }
@@ -48,15 +48,15 @@ static float complex makeFloatComplex(float re, float im) {
   return CMPLXF(re, im);
 #else
 #ifndef CHPL_DONT_USE_CMPLX_PTR_ALIASING
-#define cmplx_re32(c) (((float *)&(c))[0])
-#define cmplx_im32(c) (((float *)&(c))[1])
+#define cmplx_re32(c) (((float*)&(c))[0])
+#define cmplx_im32(c) (((float*)&(c))[1])
   float complex val;
   cmplx_re32(val) = re;
   cmplx_im32(val) = im;
   return val;
 #else
   // This can generate bad values in the face of inf/nan values
-  return re + im*_Complex_I;
+  return re + im * _Complex_I;
 #endif
 #endif
 }

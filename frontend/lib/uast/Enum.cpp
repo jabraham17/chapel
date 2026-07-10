@@ -24,8 +24,8 @@
 namespace chpl {
 namespace uast {
 
-
-owned<Enum> Enum::build(Builder* builder, Location loc,
+owned<Enum> Enum::build(Builder* builder,
+                        Location loc,
                         owned<AttributeGroup> attributeGroup,
                         Decl::Visibility vis,
                         UniqueString name,
@@ -46,7 +46,6 @@ owned<Enum> Enum::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

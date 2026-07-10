@@ -24,12 +24,12 @@
 namespace chpl {
 namespace uast {
 
-
 std::string Class::dumpChildLabelInner(int i) const {
   return aggregateDeclDumpChildLabelInner(i);
 }
 
-owned<Class> Class::build(Builder* builder, Location loc,
+owned<Class> Class::build(Builder* builder,
+                          Location loc,
                           owned<AttributeGroup> attributeGroup,
                           Decl::Visibility vis,
                           UniqueString name,
@@ -50,19 +50,22 @@ owned<Class> Class::build(Builder* builder, Location loc,
   numInheritExprs = inheritExprs.size();
   if (numInheritExprs > 0) {
     parentClassChildNum = lst.size();
-    for (auto & inheritExpr : inheritExprs) {
+    for (auto& inheritExpr : inheritExprs) {
       lst.push_back(std::move(inheritExpr));
     }
   }
   numElements = contents.size();
   if (numElements > 0) {
     elementsChildNum = lst.size();
-    for (auto & elt : contents) {
+    for (auto& elt : contents) {
       lst.push_back(std::move(elt));
     }
   }
 
-  Class* ret = new Class(std::move(lst), attributeGroupChildNum, vis, name,
+  Class* ret = new Class(std::move(lst),
+                         attributeGroupChildNum,
+                         vis,
+                         name,
                          parentClassChildNum,
                          numInheritExprs,
                          elementsChildNum,
@@ -70,7 +73,6 @@ owned<Class> Class::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

@@ -23,7 +23,6 @@
 namespace chpl {
 namespace types {
 
-
 const owned<NothingType>& NothingType::getNothingType(Context* context) {
   QUERY_BEGIN(getNothingType, context);
 
@@ -40,7 +39,6 @@ void NothingType::stringify(std::ostream& ss,
                             chpl::StringifyKind stringKind) const {
   ss << "nothing";
 }
-
 
 } // end namespace types
 } // end namespace chpl

@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 std::string Cobegin::dumpChildLabelInner(int i) const {
   if (i == withClauseChildNum_) {
     return "with";
@@ -56,13 +55,11 @@ owned<Cobegin> Cobegin::build(Builder* builder,
     lst.push_back(std::move(taskBody));
   }
 
-  Cobegin* ret = new Cobegin(std::move(lst), withClauseChildNum,
-                             bodyChildNum,
-                             numTaskBodies);
+  Cobegin* ret = new Cobegin(
+    std::move(lst), withClauseChildNum, bodyChildNum, numTaskBodies);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

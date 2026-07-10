@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 void Conditional::dumpFieldsInner(const DumpSettings& s) const {
   if (isExpressionLevel_) {
     s.out << " expr";
@@ -42,7 +41,8 @@ std::string Conditional::dumpChildLabelInner(int i) const {
   return "";
 }
 
-owned<Conditional> Conditional::build(Builder* builder, Location loc,
+owned<Conditional> Conditional::build(Builder* builder,
+                                      Location loc,
                                       owned<AstNode> condition,
                                       BlockStyle thenBlockStyle,
                                       owned<Block> thenBlock,
@@ -60,15 +60,14 @@ owned<Conditional> Conditional::build(Builder* builder, Location loc,
     lst.push_back(std::move(elseBlock));
   }
 
-  Conditional* ret = new Conditional(std::move(lst),
-                                     thenBlockStyle,
-                                     elseBlockStyle,
-                                     isExpressionLevel);
+  Conditional* ret = new Conditional(
+    std::move(lst), thenBlockStyle, elseBlockStyle, isExpressionLevel);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
 
-owned<Conditional> Conditional::build(Builder* builder, Location loc,
+owned<Conditional> Conditional::build(Builder* builder,
+                                      Location loc,
                                       owned<AstNode> condition,
                                       BlockStyle thenBlockStyle,
                                       owned<Block> thenBlock,
@@ -81,10 +80,8 @@ owned<Conditional> Conditional::build(Builder* builder, Location loc,
 
   const BlockStyle elseBlockStyle = BlockStyle::IMPLICIT;
 
-  Conditional* ret = new Conditional(std::move(lst),
-                                     thenBlockStyle,
-                                     elseBlockStyle,
-                                     isExpressionLevel);
+  Conditional* ret = new Conditional(
+    std::move(lst), thenBlockStyle, elseBlockStyle, isExpressionLevel);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

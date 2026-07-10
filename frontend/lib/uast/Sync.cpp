@@ -20,23 +20,21 @@
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/Sync.h"
 
-
 namespace chpl {
 namespace uast {
 
-
-owned<Sync> Sync::build(Builder* builder, Location loc,
+owned<Sync> Sync::build(Builder* builder,
+                        Location loc,
                         BlockStyle blockStyle,
                         AstList stmts) {
   const int bodyChildNum = 0;
   const int numBodyStmts = stmts.size();
 
-  Sync* ret = new Sync(std::move(stmts), blockStyle, bodyChildNum,
-                       numBodyStmts);
+  Sync* ret =
+    new Sync(std::move(stmts), blockStyle, bodyChildNum, numBodyStmts);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

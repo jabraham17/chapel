@@ -24,8 +24,8 @@
 namespace chpl {
 namespace uast {
 
-
-owned<TaskVar> TaskVar::build(Builder* builder, Location loc,
+owned<TaskVar> TaskVar::build(Builder* builder,
+                              Location loc,
                               owned<AttributeGroup> attributeGroup,
                               UniqueString name,
                               TaskVar::Intent intent,
@@ -51,7 +51,8 @@ owned<TaskVar> TaskVar::build(Builder* builder, Location loc,
     lst.push_back(std::move(initExpression));
   }
 
-  TaskVar* ret = new TaskVar(std::move(lst), attributeGroupChildNum,
+  TaskVar* ret = new TaskVar(std::move(lst),
+                             attributeGroupChildNum,
                              name,
                              intent,
                              typeExpressionChildNum,
@@ -59,7 +60,6 @@ owned<TaskVar> TaskVar::build(Builder* builder, Location loc,
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

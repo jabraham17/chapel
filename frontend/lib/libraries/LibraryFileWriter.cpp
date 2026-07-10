@@ -32,7 +32,7 @@ void LibraryFileSerializationHelper::beginAst(const uast::AstNode* ast,
                                               std::ostream& os) {
   if (symbolTableSet.count(ast) != 0) {
     uint64_t pos = os.tellp();
-    astOffsets[ast] = (uint32_t) (pos - astSectionStartFileOffset);
+    astOffsets[ast] = (uint32_t)(pos - astSectionStartFileOffset);
   }
 }
 
@@ -41,8 +41,8 @@ void LibraryFileSerializationHelper::endAst(const uast::AstNode* ast,
   astCounter++;
 }
 
-void
-LibraryFileSerializationHelper::noteSymbolForTable(const uast::AstNode* ast) {
+void LibraryFileSerializationHelper::noteSymbolForTable(
+  const uast::AstNode* ast) {
   auto pair = symbolTableSet.insert(ast);
   if (pair.second) {
     // it was inserted
@@ -51,8 +51,7 @@ LibraryFileSerializationHelper::noteSymbolForTable(const uast::AstNode* ast) {
 }
 
 static UniqueString cleanLocalPath(Context* context, UniqueString path) {
-  if (path.startsWith("/") ||
-      path.startsWith("./") == false) {
+  if (path.startsWith("/") || path.startsWith("./") == false) {
     return path;
   }
 
@@ -108,7 +107,7 @@ void LibraryFileWriter::writeHeader() {
   header.chplVersionUpdate = getUpdateVersion();
   header.nModules = modules.size();
   // hash remains 0s at this point
-  fileStream.write((const char*) &header, sizeof(header));
+  fileStream.write((const char*)&header, sizeof(header));
 
   // emit an error if there are too many modules for the file format
   if (modules.size() >= MAX_NUM_MODULES) {
@@ -120,7 +119,7 @@ void LibraryFileWriter::writeHeader() {
   size_t n = modules.size();
   for (size_t i = 0; i <= n; i++) {
     uint64_t zero = 0;
-    fileStream.write((const char*) &zero, sizeof(zero));
+    fileStream.write((const char*)&zero, sizeof(zero));
   }
 }
 
@@ -143,7 +142,7 @@ Region LibraryFileWriter::writeModuleSection(const ModInfo& info) {
   ModuleHeader header;
   memset(&header, 0, sizeof(header));
   header.magic = MODULE_SECTION_MAGIC;
-  fileStream.write((const char*) &header, sizeof(header));
+  fileStream.write((const char*)&header, sizeof(header));
 
   LibraryFileSerializationHelper reg;
   reg.moduleSectionStart = moduleSectionStart;
@@ -189,7 +188,7 @@ Region LibraryFileWriter::writeModuleSection(const ModInfo& info) {
   CHPL_ASSERT(savePos - moduleSectionStart < INT32_MAX);
 
   fileStream.seekp(moduleSectionStart);
-  fileStream.write((const char*) &header, sizeof(header));
+  fileStream.write((const char*)&header, sizeof(header));
 
   // seek back where we were
   fileStream.seekp(savePos);
@@ -208,7 +207,7 @@ Region LibraryFileWriter::writeModuleSection(const ModInfo& info) {
 struct GatherToplevelSymbols {
   std::vector<const uast::AstNode*> result;
 
-  GatherToplevelSymbols() { }
+  GatherToplevelSymbols() {}
 
   // Add NamedDecls to the map
   bool enter(const uast::NamedDecl* d) {
@@ -231,36 +230,29 @@ struct GatherToplevelSymbols {
     return traverse;
   }
 
-  void exit(const uast::NamedDecl* d) { }
+  void exit(const uast::NamedDecl* d) {}
 
   // Traverse into TupleDecl and MultiDecl looking for NamedDecls
-  bool enter(const uast::TupleDecl* d) {
-    return true;
-  }
-  void exit(const uast::TupleDecl* d) { }
+  bool enter(const uast::TupleDecl* d) { return true; }
+  void exit(const uast::TupleDecl* d) {}
 
-  bool enter(const uast::MultiDecl* d) {
-    return true;
-  }
-  void exit(const uast::MultiDecl* d) { }
+  bool enter(const uast::MultiDecl* d) { return true; }
+  void exit(const uast::MultiDecl* d) {}
 
   // consider 'include module' something that defines a name
   bool enter(const uast::Include* d) {
     result.push_back(d);
     return false;
   }
-  void exit(const uast::Include* d) { }
+  void exit(const uast::Include* d) {}
 
   // ignore other AST nodes
-  bool enter(const uast::AstNode* ast) {
-    return false;
-  }
-  void exit(const uast::AstNode* ast) { }
+  bool enter(const uast::AstNode* ast) { return false; }
+  void exit(const uast::AstNode* ast) {}
 };
 
 void LibraryFileWriter::noteToplevelSymbolsForTable(
-                                        const uast::Module* mod,
-                                        LibraryFileSerializationHelper& reg) {
+  const uast::Module* mod, LibraryFileSerializationHelper& reg) {
   reg.noteSymbolForTable(mod);
 
   GatherToplevelSymbols g;
@@ -290,7 +282,7 @@ computeSymbolNames(const uast::Module* mod,
   std::string modPrefix = mod->id().symbolPath().str();
 
   std::vector<std::pair<const uast::AstNode*, std::string>> result;
-  for (auto sym: symbolTableVec) {
+  for (auto sym : symbolTableVec) {
     // compute the symbol table ID
     UniqueString symPath = sym->id().symbolPath();
     CHPL_ASSERT(symPath.startsWith(modPrefix));
@@ -343,10 +335,8 @@ static unsigned int computeCommonPrefix(const std::string& last,
   return nCommonPrefix;
 }
 
-Region
-LibraryFileWriter::writeSymbolTable(const ModInfo& info,
-                                    Serializer& ser,
-                                    LibraryFileSerializationHelper& reg) {
+Region LibraryFileWriter::writeSymbolTable(
+  const ModInfo& info, Serializer& ser, LibraryFileSerializationHelper& reg) {
 
   const uast::Module* mod = info.moduleAst;
 
@@ -387,7 +377,7 @@ LibraryFileWriter::writeSymbolTable(const ModInfo& info,
 
     // write the tag / flags / kind information
     auto tag = sym->tag();
-    CHPL_ASSERT((int) tag < 256);
+    CHPL_ASSERT((int)tag < 256);
     ser.writeByte(tag);
 
     {
@@ -440,7 +430,7 @@ Region LibraryFileWriter::writeAst(const uast::Module* mod,
   AstSectionHeader header;
   memset(&header, 0, sizeof(header));
   header.magic = UAST_SECTION_MAGIC;
-  fileStream.write((const char*) &header, sizeof(header));
+  fileStream.write((const char*)&header, sizeof(header));
 
   // serialize the data
   mod->serialize(ser);
@@ -451,7 +441,7 @@ Region LibraryFileWriter::writeAst(const uast::Module* mod,
   auto savePos = fileStream.tellp();
 
   fileStream.seekp(astStart);
-  fileStream.write((const char*) &header, sizeof(header));
+  fileStream.write((const char*)&header, sizeof(header));
 
   // seek back where we were
   fileStream.seekp(savePos);
@@ -470,16 +460,16 @@ Region LibraryFileWriter::writeLongStrings(uint64_t moduleSectionStart,
   header.magic = LONG_STRINGS_TABLE_MAGIC;
   // nextStringIdx counts strings from 1, but we also want
   // to have an extra string (so we can compute the length of the last string)
-  header.nLongStrings = ser.nextStringIdx()+1;
+  header.nLongStrings = ser.nextStringIdx() + 1;
 
-  fileStream.write((const char*) &header, sizeof(header));
+  fileStream.write((const char*)&header, sizeof(header));
 
   size_t n = header.nLongStrings;
 
   std::vector<uint32_t> offsets;
   offsets.resize(n);
   // write 0s for the offsets. We will rewrite it in a moment.
-  fileStream.write((const char*) &offsets[0], n*sizeof(uint32_t));
+  fileStream.write((const char*)&offsets[0], n * sizeof(uint32_t));
 
   // gather the strings by idx so we can output them
   std::vector<std::pair<const char*, size_t>> byId;
@@ -514,10 +504,10 @@ Region LibraryFileWriter::writeLongStrings(uint64_t moduleSectionStart,
   auto savePos = fileStream.tellp();
 
   // update the offsets in the file
-  fileStream.seekp(longStringsStart+sizeof(header));
+  fileStream.seekp(longStringsStart + sizeof(header));
 
   // write the actual offsets to replace the dummy offsets written earlier
-  fileStream.write((const char*) &offsets[0], n*sizeof(uint32_t));
+  fileStream.write((const char*)&offsets[0], n * sizeof(uint32_t));
 
   // seek back where we were
   fileStream.seekp(savePos);
@@ -545,7 +535,7 @@ Region LibraryFileWriter::writeLocations(const uast::Module* mod,
   ser.checkStringLength(inputFiles.size(), MAX_NUM_FILES);
   ser.checkStringLength(reg.symbolTableVec.size(), MAX_NUM_SYMBOLS);
 
-  fileStream.write((const char*) &header, sizeof(header));
+  fileStream.write((const char*)&header, sizeof(header));
 
   // compute the file hashes
   std::vector<HashFileResult> hashes;
@@ -637,11 +627,11 @@ static unsigned int negToZero(int arg) {
   return arg;
 }
 
-void
-LibraryFileWriter::writeLocationEntries(const uast::AstNode* ast,
-                                        Serializer& ser,
-                                        LibraryFileSerializationHelper& reg,
-                                        int& lastLine) {
+void LibraryFileWriter::writeLocationEntries(
+  const uast::AstNode* ast,
+  Serializer& ser,
+  LibraryFileSerializationHelper& reg,
+  int& lastLine) {
   Location entryLoc = parsing::locateAst(context, ast);
 
   // first line, stored as a signed difference
@@ -661,14 +651,14 @@ LibraryFileWriter::writeLocationEntries(const uast::AstNode* ast,
   // compute additional locations
   using LocationMapTag = uast::BuilderResult::LocationMapTag;
   std::vector<std::pair<LocationMapTag, Location>> additionalLocations;
-  #define LOCATION_MAP(ast__, location__) \
-    if (auto x = ast->to##ast__()) { \
-      additionalLocations.emplace_back( \
-          uast::BuilderResult::LocationMapTag::location__, \
-          parsing::locate##location__##WithAst(context, x)); \
-    }
-  #include "chpl/uast/all-location-maps.h"
-  #undef LOCATION_MAP
+#define LOCATION_MAP(ast__, location__)                  \
+  if (auto x = ast->to##ast__()) {                       \
+    additionalLocations.emplace_back(                    \
+      uast::BuilderResult::LocationMapTag::location__,   \
+      parsing::locate##location__##WithAst(context, x)); \
+  }
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
 
   // write additional locations
   ser.writeVUint(additionalLocations.size());
@@ -694,7 +684,7 @@ LibraryFileWriter::writeLocationEntries(const uast::AstNode* ast,
   lastLine = entryLoc.lastLine();
 
   // consider child nodes, but stop on ones that get their own location group
-  for (auto child: ast->children()) {
+  for (auto child : ast->children()) {
     if (reg.symbolTableSet.count(child) > 0) {
       // it's in the symbol table, so don't write locations for it now;
       // it will be handled in a different locations group
@@ -703,7 +693,6 @@ LibraryFileWriter::writeLocationEntries(const uast::AstNode* ast,
     }
   }
 }
-
 
 Region LibraryFileWriter::writeGenCode(uint64_t moduleSectionStart,
                                        Serializer& ser,
@@ -732,9 +721,9 @@ void LibraryFileWriter::setSourcePaths(std::vector<UniqueString> paths) {
 }
 
 void LibraryFileWriter::setGeneratedCode(
-                         UniqueString modName,
-                         std::string buffer,
-                         std::unordered_map<ID, std::vector<GenInfo>> genMap) {
+  UniqueString modName,
+  std::string buffer,
+  std::unordered_map<ID, std::vector<GenInfo>> genMap) {
   bool handled = false;
   for (auto& info : modules) {
     if (info.moduleName == modName) {
@@ -763,14 +752,14 @@ bool LibraryFileWriter::writeAllSections() {
   }
   // and the offset just after the last module
   moduleSectionOffsets.push_back(moduleRegion.end);
-  CHPL_ASSERT(moduleSectionOffsets.size() == modules.size()+1);
+  CHPL_ASSERT(moduleSectionOffsets.size() == modules.size() + 1);
 
   // update the module section table
   // seek just after the fixed portion of the file header
   fileStream.seekp(sizeof(FileHeader));
   // write the offsets
-  fileStream.write((const char*) &moduleSectionOffsets[0],
-                   sizeof(uint64_t)*moduleSectionOffsets.size());
+  fileStream.write((const char*)&moduleSectionOffsets[0],
+                   sizeof(uint64_t) * moduleSectionOffsets.size());
 
   // compute and store the file hash
   CHPL_ASSERT(sizeof(HashFileResult) == HASH_SIZE);
@@ -791,7 +780,7 @@ bool LibraryFileWriter::writeAllSections() {
     // seek to the hash position within the file
     fileStream.seekp(offsetof(FileHeader, hash));
     // write the hash bytes
-    fileStream.write((const char*) &h, n);
+    fileStream.write((const char*)&h, n);
   }
 
   // TODO: if further error information is desired, probably best
@@ -817,7 +806,6 @@ LibraryFileWriter::gatherTopLevelModuleNames(Context* context,
   }
   return ret;
 }
-
 
 } // end namespace libraries
 } // end namespace chpl

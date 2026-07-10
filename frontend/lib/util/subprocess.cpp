@@ -30,7 +30,6 @@
 
 namespace chpl {
 
-
 // TODO: body of this function should call llvm::sys::ExecuteAndWait instead
 // see: https://llvm.org/doxygen/namespacellvm_1_1sys.html#a67688ad4697f1d516a7c71e41d78c5ba
 int executeAndWait(const std::vector<std::string>& commandVec,
@@ -67,14 +66,14 @@ int executeAndWait(const std::vector<std::string>& commandVec,
 
   if (childPid == 0) {
     // in child process
-    execvp(execArgs[0], const_cast<char* const *> (execArgs.data()));
+    execvp(execArgs[0], const_cast<char* const*>(execArgs.data()));
     // if execvp returned, there was an error
     if (printSystemCommands) {
       printf("error in exec: %s\n", strerror(errno));
     }
     // indicate problem with exec by exiting the child process
     exit(-1);
-  } else if (childPid > 0 ) {
+  } else if (childPid > 0) {
     // in parent process
     int w = waitpid(childPid, &status, 0);
     if (w == -1) {

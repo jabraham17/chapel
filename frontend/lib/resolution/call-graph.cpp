@@ -30,7 +30,6 @@
 namespace chpl {
 namespace resolution {
 
-
 using namespace uast;
 using namespace types;
 
@@ -44,7 +43,8 @@ struct CalledFnCollector {
   // input
   Context* context;
   const AstNode* symbol = nullptr; // Module* or Function*
-  std::vector<const ResolvedFunction*>& fnStack; // for each function along the way
+  std::vector<const ResolvedFunction*>&
+    fnStack; // for each function along the way
   CalledFnOrder order;
 
   // output
@@ -55,13 +55,8 @@ struct CalledFnCollector {
                     std::vector<const ResolvedFunction*>& fnStack,
                     CalledFnOrder order,
                     CalledFnsSet& called)
-    : context(context),
-      symbol(symbol),
-      fnStack(fnStack),
-      order(order),
-      called(called)
-  {
-  }
+    : context(context), symbol(symbol), fnStack(fnStack), order(order),
+      called(called) {}
 
   // helper to run the visitor on something
   void process();
@@ -73,14 +68,10 @@ struct CalledFnCollector {
   bool enter(const Module* mod, RV& rv) {
     return mod == symbol; // only proceed if it's the module requested
   }
-  void exit(const Module* mod, RV& rv) {
-  }
+  void exit(const Module* mod, RV& rv) {}
 
-  bool enter(const TypeDecl* ast, RV& rv) {
-    return false;
-  }
-  void exit(const TypeDecl* ast, RV& rv) {
-  }
+  bool enter(const TypeDecl* ast, RV& rv) { return false; }
+  void exit(const TypeDecl* ast, RV& rv) {}
 
   bool enter(const Function* fn, RV& rv) {
     // only proceed if it's the function requested
@@ -95,8 +86,7 @@ struct CalledFnCollector {
 
     return false;
   }
-  void exit(const Function* fn, RV& rv) {
-  }
+  void exit(const Function* fn, RV& rv) {}
 
   bool enter(const AstNode* ast, RV& rv) {
     if (auto re = rv.byPostorder().byAstOrNull(ast)) {
@@ -112,8 +102,7 @@ struct CalledFnCollector {
       // still in development. Eventually we will resolve the module
       // initialization of internal/standard modules and pick up these calls
       // normally.
-      if (ast->isIdentifier() &&
-          !re->toId().isEmpty() &&
+      if (ast->isIdentifier() && !re->toId().isEmpty() &&
           parsing::idIsModuleScopeVar(context, re->toId()) &&
           parsing::idIsInBundledModule(context, re->toId())) {
         auto var = parsing::idToAst(context, re->toId())->toVariable();
@@ -123,7 +112,8 @@ struct CalledFnCollector {
             var->kind() != Variable::Kind::PARAM) {
           CalledFnOrder newOrder = {order.depth + 1, 0};
           std::vector<const ResolvedFunction*> emptyFnStack;
-          auto v = CalledFnCollector(context, var, emptyFnStack, newOrder, called);
+          auto v =
+            CalledFnCollector(context, var, emptyFnStack, newOrder, called);
           v.process();
 
           order.index += v.order.index;
@@ -132,15 +122,14 @@ struct CalledFnCollector {
     }
     return true;
   }
-  void exit(const AstNode* ast, RV& rv) {
-  }
+  void exit(const AstNode* ast, RV& rv) {}
 
   // TODO: How can we make this work through ``resolveFunction``, rather than
   // relying on the cached map in ``ResolvedFunction``? The problem appears to
   // be that we never use the 'global cache' when storing queries for
   // nested functions, so the results only live on in ``ResolvedFunction``.
   const ResolvedFunction* getResolvedFunction(const TypedFnSignature* sig,
-                           const PoiScope* poiScope) {
+                                              const PoiScope* poiScope) {
     chpl::resolution::ResolutionContext rcval(context);
     const ResolvedFunction* fn = nullptr;
     for (auto it = fnStack.rbegin(); it != fnStack.rend(); it++) {
@@ -157,7 +146,6 @@ struct CalledFnCollector {
     return fn;
   }
 };
-
 
 void CalledFnCollector::process() {
   if (fnStack.size() > 0) {
@@ -250,7 +238,7 @@ int gatherTransitiveFnsCalledByFn(Context* context,
   // more reliably iterate over them later. This helps with debugging in
   // the production compiler by making it easier to break on an AST ID.
   auto sorted = std::vector<std::pair<const ResolvedFunction*, CalledFnOrder>>(
-      directCalls.begin(), directCalls.end());
+    directCalls.begin(), directCalls.end());
   std::sort(sorted.begin(), sorted.end(), [](auto& a, auto& b) {
     return a.second.index < b.second.index;
   });
@@ -267,8 +255,8 @@ int gatherTransitiveFnsCalledByFn(Context* context,
     if (pair.second) {
       // The insertion took place, so it is the first time handling this fn.
       // Visit it recursively.
-      int c = gatherTransitiveFnsCalledByFn(context, fnStack, /* fn */ kv.first,
-                                            newOrder, called);
+      int c = gatherTransitiveFnsCalledByFn(
+        context, fnStack, /* fn */ kv.first, newOrder, called);
       // include the count for subsequent calls
       newOrder.index += c;
     }
@@ -293,7 +281,8 @@ int gatherTransitiveFnsForFnId(Context* context,
       order.index++;
       // gather the transitive calls
       order.depth = 1;
-      return 1 + gatherTransitiveFnsCalledByFn(context, fnStack, fn, order, called);
+      return 1 +
+             gatherTransitiveFnsCalledByFn(context, fnStack, fn, order, called);
     }
   }
 
@@ -301,22 +290,20 @@ int gatherTransitiveFnsForFnId(Context* context,
 }
 
 int gatherFnsCalledByModInit(Context* context,
-                              ID moduleId,
-                              CalledFnsSet& called) {
+                             ID moduleId,
+                             CalledFnsSet& called) {
   const AstNode* symbol = parsing::idToAst(context, moduleId);
   CHPL_ASSERT(symbol && symbol->isModule());
   CalledFnOrder order = {0, 0};
   std::vector<const ResolvedFunction*> emptyFnStack;
-  auto v = CalledFnCollector(context, symbol,
-                             emptyFnStack,
-                             order, called);
+  auto v = CalledFnCollector(context, symbol, emptyFnStack, order, called);
   v.process();
   return v.order.index - order.index;
 }
 
 int gatherTransitiveFnsCalledByModInit(Context* context,
-                                        ID moduleId,
-                                        CalledFnsSet& called) {
+                                       ID moduleId,
+                                       CalledFnsSet& called) {
   CalledFnsSet directCalls;
   int directCount = gatherFnsCalledByModInit(context, moduleId, directCalls);
 
@@ -331,15 +318,14 @@ int gatherTransitiveFnsCalledByModInit(Context* context,
     if (pair.second) {
       // The insertion took place, so it is the first time handling this fn.
       // Visit it recursively.
-      int c = gatherTransitiveFnsCalledByFn(context, fnStack, /* fn */ kv.first,
-                                            newOrder, called);
+      int c = gatherTransitiveFnsCalledByFn(
+        context, fnStack, /* fn */ kv.first, newOrder, called);
       // include the count for subsequent calls
       newOrder.index += c;
     }
   }
   return newOrder.index;
 }
-
 
 } // end namespace resolution
 } // end namespace chpl

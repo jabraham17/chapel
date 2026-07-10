@@ -23,7 +23,6 @@
 namespace chpl {
 namespace types {
 
-
 const owned<ErroneousType>& ErroneousType::getErroneousType(Context* context) {
   QUERY_BEGIN(getErroneousType, context);
 
@@ -35,7 +34,6 @@ const owned<ErroneousType>& ErroneousType::getErroneousType(Context* context) {
 const ErroneousType* ErroneousType::get(Context* context) {
   return getErroneousType(context).get();
 }
-
 
 } // end namespace types
 } // end namespace chpl

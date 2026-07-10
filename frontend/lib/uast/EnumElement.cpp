@@ -24,8 +24,8 @@
 namespace chpl {
 namespace uast {
 
-
-owned<EnumElement> EnumElement::build(Builder* builder, Location loc,
+owned<EnumElement> EnumElement::build(Builder* builder,
+                                      Location loc,
                                       owned<AttributeGroup> attributeGroup,
                                       UniqueString name,
                                       owned<AstNode> initExpression) {
@@ -41,20 +41,22 @@ owned<EnumElement> EnumElement::build(Builder* builder, Location loc,
     lst.push_back(std::move(initExpression));
   }
 
-  EnumElement* ret = new EnumElement(std::move(lst), attributeGroupChildNum,
-                                     name);
+  EnumElement* ret =
+    new EnumElement(std::move(lst), attributeGroupChildNum, name);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
 
-owned<EnumElement> EnumElement::build(Builder* builder, Location loc,
+owned<EnumElement> EnumElement::build(Builder* builder,
+                                      Location loc,
                                       owned<AttributeGroup> attributeGroup,
                                       UniqueString name) {
-  return EnumElement::build(builder, loc, std::move(attributeGroup),
+  return EnumElement::build(builder,
+                            loc,
+                            std::move(attributeGroup),
                             name,
                             /*initExpression*/ nullptr);
 }
-
 
 } // namespace uast
 } // namespace chpl

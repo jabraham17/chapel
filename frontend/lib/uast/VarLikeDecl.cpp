@@ -24,7 +24,6 @@
 namespace chpl {
 namespace uast {
 
-
 void VarLikeDecl::dumpFieldsInner(const DumpSettings& s) const {
   const char* kind = qualifierToString(storageKind_);
   if (storageKind_ == Qualifier::CONST_VAR) {
@@ -44,10 +43,7 @@ std::string VarLikeDecl::dumpChildLabelInner(int i) const {
   return NamedDecl::dumpChildLabelInner(i);
 }
 
-
-VarLikeDecl::~VarLikeDecl() {
-}
-
+VarLikeDecl::~VarLikeDecl() {}
 
 } // namespace uast
 } // namespace chpl

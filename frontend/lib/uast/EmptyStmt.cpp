@@ -24,14 +24,12 @@
 namespace chpl {
 namespace uast {
 
-
 owned<EmptyStmt> EmptyStmt::build(Builder* builder, Location loc) {
 
   EmptyStmt* ret = new EmptyStmt();
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

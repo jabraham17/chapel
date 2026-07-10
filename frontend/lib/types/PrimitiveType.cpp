@@ -31,16 +31,14 @@
 namespace chpl {
 namespace types {
 
-
 void PrimitiveType::stringify(std::ostream& ss,
                               chpl::StringifyKind stringKind) const {
   ss << this->c_str();
 }
 
-const PrimitiveType*
-PrimitiveType::getWithNameAndWidth(Context* context,
-                                   UniqueString name,
-                                   int bitwidth) {
+const PrimitiveType* PrimitiveType::getWithNameAndWidth(Context* context,
+                                                        UniqueString name,
+                                                        int bitwidth) {
   if (name == USTR("int"))
     if (bitwidth == 8 || bitwidth == 16 || bitwidth == 32 || bitwidth == 64)
       return IntType::get(context, bitwidth);
@@ -60,7 +58,6 @@ PrimitiveType::getWithNameAndWidth(Context* context,
   // otherwise it is an invalid name or width
   return nullptr;
 }
-
 
 } // end namespace types
 } // end namespace chpl

@@ -31,8 +31,9 @@ RuntimeType::getRuntimeType(Context* context,
   return QUERY_END(result);
 }
 
-const RuntimeType* RuntimeType::get(Context* context,
-                                    const resolution::TypedFnSignature* initializer) {
+const RuntimeType*
+RuntimeType::get(Context* context,
+                 const resolution::TypedFnSignature* initializer) {
   return getRuntimeType(context, initializer).get();
 }
 

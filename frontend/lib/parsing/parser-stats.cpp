@@ -22,9 +22,7 @@
 #include <string>
 #include "chpl/parsing/parser-stats.h"
 
-
 namespace chpl {
-
 
 namespace parsing {
 
@@ -44,10 +42,8 @@ void ParserStats::clearLine() {
       totTokenHist[lineTokens]++;
     }
   }
-  if (lineTokens > maxTokensPerLineInFile)
-    maxTokensPerLineInFile = lineTokens;
-  if (lineTokens > maxTokensPerLineTot)
-    maxTokensPerLineTot = lineTokens;
+  if (lineTokens > maxTokensPerLineInFile) maxTokensPerLineInFile = lineTokens;
+  if (lineTokens > maxTokensPerLineTot) maxTokensPerLineTot = lineTokens;
   lineTokens = 0;
   lineBlank = true;
   lineComment = true;
@@ -84,11 +80,16 @@ void ParserStats::printFileSummary() {
 
     fflush(stdout);
     fprintf(stderr, "TOKENS = %d\n", fileTokens);
-    fprintf(stderr, "LINES  = %d code, %d comment, %d blank\n", codeLines,
-            commentLines, blankLines);
-    fprintf(stderr, "MAX TOKENS/LINE = %d\n"
-                    "AVG TOKENS/CODE LINE = %.2f\n",
-            maxTokensPerLineInFile, (double) fileTokens / codeLines);
+    fprintf(stderr,
+            "LINES  = %d code, %d comment, %d blank\n",
+            codeLines,
+            commentLines,
+            blankLines);
+    fprintf(stderr,
+            "MAX TOKENS/LINE = %d\n"
+            "AVG TOKENS/CODE LINE = %.2f\n",
+            maxTokensPerLineInFile,
+            (double)fileTokens / codeLines);
     fprintf(stderr, "HISTOGRAM:\n");
     for (j = 0; j <= maxTokensPerLineInFile; j++) {
       fprintf(stderr, "%3d: %3d\n", j, fileTokenHist[j]);
@@ -159,10 +160,8 @@ void ParserStats::countToken(const char* toktext1,
     if (printTokens) {
       line.push_back(' ');
       line.append(toktext1);
-      if (toktext2 != NULL)
-        line.append(toktext2);
-      if (toktext3 != NULL)
-        line.append(toktext3);
+      if (toktext2 != NULL) line.append(toktext2);
+      if (toktext3 != NULL) line.append(toktext3);
     }
     lineTokens++;
     fileTokens++;
@@ -244,11 +243,8 @@ ParserStats::ParserStats(bool printTokens) {
   this->lineComment = 0;
 }
 
-ParserStats::ParserStats() {
-  ParserStats(false);
-}
+ParserStats::ParserStats() { ParserStats(false); }
 
 } // end namespace parsing
-
 
 } // end namespace chpl

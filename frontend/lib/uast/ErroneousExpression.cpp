@@ -24,14 +24,12 @@
 namespace chpl {
 namespace uast {
 
-
 owned<ErroneousExpression> ErroneousExpression::build(Builder* builder,
                                                       Location loc) {
   ErroneousExpression* ret = new ErroneousExpression();
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-
 
 } // namespace uast
 } // namespace chpl

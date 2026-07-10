@@ -23,15 +23,13 @@ namespace chpl {
 namespace uast {
 namespace asttags {
 
-
 static const char* tagToStringTable[NUM_AST_TAGS] = {
 // define tag to string conversion
-#define NAMESTR(NAME) \
-  #NAME,
-#define AST_NODE(NAME) NAMESTR(NAME)
-#define AST_LEAF(NAME) NAMESTR(NAME)
+#define NAMESTR(NAME)              #NAME,
+#define AST_NODE(NAME)             NAMESTR(NAME)
+#define AST_LEAF(NAME)             NAMESTR(NAME)
 #define AST_BEGIN_SUBCLASSES(NAME) NAMESTR(START_##NAME)
-#define AST_END_SUBCLASSES(NAME) NAMESTR(END_##NAME)
+#define AST_END_SUBCLASSES(NAME)   NAMESTR(END_##NAME)
 // Apply the above macros to uast-classes-list.h
 #include "chpl/uast/uast-classes-list.h"
 // clear the macros
@@ -48,7 +46,6 @@ const char* tagToString(AstTag tag) {
   else
     return "<unknown-tag>";
 }
-
 
 } // end namespace asttags
 } // end namespace uast

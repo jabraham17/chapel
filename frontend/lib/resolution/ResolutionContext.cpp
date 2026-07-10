@@ -31,31 +31,30 @@ Resolver*
 ResolutionContext::findParentResolverFor(const TypedFnSignature* sig) {
   if (!sig || !sig->parentFn()) return nullptr;
   auto fptr = findFrameMatchingMutable([=](auto& f) {
-    return !f.isEmpty() && f.isUnstable() &&
-            f.signature() == sig->parentFn() &&
-            f.rv() != nullptr;
+    return !f.isEmpty() && f.isUnstable() && f.signature() == sig->parentFn() &&
+           f.rv() != nullptr;
   });
   return fptr ? fptr->rv() : nullptr;
 }
 
-bool ResolutionContext::
-canUseGlobalCache(Context* context, const UntypedFnSignature& t) {
+bool ResolutionContext::canUseGlobalCache(Context* context,
+                                          const UntypedFnSignature& t) {
   return canUseGlobalCache(context, t.id());
 }
 
-bool ResolutionContext::
-canUseGlobalCache(Context* context, const TypedFnSignature& t) {
+bool ResolutionContext::canUseGlobalCache(Context* context,
+                                          const TypedFnSignature& t) {
   return !t.isNestedFunction();
 }
 
-bool ResolutionContext::
-canUseGlobalCache(Context* context, const ID& t) {
+bool ResolutionContext::canUseGlobalCache(Context* context, const ID& t) {
   return !parsing::idIsNestedFunction(context, t);
 }
 
-bool ResolutionContext::
-canUseGlobalCache(Context* context, const MatchingIdsWithName& ids) {
-  for (auto& x : ids) if (!canUseGlobalCache(context, x)) return false;
+bool ResolutionContext::canUseGlobalCache(Context* context,
+                                          const MatchingIdsWithName& ids) {
+  for (auto& x : ids)
+    if (!canUseGlobalCache(context, x)) return false;
   return true;
 }
 
@@ -74,13 +73,15 @@ const TypedFnSignature* ResolutionContext::Frame::signature() const {
   return nullptr;
 }
 
-static types::QualifiedType placeholderForId(ResolutionContext* rc, const ID& id) {
+static types::QualifiedType placeholderForId(ResolutionContext* rc,
+                                             const ID& id) {
   return types::QualifiedType(types::QualifiedType::TYPE,
                               types::PlaceholderType::get(rc->context(), id));
 }
 
 const types::QualifiedType
-ResolutionContext::Frame::typeForContainedId(ResolutionContext* rc, const ID& id) const {
+ResolutionContext::Frame::typeForContainedId(ResolutionContext* rc,
+                                             const ID& id) const {
   if (rv_) {
     return rv_->byPostorder.byId(id).type();
   }
@@ -110,27 +111,29 @@ ResolutionContext::Frame::typeForContainedId(ResolutionContext* rc, const ID& id
   return types::QualifiedType();
 }
 
-const ResolutionContext::Frame* ResolutionContext::
-pushFrame(Resolver* rv, ResolutionContext::Frame::Kind kind) {
-  int64_t index = (int64_t) frames_.size();
+const ResolutionContext::Frame*
+ResolutionContext::pushFrame(Resolver* rv,
+                             ResolutionContext::Frame::Kind kind) {
+  int64_t index = (int64_t)frames_.size();
   frames_.push_back({rv, kind, index});
   auto ret = lastFrame();
   if (ret->isUnstable()) numUnstableFrames_++;
   return ret;
 }
 
-const ResolutionContext::Frame* ResolutionContext::
-pushFrame(const ResolvedFunction* rf) {
-  int64_t index = (int64_t) frames_.size();
+const ResolutionContext::Frame*
+ResolutionContext::pushFrame(const ResolvedFunction* rf) {
+  int64_t index = (int64_t)frames_.size();
   frames_.push_back({rf, index});
   auto ret = lastFrame();
   CHPL_ASSERT(!ret->isUnstable());
   return ret;
 }
 
-const ResolutionContext::Frame* ResolutionContext::
-pushFrame(const types::InterfaceType* ift, const ImplementationWitness* witness) {
-  int64_t index = (int64_t) frames_.size();
+const ResolutionContext::Frame*
+ResolutionContext::pushFrame(const types::InterfaceType* ift,
+                             const ImplementationWitness* witness) {
+  int64_t index = (int64_t)frames_.size();
   frames_.push_back({ift, witness, index});
   auto ret = lastFrame();
   if (ret->isUnstable()) numUnstableFrames_++;
@@ -143,8 +146,7 @@ bool ResolutionContext::Frame::isUnstable() const {
 
 void ResolutionContext::popFrame(Resolver* rv) {
   CHPL_ASSERT(!frames_.empty() && "Frame stack underflow!");
-  CHPL_ASSERT(frames_.back().rv() == rv ||
-              frames_.back().ift());
+  CHPL_ASSERT(frames_.back().rv() == rv || frames_.back().ift());
 
   if (frames_.empty()) return;
   if (frames_.back().isUnstable()) numUnstableFrames_--;
