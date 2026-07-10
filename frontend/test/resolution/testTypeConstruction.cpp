@@ -33,18 +33,19 @@ static void test1() {
   printf("test1\n");
   auto context = buildStdContext();
 
-  auto m = parseModule(context, "var i: int;\n"
-                                "var i8: int(8);\n"
-                                "var i16: int(16);\n"
-                                "var i32: int(32);\n"
-                                "var i64: int(64);\n"
-                                "var iq: int(?);\n"
-                                "var u: uint;\n"
-                                "var u8: uint(8);\n"
-                                "var u16: uint(16);\n"
-                                "var u32: uint(32);\n"
-                                "var u64: uint(64);\n"
-                                "var uq: uint(?);\n");
+  auto m = parseModule(context,
+                       "var i: int;\n"
+                       "var i8: int(8);\n"
+                       "var i16: int(16);\n"
+                       "var i32: int(32);\n"
+                       "var i64: int(64);\n"
+                       "var iq: int(?);\n"
+                       "var u: uint;\n"
+                       "var u8: uint(8);\n"
+                       "var u16: uint(16);\n"
+                       "var u32: uint(32);\n"
+                       "var u64: uint(64);\n"
+                       "var uq: uint(?);\n");
   assert(m->numStmts() == 12);
   const Variable* i = m->stmt(0)->toVariable();
   assert(i);
@@ -73,19 +74,19 @@ static void test1() {
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-  assert(rr.byAst(i).type().type()   == IntType::get(context, 0));
-  assert(rr.byAst(i8).type().type()  == IntType::get(context, 8));
+  assert(rr.byAst(i).type().type() == IntType::get(context, 0));
+  assert(rr.byAst(i8).type().type() == IntType::get(context, 8));
   assert(rr.byAst(i16).type().type() == IntType::get(context, 16));
   assert(rr.byAst(i32).type().type() == IntType::get(context, 32));
   assert(rr.byAst(i64).type().type() == IntType::get(context, 64));
-  assert(rr.byAst(iq).type().type()  == AnyIntType::get(context));
+  assert(rr.byAst(iq).type().type() == AnyIntType::get(context));
 
-  assert(rr.byAst(u).type().type()   == UintType::get(context, 0));
-  assert(rr.byAst(u8).type().type()  == UintType::get(context, 8));
+  assert(rr.byAst(u).type().type() == UintType::get(context, 0));
+  assert(rr.byAst(u8).type().type() == UintType::get(context, 8));
   assert(rr.byAst(u16).type().type() == UintType::get(context, 16));
   assert(rr.byAst(u32).type().type() == UintType::get(context, 32));
   assert(rr.byAst(u64).type().type() == UintType::get(context, 64));
-  assert(rr.byAst(uq).type().type()  == AnyUintType::get(context));
+  assert(rr.byAst(uq).type().type() == AnyUintType::get(context));
 }
 
 static void test2() {
@@ -100,25 +101,26 @@ static void test2() {
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-  assert(rr.byAst(b).type().type()   == BoolType::get(context));
+  assert(rr.byAst(b).type().type() == BoolType::get(context));
 }
 
 static void test3() {
   printf("test3\n");
   auto context = buildStdContext();
 
-  auto m = parseModule(context, "var r: real;\n"
-                                "var r32: real(32);\n"
-                                "var r64: real(64);\n"
-                                "var rq: real(?);\n"
-                                "var i: imag;\n"
-                                "var i32: imag(32);\n"
-                                "var i64: imag(64);\n"
-                                "var iq: imag(?);\n"
-                                "var c: complex;\n"
-                                "var c64: complex(64);\n"
-                                "var c128: complex(128);\n"
-                                "var cq: complex(?);\n");
+  auto m = parseModule(context,
+                       "var r: real;\n"
+                       "var r32: real(32);\n"
+                       "var r64: real(64);\n"
+                       "var rq: real(?);\n"
+                       "var i: imag;\n"
+                       "var i32: imag(32);\n"
+                       "var i64: imag(64);\n"
+                       "var iq: imag(?);\n"
+                       "var c: complex;\n"
+                       "var c64: complex(64);\n"
+                       "var c128: complex(128);\n"
+                       "var cq: complex(?);\n");
   assert(m->numStmts() == 12);
   const Variable* r = m->stmt(0)->toVariable();
   assert(r);
@@ -147,18 +149,18 @@ static void test3() {
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-  assert(rr.byAst(r).type().type()    == RealType::get(context, 0));
-  assert(rr.byAst(r32).type().type()  == RealType::get(context, 32));
-  assert(rr.byAst(r64).type().type()  == RealType::get(context, 64));
-  assert(rr.byAst(rq).type().type()   == AnyRealType::get(context));
-  assert(rr.byAst(i).type().type()    == ImagType::get(context, 0));
-  assert(rr.byAst(i32).type().type()  == ImagType::get(context, 32));
-  assert(rr.byAst(i64).type().type()  == ImagType::get(context, 64));
-  assert(rr.byAst(iq).type().type()   == AnyImagType::get(context));
-  assert(rr.byAst(c).type().type()    == ComplexType::get(context, 0));
-  assert(rr.byAst(c64).type().type()  == ComplexType::get(context, 64));
+  assert(rr.byAst(r).type().type() == RealType::get(context, 0));
+  assert(rr.byAst(r32).type().type() == RealType::get(context, 32));
+  assert(rr.byAst(r64).type().type() == RealType::get(context, 64));
+  assert(rr.byAst(rq).type().type() == AnyRealType::get(context));
+  assert(rr.byAst(i).type().type() == ImagType::get(context, 0));
+  assert(rr.byAst(i32).type().type() == ImagType::get(context, 32));
+  assert(rr.byAst(i64).type().type() == ImagType::get(context, 64));
+  assert(rr.byAst(iq).type().type() == AnyImagType::get(context));
+  assert(rr.byAst(c).type().type() == ComplexType::get(context, 0));
+  assert(rr.byAst(c64).type().type() == ComplexType::get(context, 64));
   assert(rr.byAst(c128).type().type() == ComplexType::get(context, 128));
-  assert(rr.byAst(cq).type().type()   == AnyComplexType::get(context));
+  assert(rr.byAst(cq).type().type() == AnyComplexType::get(context));
 }
 
 // assumes the last statement is a variable declaration for x.
@@ -167,7 +169,7 @@ static std::pair<const Type*, const ResolvedFields*>
 parseTypeAndFieldsOfX(Context* context, const char* program) {
   auto m = parseModule(context, program);
   assert(m->numStmts() > 0);
-  const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
+  const Variable* x = m->stmt(m->numStmts() - 1)->toVariable();
   assert(x);
   assert(x->name() == "x");
 
@@ -179,15 +181,13 @@ parseTypeAndFieldsOfX(Context* context, const char* program) {
 
   const Type* t = qt.type();
   auto ct = t->toCompositeType();
-  if (auto classType = t->toClassType())
-    ct = classType->basicClassType();
+  if (auto classType = t->toClassType()) ct = classType->basicClassType();
 
   assert(ct != nullptr);
 
   auto defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
   auto rc = createDummyRC(context);
-  const ResolvedFields& f = fieldsForTypeDecl(&rc, ct,
-                                              defaultsPolicy);
+  const ResolvedFields& f = fieldsForTypeDecl(&rc, ct, defaultsPolicy);
 
   return std::make_pair(t, &f);
 }
@@ -196,7 +196,8 @@ static void test4a() {
   printf("test4a\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "record R { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "record R { var field: int; }\n"
                                  "var x: R;\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -214,7 +215,8 @@ static void test4b() {
   printf("test4b\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "record R { var field; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "record R { var field; }\n"
                                  "var x: R(int);\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -232,16 +234,16 @@ static void test5() {
   printf("test5\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "record R { type t; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "record R { type t; }\n"
                                  "var x: R(int);\n");
   auto rt = p.first->toRecordType();
   assert(rt);
   assert(rt->instantiatedFrom());
 
   auto rc = createDummyRC(context);
-  auto& initialFields = fieldsForTypeDecl(&rc,
-                                          rt->instantiatedFrom(),
-                                          DefaultsPolicy::IGNORE_DEFAULTS);
+  auto& initialFields = fieldsForTypeDecl(
+    &rc, rt->instantiatedFrom(), DefaultsPolicy::IGNORE_DEFAULTS);
   assert(rt->instantiatedFrom()->instantiatedFrom() == nullptr);
   assert(initialFields.numFields() == 1);
   assert(initialFields.fieldName(0) == "t");
@@ -256,14 +258,14 @@ static void test5() {
   assert(fields->fieldHasDefaultValue(0) == false);
   assert(fields->fieldType(0).kind() == QualifiedType::TYPE);
   assert(fields->fieldType(0).type() == IntType::get(context, 0));
-
 }
 
 static void test6() {
   printf("test6\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "record R { param p; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "record R { param p; }\n"
                                  "var x: R(1);\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -282,7 +284,8 @@ static void test7() {
   printf("test7\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "record R { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "record R { type t = int; }\n"
                                  "var x: R(real);\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -300,7 +303,8 @@ static void test8() {
   printf("test8\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "record R { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "record R { type t = int; }\n"
                                  "var x: R;\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -318,7 +322,8 @@ static void test9() {
   printf("test9\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "record R { param p = 1; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "record R { param p = 1; }\n"
                                  "var x: R(2);\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -337,7 +342,8 @@ static void test10() {
   printf("test10\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "record R { param p = 1; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "record R { param p = 1; }\n"
                                  "var x: R;\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -356,7 +362,8 @@ static void test11() {
   printf("test11\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "record R { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "record R { type t = int; }\n"
                                  "var x: R();\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -374,7 +381,8 @@ static void test12() {
   printf("test12\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "record R { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "record R { type t = int; }\n"
                                  "var x: R(?);\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -392,7 +400,8 @@ static void test13() {
   printf("test13\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "record R { param p = 1; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "record R { param p = 1; }\n"
                                  "var x: R();\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -410,7 +419,8 @@ static void test14() {
   printf("test14\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "record R { param p = 1; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "record R { param p = 1; }\n"
                                  "var x: R(?);\n");
   auto rt = p.first->toRecordType();
   assert(rt);
@@ -429,7 +439,8 @@ static void test15() {
   printf("test15\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "class C { var field: int; }\n"
                                  "var x: C;\n");
 
   auto ct = p.first->toClassType();
@@ -453,7 +464,8 @@ static void test16() {
   printf("test16\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "class C { var field: int; }\n"
                                  "var x: C?;\n");
 
   auto ct = p.first->toClassType();
@@ -473,12 +485,12 @@ static void test16() {
   assert(fields->fieldType(0).type() == IntType::get(context, 0));
 }
 
-
 static void test17() {
   printf("test17\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "class C { var field: int; }\n"
                                  "var x: borrowed C;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -501,7 +513,8 @@ static void test18() {
   printf("test18\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "class C { var field: int; }\n"
                                  "var x: borrowed C?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -524,7 +537,8 @@ static void test19() {
   printf("test19\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "class C { var field: int; }\n"
                                  "var x: unmanaged C;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -547,7 +561,8 @@ static void test20() {
   printf("test20\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "class C { var field: int; }\n"
                                  "var x: unmanaged C?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -570,7 +585,8 @@ static void test21() {
   printf("test21\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "class C { var field: int; }\n"
                                  "var x: owned C;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -593,7 +609,8 @@ static void test22() {
   printf("test22\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "class C { var field: int; }\n"
                                  "var x: owned C?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -616,7 +633,8 @@ static void test23() {
   printf("test23\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "class C { var field: int; }\n"
                                  "var x: shared C;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -639,7 +657,8 @@ static void test23q() {
   printf("test23q\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "class C { var field: int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "class C { var field: int; }\n"
                                  "var x: shared C?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -662,7 +681,8 @@ static void test24() {
   printf("test24\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "class C { var field; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "class C { var field; }\n"
                                  "var x: C(int);\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -685,7 +705,8 @@ static void test25() {
   printf("test25\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "class C { var field; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "class C { var field; }\n"
                                  "var x: C(int)?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -708,7 +729,8 @@ static void test26() {
   printf("test26\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "class C { var field; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "class C { var field; }\n"
                                  "var x: borrowed C(int)?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -731,7 +753,8 @@ static void test27() {
   printf("test27\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "class C { type t; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "class C { type t; }\n"
                                  "var x: owned C(int)?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -754,7 +777,8 @@ static void test28() {
   printf("test28\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "class C { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "class C { type t = int; }\n"
                                  "var x: C;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -777,7 +801,8 @@ static void test29() {
   printf("test29\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "class C { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "class C { type t = int; }\n"
                                  "var x: C();\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -800,7 +825,8 @@ static void test30() {
   printf("test30\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "class C { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "class C { type t = int; }\n"
                                  "var x: borrowed C?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -823,7 +849,8 @@ static void test31() {
   printf("test31\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "class C { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "class C { type t = int; }\n"
                                  "var x: borrowed C()?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -846,7 +873,8 @@ static void test32() {
   printf("test32\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "class C { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "class C { type t = int; }\n"
                                  "var x: shared C(real)?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -869,7 +897,8 @@ static void test33() {
   printf("test33\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "class C { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "class C { type t = int; }\n"
                                  "var x: C(real)?;\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -892,7 +921,8 @@ static void test34() {
   printf("test34\n");
   auto context = buildStdContext();
 
-  auto p = parseTypeAndFieldsOfX(context, "class C { type t = int; }\n"
+  auto p = parseTypeAndFieldsOfX(context,
+                                 "class C { type t = int; }\n"
                                  "var x: unmanaged C(real);\n");
   auto ct = p.first->toClassType();
   assert(ct);
@@ -965,7 +995,7 @@ static void test35() {
   auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context,
-                        R""""(
+                                 R""""(
                           record R {
                             var a = 1;
                             var b: int;
@@ -1013,7 +1043,7 @@ static void test36() {
   auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context,
-                        R""""(
+                                 R""""(
                           class ClassA {
                             var field: RootClass;
                           }
@@ -1045,7 +1075,7 @@ static void test37() {
   auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context,
-                        R""""(
+                                 R""""(
                           class ClassA {
                             var x: int;
                           }
@@ -1074,13 +1104,12 @@ static void test37() {
   assert(fct->basicClassType()->name() == "ClassA");
 }
 
-
 static void test38() {
   printf("test38\n");
   auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context,
-                        R""""(
+                                 R""""(
                           class Parent {
                             var parentField:int;
                           }
@@ -1115,7 +1144,8 @@ static void test38() {
   assert(pct->parentClassType() == BasicClassType::getRootClassType(context));
 
   auto rc = createDummyRC(context);
-  auto& parentFields = fieldsForTypeDecl(&rc, pct, DefaultsPolicy::IGNORE_DEFAULTS);
+  auto& parentFields =
+    fieldsForTypeDecl(&rc, pct, DefaultsPolicy::IGNORE_DEFAULTS);
   assert(parentFields.numFields() == 1);
   assert(parentFields.fieldName(0) == "parentField");
   assert(parentFields.fieldHasDefaultValue(0) == false);
@@ -1128,7 +1158,7 @@ static void test39() {
   auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context,
-                        R""""(
+                                 R""""(
                           class C {
                             var next: owned C;
                           }
@@ -1157,7 +1187,7 @@ static void test40() {
   auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context,
-                        R""""(
+                                 R""""(
                           proc useType(type t) {
                             var ret: t;
                             return ret;
@@ -1182,7 +1212,7 @@ static void test41() {
   auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context,
-                        R""""(
+                                 R""""(
                           proc useType(type t) {
                             var ret: t;
                             return ret;
@@ -1209,13 +1239,12 @@ static void test41() {
   assert(fields->fieldType(0).param() == IntParam::get(context, 1));
 }
 
-
 static void test42() {
   printf("test42\n");
   auto context = buildStdContext();
 
   auto p = parseTypeAndFieldsOfX(context,
-                        R""""(
+                                 R""""(
                           proc useType(type t) {
                             var ret: t(1);
                             return ret;
@@ -1248,7 +1277,7 @@ static void testRecursiveTypeConstructor() {
   ErrorGuard guard(context);
 
   auto p = parseTypeAndFieldsOfX(context,
-      R"""(
+                                 R"""(
       class Node {
         type eltType = int;
         var data: eltType;
@@ -1277,7 +1306,8 @@ static void testRecursiveTypeConstructor() {
   assert(fields->fieldHasDefaultValue(2) == false);
   assert(fields->fieldType(2).kind() == QualifiedType::VAR);
   assert(fields->fieldType(2).type()->toClassType());
-  assert(fields->fieldType(2).type()->toClassType()->basicClassType() == ct->basicClassType());
+  assert(fields->fieldType(2).type()->toClassType()->basicClassType() ==
+         ct->basicClassType());
 }
 
 static void testRecursiveTypeConstructorAlias() {
@@ -1286,7 +1316,7 @@ static void testRecursiveTypeConstructorAlias() {
   ErrorGuard guard(context);
 
   auto p = parseTypeAndFieldsOfX(context,
-      R"""(
+                                 R"""(
       class Node {
           type eltType = int;
           var data: eltType;
@@ -1316,7 +1346,8 @@ static void testRecursiveTypeConstructorAlias() {
   assert(fields->fieldHasDefaultValue(2) == false);
   assert(fields->fieldType(2).kind() == QualifiedType::VAR);
   assert(fields->fieldType(2).type()->toClassType());
-  assert(fields->fieldType(2).type()->toClassType()->basicClassType() == ct->basicClassType());
+  assert(fields->fieldType(2).type()->toClassType()->basicClassType() ==
+         ct->basicClassType());
 }
 
 static void testRecursiveTypeConstructorGeneric() {
@@ -1325,14 +1356,15 @@ static void testRecursiveTypeConstructorGeneric() {
   ErrorGuard guard(context);
 
   std::ignore = resolveTypeOfXInit(context,
-      R"""(
+                                   R"""(
       class Node {
           type eltType = int;
           var data: eltType;
           var next: Node(eltType)?;
       }
       var x = new unmanaged Node(int, 314);
-      )""", /* requireTypeKnown */ false);
+      )""",
+                                   /* requireTypeKnown */ false);
 
   bool foundError = false;
   for (auto& err : guard.errors()) {
@@ -1340,7 +1372,8 @@ static void testRecursiveTypeConstructorGeneric() {
       auto noCandidates = static_cast<ErrorNoMatchingCandidates*>(err.get());
       auto& rejected = std::get<2>(noCandidates->info());
       if (rejected.size() > 0 &&
-          rejected[0].reason() == chpl::resolution::FAIL_NO_DEFAULT_VALUE_FOR_GENERIC_FIELD) {
+          rejected[0].reason() ==
+            chpl::resolution::FAIL_NO_DEFAULT_VALUE_FOR_GENERIC_FIELD) {
         foundError = true;
         break;
       }
@@ -1356,7 +1389,7 @@ static void testRecursiveTypeConstructorMutual() {
   ErrorGuard guard(context);
 
   auto p = parseTypeAndFieldsOfX(context,
-      R"""(
+                                 R"""(
       class MutA {
         type eltType;
         var data: eltType;
@@ -1400,8 +1433,8 @@ static void testRecursiveTypeConstructorMutual() {
 
   auto defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
   auto rc = createDummyRC(context);
-  const ResolvedFields& fieldsB = fieldsForTypeDecl(&rc, ctB->basicClassType(),
-                                                    defaultsPolicy);
+  const ResolvedFields& fieldsB =
+    fieldsForTypeDecl(&rc, ctB->basicClassType(), defaultsPolicy);
 
   assert(fieldsB.numFields() == 3);
   assert(fieldsB.fieldName(0) == "eltType");
@@ -1416,14 +1449,15 @@ static void testRecursiveTypeConstructorMutual() {
   assert(fieldsB.fieldHasDefaultValue(2) == false);
   assert(fieldsB.fieldType(2).kind() == QualifiedType::VAR);
   assert(fieldsB.fieldType(2).type()->toClassType());
-  assert(fieldsB.fieldType(2).type()->toClassType()->basicClassType() == ctA->basicClassType());
+  assert(fieldsB.fieldType(2).type()->toClassType()->basicClassType() ==
+         ctA->basicClassType());
 }
 
 static void test43() {
   printf("test43\n");
   auto context = buildStdContext();
   auto p = parseTypeAndFieldsOfX(context,
-                        R""""(
+                                 R""""(
                         class A {
                           type TX;
                           var x : TX;
@@ -1501,7 +1535,6 @@ static void test44() {
   auto param = pt.param()->toEnumParam();
   assert(param->value().str == "x");
 
-
   auto parent = xt->basicClassType()->parentClassType();
   auto pf = parent->substitutions();
   assert(pf.size() == 1);
@@ -1509,7 +1542,8 @@ static void test44() {
   assert(pf.begin()->second.param()->toEnumParam()->value().str == "red");
 }
 
-static void ensureMatchingClassOrRecord(const QualifiedType& root, const QualifiedType& inst) {
+static void ensureMatchingClassOrRecord(const QualifiedType& root,
+                                        const QualifiedType& inst) {
   assert(!root.isUnknownOrErroneous() && !inst.isUnknownOrErroneous());
   assert((root.type()->isClassType() && inst.type()->isClassType()) ||
          (root.type()->isRecordType() && inst.type()->isRecordType()));
@@ -1524,22 +1558,22 @@ static void ensureMatchingClassOrRecord(const QualifiedType& root, const Qualifi
 }
 
 static void testPartialInstantiation() {
-  std::pair<const char*, const char*> cases[] = {
-    {"record", ""},
-    {"class", ""},
-    {"class", "shared "},
-    {"class", "owned "},
-    {"class", "unmanaged "}
-  };
+  std::pair<const char*, const char*> cases[] = {{"record", ""},
+                                                 {"class", ""},
+                                                 {"class", "shared "},
+                                                 {"class", "owned "},
+                                                 {"class", "unmanaged "}};
 
   size_t numCases = sizeof(cases) / sizeof(cases[0]);
   for (size_t i = 0; i < numCases; i++) {
     auto [aggregate, management] = cases[i];
 
     std::string program = std::string(R"""(
-      )""") + aggregate + " triple { type fst; type snd; type thd; }" + R"""(
+      )""") + aggregate + " triple { type fst; type snd; type thd; }" +
+                          R"""(
 
-      type root = )""" + management + R"""(triple(?);
+      type root = )""" + management +
+                          R"""(triple(?);
 
       type R__ = root(real, ?);
       type R_B = R__(thd=bool, ?);
@@ -1555,13 +1589,18 @@ static void testPartialInstantiation() {
 
     auto context = buildStdContext();
     ErrorGuard guard(context);
-    auto vars = resolveTypesOfVariables(context, program.c_str(), {"root", "R__", "R_B", "RIB", "r__", "ri_", "rib"});
+    auto vars = resolveTypesOfVariables(
+      context,
+      program.c_str(),
+      {"root", "R__", "R_B", "RIB", "r__", "ri_", "rib"});
 
     auto& rootInst = vars["root"];
     assert(rootInst.type());
     assert(rootInst.type()->getCompositeType());
     assert(rootInst.type()->getCompositeType()->name() == "triple");
-    assert(rootInst.type()->getCompositeType()->instantiatedFromCompositeType() == nullptr);
+    assert(
+      rootInst.type()->getCompositeType()->instantiatedFromCompositeType() ==
+      nullptr);
 
     auto I = QualifiedType(QualifiedType::TYPE, IntType::get(context, 0));
     auto R = QualifiedType(QualifiedType::TYPE, RealType::get(context, 0));
@@ -1571,20 +1610,26 @@ static void testPartialInstantiation() {
     ensureSubs(context, R__.type()->getCompositeType(), {{"fst", R}});
     ensureMatchingClassOrRecord(rootInst, R__);
     auto& R_B = vars["R_B"];
-    ensureSubs(context, R_B.type()->getCompositeType(), {{"fst", R}, {"thd", B}});
+    ensureSubs(
+      context, R_B.type()->getCompositeType(), {{"fst", R}, {"thd", B}});
     ensureMatchingClassOrRecord(rootInst, R_B);
     auto& RIB = vars["RIB"];
-    ensureSubs(context, RIB.type()->getCompositeType(), {{"fst", R}, {"snd", I}, {"thd", B}});
+    ensureSubs(context,
+               RIB.type()->getCompositeType(),
+               {{"fst", R}, {"snd", I}, {"thd", B}});
     ensureMatchingClassOrRecord(rootInst, RIB);
 
     auto& r__ = vars["r__"];
     ensureSubs(context, r__.type()->getCompositeType(), {{"fst", R}});
     ensureMatchingClassOrRecord(rootInst, r__);
     auto& ri_ = vars["ri_"];
-    ensureSubs(context, ri_.type()->getCompositeType(), {{"fst", R}, {"snd", I}});
+    ensureSubs(
+      context, ri_.type()->getCompositeType(), {{"fst", R}, {"snd", I}});
     ensureMatchingClassOrRecord(rootInst, ri_);
     auto& rib = vars["rib"];
-    ensureSubs(context, rib.type()->getCompositeType(), {{"fst", R}, {"snd", I}, {"thd", B}});
+    ensureSubs(context,
+               rib.type()->getCompositeType(),
+               {{"fst", R}, {"snd", I}, {"thd", B}});
     ensureMatchingClassOrRecord(rootInst, rib);
   }
 
@@ -1592,12 +1637,14 @@ static void testPartialInstantiation() {
     auto [aggregate, management] = cases[i];
 
     std::string program = std::string(R"""(
-      )""") + aggregate + " triple { type fst; type snd; type thd; }" + R"""(
+      )""") + aggregate + " triple { type fst; type snd; type thd; }" +
+                          R"""(
 
       proc checkApply(type Constructor, type Arg, type Dummy: Constructor(Arg)) type {
           return Constructor(Arg);
       }
-      type root = )""" + management + R"""(triple(?);
+      type root = )""" + management +
+                          R"""(triple(?);
 
       type r__ = checkApply(root, real, root(real, int, bool));
       type ri_ = checkApply(r__, int, root(real, int, bool));
@@ -1613,13 +1660,18 @@ static void testPartialInstantiation() {
 
     auto context = buildStdContext();
     ErrorGuard guard(context);
-    auto vars = resolveTypesOfVariables(context, program.c_str(), {"root", "r__", "ri_", "rib", "bad1", "bad2", "bad3"});
+    auto vars = resolveTypesOfVariables(
+      context,
+      program.c_str(),
+      {"root", "r__", "ri_", "rib", "bad1", "bad2", "bad3"});
 
     auto& rootInst = vars["root"];
     assert(rootInst.type());
     assert(rootInst.type()->getCompositeType());
     assert(rootInst.type()->getCompositeType()->name() == "triple");
-    assert(rootInst.type()->getCompositeType()->instantiatedFromCompositeType() == nullptr);
+    assert(
+      rootInst.type()->getCompositeType()->instantiatedFromCompositeType() ==
+      nullptr);
 
     auto I = QualifiedType(QualifiedType::TYPE, IntType::get(context, 0));
     auto R = QualifiedType(QualifiedType::TYPE, RealType::get(context, 0));
@@ -1629,10 +1681,13 @@ static void testPartialInstantiation() {
     ensureSubs(context, r__.type()->getCompositeType(), {{"fst", R}});
     ensureMatchingClassOrRecord(rootInst, r__);
     auto& ri_ = vars["ri_"];
-    ensureSubs(context, ri_.type()->getCompositeType(), {{"fst", R}, {"snd", I}});
+    ensureSubs(
+      context, ri_.type()->getCompositeType(), {{"fst", R}, {"snd", I}});
     ensureMatchingClassOrRecord(rootInst, ri_);
     auto& rib = vars["rib"];
-    ensureSubs(context, rib.type()->getCompositeType(), {{"fst", R}, {"snd", I}, {"thd", B}});
+    ensureSubs(context,
+               rib.type()->getCompositeType(),
+               {{"fst", R}, {"snd", I}, {"thd", B}});
     ensureMatchingClassOrRecord(rootInst, rib);
 
     assert(vars["bad1"].isUnknownOrErroneous());
@@ -1709,7 +1764,8 @@ static void testEnumTypeConstructorError() {
     var x = Color(0);
   )""";
 
-  std::ignore = resolveTypeOfXInit(context, program, /* requireTypeKnown */ false);
+  std::ignore =
+    resolveTypeOfXInit(context, program, /* requireTypeKnown */ false);
 
   assertNoTypeConstructorError(guard, 0);
   assert(guard.realizeErrors() > 0);

@@ -28,7 +28,6 @@
 static ErrorGuard* currentGuard = nullptr;
 static int guardCount = 0;
 
-
 // check CHPL_DEBUG_DYNO_DUMP_SYMLINK for a directory to symlink to the
 // directory created by makeTempDir
 static const char* symlinkTarget() {
@@ -51,7 +50,9 @@ static void errorGuardSignalHandler(int sig) {
     auto files = chpl::parsing::introspectParsedFiles(currentGuard->context());
     for (auto file : files) {
       // standard modules are in CHPL_HOME, don't copy them out.
-      if (chpl::parsing::filePathIsInBundledModule(currentGuard->context(), file)) continue;
+      if (chpl::parsing::filePathIsInBundledModule(currentGuard->context(),
+                                                   file))
+        continue;
 
       // copy file into temporary directory.
       auto destPath = path + "/" + file.str();
@@ -74,7 +75,6 @@ static void errorGuardSignalHandler(int sig) {
     printf("symlinked to %s\n", symlinkTarget());
   }
 }
-
 }
 
 void ErrorGuard::installSignalHandler() {
@@ -83,7 +83,8 @@ void ErrorGuard::installSignalHandler() {
   currentGuard = this;
   guardCount++;
 
-  assert(guardCount == 1 && "ErrorGuard::installSignalHandler called more than once");
+  assert(guardCount == 1 &&
+         "ErrorGuard::installSignalHandler called more than once");
   std::signal(SIGSEGV, errorGuardSignalHandler);
   std::signal(SIGABRT, errorGuardSignalHandler);
 }

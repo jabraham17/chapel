@@ -29,12 +29,13 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-      "/* comment 1 */\n"
-      "serial /* comment 2 */ do\n"
-      "  /* comment 3 */\n"
-      "  var a;\n"
-      "/*comment 4 */\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test0.chpl",
+                                                "/* comment 1 */\n"
+                                                "serial /* comment 2 */ do\n"
+                                                "  /* comment 3 */\n"
+                                                "  var a;\n"
+                                                "/*comment 4 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -53,12 +54,14 @@ static void test0(Parser* parser) {
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
-      "/* comment 1 */\n"
-      "serial /* comment 2 */ foo /* comment 3 */ do\n"
-      "  /* comment 4 */\n"
-      "  var a;\n"
-      "/* comment 5 */\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test1.chpl",
+                               "/* comment 1 */\n"
+                               "serial /* comment 2 */ foo /* comment 3 */ do\n"
+                               "  /* comment 4 */\n"
+                               "  var a;\n"
+                               "/* comment 5 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -78,14 +81,15 @@ static void test1(Parser* parser) {
 
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
-      "/* comment 1 */\n"
-      "serial /* comment 2 */ {\n"
-      "  /* comment 3 */\n"
-      "  var a;\n"
-      "  /* comment 4 */\n"
-      "}\n"
-      "/* comment 5 */\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test2.chpl",
+                                                "/* comment 1 */\n"
+                                                "serial /* comment 2 */ {\n"
+                                                "  /* comment 3 */\n"
+                                                "  var a;\n"
+                                                "  /* comment 4 */\n"
+                                                "}\n"
+                                                "/* comment 5 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -104,14 +108,16 @@ static void test2(Parser* parser) {
 
 static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
-      "/* comment 1 */\n"
-      "serial /* comment 2 */ foo /* comment 3 */ {\n"
-      "  /* comment 4 */\n"
-      "  var a;\n"
-      "  /* comment 5 */\n"
-      "}\n"
-      "/* comment 6 */\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test3.chpl",
+                               "/* comment 1 */\n"
+                               "serial /* comment 2 */ foo /* comment 3 */ {\n"
+                               "  /* comment 4 */\n"
+                               "  var a;\n"
+                               "  /* comment 5 */\n"
+                               "}\n"
+                               "/* comment 6 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -132,9 +138,10 @@ static void test3(Parser* parser) {
 
 static void test4(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
-      "/* comment 1 */\n"
-      "serial do { var a; }\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test4.chpl",
+                                                "/* comment 1 */\n"
+                                                "serial do { var a; }\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -151,9 +158,10 @@ static void test4(Parser* parser) {
 
 static void test5(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
-      "/* comment 1 */\n"
-      "serial foo do { var a; }\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test5.chpl",
+                                                "/* comment 1 */\n"
+                                                "serial foo do { var a; }\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);

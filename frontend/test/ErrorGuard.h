@@ -28,6 +28,7 @@ using BaseHandler = chpl::Context::ErrorHandler;
 
 class AggregatingErrorHandler : BaseHandler {
   std::vector<chpl::owned<chpl::ErrorBase>> errors_;
+
  public:
   AggregatingErrorHandler() = default;
   ~AggregatingErrorHandler() = default;
@@ -36,14 +37,13 @@ class AggregatingErrorHandler : BaseHandler {
     return errors_;
   }
 
-  template <typename C>
-  void moveErrors(C& container) {
+  template <typename C> void moveErrors(C& container) {
     std::move(errors_.begin(), errors_.end(), std::back_inserter(container));
     errors_.clear();
   }
 
-  virtual void
-  report(chpl::Context* context, const chpl::ErrorBase* err) override {
+  virtual void report(chpl::Context* context,
+                      const chpl::ErrorBase* err) override {
     errors_.push_back(err->clone());
   }
 
@@ -58,7 +58,7 @@ class ErrorGuard {
 
   chpl::owned<BaseHandler> prepareAndStoreHandler() {
     handler_ = new AggregatingErrorHandler();
-    auto ret = chpl::toOwned((BaseHandler*) handler_);
+    auto ret = chpl::toOwned((BaseHandler*)handler_);
     assert(handler_);
     return ret;
   }
@@ -107,7 +107,7 @@ class ErrorGuard {
     assert(handler_);
     if (!handler_->errors().size()) return false;
     this->printErrors();
-    int ret = (int) handler_->errors().size();
+    int ret = (int)handler_->errors().size();
 
     if (!countWarnings) {
       for (auto& err : handler_->errors())
@@ -118,16 +118,14 @@ class ErrorGuard {
     return ret;
   }
 
-  template <typename C>
-  void moveErrors(C& container) {
+  template <typename C> void moveErrors(C& container) {
     handler_->moveErrors(container);
   }
 
   /** Print the errors contained in this guard in a detailed manner. */
   void printErrors() const {
-    chpl::ErrorWriter ew(this->context(), std::cout,
-                         chpl::ErrorWriter::DETAILED,
-                         false);
+    chpl::ErrorWriter ew(
+      this->context(), std::cout, chpl::ErrorWriter::DETAILED, false);
     for (auto& err : this->errors()) err->write(ew);
     std::cout.flush();
   }

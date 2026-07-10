@@ -26,19 +26,19 @@
 
 using namespace chpl;
 
-const uast::BuilderResult&
-parseAndReportErrors(Context* context, UniqueString path) {
+const uast::BuilderResult& parseAndReportErrors(Context* context,
+                                                UniqueString path) {
   auto& ret = parsing::parseFileToBuilderResultAndCheck(context, path, {});
   return ret;
 }
-const uast::BuilderResult&
-parseAndReportErrors(Context* context, const char* path) {
+const uast::BuilderResult& parseAndReportErrors(Context* context,
+                                                const char* path) {
   return parseAndReportErrors(context, UniqueString::get(context, path));
 }
 
-uast::BuilderResult
-parseStringAndReportErrors(parsing::Parser* parser, const char* filename,
-                           const char* content) {
+uast::BuilderResult parseStringAndReportErrors(parsing::Parser* parser,
+                                               const char* filename,
+                                               const char* content) {
   auto path = UniqueString::get(parser->context(), filename);
   auto result = parser->parseString(filename, content);
   uast::checkBuilderResult(parser->context(), path, result);
@@ -48,30 +48,28 @@ parseStringAndReportErrors(parsing::Parser* parser, const char* filename,
 struct NamedCollector {
   std::vector<const uast::AstNode*> nodes;
   std::string name_;
-  public:
-    NamedCollector(std::string name) : name_(name) { }
 
-    bool enter(const uast::AstNode* node) {
-      return true;
-    }
-    void exit(const uast::AstNode* node) { }
+ public:
+  NamedCollector(std::string name) : name_(name) {}
 
-    bool enter(const uast::NamedDecl* node) {
-      if (node->name() == name_) {
-        nodes.push_back(node);
-      }
-      return true;
-    }
-    void exit(const uast::NamedDecl* node) {
-    }
+  bool enter(const uast::AstNode* node) { return true; }
+  void exit(const uast::AstNode* node) {}
 
-    const uast::AstNode* only() {
-      if (nodes.size() == 1) {
-        return nodes.front();
-      } else {
-        return nullptr;
-      }
+  bool enter(const uast::NamedDecl* node) {
+    if (node->name() == name_) {
+      nodes.push_back(node);
     }
+    return true;
+  }
+  void exit(const uast::NamedDecl* node) {}
+
+  const uast::AstNode* only() {
+    if (nodes.size() == 1) {
+      return nodes.front();
+    } else {
+      return nullptr;
+    }
+  }
 };
 
 const uast::AstNode* findOnlyNamed(const uast::Module* mod, std::string name) {
@@ -79,7 +77,6 @@ const uast::AstNode* findOnlyNamed(const uast::Module* mod, std::string name) {
   mod->traverse(col);
   return col.only();
 }
-
 
 chpl::Context* buildStdContext(chpl::CompilerFlags flags) {
   // Note: If we make this 'global', we run into double-free errors most likely
@@ -108,8 +105,10 @@ chpl::Context* buildStdContext(chpl::CompilerFlags flags) {
 
   // resolve the standard modules from the same "usual" predefined point.
   // this way, the order in which the modules are traversed is always the same.
-  if (auto autoUseScope = resolution::scopeForAutoModule(_reusedContext.get())) {
-    std::ignore = resolution::resolveVisibilityStmts(_reusedContext.get(), autoUseScope, false);
+  if (auto autoUseScope =
+        resolution::scopeForAutoModule(_reusedContext.get())) {
+    std::ignore = resolution::resolveVisibilityStmts(
+      _reusedContext.get(), autoUseScope, false);
   }
 
   return _reusedContext.get();

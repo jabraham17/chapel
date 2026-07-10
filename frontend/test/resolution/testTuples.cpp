@@ -35,7 +35,7 @@ static void test1() {
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
-                R""""(
+                               R""""(
                   var x = (1, 2);
                 )"""");
 
@@ -60,7 +60,7 @@ static void test2() {
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
-                R""""(
+                               R""""(
                   type x = (int, real);
                 )"""");
 
@@ -75,13 +75,12 @@ static void test2() {
   assert(tt->elementType(1).type()->isRealType());
 }
 
-
 static void test3() {
   printf("%s\n", __FUNCTION__);
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
-                R""""(
+                               R""""(
                   record R { }
                   var r: R;
                   var x = (r, r);
@@ -111,7 +110,7 @@ static void test4() {
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
-                R""""(
+                               R""""(
                   record R { }
                   type x = (R, R);
                 )"""");
@@ -136,7 +135,7 @@ static void test5() {
   auto context = buildStdContext();
 
   auto qt = resolveQualifiedTypeOfX(context,
-                R""""(
+                                    R""""(
                   record R { }
                   var r: R;
                   var x = (r, r);
@@ -162,7 +161,7 @@ static void test6() {
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
-                R""""(
+                               R""""(
                   record R { }
                   proc R.init() { }
                   proc R.deinit() { }
@@ -187,7 +186,7 @@ static void test7() {
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
-                R""""(
+                               R""""(
                   record R { }
                   var r: R;
                   var glob = (r, r);
@@ -211,7 +210,7 @@ static void test8() {
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
-                R""""(
+                               R""""(
                   record R { }
                   proc f() : (R, R) {
                     var r: R;
@@ -234,7 +233,7 @@ static void test9() {
   auto context = buildStdContext();
 
   auto M = parseModule(context,
-                R""""(
+                       R""""(
                   var (a, (b, c)) = (1, (2.0, 3));
                 )"""");
 
@@ -292,8 +291,8 @@ static void test9b() {
     var xd = d;
     )""";
 
-    auto vars = resolveTypesOfVariables(context, program,
-                                        {"xa", "xb", "xc", "xd"});
+    auto vars =
+      resolveTypesOfVariables(context, program, {"xa", "xb", "xc", "xd"});
     assert(vars["xa"].type()->isIntType());
     assert(vars["xb"].type()->isStringType());
     assert(vars["xc"].type()->isRealType());
@@ -317,8 +316,8 @@ static void test9b() {
     var xf = f;
     )""";
 
-    auto vars = resolveTypesOfVariables(context, program,
-                                        {"xa", "xb", "xc", "xd", "xe", "xf"});
+    auto vars = resolveTypesOfVariables(
+      context, program, {"xa", "xb", "xc", "xd", "xe", "xf"});
     assert(vars["xa"].type()->isIntType());
     assert(vars["xb"].type()->isStringType());
     assert(vars["xc"].type()->isRealType());
@@ -333,7 +332,7 @@ static void test10() {
   auto context = buildStdContext();
 
   auto M = parseModule(context,
-                R""""(
+                       R""""(
                   const (a, (b, c)) = (1, (2.0, 3));
                 )"""");
 
@@ -366,7 +365,7 @@ static void test11() {
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
-                R""""(
+                               R""""(
                   proc f(in arg: (real, real)) { return arg; }
                   var x = f( (1,2) );
                 )"""");
@@ -392,7 +391,7 @@ static void test11b() {
   // constness errors. The Resolver handles this already, so we shouldn't ever
   // bother to resolve that assignment.
   auto t = resolveTypeOfX(context,
-                R""""(
+                          R""""(
                 record R { var i : int; }
 
                 proc foo() {
@@ -419,13 +418,12 @@ static void test12() {
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
-                R""""(
+                               R""""(
                   record R { }
                   proc f(in arg: (R, R)) { return arg; }
                   var r: R;
                   var x = f( (r, r) );
                 )"""");
-
 
   assert(qt.kind() == QualifiedType::CONST_VAR);
   assert(qt.type()->isTupleType());
@@ -448,13 +446,12 @@ static void test13() {
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
-                R""""(
+                               R""""(
                   record R { param p; }
                   proc f(in arg: (R, R)) { return arg; }
                   var r: R(1);
                   var x = f( (r, r) );
                 )"""");
-
 
   assert(qt.kind() == QualifiedType::CONST_VAR);
   assert(qt.type()->isTupleType());
@@ -483,7 +480,7 @@ static void test14() {
     ErrorGuard guard(context);
 
     auto qt = resolveTypeOfXInit(context,
-                  R""""(
+                                 R""""(
                     proc f(x: int, (y, z): (real, int)) { return (x, y, z); }
                     var x = f( 1, (2.0, 3) );
                   )"""");
@@ -505,7 +502,7 @@ static void test14() {
 
     // Using a homogeneous tuple type expression
     auto vars = resolveTypesOfVariables(context,
-                  R""""(
+                                        R""""(
                     proc foo((x, y, z): 3*int) {
                       return x;
                     }
@@ -517,7 +514,7 @@ static void test14() {
 
                     var retTwo = foo((a, b, c));
                   )"""",
-                  {"retOne", "retTwo"});
+                                        {"retOne", "retTwo"});
     assert(vars["retOne"].type()->isIntType());
     assert(vars["retTwo"].type()->isIntType());
   }
@@ -526,7 +523,7 @@ static void test14() {
     ErrorGuard guard(context);
 
     auto qt = resolveTypeOfXInit(context,
-                  R""""(
+                                 R""""(
                   proc blah(type (a, b, c)) {
                     var ret : a;
                     return ret;
@@ -541,7 +538,8 @@ static void test14() {
 
     // From post-parse-checks
     auto& err = guard.error(0);
-    assert(err->message() == "intents on tuple-grouped arguments are not yet supported");
+    assert(err->message() ==
+           "intents on tuple-grouped arguments are not yet supported");
 
     assert(guard.error(1)->type() == ErrorType::NoMatchingCandidates);
 
@@ -551,8 +549,9 @@ static void test14() {
     auto context = buildStdContext();
     ErrorGuard guard(context);
 
-    auto vars = resolveTypesOfVariables(context,
-                  R""""(
+    auto vars =
+      resolveTypesOfVariables(context,
+                              R""""(
                   proc baz((x, y, z), param which : int) {
                     if which == 0 then return x;
                     else if which == 1 then return y;
@@ -569,7 +568,7 @@ static void test14() {
                   var varB = baz(three, 1);
                   var varC = baz(three, 2);
                   )"""",
-                  {"litA", "litB", "litC", "varA", "varB", "varC"});
+                              {"litA", "litB", "litC", "varA", "varB", "varC"});
     assert(vars["litA"].type()->isIntType());
     assert(vars["litB"].type()->isRealType());
     assert(vars["litC"].type()->isStringType());
@@ -582,8 +581,9 @@ static void test14() {
     auto context = buildStdContext();
     ErrorGuard guard(context);
 
-    auto vars = resolveTypesOfVariables(context,
-                  R""""(
+    auto vars = resolveTypesOfVariables(
+      context,
+      R""""(
                   proc baz(((a, b), c, d), param which : int) {
                     if which == 0 then return a;
                     else if which == 1 then return b;
@@ -603,8 +603,7 @@ static void test14() {
                   var varC = baz(arg, 2);
                   var varD = baz(arg, 3);
                   )"""",
-                  {"litA", "litB", "litC", "litD",
-                   "varA", "varB", "varC", "varD"});
+      {"litA", "litB", "litC", "litD", "varA", "varB", "varC", "varD"});
     assert(vars["litA"].type()->isIntType());
     assert(vars["litB"].type()->isRealType());
     assert(vars["litC"].type()->isStringType());
@@ -622,7 +621,7 @@ static void test15() {
   {
     auto context = buildStdContext();
     auto qt = resolveTypeOfXInit(context,
-                  R""""(
+                                 R""""(
                     var tup = (1, 2);
                     var x = ( (... tup), 3.0);
                   )"""");
@@ -641,7 +640,7 @@ static void test15() {
   {
     auto context = buildStdContext();
     auto qt = resolveTypeOfXInit(context,
-                  R""""(
+                                 R""""(
                     var tup1 = (1, 2);
                     var tup2 = (3.0, "hi");
                     var x = ( (... tup1), false, (... tup2), true);
@@ -667,7 +666,7 @@ static void test16() {
   auto context = buildStdContext();
 
   auto qt = resolveQualifiedTypeOfX(context,
-                R""""(
+                                    R""""(
                   proc helper(a: int, b: real) { return b; }
                   var tup = (1, 2.0);
                   var x = helper( (... tup) );
@@ -682,7 +681,7 @@ static void test16b() {
   auto context = buildStdContext();
 
   auto qt = resolveQualifiedTypeOfX(context,
-                R""""(
+                                    R""""(
                   proc helper(type a, type b) type { return b; }
                   type tup = (int, real);
                   type x = helper( (... tup) );
@@ -697,7 +696,7 @@ static void test17() {
   auto context = buildStdContext();
 
   auto qt = resolveQualifiedTypeOfX(context,
-                R""""(
+                                    R""""(
                   var x : 3*int;
                 )"""");
 
@@ -712,23 +711,25 @@ static void test17() {
   assert(tt->elementType(2).type()->isIntType());
 }
 
-static void argHelper(std::string formal, std::string actual,
-                           bool shouldResolve) {
+static void
+argHelper(std::string formal, std::string actual, bool shouldResolve) {
   Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program = R"""(
-    proc foo(arg: )""" + formal + R"""() {
+    proc foo(arg: )""" + formal +
+                        R"""() {
       return arg;
     }
 
-    var actual = )""" + actual + R"""(;
+    var actual = )""" + actual +
+                        R"""(;
     var x = foo(actual);
     )""";
 
   auto m = parseModule(context, std::move(program));
   auto x = findVariable(m, "x");
-  auto a = findVariable(m ,"actual");
+  auto a = findVariable(m, "actual");
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
@@ -768,8 +769,8 @@ static void test18() {
   auto m = parseModule(context, std::move(program));
 
   auto x = findVariable(m, "x");
-  auto y = findVariable(m ,"y");
-  auto z = findVariable(m ,"z");
+  auto y = findVariable(m, "y");
+  auto z = findVariable(m, "z");
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
@@ -793,8 +794,8 @@ static void test18b() {
   auto m = parseModule(context, std::move(program));
 
   auto x = findVariable(m, "x");
-  auto y = findVariable(m ,"y");
-  auto z = findVariable(m ,"z");
+  auto y = findVariable(m, "y");
+  auto z = findVariable(m, "z");
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
@@ -826,7 +827,7 @@ static void test19() {
                 )"""";
 
   auto variables = resolveTypesOfVariablesInit(
-      context, program, {"x", "y", "z", "a", "b", "c", "d"});
+    context, program, {"x", "y", "z", "a", "b", "c", "d"});
 
   assert(variables.at("x").type()->isIntType());
   assert(variables.at("y").type()->isIntType());
@@ -844,7 +845,6 @@ static void test19() {
   assert(variables.at("d").kind() == QualifiedType::VAR);
   assert(variables.at("d").type()->isClassType());
 }
-
 
 static void testTupleGeneric() {
   printf("%s\n", __FUNCTION__);
@@ -880,10 +880,11 @@ static void testTupleGeneric() {
   argHelper("(numeric, numeric)", "(5, 'hi')", false);
 }
 
-static const TypedFnSignature* test20Helper(Context* context, std::string program) {
+static const TypedFnSignature* test20Helper(Context* context,
+                                            std::string program) {
   auto M = parseModule(context, program);
   auto rr = resolveModule(context, M->id());
-  auto x = M->stmt(M->numStmts()-1)->toVarLikeDecl();
+  auto x = M->stmt(M->numStmts() - 1)->toVarLikeDecl();
   auto call = x->initExpression()->toFnCall();
 
   ResolutionContext rcval(context);
@@ -1017,8 +1018,8 @@ static void test21() {
     param secondMatch = y.type == y2.type;
   )""";
 
-  auto vars = resolveTypesOfVariables(context, program,
-                                      {"x", "y", "x2", "y2", "firstMatch", "secondMatch"});
+  auto vars = resolveTypesOfVariables(
+    context, program, {"x", "y", "x2", "y2", "firstMatch", "secondMatch"});
   assert(vars["x"].type()->isTupleType());
   assert(vars["y"].type()->isTupleType());
   assert(vars["x2"].type()->isTupleType());
@@ -1039,8 +1040,7 @@ static void test22() {
     param match = t1.type == t2.type;
   )""";
 
-  auto vars = resolveTypesOfVariables(context, program,
-                                      {"t1", "t2", "match"});
+  auto vars = resolveTypesOfVariables(context, program, {"t1", "t2", "match"});
   assert(vars["t1"].type()->isTupleType());
   assert(vars["t2"].type()->isTupleType());
   ensureParamBool(vars["match"], true);
@@ -1108,8 +1108,10 @@ static void test24() {
   // Its components are 'var real(64)' and 'var nothing'.
   for (int i = 0; i < tpTup->numElements(); i++) {
     auto qt = tpTup->elementType(i);
-    assert(i != 0 || (qt.type()->isRealType() && qt.kind() == QualifiedType::VAR));
-    assert(i != 1 || (qt.type()->isNothingType() && qt.kind() == QualifiedType::VAR));
+    assert(i != 0 ||
+           (qt.type()->isRealType() && qt.kind() == QualifiedType::VAR));
+    assert(i != 1 ||
+           (qt.type()->isNothingType() && qt.kind() == QualifiedType::VAR));
   }
 
   // Finally confirm that there is an assignment for 'x' but not for '_'.
@@ -1149,7 +1151,7 @@ static void test26() {
     for (x, y) in foo() do;
     )"""";
 
-  auto m = resolveTypesOfVariables(context, program, { "x", "y" });
+  auto m = resolveTypesOfVariables(context, program, {"x", "y"});
   assert(!guard.realizeErrors());
   assert(m["x"].kind() == QualifiedType::CONST_VAR);
   assert(m["x"].type()->isIntType());
@@ -1202,7 +1204,7 @@ static void test28() {
     operator=(ref lhs: int, rhs: int) {}
     )"""";
 
-  auto m = resolveTypesOfVariables(context, program, { "i", "j", "z" });
+  auto m = resolveTypesOfVariables(context, program, {"i", "j", "z"});
   assert(!guard.realizeErrors());
   auto& i = m["i"];
   assert(i.kind() == QualifiedType::CONST_VAR && i.type()->isIntType());
@@ -1245,7 +1247,7 @@ static void test29() {
   }
 
   // The de-tupled components still maintain their 'REF'ness.
-  auto m = resolveTypesOfVariables(context, program, { "i", "j", "z" });
+  auto m = resolveTypesOfVariables(context, program, {"i", "j", "z"});
   assert(!guard.realizeErrors());
   auto& i = m["i"];
   assert(i.kind() == QualifiedType::REF && i.type()->isIntType());
@@ -1281,7 +1283,7 @@ static void test30() {
   assert(qtTup.type()->isTupleType());
 
   // The de-tupled components still maintain their 'REF'ness.
-  auto m = resolveTypesOfVariables(context, program, { "i", "j", "z" });
+  auto m = resolveTypesOfVariables(context, program, {"i", "j", "z"});
   assert(!guard.realizeErrors());
   auto& i = m["i"];
   assert(i.kind() == QualifiedType::CONST_REF && i.type()->isIntType());
@@ -1312,7 +1314,7 @@ static void test31() {
   assert(qtTup.type()->isTupleType());
 
   // The de-tupled components still maintain their 'REF'ness.
-  auto m = resolveTypesOfVariables(context, program, { "a", "b" });
+  auto m = resolveTypesOfVariables(context, program, {"a", "b"});
   assert(!guard.realizeErrors());
   assert(m["a"].kind() == QualifiedType::REF);
   assert(m["a"].type()->isIntType());
@@ -1339,7 +1341,7 @@ static void test32() {
   assert(qtTup.kind() == QualifiedType::CONST_REF);
   assert(qtTup.type()->isTupleType());
 
-  auto m = resolveTypesOfVariables(context, program, { "a", "b" });
+  auto m = resolveTypesOfVariables(context, program, {"a", "b"});
   assert(!guard.realizeErrors());
   assert(m["a"].kind() == QualifiedType::CONST_REF);
   assert(m["a"].type()->isIntType());

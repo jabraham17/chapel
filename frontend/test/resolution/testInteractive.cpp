@@ -53,9 +53,10 @@ static const char* tagToString(const AstNode* ast) {
 }
 
 static const ResolvedExpression*
-resolvedExpressionForAstInteractive(ResolutionContext* rc, const AstNode* ast,
-                         const ResolvedFunction* inFn,
-                         bool scopeResolveOnly) {
+resolvedExpressionForAstInteractive(ResolutionContext* rc,
+                                    const AstNode* ast,
+                                    const ResolvedFunction* inFn,
+                                    bool scopeResolveOnly) {
   Context* context = rc->context();
   if (!(ast->isLoop() || ast->isBlock())) {
     // compute the parent module or function
@@ -108,14 +109,13 @@ resolvedExpressionForAstInteractive(ResolutionContext* rc, const AstNode* ast,
   return nullptr;
 }
 
-static void
-computeAndPrintStuff(ResolutionContext* rc,
-                     const AstNode* ast,
-                     const ResolvedFunction* inFn,
-                     std::set<const ResolvedFunction*>& calledFns,
-                     bool scopeResolveOnly,
-                     int maxIdWidth,
-                     bool quiet) {
+static void computeAndPrintStuff(ResolutionContext* rc,
+                                 const AstNode* ast,
+                                 const ResolvedFunction* inFn,
+                                 std::set<const ResolvedFunction*>& calledFns,
+                                 bool scopeResolveOnly,
+                                 int maxIdWidth,
+                                 bool quiet) {
   Context* context = rc->context();
   // Scope resolve / resolve concrete functions before printing
   if (auto fn = ast->toFunction()) {
@@ -131,8 +131,8 @@ computeAndPrintStuff(ResolutionContext* rc,
   }
 
   for (const AstNode* child : ast->children()) {
-    computeAndPrintStuff(rc, child, inFn, calledFns,
-                         scopeResolveOnly, maxIdWidth, quiet);
+    computeAndPrintStuff(
+      rc, child, inFn, calledFns, scopeResolveOnly, maxIdWidth, quiet);
     if (!quiet) {
       if (child->isModule() || child->isFunction()) {
         std::cout << "\n";
@@ -201,24 +201,26 @@ computeAndPrintStuff(ResolutionContext* rc,
 }
 
 static void usage(int argc, char** argv) {
-  printf("Usage: %s [args] file.chpl otherFile.chpl ...\n"
-         "  --std enables the standard library\n"
-         "  --scope only performs scope resolution\n"
-         "  --trace enables query tracing\n"
-         "  --time <outputFile> outputs query timing information to outputFile\n"
-         "  --searchPath <path> adds to the module search path\n"
-         "  --warn-unstable turns on unstable warnings\n",
-         argv[0]);
+  printf(
+    "Usage: %s [args] file.chpl otherFile.chpl ...\n"
+    "  --std enables the standard library\n"
+    "  --scope only performs scope resolution\n"
+    "  --trace enables query tracing\n"
+    "  --time <outputFile> outputs query timing information to outputFile\n"
+    "  --searchPath <path> adds to the module search path\n"
+    "  --warn-unstable turns on unstable warnings\n",
+    argv[0]);
 }
 
-static void setupSearchPaths(Context* ctx, bool enableStdLib,
+static void setupSearchPaths(Context* ctx,
+                             bool enableStdLib,
                              const std::vector<std::string>& cmdLinePaths,
                              const std::vector<std::string>& files) {
   if (enableStdLib) {
     setupModuleSearchPaths(ctx, false, cmdLinePaths, files);
   } else {
     std::vector<UniqueString> uPaths;
-    for (auto p: cmdLinePaths) {
+    for (auto p : cmdLinePaths) {
       uPaths.push_back(UniqueString::get(ctx, p));
     }
     setModuleSearchPath(ctx, uPaths);
@@ -243,11 +245,11 @@ int main(int argc, char** argv) {
     if (0 == strcmp(argv[i], "--std")) {
       enableStdLib = true;
     } else if (0 == strcmp(argv[i], "--search")) {
-      if (i+1 >= argc) {
+      if (i + 1 >= argc) {
         usage(argc, argv);
         return 1;
       }
-      cmdLinePaths.push_back(argv[i+1]);
+      cmdLinePaths.push_back(argv[i + 1]);
       i++;
     } else if (0 == strcmp(argv[i], "--trace")) {
       trace = true;
@@ -258,11 +260,11 @@ int main(int argc, char** argv) {
     } else if (0 == strcmp(argv[i], "--quiet")) {
       quiet = true;
     } else if (0 == strcmp(argv[i], "--time")) {
-      if (i+1 >= argc) {
+      if (i + 1 >= argc) {
         usage(argc, argv);
         return 1;
       }
-      timing = argv[i+1];
+      timing = argv[i + 1];
       i++;
     } else if (0 == strcmp(argv[i], "--time-all-generations")) {
       timeAllGenerations = true;
@@ -318,7 +320,7 @@ int main(int argc, char** argv) {
 
     std::set<const ResolvedFunction*> calledFns;
 
-    for (auto p: files) {
+    for (auto p : files) {
       auto filepath = UniqueString::get(ctx, p);
 
       const ModuleVec& mods = parseToplevel(ctx, filepath);
@@ -329,8 +331,8 @@ int main(int argc, char** argv) {
         }
 
         int maxIdWidth = mod->computeMaxIdStringWidth();
-        computeAndPrintStuff(rc, mod, nullptr, calledFns,
-                             scopeResolveOnly, maxIdWidth, quiet);
+        computeAndPrintStuff(
+          rc, mod, nullptr, calledFns, scopeResolveOnly, maxIdWidth, quiet);
         if (!quiet) {
           printf("\n");
         }
@@ -363,15 +365,21 @@ int main(int argc, char** argv) {
             int maxIdWidth = 0;
             if (!quiet) {
               printf("Instantiation of ");
-              initialType->stringify(std::cout, chpl::StringifyKind::CHPL_SYNTAX);
+              initialType->stringify(std::cout,
+                                     chpl::StringifyKind::CHPL_SYNTAX);
               printf("\n");
               printf("Instantiation is ");
               sig->stringify(std::cout, chpl::StringifyKind::CHPL_SYNTAX);
               printf("\n");
               maxIdWidth = ast->computeMaxIdStringWidth();
             }
-            computeAndPrintStuff(rc, ast, calledFn, calledFns,
-                                 scopeResolveOnly, maxIdWidth, quiet);
+            computeAndPrintStuff(rc,
+                                 ast,
+                                 calledFn,
+                                 calledFns,
+                                 scopeResolveOnly,
+                                 maxIdWidth,
+                                 quiet);
             if (!quiet) {
               printf("\n");
             }
@@ -398,7 +406,7 @@ int main(int argc, char** argv) {
     }
 
     // ask the user if they want to run it again
-    printf ("Would you like to incrementally parse again? [Y]: ");
+    printf("Would you like to incrementally parse again? [Y]: ");
     int ch = 0;
     do {
       ch = getc(stdin);

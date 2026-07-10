@@ -24,24 +24,24 @@
 using namespace chpl;
 
 int main(int argc, char** argv) {
-  assert(startsWith(std::string("abcde"),  std::string("")));
-  assert(startsWith(std::string("abcde"),  std::string("a")));
-  assert(startsWith(std::string("abcde"),  std::string("ab")));
-  assert(startsWith(std::string("abcde"),  std::string("abc")));
-  assert(startsWith(std::string("abcde"),  std::string("abcd")));
-  assert(startsWith(std::string("abcde"),  std::string("abcde")));
+  assert(startsWith(std::string("abcde"), std::string("")));
+  assert(startsWith(std::string("abcde"), std::string("a")));
+  assert(startsWith(std::string("abcde"), std::string("ab")));
+  assert(startsWith(std::string("abcde"), std::string("abc")));
+  assert(startsWith(std::string("abcde"), std::string("abcd")));
+  assert(startsWith(std::string("abcde"), std::string("abcde")));
   assert(!startsWith(std::string("abcde"), std::string("abcdef")));
   assert(!startsWith(std::string("abcde"), std::string("bcde")));
   assert(!startsWith(std::string("abcde"), std::string("cde")));
   assert(!startsWith(std::string("abcde"), std::string("de")));
   assert(!startsWith(std::string("abcde"), std::string("e")));
 
-  assert(startsWith("abcde",  ""));
-  assert(startsWith("abcde",  "a"));
-  assert(startsWith("abcde",  "ab"));
-  assert(startsWith("abcde",  "abc"));
-  assert(startsWith("abcde",  "abcd"));
-  assert(startsWith("abcde",  "abcde"));
+  assert(startsWith("abcde", ""));
+  assert(startsWith("abcde", "a"));
+  assert(startsWith("abcde", "ab"));
+  assert(startsWith("abcde", "abc"));
+  assert(startsWith("abcde", "abcd"));
+  assert(startsWith("abcde", "abcde"));
   assert(!startsWith("abcde", "abcdef"));
   assert(!startsWith("abcde", "bcde"));
   assert(!startsWith("abcde", "cde"));

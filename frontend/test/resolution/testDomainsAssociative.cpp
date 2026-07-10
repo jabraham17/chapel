@@ -28,20 +28,20 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 
-
-static void testAssociative(std::string domainType,
-                            std::string idxType,
-                            bool parSafe) {
+static void
+testAssociative(std::string domainType, std::string idxType, bool parSafe) {
   printf("Testing: %s\n", domainType.c_str());
 
   auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
-R"""(
+    R"""(
 module M {
-  var d : )""" + domainType + R"""(;
-  type ig = )""" + idxType + R"""(;
+  var d : )""" +
+    domainType + R"""(;
+  type ig = )""" +
+    idxType + R"""(;
 
   type i = d.idxType;
   param s = d.parSafe;
@@ -62,7 +62,8 @@ module M {
     return 42;
   }
 
-  proc concrete(arg: )""" + domainType + R"""() {
+  proc concrete(arg: )""" +
+    domainType + R"""() {
     type CT = arg.type;
     return 42;
   }
@@ -104,7 +105,8 @@ module M {
     auto res = rr.byAst(g_ret);
     assert(res.type().type()->isIntType());
 
-    auto call = resolveOnlyCandidate(context, rr.byAst(g_ret->initExpression()));
+    auto call =
+      resolveOnlyCandidate(context, rr.byAst(g_ret->initExpression()));
     // Generic function, should have been instantiated
     assert(call->signature()->instantiatedFrom() != nullptr);
 
@@ -117,7 +119,8 @@ module M {
     auto res = rr.byAst(c_ret);
     assert(res.type().type()->isIntType());
 
-    auto call = resolveOnlyCandidate(context, rr.byAst(c_ret->initExpression()));
+    auto call =
+      resolveOnlyCandidate(context, rr.byAst(c_ret->initExpression()));
     // Concrete function, should not be instantiated
     assert(call->signature()->instantiatedFrom() == nullptr);
 
@@ -140,7 +143,9 @@ static void testDisallowDomainDomain() {
   // some extraneous errors from not handling early `compilerError` returns
   assert(guard.numErrors() >= 1);
   for (auto& err : guard.errors()) {
-    if (err->message() == "Values of 'domain' type do not support hash functions yet, so cannot be used as an associative domain's index type") {
+    if (err->message() ==
+        "Values of 'domain' type do not support hash functions yet, so cannot "
+        "be used as an associative domain's index type") {
       guard.realizeErrors();
       return;
     }

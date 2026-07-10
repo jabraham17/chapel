@@ -75,8 +75,7 @@ static void checkThisFormal(const Function* fn,
 
 static void test0(Parser* parser) {
   const AggregateDecl* agg = nullptr;
-  auto res = parseAggregate(parser, agg, "test0.chpl",
-                            "class C { }");
+  auto res = parseAggregate(parser, agg, "test0.chpl", "class C { }");
   auto cls = agg->toClass();
   assert(cls);
   assert(cls->name() == "C");
@@ -88,8 +87,7 @@ static void test0(Parser* parser) {
 
 static void test1(Parser* parser) {
   const AggregateDecl* agg = nullptr;
-  auto res = parseAggregate(parser, agg, "test1.chpl",
-                            "class C : P { }");
+  auto res = parseAggregate(parser, agg, "test1.chpl", "class C : P { }");
   auto cls = agg->toClass();
   assert(cls);
   assert(cls->name() == "C");
@@ -104,8 +102,7 @@ static void test1(Parser* parser) {
 
 static void test2(Parser* parser) {
   const AggregateDecl* agg = nullptr;
-  auto res = parseAggregate(parser, agg, "test2.chpl",
-                            "class C { var x; }");
+  auto res = parseAggregate(parser, agg, "test2.chpl", "class C { var x; }");
   auto cls = agg->toClass();
   assert(cls);
   assert(cls->name() == "C");
@@ -121,8 +118,8 @@ static void test2(Parser* parser) {
 
 static void test3(Parser* parser) {
   const AggregateDecl* agg = nullptr;
-  auto res = parseAggregate(parser, agg, "test3.chpl",
-                            "class C { proc method() { } }");
+  auto res =
+    parseAggregate(parser, agg, "test3.chpl", "class C { proc method() { } }");
   auto cls = agg->toClass();
   assert(cls);
   assert(cls->name() == "C");
@@ -140,8 +137,7 @@ static void test3(Parser* parser) {
 
 static void test4(Parser* parser) {
   const AggregateDecl* agg = nullptr;
-  auto res = parseAggregate(parser, agg, "test4.chpl",
-                            "record R { }");
+  auto res = parseAggregate(parser, agg, "test4.chpl", "record R { }");
   auto rec = agg->toRecord();
   assert(rec);
   assert(rec->name() == "R");
@@ -152,8 +148,7 @@ static void test4(Parser* parser) {
 
 static void test5(Parser* parser) {
   const AggregateDecl* agg = nullptr;
-  auto res = parseAggregate(parser, agg, "test5.chpl",
-                            "union U { }");
+  auto res = parseAggregate(parser, agg, "test5.chpl", "union U { }");
   auto uni = agg->toUnion();
   assert(uni);
   assert(uni->name() == "U");
@@ -164,8 +159,8 @@ static void test5(Parser* parser) {
 
 static void test6(Parser* parser) {
   const AggregateDecl* agg = nullptr;
-  auto res = parseAggregate(parser, agg, "test6.chpl",
-                            "record R { var x; proc method() { } }");
+  auto res = parseAggregate(
+    parser, agg, "test6.chpl", "record R { var x; proc method() { } }");
   auto rec = agg->toRecord();
   assert(rec);
   assert(rec->name() == "R");
@@ -186,8 +181,8 @@ static void test6(Parser* parser) {
 
 static void test7(Parser* parser) {
   const AggregateDecl* agg = nullptr;
-  auto res = parseAggregate(parser, agg, "test7.chpl",
-                            "union U { var x: int; proc method() { } }");
+  auto res = parseAggregate(
+    parser, agg, "test7.chpl", "union U { var x: int; proc method() { } }");
   auto uni = agg->toUnion();
   assert(uni);
   assert(uni->name() == "U");
@@ -208,7 +203,9 @@ static void test7(Parser* parser) {
 
 static void test8(Parser* parser) {
   const AggregateDecl* agg = nullptr;
-  auto res = parseAggregate(parser, agg, "test8.chpl",
+  auto res = parseAggregate(parser,
+                            agg,
+                            "test8.chpl",
                             "/*1*/\n"
                             "class /*2*/ C /*3*/ : /*4*/ P /*5*/ {\n"
                             "  /*6*/ var /*7*/ x /*8*/;\n"
@@ -254,7 +251,9 @@ static void test8(Parser* parser) {
 
 static void test9(Parser* parser) {
   const AggregateDecl* agg = nullptr;
-  auto res = parseAggregate(parser, agg, "test9.chpl",
+  auto res = parseAggregate(parser,
+                            agg,
+                            "test9.chpl",
                             "record R {\n"
                             "  proc df(arg) { }\n"
                             "  proc const cnst(arg) const { }\n"
@@ -270,8 +269,7 @@ static void test9(Parser* parser) {
                             "proc ref R.rf2(arg) ref { }\n"
                             "proc param R.prm2(arg) param { }\n"
                             "proc type R.tp2(arg) type { }\n"
-                            "proc R.ou2(arg) out { }\n"
-                            );
+                            "proc R.ou2(arg) out { }\n");
 
   auto rec = agg->toRecord();
   assert(rec);
@@ -418,22 +416,23 @@ static void test9(Parser* parser) {
 }
 
 static void test10(Parser* parser) {
-  auto parseResult = parseStringAndReportErrors(parser, "test10.chpl",
-                                         "/*1*/ class C1 {\n"
-                                         "  /*1a*/ var a;\n"
-                                         "  /*1aa*/ var aa;\n"
-                                         "}\n"
-                                         "/*2*/ class C2 { }\n"
-                                         "/*3*/ record R3 {\n"
-                                         "  /*3b*/ var b;\n"
-                                         "  /*3bb*/ var bb;\n"
-                                         "}\n"
-                                         "/*4*/ record R4 { }\n"
-                                         "/*5*/ union U5 {\n"
-                                         "  /*5c*/ var c: int;\n"
-                                         "  /*5cc*/ var cc: real;\n"
-                                         "}\n"
-                                         "/*6*/ union U6 { }\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test10.chpl",
+                                                "/*1*/ class C1 {\n"
+                                                "  /*1a*/ var a;\n"
+                                                "  /*1aa*/ var aa;\n"
+                                                "}\n"
+                                                "/*2*/ class C2 { }\n"
+                                                "/*3*/ record R3 {\n"
+                                                "  /*3b*/ var b;\n"
+                                                "  /*3bb*/ var bb;\n"
+                                                "}\n"
+                                                "/*4*/ record R4 { }\n"
+                                                "/*5*/ union U5 {\n"
+                                                "  /*5c*/ var c: int;\n"
+                                                "  /*5cc*/ var cc: real;\n"
+                                                "}\n"
+                                                "/*6*/ union U6 { }\n");
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 12);
@@ -449,7 +448,6 @@ static void test10(Parser* parser) {
   assert(mod->stmt(9)->isUnion());
   assert(mod->stmt(10)->isComment());
   assert(mod->stmt(11)->isUnion());
-
 
   auto c1 = mod->stmt(1)->toClass();
   assert(c1->numDeclOrComments() == 4);
@@ -496,13 +494,15 @@ static void test10(Parser* parser) {
 
 static void test11(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test11.chpl",
-        "extern record foo {}\n"
-        "extern \"struct bar\" record bar {}\n"
-        "export record dog { var x = 0; }\n"
-        "export \"meow\" record cat { var x = 0; }\n"
-        "extern union baz {}\n"
-        "extern \"union thing\" union thing {}\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test11.chpl",
+                               "extern record foo {}\n"
+                               "extern \"struct bar\" record bar {}\n"
+                               "export record dog { var x = 0; }\n"
+                               "export \"meow\" record cat { var x = 0; }\n"
+                               "extern union baz {}\n"
+                               "extern \"union thing\" union thing {}\n");
 
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -556,13 +556,15 @@ static void test11(Parser* parser) {
 // Test failure for exporting a union.
 static void test12(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test12.chpl",
-        "extern class foo {};\n"
-        "extern \"foo\" class foo {};\n"
-        "export class bar { var x = 0; }\n"
-        "export \"bar\" class bar { var x = 0; }\n"
-        "export union baz {}\n"
-        "export \"baz\" union baz {}\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test12.chpl",
+                               "extern class foo {};\n"
+                               "extern \"foo\" class foo {};\n"
+                               "export class bar { var x = 0; }\n"
+                               "export \"bar\" class bar { var x = 0; }\n"
+                               "export union baz {}\n"
+                               "export \"baz\" union baz {}\n");
 
   assert(guard.realizeErrors() == 6);
   auto mod = parseResult.singleModule();
@@ -573,8 +575,8 @@ static void test13(Parser* parser) {
   ErrorGuard guard(parser->context());
   std::string base = " foo /*comment*/ {}\n";
   for (auto keyword : {"class", "record", "union"}) {
-    auto parseResult = parseStringAndReportErrors(parser, "test13.chpl",
-          (std::string(keyword) + base).c_str());
+    auto parseResult = parseStringAndReportErrors(
+      parser, "test13.chpl", (std::string(keyword) + base).c_str());
     assert(guard.realizeErrors() == 0);
     auto mod = parseResult.singleModule();
     assert(mod);

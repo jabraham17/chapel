@@ -193,7 +193,8 @@ static void testReturnIntentOverload() {
     )""";
 
   setFileText(ctx, "test.chpl", program);
-  auto& modules = parsing::parse(ctx, UniqueString::get(ctx, "test.chpl"), UniqueString());
+  auto& modules =
+    parsing::parse(ctx, UniqueString::get(ctx, "test.chpl"), UniqueString());
   assert(modules.size() == 1);
   auto& rr = resolveModule(ctx, modules[0]->id());
 
@@ -301,7 +302,8 @@ static void testWithoutInterfaceMatch() {
     }
   }
   assert(foundError);
-  assert(guard.realizeErrors(/* countWarnings */ false) == 2); // one extra error for "no 'contextManager' on R"
+  assert(guard.realizeErrors(/* countWarnings */ false) ==
+         2); // one extra error for "no 'contextManager' on R"
 }
 
 int main() {

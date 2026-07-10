@@ -230,7 +230,8 @@ static void testIteratorFnPoi() {
     }
     )""";
 
-  auto vars = resolveTypesOfVariables(context, prog, {"i1", "j1", "i2", "j2", "i3", "j3"});
+  auto vars = resolveTypesOfVariables(
+    context, prog, {"i1", "j1", "i2", "j2", "i3", "j3"});
 
   assert(vars.at("i1").type()->isIntType());
   assert(vars.at("j1").type()->isIntType());
@@ -365,37 +366,50 @@ static void testLoopExprIteratorPoi() {
     }
     )""";
 
-  auto vars = resolveTypesOfVariables(context, prog, {"i1", "j1", "i2", "j2", "i3", "j3"});
+  auto vars = resolveTypesOfVariables(
+    context, prog, {"i1", "j1", "i2", "j2", "i3", "j3"});
 
   assert(vars.at("i1").type()->isTupleType());
   assert(vars.at("i1").type()->toTupleType()->numElements() == 2);
-  assert(vars.at("i1").type()->toTupleType()->elementType(0).type()->isIntType());
-  assert(vars.at("i1").type()->toTupleType()->elementType(1).type()->isIntType());
+  assert(
+    vars.at("i1").type()->toTupleType()->elementType(0).type()->isIntType());
+  assert(
+    vars.at("i1").type()->toTupleType()->elementType(1).type()->isIntType());
 
   assert(vars.at("j1").type()->isTupleType());
   assert(vars.at("j1").type()->toTupleType()->numElements() == 2);
-  assert(vars.at("j1").type()->toTupleType()->elementType(0).type()->isIntType());
-  assert(vars.at("j1").type()->toTupleType()->elementType(1).type()->isIntType());
+  assert(
+    vars.at("j1").type()->toTupleType()->elementType(0).type()->isIntType());
+  assert(
+    vars.at("j1").type()->toTupleType()->elementType(1).type()->isIntType());
 
   assert(vars.at("i2").type()->isTupleType());
   assert(vars.at("i2").type()->toTupleType()->numElements() == 2);
-  assert(vars.at("i2").type()->toTupleType()->elementType(0).type()->isRealType());
-  assert(vars.at("i2").type()->toTupleType()->elementType(1).type()->isRealType());
+  assert(
+    vars.at("i2").type()->toTupleType()->elementType(0).type()->isRealType());
+  assert(
+    vars.at("i2").type()->toTupleType()->elementType(1).type()->isRealType());
 
   assert(vars.at("j2").type()->isTupleType());
   assert(vars.at("j2").type()->toTupleType()->numElements() == 2);
-  assert(vars.at("j2").type()->toTupleType()->elementType(0).type()->isRealType());
-  assert(vars.at("j2").type()->toTupleType()->elementType(1).type()->isRealType());
+  assert(
+    vars.at("j2").type()->toTupleType()->elementType(0).type()->isRealType());
+  assert(
+    vars.at("j2").type()->toTupleType()->elementType(1).type()->isRealType());
 
   assert(vars.at("i3").type()->isTupleType());
   assert(vars.at("i3").type()->toTupleType()->numElements() == 2);
-  assert(vars.at("i3").type()->toTupleType()->elementType(0).type()->isBoolType());
-  assert(vars.at("i3").type()->toTupleType()->elementType(1).type()->isBoolType());
+  assert(
+    vars.at("i3").type()->toTupleType()->elementType(0).type()->isBoolType());
+  assert(
+    vars.at("i3").type()->toTupleType()->elementType(1).type()->isBoolType());
 
   assert(vars.at("j3").type()->isTupleType());
   assert(vars.at("j3").type()->toTupleType()->numElements() == 2);
-  assert(vars.at("j3").type()->toTupleType()->elementType(0).type()->isBoolType());
-  assert(vars.at("j3").type()->toTupleType()->elementType(1).type()->isBoolType());
+  assert(
+    vars.at("j3").type()->toTupleType()->elementType(0).type()->isBoolType());
+  assert(
+    vars.at("j3").type()->toTupleType()->elementType(1).type()->isBoolType());
 }
 
 static void testNewShadowCandidates() {

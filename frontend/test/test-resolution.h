@@ -26,10 +26,8 @@
 
 // forward declare classes and namespaces
 namespace chpl {
-  namespace resolution {
-  }
-  namespace types {
-  }
+namespace resolution {}
+namespace types {}
 }
 
 using namespace resolution;
@@ -46,10 +44,10 @@ QualifiedType resolveQualifiedTypeOfX(Context* context, std::string program);
 
 const Type* resolveTypeOfX(Context* context, std::string program);
 
-const ResolvedExpression*
-resolvedExpressionForAst(Context* context, const AstNode* ast,
-                         const ResolvedFunction* inFn,
-                         bool scopeResolveOnly);
+const ResolvedExpression* resolvedExpressionForAst(Context* context,
+                                                   const AstNode* ast,
+                                                   const ResolvedFunction* inFn,
+                                                   bool scopeResolveOnly);
 
 // check that in method methodIdStr, the call with id callIdStr resolves
 // to a function with id calledFnIdStr.
@@ -69,19 +67,27 @@ resolveTypesOfVariables(Context* context,
                         const std::vector<std::string>& variables);
 
 std::unordered_map<std::string, QualifiedType>
-resolveTypesOfVariables(Context* context, std::string program, const std::vector<std::string>& variables);
+resolveTypesOfVariables(Context* context,
+                        std::string program,
+                        const std::vector<std::string>& variables);
 
-QualifiedType resolveTypeOfVariable(Context* context, std::string program,
+QualifiedType resolveTypeOfVariable(Context* context,
+                                    std::string program,
                                     const std::string& variable);
 
 std::unordered_map<std::string, QualifiedType>
-resolveTypesOfVariablesInit(Context* context, std::string program, const std::vector<std::string>& variables);
+resolveTypesOfVariablesInit(Context* context,
+                            std::string program,
+                            const std::vector<std::string>& variables);
 
 void ensureParamInt(const QualifiedType& type, int64_t expectedValue);
 void ensureParamUint(const QualifiedType& type, uint64_t expectedValue);
 void ensureParamBool(const QualifiedType& type, bool expectedValue);
-void ensureParamString(const QualifiedType& type, const std::string& expectedValue, bool isByteString = false);
-void ensureParamEnumStr(const QualifiedType& type, const std::string& expectedName);
+void ensureParamString(const QualifiedType& type,
+                       const std::string& expectedValue,
+                       bool isByteString = false);
+void ensureParamEnumStr(const QualifiedType& type,
+                        const std::string& expectedName);
 void ensureParamReal(const QualifiedType& type, double expectedValue);
 void ensureErroneousType(const QualifiedType& type);
 
@@ -90,8 +96,8 @@ QualifiedType getTypeForFirstStmt(Context* context, const std::string& program);
 Context::Configuration getConfigWithHome();
 
 void ensureSubs(Context* context,
-              const CompositeType* ct,
-              const std::map<std::string, QualifiedType>& expected);
+                const CompositeType* ct,
+                const std::map<std::string, QualifiedType>& expected);
 
 /**
   Returns the ResolvedFunction called by a particular
@@ -110,22 +116,37 @@ QualifiedType findVarType(const Module* m,
 /**
   Test resolution of a domain literal.
  */
-void testDomainLiteral(std::string domainLiteral,
-                       DomainType::Kind domainKind);
+void testDomainLiteral(std::string domainLiteral, DomainType::Kind domainKind);
 
-void testDomainIndex(std::string domainType,
-                     std::string expectedType);
+void testDomainIndex(std::string domainType, std::string expectedType);
 
-void testDomainBadPass(std::string argType,
-                       std::string actualType);
+void testDomainBadPass(std::string argType, std::string actualType);
 
 /**
  Test assigning an iterator to an array.
  */
 
-void testArrayAssign(Context* context, const char* prelude, const char* typeExpr, const char* iterable, int expectedRank, const char* expectedStride, AssociatedAction::Action actionKind, const char* expectedCopyInitFn);
-void testArrayMaterialize(Context* context, const char* prelude, const char* iterable, int expectedRank, const char* expectedStride, const char* expectedCopyInitFn);
-void testArrayCoerce(Context* context, const char* prelude, const char* typeExpr, const char* iterable, int expectedRank, const char* expectedStride, const char* expectedCopyInitFn);
+void testArrayAssign(Context* context,
+                     const char* prelude,
+                     const char* typeExpr,
+                     const char* iterable,
+                     int expectedRank,
+                     const char* expectedStride,
+                     AssociatedAction::Action actionKind,
+                     const char* expectedCopyInitFn);
+void testArrayMaterialize(Context* context,
+                          const char* prelude,
+                          const char* iterable,
+                          int expectedRank,
+                          const char* expectedStride,
+                          const char* expectedCopyInitFn);
+void testArrayCoerce(Context* context,
+                     const char* prelude,
+                     const char* typeExpr,
+                     const char* iterable,
+                     int expectedRank,
+                     const char* expectedStride,
+                     const char* expectedCopyInitFn);
 
 std::string toString(QualifiedType type);
 

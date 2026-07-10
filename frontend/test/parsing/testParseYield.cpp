@@ -31,15 +31,17 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-      "/* comment 1 */\n"
-      "iter foo(): int {\n"
-      "  /* comment 2 */\n"
-      "  /* comment 3 */\n"
-      "  yield /* comment 4 */ bar() /* comment 5 */;\n"
-      "  /* comment 6 */\n"
-      "}\n"
-      "/* comment 7 */\n");
+  auto parseResult = parseStringAndReportErrors(
+    parser,
+    "test0.chpl",
+    "/* comment 1 */\n"
+    "iter foo(): int {\n"
+    "  /* comment 2 */\n"
+    "  /* comment 3 */\n"
+    "  yield /* comment 4 */ bar() /* comment 5 */;\n"
+    "  /* comment 6 */\n"
+    "}\n"
+    "/* comment 7 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -63,15 +65,17 @@ static void test0(Parser* parser) {
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-      "/* comment 1 */\n"
-      "iter foo(): int {\n"
-      "  /* comment 2 */\n"
-      "  /* comment 3 */\n"
-      "  yield try! /* comment 4 */ bar() /* comment 5 */;\n"
-      "  /* comment 6 */\n"
-      "}\n"
-      "/* comment 7 */\n");
+  auto parseResult = parseStringAndReportErrors(
+    parser,
+    "test0.chpl",
+    "/* comment 1 */\n"
+    "iter foo(): int {\n"
+    "  /* comment 2 */\n"
+    "  /* comment 3 */\n"
+    "  yield try! /* comment 4 */ bar() /* comment 5 */;\n"
+    "  /* comment 6 */\n"
+    "}\n"
+    "/* comment 7 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);

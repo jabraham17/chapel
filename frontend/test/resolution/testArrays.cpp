@@ -28,8 +28,7 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 
-static void testArray(std::string domainType,
-                      std::string eltType) {
+static void testArray(std::string domainType, std::string eltType) {
   std::string arrayText;
   arrayText += "[" + domainType + "] " + eltType;
   printf("Testing array type expression: %s\n", arrayText.c_str());
@@ -46,8 +45,10 @@ static void testArray(std::string domainType,
   std::string program = R"""(
 module M {
   // input types
-  var d : )""" + domainType + R"""(;
-  type eltType = )""" + eltType + R"""(;
+  var d : )""" + domainType +
+                        R"""(;
+  type eltType = )""" + eltType +
+                        R"""(;
   var A : [d] eltType;
 
   // misc fields and methods
@@ -98,11 +99,13 @@ module M {
     type GT = arg.type;
     return 42;
   }
-  proc eltOnly(arg: [] )""" + eltType + R"""() param {
+  proc eltOnly(arg: [] )""" +
+                        eltType + R"""() param {
     type ETGood = arg.type;
     return "correct method";
   }
-  proc eltOnly(arg: [] )""" + altElt + R"""() param {
+  proc eltOnly(arg: [] )""" +
+                        altElt + R"""() param {
     type ETBad = arg.type;
     return "wrong method";
   }
@@ -185,7 +188,8 @@ module M {
     auto res = rr.byAst(g_ret);
     assert(res.type().type()->isIntType());
 
-    auto call = resolveOnlyCandidate(context, rr.byAst(g_ret->initExpression()));
+    auto call =
+      resolveOnlyCandidate(context, rr.byAst(g_ret->initExpression()));
     // Generic function, should have been instantiated
     assert(call->signature()->instantiatedFrom() != nullptr);
 
@@ -199,7 +203,8 @@ module M {
     assert(ret.isParam());
     assert(ret.param()->toStringParam()->value() == "correct method");
 
-    auto call = resolveOnlyCandidate(context, rr.byAst(e_ret->initExpression()));
+    auto call =
+      resolveOnlyCandidate(context, rr.byAst(e_ret->initExpression()));
     // Generic function, should have been instantiated
     assert(call->signature()->instantiatedFrom() != nullptr);
 
@@ -210,7 +215,8 @@ module M {
   assert(guard.realizeErrors() == 0);
 }
 
-static void testArrayLiteral(std::string arrayLiteral, std::string domainType,
+static void testArrayLiteral(std::string arrayLiteral,
+                             std::string domainType,
                              std::string eltType) {
   printf("Testing array literal: %s\n", arrayLiteral.c_str());
 
@@ -218,12 +224,14 @@ static void testArrayLiteral(std::string arrayLiteral, std::string domainType,
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-    R"""(
+                                      R"""(
     module M {
       var A = )""" + arrayLiteral + R"""(;
 
-      type expectedDomTy = )""" + domainType + R"""(;
-      type expectedEltTy = )""" + eltType + R"""(;
+      type expectedDomTy = )""" + domainType +
+                                        R"""(;
+      type expectedEltTy = )""" + eltType +
+                                        R"""(;
 
       type actualDomTy = A.domain.type;
       type actualEltTy = A.eltType;
@@ -232,7 +240,7 @@ static void testArrayLiteral(std::string arrayLiteral, std::string domainType,
       param correctElt = expectedEltTy == actualEltTy;
     }
     )""",
-    {"A", "correctDom", "correctElt"});
+                                      {"A", "correctDom", "correctElt"});
   auto arrType = vars.at("A");
   assert(arrType.type());
   assert(!arrType.type()->isUnknownType());
@@ -244,24 +252,27 @@ static void testArrayLiteral(std::string arrayLiteral, std::string domainType,
   assert(guard.realizeErrors() == 0);
 }
 
-static void testArraySlicing(std::string arrayLiteral, std::string sliceArgs,
+static void testArraySlicing(std::string arrayLiteral,
+                             std::string sliceArgs,
                              std::string resultType) {
-  printf("Testing slicing array %s with %s\n", arrayLiteral.c_str(),
+  printf("Testing slicing array %s with %s\n",
+         arrayLiteral.c_str(),
          sliceArgs.c_str());
 
   Context* context = buildStdContext();
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-    R"""(
+                                      R"""(
     module M {
       var A = )""" + arrayLiteral + R"""(;
       var mySlice = A[)""" + sliceArgs + R"""(];
       type gotSliceTy = mySlice.type;
-      type expectedSliceTy = )""" + resultType + R"""(;
+      type expectedSliceTy = )""" + resultType +
+                                        R"""(;
     }
     )""",
-    {"A", "gotSliceTy", "expectedSliceTy"});
+                                      {"A", "gotSliceTy", "expectedSliceTy"});
   auto arrType = vars.at("A");
   assert(arrType.type());
   assert(!arrType.type()->isUnknownType());
@@ -298,7 +309,8 @@ int main() {
   testArrayLiteral("[1.0, 2]", "domain(1)", "real");
   testArrayLiteral("[\"foo\", \"bar\"]", "domain(1)", "string");
   testArrayLiteral("[1..10]", "domain(1)", "range");
-  testArrayLiteral("[[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]", "domain(1)", "[1..5] int");
+  testArrayLiteral(
+    "[[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]]", "domain(1)", "[1..5] int");
   // multi-dim literals
   testArrayLiteral("[1, 2; 3, 4]", "domain(2)", "int");
   testArrayLiteral("[1, 2; 3, 4;]", "domain(2)", "int");
@@ -307,16 +319,23 @@ int main() {
 
   // slices
   testArraySlicing("[1, 2, 3]", "0..1", "[0..1] int");
-  testArraySlicing("[1, 2; 3, 4]", "0, 1", "int"); // testing multi-dim indexing, not really a slice
-  testArraySlicing("[1, 2; 3, 4;; 5, 6; 7, 8]", "0..1, 0..1, 1", "[0..1, 0..1] int");
+  testArraySlicing("[1, 2; 3, 4]",
+                   "0, 1",
+                   "int"); // testing multi-dim indexing, not really a slice
+  testArraySlicing(
+    "[1, 2; 3, 4;; 5, 6; 7, 8]", "0..1, 0..1, 1", "[0..1, 0..1] int");
 
   // associative
   testArray("domain(int)", "int");
   testArray("domain(int, true)", "int");
 
   // associative literals
-  testArrayLiteral("[1 => \"one\", 10 => \"ten\", 3 => \"three\", 16 => \"sixteen\"]", "domain(int)", "string");
-  testArrayLiteral("[1 => 1, 10 => 10, 3 => 3, 16 => 16]", "domain(int)", "int");
+  testArrayLiteral(
+    "[1 => \"one\", 10 => \"ten\", 3 => \"three\", 16 => \"sixteen\"]",
+    "domain(int)",
+    "string");
+  testArrayLiteral(
+    "[1 => 1, 10 => 10, 3 => 3, 16 => 16]", "domain(int)", "int");
   testArrayLiteral("[\"foo\" => false]", "domain(string)", "bool");
   testArrayLiteral("[\"foo\" => false, ]", "domain(string)", "bool");
 

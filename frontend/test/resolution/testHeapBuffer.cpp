@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 
-
 #include "test-resolution.h"
 
 #include "chpl/parsing/parsing-queries.h"
@@ -37,12 +36,14 @@ static Context* context;
 static Context* advanceAndGetContext() {
   context->advanceToNextRevision(false);
   if (!context->chplHome().empty())
-    setupModuleSearchPaths(context,  false, {}, {});
+    setupModuleSearchPaths(context, false, {}, {});
   return context;
 }
 
 template <typename F>
-void testHeapBufferArg(const char* formalType, const char* actualType, F&& test) {
+void testHeapBufferArg(const char* formalType,
+                       const char* actualType,
+                       F&& test) {
   auto context = advanceAndGetContext();
   ErrorGuard guard(context);
 
@@ -90,71 +91,94 @@ void testHeapBufferArg(const char* formalType, const char* actualType, F&& test)
 }
 
 static void test1() {
-  testHeapBufferArg("_ddata", "_ddata(int)", [](const TypedFnSignature* fn, const HeapBufferType* t, ErrorGuard& eg) {
-    assert(fn);
-    assert(t);
-    auto eltT = t->eltType();
-    assert(eltT && eltT->isIntType());
-    assert(eltT->toIntType()->isDefaultWidth());
-  });
+  testHeapBufferArg(
+    "_ddata",
+    "_ddata(int)",
+    [](const TypedFnSignature* fn, const HeapBufferType* t, ErrorGuard& eg) {
+      assert(fn);
+      assert(t);
+      auto eltT = t->eltType();
+      assert(eltT && eltT->isIntType());
+      assert(eltT->toIntType()->isDefaultWidth());
+    });
 }
 
 static void test2() {
-  testHeapBufferArg("_ddata", "_ddata(real)", [](const TypedFnSignature* fn, const HeapBufferType* t, ErrorGuard& eg) {
-    assert(fn);
-    assert(t);
-    auto eltT = t->eltType();
-    assert(eltT && eltT->isRealType());
-    assert(eltT->toRealType()->isDefaultWidth());
-  });
+  testHeapBufferArg(
+    "_ddata",
+    "_ddata(real)",
+    [](const TypedFnSignature* fn, const HeapBufferType* t, ErrorGuard& eg) {
+      assert(fn);
+      assert(t);
+      auto eltT = t->eltType();
+      assert(eltT && eltT->isRealType());
+      assert(eltT->toRealType()->isDefaultWidth());
+    });
 }
 
 static void test3() {
-  testHeapBufferArg("_ddata(int(?w))", "_ddata(int(32))", [](const TypedFnSignature* fn, const HeapBufferType* t, ErrorGuard& eg) {
-    assert(fn);
-    assert(t);
-    auto eltT = t->eltType();
-    assert(eltT && eltT->isIntType());
-    assert(eltT == IntType::get(eg.context(), 32));
-  });
+  testHeapBufferArg(
+    "_ddata(int(?w))",
+    "_ddata(int(32))",
+    [](const TypedFnSignature* fn, const HeapBufferType* t, ErrorGuard& eg) {
+      assert(fn);
+      assert(t);
+      auto eltT = t->eltType();
+      assert(eltT && eltT->isIntType());
+      assert(eltT == IntType::get(eg.context(), 32));
+    });
 }
 
 static void test4() {
-  testHeapBufferArg("_ddata(rec(?t))", "_ddata(rec(int))", [](const TypedFnSignature* fn, const HeapBufferType* t, ErrorGuard& eg) {
-    assert(fn);
-    assert(t);
-    auto eltT = t->eltType();
-    assert(eltT && eltT->isRecordType());
-    auto rt = eltT->toRecordType();
-    assert(rt->name() == "rec");
-    auto rc = createDummyRC(eg.context());
-    auto& fields = fieldsForTypeDecl(&rc, rt, DefaultsPolicy::IGNORE_DEFAULTS);
-    assert(fields.numFields() == 1 && fields.fieldType(0).type()->isIntType());
-  });
+  testHeapBufferArg(
+    "_ddata(rec(?t))",
+    "_ddata(rec(int))",
+    [](const TypedFnSignature* fn, const HeapBufferType* t, ErrorGuard& eg) {
+      assert(fn);
+      assert(t);
+      auto eltT = t->eltType();
+      assert(eltT && eltT->isRecordType());
+      auto rt = eltT->toRecordType();
+      assert(rt->name() == "rec");
+      auto rc = createDummyRC(eg.context());
+      auto& fields =
+        fieldsForTypeDecl(&rc, rt, DefaultsPolicy::IGNORE_DEFAULTS);
+      assert(fields.numFields() == 1 &&
+             fields.fieldType(0).type()->isIntType());
+    });
 }
 
 static void test5() {
-  testHeapBufferArg("_ddata(int(?w))", "_ddata(uint(32))", [](const TypedFnSignature* fn, const HeapBufferType* t, ErrorGuard& eg) {
-    assert(!fn);
-    assert(eg.realizeErrors() == 1);
-  });
+  testHeapBufferArg(
+    "_ddata(int(?w))",
+    "_ddata(uint(32))",
+    [](const TypedFnSignature* fn, const HeapBufferType* t, ErrorGuard& eg) {
+      assert(!fn);
+      assert(eg.realizeErrors() == 1);
+    });
 }
 
 static void test6() {
-  testHeapBufferArg("_ddata(int(64))", "_ddata(int(32))", [](const TypedFnSignature* fn, const HeapBufferType* t, ErrorGuard& eg) {
-    assert(!fn);
-    assert(eg.realizeErrors() == 1);
-  });
+  testHeapBufferArg(
+    "_ddata(int(64))",
+    "_ddata(int(32))",
+    [](const TypedFnSignature* fn, const HeapBufferType* t, ErrorGuard& eg) {
+      assert(!fn);
+      assert(eg.realizeErrors() == 1);
+    });
 }
 
 static void test7() {
-  testHeapBufferArg("_ddata(int)", "_ddata(int)", [](const TypedFnSignature* fn, const HeapBufferType* t, ErrorGuard& eg) {
-    assert(fn);
-    assert(t);
-    auto eltT = t->eltType();
-    assert(eltT && eltT->isIntType());
-    assert(eltT->toIntType()->isDefaultWidth());
-  });
+  testHeapBufferArg(
+    "_ddata(int)",
+    "_ddata(int)",
+    [](const TypedFnSignature* fn, const HeapBufferType* t, ErrorGuard& eg) {
+      assert(fn);
+      assert(t);
+      auto eltT = t->eltType();
+      assert(eltT && eltT->isIntType());
+      assert(eltT->toIntType()->isDefaultWidth());
+    });
 }
 
 static void test8() {
@@ -204,13 +228,16 @@ static void test9() {
 }
 
 static void test10() {
-  testHeapBufferArg("_ddata(int)", "_nilType", [](const TypedFnSignature* fn, const HeapBufferType* t, ErrorGuard& eg) {
-    assert(fn);
-    assert(t);
-    auto eltT = t->eltType();
-    assert(eltT && eltT->isIntType());
-    assert(eltT == IntType::get(eg.context(), 64));
-  });
+  testHeapBufferArg(
+    "_ddata(int)",
+    "_nilType",
+    [](const TypedFnSignature* fn, const HeapBufferType* t, ErrorGuard& eg) {
+      assert(fn);
+      assert(t);
+      auto eltT = t->eltType();
+      assert(eltT && eltT->isIntType());
+      assert(eltT == IntType::get(eg.context(), 64));
+    });
 }
 
 static void test11() {
@@ -255,9 +282,7 @@ static void runCommonTests() {
   test11();
 }
 
-static void runTestsThatRequireStdlib() {
-  test10();
-}
+static void runTestsThatRequireStdlib() { test10(); }
 
 int main() {
   // With stdlib

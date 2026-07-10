@@ -71,7 +71,8 @@ static void test2(Parser* parser) {
 
 static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl", "/* hi */ y;");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test3.chpl", "/* hi */ y;");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -83,7 +84,8 @@ static void test3(Parser* parser) {
 
 static void test4(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl", "/* hi */ y; /* bye */");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test4.chpl", "/* hi */ y; /* bye */");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -96,10 +98,11 @@ static void test4(Parser* parser) {
 
 static void test5(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
-                                         "// hi\n"
-                                         "a;\n"
-                                         "// bye\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test5.chpl",
+                                                "// hi\n"
+                                                "a;\n"
+                                                "// bye\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -111,8 +114,7 @@ static void test5(Parser* parser) {
 
 static void test6(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test6.chpl",
-                                         "{ }");
+  auto parseResult = parseStringAndReportErrors(parser, "test6.chpl", "{ }");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -122,21 +124,21 @@ static void test6(Parser* parser) {
 
 static void test7(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test7.chpl",
-                                         "{ a; }");
+  auto parseResult = parseStringAndReportErrors(parser, "test7.chpl", "{ a; }");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
   assert(mod->stmt(0)->isBlock());
   const Block* block = mod->stmt(0)->toBlock();
-  assert(block->numStmts()==1);
+  assert(block->numStmts() == 1);
   assert(block->stmt(0)->isIdentifier());
 }
 
 static void test8(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "t.chpl", "aVeryLongIdentifierName;");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "t.chpl", "aVeryLongIdentifierName;");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -146,49 +148,50 @@ static void test8(Parser* parser) {
 
 static void test9(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test9.chpl",
-                                         "{ /* this is a comment */ }");
+  auto parseResult = parseStringAndReportErrors(
+    parser, "test9.chpl", "{ /* this is a comment */ }");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
   assert(mod->stmt(0)->isBlock());
   const Block* block = mod->stmt(0)->toBlock();
-  assert(block->numStmts()==1);
+  assert(block->numStmts() == 1);
   assert(block->stmt(0)->isComment());
 }
 
 static void test10(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test10.chpl",
-                                         "{\n"
-                                         "/* this is comment 2 */\n"
-                                         "aVeryLongIdentifierName;\n"
-                                         "/* this is comment 3 */\n"
-                                         "}\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test10.chpl",
+                                                "{\n"
+                                                "/* this is comment 2 */\n"
+                                                "aVeryLongIdentifierName;\n"
+                                                "/* this is comment 3 */\n"
+                                                "}\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
   assert(mod->stmt(0)->isBlock());
   const Block* block = mod->stmt(0)->toBlock();
-  assert(block->numStmts()==3);
+  assert(block->numStmts() == 3);
   assert(block->stmt(0)->isComment());
   assert(block->stmt(1)->isIdentifier());
   assert(block->stmt(2)->isComment());
 }
 
-
 static void test11(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test11.chpl",
-                                         "/* this is comment 1 */\n"
-                                         "{\n"
-                                         "/* this is comment 2 */\n"
-                                         "aVeryLongIdentifierName;\n"
-                                         "/* this is comment 3 */\n"
-                                         "}\n"
-                                         "/* this is comment 4 */");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test11.chpl",
+                                                "/* this is comment 1 */\n"
+                                                "{\n"
+                                                "/* this is comment 2 */\n"
+                                                "aVeryLongIdentifierName;\n"
+                                                "/* this is comment 3 */\n"
+                                                "}\n"
+                                                "/* this is comment 4 */");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -197,7 +200,7 @@ static void test11(Parser* parser) {
   assert(mod->stmt(1)->isBlock());
   assert(mod->stmt(2)->isComment());
   const Block* block = mod->stmt(1)->toBlock();
-  assert(block->numStmts()==3);
+  assert(block->numStmts() == 3);
   assert(block->stmt(0)->isComment());
   assert(block->stmt(1)->isIdentifier());
   assert(block->stmt(2)->isComment());
@@ -205,18 +208,19 @@ static void test11(Parser* parser) {
 
 static void test12(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test12.chpl",
-                                         "/* this is comment 1 */\n"
-                                         "/* this is comment 2 */\n"
-                                         "{\n"
-                                         "/* this is comment 2 */\n"
-                                         "/* this is comment 3 */\n"
-                                         "aVeryLongIdentifierName;\n"
-                                         "/* this is comment 3 */\n"
-                                         "/* this is comment 4 */\n"
-                                         "}\n"
-                                         "/* this is comment 5 */\n"
-                                         "/* this is comment 6 */");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test12.chpl",
+                                                "/* this is comment 1 */\n"
+                                                "/* this is comment 2 */\n"
+                                                "{\n"
+                                                "/* this is comment 2 */\n"
+                                                "/* this is comment 3 */\n"
+                                                "aVeryLongIdentifierName;\n"
+                                                "/* this is comment 3 */\n"
+                                                "/* this is comment 4 */\n"
+                                                "}\n"
+                                                "/* this is comment 5 */\n"
+                                                "/* this is comment 6 */");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -227,7 +231,7 @@ static void test12(Parser* parser) {
   assert(mod->stmt(3)->isComment());
   assert(mod->stmt(4)->isComment());
   const Block* block = mod->stmt(2)->toBlock();
-  assert(block->numStmts()==5);
+  assert(block->numStmts() == 5);
   assert(block->stmt(0)->isComment());
   assert(block->stmt(1)->isComment());
   assert(block->stmt(2)->isIdentifier());
@@ -237,9 +241,10 @@ static void test12(Parser* parser) {
 
 static void test13(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test13.chpl",
-                                         "var a;\n"
-                                         "a;");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test13.chpl",
+                                                "var a;\n"
+                                                "a;");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -250,11 +255,12 @@ static void test13(Parser* parser) {
 
 static void test14(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test14.chpl",
-                                         "{\n"
-                                         " //a\n"
-                                         " //b\n"
-                                         "}\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test14.chpl",
+                                                "{\n"
+                                                " //a\n"
+                                                " //b\n"
+                                                "}\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -268,12 +274,13 @@ static void test14(Parser* parser) {
 
 static void test15(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test15.chpl",
-                                         "{\n"
-                                         " x;\n"
-                                         " //a\n"
-                                         " //b\n"
-                                         "}\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test15.chpl",
+                                                "{\n"
+                                                " x;\n"
+                                                " //a\n"
+                                                " //b\n"
+                                                "}\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -288,8 +295,8 @@ static void test15(Parser* parser) {
 
 static void testCalls1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testCalls1.chpl",
-                                         "f();\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "testCalls1.chpl", "f();\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -306,8 +313,8 @@ static void testCalls1(Parser* parser) {
 
 static void testCalls2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testCalls2.chpl",
-                                         "f[];\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "testCalls2.chpl", "f[];\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -324,8 +331,8 @@ static void testCalls2(Parser* parser) {
 
 static void testCalls3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testCalls3.chpl",
-                                         "f(x);\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "testCalls3.chpl", "f(x);\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -344,8 +351,8 @@ static void testCalls3(Parser* parser) {
 
 static void testCalls3a(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testCalls3a.chpl",
-                                         "f(g(x));\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "testCalls3a.chpl", "f(g(x));\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -371,8 +378,8 @@ static void testCalls3a(Parser* parser) {
 
 static void testCalls4(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testCalls4.chpl",
-                                         "f[x];\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "testCalls4.chpl", "f[x];\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -391,8 +398,8 @@ static void testCalls4(Parser* parser) {
 
 static void testCalls5(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testCalls5.chpl",
-                                         "f(a,b,c);\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "testCalls5.chpl", "f(a,b,c);\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -419,8 +426,8 @@ static void testCalls5(Parser* parser) {
 
 static void testCalls6(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testCalls6.chpl",
-                                         "f(a=aa,b=bb,c=cc);\n");
+  auto parseResult = parseStringAndReportErrors(
+    parser, "testCalls6.chpl", "f(a=aa,b=bb,c=cc);\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -446,8 +453,8 @@ static void testCalls6(Parser* parser) {
 
 static void testCalls7(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testCalls6.chpl",
-                                         "f(aa,b=bb,cc);\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "testCalls6.chpl", "f(aa,b=bb,cc);\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -473,8 +480,8 @@ static void testCalls7(Parser* parser) {
 
 static void testOp1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testOp1.chpl",
-                                         "a=b;\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "testOp1.chpl", "a=b;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -490,8 +497,8 @@ static void testOp1(Parser* parser) {
 
 static void testOp2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testOp1.chpl",
-                                         "a=b+c;\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "testOp1.chpl", "a=b+c;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -513,8 +520,8 @@ static void testOp2(Parser* parser) {
 
 static void testDot1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testDot1.chpl",
-                                         "a.b;\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "testDot1.chpl", "a.b;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -531,8 +538,8 @@ static void testDot1(Parser* parser) {
 
 static void testDot2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testDot2.chpl",
-                                         "a.type;\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "testDot2.chpl", "a.type;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -549,8 +556,8 @@ static void testDot2(Parser* parser) {
 
 static void testDot3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testDot3.chpl",
-                                         "a.f(b=c);\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "testDot3.chpl", "a.f(b=c);\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -575,8 +582,8 @@ static void testDot3(Parser* parser) {
 
 static void testComment1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testComment1.chpl",
-                                         "// bla\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "testComment1.chpl", "// bla\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -589,8 +596,8 @@ static void testComment1(Parser* parser) {
 
 static void testComment2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testComment2.chpl",
-                                         "// bla");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "testComment2.chpl", "// bla");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -603,8 +610,8 @@ static void testComment2(Parser* parser) {
 
 static void testComment3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testComment3.chpl",
-                                         "/* bla */");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "testComment3.chpl", "/* bla */");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -617,8 +624,8 @@ static void testComment3(Parser* parser) {
 
 static void testComment4(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testComment4.chpl",
-                                         "/* bla");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "testComment4.chpl", "/* bla");
   assert(guard.realizeErrors() >= 1);
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -631,8 +638,8 @@ static void testComment4(Parser* parser) {
 
 static void testComment5(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testComment5.chpl",
-                                         "/* /* bla */ */");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "testComment5.chpl", "/* /* bla */ */");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -645,8 +652,8 @@ static void testComment5(Parser* parser) {
 
 static void testComment6(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testComment6.chpl",
-                                         "/* /* bla */");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "testComment6.chpl", "/* /* bla */");
   assert(guard.realizeErrors() >= 1);
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -659,8 +666,8 @@ static void testComment6(Parser* parser) {
 
 static void testBoolLiteral0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testBoolLiteral0.chpl",
-                                         "var f = false;\n");
+  auto parseResult = parseStringAndReportErrors(
+    parser, "testBoolLiteral0.chpl", "var f = false;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -677,8 +684,8 @@ static void testBoolLiteral0(Parser* parser) {
 
 static void testBoolLiteral1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testBoolLiteral1.chpl",
-                                         "var f = true;\n");
+  auto parseResult = parseStringAndReportErrors(
+    parser, "testBoolLiteral1.chpl", "var f = true;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -695,8 +702,8 @@ static void testBoolLiteral1(Parser* parser) {
 
 static void testPrimCall0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testPrimCall0.chpl",
-                                         "__primitive(\"u-\");\n");
+  auto parseResult = parseStringAndReportErrors(
+    parser, "testPrimCall0.chpl", "__primitive(\"u-\");\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -711,8 +718,8 @@ static void testPrimCall0(Parser* parser) {
 }
 static void testPrimCall1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "testPrimCall1.chpl",
-                                         "__primitive(\"u-\", x);\n");
+  auto parseResult = parseStringAndReportErrors(
+    parser, "testPrimCall1.chpl", "__primitive(\"u-\", x);\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -731,8 +738,9 @@ static void testPrimCall1(Parser* parser) {
 
 static void testAttributeOnClass(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("testAttributeOnClass.chpl",
-                                         "@thekitchensink.inner.attribute(true, 'life', 42, 4.2, 1.28..)\n \
+  auto parseResult = parser->parseString(
+    "testAttributeOnClass.chpl",
+    "@thekitchensink.inner.attribute(true, 'life', 42, 4.2, 1.28..)\n \
                                           class MyClass { \n }");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -751,16 +759,17 @@ static void testAttributeOnClass(Parser* parser) {
   auto attr = attrGrp->getAttributeNamed(complexName);
   assert(attr);
   auto attrNull = attrGrp->getAttributeNamed(UniqueString::get(ctx, "nodoc"));
-  assert(attrNull==nullptr);
-  assert(attr->fullyQualifiedAttributeName()=="thekitchensink.inner.attribute");
+  assert(attrNull == nullptr);
+  assert(attr->fullyQualifiedAttributeName() ==
+         "thekitchensink.inner.attribute");
   assert(attr->numActuals() == 5);
   assert(attr->actual(0)->toBoolLiteral()->value());
-  assert(attr->actual(1)->toStringLiteral()->value()=="life");
-  assert(attr->actual(2)->toIntLiteral()->value()==42);
-  assert(attr->actual(3)->toRealLiteral()->value()==4.2);
+  assert(attr->actual(1)->toStringLiteral()->value() == "life");
+  assert(attr->actual(2)->toIntLiteral()->value() == 42);
+  assert(attr->actual(3)->toRealLiteral()->value() == 4.2);
   auto range = attr->actual(4)->toRange();
-  assert(range->lowerBound()->toRealLiteral()->value()==1.28);
-  assert(range->upperBound()==nullptr);
+  assert(range->lowerBound()->toRealLiteral()->value() == 1.28);
+  assert(range->upperBound() == nullptr);
 }
 
 static void testMultiAttributesOnClass(Parser* parser) {
@@ -790,8 +799,9 @@ static void testMultiAttributesOnClass(Parser* parser) {
   auto attr2 = attrGrp->getAttributeNamed(UniqueString::get(ctx, "attribute2"));
   auto attr3 = attrGrp->getAttributeNamed(UniqueString::get(ctx, "attribute3"));
   auto attr4 = attrGrp->getAttributeNamed(UniqueString::get(ctx, "attribute4"));
-  auto attrNull = attrGrp->getAttributeNamed(UniqueString::get(ctx, "attribute5"));
-  assert(attrNull==nullptr);
+  auto attrNull =
+    attrGrp->getAttributeNamed(UniqueString::get(ctx, "attribute5"));
+  assert(attrNull == nullptr);
   assert(attr0);
   assert(attr1);
   assert(attr2);
@@ -845,33 +855,32 @@ static void testMultiAttributesAndPragma(Parser* parser) {
   assert(attr4->name() == "attribute4");
 }
 
-
 static void testAttributeAndUnstable(Parser* parser) {
- ErrorGuard guard(parser->context());
- auto parseResult = parser->parseString("testAttributeAndUnstable.chpl",
-                                        R""""(
+  ErrorGuard guard(parser->context());
+  auto parseResult = parser->parseString("testAttributeAndUnstable.chpl",
+                                         R""""(
                                          @unstable("we're not sure about this")
                                          @attribute(true)
                                          class MyClass { })"""");
- assert(!guard.realizeErrors());
- auto mod = parseResult.singleModule();
- assert(mod);
- assert(mod->numStmts() == 1);
+  assert(!guard.realizeErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
 
- auto cls = mod->stmt(0)->toClass();
- assert(cls);
- assert(cls->attributeGroupChildNum() > -1);
- auto attrGrp = cls->attributeGroup()->toAttributeGroup();
- assert(attrGrp);
- assert(attrGrp->numAttributes() == 2);
- auto attr0 = attrGrp->getAttributeNamed(UniqueString::get(parser->context(), "attribute"));
- auto attrUnstable = attrGrp->getAttributeNamed(USTR("unstable"));
- assert(attrUnstable);
- assert(attrGrp->isUnstable());
- assert(attr0);
- assert(attr0->name() == "attribute");
+  auto cls = mod->stmt(0)->toClass();
+  assert(cls);
+  assert(cls->attributeGroupChildNum() > -1);
+  auto attrGrp = cls->attributeGroup()->toAttributeGroup();
+  assert(attrGrp);
+  assert(attrGrp->numAttributes() == 2);
+  auto attr0 = attrGrp->getAttributeNamed(
+    UniqueString::get(parser->context(), "attribute"));
+  auto attrUnstable = attrGrp->getAttributeNamed(USTR("unstable"));
+  assert(attrUnstable);
+  assert(attrGrp->isUnstable());
+  assert(attr0);
+  assert(attr0->name() == "attribute");
 }
-
 
 static void testAttributeAndUnstableLast(Parser* parser) {
   ErrorGuard guard(parser->context());
@@ -892,13 +901,13 @@ static void testAttributeAndUnstableLast(Parser* parser) {
   assert(attrGrp);
   assert(attrGrp->isUnstable());
   assert(attrGrp->numAttributes() == 2);
-  auto attr0 = attrGrp->getAttributeNamed(UniqueString::get(parser->context(), "attribute"));
+  auto attr0 = attrGrp->getAttributeNamed(
+    UniqueString::get(parser->context(), "attribute"));
   auto attrUnstable = attrGrp->getAttributeNamed(USTR("unstable"));
   assert(attrUnstable);
   assert(attr0);
   assert(attr0->name() == "attribute");
 }
-
 
 static void testAttributeAndUnstableMessage(Parser* parser) {
   ErrorGuard guard(parser->context());
@@ -918,7 +927,8 @@ static void testAttributeAndUnstableMessage(Parser* parser) {
   auto attrGrp = cls->attributeGroup()->toAttributeGroup();
   assert(attrGrp);
   assert(attrGrp->isUnstable());
-  assert(attrGrp->unstableMessage() == UniqueString::get(ctx, "this will be changed later"));
+  assert(attrGrp->unstableMessage() ==
+         UniqueString::get(ctx, "this will be changed later"));
   assert(attrGrp->numAttributes() == 2);
   auto attr0 = attrGrp->getAttributeNamed(UniqueString::get(ctx, "attribute"));
   auto attrUnstable = attrGrp->getAttributeNamed(USTR("unstable"));
@@ -926,7 +936,8 @@ static void testAttributeAndUnstableMessage(Parser* parser) {
   assert(attr0);
   assert(attr0->name() == "attribute");
   assert(attrUnstable->numActuals() == 1);
-  assert(attrUnstable->getOnlyStringActualOrError(ctx) == UniqueString::get(ctx, "this will be changed later"));
+  assert(attrUnstable->getOnlyStringActualOrError(ctx) ==
+         UniqueString::get(ctx, "this will be changed later"));
 }
 
 static void testAttributeAndDeprecatedLast(Parser* parser) {
@@ -954,15 +965,16 @@ static void testAttributeAndDeprecatedLast(Parser* parser) {
   assert(attrDeprecated);
   assert(attr0);
   assert(attr0->name() == "attribute");
-  assert(
-      attr0->getOnlyStringActualOrError(ctx) == UniqueString::get(ctx, "word"));
+  assert(attr0->getOnlyStringActualOrError(ctx) ==
+         UniqueString::get(ctx, "word"));
 }
 
 static void testAttributeAndDeprecatedMessage(Parser* parser) {
   // deprecated as a token TDEPRECATED, last, with arg
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("testAttributeAndDeprecatedMessage.chpl",
-                                         R""""(
+  auto parseResult =
+    parser->parseString("testAttributeAndDeprecatedMessage.chpl",
+                        R""""(
                                          @attribute("word")
                                          @deprecated(notes="try using something else")
                                          class MyClass { })"""");
@@ -977,43 +989,46 @@ static void testAttributeAndDeprecatedMessage(Parser* parser) {
   auto attrGrp = cls->attributeGroup()->toAttributeGroup();
   assert(attrGrp);
   assert(attrGrp->isDeprecated());
-  assert(attrGrp->deprecationMessage() == UniqueString::get(ctx,"try using something else"));
+  assert(attrGrp->deprecationMessage() ==
+         UniqueString::get(ctx, "try using something else"));
   assert(attrGrp->numAttributes() == 2);
   auto attr0 = attrGrp->getAttributeNamed(UniqueString::get(ctx, "attribute"));
   auto attrDeprecated = attrGrp->getAttributeNamed(USTR("deprecated"));
   assert(attrDeprecated);
   assert(attr0);
   assert(attr0->name() == "attribute");
-  assert(
-      attr0->getOnlyStringActualOrError(ctx) == UniqueString::get(ctx, "word"));
-  assert(attrDeprecated->getOnlyStringActualOrError(ctx) == UniqueString::get(ctx, "try using something else"));
+  assert(attr0->getOnlyStringActualOrError(ctx) ==
+         UniqueString::get(ctx, "word"));
+  assert(attrDeprecated->getOnlyStringActualOrError(ctx) ==
+         UniqueString::get(ctx, "try using something else"));
 }
 
 static void testAttributeAndDeprecated(Parser* parser) {
   // deprecated as an attribute @deprecated, first, no arg
   ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("testAttributeAndDeprecated.chpl",
-                                        R""""(
+                                         R""""(
                                         @deprecated
                                         @attribute(true)
                                         class MyClass { })"""");
-   assert(!guard.realizeErrors());
-   auto mod = parseResult.singleModule();
-   assert(mod);
-   assert(mod->numStmts() == 1);
+  assert(!guard.realizeErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
 
-   auto cls = mod->stmt(0)->toClass();
-   assert(cls);
-   assert(cls->attributeGroupChildNum() > -1);
-   auto attrGrp = cls->attributeGroup()->toAttributeGroup();
-   assert(attrGrp);
-   assert(attrGrp->isDeprecated());
-   assert(attrGrp->numAttributes() == 2);
-   auto attr0 = attrGrp->getAttributeNamed(UniqueString::get(parser->context(), "attribute"));
-   auto attrDeprecated = attrGrp->getAttributeNamed(USTR("deprecated"));
-   assert(attrDeprecated);
-   assert(attr0);
-   assert(attr0->name() == "attribute");
+  auto cls = mod->stmt(0)->toClass();
+  assert(cls);
+  assert(cls->attributeGroupChildNum() > -1);
+  auto attrGrp = cls->attributeGroup()->toAttributeGroup();
+  assert(attrGrp);
+  assert(attrGrp->isDeprecated());
+  assert(attrGrp->numAttributes() == 2);
+  auto attr0 = attrGrp->getAttributeNamed(
+    UniqueString::get(parser->context(), "attribute"));
+  auto attrDeprecated = attrGrp->getAttributeNamed(USTR("deprecated"));
+  assert(attrDeprecated);
+  assert(attr0);
+  assert(attr0->name() == "attribute");
 }
 
 static void testAttributeNamedArgs(Parser* parser) {
@@ -1026,7 +1041,7 @@ static void testAttributeNamedArgs(Parser* parser) {
   )"""";
 
   auto parseResult =
-  parseStringAndReportErrors(parser, "testAttributeNamedArgs.chpl", program);
+    parseStringAndReportErrors(parser, "testAttributeNamedArgs.chpl", program);
   assert(guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -1036,32 +1051,39 @@ static void testAttributeNamedArgs(Parser* parser) {
   auto attr = p->attributeGroup();
   assert(attr);
   assert(attr->numAttributes() == 3);
-  auto attr1 = attr->getAttributeNamed(UniqueString::get(parser->context(), "myAttribute"));
+  auto attr1 = attr->getAttributeNamed(
+    UniqueString::get(parser->context(), "myAttribute"));
   assert(attr1);
   assert(attr1->numActuals() == 1);
   auto actual = attr1->actual(0);
   assert(actual);
   assert(attr1->isNamedActual(0));
-  assert(attr1->actualName(0) == UniqueString::get(parser->context(), "reason"));
+  assert(attr1->actualName(0) ==
+         UniqueString::get(parser->context(), "reason"));
   assert(actual->isStringLiteral());
-  auto attr2 = attr->getAttributeNamed(UniqueString::get(parser->context(), "myAttribute2"));
+  auto attr2 = attr->getAttributeNamed(
+    UniqueString::get(parser->context(), "myAttribute2"));
   assert(attr2);
   assert(attr2->numActuals() == 2);
   assert(attr2->isNamedActual(0));
   assert(attr2->actualName(0) == UniqueString::get(parser->context(), "id"));
   assert(attr2->isNamedActual(1));
-  assert(attr2->actualName(1) == UniqueString::get(parser->context(), "feature"));
+  assert(attr2->actualName(1) ==
+         UniqueString::get(parser->context(), "feature"));
   assert(attr2->actual(0)->isIntLiteral());
   assert(attr2->actual(1)->isStringLiteral());
-  auto attr3 = attr->getAttributeNamed(UniqueString::get(parser->context(), "myAttribute3"));
+  auto attr3 = attr->getAttributeNamed(
+    UniqueString::get(parser->context(), "myAttribute3"));
   assert(attr3);
   assert(attr3->numActuals() == 4);
   assert(attr3->isNamedActual(0));
   assert(attr3->actualName(0) == UniqueString::get(parser->context(), "since"));
   assert(attr3->isNamedActual(1));
-  assert(attr3->actualName(1) == UniqueString::get(parser->context(), "feature"));
+  assert(attr3->actualName(1) ==
+         UniqueString::get(parser->context(), "feature"));
   assert(attr3->isNamedActual(2));
-  assert(attr3->actualName(2) == UniqueString::get(parser->context(), "reason"));
+  assert(attr3->actualName(2) ==
+         UniqueString::get(parser->context(), "reason"));
   assert(attr3->isNamedActual(3));
   assert(attr3->actualName(3) == UniqueString::get(parser->context(), "issue"));
   assert(attr3->actual(0)->isRealLiteral());
@@ -1077,7 +1099,8 @@ static void testAttributeMixedNamedArgs(Parser* parser) {
     proc foo { }
   )"""";
 
-  auto parseResult = parseStringAndReportErrors(parser, "testAttributeMixedNamedArgs.chpl", program);
+  auto parseResult = parseStringAndReportErrors(
+    parser, "testAttributeMixedNamedArgs.chpl", program);
   assert(guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -1087,7 +1110,8 @@ static void testAttributeMixedNamedArgs(Parser* parser) {
   auto attr = p->attributeGroup();
   assert(attr);
   assert(attr->numAttributes() == 1);
-  auto attr1 = attr->getAttributeNamed(UniqueString::get(parser->context(), "myAttribute"));
+  auto attr1 = attr->getAttributeNamed(
+    UniqueString::get(parser->context(), "myAttribute"));
   assert(attr1);
   assert(attr1->numActuals() == 3);
   assert(attr1->isNamedActual(1));
@@ -1210,7 +1234,8 @@ static void testAttributeOnLoop(Parser* parser) {
     }
   )"""";
 
-  auto parseResult = parseStringAndReportErrors(parser, "testAttributeOnLoop.chpl", program);
+  auto parseResult =
+    parseStringAndReportErrors(parser, "testAttributeOnLoop.chpl", program);
   assert(guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -1218,14 +1243,15 @@ static void testAttributeOnLoop(Parser* parser) {
   auto f = mod->stmt(0)->toFunction();
   assert(f);
   // 7 kinds of loops, 3 for each kind plus 1 comment
-  assert(f->numStmts() == (7*(3+1)));
-  for(auto s: f->stmts()) {
+  assert(f->numStmts() == (7 * (3 + 1)));
+  for (auto s : f->stmts()) {
     assert(s);
     assert(s->isLoop() || s->isComment());
-    if(s->isLoop()) {
+    if (s->isLoop()) {
       auto attr = s->attributeGroup();
       assert(attr->numAttributes() == 1);
-      auto attr1 = attr->getAttributeNamed(UniqueString::get(parser->context(), "myLoopAttribute"));
+      auto attr1 = attr->getAttributeNamed(
+        UniqueString::get(parser->context(), "myLoopAttribute"));
       assert(attr1);
     }
   }
@@ -1247,7 +1273,8 @@ static void testAttributeAndNoAttributeOnLoop(Parser* parser) {
     }
   )"""";
 
-  auto parseResult = parseStringAndReportErrors(parser, "testAttributeAndNoAttributeOnLoop.chpl", program);
+  auto parseResult = parseStringAndReportErrors(
+    parser, "testAttributeAndNoAttributeOnLoop.chpl", program);
   assert(guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -1271,9 +1298,9 @@ static void testAttributeAndNoAttributeOnLoop(Parser* parser) {
 
   auto loopAttr = fooLoop->attributeGroup();
   assert(loopAttr);
-  assert(loopAttr->getAttributeNamed(UniqueString::get(parser->context(), "loopAttr")));
+  assert(loopAttr->getAttributeNamed(
+    UniqueString::get(parser->context(), "loopAttr")));
 }
-
 
 /* a test of the parser's ability to parse a proc with an attribute that has
    3 named arguments
@@ -1285,7 +1312,8 @@ static void testAttribute3NamedArgs(Parser* parser) {
     proc foo() { }
   )"""";
 
-  auto parseResult = parseStringAndReportErrors(parser, "testAttribute3NamedArgs.chpl", program);
+  auto parseResult =
+    parseStringAndReportErrors(parser, "testAttribute3NamedArgs.chpl", program);
   assert(guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -1295,14 +1323,17 @@ static void testAttribute3NamedArgs(Parser* parser) {
   auto attr = p->attributeGroup();
   assert(attr);
   assert(attr->numAttributes() == 1);
-  auto attr1 = attr->getAttributeNamed(UniqueString::get(parser->context(), "myAttribute"));
+  auto attr1 = attr->getAttributeNamed(
+    UniqueString::get(parser->context(), "myAttribute"));
   assert(attr1);
   assert(attr1->numActuals() == 3);
   assert(attr1->isNamedActual(0));
-  assert(attr1->actualName(0) == UniqueString::get(parser->context(), "reason"));
+  assert(attr1->actualName(0) ==
+         UniqueString::get(parser->context(), "reason"));
   assert(attr1->actual(0)->isStringLiteral());
   assert(attr1->isNamedActual(1));
-  assert(attr1->actualName(1) == UniqueString::get(parser->context(), "feature"));
+  assert(attr1->actualName(1) ==
+         UniqueString::get(parser->context(), "feature"));
   assert(attr1->actual(1)->isStringLiteral());
   assert(attr1->isNamedActual(2));
   assert(attr1->actualName(2) == UniqueString::get(parser->context(), "issue"));
@@ -1319,10 +1350,11 @@ static void testPragmaChpldocIgnoreChplPrefix(Parser* parser) {
     }
   )"""";
 
-  auto parseResult = parseStringAndReportErrors(parser, "testPragmaChpldocIgnoreChplPrefix.chpl", program);
+  auto parseResult = parseStringAndReportErrors(
+    parser, "testPragmaChpldocIgnoreChplPrefix.chpl", program);
 
   auto mod = parseResult.singleModule();
-  assert(guard.numErrors()==0);
+  assert(guard.numErrors() == 0);
   assert(mod);
   assert(mod->numStmts() == 1);
   auto p = mod->stmt(0)->toFunction();

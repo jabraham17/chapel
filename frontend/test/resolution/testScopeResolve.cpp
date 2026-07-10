@@ -30,8 +30,8 @@
 
 // helper functions
 
-static const ResolvedExpression&
-scopeResolveIt(Context* context, const AstNode* ast) {
+static const ResolvedExpression& scopeResolveIt(Context* context,
+                                                const AstNode* ast) {
   ID mId = idToParentModule(context, ast->id());
   assert(!mId.isEmpty());
   // if scopeResolveModule ever goes away, this can safely
@@ -575,7 +575,6 @@ static void test14() {
   assert(reY.toId() == x->id());
 }
 
-
 // Make sure that the dot-expression handling of "this" works in addition
 // to the identifier-expression handling of "this". Technically this is
 // redundant, but our goal is to issue a warning, not fail to resolve in
@@ -667,7 +666,7 @@ static void test17() {
   assert(x);
   // Trigger scope resolution
   const ResolvedExpression& reX = scopeResolveIt(context, x->initExpression());
-  (void) reX;
+  (void)reX;
 
   assert(guard.errors().size() == 1);
   auto& e = guard.errors()[0];
@@ -1329,7 +1328,6 @@ static void test33() {
   assert(rSubSub.byAst(tSubSub1).toId() == x->id());
   assert(rSubSub.byAst(tSubSub2).toId() == x->id());
 }
-
 
 int main() {
   test1();

@@ -34,12 +34,13 @@
 #include <algorithm>
 #include <sstream>
 
-std::map<AstTag, std::tuple<std::string, std::string, std::string>> gLoopBits = {
-  { asttags::For, {"for", "in 1..10", ""}},
-  { asttags::Forall, {"forall", "in 1..10", ""}},
-  { asttags::Coforall, {"coforall", "in 1..10", ""}},
-  { asttags::While, {"while true", "", ""}},
-  { asttags::DoWhile, {"do", "", "while true;"}},
+std::map<AstTag, std::tuple<std::string, std::string, std::string>> gLoopBits =
+  {
+    {asttags::For, {"for", "in 1..10", ""}},
+    {asttags::Forall, {"forall", "in 1..10", ""}},
+    {asttags::Coforall, {"coforall", "in 1..10", ""}},
+    {asttags::While, {"while true", "", ""}},
+    {asttags::DoWhile, {"do", "", "while true;"}},
 };
 
 int gFreshVarCounter = 0;
@@ -54,7 +55,6 @@ class Part {
   std::vector<Part> childParts;
 
  public:
-
   static Part attr(std::string name) {
     Part toReturn;
     toReturn.theString = std::move(name);
@@ -68,9 +68,7 @@ class Part {
     return toReturn;
   }
 
-  bool isLoop() const {
-    return !!expectTag;
-  }
+  bool isLoop() const { return !!expectTag; }
 
   void generateProgram(std::ostream& lines, int indent = 0) const {
     auto doIndent = [&]() {
@@ -89,12 +87,13 @@ class Part {
       doIndent();
       if (!afterVar.empty()) {
         auto newVar = "i" + std::to_string(gFreshVarCounter++);
-        lines << beforeVar << " " << newVar << " " << afterVar << " {" << std::endl;
+        lines << beforeVar << " " << newVar << " " << afterVar << " {"
+              << std::endl;
       } else {
         lines << beforeVar << " {" << std::endl;
       }
 
-      for (auto& child : childParts) child.generateProgram(lines, indent+2);
+      for (auto& child : childParts) child.generateProgram(lines, indent + 2);
 
       doIndent();
       lines << "} " << afterEndBody << std::endl;
@@ -144,7 +143,8 @@ static void validateParts(const AstNode* container,
     if (part.isLoop()) {
       if (attrChildCounter > 0) {
         assert(childLoop->attributeGroup() &&
-               childLoop->attributeGroup()->numAttributes() == attrChildCounter);
+               childLoop->attributeGroup()->numAttributes() ==
+                 attrChildCounter);
       } else {
         assert(!childLoop->attributeGroup());
       }
@@ -158,7 +158,8 @@ static void validateParts(const AstNode* container,
   }
 }
 
-static void runTest(const char* testName, Parser* parser, const std::vector<Part>& parts) {
+static void
+runTest(const char* testName, Parser* parser, const std::vector<Part>& parts) {
   parser->context()->advanceToNextRevision(false);
   std::ostringstream programStream;
   for (auto& part : parts) {
@@ -170,7 +171,8 @@ static void runTest(const char* testName, Parser* parser, const std::vector<Part
   std::cout << program << std::endl << std::endl;
 
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, testName, program.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, testName, program.c_str());
   assert(!guard.realizeErrors());
   assert(parseResult.numTopLevelExpressions() == 1);
 
@@ -179,32 +181,39 @@ static void runTest(const char* testName, Parser* parser, const std::vector<Part
 
 static void test1(Parser* parser) {
   for (auto pair : gLoopBits) {
-    runTest("oneLoopOneAttr.chpl", parser, {
-        Part::attr("llvm.assertVectorized"),
-        Part::loop(pair.first),
-    });
+    runTest("oneLoopOneAttr.chpl",
+            parser,
+            {
+              Part::attr("llvm.assertVectorized"),
+              Part::loop(pair.first),
+            });
   }
 }
 
 static void test2(Parser* parser) {
   for (auto pair : gLoopBits) {
-    runTest("oneLoopTwoAttr.chpl", parser, {
-        Part::attr("llvm.assertVectorized"),
-        Part::attr("llvm.attribute"),
-        Part::loop(pair.first),
-    });
+    runTest("oneLoopTwoAttr.chpl",
+            parser,
+            {
+              Part::attr("llvm.assertVectorized"),
+              Part::attr("llvm.attribute"),
+              Part::loop(pair.first),
+            });
   }
 }
 
 static void test3(Parser* parser) {
   for (auto pair1 : gLoopBits) {
     for (auto pair2 : gLoopBits) {
-      runTest("outerLoopAttr.chpl", parser, {
-          Part::attr("llvm.assertVectorized"),
-          Part::loop(pair1.first, {
-            Part::loop(pair2.first),
-          }),
-      });
+      runTest("outerLoopAttr.chpl",
+              parser,
+              {
+                Part::attr("llvm.assertVectorized"),
+                Part::loop(pair1.first,
+                           {
+                             Part::loop(pair2.first),
+                           }),
+              });
     }
   }
 }
@@ -212,12 +221,15 @@ static void test3(Parser* parser) {
 static void test4(Parser* parser) {
   for (auto pair1 : gLoopBits) {
     for (auto pair2 : gLoopBits) {
-      runTest("innerLoopAttr.chpl", parser, {
-          Part::loop(pair1.first, {
-            Part::attr("llvm.assertVectorized"),
-            Part::loop(pair2.first),
-          }),
-      });
+      runTest("innerLoopAttr.chpl",
+              parser,
+              {
+                Part::loop(pair1.first,
+                           {
+                             Part::attr("llvm.assertVectorized"),
+                             Part::loop(pair2.first),
+                           }),
+              });
     }
   }
 }
@@ -225,13 +237,16 @@ static void test4(Parser* parser) {
 static void test5(Parser* parser) {
   for (auto pair1 : gLoopBits) {
     for (auto pair2 : gLoopBits) {
-      runTest("bothLoopAttr.chpl", parser, {
-          Part::attr("llvm.attribute"),
-          Part::loop(pair1.first, {
-            Part::attr("llvm.assertVectorized"),
-            Part::loop(pair2.first),
-          }),
-      });
+      runTest("bothLoopAttr.chpl",
+              parser,
+              {
+                Part::attr("llvm.attribute"),
+                Part::loop(pair1.first,
+                           {
+                             Part::attr("llvm.assertVectorized"),
+                             Part::loop(pair2.first),
+                           }),
+              });
     }
   }
 }
@@ -239,15 +254,18 @@ static void test5(Parser* parser) {
 static void test6(Parser* parser) {
   for (auto pair1 : gLoopBits) {
     for (auto pair2 : gLoopBits) {
-      runTest("bothLoopAttr.chpl", parser, {
-          Part::attr("llvm.attribute"),
-          Part::attr("llvm.notARealAttributeButAllowed"),
-          Part::loop(pair1.first, {
-            Part::attr("llvm.assertVectorized"),
-            Part::attr("llvm.alsoNotARealAttributeButAllowed"),
-            Part::loop(pair2.first),
-          }),
-      });
+      runTest("bothLoopAttr.chpl",
+              parser,
+              {
+                Part::attr("llvm.attribute"),
+                Part::attr("llvm.notARealAttributeButAllowed"),
+                Part::loop(pair1.first,
+                           {
+                             Part::attr("llvm.assertVectorized"),
+                             Part::attr("llvm.alsoNotARealAttributeButAllowed"),
+                             Part::loop(pair2.first),
+                           }),
+              });
     }
   }
 }
@@ -255,11 +273,13 @@ static void test6(Parser* parser) {
 static void test7(Parser* parser) {
   for (auto pair1 : gLoopBits) {
     for (auto pair2 : gLoopBits) {
-      runTest("siblingLoopFirst.chpl", parser, {
-          Part::attr("llvm.attribute"),
-          Part::loop(pair1.first),
-          Part::loop(pair2.first),
-      });
+      runTest("siblingLoopFirst.chpl",
+              parser,
+              {
+                Part::attr("llvm.attribute"),
+                Part::loop(pair1.first),
+                Part::loop(pair2.first),
+              });
     }
   }
 }
@@ -267,11 +287,13 @@ static void test7(Parser* parser) {
 static void test8(Parser* parser) {
   for (auto pair1 : gLoopBits) {
     for (auto pair2 : gLoopBits) {
-      runTest("siblingLoopSecond.chpl", parser, {
-          Part::loop(pair1.first),
-          Part::attr("llvm.attribute"),
-          Part::loop(pair2.first),
-      });
+      runTest("siblingLoopSecond.chpl",
+              parser,
+              {
+                Part::loop(pair1.first),
+                Part::attr("llvm.attribute"),
+                Part::loop(pair2.first),
+              });
     }
   }
 }
@@ -279,12 +301,14 @@ static void test8(Parser* parser) {
 static void test9(Parser* parser) {
   for (auto pair1 : gLoopBits) {
     for (auto pair2 : gLoopBits) {
-      runTest("siblingLoopBoth.chpl", parser, {
-          Part::attr("llvm.attribute"),
-          Part::loop(pair1.first),
-          Part::attr("llvm.attribute"),
-          Part::loop(pair2.first),
-      });
+      runTest("siblingLoopBoth.chpl",
+              parser,
+              {
+                Part::attr("llvm.attribute"),
+                Part::loop(pair1.first),
+                Part::attr("llvm.attribute"),
+                Part::loop(pair2.first),
+              });
     }
   }
 }
@@ -293,18 +317,21 @@ static void test10(Parser* parser) {
   for (auto pair1 : gLoopBits) {
     for (auto pair2 : gLoopBits) {
       for (auto pair3 : gLoopBits) {
-        runTest("nestedAndSiblings.chpl", parser, {
-            Part::attr("llvm.attribute1"),
-            Part::attr("llvm.attribute2"),
-            Part::loop(pair1.first, {
-              Part::attr("llvm.attribute3"),
-              Part::attr("llvm.attribute4"),
-              Part::loop(pair2.first),
-            }),
-            Part::attr("llvm.attribute5"),
-            Part::attr("llvm.attribute6"),
-            Part::loop(pair3.first),
-        });
+        runTest("nestedAndSiblings.chpl",
+                parser,
+                {
+                  Part::attr("llvm.attribute1"),
+                  Part::attr("llvm.attribute2"),
+                  Part::loop(pair1.first,
+                             {
+                               Part::attr("llvm.attribute3"),
+                               Part::attr("llvm.attribute4"),
+                               Part::loop(pair2.first),
+                             }),
+                  Part::attr("llvm.attribute5"),
+                  Part::attr("llvm.attribute6"),
+                  Part::loop(pair3.first),
+                });
       }
     }
   }

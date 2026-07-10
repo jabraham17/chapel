@@ -33,12 +33,12 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  const std::string myCircle =
-        "record MyCircle {\n"
-          "forwarding var impl: MyCircleImpl;\n"
-        "}\n";
+  const std::string myCircle = "record MyCircle {\n"
+                               "forwarding var impl: MyCircleImpl;\n"
+                               "}\n";
 
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl", myCircle.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test0.chpl", myCircle.c_str());
 
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -59,20 +59,20 @@ static void test0(Parser* parser) {
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  const std::string myCircle =
-                    "record MyCircle {\n"
-                      "var impl: MyCircleImpl;\n"
+  const std::string myCircle = "record MyCircle {\n"
+                               "var impl: MyCircleImpl;\n"
 
-                      "proc getImplOrFail() {\n"
-                        "if impl == nil then\n"
-                          "halt('impl is nil');\n"
-                        "else\n"
-                          "return impl;\n"
-                      "}\n"
-                      "forwarding getImplOrFail();\n"
-                     "}\n";
+                               "proc getImplOrFail() {\n"
+                               "if impl == nil then\n"
+                               "halt('impl is nil');\n"
+                               "else\n"
+                               "return impl;\n"
+                               "}\n"
+                               "forwarding getImplOrFail();\n"
+                               "}\n";
 
-  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl", myCircle.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test1.chpl", myCircle.c_str());
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -92,17 +92,16 @@ static void test1(Parser* parser) {
   assert(expr->isFnCall());
 }
 
-
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  const std::string myCircle =
-                    "record MyCircle {\n"
-                      "var impl: MyCircleImpl;\n"
-                      "forwarding impl only area;\n"
-                      "/* some comments after forwarding*/\n"
-                    "}\n";
+  const std::string myCircle = "record MyCircle {\n"
+                               "var impl: MyCircleImpl;\n"
+                               "forwarding impl only area;\n"
+                               "/* some comments after forwarding*/\n"
+                               "}\n";
 
-  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl", myCircle.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test2.chpl", myCircle.c_str());
 
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -131,14 +130,14 @@ static void test2(Parser* parser) {
 
 static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  const std::string myCircle =
-                    "record MyCircle {\n"
-                      "var impl: MyCircleImpl;\n"
-                      "/* some comments before forwarding*/\n"
-                      "forwarding impl except circumference;\n"
-                    "}\n";
+  const std::string myCircle = "record MyCircle {\n"
+                               "var impl: MyCircleImpl;\n"
+                               "/* some comments before forwarding*/\n"
+                               "forwarding impl except circumference;\n"
+                               "}\n";
 
-  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl", myCircle.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test3.chpl", myCircle.c_str());
 
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -165,14 +164,14 @@ static void test3(Parser* parser) {
 
 static void test4(Parser* parser) {
   ErrorGuard guard(parser->context());
-  const std::string myCircle =
-                    "record MyCircle {\n"
-                      "var impl: MyCircleImpl;\n"
-                      "/* some comments before forwarding*/\n"
-                      "forwarding var x = 10;\n"
-                    "}\n";
+  const std::string myCircle = "record MyCircle {\n"
+                               "var impl: MyCircleImpl;\n"
+                               "/* some comments before forwarding*/\n"
+                               "forwarding var x = 10;\n"
+                               "}\n";
 
-  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl", myCircle.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test4.chpl", myCircle.c_str());
 
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -195,30 +194,30 @@ static void test4(Parser* parser) {
   assert(var->visibility() == Decl::DEFAULT_VISIBILITY);
 }
 
-
 static void test5(Parser* parser) {
   ErrorGuard guard(parser->context());
   const std::string myCircle =
-                        "module test5 {\n"
-                          "class MyCircleImpl {\n"
-                            "var radius:real;\n"
-                            "proc area() {\n"
-                              "return pi*radius*radius;\n"
-                            "}\n"
-                            "proc circumference() {\n"
-                              "return 2.0*pi*radius;\n"
-                            "}\n"
-                          "}\n"
-                          "record MyCircle {\n"
-                            "var impl: MyCircleImpl;\n"
+    "module test5 {\n"
+    "class MyCircleImpl {\n"
+    "var radius:real;\n"
+    "proc area() {\n"
+    "return pi*radius*radius;\n"
+    "}\n"
+    "proc circumference() {\n"
+    "return 2.0*pi*radius;\n"
+    "}\n"
+    "}\n"
+    "record MyCircle {\n"
+    "var impl: MyCircleImpl;\n"
 
-                            "forwarding impl except circumference;\n"
-                          "}\n"
-                          "// var c = new MyCircle(new MyCircleImpl(10));\n"
-                          "// writeln(c.area());\n"
-                        "}\n";
+    "forwarding impl except circumference;\n"
+    "}\n"
+    "// var c = new MyCircle(new MyCircleImpl(10));\n"
+    "// writeln(c.area());\n"
+    "}\n";
 
-  auto parseResult = parseStringAndReportErrors(parser, "test5.chpl", myCircle.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test5.chpl", myCircle.c_str());
 
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -245,7 +244,6 @@ static void test5(Parser* parser) {
   assert(visClause->limitationKind() == VisibilityClause::EXCEPT);
   assert(visClause->numLimitations() == 1);
 }
-
 
 /**
  * commented this test out until visibility is implemented
@@ -281,7 +279,6 @@ static void test5(Parser* parser) {
 //   assert(var->visibility() == Decl::PRIVATE);
 // }
 
-
 /**
  * commented this test out until visibility is implemented
  *
@@ -314,13 +311,13 @@ static void test5(Parser* parser) {
 
 static void test8(Parser* parser) {
   ErrorGuard guard(parser->context());
-  const std::string myCircle =
-        "record MyCircle {\n"
-          "@chpldoc.nodoc\n"
-          "forwarding var impl: MyCircleImpl;\n"
-        "}\n";
+  const std::string myCircle = "record MyCircle {\n"
+                               "@chpldoc.nodoc\n"
+                               "forwarding var impl: MyCircleImpl;\n"
+                               "}\n";
 
-  auto parseResult = parseStringAndReportErrors(parser, "test8.chpl", myCircle.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test8.chpl", myCircle.c_str());
 
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -338,8 +335,8 @@ static void test8(Parser* parser) {
   auto attr = fwd->attributeGroup();
   assert(attr);
   assert(!attr->isDeprecated());
-  auto noDoc = attr->getAttributeNamed(UniqueString::get(parser->context(),
-                                                         "chpldoc.nodoc"));
+  auto noDoc = attr->getAttributeNamed(
+    UniqueString::get(parser->context(), "chpldoc.nodoc"));
   assert(noDoc);
   const Variable* var = fwd->expr()->toVariable();
   assert(var);
@@ -348,13 +345,13 @@ static void test8(Parser* parser) {
 
 static void test9(Parser* parser) {
   ErrorGuard guard(parser->context());
-  const std::string myCircle =
-        "record MyCircle {\n"
-          "@deprecated(\"don't use this anymore\")\n"
-          "forwarding var impl: MyCircleImpl;\n"
-        "}\n";
+  const std::string myCircle = "record MyCircle {\n"
+                               "@deprecated(\"don't use this anymore\")\n"
+                               "forwarding var impl: MyCircleImpl;\n"
+                               "}\n";
 
-  auto parseResult = parseStringAndReportErrors(parser, "test9.chpl", myCircle.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test9.chpl", myCircle.c_str());
 
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -376,9 +373,7 @@ static void test9(Parser* parser) {
   const Variable* var = fwd->expr()->toVariable();
   assert(var);
   assert(var->visibility() == Decl::DEFAULT_VISIBILITY);
-
 }
-
 
 int main() {
   Context context;

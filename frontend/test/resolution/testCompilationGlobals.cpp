@@ -29,17 +29,18 @@
 #include "chpl/uast/Variable.h"
 
 const std::string allGlobalsProgram = ""
-  #define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__)\
-    "param my" NAME__ " = " NAME__ ";\n"
-  #include "chpl/uast/compiler-globals-list.h"
-  #undef COMPILER_GLOBAL
+#define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) \
+  "param my" NAME__ " = " NAME__ ";\n"
+#include "chpl/uast/compiler-globals-list.h"
+#undef COMPILER_GLOBAL
   ;
 
-static std::unordered_map<std::string, QualifiedType> compilationGlobalTypes(Context* context) {
+static std::unordered_map<std::string, QualifiedType>
+compilationGlobalTypes(Context* context) {
   static std::vector<std::string> variables = {
-    #define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) "my" NAME__,
-    #include "chpl/uast/compiler-globals-list.h"
-    #undef COMPILER_GLOBAL
+#define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) "my" NAME__,
+#include "chpl/uast/compiler-globals-list.h"
+#undef COMPILER_GLOBAL
   };
 
   return resolveTypesOfVariables(context, allGlobalsProgram, variables);
@@ -47,24 +48,22 @@ static std::unordered_map<std::string, QualifiedType> compilationGlobalTypes(Con
 
 static CompilerGlobals defaultGlobals() {
   CompilerGlobals globals;
-  // For the time being, all globals are bools so just set them to false.
-  #define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) globals.FIELD__ = false;
-  #include "chpl/uast/compiler-globals-list.h"
-  #undef COMPILER_GLOBAL
+// For the time being, all globals are bools so just set them to false.
+#define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) globals.FIELD__ = false;
+#include "chpl/uast/compiler-globals-list.h"
+#undef COMPILER_GLOBAL
   return globals;
 }
 
 template <typename T>
 void verifyGlobal(const QualifiedType& actual, T expected);
 
-template <>
-void verifyGlobal<bool>(const QualifiedType& type, bool expected) {
+template <> void verifyGlobal<bool>(const QualifiedType& type, bool expected) {
   CHPL_ASSERT(type.isParam() && type.type()->isBoolType());
   CHPL_ASSERT(type.isParamFalse() ^ expected);
 }
 
-template <typename F>
-void verifyCompilerGlobals(F&& function) {
+template <typename F> void verifyCompilerGlobals(F&& function) {
   // Create the context
   Context ctx;
   Context* context = &ctx;
@@ -78,15 +77,15 @@ void verifyCompilerGlobals(F&& function) {
 
   // Verify all the globals are as we set them.
   auto types = compilationGlobalTypes(context);
-  #define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__)\
-    { \
-      auto& type = types.at("my" NAME__); \
-      std::cout << "Expecting " << myGlobals.FIELD__ << ", got: "; \
-      type.dump(); \
-      verifyGlobal<TYPE__>(type, myGlobals.FIELD__); \
-    }
-  #include "chpl/uast/compiler-globals-list.h"
-  #undef COMPILER_GLOBAL
+#define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__)                 \
+  {                                                              \
+    auto& type = types.at("my" NAME__);                          \
+    std::cout << "Expecting " << myGlobals.FIELD__ << ", got: "; \
+    type.dump();                                                 \
+    verifyGlobal<TYPE__>(type, myGlobals.FIELD__);               \
+  }
+#include "chpl/uast/compiler-globals-list.h"
+#undef COMPILER_GLOBAL
 }
 
 static void test1() {
@@ -98,9 +97,8 @@ static void test1() {
 }
 
 static void test2() {
-  verifyCompilerGlobals([](CompilerGlobals& globals) {
-    globals.boundsChecking = true;
-  });
+  verifyCompilerGlobals(
+    [](CompilerGlobals& globals) { globals.boundsChecking = true; });
 }
 
 static void test3() {
@@ -111,7 +109,6 @@ static void test3() {
     globals.cacheRemote = true;
   });
 }
-
 
 int main() {
   test1();

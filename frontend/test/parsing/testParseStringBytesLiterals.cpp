@@ -34,7 +34,8 @@ static uast::BuilderResult parseExprAsVarInit(Parser* parser,
   std::string toparse = "var x = ";
   toparse += init;
   toparse += ";\n";
-  auto parseResult = parseStringAndReportErrors(parser, testname.c_str(), toparse.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, testname.c_str(), toparse.c_str());
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -83,17 +84,27 @@ static void testTripleLiteral(Parser* parser,
 
   std::string tn = testname;
 
-  testStringLiteral(parser, "triple-single-s-" + tn,
-                    tSingleS, StringLikeLiteral::TRIPLE_SINGLE, expectValue);
-  testStringLiteral(parser, "triple-double-s-" + tn,
-                    tDoubleS, StringLikeLiteral::TRIPLE_DOUBLE, expectValue);
+  testStringLiteral(parser,
+                    "triple-single-s-" + tn,
+                    tSingleS,
+                    StringLikeLiteral::TRIPLE_SINGLE,
+                    expectValue);
+  testStringLiteral(parser,
+                    "triple-double-s-" + tn,
+                    tDoubleS,
+                    StringLikeLiteral::TRIPLE_DOUBLE,
+                    expectValue);
 
-  testBytesLiteral(parser, "triple-single-b-" + tn,
+  testBytesLiteral(parser,
+                   "triple-single-b-" + tn,
                    "b" + tSingleS,
-                   StringLikeLiteral::TRIPLE_SINGLE, expectValue);
-  testBytesLiteral(parser, "triple-double-b-" + tn,
+                   StringLikeLiteral::TRIPLE_SINGLE,
+                   expectValue);
+  testBytesLiteral(parser,
+                   "triple-double-b-" + tn,
                    "b" + tDoubleS,
-                   StringLikeLiteral::TRIPLE_DOUBLE, expectValue);
+                   StringLikeLiteral::TRIPLE_DOUBLE,
+                   expectValue);
 }
 
 static void testSingleLiteral(Parser* parser,
@@ -109,26 +120,31 @@ static void testSingleLiteral(Parser* parser,
 
   std::string tn = testname;
 
-  testStringLiteral(parser, "single-s-" + tn,
-                    oSingleS, StringLikeLiteral::SINGLE, expectValue);
-  testStringLiteral(parser, "double-s-" + tn,
-                    oDoubleS, StringLikeLiteral::DOUBLE, expectValue);
+  testStringLiteral(
+    parser, "single-s-" + tn, oSingleS, StringLikeLiteral::SINGLE, expectValue);
+  testStringLiteral(
+    parser, "double-s-" + tn, oDoubleS, StringLikeLiteral::DOUBLE, expectValue);
 
-  testBytesLiteral(parser, "single-b-" + tn,
-                   "b" + oSingleS, StringLikeLiteral::SINGLE, expectValue);
-  testBytesLiteral(parser, "double-b-" + tn,
-                   "b" + oDoubleS, StringLikeLiteral::DOUBLE, expectValue);
+  testBytesLiteral(parser,
+                   "single-b-" + tn,
+                   "b" + oSingleS,
+                   StringLikeLiteral::SINGLE,
+                   expectValue);
+  testBytesLiteral(parser,
+                   "double-b-" + tn,
+                   "b" + oDoubleS,
+                   StringLikeLiteral::DOUBLE,
+                   expectValue);
 }
 
-
-static void testBadLiteral(Parser* parser,
-                           const char* testname,
-                           const char* str) {
+static void
+testBadLiteral(Parser* parser, const char* testname, const char* str) {
   ErrorGuard guard(parser->context());
   std::string toparse = "var x = ";
   toparse += str;
   toparse += ";\n";
-  auto parseResult = parseStringAndReportErrors(parser, testname, toparse.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, testname, toparse.c_str());
   assert(guard.realizeErrors() > 0);
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -147,13 +163,23 @@ int main() {
 
   testSingleLiteral(p, "test0.chpl", "hi", std::string("hi"));
   testTripleLiteral(p, "test2.chpl", "hi", std::string("hi"));
-  testStringLiteral(p, "test4.chpl", std::string("\"'hi'\""),
-                    StringLiteral::DOUBLE, std::string("'hi'"));
-  testStringLiteral(p, "test5.chpl", std::string("'\"hi\"'"),
-                    StringLiteral::SINGLE, std::string("\"hi\""));
-  testSingleLiteral(p, "test6.chpl", "\\'\\\"\\?\\\\\\a\\b\\f\\n\\r\\t\\v",
+  testStringLiteral(p,
+                    "test4.chpl",
+                    std::string("\"'hi'\""),
+                    StringLiteral::DOUBLE,
+                    std::string("'hi'"));
+  testStringLiteral(p,
+                    "test5.chpl",
+                    std::string("'\"hi\"'"),
+                    StringLiteral::SINGLE,
+                    std::string("\"hi\""));
+  testSingleLiteral(p,
+                    "test6.chpl",
+                    "\\'\\\"\\?\\\\\\a\\b\\f\\n\\r\\t\\v",
                     std::string("'\"\?\\\a\b\f\n\r\t\v"));
-  testTripleLiteral(p, "test7.chpl", "\\'\\\"\\?\\\\\\a\\b\\f\\n\\r\\t\\v",
+  testTripleLiteral(p,
+                    "test7.chpl",
+                    "\\'\\\"\\?\\\\\\a\\b\\f\\n\\r\\t\\v",
                     std::string("\\'\\\"\\\?\\\\\\a\\b\\f\\n\\r\\t\\v"));
 
   std::string zeroOne;

@@ -32,8 +32,8 @@ static void test1() {
   // make sure that function return type computation does not throw
   // away the param.
   auto context = buildStdContext();
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          proc p(param x: int(64), param y: int(64)) param do return __primitive("+", x, y);
 
                          param x = p(1,2);
@@ -42,17 +42,19 @@ static void test1() {
   auto typePtr = qt.type();
   auto paramPtr = qt.param();
   assert(typePtr && typePtr->isIntType());
-  assert(paramPtr && paramPtr->isIntParam() && paramPtr->toIntParam()->value() == 3);
+  assert(paramPtr && paramPtr->isIntParam() &&
+         paramPtr->toIntParam()->value() == 3);
 }
 
 static void test2() {
   // make sure unknown types don't slip into candidate search
   auto context = buildStdContext();
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          proc test(z) {}
                          var x = test(y);
-                         )"""", false);
+                         )"""",
+                                        false);
   assert(qt.isUnknown());
 }
 
@@ -61,8 +63,9 @@ static void helpTest3(const std::string& theFunction) {
   // enforced
   {
     auto context = buildStdContext();
-    auto qt = resolveTypeOfXInit(context, theFunction +
-                                 R""""(
+    auto qt = resolveTypeOfXInit(context,
+                                 theFunction +
+                                   R""""(
                                  var x = f(true, "hello", "world");
                                  )"""");
     assert(qt.type() != nullptr);
@@ -70,8 +73,9 @@ static void helpTest3(const std::string& theFunction) {
   }
   {
     auto context = buildStdContext();
-    auto qt = resolveTypeOfXInit(context, theFunction +
-                                 R""""(
+    auto qt = resolveTypeOfXInit(context,
+                                 theFunction +
+                                   R""""(
                                  var x = f(false, 0, 1);
                                  )"""");
     assert(qt.type() != nullptr);
@@ -79,24 +83,27 @@ static void helpTest3(const std::string& theFunction) {
   }
   {
     auto context = buildStdContext();
-    auto qt = resolveTypeOfXInit(context, theFunction +
-                                 R""""(
+    auto qt = resolveTypeOfXInit(context,
+                                 theFunction +
+                                   R""""(
                                  var x = f(true, 0, 1);
                                  )"""");
     assert(qt.isUnknown());
   }
   {
     auto context = buildStdContext();
-    auto qt = resolveTypeOfXInit(context, theFunction +
-                                 R""""(
+    auto qt = resolveTypeOfXInit(context,
+                                 theFunction +
+                                   R""""(
                                  var x = f(false, "hello", "world");
                                  )"""");
     assert(qt.isUnknown());
   }
   {
     auto context = buildStdContext();
-    auto qt = resolveTypeOfXInit(context, theFunction +
-                                 R""""(
+    auto qt = resolveTypeOfXInit(context,
+                                 theFunction +
+                                   R""""(
                                  var x = f(true, "hello", 0);
                                  )"""");
     assert(qt.isUnknown());
@@ -390,11 +397,13 @@ static void test7() {
     bool noMatchingCalls = false;
     bool dueToErrorsThrown = false;
     for (auto& e : guard.errors()) {
-      if (e->type() == ErrorType::UserDiagnosticEmitError && e->message() == "nooo") {
+      if (e->type() == ErrorType::UserDiagnosticEmitError &&
+          e->message() == "nooo") {
         numberOfNoos++;
       } else if (e->type() == chpl::NoMatchingCandidates) {
         auto err = static_cast<const chpl::ErrorNoMatchingCandidates*>(e.get());
-        for (auto& candidate : std::get<std::vector<ApplicabilityResult>>(err->info())) {
+        for (auto& candidate :
+             std::get<std::vector<ApplicabilityResult>>(err->info())) {
           if (candidate.reason() == FAIL_ERRORS_THROWN) {
             dueToErrorsThrown = true;
           }
@@ -519,7 +528,8 @@ static void test9() {
     ErrorGuard guard(ctx);
 
     setFileText(ctx, UniqueString::get(ctx, "input.chpl"), fullProg);
-    auto mods = parse(ctx, UniqueString::get(ctx, "input.chpl"), UniqueString());
+    auto mods =
+      parse(ctx, UniqueString::get(ctx, "input.chpl"), UniqueString());
 
     auto M2 = mods[0]->stmt(1);
     auto res = resolveModule(ctx, M2->id());
@@ -599,7 +609,8 @@ static void test10() {
 
   bool foundNooo = false;
   for (auto& e : guard.errors()) {
-    if (e->type() == ErrorType::UserDiagnosticEmitError && e->message() == "nooo") {
+    if (e->type() == ErrorType::UserDiagnosticEmitError &&
+        e->message() == "nooo") {
       foundNooo = true;
     } else if (e->type() != ErrorType::UserDiagnosticEncounterError) {
       assert(false && "unexpected error");

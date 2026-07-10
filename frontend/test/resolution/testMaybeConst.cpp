@@ -34,9 +34,9 @@ testMaybeRef(const char* test,
              const char* program,
              // vector of ID of Formal, isRef (vs const ref)
              std::vector<std::pair<const char*, bool>> expectedRefs,
-             // vector of ID of call, ID of called function  
+             // vector of ID of call, ID of called function
              std::vector<std::pair<const char*, const char*>> expectedCalls,
-             bool expectErrors=false) {
+             bool expectErrors = false) {
   printf("\n### %s\n", test);
 
   Context* context = buildStdContext();
@@ -80,15 +80,15 @@ testMaybeRef(const char* test,
         if (pair.second) { // ref
           if (t.kind() != QualifiedType::REF) {
             printf("For Formal ID %s, expected 'ref' but got '%s'\n",
-                    ast->id().str().c_str(),
-                    qualifierToString(t.kind()));
+                   ast->id().str().c_str(),
+                   qualifierToString(t.kind()));
             assert(false);
           }
         } else {
           if (t.kind() != QualifiedType::CONST_REF) {
             printf("For Formal ID %s, expected 'const ref' but got '%s'\n",
-                    ast->id().str().c_str(),
-                    qualifierToString(t.kind()));
+                   ast->id().str().c_str(),
+                   qualifierToString(t.kind()));
             assert(false);
           }
         }
@@ -113,9 +113,9 @@ testMaybeRef(const char* test,
     ID calledFnId = candidates.only().fn()->untyped()->id();
     if (expectedCalledFnId != calledFnId) {
       printf("For Call ID %s, expected to call Function ID %s, bot got %s\n",
-              ast->id().str().c_str(),
-              expectedCalledFnId.str().c_str(),
-              calledFnId.str().c_str());
+             ast->id().str().c_str(),
+             expectedCalledFnId.str().c_str(),
+             calledFnId.str().c_str());
       assert(false);
     }
   }
@@ -130,19 +130,19 @@ testMaybeRef(const char* test,
 
 static void test1() {
   testMaybeRef("test1",
-    R""""(
+               R""""(
       module M {
         proc test() {
         }
       }
     )"""",
-    {},
-    {});
+               {},
+               {});
 }
 
 static void test2() {
   testMaybeRef("test2",
-    R""""(
+               R""""(
       module M {
         proc acceptsRef(ref arg) { }
         record R {
@@ -153,14 +153,14 @@ static void test2() {
 
       }
     )"""",
-    {{"M.R.method@0", true}},
-    {});
+               {{"M.R.method@0", true}},
+               {});
 }
 
 // test ref/const ref return intent overload
 static void test3a() {
   testMaybeRef("test3a",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() ref { return global; }         // M.foo
@@ -170,13 +170,13 @@ static void test3a() {
         }
       }
     )"""",
-    {},
-    {{"M.test@1", "M.foo#1"}});
+               {},
+               {{"M.test@1", "M.foo#1"}});
 }
 
 static void test3b() {
   testMaybeRef("test3b",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() const ref { return global; }   // M.foo
@@ -186,13 +186,13 @@ static void test3b() {
         }
       }
     )"""",
-    {},
-    {{"M.test@1", "M.foo"}});
+               {},
+               {{"M.test@1", "M.foo"}});
 }
 
 static void test3c() {
   testMaybeRef("test3c",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() const ref { return global; }   // M.foo
@@ -202,13 +202,13 @@ static void test3c() {
         }
       }
     )"""",
-    {},
-    {{"M.test@1", "M.foo"}});
+               {},
+               {{"M.test@1", "M.foo"}});
 }
 
 static void test3d() {
   testMaybeRef("test3d",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() const ref { return global; }   // M.foo
@@ -218,13 +218,13 @@ static void test3d() {
         }
       }
     )"""",
-    {},
-    {{"M.test@1", "M.foo#1"}});
+               {},
+               {{"M.test@1", "M.foo#1"}});
 }
 
 static void test3e() {
   testMaybeRef("test3e",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() ref { return global; }         // M.foo
@@ -235,13 +235,13 @@ static void test3e() {
         }
       }
     )"""",
-    {},
-    {{"M.test@2", "M.foo"}});
+               {},
+               {{"M.test@2", "M.foo"}});
 }
 
 static void test3f() {
   testMaybeRef("test3f",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() ref { return global; }         // M.foo
@@ -252,13 +252,13 @@ static void test3f() {
         }
       }
     )"""",
-    {},
-    {{"M.test@2", "M.foo#1"}});
+               {},
+               {{"M.test@2", "M.foo#1"}});
 }
 
 static void test3g() {
   testMaybeRef("test3g",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() ref { return global; }         // M.foo
@@ -269,13 +269,13 @@ static void test3g() {
         }
       }
     )"""",
-    {},
-    {{"M.test@2", "M.foo#1"}});
+               {},
+               {{"M.test@2", "M.foo#1"}});
 }
 
 static void test3h() {
   testMaybeRef("test3h",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() ref { return global; }         // M.foo
@@ -286,13 +286,13 @@ static void test3h() {
         }
       }
     )"""",
-    {},
-    {{"M.test@2", "M.foo"}});
+               {},
+               {{"M.test@2", "M.foo"}});
 }
 
 static void test3i() {
   testMaybeRef("test3i",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() ref { return global; }         // M.foo
@@ -303,14 +303,14 @@ static void test3i() {
         }
       }
     )"""",
-    {},
-    {{"M.test@2", "M.foo"}});
+               {},
+               {{"M.test@2", "M.foo"}});
 }
 
 // test ref/value return intent overload
 static void test4a() {
   testMaybeRef("test4a",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() ref { return global; }         // M.foo
@@ -320,13 +320,13 @@ static void test4a() {
         }
       }
     )"""",
-    {},
-    {{"M.test@1", "M.foo#1"}});
+               {},
+               {{"M.test@1", "M.foo#1"}});
 }
 
 static void test4b() {
   testMaybeRef("test4b",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() { return global; }             // M.foo
@@ -336,13 +336,13 @@ static void test4b() {
         }
       }
     )"""",
-    {},
-    {{"M.test@1", "M.foo"}});
+               {},
+               {{"M.test@1", "M.foo"}});
 }
 
 static void test4c() {
   testMaybeRef("test4c",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() { return global; }             // M.foo
@@ -352,13 +352,13 @@ static void test4c() {
         }
       }
     )"""",
-    {},
-    {{"M.test@1", "M.foo"}});
+               {},
+               {{"M.test@1", "M.foo"}});
 }
 
 static void test4d() {
   testMaybeRef("test4d",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() { return global; }             // M.foo
@@ -368,13 +368,13 @@ static void test4d() {
         }
       }
     )"""",
-    {},
-    {{"M.test@1", "M.foo#1"}});
+               {},
+               {{"M.test@1", "M.foo#1"}});
 }
 
 static void test4e() {
   testMaybeRef("test4e",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() ref { return global; }         // M.foo
@@ -385,13 +385,13 @@ static void test4e() {
         }
       }
     )"""",
-    {},
-    {{"M.test@2", "M.foo"}});
+               {},
+               {{"M.test@2", "M.foo"}});
 }
 
 static void test4f() {
   testMaybeRef("test4f",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() ref { return global; }         // M.foo
@@ -402,13 +402,13 @@ static void test4f() {
         }
       }
     )"""",
-    {},
-    {{"M.test@2", "M.foo#1"}});
+               {},
+               {{"M.test@2", "M.foo#1"}});
 }
 
 static void test4g() {
   testMaybeRef("test4g",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() ref { return global; }         // M.foo
@@ -419,13 +419,13 @@ static void test4g() {
         }
       }
     )"""",
-    {},
-    {{"M.test@2", "M.foo#1"}});
+               {},
+               {{"M.test@2", "M.foo#1"}});
 }
 
 static void test4h() {
   testMaybeRef("test4h",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() ref { return global; }         // M.foo
@@ -436,13 +436,13 @@ static void test4h() {
         }
       }
     )"""",
-    {},
-    {{"M.test@2", "M.foo"}});
+               {},
+               {{"M.test@2", "M.foo"}});
 }
 
 static void test4i() {
   testMaybeRef("test4i",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() ref { return global; }         // M.foo
@@ -453,14 +453,14 @@ static void test4i() {
         }
       }
     )"""",
-    {},
-    {{"M.test@2", "M.foo"}});
+               {},
+               {{"M.test@2", "M.foo"}});
 }
 
 // test const ref/value return intent overload
 static void test5a() {
   testMaybeRef("test5a",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() const ref { return global; }   // M.foo
@@ -470,13 +470,13 @@ static void test5a() {
         }
       }
     )"""",
-    {},
-    {{"M.test@1", "M.foo#1"}});
+               {},
+               {{"M.test@1", "M.foo#1"}});
 }
 
 static void test5b() {
   testMaybeRef("test5b",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() { return global; }               // M.foo
@@ -486,13 +486,13 @@ static void test5b() {
         }
       }
     )"""",
-    {},
-    {{"M.test@1", "M.foo"}});
+               {},
+               {{"M.test@1", "M.foo"}});
 }
 
 static void test5c() {
   testMaybeRef("test5c",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() { return global; }               // M.foo
@@ -502,13 +502,13 @@ static void test5c() {
         }
       }
     )"""",
-    {},
-    {{"M.test@1", "M.foo#1"}});
+               {},
+               {{"M.test@1", "M.foo#1"}});
 }
 
 static void test5d() {
   testMaybeRef("test5d",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() { return global; }               // M.foo
@@ -518,14 +518,14 @@ static void test5d() {
         }
       }
     )"""",
-    {},
-    {{"M.test@1", "M.foo#1"}},
-    /* expectErrors */ true);
+               {},
+               {{"M.test@1", "M.foo#1"}},
+               /* expectErrors */ true);
 }
 
 static void test5e() {
   testMaybeRef("test5e",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() const ref { return global; }    // M.foo
@@ -536,14 +536,14 @@ static void test5e() {
         }
       }
     )"""",
-    {},
-    {{"M.test@2", "M.foo"}},
-    /* expectErrors */ true);
+               {},
+               {{"M.test@2", "M.foo"}},
+               /* expectErrors */ true);
 }
 
 static void test5f() {
   testMaybeRef("test5f",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() const ref { return global; }    // M.foo
@@ -554,13 +554,13 @@ static void test5f() {
         }
       }
     )"""",
-    {},
-    {{"M.test@2", "M.foo"}});
+               {},
+               {{"M.test@2", "M.foo"}});
 }
 
 static void test5g() {
   testMaybeRef("test5g",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() const ref { return global; }   // M.foo
@@ -571,13 +571,13 @@ static void test5g() {
         }
       }
     )"""",
-    {},
-    {{"M.test@2", "M.foo#1"}});
+               {},
+               {{"M.test@2", "M.foo#1"}});
 }
 
 static void test5h() {
   testMaybeRef("test5h",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() const ref { return global; }     // M.foo
@@ -588,14 +588,14 @@ static void test5h() {
         }
       }
     )"""",
-    {},
-    {{"M.test@2", "M.foo"}},
-    /* expectErrors */ true);
+               {},
+               {{"M.test@2", "M.foo"}},
+               /* expectErrors */ true);
 }
 
 static void test5i() {
   testMaybeRef("test5i",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() const ref { return global; }  // M.foo
@@ -606,15 +606,15 @@ static void test5i() {
         }
       }
     )"""",
-    {},
-    {{"M.test@2", "M.foo"}},
-    /* expectErrors */ true);
+               {},
+               {{"M.test@2", "M.foo"}},
+               /* expectErrors */ true);
 }
 
 // test ref/const ref/value return intent overload
 static void test6a() {
   testMaybeRef("test6a",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() const ref { return global; }   // M.foo
@@ -625,13 +625,13 @@ static void test6a() {
         }
       }
     )"""",
-    {},
-    {{"M.test@1", "M.foo#1"}});
+               {},
+               {{"M.test@1", "M.foo#1"}});
 }
 
 static void test6b() {
   testMaybeRef("test6b",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() ref { return global; }           // M.foo
@@ -642,13 +642,13 @@ static void test6b() {
         }
       }
     )"""",
-    {},
-    {{"M.test@1", "M.foo#1"}});
+               {},
+               {{"M.test@1", "M.foo#1"}});
 }
 
 static void test6c() {
   testMaybeRef("test6c",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() { return global; }               // M.foo
@@ -659,13 +659,13 @@ static void test6c() {
         }
       }
     )"""",
-    {},
-    {{"M.test@1", "M.foo#1"}});
+               {},
+               {{"M.test@1", "M.foo#1"}});
 }
 
 static void test6d() {
   testMaybeRef("test6d",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() ref { return global; }           // M.foo
@@ -676,13 +676,13 @@ static void test6d() {
         }
       }
     )"""",
-    {},
-    {{"M.test@1", "M.foo"}});
+               {},
+               {{"M.test@1", "M.foo"}});
 }
 
 static void test6e() {
   testMaybeRef("test6e",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() const ref { return global; }    // M.foo
@@ -694,13 +694,13 @@ static void test6e() {
         }
       }
     )"""",
-    {},
-    {{"M.test@2", "M.foo#1"}});
+               {},
+               {{"M.test@2", "M.foo#1"}});
 }
 
 static void test6f() {
   testMaybeRef("test6f",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() const ref { return global; }    // M.foo
@@ -712,13 +712,13 @@ static void test6f() {
         }
       }
     )"""",
-    {},
-    {{"M.test@2", "M.foo"}});
+               {},
+               {{"M.test@2", "M.foo"}});
 }
 
 static void test6g() {
   testMaybeRef("test6g",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() const ref { return global; }   // M.foo
@@ -730,13 +730,13 @@ static void test6g() {
         }
       }
     )"""",
-    {},
-    {{"M.test@2", "M.foo#2"}});
+               {},
+               {{"M.test@2", "M.foo#2"}});
 }
 
 static void test6h() {
   testMaybeRef("test6h",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() const ref { return global; }     // M.foo
@@ -748,13 +748,13 @@ static void test6h() {
         }
       }
     )"""",
-    {},
-    {{"M.test@2", "M.foo#2"}});
+               {},
+               {{"M.test@2", "M.foo#2"}});
 }
 
 static void test6i() {
   testMaybeRef("test6i",
-    R""""(
+               R""""(
       module M {
         var global: int;
         proc foo() ref { return global; }        // M.foo
@@ -766,13 +766,13 @@ static void test6i() {
         }
       }
     )"""",
-    {},
-    {{"M.test@2", "M.foo"}});
+               {},
+               {{"M.test@2", "M.foo"}});
 }
 
 static void test7a() {
   testMaybeRef("test7a",
-    R""""(
+               R""""(
       module M {
         config const cond = false;
         proc foo(pragma "intent ref maybe const formal" arg: int) {
@@ -780,13 +780,13 @@ static void test7a() {
         }
       }
     )"""",
-    {{"M.foo@2", false}},
-    {},
-    /* expectErrors */ true);
+               {{"M.foo@2", false}},
+               {},
+               /* expectErrors */ true);
 }
 static void test7b() {
   testMaybeRef("test7b",
-    R""""(
+               R""""(
       module M {
         config const cond = false;
         proc acceptsRef(ref arg: int) { }
@@ -796,13 +796,13 @@ static void test7b() {
         }
       }
     )"""",
-    {{"M.foo@2", true}},
-    {},
-    /* expectErrors */ true);
+               {{"M.foo@2", true}},
+               {},
+               /* expectErrors */ true);
 }
 static void test7c() {
   testMaybeRef("test7c",
-    R""""(
+               R""""(
       module M {
         config const cond = false;
         proc acceptsRef(ref arg: int) { }
@@ -812,13 +812,13 @@ static void test7c() {
         }
       }
     )"""",
-    {{"M.foo@2", true}},
-    {},
-    /* expectErrors */ true);
+               {{"M.foo@2", true}},
+               {},
+               /* expectErrors */ true);
 }
 static void test7d() {
   testMaybeRef("test7d",
-    R""""(
+               R""""(
       module M {
         config const cond = false;
         var global: int;
@@ -829,11 +829,10 @@ static void test7d() {
         }
       }
     )"""",
-    {{"M.foo@2", true}},
-    {},
-    /* expectErrors */ false);
+               {{"M.foo@2", true}},
+               {},
+               /* expectErrors */ false);
 }
-
 
 // TODO: setting a maybe-const formal with =
 // TODO: check param loops

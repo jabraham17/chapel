@@ -30,15 +30,17 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-      "/* comment 1 */\n"
-      "proc foo() {\n"
-      "  /* comment 2 */\n"
-      "  /* comment 3 */\n"
-      "  return /* comment 4 */ bar() /* comment 5 */;\n"
-      "  /* comment 6 */\n"
-      "}\n"
-      "/* comment 7 */\n");
+  auto parseResult = parseStringAndReportErrors(
+    parser,
+    "test0.chpl",
+    "/* comment 1 */\n"
+    "proc foo() {\n"
+    "  /* comment 2 */\n"
+    "  /* comment 3 */\n"
+    "  return /* comment 4 */ bar() /* comment 5 */;\n"
+    "  /* comment 6 */\n"
+    "}\n"
+    "/* comment 7 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -61,15 +63,16 @@ static void test0(Parser* parser) {
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
-      "/* comment 1 */\n"
-      "proc foo() {\n"
-      "  /* comment 2 */\n"
-      "  /* comment 3 */\n"
-      "  return /* comment 4 */;\n"
-      "  /* comment 5 */\n"
-      "}\n"
-      "/* comment 6 */\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1.chpl",
+                                                "/* comment 1 */\n"
+                                                "proc foo() {\n"
+                                                "  /* comment 2 */\n"
+                                                "  /* comment 3 */\n"
+                                                "  return /* comment 4 */;\n"
+                                                "  /* comment 5 */\n"
+                                                "}\n"
+                                                "/* comment 6 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);

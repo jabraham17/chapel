@@ -33,14 +33,16 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-      "/* comment 1 */\n"
-      "do {\n"
-      "  /* comment 2 */\n"
-      "  bar();\n"
-      "  /* comment 3 */\n"
-      "} while /* comment 4 */ foo();\n"
-      "/* comment 5 */\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test0.chpl",
+                               "/* comment 1 */\n"
+                               "do {\n"
+                               "  /* comment 2 */\n"
+                               "  bar();\n"
+                               "  /* comment 3 */\n"
+                               "} while /* comment 4 */ foo();\n"
+                               "/* comment 5 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -61,15 +63,17 @@ static void test0(Parser* parser) {
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
-      "/* comment 1 */\n"
-      "do /* comment 2 */\n"
-      "  for x in thing do\n"
-      "    /* comment 3 */\n"
-      "    bar();\n"
-      "  /* comment 4 */\n"
-      "while /* comment 5 */ condition;\n"
-      "/* comment 6 */\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test1.chpl",
+                               "/* comment 1 */\n"
+                               "do /* comment 2 */\n"
+                               "  for x in thing do\n"
+                               "    /* comment 3 */\n"
+                               "    bar();\n"
+                               "  /* comment 4 */\n"
+                               "while /* comment 5 */ condition;\n"
+                               "/* comment 6 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -101,18 +105,20 @@ static void test1(Parser* parser) {
 
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
-      "/* comment 1 */\n"
-      "do\n"
-      "  /* comment 2 */\n"
-      "  do /* comment 3 */ {\n"
-      "    /* comment 4 */\n"
-      "    foo();\n"
-      "    /* comment 5 */\n"
-      "  } /* comment 6 */ while condition1;\n"
-      "  /* comment 7 */\n"
-      "while condition2;\n"
-      "/* comment 8 */\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test2.chpl",
+                               "/* comment 1 */\n"
+                               "do\n"
+                               "  /* comment 2 */\n"
+                               "  do /* comment 3 */ {\n"
+                               "    /* comment 4 */\n"
+                               "    foo();\n"
+                               "    /* comment 5 */\n"
+                               "  } /* comment 6 */ while condition1;\n"
+                               "  /* comment 7 */\n"
+                               "while condition2;\n"
+                               "/* comment 8 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);

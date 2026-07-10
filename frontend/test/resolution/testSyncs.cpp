@@ -24,7 +24,7 @@ static void testCoerceToDesync() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       var tmp1: sync int;
       var tmp2: sync real;
       var tmp3: sync bool;
@@ -32,7 +32,8 @@ static void testCoerceToDesync() {
       var x = tmp1;
       var y = tmp2;
       var z = tmp3;
-      )""", {"x", "y", "z"});
+      )""",
+                                      {"x", "y", "z"});
 
   assert(vars.at("x").type()->isIntType());
   assert(vars.at("y").type()->isRealType());
@@ -44,13 +45,14 @@ static void testExplicitCoerce() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       var tmp1: sync int;
       var tmp2: sync bool;
 
       var x: real = tmp1;
       var y: int = tmp2;
-      )""", {"x", "y"});
+      )""",
+                                      {"x", "y"});
 
   assert(vars.at("x").type()->isRealType());
   assert(vars.at("y").type()->isIntType());
@@ -61,7 +63,7 @@ static void testCoerceInCall() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       class Parent {}
       class Child : Parent {}
 
@@ -79,7 +81,8 @@ static void testCoerceInCall() {
       var y = foo2(tmp2);
       var z = foo3(tmp3);
       var w = foo4(tmp4);
-      )""", {"x", "y", "z", "w"});
+      )""",
+                                      {"x", "y", "z", "w"});
 
   assert(vars.at("x").type()->isIntType());
   assert(vars.at("y").type()->isRealType());
@@ -92,7 +95,6 @@ static void testCoerceInCall() {
   }
   guard.realizeErrors();
 }
-
 
 int main() {
   testCoerceToDesync();

@@ -32,7 +32,7 @@ static void test1() {
   ErrorGuard guard(context);
 
   QualifiedType qt = resolveTypeOfXInit(context,
-                R""""(
+                                        R""""(
                   module M {
                     record R { }
                     proc R.this(arg: int) { return 1.0; }
@@ -66,7 +66,7 @@ static void test2() {
                 )"""";
   auto m = parseModule(context, std::move(program));
   assert(m->numStmts() > 0);
-  auto begin = m->stmt(m->numStmts()-1)->toBegin();
+  auto begin = m->stmt(m->numStmts() - 1)->toBegin();
   assert(begin);
   const Variable* x = begin->stmt(0)->toVariable();
   assert(x);
@@ -100,7 +100,7 @@ static void test3() {
                 )"""";
   auto m = parseModule(context, std::move(program));
   assert(m->numStmts() > 0);
-  auto coforall = m->stmt(m->numStmts()-1)->toCoforall();
+  auto coforall = m->stmt(m->numStmts() - 1)->toCoforall();
   assert(coforall);
   const Variable* x = coforall->stmt(0)->toVariable();
   assert(x);
@@ -121,4 +121,3 @@ int main() {
 
   return 0;
 }
-

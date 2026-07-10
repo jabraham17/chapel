@@ -154,7 +154,8 @@ static void testStringBytes() {
 
     auto y = findVariable(m, "y");
     std::stringstream ss;
-    testFn->byAst(y).type().type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+    testFn->byAst(y).type().type()->stringify(ss,
+                                              chpl::StringifyKind::CHPL_SYNTAX);
     assert(ss.str() == "range(int(64), boundKind.both, strideKind.one)");
   }
 
@@ -169,7 +170,8 @@ static void testStringBytes() {
 
     auto b = findVariable(m, "b");
     std::stringstream ss;
-    testFn->byAst(b).type().type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+    testFn->byAst(b).type().type()->stringify(ss,
+                                              chpl::StringifyKind::CHPL_SYNTAX);
     assert(ss.str() == "range(int(64), boundKind.both, strideKind.one)");
   }
 }
@@ -182,4 +184,3 @@ int main() {
 
   return 0;
 }
-

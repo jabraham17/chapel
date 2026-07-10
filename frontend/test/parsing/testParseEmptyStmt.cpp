@@ -31,15 +31,16 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-        "hi();\n"
-         ";\n"
-         ";\n"
-         "tester();\n"
-         ";\n"
-         ";\n"
-         ";\n"
-         "bye();\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test0.chpl",
+                                                "hi();\n"
+                                                ";\n"
+                                                ";\n"
+                                                "tester();\n"
+                                                ";\n"
+                                                ";\n"
+                                                ";\n"
+                                                "bye();\n");
 
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -58,7 +59,7 @@ static void test0(Parser* parser) {
   assert(e6);
 
   auto fnCall1 = mod->stmt(0)->toFnCall();
-  assert(fnCall1->numActuals()==0);
+  assert(fnCall1->numActuals() == 0);
   assert(fnCall1->callUsedSquareBrackets() == false);
   auto baseExpr = fnCall1->calledExpression();
   assert(baseExpr);
@@ -66,7 +67,7 @@ static void test0(Parser* parser) {
   assert(0 == baseExprIdent->name().compare("hi"));
 
   auto fnCall2 = mod->stmt(3)->toFnCall();
-  assert(fnCall2->numActuals()==0);
+  assert(fnCall2->numActuals() == 0);
   assert(fnCall2->callUsedSquareBrackets() == false);
   auto baseExpr2 = fnCall2->calledExpression();
   assert(baseExpr2);
@@ -74,20 +75,20 @@ static void test0(Parser* parser) {
   assert(0 == baseExprIdent2->name().compare("tester"));
 
   auto fnCall3 = mod->stmt(7)->toFnCall();
-  assert(fnCall3->numActuals()==0);
+  assert(fnCall3->numActuals() == 0);
   assert(fnCall3->callUsedSquareBrackets() == false);
   auto baseExpr3 = fnCall3->calledExpression();
   assert(baseExpr3);
   auto baseExprIdent3 = baseExpr3->toIdentifier();
   assert(0 == baseExprIdent3->name().compare("bye"));
-
 }
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
-        "while true do\n"
-         ";\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1.chpl",
+                                                "while true do\n"
+                                                ";\n");
 
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -96,26 +97,26 @@ static void test1(Parser* parser) {
   auto stmt = mod->stmt(0)->toWhile();
   assert(stmt);
   auto cond = stmt->condition()->toBoolLiteral();
-  assert(cond->value()==true);
+  assert(cond->value() == true);
   assert(stmt->blockStyle() == BlockStyle::IMPLICIT);
-  assert(stmt->numStmts()==1);
+  assert(stmt->numStmts() == 1);
   auto body = stmt->body();
   assert(body);
-  assert(body->numChildren()==1);
+  assert(body->numChildren() == 1);
   // TODO: Why is the body blockstyle EXPLICIT here? Shouldn't it follow
   // from the parent loop blockstyle?
   // Yes, but it requires changes to parser and some nodes (like Loop) to get
   // the blockStyle from the child instead of storing it in the parent
   // (or at least make sure the styles match when the node is built)
-  assert(body->blockStyle()==BlockStyle::EXPLICIT);
+  assert(body->blockStyle() == BlockStyle::EXPLICIT);
   auto e1 = body->stmt(0)->toEmptyStmt();
   assert(e1);
 }
 
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
-        "cobegin { ; writeln['']; }\n");
+  auto parseResult = parseStringAndReportErrors(
+    parser, "test2.chpl", "cobegin { ; writeln['']; }\n");
 
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -128,7 +129,7 @@ static void test2(Parser* parser) {
   assert(e1);
   auto call = stmt->taskBody(1)->toFnCall();
   assert(call);
-  assert(call->numActuals()==1);
+  assert(call->numActuals() == 1);
   assert(call->callUsedSquareBrackets() == true);
   auto baseExpr = call->calledExpression();
   assert(baseExpr);
@@ -143,10 +144,11 @@ static void test3(Parser* parser) {
   // It originated from test/users/thom/topLevelCode.chpl and causes some
   // discrepancy in the test result between dyno and production
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
-        "proc myProc();\n"
-        "{\n //comment;\n"
-        "}");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test3.chpl",
+                                                "proc myProc();\n"
+                                                "{\n //comment;\n"
+                                                "}");
 
   // Now has error: "non-extern functions must have a body"!
   assert(guard.realizeErrors() == 1);
@@ -160,9 +162,7 @@ static void test3(Parser* parser) {
   assert(blk->numStmts() == 1);
   auto comm = blk->stmt(0)->toComment();
   assert(comm);
-
 }
-
 
 int main() {
   Context context;

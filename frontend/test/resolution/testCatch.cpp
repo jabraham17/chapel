@@ -26,8 +26,6 @@
 
 // helper functions
 
-
-
 /* Check that when resolving program, catchIdStr maps to the catch block,
     the catch block's error variable has the argIdStr given, and the error
     variable maps to the type given by varIdStr. If expectedErrorCount is given,
@@ -41,8 +39,8 @@ static void testIt(const char* testName,
                    const char* catchIdStr,
                    const char* argIdStr,
                    const char* varIdStr,
-                   int expectedErrorCount=0,
-                   bool validateClassType=true) {
+                   int expectedErrorCount = 0,
+                   bool validateClassType = true) {
   printf("test %s\n", testName);
   Context* context = buildStdContext();
   ErrorGuard guard(context);
@@ -97,7 +95,6 @@ static void testIt(const char* testName,
     assert(guard.realizeErrors() == expectedErrorCount);
   }
 }
-
 
 static void test1() {
   // test for a catch block with explicit error variable that inherits from
@@ -203,10 +200,10 @@ static void test5() {
 }
 
 static void test6() {
-// test for a bad error type (int) in the catch block
-  std::string testName="test6.chpl";
+  // test for a bad error type (int) in the catch block
+  std::string testName = "test6.chpl";
   auto program =
-         R""""(
+    R""""(
             module M {
               proc foo() throws { }
               proc main() {
@@ -217,20 +214,21 @@ static void test6() {
               }
             }
          )"""";
-         testIt(testName.c_str(), program,
-                "int",
-                "M.main@6",
-                "M.main@4",
-                "M.main@3",
-                1,
-                false);
+  testIt(testName.c_str(),
+         program,
+         "int",
+         "M.main@6",
+         "M.main@4",
+         "M.main@3",
+         1,
+         false);
 }
 
 static void test7() {
   // test for a bad error type (MyClass doesn't inherit from Error) in the catch block
-  std::string testName="test7.chpl";
+  std::string testName = "test7.chpl";
   auto program =
-         R""""(
+    R""""(
             module M {
               proc foo() throws { }
               class MyClass {}
@@ -242,13 +240,14 @@ static void test7() {
               }
             }
          )"""";
-    testIt(testName.c_str(), program,
-        "MyClass",
-        "M.main@6",
-        "M.main@4",
-        "M.main@3",
-        1,
-        true);
+  testIt(testName.c_str(),
+         program,
+         "MyClass",
+         "M.main@6",
+         "M.main@4",
+         "M.main@3",
+         1,
+         true);
 }
 
 static void test8() {
@@ -356,7 +355,6 @@ static void test10(Parser* parser) {
   assert(guard.realizeErrors() == 1);
 }
 
-
 // catchall placed before the end of a catch list in non-throwing function
 static void test11(Parser* parser) {
   auto ctx = buildStdContext();
@@ -386,11 +384,11 @@ static void test11(Parser* parser) {
   assert(resFunc);
 
   assert(guard.numErrors() == 1);
-  assert(guard.error(0)->message() == "catchall placed before the end of a catch list");
+  assert(guard.error(0)->message() ==
+         "catchall placed before the end of a catch list");
   assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
   assert(guard.realizeErrors() == 1);
 }
-
 
 // cannot throw in a non-throwing function
 static void test12(Parser* parser) {
@@ -443,7 +441,6 @@ static void test12b(Parser* parser) {
   auto resFunc = resolveConcreteFunction(ctx, func->id());
   assert(resFunc);
 }
-
 
 // after compilerError, try-catch analysis should go and try access unresolved
 // AST.
@@ -635,9 +632,6 @@ static void test15(Parser* parser) {
 
 // check relaxed error checking mode
 
-
-
-
 // check fatal error handling mode
 static void test16(Parser* parser) {
   auto ctx = buildStdContext();
@@ -729,7 +723,6 @@ static void test18(Parser* parser) {
   assert(!guard.realizeErrors());
 }
 
-
 // check fatal error handling mode - implicit module
 static void test19(Parser* parser) {
 
@@ -758,7 +751,6 @@ static void test19(Parser* parser) {
 
   assert(!guard.realizeErrors());
 }
-
 
 static void test20(Parser* parser) {
   auto ctx = buildStdContext();
@@ -804,9 +796,8 @@ static void test20(Parser* parser) {
   assert(guard.realizeErrors() == 1);
 }
 
-
 static void test21(Parser* parser) {
- auto ctx = buildStdContext();
+  auto ctx = buildStdContext();
   auto path = UniqueString::get(ctx, "test21.chpl");
 
   ErrorGuard guard(ctx);
@@ -938,7 +929,7 @@ static void test25() {
   ErrorGuard guard(ctx);
 
   auto t = resolveTypeOfX(ctx,
-                R""""(
+                          R""""(
                   proc inner() throws { throw new Error(); }
                   proc outer() throws { try inner(); return 0; }
                   var x = try! outer();
@@ -1161,7 +1152,6 @@ static void test32() {
 }
 
 // TODO: error handling in defer blocks must be complete
-
 
 int main() {
   Context* ctx = buildStdContext();

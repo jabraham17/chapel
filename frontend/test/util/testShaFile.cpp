@@ -25,10 +25,8 @@
 
 using namespace chpl;
 
-static void checkHash(const char* name,
-                      std::string data,
-                      std::string expectHex) {
-
+static void
+checkHash(const char* name, std::string data, std::string expectHex) {
 
   printf("hash test %s\n", name);
 
@@ -44,7 +42,7 @@ static void checkHash(const char* name,
   }
 
   llvm::ErrorOr<HashFileResult> hashOrErr = hashFile(name);
-  
+
   // delete the file since it is no longer needed
   remove(name);
 
@@ -69,9 +67,11 @@ static void checkHash(const char* name,
 
 static void testHashes() {
   // sha-256
-  checkHash("hello.data", "hello",
+  checkHash("hello.data",
+            "hello",
             "2CF24DBA5FB0A30E26E83B2AC5B9E29E1B161E5C1FA7425E73043362938B9824");
-  checkHash("ones.data", std::string(1024*1024*32, '1'),
+  checkHash("ones.data",
+            std::string(1024 * 1024 * 32, '1'),
             "34511EDC22A4D5749A71FF3D4A47AAC494214D65EE88EC69FAC46C9ABDF5CE0D");
 }
 

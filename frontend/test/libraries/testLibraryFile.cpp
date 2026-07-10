@@ -63,27 +63,29 @@ static void checkBuilderResultLocations(Context* context,
     assert(parsedLoc == loadedLoc);
   }
 
-  // check also the locations of the additional maps
-  #define LOCATION_MAP(ast__, location__) { \
+// check also the locations of the additional maps
+#define LOCATION_MAP(ast__, location__)                                        \
+  {                                                                            \
     Location parsedLoc = parsed.idTo##location__##Location(context, id, path); \
     Location loadedLoc = loaded.idTo##location__##Location(context, id, path); \
-    assert(parsedLoc == loadedLoc); \
+    assert(parsedLoc == loadedLoc);                                            \
   }
-  #include "chpl/uast/all-location-maps.h"
-  #undef LOCATION_MAP
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
 
   // recurse to check child nodes
   for (int i = 0; i < numChildren; i++) {
-    checkBuilderResultLocations(context, filename,
-                                parsed, parsedAst->child(i),
-                                loaded, loadedAst->child(i));
+    checkBuilderResultLocations(context,
+                                filename,
+                                parsed,
+                                parsedAst->child(i),
+                                loaded,
+                                loadedAst->child(i));
   }
 }
 
-
-static void testStoreLoadAst(const char* test,
-                             const char* modname,
-                             const char* program) {
+static void
+testStoreLoadAst(const char* test, const char* modname, const char* program) {
   printf("%s\n", test);
 
   Context ctx;
@@ -126,23 +128,23 @@ static void testStoreLoadAst(const char* test,
   const BuilderResult& loaded = lf->loadSourceAst(context, path);
   assert(loaded.singleModule() == loadedMod);
 
-  checkBuilderResultLocations(context, filename.c_str(),
-                              parsed, parsedMod, loaded, loadedMod);
+  checkBuilderResultLocations(
+    context, filename.c_str(), parsed, parsedMod, loaded, loadedMod);
 }
 
 static void testStrings() {
-  std::vector<const char*> strings =
-    {"a",
-     "hello",
-     "abcdefghijklmnopqrstuvwxyz",
-     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
-     "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-     // each of these concatenated strings is 50 characters long,
-     // so the resulting string is 200 characters long.
-     "a0123456789b0123456789c0123456789d0123456789a0a0a0"
-     "a0123456789b0123456789c0123456789d0123456789b1b1b1"
-     "a0123456789b0123456789c0123456789d0123456789c2c2c2"
-     "a0123456789b0123456789c0123456789d0123456789d3d3d3"};
+  std::vector<const char*> strings = {
+    "a",
+    "hello",
+    "abcdefghijklmnopqrstuvwxyz",
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
+    "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+    // each of these concatenated strings is 50 characters long,
+    // so the resulting string is 200 characters long.
+    "a0123456789b0123456789c0123456789d0123456789a0a0a0"
+    "a0123456789b0123456789c0123456789d0123456789b1b1b1"
+    "a0123456789b0123456789c0123456789d0123456789c2c2c2"
+    "a0123456789b0123456789c0123456789d0123456789d3d3d3"};
 
   for (auto s : strings) {
     std::string str = std::string(s);
@@ -150,8 +152,6 @@ static void testStrings() {
     testStoreLoadAst("string-test", "M", code.c_str());
   }
 }
-
-
 
 int main(int argc, char** argv) {
   // use the passed file if provided
@@ -171,7 +171,8 @@ int main(int argc, char** argv) {
                                           }
                                         }
                                       )"""");
-  testStoreLoadAst("test4",  "test4",
+  testStoreLoadAst("test4",
+                   "test4",
                    R""""(
                           class C { var x: int; }
                           record R { var y: int; }
@@ -180,7 +181,8 @@ int main(int argc, char** argv) {
                           var rr = new R(2);
                           var zz = rr.secondary("actual");
                         )"""");
-  testStoreLoadAst("test5", "SomeVeryLongIdentifierName",
+  testStoreLoadAst("test5",
+                   "SomeVeryLongIdentifierName",
                    R""""(
                            module SomeVeryLongIdentifierName {
                              var anEvenLongerIntegerVariableName: int;

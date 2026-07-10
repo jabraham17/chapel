@@ -35,7 +35,8 @@
 
 #include <array>
 
-static void testRange(Parser* parser, const char* testName,
+static void testRange(Parser* parser,
+                      const char* testName,
                       const char* intervalStr,
                       bool hasLowerBound,
                       bool hasUpperBound) {
@@ -81,7 +82,8 @@ static void testRange(Parser* parser, const char* testName,
   }
 }
 
-static void testArrayDomain(Parser* parser, const char* testName,
+static void testArrayDomain(Parser* parser,
+                            const char* testName,
                             bool isArray,
                             int numElements,
                             bool hasTrailingComma) {
@@ -92,12 +94,12 @@ static void testArrayDomain(Parser* parser, const char* testName,
   std::string test = isArray ? "var a = " : "var d = ";
   test += isArray ? "[" : "{";
 
-  for (int i = 0; i < numElements-1; i++) {
+  for (int i = 0; i < numElements - 1; i++) {
     test += std::to_string(i);
     test += ", ";
   }
 
-  test += std::to_string(numElements-1);
+  test += std::to_string(numElements - 1);
   if (hasTrailingComma) {
     test += ",";
   }
@@ -149,10 +151,10 @@ static void testArrayDomain(Parser* parser, const char* testName,
   assert(i == numElements);
 }
 
-template<size_t N>
-static std::string getNDArrayRows(std::array<int, N> shape,
-                                  int idx, bool trailingCommas) {
-  if (idx == N-1) {
+template <size_t N>
+static std::string
+getNDArrayRows(std::array<int, N> shape, int idx, bool trailingCommas) {
+  if (idx == N - 1) {
     std::string test = "";
     std::string sep;
     for (int i = 0; i < shape[idx]; i++) {
@@ -168,14 +170,14 @@ static std::string getNDArrayRows(std::array<int, N> shape,
     std::string sep;
     for (int i = 0; i < shape[idx]; i++) {
 
-      test += sep + getNDArrayRows(shape, idx+1, trailingCommas);
-      sep = std::string(N-idx-1, ';');
+      test += sep + getNDArrayRows(shape, idx + 1, trailingCommas);
+      sep = std::string(N - idx - 1, ';');
     }
     return test;
   }
 }
 
-template<size_t N>
+template <size_t N>
 static void testNDArrayShape(Parser* parser,
                              std::array<int, N> shape,
                              bool trailingCommas) {
@@ -192,7 +194,8 @@ static void testNDArrayShape(Parser* parser,
   std::cout << "--- " << testName << " ---" << std::endl;
   std::cout << test << std::endl << "====" << std::endl;
 
-  auto parseResult = parseStringAndReportErrors(parser, testName.c_str(), test.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, testName.c_str(), test.c_str());
 
   assert(!guard.realizeErrors());
 
@@ -206,7 +209,7 @@ static void testNDArrayShape(Parser* parser,
 
   std::function<void(const AstNode*, decltype(shape), int)> checkerFunc;
   checkerFunc = [&checkerFunc](const AstNode* expr, auto shape, int idx) {
-    if (idx == shape.size()-1) {
+    if (idx == shape.size() - 1) {
       auto row = expr->toArrayRow();
       assert(row);
       assert(row->numExprs() == shape[idx]);
@@ -221,18 +224,16 @@ static void testNDArrayShape(Parser* parser,
       }
       assert(expr->numChildren() == shape[idx]);
       for (auto expr : expr->children()) {
-        checkerFunc(expr, shape, idx+1);
+        checkerFunc(expr, shape, idx + 1);
       }
     }
   };
 
   checkerFunc(arr, shape, 0);
-
 }
 
-static void testNDArrayLiteral(Parser* parser,
-                               const char* literal,
-                               int nArrayRows) {
+static void
+testNDArrayLiteral(Parser* parser, const char* literal, int nArrayRows) {
   static int counter = 0;
   auto testName = std::string(__func__) + std::to_string(counter++) + ".chpl";
 
@@ -244,7 +245,8 @@ static void testNDArrayLiteral(Parser* parser,
   std::cout << "--- " << testName << " ---" << std::endl;
   std::cout << test << std::endl << "====" << std::endl;
 
-  auto parseResult = parseStringAndReportErrors(parser, testName.c_str(), test.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, testName.c_str(), test.c_str());
 
   assert(!guard.realizeErrors());
 
@@ -267,9 +269,8 @@ static void testNDArrayLiteral(Parser* parser,
   assert(nArrayRows == counterFunc(arr));
 }
 
-static void testNDArrayError(Parser* parser,
-                             const char* literal,
-                             int numErrors) {
+static void
+testNDArrayError(Parser* parser, const char* literal, int numErrors) {
   static int counter = 0;
   auto testName = std::string(__func__) + std::to_string(counter++) + ".chpl";
 
@@ -281,11 +282,11 @@ static void testNDArrayError(Parser* parser,
   std::cout << "--- " << testName << " ---" << std::endl;
   std::cout << test << std::endl << "====" << std::endl;
 
-  auto parseResult = parseStringAndReportErrors(parser, testName.c_str(), test.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, testName.c_str(), test.c_str());
 
   assert(guard.realizeErrors() == numErrors);
 }
-
 
 int main() {
   Context context;

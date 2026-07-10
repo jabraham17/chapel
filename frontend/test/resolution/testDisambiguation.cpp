@@ -31,7 +31,7 @@ struct GatherStuff {
 
   // traverse into everything
   bool enter(const AstNode* ast) { return true; }
-  void exit(const AstNode* ast) { }
+  void exit(const AstNode* ast) {}
 
   bool enter(const Function* ast) {
     fns.push_back(ast);
@@ -79,12 +79,14 @@ static void checkCalledIndex(Context* context,
 
   // resolve the individual module statement, since the full module
   // resolution performs return intent selection and discards unrelated candidates.
-  const ResolutionResultByPostorderID& rr = resolveModuleStmt(context, parsing::idToParentModuleStmt(context, stuff.fnCalls.back()->id()));
+  const ResolutionResultByPostorderID& rr = resolveModuleStmt(
+    context,
+    parsing::idToParentModuleStmt(context, stuff.fnCalls.back()->id()));
   const ResolvedExpression& re = rr.byAst(stuff.fnCalls.back());
   const MostSpecificCandidates& s = re.mostSpecific();
 
   // disambiguation tests should either have a best candidate or be ambiguous.
-  assert (!s.isEmpty() || s.isAmbiguous());
+  assert(!s.isEmpty() || s.isAmbiguous());
 
   int foundOnlyIdx = 0;
   int foundBestRef = 0;
@@ -129,92 +131,91 @@ static void test1() {
   auto context = buildStdContext();
 
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         proc f(arg: int) { }   // 1
         proc f(arg: real) { }  // 2
         var x: int;
         f(x);
       )"""",
-    1);
+                   1);
 
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         proc f(arg: real) { }  // 1
         proc f(arg: int) { }   // 2
         var x: int;
         f(x);
       )"""",
-    2);
+                   2);
 
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         proc f(param arg: int) { }   // 1
         proc f(param arg: real) { }  // 2
         param x = 1;
         f(x);
       )"""",
-    1);
+                   1);
 
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         proc f(param arg: real) { }  // 1
         proc f(param arg: int) { }   // 2
         param x = 1;
         f(x);
       )"""",
-    2);
+                   2);
 }
 
 static void test2() {
   auto context = buildStdContext();
 
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         proc f(arg) { }           // 1
         proc f(arg: numeric) { }  // 2
         proc f(arg: int) { }      // 3
         var x: int;
         f(x);
       )"""",
-    3);
+                   3);
 
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         proc f(arg) { }           // 1
         proc f(arg: numeric) { }  // 2
         proc f(arg: int) { }      // 3
         var x: real;
         f(x);
       )"""",
-    2);
+                   2);
 
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         proc f(arg) { }           // 1
         proc f(arg: numeric) { }  // 2
         proc f(arg: int) { }      // 3
         var x: string;
         f(x);
       )"""",
-    1);
+                   1);
 
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         proc f(arg: numeric) { }  // 1
         proc f(arg: int) { }      // 2
         proc f(arg) { }           // 3
         var x: string;
         f(x);
       )"""",
-    3);
-
+                   3);
 }
 
 static void test3() {
   auto context = buildStdContext();
 
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         var g: int;
         proc f(arg: int) ref { return g; }        // 1
         proc f(arg: int) const ref { return g; }  // 2
@@ -224,10 +225,13 @@ static void test3() {
         var x: int;
         f(x);
       )"""",
-    0, 1, 2, 3);
+                   0,
+                   1,
+                   2,
+                   3);
 
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         var g: int;
         proc f(arg: real) { }                     // 1
         proc f(arg: numeric) { }                  // 2
@@ -237,10 +241,13 @@ static void test3() {
         var x: int;
         f(x);
       )"""",
-    0, 5, 4, 3);
+                   0,
+                   5,
+                   4,
+                   3);
 
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         var g: int;
         proc f(arg: int) ref { return g; }        // 1
         proc f(arg: int) const ref { return g; }  // 2
@@ -250,10 +257,10 @@ static void test3() {
         var x: real;
         f(x);
       )"""",
-    5);
+                   5);
 
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         var g: int;
         proc f(arg: real) { }                     // 1
         proc f(arg: numeric) { }                  // 2
@@ -263,11 +270,11 @@ static void test3() {
         var x: real;
         f(x);
       )"""",
-    1);
+                   1);
 
   // updated disambiguation based on visibility of proc
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         proc f(arg: int) { }                     // 1
         {
           proc f(arg) { }                        // 2
@@ -276,7 +283,7 @@ static void test3() {
           f(x);
         }
       )"""",
-    2);
+                   2);
 }
 
 // updated disambiguation based on width of argument
@@ -308,9 +315,9 @@ static void test4() {
   GatherStuff stuff;
   m->traverse(stuff);
 
-  assert(stuff.fns.size() > 1); // > 1 needed for disambiguation
+  assert(stuff.fns.size() > 1);      // > 1 needed for disambiguation
   assert(stuff.fnCalls.size() == 4); // we have 3 calls defining types prior to
-                                      // the call to f that we care about
+                                     // the call to f that we care about
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   auto fnCall = stuff.fnCalls[3];
@@ -319,7 +326,7 @@ static void test4() {
   const MostSpecificCandidates& s = re.mostSpecific();
 
   // disambiguation tests should either have a best candidate or be ambiguous.
-  assert (!s.isEmpty());
+  assert(!s.isEmpty());
 
   int foundOnlyIdx = 0;
   int i = 1;
@@ -379,13 +386,13 @@ static void test7() {
   ErrorGuard guard(context);
 
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         proc f(param arg: int(8)) { }   // 1
         proc f(param arg: int(16)) { }  // 2
         param x = 1;
         f(x);
       )"""",
-    1);
+                   1);
 }
 
 static void testDistance() {
@@ -440,7 +447,7 @@ static void testPartialGeneric1() {
   auto context = buildStdContext();
 
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         record R {
           type T;
           param p : T;
@@ -450,7 +457,7 @@ static void testPartialGeneric1() {
         var arg = new R(int, 100);
         f(arg);
       )"""",
-    1);
+                   1);
 }
 
 // Test partial instantiation: class with management
@@ -459,7 +466,7 @@ static void testPartialGeneric2() {
 
   // 'owned' makes both partially generic; this is ambiguous in prod.
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         class C {
           type T;
           param n : int;
@@ -469,10 +476,10 @@ static void testPartialGeneric2() {
         var arg = new owned C(int, 4);
         f(arg);
       )"""",
-    -1);
+                   -1);
 
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         class C {
           type T;
           param n : int;
@@ -482,7 +489,7 @@ static void testPartialGeneric2() {
         var arg = new owned C(string, 10);
         f(arg);
       )"""",
-    1);
+                   1);
 }
 
 // Test partial instantiation: param values constrain the type
@@ -490,7 +497,7 @@ static void testPartialGeneric3() {
   auto context = buildStdContext();
 
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         class C {
           type T;
           param n : int;
@@ -500,7 +507,7 @@ static void testPartialGeneric3() {
         var arg = new owned C(string, 4);
         f(arg);
       )"""",
-    1);
+                   1);
 }
 
 // Test partial instantiation: tuple types constrain size
@@ -508,22 +515,22 @@ static void testPartialGeneric4() {
   auto context = buildStdContext();
 
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         proc f(x : (int, ?)) { }   // 1 - partially generic (size constrained)
         proc f(x : _tuple) { }     // 2 - fully generic
         var arg = (1, 2);
         f(arg);
       )"""",
-    1);
+                   1);
 
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         proc f(x : (?, ?)) { }   // 1 - partially generic (size constrained)
         proc f(x : _tuple) { }   // 2 - fully generic
         var arg = (1, 2);
         f(arg);
       )"""",
-    1);
+                   1);
 }
 
 // Test partial instantiation: array element types
@@ -531,13 +538,13 @@ static void testPartialGeneric5() {
   auto context = buildStdContext();
 
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         proc f(x : [1..10] int) { }  // 1 - partially generic (element type specified)
         proc f(x : [1..10] ?) { }    // 2 - fully generic
         var arg : [1..10] int;
         f(arg);
       )"""",
-    1);
+                   1);
 }
 
 // Test multiple fields with different specificity
@@ -545,7 +552,7 @@ static void testPartialGeneric6() {
   auto context = buildStdContext();
 
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         record R {
           type T;
           type U;
@@ -556,7 +563,7 @@ static void testPartialGeneric6() {
         var arg : R(int, int);
         f(arg);
       )"""",
-    -1); // ambiguous between 1 and 2
+                   -1); // ambiguous between 1 and 2
 }
 
 // regression test; vararg counts are not part of a formal's type and thus
@@ -569,12 +576,12 @@ static void testPartialGeneric6() {
 static void testPartialGeneric7() {
   auto context = buildStdContext();
   checkCalledIndex(context,
-      R""""(
+                   R""""(
         proc f(const args...?n, type eltType) { }  // 1 - fully generic
         proc f(arg1, arg2, type eltType=real) where isIntegral(arg1) && isIntegral(arg2) { }  // 2 - fully generic
         f(5, 10, int);
       )"""",
-    2); // where clause makes 2 more specific
+                   2); // where clause makes 2 more specific
 }
 
 int main() {

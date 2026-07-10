@@ -82,7 +82,6 @@ static void checkEmptyOrComment() {
   assert(rc == 0);
 }
 
-
 int main(int argc, char** argv) {
 
   checkNonexistent();

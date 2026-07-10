@@ -21,23 +21,33 @@
 #include "chpl/resolution/resolution-queries.h"
 #include "test-resolution.h"
 
-static void ensureErrorOnLine(Context* context, const std::vector<owned<ErrorBase>>& errors, ErrorType type, int line, const char* message, bool allowOthers = false) {
+static void ensureErrorOnLine(Context* context,
+                              const std::vector<owned<ErrorBase>>& errors,
+                              ErrorType type,
+                              int line,
+                              const char* message,
+                              bool allowOthers = false) {
   for (auto& error : errors) {
     if (error->type() != type) continue;
     bool matches = error->location(context).firstLine() == line &&
                    error->message() == message;
     if (!matches && !allowOthers) {
-      assert(false && "error found on a different line or with different message");
+      assert(false &&
+             "error found on a different line or with different message");
     }
     if (matches) return;
   }
   assert(false && "error not found");
 }
 
-static void ensureErrorInErrorsModule(Context* context, const std::vector<owned<ErrorBase>>& errors, ErrorType type) {
+static void
+ensureErrorInErrorsModule(Context* context,
+                          const std::vector<owned<ErrorBase>>& errors,
+                          ErrorType type) {
   for (auto& error : errors) {
     if (error->type() != type) continue;
-    assert(error->location(context).path().endsWith("modules/standard/Errors.chpl"));
+    assert(
+      error->location(context).path().endsWith("modules/standard/Errors.chpl"));
     return;
   }
   assert(false && "error not found");
@@ -56,8 +66,10 @@ static void testDirect() {
     )""";
 
   resolveTypesOfVariables(ctx, program, {"x"});
-  ensureErrorInErrorsModule(ctx, guard.errors(), ErrorType::UserDiagnosticEncounterError);
-  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 6, "some error");
+  ensureErrorInErrorsModule(
+    ctx, guard.errors(), ErrorType::UserDiagnosticEncounterError);
+  ensureErrorOnLine(
+    ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 6, "some error");
   guard.realizeErrors();
 }
 
@@ -74,8 +86,10 @@ static void testDirectWarn() {
     )""";
 
   resolveTypesOfVariables(ctx, program, {"x"});
-  ensureErrorInErrorsModule(ctx, guard.errors(), ErrorType::UserDiagnosticEncounterWarning);
-  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitWarning, 6, "some error");
+  ensureErrorInErrorsModule(
+    ctx, guard.errors(), ErrorType::UserDiagnosticEncounterWarning);
+  ensureErrorOnLine(
+    ctx, guard.errors(), ErrorType::UserDiagnosticEmitWarning, 6, "some error");
   guard.realizeErrors();
 }
 
@@ -93,8 +107,10 @@ static void testDepth2() {
     )""";
 
   resolveTypesOfVariables(ctx, program, {"x"});
-  ensureErrorInErrorsModule(ctx, guard.errors(), ErrorType::UserDiagnosticEncounterError);
-  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 7, "some error");
+  ensureErrorInErrorsModule(
+    ctx, guard.errors(), ErrorType::UserDiagnosticEncounterError);
+  ensureErrorOnLine(
+    ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 7, "some error");
   guard.realizeErrors();
 }
 
@@ -113,8 +129,10 @@ static void testDepth3() {
     )""";
 
   resolveTypesOfVariables(ctx, program, {"x"});
-  ensureErrorInErrorsModule(ctx, guard.errors(), ErrorType::UserDiagnosticEncounterError);
-  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 8, "some error");
+  ensureErrorInErrorsModule(
+    ctx, guard.errors(), ErrorType::UserDiagnosticEncounterError);
+  ensureErrorOnLine(
+    ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 8, "some error");
   guard.realizeErrors();
 }
 
@@ -131,8 +149,10 @@ static void testTooDeep() {
     )""";
 
   resolveTypesOfVariables(ctx, program, {"x"});
-  ensureErrorInErrorsModule(ctx, guard.errors(), ErrorType::UserDiagnosticEncounterError);
-  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 6, "some error");
+  ensureErrorInErrorsModule(
+    ctx, guard.errors(), ErrorType::UserDiagnosticEncounterError);
+  ensureErrorOnLine(
+    ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 6, "some error");
   guard.realizeErrors();
 }
 
@@ -149,8 +169,13 @@ static void testVarArgs() {
     )""";
 
   resolveTypesOfVariables(ctx, program, {"x"});
-  ensureErrorInErrorsModule(ctx, guard.errors(), ErrorType::UserDiagnosticEncounterError);
-  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 6, "this is some error message");
+  ensureErrorInErrorsModule(
+    ctx, guard.errors(), ErrorType::UserDiagnosticEncounterError);
+  ensureErrorOnLine(ctx,
+                    guard.errors(),
+                    ErrorType::UserDiagnosticEmitError,
+                    6,
+                    "this is some error message");
   guard.realizeErrors();
 }
 
@@ -169,9 +194,24 @@ static void testTwoErrors() {
     )""";
 
   resolveTypesOfVariables(ctx, program, {"x", "y"});
-  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEncounterError, 644, "no", /* allowOthers = */ true);
-  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 5, "no", /* allowOthers = */ true);
-  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 7, "no", /* allowOthers = */ true);
+  ensureErrorOnLine(ctx,
+                    guard.errors(),
+                    ErrorType::UserDiagnosticEncounterError,
+                    644,
+                    "no",
+                    /* allowOthers = */ true);
+  ensureErrorOnLine(ctx,
+                    guard.errors(),
+                    ErrorType::UserDiagnosticEmitError,
+                    5,
+                    "no",
+                    /* allowOthers = */ true);
+  ensureErrorOnLine(ctx,
+                    guard.errors(),
+                    ErrorType::UserDiagnosticEmitError,
+                    7,
+                    "no",
+                    /* allowOthers = */ true);
   guard.realizeErrors();
 }
 
@@ -197,7 +237,8 @@ static void testRunAndTrackErrors() {
   });
   assert(!result.ranWithoutErrors());
   assert(result.errors().size() == 2);
-  ensureErrorInErrorsModule(ctx, result.errors(), ErrorType::UserDiagnosticEncounterError);
+  ensureErrorInErrorsModule(
+    ctx, result.errors(), ErrorType::UserDiagnosticEncounterError);
 }
 
 static void testInfiniteRecursion() {
@@ -250,9 +291,20 @@ static void testEarlyReturn() {
 
   auto x = resolveTypeOfX(ctx, program);
   assert(x->isIntType());
-  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitError, 3, "Hello", /* allowOthers = */ true);
-  ensureErrorOnLine(ctx, guard.errors(), ErrorType::UserDiagnosticEmitWarning, 13, "inside foo, after call to bar", /* allowOthers = */ true);
-  assert(guard.realizeErrors() == 4); /* two more for UserDiagnosticEncounter{Error,Warning} */
+  ensureErrorOnLine(ctx,
+                    guard.errors(),
+                    ErrorType::UserDiagnosticEmitError,
+                    3,
+                    "Hello",
+                    /* allowOthers = */ true);
+  ensureErrorOnLine(ctx,
+                    guard.errors(),
+                    ErrorType::UserDiagnosticEmitWarning,
+                    13,
+                    "inside foo, after call to bar",
+                    /* allowOthers = */ true);
+  assert(guard.realizeErrors() ==
+         4); /* two more for UserDiagnosticEncounter{Error,Warning} */
 }
 
 int main() {

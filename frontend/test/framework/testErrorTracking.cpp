@@ -27,7 +27,6 @@
 
 using namespace chpl;
 
-
 static const std::string& inputQuery(Context* context) {
   QUERY_BEGIN_INPUT(inputQuery, context);
   std::string result = "This is from input";
@@ -44,33 +43,32 @@ static const std::string& queryThatErrors(Context* context) {
 static const std::string& queryThatCapturesErrors(Context* context) {
   QUERY_BEGIN(queryThatCapturesErrors, context);
   std::string output = "";
-  auto fineResult = context->runAndCaptureErrors([](Context* ctx) {
-    return inputQuery(ctx);
-  });
+  auto fineResult =
+    context->runAndCaptureErrors([](Context* ctx) { return inputQuery(ctx); });
   output += fineResult.ranWithoutErrors() ? "no errors" : "errors";
   output += " on the first go; ";
-  auto badResult = context->runAndCaptureErrors([](Context* ctx) {
-    return queryThatErrors(ctx);
-  });
+  auto badResult = context->runAndCaptureErrors(
+    [](Context* ctx) { return queryThatErrors(ctx); });
   output += badResult.ranWithoutErrors() ? "no errors" : "errors";
   output += " on the second go";
 
-  context->error(ID(), "Besides the errors I captured, I also had my own error.");
+  context->error(ID(),
+                 "Besides the errors I captured, I also had my own error.");
   return QUERY_END(output);
 }
 
 static const std::string& queryThatCapturesCapturingErrors(Context* context) {
   QUERY_BEGIN(queryThatCapturesCapturingErrors, context);
   std::string output = "";
-  auto result = context->runAndCaptureErrors([](Context* ctx) {
-    return queryThatCapturesErrors(ctx);
-  });
+  auto result = context->runAndCaptureErrors(
+    [](Context* ctx) { return queryThatCapturesErrors(ctx); });
   output += "[" + result.result() + "] ";
   output += "error count: " + std::to_string(result.errors().size());
   return QUERY_END(output);
 }
 
-static const std::string& queryThatRunsQueryThatCapturesErrors(Context* context) {
+static const std::string&
+queryThatRunsQueryThatCapturesErrors(Context* context) {
   QUERY_BEGIN(queryThatRunsQueryThatCapturesErrors, context);
   std::string output = "(" + queryThatCapturesErrors(context) + ")";
   return QUERY_END(output);
@@ -94,12 +92,12 @@ static const std::string& queryThatSilencesOwnErrors(Context* context) {
   return QUERY_END(output);
 }
 
-static const std::string& queryThatTracksQueryThatSilencesOwnErrors(Context* context) {
+static const std::string&
+queryThatTracksQueryThatSilencesOwnErrors(Context* context) {
   QUERY_BEGIN(queryThatTracksQueryThatSilencesOwnErrors, context);
 
-  auto result = context->runAndCaptureErrors([](Context* ctx) {
-    return queryThatSilencesOwnErrors(ctx);
-  });
+  auto result = context->runAndCaptureErrors(
+    [](Context* ctx) { return queryThatSilencesOwnErrors(ctx); });
 
   std::string output = "{" + result.result() + "}";
   return QUERY_END(output);
@@ -112,24 +110,29 @@ static void test1() {
   ErrorGuard guard(context);
 
   // Doesn't have errors at the top level; no errors should make it to us.
-  assert(queryThatCapturesCapturingErrors(context) == "[no errors on the first go; errors on the second go] error count: 1");
+  assert(queryThatCapturesCapturingErrors(context) ==
+         "[no errors on the first go; errors on the second go] error count: 1");
   assert(guard.errors().size() == 0);
 
   // Does have an error that was captured by the previous call, and captures
   // other errors but shouldn't report them.
-  assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
+  assert(queryThatCapturesErrors(context) ==
+         "no errors on the first go; errors on the second go");
   assert(guard.errors().size() == 1);
 
   // Now the hidden errors have been re-reported; no new errors should be reported
   // after the second call.
-  assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
+  assert(queryThatCapturesErrors(context) ==
+         "no errors on the first go; errors on the second go");
   assert(guard.errors().size() == 1);
 
   // This query had an error captured before, but now it should be reported.
-  assert(queryThatErrors(context) == "I returned a value but I also reported an error");
+  assert(queryThatErrors(context) ==
+         "I returned a value but I also reported an error");
   assert(guard.errors().size() == 2);
 
-  assert(queryThatErrors(context) == "I returned a value but I also reported an error");
+  assert(queryThatErrors(context) ==
+         "I returned a value but I also reported an error");
   assert(guard.errors().size() == 2);
 
   guard.realizeErrors();
@@ -142,24 +145,29 @@ static void test2() {
   ErrorGuard guard(context);
 
   // Doesn't have errors at the top level; no errors should make it to us.
-  assert(queryThatCapturesCapturingErrors(context) == "[no errors on the first go; errors on the second go] error count: 1");
+  assert(queryThatCapturesCapturingErrors(context) ==
+         "[no errors on the first go; errors on the second go] error count: 1");
   assert(guard.errors().size() == 0);
 
   // Does have an error that was captured by the previous call, and captures
   // other errors but shouldn't report them.
-  assert(queryThatRunsQueryThatCapturesErrors(context) == "(no errors on the first go; errors on the second go)");
+  assert(queryThatRunsQueryThatCapturesErrors(context) ==
+         "(no errors on the first go; errors on the second go)");
   assert(guard.errors().size() == 1);
 
   // Now the hidden errors have been re-reported; no new errors should be reported
   // after the second call.
-  assert(queryThatRunsQueryThatCapturesErrors(context) == "(no errors on the first go; errors on the second go)");
+  assert(queryThatRunsQueryThatCapturesErrors(context) ==
+         "(no errors on the first go; errors on the second go)");
   assert(guard.errors().size() == 1);
 
   // This query had an error captured before, but now it should be reported.
-  assert(queryThatRunsQueryThatErrors(context) == "[I returned a value but I also reported an error]");
+  assert(queryThatRunsQueryThatErrors(context) ==
+         "[I returned a value but I also reported an error]");
   assert(guard.errors().size() == 2);
 
-  assert(queryThatRunsQueryThatErrors(context) == "[I returned a value but I also reported an error]");
+  assert(queryThatRunsQueryThatErrors(context) ==
+         "[I returned a value but I also reported an error]");
   assert(guard.errors().size() == 2);
 
   guard.realizeErrors();
@@ -173,30 +181,36 @@ static void test3() {
   ErrorGuard guard(context);
 
   // First, an error is immediately logged (nothing is hiding it)
-  assert(queryThatErrors(context) == "I returned a value but I also reported an error");
+  assert(queryThatErrors(context) ==
+         "I returned a value but I also reported an error");
   assert(guard.errors().size() == 1);
 
   // Not logged again, we cache etc.
-  assert(queryThatErrors(context) == "I returned a value but I also reported an error");
+  assert(queryThatErrors(context) ==
+         "I returned a value but I also reported an error");
   assert(guard.errors().size() == 1);
 
   // Okay, now run a query that tracks errors from here. It should detect errors ("errors on the second go"),
   // and also it reports an error of its own, so the error count goes to two.
-  assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
+  assert(queryThatCapturesErrors(context) ==
+         "no errors on the first go; errors on the second go");
   assert(guard.errors().size() == 2);
 
   // One more time.
-  assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
+  assert(queryThatCapturesErrors(context) ==
+         "no errors on the first go; errors on the second go");
   assert(guard.errors().size() == 2);
 
   // Okay, now run a query that tracks errors emitted by the query that tracks errors...
   // No errors should be re-emitted, and it should still detect the one error reported
   // by queryThatCapturesErrors.
-  assert(queryThatCapturesCapturingErrors(context) == "[no errors on the first go; errors on the second go] error count: 1");
+  assert(queryThatCapturesCapturingErrors(context) ==
+         "[no errors on the first go; errors on the second go] error count: 1");
   assert(guard.errors().size() == 2);
 
   // One more time.
-  assert(queryThatCapturesCapturingErrors(context) == "[no errors on the first go; errors on the second go] error count: 1");
+  assert(queryThatCapturesCapturingErrors(context) ==
+         "[no errors on the first go; errors on the second go] error count: 1");
   assert(guard.errors().size() == 2);
 
   guard.realizeErrors();
@@ -209,35 +223,40 @@ static void test4() {
   ErrorGuard guard(context);
 
   // First, an error is immediately logged (nothing is hiding it)
-  assert(queryThatRunsQueryThatErrors(context) == "[I returned a value but I also reported an error]");
+  assert(queryThatRunsQueryThatErrors(context) ==
+         "[I returned a value but I also reported an error]");
   assert(guard.errors().size() == 1);
 
   // Not logged again, we cache etc.
-  assert(queryThatRunsQueryThatErrors(context) == "[I returned a value but I also reported an error]");
+  assert(queryThatRunsQueryThatErrors(context) ==
+         "[I returned a value but I also reported an error]");
   assert(guard.errors().size() == 1);
 
   // Okay, now run a query that tracks errors from here. It should detect errors ("errors on the second go"),
   // and also it reports an error of its own, so the error count goes to two.
-  assert(queryThatRunsQueryThatCapturesErrors(context) == "(no errors on the first go; errors on the second go)");
+  assert(queryThatRunsQueryThatCapturesErrors(context) ==
+         "(no errors on the first go; errors on the second go)");
   assert(guard.errors().size() == 2);
 
   // One more time.
-  assert(queryThatRunsQueryThatCapturesErrors(context) == "(no errors on the first go; errors on the second go)");
+  assert(queryThatRunsQueryThatCapturesErrors(context) ==
+         "(no errors on the first go; errors on the second go)");
   assert(guard.errors().size() == 2);
 
   // Okay, now run a query that tracks errors emitted by the query that tracks errors...
   // No errors should be re-emitted, and it should still detect the one error reported
   // by queryThatCapturesErrors.
-  assert(queryThatCapturesCapturingErrors(context) == "[no errors on the first go; errors on the second go] error count: 1");
+  assert(queryThatCapturesCapturingErrors(context) ==
+         "[no errors on the first go; errors on the second go] error count: 1");
   assert(guard.errors().size() == 2);
 
   // One more time.
-  assert(queryThatCapturesCapturingErrors(context) == "[no errors on the first go; errors on the second go] error count: 1");
+  assert(queryThatCapturesCapturingErrors(context) ==
+         "[no errors on the first go; errors on the second go] error count: 1");
   assert(guard.errors().size() == 2);
 
   guard.realizeErrors();
 }
-
 
 static void test5() {
   Context ctx;
@@ -248,20 +267,24 @@ static void test5() {
   //   Generation 1
   // ================
   // First, an error is immediately logged (nothing is hiding it)
-  assert(queryThatErrors(context) == "I returned a value but I also reported an error");
+  assert(queryThatErrors(context) ==
+         "I returned a value but I also reported an error");
   assert(guard.errors().size() == 1);
 
   // Not logged again, we cache etc.
-  assert(queryThatErrors(context) == "I returned a value but I also reported an error");
+  assert(queryThatErrors(context) ==
+         "I returned a value but I also reported an error");
   assert(guard.errors().size() == 1);
 
   // Okay, now run a query that tracks errors from here. It should detect errors ("errors on the second go"),
   // and also it reports an error of its own, so the error count goes to two.
-  assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
+  assert(queryThatCapturesErrors(context) ==
+         "no errors on the first go; errors on the second go");
   assert(guard.errors().size() == 2);
 
   // One more time.
-  assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
+  assert(queryThatCapturesErrors(context) ==
+         "no errors on the first go; errors on the second go");
   assert(guard.errors().size() == 2);
 
   // Errors aren't safe to store between generations.
@@ -274,19 +297,23 @@ static void test5() {
   // Now, run the query that tracks errors. It should capture the inner error, and report one itself.
   // This tests marking a query that emitted its errors in the previous generation
   // as needing to report them this time.
-  assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
+  assert(queryThatCapturesErrors(context) ==
+         "no errors on the first go; errors on the second go");
   assert(guard.errors().size() == 1);
 
   // One more time.
-  assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
+  assert(queryThatCapturesErrors(context) ==
+         "no errors on the first go; errors on the second go");
   assert(guard.errors().size() == 1);
 
   // Now run the error that had already reported an error last time, but hasn't this time.
-  assert(queryThatErrors(context) == "I returned a value but I also reported an error");
+  assert(queryThatErrors(context) ==
+         "I returned a value but I also reported an error");
   assert(guard.errors().size() == 2);
 
   // One more time.
-  assert(queryThatErrors(context) == "I returned a value but I also reported an error");
+  assert(queryThatErrors(context) ==
+         "I returned a value but I also reported an error");
   assert(guard.realizeErrors() == 2);
 }
 
@@ -300,11 +327,13 @@ static void test6() {
   // ================
   // Run a query that tracks errors. It should detect errors ("errors on the second go"),
   // and also it reports an error of its own, so the error count goes to one.
-  assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
+  assert(queryThatCapturesErrors(context) ==
+         "no errors on the first go; errors on the second go");
   assert(guard.errors().size() == 1);
 
   // One more time.
-  assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
+  assert(queryThatCapturesErrors(context) ==
+         "no errors on the first go; errors on the second go");
   assert(guard.errors().size() == 1);
 
   // Errors aren't safe to store between generations.
@@ -317,11 +346,13 @@ static void test6() {
   // Just run the previous code again, make sure a single error is re-reported.
   // Run a query that tracks errors. It should detect errors ("errors on the second go"),
   // and also it reports an error of its own, so the error count goes to one.
-  assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
+  assert(queryThatCapturesErrors(context) ==
+         "no errors on the first go; errors on the second go");
   assert(guard.errors().size() == 1);
 
   // One more time.
-  assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
+  assert(queryThatCapturesErrors(context) ==
+         "no errors on the first go; errors on the second go");
   assert(guard.errors().size() == 1);
 
   // Errors aren't safe to store between generations.

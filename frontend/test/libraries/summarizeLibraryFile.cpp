@@ -38,8 +38,10 @@ int main(int argc, char** argv) {
   Context* context = &ctx;
   const char* input = "input.dyno";
 
-  if (argc == 1) usage(argc, argv);
-  else if (argc > 1) input = argv[1];
+  if (argc == 1)
+    usage(argc, argv);
+  else if (argc > 1)
+    input = argv[1];
 
   UniqueString libPath = UniqueString::get(context, input);
   const LibraryFile* lib = LibraryFile::load(context, libPath);

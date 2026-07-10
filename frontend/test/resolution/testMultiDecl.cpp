@@ -35,7 +35,7 @@ static void test1() {
   Context* context = &ctx;
 
   auto M = parseModule(context,
-                R""""(
+                       R""""(
                   var a, b, c: int;
                 )"""");
 
@@ -67,7 +67,7 @@ static void test2() {
   Context* context = &ctx;
 
   auto M = parseModule(context,
-                R""""(
+                       R""""(
                   const a, b, c = 1.0;
                 )"""");
 
@@ -98,7 +98,7 @@ static void test3() {
   auto context = buildStdContext();
 
   auto M = parseModule(context,
-                R""""(
+                       R""""(
                   proc g() { return "a string"; }
                   var a, b = 1.0, c, d:int, e, f = g();
                 )"""");
@@ -147,7 +147,7 @@ static void test4() {
   Context* context = &ctx;
 
   auto M = parseModule(context,
-                R""""(
+                       R""""(
                   var a, b: real, (c, d): (int, real), (e, f) = (1.0, 2);
                 )"""");
 
@@ -199,7 +199,7 @@ static void test5() {
   Context* context = &ctx;
 
   auto M = parseModule(context,
-                R""""(
+                       R""""(
                   var (a, b), (c, d): (int, real);
                 )"""");
 
@@ -257,7 +257,7 @@ static void test7() {
   Context* context = &ctx;
 
   auto M = parseModule(context,
-                R""""(
+                       R""""(
                   operator +(lhs: int, rhs: int) do return __primitive("+", lhs, rhs);
                   var a = 1, b = (1 + a);
                 )"""");

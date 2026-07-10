@@ -27,8 +27,7 @@
 #include "chpl/uast/all-uast.h"
 #include "./ErrorGuard.h"
 
-static Context*
-turnOnWarnUnstable() {
+static Context* turnOnWarnUnstable() {
   CompilerFlags flags;
   flags.set(CompilerFlags::WARN_UNSTABLE, true);
   return buildStdContext(std::move(flags));
@@ -130,7 +129,7 @@ static void test2() {
     var x3 = foo(e.b);
     )"""";
 
-  auto m = resolveTypesOfVariables(ctx, program, { "x0", "x1", "x2", "x3" });
+  auto m = resolveTypesOfVariables(ctx, program, {"x0", "x1", "x2", "x3"});
   assert(!guard.realizeErrors());
 
   auto& x0 = m["x0"];
@@ -190,7 +189,8 @@ static void test3() {
     var x5 = foo(e);
     )"""";
 
-  auto m = resolveTypesOfVariables(ctx, program, { "x0", "x1", "x2", "x3", "x4", "x5"});
+  auto m =
+    resolveTypesOfVariables(ctx, program, {"x0", "x1", "x2", "x3", "x4", "x5"});
   assert(!guard.realizeErrors());
   auto& x0 = m["x0"];
   assert(x0.kind() == QualifiedType::VAR);
@@ -230,7 +230,7 @@ static void test4() {
     var x3 = foo("0", true);
     )"""";
 
-  auto m = resolveTypesOfVariables(ctx, program, { "x0", "x1", "x2", "x3" });
+  auto m = resolveTypesOfVariables(ctx, program, {"x0", "x1", "x2", "x3"});
 
   assert(guard.numErrors() == 2);
   auto& e = guard.errors();
@@ -334,7 +334,7 @@ static void test5c() {
     var z = test(str);
     )"""";
 
-  auto qt = resolveTypesOfVariables(ctx, program, { "y", "z" });
+  auto qt = resolveTypesOfVariables(ctx, program, {"y", "z"});
   assert(!guard.realizeErrors());
   assert(qt["y"].kind() == QualifiedType::VAR);
   assert(qt["y"].type() && qt["y"].type()->isIntType());
@@ -594,7 +594,6 @@ static void test10() {
   assert(qt.type() && qt.type()->isRealType());
 }
 
-
 static void test11() {
   auto ctx = turnOnWarnUnstable();
   ErrorGuard guard(ctx);
@@ -643,7 +642,7 @@ static void test12() {
       var x = f.doSomething();
       )""";
 
-  auto vars = resolveTypesOfVariables(ctx, program, { "x" });
+  auto vars = resolveTypesOfVariables(ctx, program, {"x"});
   assert(guard.realizeErrors());
 }
 
@@ -672,10 +671,9 @@ static void test12b() {
     var x = myProcWithAProcAndAClass();
     )""";
 
-  auto vars = resolveTypesOfVariables(ctx, program, { "x" });
+  auto vars = resolveTypesOfVariables(ctx, program, {"x"});
   assert(guard.realizeErrors());
 }
-
 
 static void test13() {
   auto ctx = turnOnWarnUnstable();

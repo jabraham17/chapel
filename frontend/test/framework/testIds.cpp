@@ -138,7 +138,8 @@ static void test2() {
   auto escSubElt = escSubMod + ".y#5";
   ID subEltId = ID(UniqueString::get(context, escSubElt));
 
-  assert(subEltId.parentSymbolId(context).symbolPath()==subModId.symbolPath());
+  assert(subEltId.parentSymbolId(context).symbolPath() ==
+         subModId.symbolPath());
   assert(subEltId.symbolName(context) == "y");
 
   {
@@ -149,7 +150,6 @@ static void test2() {
     assert(gotPath == subFname);
     assert(gotParentSymbol == modId.symbolPath());
   }
-
 }
 
 static void test3() {
@@ -252,7 +252,6 @@ static void testGenerated() {
   assert(type == parent);
   assert(parent.isFabricatedId() == false);
 }
-
 
 int main() {
   test1();

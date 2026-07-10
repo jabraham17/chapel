@@ -33,8 +33,8 @@
 // Test basic sum-reduce
 static void test1() {
   auto context = buildStdContext();
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          iter f() {
                            yield 1;
                            yield 2;
@@ -50,8 +50,8 @@ static void test1() {
 // Test basic or-reduce
 static void test2() {
   auto context = buildStdContext();
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          iter f() {
                            yield true;
                            yield false;
@@ -65,8 +65,8 @@ static void test2() {
 // Tests calling `these` on a record when it's used for a reduction
 static void test3() {
   auto context = buildStdContext();
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          record R {
                            iter these() {
                              yield 1;
@@ -84,8 +84,8 @@ static void test3() {
 
 static void test4() {
   auto context = buildStdContext();
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          iter f() {
                            yield 1;
                            yield 2;
@@ -122,7 +122,7 @@ static void test4() {
 static void test5() {
   auto context = buildStdContext();
   auto qts = resolveTypesOfVariablesInit(context,
-                        R""""(
+                                         R""""(
                         iter f() {
                           yield (1, 0);
                           yield (2, 1);
@@ -130,7 +130,8 @@ static void test5() {
                         }
                         var x = maxloc reduce f();
                         var y = minloc reduce f();
-                        )"""", {"x", "y"});
+                        )"""",
+                                         {"x", "y"});
   for (auto& pair : qts) {
     auto& qt = pair.second;
     assert(qt.type());
@@ -145,12 +146,13 @@ static void test5() {
 static void test6() {
   auto context = buildStdContext();
   auto qts = resolveTypesOfVariablesInit(context,
-                        R""""(
+                                         R""""(
                         iter f() { yield 1; yield 2; yield 3; }
 
                         var x = maxloc reduce zip(1..10, 1..10);
                         var y = maxloc reduce zip(f(), f());
-                        )"""", {"x", "y"});
+                        )"""",
+                                         {"x", "y"});
   for (auto& pair : qts) {
     auto& qt = pair.second;
     assert(qt.type());
@@ -165,11 +167,12 @@ static void test6() {
 static void test7() {
   auto context = buildStdContext();
   auto qts = resolveTypesOfVariablesInit(context,
-                        R""""(
+                                         R""""(
                         iter f(param tag) where tag == iterKind.standalone { yield 1; yield 2; yield 3; }
 
                         var x = + reduce f();
-                        )"""", {"x"});
+                        )"""",
+                                         {"x"});
   for (auto& pair : qts) {
     auto& qt = pair.second;
     assert(qt.type());

@@ -29,12 +29,13 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-      " /* c1 */\n"
-      " interface Foo(a, b, c) {\n"
-      "   proc foo() {}\n"
-      " }\n"
-      " /* c2 */\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test0.chpl",
+                                                " /* c1 */\n"
+                                                " interface Foo(a, b, c) {\n"
+                                                "   proc foo() {}\n"
+                                                " }\n"
+                                                " /* c2 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -49,7 +50,6 @@ static void test0(Parser* parser) {
   assert(intf->numStmts() == 1);
   assert(intf->stmt(0)->isFunction());
 }
-
 
 int main() {
   Context context;

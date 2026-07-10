@@ -37,14 +37,13 @@ static void test1() {
       context = buildStdContext();
       ErrorGuard guard(context);
       QualifiedType qt = resolveTypeOfXInit(context,
-        R""""(
+                                            R""""(
           record R {
             )"""" + body + R""""(
           }
           var myR: R;
           var x = myR.hash();
-        )""""
-      );
+        )"""");
       assert(qt.type() && qt.type()->isUintType());
       assert(qt.kind() == QualifiedType::CONST_VAR);
     }
@@ -54,15 +53,14 @@ static void test1() {
       context = buildStdContext();
       ErrorGuard guard(context);
       QualifiedType qt = resolveTypeOfXInit(context,
-        R""""(
+                                            R""""(
           record R {
             )"""" + body + R""""(
             proc hash() { return 42; }
           }
           var myR: R;
           var x = myR.hash();
-        )""""
-      );
+        )"""");
       assert(qt.type() && qt.type()->isIntType());
       assert(qt.kind() == QualifiedType::CONST_VAR);
     }
@@ -72,15 +70,14 @@ static void test1() {
       context = buildStdContext();
       ErrorGuard guard(context);
       QualifiedType qt = resolveTypeOfXInit(context,
-        R""""(
+                                            R""""(
           record R {
             )"""" + body + R""""(
           }
           proc R.hash() { return 42; }
           var myR: R;
           var x = myR.hash();
-        )""""
-      );
+        )"""");
       assert(qt.type() && qt.type()->isIntType());
       assert(qt.kind() == QualifiedType::CONST_VAR);
     }
@@ -95,60 +92,56 @@ static void test2() {
     {
       context = buildStdContext();
       QualifiedType qt = resolveTypeOfXInit(context,
-        R""""(
+                                            R""""(
           record R {
             )"""" + body + R""""(
             operator ==(lhs: R, rhs: R) { return true; }
           }
           var myR: R;
           var x = myR.hash();
-        )""""
-      );
+        )"""");
       assert(qt.isErroneousType());
     }
 
     {
       context = buildStdContext();
       QualifiedType qt = resolveTypeOfXInit(context,
-        R""""(
+                                            R""""(
           record R {
             )"""" + body + R""""(
           }
           operator R.==(lhs: R, rhs: R) { return true; }
           var myR: R;
           var x = myR.hash();
-        )""""
-      );
+        )"""");
       assert(qt.isErroneousType());
     }
 
     {
       context = buildStdContext();
       QualifiedType qt = resolveTypeOfXInit(context,
-        R""""(
+                                            R""""(
           record R {
             )"""" + body + R""""(
             operator !=(lhs: R, rhs: R) { return true; }
           }
           var myR: R;
           var x = myR.hash();
-        )""""
-      );
+        )"""");
       assert(qt.isErroneousType());
     }
 
     {
       context = buildStdContext();
       QualifiedType qt = resolveTypeOfXInit(context,
-        R""""(
+                                            R""""(
           record R {
             )"""" + body + R""""(
           }
           operator R.!=(lhs: R, rhs: R) { return true; }
           var myR: R;
           var x = myR.hash();
-        )""""
-      );
+        )"""");
       assert(qt.isErroneousType());
     }
   }

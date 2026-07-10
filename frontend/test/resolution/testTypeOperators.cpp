@@ -29,38 +29,38 @@
 
 static void test1() {
   auto context = buildStdContext();
-  QualifiedType qt1 =  resolveTypeOfXInit(context, "var x = int == int;");
+  QualifiedType qt1 = resolveTypeOfXInit(context, "var x = int == int;");
   assert(qt1.isParamTrue());
   context->advanceToNextRevision(false);
-  QualifiedType qt2 =  resolveTypeOfXInit(context, "var x = int != int;");
+  QualifiedType qt2 = resolveTypeOfXInit(context, "var x = int != int;");
   assert(qt2.isParamFalse());
   context->advanceToNextRevision(false);
-  QualifiedType qt3 =  resolveTypeOfXInit(context, "var x = bool == int;");
+  QualifiedType qt3 = resolveTypeOfXInit(context, "var x = bool == int;");
   assert(qt3.isParamFalse());
   context->advanceToNextRevision(false);
-  QualifiedType qt4 =  resolveTypeOfXInit(context, "var x = bool != int;");
+  QualifiedType qt4 = resolveTypeOfXInit(context, "var x = bool != int;");
   assert(qt4.isParamTrue());
 }
 
 static void test2() {
   auto context = buildStdContext();
-  QualifiedType qt1 =  resolveTypeOfXInit(context, "var x = 1 == 1;");
+  QualifiedType qt1 = resolveTypeOfXInit(context, "var x = 1 == 1;");
   assert(qt1.isParamTrue());
   context->advanceToNextRevision(false);
-  QualifiedType qt2 =  resolveTypeOfXInit(context, "var x = 1 != 1;");
+  QualifiedType qt2 = resolveTypeOfXInit(context, "var x = 1 != 1;");
   assert(qt2.isParamFalse());
   context->advanceToNextRevision(false);
-  QualifiedType qt3 =  resolveTypeOfXInit(context, "var x = 1 == 2;");
+  QualifiedType qt3 = resolveTypeOfXInit(context, "var x = 1 == 2;");
   assert(qt3.isParamFalse());
   context->advanceToNextRevision(false);
-  QualifiedType qt4 =  resolveTypeOfXInit(context, "var x = 1 != 2;");
+  QualifiedType qt4 = resolveTypeOfXInit(context, "var x = 1 != 2;");
   assert(qt4.isParamTrue());
 }
 
 static void test3() {
   auto context = buildStdContext();
-  QualifiedType qt1 =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt1 = resolveTypeOfXInit(context,
+                                         R""""(
                          param p : int = 0;
                          var x = p == 1;
                          )"""");
@@ -71,8 +71,8 @@ static void test4() {
   auto context = buildStdContext();
   ErrorGuard guard(context);
 
-  QualifiedType qt1 =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt1 = resolveTypeOfXInit(context,
+                                         R""""(
                          record R {}
 
                          var y : R;

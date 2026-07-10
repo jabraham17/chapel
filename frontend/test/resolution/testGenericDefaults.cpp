@@ -31,8 +31,8 @@
 static void test1() {
   Context ctx;
   auto context = &ctx;
-  QualifiedType qt =  resolveQualifiedTypeOfX(context,
-                         R""""(
+  QualifiedType qt = resolveQualifiedTypeOfX(context,
+                                             R""""(
                          proc id(type t) type do return t;
 
                          record r {
@@ -47,8 +47,8 @@ static void test1() {
   auto baseCt = ct->instantiatedFrom();
   assert(baseCt != nullptr);
   auto rc = createDummyRC(context);
-  auto& fields = chpl::resolution::fieldsForTypeDecl(&rc, baseCt,
-      chpl::resolution::DefaultsPolicy::IGNORE_DEFAULTS);
+  auto& fields = chpl::resolution::fieldsForTypeDecl(
+    &rc, baseCt, chpl::resolution::DefaultsPolicy::IGNORE_DEFAULTS);
   assert(fields.numFields() == 2);
   assert(fields.fieldName(0) == "typeWithDefault");
   auto firstFieldType = fields.fieldType(0);
@@ -69,8 +69,8 @@ static void test1() {
 static void test2() {
   Context ctx;
   auto context = &ctx;
-  QualifiedType qt =  resolveQualifiedTypeOfX(context,
-                         R""""(
+  QualifiedType qt = resolveQualifiedTypeOfX(context,
+                                             R""""(
                          proc id(type t) type do return t;
 
                          record r {
@@ -85,8 +85,8 @@ static void test2() {
   auto baseCt = ct->instantiatedFrom();
   assert(baseCt == nullptr);
   auto rc = createDummyRC(context);
-  auto& fields = chpl::resolution::fieldsForTypeDecl(&rc, ct,
-      chpl::resolution::DefaultsPolicy::IGNORE_DEFAULTS);
+  auto& fields = chpl::resolution::fieldsForTypeDecl(
+    &rc, ct, chpl::resolution::DefaultsPolicy::IGNORE_DEFAULTS);
   assert(fields.numFields() == 2);
   assert(fields.fieldName(0) == "typeWithDefault");
   auto firstFieldType = fields.fieldType(0);
@@ -103,8 +103,8 @@ static void test2() {
 static void test3() {
   Context ctx;
   auto context = &ctx;
-  QualifiedType qt =  resolveQualifiedTypeOfX(context,
-                         R""""(
+  QualifiedType qt = resolveQualifiedTypeOfX(context,
+                                             R""""(
                          proc id(type t) type do return enum;
 
                          record r {
@@ -119,8 +119,8 @@ static void test3() {
   auto baseCt = ct->instantiatedFrom();
   assert(baseCt == nullptr);
   auto rc = createDummyRC(context);
-  auto& fields = chpl::resolution::fieldsForTypeDecl(&rc, ct,
-      chpl::resolution::DefaultsPolicy::IGNORE_DEFAULTS);
+  auto& fields = chpl::resolution::fieldsForTypeDecl(
+    &rc, ct, chpl::resolution::DefaultsPolicy::IGNORE_DEFAULTS);
   assert(fields.numFields() == 2);
   assert(fields.fieldName(0) == "typeWithDefault");
   auto firstFieldType = fields.fieldType(0);
@@ -138,8 +138,8 @@ static void test4() {
   {
     Context ctx;
     auto context = &ctx;
-    QualifiedType qt =  resolveQualifiedTypeOfX(context,
-                           R""""(
+    QualifiedType qt = resolveQualifiedTypeOfX(context,
+                                               R""""(
                            proc foo(type t = int) type do return t;
 
                            var x : foo();
@@ -149,8 +149,8 @@ static void test4() {
   }
   {
     auto context = buildStdContext();
-    QualifiedType qt =  resolveQualifiedTypeOfX(context,
-                           R""""(
+    QualifiedType qt = resolveQualifiedTypeOfX(context,
+                                               R""""(
                            proc foo(type t = int) type do return t;
 
                            var x : foo(string);
@@ -284,8 +284,8 @@ static void test6() {
   assert(ct->instantiatedFrom() == nullptr);
 
   auto rc = createDummyRC(context);
-  auto& fields = chpl::resolution::fieldsForTypeDecl(&rc, ct,
-      chpl::resolution::DefaultsPolicy::USE_DEFAULTS);
+  auto& fields = chpl::resolution::fieldsForTypeDecl(
+    &rc, ct, chpl::resolution::DefaultsPolicy::USE_DEFAULTS);
   assert(fields.numFields() == 1);
   assert(fields.fieldName(0) == "myfield");
 

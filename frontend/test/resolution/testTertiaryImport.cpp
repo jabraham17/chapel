@@ -28,7 +28,7 @@ static void test1() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
         module Lib {
           record R {}
           record S {}
@@ -52,12 +52,17 @@ static void test1() {
 
           var (z, w) = foo();
         }
-      )""", {"x", "y", "z", "w"});
+      )""",
+                                      {"x", "y", "z", "w"});
 
-  assert(!vars.at("x").isUnknownOrErroneous() && vars.at("x").type()->isIntType());
-  assert(!vars.at("y").isUnknownOrErroneous() && vars.at("y").type()->isRealType());
-  assert(!vars.at("z").isUnknownOrErroneous() && vars.at("z").type()->isIntType());
-  assert(!vars.at("w").isUnknownOrErroneous() && vars.at("w").type()->isRealType());
+  assert(!vars.at("x").isUnknownOrErroneous() &&
+         vars.at("x").type()->isIntType());
+  assert(!vars.at("y").isUnknownOrErroneous() &&
+         vars.at("y").type()->isRealType());
+  assert(!vars.at("z").isUnknownOrErroneous() &&
+         vars.at("z").type()->isIntType());
+  assert(!vars.at("w").isUnknownOrErroneous() &&
+         vars.at("w").type()->isRealType());
 }
 
 // test that type-based imports only bring in methods on the type imported
@@ -66,7 +71,7 @@ static void test2() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
         module Lib {
           record R {}
           record S {}
@@ -91,12 +96,16 @@ static void test2() {
 
           var (z, w) = foo();
         }
-      )""", {"x", "y", "z", "w"});
+      )""",
+                                      {"x", "y", "z", "w"});
 
-  assert(!vars.at("x").isUnknownOrErroneous() && vars.at("x").type()->isIntType());
+  assert(!vars.at("x").isUnknownOrErroneous() &&
+         vars.at("x").type()->isIntType());
   assert(vars.at("y").isUnknownOrErroneous());
-  assert(!vars.at("z").isUnknownOrErroneous() && vars.at("z").type()->isIntType());
-  assert(!vars.at("w").isUnknownOrErroneous() && vars.at("w").type()->isRealType());
+  assert(!vars.at("z").isUnknownOrErroneous() &&
+         vars.at("z").type()->isIntType());
+  assert(!vars.at("w").isUnknownOrErroneous() &&
+         vars.at("w").type()->isRealType());
 
   assert(guard.realizeErrors());
 }
@@ -107,7 +116,7 @@ static void test3() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
         module Lib {
           record R { type arg; }
           record S { type arg; }
@@ -131,12 +140,17 @@ static void test3() {
 
           var (z, w) = foo();
         }
-      )""", {"x", "y", "z", "w"});
+      )""",
+                                      {"x", "y", "z", "w"});
 
-  assert(!vars.at("x").isUnknownOrErroneous() && vars.at("x").type()->isIntType());
-  assert(!vars.at("y").isUnknownOrErroneous() && vars.at("y").type()->isRealType());
-  assert(!vars.at("z").isUnknownOrErroneous() && vars.at("z").type()->isIntType());
-  assert(!vars.at("w").isUnknownOrErroneous() && vars.at("w").type()->isRealType());
+  assert(!vars.at("x").isUnknownOrErroneous() &&
+         vars.at("x").type()->isIntType());
+  assert(!vars.at("y").isUnknownOrErroneous() &&
+         vars.at("y").type()->isRealType());
+  assert(!vars.at("z").isUnknownOrErroneous() &&
+         vars.at("z").type()->isIntType());
+  assert(!vars.at("w").isUnknownOrErroneous() &&
+         vars.at("w").type()->isRealType());
 }
 
 // test that type-based imports works with basic aliases
@@ -145,7 +159,7 @@ static void test4() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
         module Lib {
           record R { type arg; }
           record S { type arg; }
@@ -172,12 +186,17 @@ static void test4() {
 
           var (z, w) = foo();
         }
-      )""", {"x", "y", "z", "w"});
+      )""",
+                                      {"x", "y", "z", "w"});
 
-  assert(!vars.at("x").isUnknownOrErroneous() && vars.at("x").type()->isIntType());
-  assert(!vars.at("y").isUnknownOrErroneous() && vars.at("y").type()->isRealType());
-  assert(!vars.at("z").isUnknownOrErroneous() && vars.at("z").type()->isIntType());
-  assert(!vars.at("w").isUnknownOrErroneous() && vars.at("w").type()->isRealType());
+  assert(!vars.at("x").isUnknownOrErroneous() &&
+         vars.at("x").type()->isIntType());
+  assert(!vars.at("y").isUnknownOrErroneous() &&
+         vars.at("y").type()->isRealType());
+  assert(!vars.at("z").isUnknownOrErroneous() &&
+         vars.at("z").type()->isIntType());
+  assert(!vars.at("w").isUnknownOrErroneous() &&
+         vars.at("w").type()->isRealType());
 }
 
 // test that type-based imports works with aliases even if names mismatch
@@ -186,7 +205,7 @@ static void test5() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
         module Lib {
           record R { type arg; }
           record S { type arg; }
@@ -213,12 +232,17 @@ static void test5() {
 
           var (z, w) = foo();
         }
-      )""", {"x", "y", "z", "w"});
+      )""",
+                                      {"x", "y", "z", "w"});
 
-  assert(!vars.at("x").isUnknownOrErroneous() && vars.at("x").type()->isIntType());
-  assert(!vars.at("y").isUnknownOrErroneous() && vars.at("y").type()->isRealType());
-  assert(!vars.at("z").isUnknownOrErroneous() && vars.at("z").type()->isIntType());
-  assert(!vars.at("w").isUnknownOrErroneous() && vars.at("w").type()->isRealType());
+  assert(!vars.at("x").isUnknownOrErroneous() &&
+         vars.at("x").type()->isIntType());
+  assert(!vars.at("y").isUnknownOrErroneous() &&
+         vars.at("y").type()->isRealType());
+  assert(!vars.at("z").isUnknownOrErroneous() &&
+         vars.at("z").type()->isIntType());
+  assert(!vars.at("w").isUnknownOrErroneous() &&
+         vars.at("w").type()->isRealType());
 }
 
 // test that type-based imports works with complex receiver expressions
@@ -227,7 +251,7 @@ static void test6() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
         module Lib {
           record R {}
           record S {}
@@ -253,12 +277,17 @@ static void test6() {
 
           var (z, w) = foo();
         }
-      )""", {"x", "y", "z", "w"});
+      )""",
+                                      {"x", "y", "z", "w"});
 
-  assert(!vars.at("x").isUnknownOrErroneous() && vars.at("x").type()->isIntType());
-  assert(!vars.at("y").isUnknownOrErroneous() && vars.at("y").type()->isRealType());
-  assert(!vars.at("z").isUnknownOrErroneous() && vars.at("z").type()->isIntType());
-  assert(!vars.at("w").isUnknownOrErroneous() && vars.at("w").type()->isRealType());
+  assert(!vars.at("x").isUnknownOrErroneous() &&
+         vars.at("x").type()->isIntType());
+  assert(!vars.at("y").isUnknownOrErroneous() &&
+         vars.at("y").type()->isRealType());
+  assert(!vars.at("z").isUnknownOrErroneous() &&
+         vars.at("z").type()->isIntType());
+  assert(!vars.at("w").isUnknownOrErroneous() &&
+         vars.at("w").type()->isRealType());
 }
 
 // test that type-based imports works with parenless type-producing methods
@@ -267,7 +296,7 @@ static void test7() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
         module Lib {
           record R {}
           record S {}
@@ -295,12 +324,17 @@ static void test7() {
 
           var (z, w) = foo();
         }
-      )""", {"x", "y", "z", "w"});
+      )""",
+                                      {"x", "y", "z", "w"});
 
-  assert(!vars.at("x").isUnknownOrErroneous() && vars.at("x").type()->isIntType());
-  assert(!vars.at("y").isUnknownOrErroneous() && vars.at("y").type()->isRealType());
-  assert(!vars.at("z").isUnknownOrErroneous() && vars.at("z").type()->isIntType());
-  assert(!vars.at("w").isUnknownOrErroneous() && vars.at("w").type()->isRealType());
+  assert(!vars.at("x").isUnknownOrErroneous() &&
+         vars.at("x").type()->isIntType());
+  assert(!vars.at("y").isUnknownOrErroneous() &&
+         vars.at("y").type()->isRealType());
+  assert(!vars.at("z").isUnknownOrErroneous() &&
+         vars.at("z").type()->isIntType());
+  assert(!vars.at("w").isUnknownOrErroneous() &&
+         vars.at("w").type()->isRealType());
 }
 
 // regression test: when 'only' mentions a method, and we try to resolve to
@@ -311,13 +345,13 @@ static void test8() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       use CTypes only c_str;
 
       var s1 = "1";
       var s1c = s1.c_str();
-      )""", {});
-
+      )""",
+                                      {});
 }
 
 int main() {
@@ -331,4 +365,3 @@ int main() {
   test8();
   return 0;
 }
-

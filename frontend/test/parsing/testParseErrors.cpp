@@ -31,48 +31,54 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-      "{{\n"
-      "  var x = A[\n"
-      "}}\n"
-      "var y = 1;\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test0.chpl",
+                                                "{{\n"
+                                                "  var x = A[\n"
+                                                "}}\n"
+                                                "var y = 1;\n");
   assert(guard.realizeErrors() == 1);
 }
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
-      "class CC\n"
-      "  proc foo() CC {\n"
-      "    return new unmanaged CC();\n"
-      "  }\n"
-      "}\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test1.chpl",
+                               "class CC\n"
+                               "  proc foo() CC {\n"
+                               "    return new unmanaged CC();\n"
+                               "  }\n"
+                               "}\n");
   assert(guard.realizeErrors() == 1);
 }
 
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
-      "pragma \"lineno ok\"\n"
-      "proc Matrix(const Arrays: ...?n) {}\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test2.chpl",
+                               "pragma \"lineno ok\"\n"
+                               "proc Matrix(const Arrays: ...?n) {}\n");
   assert(guard.realizeErrors() == 1);
 }
 
 static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
-      "class C {\n"
-      "  var a: pwned C;\n"
-      "}\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test3.chpl",
+                                                "class C {\n"
+                                                "  var a: pwned C;\n"
+                                                "}\n");
   assert(guard.realizeErrors() == 1);
 }
 
-
 static void test4(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
-      "pragma \"lineno ok\"\n"
-      "use foo;\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test4.chpl",
+                                                "pragma \"lineno ok\"\n"
+                                                "use foo;\n");
   assert(guard.realizeErrors() == 1);
 }
 

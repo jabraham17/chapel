@@ -21,14 +21,16 @@
 
 #include "test-resolution.h"
 
-
 static void readyMap(Context* context);
 
 // stores the mapping of test name, bool val, type1, type2, and expected result
-std::map<std::tuple<std::string, std::string, std::string, std::string>, std::string> testExpectationsMap;
+std::map<std::tuple<std::string, std::string, std::string, std::string>,
+         std::string>
+  testExpectationsMap;
 
 // given a string representing a type, returns the corresponding PrimitiveType
-static const chpl::types::PrimitiveType* stringNameToType(Context* context, std::string name) {
+static const chpl::types::PrimitiveType* stringNameToType(Context* context,
+                                                          std::string name) {
   if (name == "int(8)") {
     return IntType::get(context, 8);
   } else if (name == "int(16)") {
@@ -53,7 +55,8 @@ static const chpl::types::PrimitiveType* stringNameToType(Context* context, std:
 // given an existing block of code defining a procedure f(arg: bool),
 // add a call to f() with the given boolean value
 static std::string addCallToProcedure(std::string& existingProcedure,
-                              std::string boolVal, bool isParam=false) {
+                                      std::string boolVal,
+                                      bool isParam = false) {
   std::ostringstream oss;
   oss << existingProcedure;
   oss << (isParam ? "param " : "var ");
@@ -62,7 +65,8 @@ static std::string addCallToProcedure(std::string& existingProcedure,
 }
 
 static std::string addBoolToExpression(std::string& existingExpression,
-                                std::string boolVal, bool isParam=false) {
+                                       std::string boolVal,
+                                       bool isParam = false) {
   std::ostringstream oss;
   oss << (isParam ? "param " : "var ");
   oss << "b: bool = " << boolVal << ";\n";
@@ -70,9 +74,12 @@ static std::string addBoolToExpression(std::string& existingExpression,
   return oss.str();
 }
 
-static void
-buildProcedure(std::ostringstream& oss, std::string typeVal1, std::string typeVal2,
-              bool isParam=false, bool isMax=false, bool defVars=false) {
+static void buildProcedure(std::ostringstream& oss,
+                           std::string typeVal1,
+                           std::string typeVal2,
+                           bool isParam = false,
+                           bool isMax = false,
+                           bool defVars = false) {
   oss << "proc f(";
   oss << (isParam ? "param " : "");
   oss << "arg: bool) ";
@@ -91,15 +98,18 @@ buildProcedure(std::ostringstream& oss, std::string typeVal1, std::string typeVa
   } else {
     oss << "  if arg then return ";
     oss << (isMax ? "max(" + typeVal1 + "):" : "0:");
-    oss << typeVal1 << "; else return " << (isMax ? "max(" + typeVal2 + "):" : "0:");
+    oss << typeVal1 << "; else return "
+        << (isMax ? "max(" + typeVal2 + "):" : "0:");
     oss << typeVal2 << ";\n";
   }
   oss << "}\n";
 }
 
-static void
-buildIfExpression(std::ostringstream& oss, std::string typeVal1,
-                  std::string typeVal2, bool isParam=false, bool isMax=false) {
+static void buildIfExpression(std::ostringstream& oss,
+                              std::string typeVal1,
+                              std::string typeVal2,
+                              bool isParam = false,
+                              bool isMax = false) {
   oss << (isParam ? "param " : "var ");
   oss << "x = if b then " << (isMax ? "max(" + typeVal1 + "):" : "0:");
   oss << typeVal1 << " else " << (isMax ? "max(" + typeVal2 + "):" : "0:");
@@ -131,7 +141,8 @@ static void evaluateTestResult(IntegralTest& test, std::string boolVal) {
   // these lines can be used to debug or collect updated values for the testExpectationsMap
   // std::cout << test.testName << ": when " << boolVal << " " << test.type1 << " " << test.type2 << " then ";
   // returnType.type()->dump();
-  auto expectedTypeName = testExpectationsMap[std::make_tuple(test.testName + ":", boolVal, test.type1, test.type2)];
+  auto expectedTypeName = testExpectationsMap[std::make_tuple(
+    test.testName + ":", boolVal, test.type1, test.type2)];
   assert(expectedTypeName != "");
   auto expectedType = stringNameToType(context, expectedTypeName);
   assert(expectedType);
@@ -144,30 +155,50 @@ static void evaluateTestResult(IntegralTest& test, std::string boolVal) {
 static void testConditionalIntegralTypes() {
   auto context = buildStdContext();
   readyMap(context);
-  std::vector<std::string> integralTypes = {
-    "int(8)", "int(16)", "int(32)", "int(64)",
-    "uint(8)", "uint(16)", "uint(32)", "uint(64)"
-  };
+  std::vector<std::string> integralTypes = {"int(8)",
+                                            "int(16)",
+                                            "int(32)",
+                                            "int(64)",
+                                            "uint(8)",
+                                            "uint(16)",
+                                            "uint(32)",
+                                            "uint(64)"};
 
-  std::vector<std::string> boolVals = {
-    "true", "false"
-  };
+  std::vector<std::string> boolVals = {"true", "false"};
   std::vector<IntegralTest> chapelTests;
   std::ostringstream oss;
   for (const auto& type1 : integralTypes) {
     for (const auto& type2 : integralTypes) {
-      chapelTests.push_back({false, false, false, true, type1, type2, "testProcCastZero", ""});
-      chapelTests.push_back({false, false, true, true, type1, type2, "testProcZero", ""});
-      chapelTests.push_back({false, true, false, true, type1, type2, "testProcCastMax", ""});
-      chapelTests.push_back({false, true, true, true, type1, type2, "testProcMax",""});
-      chapelTests.push_back({true, false, false, true, type1, type2, "testParamProcCastZero",""});
-      chapelTests.push_back({true, false, true, true, type1, type2, "testParamProcZero",""});
-      chapelTests.push_back({true, true, false, true, type1, type2, "testParamProcCastMax",""});
-      chapelTests.push_back({true, true, true, true, type1, type2, "testParamProcMax",""});
-      chapelTests.push_back({false, false, false, false, type1, type2, "testExpressionZero",""});
-      chapelTests.push_back({false, true, false, false, type1, type2, "testExpressionMax",""});
-      chapelTests.push_back({true, false, false, false, type1, type2, "testParamExpressionZero",""});
-      chapelTests.push_back({true, true, false, false, type1, type2, "testParamExpressionMax",""});
+      chapelTests.push_back(
+        {false, false, false, true, type1, type2, "testProcCastZero", ""});
+      chapelTests.push_back(
+        {false, false, true, true, type1, type2, "testProcZero", ""});
+      chapelTests.push_back(
+        {false, true, false, true, type1, type2, "testProcCastMax", ""});
+      chapelTests.push_back(
+        {false, true, true, true, type1, type2, "testProcMax", ""});
+      chapelTests.push_back(
+        {true, false, false, true, type1, type2, "testParamProcCastZero", ""});
+      chapelTests.push_back(
+        {true, false, true, true, type1, type2, "testParamProcZero", ""});
+      chapelTests.push_back(
+        {true, true, false, true, type1, type2, "testParamProcCastMax", ""});
+      chapelTests.push_back(
+        {true, true, true, true, type1, type2, "testParamProcMax", ""});
+      chapelTests.push_back(
+        {false, false, false, false, type1, type2, "testExpressionZero", ""});
+      chapelTests.push_back(
+        {false, true, false, false, type1, type2, "testExpressionMax", ""});
+      chapelTests.push_back({true,
+                             false,
+                             false,
+                             false,
+                             type1,
+                             type2,
+                             "testParamExpressionZero",
+                             ""});
+      chapelTests.push_back(
+        {true, true, false, false, type1, type2, "testParamExpressionMax", ""});
     }
   }
 
@@ -175,7 +206,8 @@ static void testConditionalIntegralTypes() {
     oss.str("");
     oss.clear();
     if (test.isProcedure) {
-      buildProcedure(oss, test.type1, test.type2, test.isParam, test.isMax, test.defVars);
+      buildProcedure(
+        oss, test.type1, test.type2, test.isParam, test.isMax, test.defVars);
     } else {
       buildIfExpression(oss, test.type1, test.type2, test.isParam, test.isMax);
     }
@@ -208,34 +240,31 @@ static void readyMap(Context* context) {
                   TestPairList{TestPair("testExpressionZero:", "false")});
 
   testMap.emplace(TestPair("testProcZero:", "true"),
-                  TestPairList{
-                    TestPair("testProcZero:", "false"),
-                    TestPair("testProcMax:", "true"),
-                    TestPair("testProcMax:", "false"),
-                    TestPair("testProcCastZero:", "true"),
-                    TestPair("testProcCastZero:", "false"),
-                    TestPair("testProcMax:", "true"),
-                    TestPair("testProcMax:", "false"),
-                    TestPair("testProcCastMax:", "true"),
-                    TestPair("testProcCastMax:", "false"),
-                    TestPair("testExpressionMax:", "true"),
-                    TestPair("testExpressionMax:", "false")});
+                  TestPairList{TestPair("testProcZero:", "false"),
+                               TestPair("testProcMax:", "true"),
+                               TestPair("testProcMax:", "false"),
+                               TestPair("testProcCastZero:", "true"),
+                               TestPair("testProcCastZero:", "false"),
+                               TestPair("testProcMax:", "true"),
+                               TestPair("testProcMax:", "false"),
+                               TestPair("testProcCastMax:", "true"),
+                               TestPair("testProcCastMax:", "false"),
+                               TestPair("testExpressionMax:", "true"),
+                               TestPair("testExpressionMax:", "false")});
 
   testMap.emplace(TestPair("testParamProcZero:", "true"),
-                  TestPairList{
-                    TestPair("testParamProcMax:", "true"),
-                    TestPair("testParamExpressionZero:", "true"),
-                    TestPair("testParamExpressionMax:", "true"),
-                    TestPair("testParamProcCastZero:", "true"),
-                    TestPair("testParamProcCastMax:", "true")});
+                  TestPairList{TestPair("testParamProcMax:", "true"),
+                               TestPair("testParamExpressionZero:", "true"),
+                               TestPair("testParamExpressionMax:", "true"),
+                               TestPair("testParamProcCastZero:", "true"),
+                               TestPair("testParamProcCastMax:", "true")});
 
   testMap.emplace(TestPair("testParamProcZero:", "false"),
-                  TestPairList{
-                    TestPair("testParamProcMax:", "false"),
-                    TestPair("testParamExpressionZero:", "false"),
-                    TestPair("testParamExpressionMax:", "false"),
-                    TestPair("testParamProcCastZero:", "false"),
-                    TestPair("testParamProcCastMax:", "false")});
+                  TestPairList{TestPair("testParamProcMax:", "false"),
+                               TestPair("testParamExpressionZero:", "false"),
+                               TestPair("testParamExpressionMax:", "false"),
+                               TestPair("testParamProcCastZero:", "false"),
+                               TestPair("testParamProcCastMax:", "false")});
 
   std::string input = R"(
   testProcZero: when true int(8) int(8) then int(8)
@@ -502,7 +531,8 @@ static void readyMap(Context* context) {
     std::istringstream lineStream(line);
     std::string testName, when, condition, type1, type2, then, resultType;
 
-    lineStream >> testName >> when >> condition >> type1 >> type2 >> then >> resultType;
+    lineStream >> testName >> when >> condition >> type1 >> type2 >> then >>
+      resultType;
 
     auto key = std::make_tuple(testName, condition, type1, type2);
     testExpectationsMap[key] = resultType;
@@ -512,10 +542,10 @@ static void readyMap(Context* context) {
     if (otherSameTable != testMap.end()) {
       auto otherSameList = otherSameTable->second;
       for (const auto& otherSame : otherSameList) {
-        auto otherKey = std::make_tuple(otherSame.first, otherSame.second, type1, type2);
+        auto otherKey =
+          std::make_tuple(otherSame.first, otherSame.second, type1, type2);
         testExpectationsMap[otherKey] = resultType;
       }
     }
-
   }
 }

@@ -30,8 +30,8 @@
 
 static void test1() {
   auto context = buildStdContext();
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          enum color {
                            red, green, blue
                          }
@@ -53,8 +53,8 @@ static void test1() {
 
 static void test2() {
   auto context = buildStdContext();
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          enum color {
                            red, red, blue
                          }
@@ -67,8 +67,8 @@ static void test2() {
 
 static void test3() {
   auto context = buildStdContext();
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          enum color {
                            green, blue
                          }
@@ -85,7 +85,7 @@ static void test4() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       enum color {
         red = 1,
         green,
@@ -96,7 +96,8 @@ static void test4() {
       param b = color.green : int;
       param c = color.blue : int;
       param d = color.gold : int;
-      )""", {"a", "b", "c", "d"});
+      )""",
+                                      {"a", "b", "c", "d"});
 
   ensureParamInt(vars.at("a"), 1);
   ensureParamInt(vars.at("b"), 2);
@@ -132,7 +133,7 @@ static void test5() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       enum color {
         red = "hello",
         green,
@@ -144,8 +145,8 @@ static void test5() {
       param b = color.green : int;
       param c = color.blue : int;
       param d = color.gold : int;
-      )""", {"t", "a", "b", "c", "d"});
-
+      )""",
+                                      {"t", "a", "b", "c", "d"});
 
   // First, ensure that the actual computation marks 'red' as erroneous
 
@@ -173,7 +174,7 @@ static void test6() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       enum color {
         negative = __primitive("-", 0, 1),
         huge = 0x8000000000000000,
@@ -181,8 +182,8 @@ static void test6() {
       type t = color;
       param a = color.negative : int;
       param b = color.huge : uint;
-      )""", {"t", "a", "b"});
-
+      )""",
+                                      {"t", "a", "b"});
 
   // First, ensure that the actual computation marks 'red' as erroneous
 
@@ -206,7 +207,7 @@ static void test7() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       enum color {
         red,
         green,
@@ -216,8 +217,8 @@ static void test7() {
       param a = color.red : int;
       param b = color.green : int;
       param c = color.blue : int;
-      )""", {"t", "a", "b", "c"});
-
+      )""",
+                                      {"t", "a", "b", "c"});
 
   auto qtT = vars.at("t");
   auto enumValuesByName = enumConstantValues(context, qtT);
@@ -239,7 +240,7 @@ static void test8() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       var x = 1;
       enum color {
         red = x,
@@ -250,7 +251,8 @@ static void test8() {
       param a = color.red : int;
       param b = color.green : int;
       param c = color.blue : int;
-      )""", {"t", "a", "b", "c"});
+      )""",
+                                      {"t", "a", "b", "c"});
 
   auto qtT = vars.at("t");
   auto enumValuesByName = enumConstantValues(context, qtT);
@@ -272,7 +274,7 @@ static void test9() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       var x = 1;
       enum color {
         red,
@@ -283,7 +285,8 @@ static void test9() {
       param a = color.red : int;
       param b = color.green : int;
       param c = color.blue : int;
-      )""", {"t", "a", "b", "c"});
+      )""",
+                                      {"t", "a", "b", "c"});
 
   auto qtT = vars.at("t");
   auto enumValuesByName = enumConstantValues(context, qtT);
@@ -305,7 +308,7 @@ static void test10() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       enum color {
         red = 0,
         green,
@@ -313,7 +316,8 @@ static void test10() {
       }
       type t = color;
       param a = 3 : color;
-      )""", {"t", "a"});
+      )""",
+                                      {"t", "a"});
 
   auto qtT = vars.at("t");
   auto enumValuesByName = enumConstantValues(context, qtT);
@@ -334,7 +338,7 @@ static void test11() {
   // Production allows multiple constants to have the same numeric value.
   // When casting backwards, the first matching constant is picked.
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       enum color {
         red = 0,
         green = 0,
@@ -344,7 +348,8 @@ static void test11() {
       type t = color;
       param a = 0 : color;
       param b = 1 : color;
-      )""", {"t", "a", "b"});
+      )""",
+                                      {"t", "a", "b"});
 
   auto qtT = vars.at("t");
   auto enumValuesByName = enumConstantValues(context, qtT);
@@ -369,7 +374,7 @@ static void test12() {
   // Production allows multiple constants to have the same numeric value.
   // When casting backwards, the first matching constant is picked.
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       enum color {
         red = 0,
         green = 1,
@@ -384,12 +389,17 @@ static void test12() {
       var b = greenU : color;
       var c = blueI8 : color;
       var d = goldU8 : color;
-      )""", {"a", "b", "c", "d"});
+      )""",
+                                      {"a", "b", "c", "d"});
 
-  assert(vars.at("a").type()->isEnumType() && vars.at("a").type()->toEnumType()->name() == "color");
-  assert(vars.at("b").type()->isEnumType() && vars.at("b").type()->toEnumType()->name() == "color");
-  assert(vars.at("c").type()->isEnumType() && vars.at("c").type()->toEnumType()->name() == "color");
-  assert(vars.at("d").type()->isEnumType() && vars.at("d").type()->toEnumType()->name() == "color");
+  assert(vars.at("a").type()->isEnumType() &&
+         vars.at("a").type()->toEnumType()->name() == "color");
+  assert(vars.at("b").type()->isEnumType() &&
+         vars.at("b").type()->toEnumType()->name() == "color");
+  assert(vars.at("c").type()->isEnumType() &&
+         vars.at("c").type()->toEnumType()->name() == "color");
+  assert(vars.at("d").type()->isEnumType() &&
+         vars.at("d").type()->toEnumType()->name() == "color");
 }
 
 static void test13() {
@@ -399,7 +409,7 @@ static void test13() {
   // Production allows multiple constants to have the same numeric value.
   // When casting backwards, the first matching constant is picked.
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       enum color {
         red = 0,
         green = 1,
@@ -411,13 +421,20 @@ static void test13() {
       var b = red : uint;
       var c = red : int(8);
       var d = red : uint(8);
-      )""", {"red", "a", "b", "c", "d"});
+      )""",
+                                      {"red", "a", "b", "c", "d"});
 
   assert(vars.at("red").type()->isEnumType());
-  assert(vars.at("a").type()->isIntType() && vars.at("a").type()->toIntType()->bitwidth() == IntType::defaultBitwidth());
-  assert(vars.at("b").type()->toUintType() && vars.at("b").type()->toUintType()->bitwidth() == UintType::defaultBitwidth());
-  assert(vars.at("c").type()->isIntType() && vars.at("c").type()->toIntType()->bitwidth() == 8);
-  assert(vars.at("d").type()->isUintType() && vars.at("d").type()->toUintType()->bitwidth() == 8);
+  assert(vars.at("a").type()->isIntType() &&
+         vars.at("a").type()->toIntType()->bitwidth() ==
+           IntType::defaultBitwidth());
+  assert(vars.at("b").type()->toUintType() &&
+         vars.at("b").type()->toUintType()->bitwidth() ==
+           UintType::defaultBitwidth());
+  assert(vars.at("c").type()->isIntType() &&
+         vars.at("c").type()->toIntType()->bitwidth() == 8);
+  assert(vars.at("d").type()->isUintType() &&
+         vars.at("d").type()->toUintType()->bitwidth() == 8);
 }
 
 static void test14() {
@@ -427,7 +444,7 @@ static void test14() {
   // Production allows multiple constants to have the same numeric value.
   // When casting backwards, the first matching constant is picked.
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       enum color {
         red,
         green,
@@ -442,19 +459,19 @@ static void test14() {
       var b = greenU : color;
       var c = blueI8 : color;
       var d = goldU8 : color;
-      )""", {"a", "b", "c", "d"});
+      )""",
+                                      {"a", "b", "c", "d"});
 
   for (auto pair : vars) {
     assert(pair.second.isErroneousType());
   }
 
   assert(guard.numErrors() == 4);
-  for (int i = 0; i < 4; i ++) {
+  for (int i = 0; i < 4; i++) {
     assert(guard.error(i)->type() == ErrorType::NoMatchingCandidates);
   }
   guard.realizeErrors();
 }
-
 
 static void test15() {
   auto context = buildStdContext();
@@ -463,7 +480,7 @@ static void test15() {
   // Production allows multiple constants to have the same numeric value.
   // When casting backwards, the first matching constant is picked.
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       enum color {
         red,
         green,
@@ -475,14 +492,15 @@ static void test15() {
       var b = red : uint;
       var c = red : int(8);
       var d = red : uint(8);
-      )""", {"a", "b", "c", "d"});
+      )""",
+                                      {"a", "b", "c", "d"});
 
   for (auto pair : vars) {
     assert(pair.second.isErroneousType());
   }
 
   assert(guard.numErrors() == 4);
-  for (int i = 0; i < 4; i ++) {
+  for (int i = 0; i < 4; i++) {
     assert(guard.error(i)->type() == ErrorType::NoMatchingCandidates);
   }
   guard.realizeErrors();
@@ -493,7 +511,7 @@ static void test16() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       enum property {
         shape, color, size
       }
@@ -511,7 +529,8 @@ static void test16() {
       param d = color.size;
       var e = colorDifferent.size;
       param f = colorDifferent.size;
-      )""", {"a", "b", "c", "d", "e", "f"});
+      )""",
+                                      {"a", "b", "c", "d", "e", "f"});
 
   assert(vars.at("a").type());
   assert(vars.at("a").type()->isEnumType());
@@ -540,7 +559,7 @@ static void test17() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       enum color {
         red, green, blue
       }
@@ -552,7 +571,8 @@ static void test17() {
       param d = chpl__orderToEnum(0, color);
       param e = chpl__orderToEnum(1, color);
       param f = chpl__orderToEnum(2, color);
-      )""", {"a", "b", "c", "d", "e", "f"});
+      )""",
+                                      {"a", "b", "c", "d", "e", "f"});
 
   assert(vars.at("a").type());
   assert(vars.at("a").type()->isEnumType());
@@ -587,7 +607,7 @@ static void test18() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       enum color {
         red, green, blue
       }
@@ -599,7 +619,8 @@ static void test18() {
       param d = chpl__enumToOrder(color.red);
       param e = chpl__enumToOrder(color.green);
       param f = chpl__enumToOrder(color.blue);
-      )""", {"a", "b", "c", "d", "e", "f"});
+      )""",
+                                      {"a", "b", "c", "d", "e", "f"});
 
   assert(vars.at("a").type());
   assert(vars.at("a").type()->isIntType());
@@ -655,7 +676,8 @@ static void test18internal() {
     auto& chplHomeStr = context->chplHome();
     CHPL_ASSERT(chplHomeStr != "");
     auto chplEnv = context->getChplEnv();
-    CHPL_ASSERT(!chplEnv.getError() && "printchplenv error handling not implemented");
+    CHPL_ASSERT(!chplEnv.getError() &&
+                "printchplenv error handling not implemented");
 
     // CHPL_MODULE_PATH isn't always in the output; check if it's there.
     auto it = chplEnv->find("CHPL_MODULE_PATH");
@@ -669,16 +691,17 @@ static void test18internal() {
                            chplEnv->at("CHPL_COMM"),
                            chplEnv->at("CHPL_SYS_MODULES_SUBDIR"),
                            chplModulePath,
-                           {"myint"},  // prependInternalModulePaths
-                           {},  // prependStandardModulePaths
-                           {}, // cmdLinePaths
+                           {"myint"}, // prependInternalModulePaths
+                           {},        // prependStandardModulePaths
+                           {},        // cmdLinePaths
                            {});
   }
   // end duplicate
 
   auto path = UniqueString::get(context, "myint/input.chpl");
-  setFileText(context, path,
-      R"""(
+  setFileText(context,
+              path,
+              R"""(
       // internal modules don't get auto-generated assignment operators
       use ChapelBase only =;
 
@@ -703,8 +726,8 @@ static void test18internal() {
   auto& br = parseFileToBuilderResultAndCheck(context, path, {});
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.topLevelExpression(0)->toModule();
-  auto vars = resolveTypesOfVariables(context, mod,
-      {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"});
+  auto vars = resolveTypesOfVariables(
+    context, mod, {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"});
 
   assert(vars.at("a").type());
   assert(vars.at("a").type()->isIntType());
@@ -739,7 +762,7 @@ static void test18internal() {
   assert(vars.at("j").type());
   assert(vars.at("j").type()->isEnumType());
 
-  assert(guard.realizeErrors(/*countWarnings*/false) == 1);
+  assert(guard.realizeErrors(/*countWarnings*/ false) == 1);
 }
 
 // regression test: we used to generate `e : e` formals, which was not valid.
@@ -748,7 +771,7 @@ static void test18e() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       enum e {
         red, green, blue
       }
@@ -756,7 +779,8 @@ static void test18e() {
       param tmpParam = e.red;
       var a = chpl__enumToOrder(tmp);
       param c = chpl__enumToOrder(tmpParam);
-      )""", {"a","c" });
+      )""",
+                                      {"a", "c"});
 
   assert(vars.at("a").type());
   assert(vars.at("a").type()->isIntType());
@@ -773,14 +797,15 @@ static void test19() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       enum color {
         red, green, blue
       }
       for c in color {
         var res = c;
       }
-      )""", {"res"});
+      )""",
+                                      {"res"});
 
   assert(guard.realizeErrors() == 0);
   assert(vars.at("res").type());
@@ -793,7 +818,7 @@ static void test20() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
         enum colors {red, green, blue};
 
         param c = colors.red;
@@ -808,11 +833,12 @@ static void test20() {
         }
 
         var r = new R(colors.green);
-      )""", {"s", "x", "y", "z", "r"});
+      )""",
+                                      {"s", "x", "y", "z", "r"});
 
   assert(guard.realizeErrors() == 0);
 
-  auto check = [] (QualifiedType qt, std::string text) {
+  auto check = [](QualifiedType qt, std::string text) {
     assert(qt.type()->isStringType());
     assert(qt.param()->toStringParam()->value() == text);
   };
@@ -833,7 +859,7 @@ static void test21() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
         enum colors {red, green, blue};
 
         param c = colors.red;
@@ -842,11 +868,12 @@ static void test21() {
         var x = colors.red:string;
         var y = colors.green:string;
         var z = colors.blue:string;
-      )""", {"s", "x", "y", "z"});
+      )""",
+                                      {"s", "x", "y", "z"});
 
   assert(guard.realizeErrors() == 0);
 
-  auto check = [] (QualifiedType qt, std::string text) {
+  auto check = [](QualifiedType qt, std::string text) {
     assert(qt.type()->isStringType());
     assert(!qt.isParam());
   };
@@ -859,8 +886,8 @@ static void test21() {
 
 static void test22() {
   auto context = buildStdContext();
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          proc id(param x) param do return x;
                          proc foo() param {
                            enum color {
@@ -886,7 +913,7 @@ static void test23() {
   // Production allows multiple constants to have the same numeric value.
   // When casting backwards, the first matching constant is picked.
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       enum color {
         red = 0,
         green = 0,
@@ -897,7 +924,8 @@ static void test23() {
       param b = "green" : color;
       param c = "blue" : color;
       param d = "gold" : color;
-      )""", {"a", "b", "c", "d"});
+      )""",
+                                      {"a", "b", "c", "d"});
 
   auto param0 = vars.at("a").param();
   assert(param0 && param0->isEnumParam());
@@ -922,7 +950,7 @@ static void test24() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       var x = 1;
       enum color {
         red = 1,
@@ -935,7 +963,8 @@ static void test24() {
       param b = color.green : int;
       param c = color.blue : int;
       param d = color.gold : int;
-      )""", {"t", "a", "b", "c", "d"});
+      )""",
+                                      {"t", "a", "b", "c", "d"});
 
   auto qtT = vars.at("t");
   auto enumValuesByName = enumConstantValues(context, qtT);
@@ -955,7 +984,7 @@ static void test25() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       var x = 1;
       enum color {
         red = 1,
@@ -968,7 +997,8 @@ static void test25() {
       param b = color.green : int;
       param c = color.blue : int;
       param d = color.gold : int;
-      )""", {"t", "a", "b", "c", "d"});
+      )""",
+                                      {"t", "a", "b", "c", "d"});
 
   assert(guard.realizeErrors());
 }
@@ -977,7 +1007,7 @@ static void test25() {
 static void test26() {
   auto context = buildStdContext();
   auto vars = resolveTypesOfVariables(context,
-                         R""""(
+                                      R""""(
                          enum color {
                            red, green, blue
                          }
@@ -986,7 +1016,8 @@ static void test26() {
 
                          param x = c1.red;
                          param y = c2.red;
-                         )"""", {"x", "y"});
+                         )"""",
+                                      {"x", "y"});
   ensureParamEnumStr(vars.at("x"), "red");
   ensureParamEnumStr(vars.at("y"), "red");
 }
@@ -996,7 +1027,7 @@ static void test27() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       enum color {
         red = 0,
         green = 0,
@@ -1009,7 +1040,8 @@ static void test27() {
       param b = "color.green" : color;
       param c = "colorOther.red" : color;
       param d = "colorOther.green" : color;
-      )""", {"a", "b", "c", "d"});
+      )""",
+                                      {"a", "b", "c", "d"});
 
   auto param0 = vars.at("a").param();
   assert(param0 && param0->isEnumParam());
@@ -1071,7 +1103,7 @@ static void test30() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
         enum colors {red, green, blue};
 
         param c = colors.red;
@@ -1086,11 +1118,12 @@ static void test30() {
         }
 
         var r = new R(colors.green);
-      )""", {"s", "x", "y", "z", "r"});
+      )""",
+                                      {"s", "x", "y", "z", "r"});
 
   assert(guard.realizeErrors() == 0);
 
-  auto check = [] (QualifiedType qt, std::string text) {
+  auto check = [](QualifiedType qt, std::string text) {
     assert(qt.type()->isBytesType());
     assert(qt.param()->toStringParam()->value() == text);
   };
@@ -1111,7 +1144,7 @@ static void test31() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       enum color {
         red = 0,
         green = 0,
@@ -1122,7 +1155,8 @@ static void test31() {
       param b = b"green" : color;
       param c = b"blue" : color;
       param d = b"gold" : color;
-      )""", {"a", "b", "c", "d"});
+      )""",
+                                      {"a", "b", "c", "d"});
 
   auto param0 = vars.at("a").param();
   assert(param0 && param0->isEnumParam());

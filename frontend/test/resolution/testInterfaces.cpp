@@ -37,7 +37,8 @@ static const bool IS_A_TYPE_METHOD = true;
 
 struct InterfaceSource;
 
-static std::string intercalate(const std::vector<std::string>& lines, const std::string& separator) {
+static std::string intercalate(const std::vector<std::string>& lines,
+                               const std::string& separator) {
   std::string result;
   bool first = true;
   for (const auto& line : lines) {
@@ -57,7 +58,8 @@ struct RecordSource {
 
   RecordSource(std::string name) : typeName(std::move(name)) {}
 
-  RecordSource& addMethod(bool isTypeMethod, std::string sig, std::string kind = "proc") {
+  RecordSource&
+  addMethod(bool isTypeMethod, std::string sig, std::string kind = "proc") {
     methods.push_back({isTypeMethod, std::move(sig), kind});
     return *this;
   }
@@ -80,7 +82,8 @@ struct RecordSource {
       auto isTypeMethod = std::get<0>(line);
       auto& sig = std::get<1>(line);
       auto kind = std::get<2>(line);
-      methodLines.push_back(indent + kind + " " + (isTypeMethod ? "type " : "") + prefix + sig);
+      methodLines.push_back(indent + kind + " " +
+                            (isTypeMethod ? "type " : "") + prefix + sig);
     }
     return methodLines;
   }
@@ -110,8 +113,9 @@ struct InterfaceSource {
   std::string interfaceName;
   std::vector<std::string> linesInside;
 
-  template <typename ... Args>
-  InterfaceSource(std::string name, Args&& ... args) : interfaceName(std::move(name)) {
+  template <typename... Args>
+  InterfaceSource(std::string name, Args&&... args)
+    : interfaceName(std::move(name)) {
     (linesInside.push_back(std::move(args)), ...);
   }
 
@@ -129,8 +133,8 @@ struct InterfaceSource {
     return record.typeName + " implements " + interfaceName + ";";
   }
 
-  template <typename ... Records>
-  std::string generalImplements(Records&& ... records) const {
+  template <typename... Records>
+  std::string generalImplements(Records&&... records) const {
     std::string line = "implements " + interfaceName + "(";
     bool first = true;
     auto appendRecord = [&line, &first](const auto& record) {
@@ -194,14 +198,18 @@ struct ModuleSource {
 
   ModuleSource(std::string name) : moduleName(std::move(name)) {}
 
-  ModuleSource& addRecord(const RecordSource& record, MethodKind methodKind, ImplementationKind implKind) {
+  ModuleSource& addRecord(const RecordSource& record,
+                          MethodKind methodKind,
+                          ImplementationKind implKind) {
     bool includeInterfaces = implKind == I_DECL;
     bool includeMethods = methodKind == M_PRIMARY;
     // Include a dummy variable in scope that we can use to return by ref.
     if (methodKind == M_PRIMARY || methodKind == M_SECONDARY) {
       linesInside.push_back(record.dummyVarLine());
     }
-    for (const auto& line : includeMethods ? record.primaryLines(includeInterfaces) : record.definitionOnly(includeInterfaces)) {
+    for (const auto& line : includeMethods
+                              ? record.primaryLines(includeInterfaces)
+                              : record.definitionOnly(includeInterfaces)) {
       linesInside.push_back(line);
     }
     if (methodKind == M_SECONDARY) {
@@ -243,13 +251,15 @@ struct ModuleSource {
     return *this;
   }
 
-  ModuleSource& addSingleImplements(const InterfaceSource& interface, const RecordSource& record) {
+  ModuleSource& addSingleImplements(const InterfaceSource& interface,
+                                    const RecordSource& record) {
     linesInside.push_back(interface.singleImplements(record));
     return *this;
   }
 
-  template <typename ... Records>
-  ModuleSource& addGeneralImplements(const InterfaceSource& interface, Records&& ... records) {
+  template <typename... Records>
+  ModuleSource& addGeneralImplements(const InterfaceSource& interface,
+                                     Records&&... records) {
     linesInside.push_back(interface.generalImplements(records...));
     return *this;
   }
@@ -276,13 +286,16 @@ struct ModuleSource {
       all.push_back(INDENT + line);
     }
     for (const auto& check : checks) {
-      all.push_back(INDENT + "param " + check.first + " = " + check.second + ";");
+      all.push_back(INDENT + "param " + check.first + " = " + check.second +
+                    ";");
     }
     all.push_back("}");
     return all;
   }
 
-  void validateChecks(Context* context, const chpl::uast::Module* mod, bool expectError) const {
+  void validateChecks(Context* context,
+                      const chpl::uast::Module* mod,
+                      bool expectError) const {
     std::vector<std::string> checkNames;
     for (const auto& check : checks) {
       checkNames.push_back(check.first);
@@ -291,12 +304,14 @@ struct ModuleSource {
     auto types = resolveTypesOfVariables(context, mod, checkNames);
     for (auto& [name, type] : types) {
       std::cout << "checking " << name << std::endl;
-      assert(expectError ? (type.isParamFalse() || type.isUnknownOrErroneous()) : type.isParamTrue());
+      assert(expectError ? (type.isParamFalse() || type.isUnknownOrErroneous())
+                         : type.isParamTrue());
     }
   }
 };
 
-static bool findError(const std::vector<owned<ErrorBase>>& errors, ErrorType type) {
+static bool findError(const std::vector<owned<ErrorBase>>& errors,
+                      ErrorType type) {
   for (auto& err : errors) {
     if (err->type() == type) {
       return true;
@@ -305,15 +320,17 @@ static bool findError(const std::vector<owned<ErrorBase>>& errors, ErrorType typ
   return false;
 }
 
-static void testSingleInterface(const InterfaceSource& interface,
-                                const RecordSource& record,
-                                chpl::optional<ErrorType> expectedError = chpl::empty) {
+static void
+testSingleInterface(const InterfaceSource& interface,
+                    const RecordSource& record,
+                    chpl::optional<ErrorType> expectedError = chpl::empty) {
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
 
-  auto validateAndAdvance = [context, &guard, expectedError](const ModuleSource& src, const Module* mod) {
-    src.validateChecks(context, mod, (bool) expectedError);
+  auto validateAndAdvance = [context, &guard, expectedError](
+                              const ModuleSource& src, const Module* mod) {
+    src.validateChecks(context, mod, (bool)expectedError);
     std::cout << std::endl;
 
     if (expectedError) {
@@ -328,12 +345,17 @@ static void testSingleInterface(const InterfaceSource& interface,
 
   // First, place the interface and the type in the same module.
   {
-    for (auto methodKind : { ModuleSource::M_PRIMARY, ModuleSource::M_SECONDARY }) {
-      for (auto implKind : { ModuleSource::I_DECL, ModuleSource::I_SINGLE, ModuleSource::I_GENERAL }) {
+    for (auto methodKind :
+         {ModuleSource::M_PRIMARY, ModuleSource::M_SECONDARY}) {
+      for (auto implKind : {ModuleSource::I_DECL,
+                            ModuleSource::I_SINGLE,
+                            ModuleSource::I_GENERAL}) {
         auto module = ModuleSource("M")
-          .addInterface(interface)
-          .addRecord(record, methodKind, implKind)
-          .addCheck("__primitive(\"implements interface\", " + record.typeName + ", " + interface.interfaceName + ") == 0");
+                        .addInterface(interface)
+                        .addRecord(record, methodKind, implKind)
+                        .addCheck("__primitive(\"implements interface\", " +
+                                  record.typeName + ", " +
+                                  interface.interfaceName + ") == 0");
         auto source = intercalate(module.allLines(), "\n");
 
         std::cout << "--- testing program ---" << std::endl;
@@ -351,24 +373,29 @@ static void testSingleInterface(const InterfaceSource& interface,
 
   // Then, split the interface, record definition, and checks into three modules.
   {
-    for (auto methodKind : { ModuleSource::M_PRIMARY, ModuleSource::M_SECONDARY }) {
-      for (auto implKind : { ModuleSource::I_DECL, ModuleSource::I_SINGLE, ModuleSource::I_GENERAL }) {
-        for (auto importTechnique : { std::string("use MRec;"),
-                                      std::string("import MRec.{") + record.typeName + "};" }) {
-          auto moduleLib = ModuleSource("MLib")
-            .addInterface(interface);
+    for (auto methodKind :
+         {ModuleSource::M_PRIMARY, ModuleSource::M_SECONDARY}) {
+      for (auto implKind : {ModuleSource::I_DECL,
+                            ModuleSource::I_SINGLE,
+                            ModuleSource::I_GENERAL}) {
+        for (auto importTechnique :
+             {std::string("use MRec;"),
+              std::string("import MRec.{") + record.typeName + "};"}) {
+          auto moduleLib = ModuleSource("MLib").addInterface(interface);
           auto moduleRec = ModuleSource("MRec")
-            .addUsesImport("use MLib;")
-            .addRecord(record, methodKind, implKind);
-          auto moduleCheck = ModuleSource("MCheck")
-            .addUsesImport("use MLib;")
-            .addUsesImport(importTechnique)
-            .addCheck("__primitive(\"implements interface\", " + record.typeName + ", " + interface.interfaceName + ") == 0");
+                             .addUsesImport("use MLib;")
+                             .addRecord(record, methodKind, implKind);
+          auto moduleCheck =
+            ModuleSource("MCheck")
+              .addUsesImport("use MLib;")
+              .addUsesImport(importTechnique)
+              .addCheck("__primitive(\"implements interface\", " +
+                        record.typeName + ", " + interface.interfaceName +
+                        ") == 0");
 
-          auto source =
-              intercalate(moduleLib.allLines(), "\n") + "\n\n"
-            + intercalate(moduleRec.allLines(), "\n") + "\n\n"
-            + intercalate(moduleCheck.allLines(), "\n");
+          auto source = intercalate(moduleLib.allLines(), "\n") + "\n\n" +
+                        intercalate(moduleRec.allLines(), "\n") + "\n\n" +
+                        intercalate(moduleCheck.allLines(), "\n");
 
           std::cout << "--- testing program ---" << std::endl;
           std::cout << source << std::endl << std::endl;
@@ -386,27 +413,30 @@ static void testSingleInterface(const InterfaceSource& interface,
   // Then, define the record in one place, but provide the required methods in
   // another place.
   {
-    for (auto implKind : { ModuleSource::I_SINGLE, ModuleSource::I_GENERAL }) {
-      for (auto importTechnique : { std::string("use MRec;"),
-                                    std::string("import MRec.{") + record.typeName + "};" }) {
-        auto moduleLib = ModuleSource("MLib")
-          .addInterface(interface);
-        auto moduleRec = ModuleSource("MRec")
-          .addUsesImport("use MLib;")
-          .addRecord(record, ModuleSource::M_NONE, ModuleSource::I_NONE);
+    for (auto implKind : {ModuleSource::I_SINGLE, ModuleSource::I_GENERAL}) {
+      for (auto importTechnique :
+           {std::string("use MRec;"),
+            std::string("import MRec.{") + record.typeName + "};"}) {
+        auto moduleLib = ModuleSource("MLib").addInterface(interface);
+        auto moduleRec =
+          ModuleSource("MRec")
+            .addUsesImport("use MLib;")
+            .addRecord(record, ModuleSource::M_NONE, ModuleSource::I_NONE);
         auto moduleCheck = ModuleSource("MCheck")
-          .addUsesImport("use MLib;")
-          .addUsesImport(importTechnique)
-          .addRecordMethods(record);
+                             .addUsesImport("use MLib;")
+                             .addUsesImport(importTechnique)
+                             .addRecordMethods(record);
 
-        implKind == ModuleSource::I_SINGLE ? moduleCheck.addSingleImplements(interface, record)
-                                           : moduleCheck.addGeneralImplements(interface, record);
-        moduleCheck.addCheck("__primitive(\"implements interface\", " + record.typeName + ", " + interface.interfaceName + ") == 0");
+        implKind == ModuleSource::I_SINGLE
+          ? moduleCheck.addSingleImplements(interface, record)
+          : moduleCheck.addGeneralImplements(interface, record);
+        moduleCheck.addCheck("__primitive(\"implements interface\", " +
+                             record.typeName + ", " + interface.interfaceName +
+                             ") == 0");
 
-        auto source =
-          intercalate(moduleLib.allLines(), "\n") + "\n\n"
-          + intercalate(moduleRec.allLines(), "\n") + "\n\n"
-          + intercalate(moduleCheck.allLines(), "\n");
+        auto source = intercalate(moduleLib.allLines(), "\n") + "\n\n" +
+                      intercalate(moduleRec.allLines(), "\n") + "\n\n" +
+                      intercalate(moduleCheck.allLines(), "\n");
 
         std::cout << "--- testing program ---" << std::endl;
         std::cout << source << std::endl << std::endl;
@@ -424,176 +454,168 @@ static void testSingleInterface(const InterfaceSource& interface,
 static void testRequiredMethodNoArgs() {
   auto i = InterfaceSource("myInterface", "proc Self.foo();");
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo() {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r1);
 
   auto r2 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r2, ErrorType::InterfaceMissingFn);
 }
 
 static void testRequiredMethodNoArgsDefault() {
   auto i = InterfaceSource("myInterface", "proc Self.foo();");
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x: int = 10) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x: int = 10) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r1);
 }
 
 static void testRequiredMethodOneArg() {
   auto i = InterfaceSource("myInterface", "proc Self.foo(x: int);");
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r1);
 
   auto r2 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo() {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r2, ErrorType::InterfaceMissingFn);
 
   auto r3 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x: bool) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x: bool) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r3, ErrorType::InterfaceMissingFn);
 }
 
 static void testRequiredMethodAmbiguous() {
   auto i = InterfaceSource("myInterface", "proc Self.foo(x: int);");
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r1, ErrorType::InterfaceAmbiguousFn);
 }
 
 static void testRequiredMethodWrongIntent() {
   auto i = InterfaceSource("myInterface", "proc Self.foo(x: int);");
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) type do return int;")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) type do return int;")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r1, ErrorType::InterfaceInvalidIntent);
 }
 
 static void testTwoRequiredMethods() {
-  auto i = InterfaceSource("myInterface",
-                           "proc Self.foo(x: int);",
-                           "proc Self.bar(y: real);");
+  auto i = InterfaceSource(
+    "myInterface", "proc Self.foo(x: int);", "proc Self.bar(y: real);");
 
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
-    .addMethod(NOT_A_TYPE_METHOD, "bar(y: real) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
+              .addMethod(NOT_A_TYPE_METHOD, "bar(y: real) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r1);
 
   auto r2 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
-    .addMethod(NOT_A_TYPE_METHOD, "bar() {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
+              .addMethod(NOT_A_TYPE_METHOD, "bar() {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r2, ErrorType::InterfaceMissingFn);
 
   auto r3 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
-    .addMethod(NOT_A_TYPE_METHOD, "bar(y: int) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
+              .addMethod(NOT_A_TYPE_METHOD, "bar(y: int) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r3, ErrorType::InterfaceMissingFn);
 
   auto r4 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r4, ErrorType::InterfaceMissingFn);
 
   auto r5 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "bar(y: real) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "bar(y: real) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r5, ErrorType::InterfaceMissingFn);
 }
 
 static void testBasicGeneric() {
-  auto i = InterfaceSource("myInterface",
-                           "proc Self.foo(x);");
+  auto i = InterfaceSource("myInterface", "proc Self.foo(x);");
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r1);
 
   // top-level type queries and missing types should be cross-compatible.
   auto r2 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x: ?t) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x: ?t) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r2);
 
   // too specific: interface requires fully generic, we're giving it a specific type
   auto r3 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r3, ErrorType::InterfaceMissingFn);
-
 }
 
 static void testBasicGenericTypeQuery() {
-  auto i = InterfaceSource("myInterface",
-                           "proc Self.foo(x: ?tq);");
+  auto i = InterfaceSource("myInterface", "proc Self.foo(x: ?tq);");
   // top-level type queries and missing types should be cross-compatible.
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r1);
 
   auto r2 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x: ?t) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x: ?t) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r2);
 
   // too specific: interface requires fully generic, we're giving it a specific type
   auto r3 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r3, ErrorType::InterfaceMissingFn);
-
 }
 
 static void testDependentGeneric() {
-  auto i = InterfaceSource("myInterface",
-                           "proc Self.foo(x: ?tq, y: tq);");
+  auto i = InterfaceSource("myInterface", "proc Self.foo(x: ?tq, y: tq);");
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x, y: x.type) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x, y: x.type) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r1);
 
   auto r2 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x: ?t, y: t) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x: ?t, y: t) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r2);
 }
 
 static void testAssociatedType() {
-  auto i = InterfaceSource("myInterface",
-                           "type someType;");
+  auto i = InterfaceSource("myInterface", "type someType;");
   auto r1 = RecordSource("myRec")
-    .addMethod(IS_A_TYPE_METHOD, "someType type do return int;")
-    .addInterfaceConstraint(i);
+              .addMethod(IS_A_TYPE_METHOD, "someType type do return int;")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r1);
 
-  auto r2 = RecordSource("myRec")
-    .addInterfaceConstraint(i);
+  auto r2 = RecordSource("myRec").addInterfaceConstraint(i);
   testSingleInterface(i, r2, ErrorType::InterfaceMissingAssociatedType);
 
   auto r3 = RecordSource("myRec")
-    .addMethod(IS_A_TYPE_METHOD, "wrongName type do return int;")
-    .addInterfaceConstraint(i);
+              .addMethod(IS_A_TYPE_METHOD, "wrongName type do return int;")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r2, ErrorType::InterfaceMissingAssociatedType);
 
   auto r4 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "someType type do return int;")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "someType type do return int;")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r4, ErrorType::InterfaceMissingAssociatedType);
 
   auto r5 = RecordSource("myRec")
-    .addMethod(IS_A_TYPE_METHOD, "someType do return 42;")
-    .addInterfaceConstraint(i);
+              .addMethod(IS_A_TYPE_METHOD, "someType do return 42;")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r5, ErrorType::InterfaceMissingAssociatedType);
 }
 
@@ -602,94 +624,100 @@ static void testAssociatedTypeInFn() {
                            "type someType;"
                            "proc Self.foo(x: someType);");
   auto r1 = RecordSource("myRec")
-    .addMethod(IS_A_TYPE_METHOD, "someType type do return int;")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(IS_A_TYPE_METHOD, "someType type do return int;")
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r1);
 
   auto r2 = RecordSource("myRec")
-    .addMethod(IS_A_TYPE_METHOD, "someType type do return int;")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x: bool) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(IS_A_TYPE_METHOD, "someType type do return int;")
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x: bool) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r2, ErrorType::InterfaceMissingFn);
 }
 
 static void testFormalNaming() {
-  auto i = InterfaceSource("myInterface",
-                           "proc Self.foo(x: int);");
+  auto i = InterfaceSource("myInterface", "proc Self.foo(x: int);");
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r1);
 
   auto r2 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(y: int) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(y: int) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r2, ErrorType::InterfaceMissingFn);
 }
 
 static void testFormalOrdering() {
-  auto i = InterfaceSource("myInterface",
-                           "proc Self.foo(x: int, y: int, z: int);");
+  auto i =
+    InterfaceSource("myInterface", "proc Self.foo(x: int, y: int, z: int);");
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x: int, y: int, z: int) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x: int, y: int, z: int) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r1);
 
   auto r2 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(y: int, x: int, z: int) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(y: int, x: int, z: int) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r2, ErrorType::InterfaceReorderedFnFormals);
 }
 
 static void testBasicReturnTypes() {
   auto i = InterfaceSource("myInterface", "proc Self.foo(): int;");
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() do return 42;")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo() do return 42;")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r1);
 
   auto r2 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() do return 42.0;")
-    .addInterfaceConstraint(i);
-  testSingleInterface(i, r2, ErrorType::General /* InterfaceInvalidReturnType */);
+              .addMethod(NOT_A_TYPE_METHOD, "foo() do return 42.0;")
+              .addInterfaceConstraint(i);
+  testSingleInterface(
+    i, r2, ErrorType::General /* InterfaceInvalidReturnType */);
 
   auto r3 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() do return (42 : int(16));")
-    .addInterfaceConstraint(i);
-  testSingleInterface(i, r3, ErrorType::General /* InterfaceInvalidReturnType */);
+              .addMethod(NOT_A_TYPE_METHOD, "foo() do return (42 : int(16));")
+              .addInterfaceConstraint(i);
+  testSingleInterface(
+    i, r3, ErrorType::General /* InterfaceInvalidReturnType */);
 }
 
 static void testBasicReturnTypesIter() {
   auto i = InterfaceSource("myInterface", "iter Self.foo(): int;");
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() do yield 42;", "iter")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo() do yield 42;", "iter")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r1);
 
   auto r2 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() do yield 42.0;", "iter")
-    .addInterfaceConstraint(i);
-  testSingleInterface(i, r2, ErrorType::General /* InterfaceInvalidReturnType */);
+              .addMethod(NOT_A_TYPE_METHOD, "foo() do yield 42.0;", "iter")
+              .addInterfaceConstraint(i);
+  testSingleInterface(
+    i, r2, ErrorType::General /* InterfaceInvalidReturnType */);
 
-  auto r3 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() do yield (42 : int(16));", "iter")
-    .addInterfaceConstraint(i);
-  testSingleInterface(i, r3, ErrorType::General /* InterfaceInvalidReturnType */);
+  auto r3 =
+    RecordSource("myRec")
+      .addMethod(NOT_A_TYPE_METHOD, "foo() do yield (42 : int(16));", "iter")
+      .addInterfaceConstraint(i);
+  testSingleInterface(
+    i, r3, ErrorType::General /* InterfaceInvalidReturnType */);
 }
 
 static void testMismatchedFnKind() {
   auto i1 = InterfaceSource("myInterface", "iter Self.foo(): int;");
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() do return 42;", "proc")
-    .addInterfaceConstraint(i1);
-  testSingleInterface(i1, r1, ErrorType::General /* InterfaceInvalidReturnType */);
+              .addMethod(NOT_A_TYPE_METHOD, "foo() do return 42;", "proc")
+              .addInterfaceConstraint(i1);
+  testSingleInterface(
+    i1, r1, ErrorType::General /* InterfaceInvalidReturnType */);
 
   auto i2 = InterfaceSource("myInterface", "proc Self.foo(): int;");
   auto r2 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() do yield 42;", "iter")
-    .addInterfaceConstraint(i1);
-  testSingleInterface(i2, r2, ErrorType::General /* InterfaceInvalidReturnType */);
+              .addMethod(NOT_A_TYPE_METHOD, "foo() do yield 42;", "iter")
+              .addInterfaceConstraint(i1);
+  testSingleInterface(
+    i2, r2, ErrorType::General /* InterfaceInvalidReturnType */);
 }
 
 static void testPromotion() {
@@ -712,7 +740,8 @@ static void testPromotion() {
       }
       )""";
 
-    auto satisfies = resolveTypesOfVariables(context, program, {"satisfies"}).at("satisfies");
+    auto satisfies =
+      resolveTypesOfVariables(context, program, {"satisfies"}).at("satisfies");
     assert(!guard.realizeErrors());
     assert(satisfies.isParamTrue());
   }
@@ -733,9 +762,11 @@ static void testPromotion() {
       }
       )""";
 
-    auto satisfies = resolveTypesOfVariables(context, program, {"satisfies"}).at("satisfies");
+    auto satisfies =
+      resolveTypesOfVariables(context, program, {"satisfies"}).at("satisfies");
     assert(guard.numErrors() > 0);
-    assert(findError(guard.errors(), ErrorType::General /* InterfacePromotionNonVoid */));
+    assert(findError(guard.errors(),
+                     ErrorType::General /* InterfacePromotionNonVoid */));
     assert(satisfies.isParamFalse());
     guard.realizeErrors();
   }
@@ -756,9 +787,11 @@ static void testPromotion() {
       }
       )""";
 
-    auto satisfies = resolveTypesOfVariables(context, program, {"satisfies"}).at("satisfies");
+    auto satisfies =
+      resolveTypesOfVariables(context, program, {"satisfies"}).at("satisfies");
     assert(guard.numErrors() > 0);
-    assert(findError(guard.errors(), ErrorType::General /* InterfaceInvalidReturnType */));
+    assert(findError(guard.errors(),
+                     ErrorType::General /* InterfaceInvalidReturnType */));
     assert(satisfies.isParamFalse());
     guard.realizeErrors();
   }
@@ -767,54 +800,60 @@ static void testPromotion() {
 static void testReturnIntentsValue() {
   auto i = InterfaceSource("myInterface", "proc Self.foo(): int;");
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(): int { return myRecDummy; }")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(): int { return myRecDummy; }")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r1, chpl::empty);
 
-  auto r2 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() ref : int { return myRecDummy; }")
-    .addInterfaceConstraint(i);
+  auto r2 =
+    RecordSource("myRec")
+      .addMethod(NOT_A_TYPE_METHOD, "foo() ref : int { return myRecDummy; }")
+      .addInterfaceConstraint(i);
   testSingleInterface(i, r2, chpl::empty);
 
   auto r3 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() const ref : int { return myRecDummy; }")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD,
+                         "foo() const ref : int { return myRecDummy; }")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r3, chpl::empty);
 }
 
 static void testReturnIntentsConstRef() {
   auto i = InterfaceSource("myInterface", "proc Self.foo() const ref : int;");
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() const ref : int { return myRecDummy; }")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD,
+                         "foo() const ref : int { return myRecDummy; }")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r1, chpl::empty);
 
-  auto r2 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() ref : int { return myRecDummy; }")
-    .addInterfaceConstraint(i);
+  auto r2 =
+    RecordSource("myRec")
+      .addMethod(NOT_A_TYPE_METHOD, "foo() ref : int { return myRecDummy; }")
+      .addInterfaceConstraint(i);
   testSingleInterface(i, r2, chpl::empty);
 
   auto r3 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(): int { return myRecDummy; }")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(): int { return myRecDummy; }")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r3, chpl::InterfaceInvalidIntent);
 }
 
 static void testReturnIntentsRef() {
   auto i = InterfaceSource("myInterface", "proc Self.foo() ref : int;");
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() const ref : int { return myRecDummy; }")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD,
+                         "foo() const ref : int { return myRecDummy; }")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r1, chpl::InterfaceInvalidIntent);
 
-  auto r2 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() ref : int { return myRecDummy; }")
-    .addInterfaceConstraint(i);
+  auto r2 =
+    RecordSource("myRec")
+      .addMethod(NOT_A_TYPE_METHOD, "foo() ref : int { return myRecDummy; }")
+      .addInterfaceConstraint(i);
   testSingleInterface(i, r2, chpl::empty);
 
   auto r3 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(): int { return myRecDummy; }")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(): int { return myRecDummy; }")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r3, chpl::InterfaceInvalidIntent);
 }
 
@@ -840,7 +879,8 @@ static void testReturnIntentsOverriding() {
       }
       )""";
 
-    auto satisfies = resolveTypesOfVariables(context, program, {"satisfies"}).at("satisfies");
+    auto satisfies =
+      resolveTypesOfVariables(context, program, {"satisfies"}).at("satisfies");
     assert(!guard.realizeErrors());
     assert(satisfies.isParamTrue());
   }
@@ -863,7 +903,8 @@ static void testReturnIntentsOverriding() {
       }
       )""";
 
-    auto satisfies = resolveTypesOfVariables(context, program, {"satisfies"}).at("satisfies");
+    auto satisfies =
+      resolveTypesOfVariables(context, program, {"satisfies"}).at("satisfies");
     assert(!guard.realizeErrors());
     assert(satisfies.isParamTrue());
   }
@@ -886,7 +927,8 @@ static void testReturnIntentsOverriding() {
       }
       )""";
 
-    auto satisfies = resolveTypesOfVariables(context, program, {"satisfies"}).at("satisfies");
+    auto satisfies =
+      resolveTypesOfVariables(context, program, {"satisfies"}).at("satisfies");
     assert(!guard.realizeErrors());
     assert(satisfies.isParamTrue());
   }
@@ -914,7 +956,8 @@ static void testImplementsInvalidInterface() {
 
       }
       int implements I;
-    )""", ErrorType::InvalidImplementsInterface);
+    )""",
+    ErrorType::InvalidImplementsInterface);
 }
 
 static void testImplementsInvalidActual() {
@@ -925,7 +968,8 @@ static void testImplementsInvalidActual() {
       }
       var x = 3;
       x implements I;
-    )""", ErrorType::InvalidImplementsActual);
+    )""",
+    ErrorType::InvalidImplementsActual);
 
   expectError(
     R"""(
@@ -934,7 +978,8 @@ static void testImplementsInvalidActual() {
     }
     var x = 3;
     implements I(x);
-    )""", ErrorType::InvalidImplementsActual);
+    )""",
+    ErrorType::InvalidImplementsActual);
 };
 
 static void testImplementsDuplicate() {
@@ -946,7 +991,8 @@ static void testImplementsDuplicate() {
     record R : I, I {
 
     }
-    )""", ErrorType::InterfaceMultipleImplements);
+    )""",
+    ErrorType::InterfaceMultipleImplements);
 };
 
 static void testInvalidImplementsArity() {
@@ -954,45 +1000,51 @@ static void testInvalidImplementsArity() {
     R"""(
     interface Unary {}
     implements Unary(int, bool);
-    )""", ErrorType::InvalidImplementsArity);
+    )""",
+    ErrorType::InvalidImplementsArity);
 
   expectError(
     R"""(
     interface Unary(Self) {}
     implements Unary(int, bool);
-    )""", ErrorType::InvalidImplementsArity);
+    )""",
+    ErrorType::InvalidImplementsArity);
 
   expectError(
     R"""(
     interface Binary(L, R) {}
     implements Binary(int);
-    )""", ErrorType::InvalidImplementsArity);
+    )""",
+    ErrorType::InvalidImplementsArity);
 
   expectError(
     R"""(
     interface Binary(L, R) {}
     implements Binary(int, bool, real);
-    )""", ErrorType::InvalidImplementsArity);
+    )""",
+    ErrorType::InvalidImplementsArity);
 
   expectError(
     R"""(
     interface Binary(L, R) {}
     record R : Binary {}
-    )""", ErrorType::InterfaceNaryInInherits);
+    )""",
+    ErrorType::InterfaceNaryInInherits);
 };
 
 static void testDocsOny() {
   // Self.bar is docs only, so we shouldn't require it to be implemented.
 
-  auto i = InterfaceSource("myInterface", "proc Self.foo();", "pragma \"docs only\" proc Self.bar();");
+  auto i = InterfaceSource(
+    "myInterface", "proc Self.foo();", "pragma \"docs only\" proc Self.bar();");
   auto r1 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo() {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo() {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r1);
 
   auto r2 = RecordSource("myRec")
-    .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
-    .addInterfaceConstraint(i);
+              .addMethod(NOT_A_TYPE_METHOD, "foo(x: int) {}")
+              .addInterfaceConstraint(i);
   testSingleInterface(i, r2, ErrorType::InterfaceMissingFn);
 }
 

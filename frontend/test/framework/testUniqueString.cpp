@@ -31,16 +31,15 @@
 
 using namespace chpl;
 
-static void testPerformance(Context* ctx,
-                            const char* inputFile,
-                            bool printTiming) {
+static void
+testPerformance(Context* ctx, const char* inputFile, bool printTiming) {
   int outerRepeat = 10;
   int innerRepeat = 1;
 
   bool dohisto = false;
   int querybysize[41];
   int nqueries = 0;
-  for(int i = 0; i < 41; i++) querybysize[i] = 0;
+  for (int i = 0; i < 41; i++) querybysize[i] = 0;
 
   auto start = std::chrono::steady_clock::now();
   for (int i = 0; i < outerRepeat; i++) {
@@ -83,7 +82,7 @@ static void testPerformance(Context* ctx,
     if (dohisto) {
       std::cout << "Queried " << nqueries << " strings\n";
       int sum = 0;
-      for(int i = 0; i < 40; i++) {
+      for (int i = 0; i < 40; i++) {
         std::cout << "length < " << i << " -- " << sum << "\n";
         sum += querybysize[i];
         std::cout << "length " << i << " -- " << querybysize[i] << "\n";
@@ -97,9 +96,9 @@ static void test0() {
   Context context;
   Context* ctx = &context;
 
-  // First, add some strings to the map and make sure we get uniqueness.
-  // needs to be long enough to require strdup etc.
-  #define TEST1STRING "this is a very very very long string"
+// First, add some strings to the map and make sure we get uniqueness.
+// needs to be long enough to require strdup etc.
+#define TEST1STRING "this is a very very very long string"
   std::string test1 = TEST1STRING;
   std::string test1Copy = test1;
   assert(test1.c_str() != test1Copy.c_str());
@@ -158,15 +157,24 @@ static void test0() {
                                          "ggggggg"
                                          "hhhhhhhh"
                                          "iiiiiiiii");
-  const char* abcd2 = ctx->uniqueCStringConcatLen("a", 1,
-                                                  "bb", 2,
-                                                  "ccc", 3,
-                                                  "dddd", 4,
-                                                  "eeeee", 5,
-                                                  "ffffff", 6,
-                                                  "ggggggg", 7,
-                                                  "hhhhhhhh", 8,
-                                                  "iiiiiiiii", 9);
+  const char* abcd2 = ctx->uniqueCStringConcatLen("a",
+                                                  1,
+                                                  "bb",
+                                                  2,
+                                                  "ccc",
+                                                  3,
+                                                  "dddd",
+                                                  4,
+                                                  "eeeee",
+                                                  5,
+                                                  "ffffff",
+                                                  6,
+                                                  "ggggggg",
+                                                  7,
+                                                  "hhhhhhhh",
+                                                  8,
+                                                  "iiiiiiiii",
+                                                  9);
   const char* abcd3 = ctx->uniqueCStringConcat("a",
                                                "bb",
                                                "ccc",
@@ -177,27 +185,27 @@ static void test0() {
                                                "hhhhhhhh",
                                                "iiiiiiiii");
 
-  assert(0 == strcmp(abcd1,  "a"
-                             "bb"
-                             "ccc"
-                             "dddd"
-                             "eeeee"
-                             "ffffff"
-                             "ggggggg"
-                             "hhhhhhhh"
-                             "iiiiiiiii"));
+  assert(0 == strcmp(abcd1,
+                     "a"
+                     "bb"
+                     "ccc"
+                     "dddd"
+                     "eeeee"
+                     "ffffff"
+                     "ggggggg"
+                     "hhhhhhhh"
+                     "iiiiiiiii"));
   assert(abcd1 == abcd2);
   assert(abcd2 == abcd3);
 }
-
 
 static void test1() {
   Context context;
   Context* ctx = &context;
 
-  // First, add some strings to the map and make sure we get uniqueness.
-  // needs to be long enough to require strdup etc.
-  #define TEST1STRING "this is a very very very long string"
+// First, add some strings to the map and make sure we get uniqueness.
+// needs to be long enough to require strdup etc.
+#define TEST1STRING "this is a very very very long string"
   std::string test1 = TEST1STRING;
   std::string test1Copy = test1;
   assert(test1.c_str() != test1Copy.c_str());
@@ -242,8 +250,8 @@ static void test1() {
 
   // check that truncation works for short strings and long ones
   assert(h1 == UniqueString::get(ctx, "hello____", strlen("hello")));
-  assert(t1 == UniqueString::get(ctx, TEST1STRING "_____",
-                                   strlen(TEST1STRING)));
+  assert(t1 ==
+         UniqueString::get(ctx, TEST1STRING "_____", strlen(TEST1STRING)));
 
   // check concatenation builder
   UniqueString ab1 = UniqueString::get(ctx, "aabbb");
@@ -252,35 +260,36 @@ static void test1() {
   assert(0 == strcmp(ab1.c_str(), "aabbb"));
 
   UniqueString abcd1 = UniqueString::get(ctx,
-                                           "a"
-                                           "bb"
-                                           "ccc"
-                                           "dddd"
-                                           "eeeee"
-                                           "ffffff"
-                                           "ggggggg"
-                                           "hhhhhhhh"
-                                           "iiiiiiiii");
+                                         "a"
+                                         "bb"
+                                         "ccc"
+                                         "dddd"
+                                         "eeeee"
+                                         "ffffff"
+                                         "ggggggg"
+                                         "hhhhhhhh"
+                                         "iiiiiiiii");
   UniqueString abcd2 = UniqueString::getConcat(ctx,
-                                                 "a",
-                                                 "bb",
-                                                 "ccc",
-                                                 "dddd",
-                                                 "eeeee",
-                                                 "ffffff",
-                                                 "ggggggg",
-                                                 "hhhhhhhh",
-                                                 "iiiiiiiii");
+                                               "a",
+                                               "bb",
+                                               "ccc",
+                                               "dddd",
+                                               "eeeee",
+                                               "ffffff",
+                                               "ggggggg",
+                                               "hhhhhhhh",
+                                               "iiiiiiiii");
   assert(abcd1 == abcd2);
-  assert(0 == strcmp(abcd1.c_str(), "a"
-                                    "bb"
-                                    "ccc"
-                                    "dddd"
-                                    "eeeee"
-                                    "ffffff"
-                                    "ggggggg"
-                                    "hhhhhhhh"
-                                    "iiiiiiiii"));
+  assert(0 == strcmp(abcd1.c_str(),
+                     "a"
+                     "bb"
+                     "ccc"
+                     "dddd"
+                     "eeeee"
+                     "ffffff"
+                     "ggggggg"
+                     "hhhhhhhh"
+                     "iiiiiiiii"));
 
   // check ==
   assert(t1 == t2);
@@ -383,7 +392,7 @@ static void test4() {
 
   const char* abcs = "abcdefghijklmnopqrstuvwxyz";
   UniqueString abc = UniqueString::get(ctx, abcs);
-  UniqueString abc0 = UniqueString::get(ctx, abcs, strlen(abcs)+1);
+  UniqueString abc0 = UniqueString::get(ctx, abcs, strlen(abcs) + 1);
   UniqueString a = UniqueString::get(ctx, "a");
   UniqueString a0 = UniqueString::get(ctx, "a", 2);
   UniqueString a0a = UniqueString::get(ctx, "a\x00a", 3);
@@ -424,15 +433,14 @@ static void test4() {
   assert(abc < d);
   assert(abc <= d);
   assert(abc <= abc);
-  assert(! (abc > d));
-  assert(! (abc >= d));
+  assert(!(abc > d));
+  assert(!(abc >= d));
 
-  assert(! (d < abc));
-  assert(! (d <= abc));
+  assert(!(d < abc));
+  assert(!(d <= abc));
   assert(d > abc);
   assert(d >= abc);
 }
-
 
 int main(int argc, char** argv) {
   const char* inputFile = nullptr;
@@ -458,7 +466,8 @@ int main(int argc, char** argv) {
   if (inputFile) {
     testPerformance(ctx, inputFile, printTiming);
   } else if (printTiming) {
-    std::cout << "Performance timing requested, but no input file specified" << std::endl;
+    std::cout << "Performance timing requested, but no input file specified"
+              << std::endl;
     return 1;
   }
 

@@ -34,65 +34,58 @@ using namespace chpl;
 using namespace uast;
 using namespace parsing;
 
-
 // This macro just helps keep the tests a little cleaner
 // rather than redefine all this for every type we want to test
-#define TEST_STRINGIFY_TYPE(val)                      \
-{                                                     \
-  std::ostringstream ss;                              \
-  stringify<std::decay_t<decltype(val)>> stringifier; \
-  stringifier(ss, DEBUG_DETAIL, val);                 \
-  assert(!ss.str().empty());                          \
-}
+#define TEST_STRINGIFY_TYPE(val)                        \
+  {                                                     \
+    std::ostringstream ss;                              \
+    stringify<std::decay_t<decltype(val)>> stringifier; \
+    stringifier(ss, DEBUG_DETAIL, val);                 \
+    assert(!ss.str().empty());                          \
+  }
 
 // Helper macro for testing output from printUserString
 #define TEST_USER_STRING(funcDef, val)                           \
-{                                                                \
-  std::ostringstream ss;                                         \
-  auto parseResult = parseStringAndReportErrors(parser,          \
-                                                "test3.chpl",    \
-                                                funcDef);        \
-  auto mod = parseResult.singleModule();                         \
-  auto funcDecl = mod->stmt(0)->toFunction();                    \
-  assert(funcDecl);                                              \
-  printFunctionSignature(ss, funcDecl);                          \
-  std::cerr << ss.str() << std::endl;                            \
-  assert(ss.str() == val);                                       \
-}
+  {                                                              \
+    std::ostringstream ss;                                       \
+    auto parseResult =                                           \
+      parseStringAndReportErrors(parser, "test3.chpl", funcDef); \
+    auto mod = parseResult.singleModule();                       \
+    auto funcDecl = mod->stmt(0)->toFunction();                  \
+    assert(funcDecl);                                            \
+    printFunctionSignature(ss, funcDecl);                        \
+    std::cerr << ss.str() << std::endl;                          \
+    assert(ss.str() == val);                                     \
+  }
 
-
-#define TEST_CHPL_SYNTAX(src, val)                           \
-{                                                            \
-  std::ostringstream ss;                                     \
-  auto parseResult = parseStringAndReportErrors(parser,      \
-                                                "test5.chpl",\
-                                                src);        \
-  auto mod = parseResult.singleModule();                     \
-  assert(mod);                                               \
-  printChapelSyntax(ss, mod);                                \
-  std::cerr << ss.str() << std::endl;                        \
-  assert(ss.str() == val);                                   \
-}
-
+#define TEST_CHPL_SYNTAX(src, val)                                            \
+  {                                                                           \
+    std::ostringstream ss;                                                    \
+    auto parseResult = parseStringAndReportErrors(parser, "test5.chpl", src); \
+    auto mod = parseResult.singleModule();                                    \
+    assert(mod);                                                              \
+    printChapelSyntax(ss, mod);                                               \
+    std::cerr << ss.str() << std::endl;                                       \
+    assert(ss.str() == val);                                                  \
+  }
 
 static void stringifyNode(const AstNode* node, chpl::StringifyKind kind) {
   // recurse through the nodes and make sure each can call stringify()
   // and produce a non-empty result (for now)
   // this is a little convoluted as each AstNode is also calling
   // AstNode.dumpHelper() on all of its children
-//  for (const AstNode* child : node->children()) {
-//    stringifyNode(child, kind);
-//  }
+  //  for (const AstNode* child : node->children()) {
+  //    stringifyNode(child, kind);
+  //  }
   std::ostringstream ss;
   node->stringify(ss, kind);
   // don't test an empty domains as in formal array decls like `proc main(args:[] string)`
   // don't test comments for now as they are not printed by the chpl-syntax-printer
-  if (!(node->isDomain() && node->toDomain()->numChildren() == 0)
-      && !node->isComment() && !node->isEmptyStmt())
+  if (!(node->isDomain() && node->toDomain()->numChildren() == 0) &&
+      !node->isComment() && !node->isEmptyStmt())
     assert(!ss.str().empty());
   std::cerr << ss.str() << std::endl;
 }
-
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
@@ -348,8 +341,8 @@ static void test1(Parser* parser) {
   XNew(ij) = (X(ij+north) + X(ij+south) + X(ij+east) + X(ij+west)) / 4.0;
   proc multiDimension(): [1..3, 2..8] string {}
   )"""";
-  auto parseResult = parseStringAndReportErrors(parser, "Test1.chpl",
-                                         testCode.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "Test1.chpl", testCode.c_str());
   for (auto& error : guard.errors()) {
     const ErrorBase* err = error.get();
     // ignore implicit module warning
@@ -381,12 +374,12 @@ static void test2(Parser* parser) {
   TEST_STRINGIFY_TYPE(std::string("so long, and thanks for all the phish"))
   TEST_STRINGIFY_TYPE(true)
 
-  TEST_STRINGIFY_TYPE(std::make_pair(42, std::string("the answer to life, "
-                                                     "the universe, "
-                                                     "and everything")))
-  TEST_STRINGIFY_TYPE(std::make_tuple(std::string("blue"),
-                                      true, 35,
-                                      std::make_pair(42, true)))
+  TEST_STRINGIFY_TYPE(std::make_pair(42,
+                                     std::string("the answer to life, "
+                                                 "the universe, "
+                                                 "and everything")))
+  TEST_STRINGIFY_TYPE(
+    std::make_tuple(std::string("blue"), true, 35, std::make_pair(42, true)))
   std::vector<int> v{7, 5, 16, 8};
   TEST_STRINGIFY_TYPE(v)
   std::set<double> dSet = {1.23, 3.14, 2.789};
@@ -400,9 +393,7 @@ static void test2(Parser* parser) {
                                          {1, std::string("Mon.")},
                                          {3, std::string("Wed.")}};
   TEST_STRINGIFY_TYPE(weekDays)
-
 }
-
 
 static void test3(Parser* parser) {
 
@@ -420,8 +411,9 @@ static void test3(Parser* parser) {
   TEST_USER_STRING("proc main(args: [] string) {\n}", "main(args: [] string)")
   TEST_USER_STRING("proc MYPROC(FORMAL: sync int) { }",
                    "MYPROC(FORMAL: sync int)")
-  TEST_USER_STRING("inline operator ==(a: _nilType, b: _nilType) param do return true;",
-                   "==(a: _nilType, b: _nilType)")
+  TEST_USER_STRING(
+    "inline operator ==(a: _nilType, b: _nilType) param do return true;",
+    "==(a: _nilType, b: _nilType)")
   TEST_USER_STRING("private proc param R.prm2(arg) param : string { }",
                    "private param R.prm2(arg)")
   TEST_USER_STRING("proc procRefC(ref arg: borrowed C?) { }",
@@ -430,17 +422,17 @@ static void test3(Parser* parser) {
   TEST_USER_STRING("proc foo(x...) {}", "foo(x ...)")
   TEST_USER_STRING("proc bar(type x...) {}", "bar(type x ...)")
   TEST_USER_STRING("proc bar(type x...?k) {}", "bar(type x ...?k)")
-  TEST_USER_STRING("proc foo(x: borrowed C(t=?tt, r=?rr), y: borrowed C(tt, rr)) {}",
-                   "foo(x: borrowed C(t = ?tt, r = ?rr), y: borrowed C(tt, rr))")
+  TEST_USER_STRING(
+    "proc foo(x: borrowed C(t=?tt, r=?rr), y: borrowed C(tt, rr)) {}",
+    "foo(x: borrowed C(t = ?tt, r = ?rr), y: borrowed C(tt, rr))")
   TEST_USER_STRING("proc (int(32)).foo() {\n}", "(int(32)).foo()")
-  TEST_USER_STRING("proc proc1(arg: Monkey1?) { }", "proc1(arg: Monkey1?)" )
+  TEST_USER_STRING("proc proc1(arg: Monkey1?) { }", "proc1(arg: Monkey1?)")
   TEST_USER_STRING("proc proc1(arg: 2*Monkey1?) { }", "proc1(arg: 2*Monkey1?)")
   TEST_USER_STRING("proc proc1(arg: owned 2*Monkey1?) { }",
                    "proc1(arg: owned 2*Monkey1?)")
   TEST_USER_STRING("proc init(fScore : borrowed [..] real) {}",
                    "init(fScore: borrowed [..] real)")
-  TEST_USER_STRING("proc difDecl(arg1: 3*string) {}",
-                   "difDecl(arg1: 3*string)")
+  TEST_USER_STRING("proc difDecl(arg1: 3*string) {}", "difDecl(arg1: 3*string)")
   TEST_USER_STRING("proc multiDimension(arg2: 3*(4*complex)): 3*(4*complex) {}",
                    "multiDimension(arg2: 3*(4*complex))")
   TEST_USER_STRING("proc multiDimension(): [1..3, 2..8] string {}",
@@ -456,9 +448,11 @@ static void test3(Parser* parser) {
 }
 
 static void test4(Parser* parser) {
-  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
-                                          "class C {\n"
-                                          "proc ref setClt(rhs: borrowed C) {\n}\n}\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test4.chpl",
+                               "class C {\n"
+                               "proc ref setClt(rhs: borrowed C) {\n}\n}\n");
   auto mod = parseResult.singleModule();
   std::ostringstream ss;
   auto cDecl = mod->stmt(0)->toClass();
@@ -475,9 +469,7 @@ static void testModules(Parser* parser) {
   TEST_CHPL_SYNTAX("module M {}", "module M {\n\n}\n")
 }
 
-static void testUse(Parser* parser) {
-  TEST_CHPL_SYNTAX("use Map;", "use Map;")
-}
+static void testUse(Parser* parser) { TEST_CHPL_SYNTAX("use Map;", "use Map;") }
 
 static void testRequire(Parser* parser) {
   TEST_CHPL_SYNTAX("require \"foo.h\", \"foo.c\";",
@@ -515,7 +507,8 @@ static void testDecl(Parser* parser) {
   TEST_CHPL_SYNTAX("const j = !this && that;", "const j = !this && that;")
   TEST_CHPL_SYNTAX("const d : int = (((i + j) * (i + j + 1)) >> 1) + i + 1;",
                    "const d: int = (i + j) * (i + j + 1) >> 1 + i + 1;")
-  TEST_CHPL_SYNTAX("const vBv = + reduce (u*v);", "const vBv = + reduce (u * v);")
+  TEST_CHPL_SYNTAX("const vBv = + reduce (u*v);",
+                   "const vBv = + reduce (u * v);")
   TEST_CHPL_SYNTAX("const vBv = + reduce [(u,v) in zip(U,V)] (u * v);",
                    "const vBv = + reduce [(u, v) in zip(U, V)] (u * v);")
   TEST_CHPL_SYNTAX("config var x,y,z : int;", "config var x, y, z: int;")
@@ -525,8 +518,9 @@ static void testDecl(Parser* parser) {
   TEST_CHPL_SYNTAX("var aq = new owned Foo()?;", "var aq = new owned Foo()?;")
   TEST_CHPL_SYNTAX("var eq = new Foo()?;", "var eq = new Foo()?;")
   TEST_CHPL_SYNTAX("var x: atomic int;", "var x: atomic int;")
-  TEST_CHPL_SYNTAX("var domain7: domain(rank=3, idxType=int, stridable=false);",
-                   "var domain7: domain(rank = 3, idxType = int, stridable = false);")
+  TEST_CHPL_SYNTAX(
+    "var domain7: domain(rank=3, idxType=int, stridable=false);",
+    "var domain7: domain(rank = 3, idxType = int, stridable = false);")
   TEST_CHPL_SYNTAX("var domain1: domain(keyType, parSafe=true);",
                    "var domain1: domain(keyType, parSafe = true);")
   TEST_CHPL_SYNTAX("var lSrcVals: [myLocaleSpace] [0..#bufferSize] elemType;",
@@ -537,7 +531,6 @@ static void testDecl(Parser* parser) {
                    "var x: c_ptrConst(c_ptrConst(int));")
   TEST_CHPL_SYNTAX("var x:  c_ptr(void); ", "var x: c_ptr(void);")
 }
-
 
 //TODO: Write many more specific tests for the format of different node types
 
@@ -559,7 +552,6 @@ int main(int argc, char** argv) {
   testEnum(p);
   testExtern(p);
   testDecl(p);
-
 
   return 0;
 }

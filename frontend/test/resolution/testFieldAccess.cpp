@@ -34,7 +34,7 @@ static void test1() {
   Context* context = &ctx;
 
   auto qt = resolveTypeOfXInit(context,
-                             R""""(
+                               R""""(
                                record R {
                                  var field: int;
                                }

@@ -34,7 +34,7 @@ static void testRecordInt() {
   ErrorGuard guard(context);
 
   std::string program =
-R"""(
+    R"""(
 module M {
   pragma "infer custom type"
   record R {
@@ -66,7 +66,8 @@ module M {
 
   QualifiedType x = findVarType(m, rr, "x");
   // Make sure it's actually 'R'
-  auto xTypeNode = parsing::idToAst(context, x.type()->getCompositeType()->id());
+  auto xTypeNode =
+    parsing::idToAst(context, x.type()->getCompositeType()->id());
   assert(xTypeNode == m->stmt(0));
 
   QualifiedType y = findVarType(m, rr, "y");
@@ -94,7 +95,7 @@ static void testTypeAlias() {
   ErrorGuard guard(context);
 
   std::string program =
-R"""(
+    R"""(
 module M {
   pragma "infer custom type"
   record R {
@@ -124,7 +125,8 @@ module M {
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
   QualifiedType myAlias = findVarType(m, rr, "MyAlias");
-  assert(myAlias.type()->isRecordType() && myAlias.type()->toRecordType()->name() == "R");
+  assert(myAlias.type()->isRecordType() &&
+         myAlias.type()->toRecordType()->name() == "R");
 
   QualifiedType x = findVarType(m, rr, "x");
   // x should also be of type R

@@ -35,7 +35,9 @@ static void testIterFn(Context* context) {
                   "iter foo() do yield 1;",
                   ": [1..1] int",
                   "foo()",
-                  1, "one", "ChapelArray.chpl__coerceMove#5");
+                  1,
+                  "one",
+                  "ChapelArray.chpl__coerceMove#5");
 }
 
 static void testForeachRange(Context* context) {
@@ -43,7 +45,9 @@ static void testForeachRange(Context* context) {
                   "",
                   ": [1..10] int",
                   "foreach i in 1..10 do i",
-                  1, "one", "ChapelArray.chpl__coerceMove#5");
+                  1,
+                  "one",
+                  "ChapelArray.chpl__coerceMove#5");
 }
 
 static void testForeachStridedRange(Context* context) {
@@ -51,7 +55,9 @@ static void testForeachStridedRange(Context* context) {
                   "",
                   ": [1..5] int",
                   "foreach i in 1..10 by 2 do i",
-                  1, "one", "ChapelArray.chpl__coerceMove#5");
+                  1,
+                  "one",
+                  "ChapelArray.chpl__coerceMove#5");
 }
 
 static void testForeachOverForeach(Context* context) {
@@ -59,7 +65,9 @@ static void testForeachOverForeach(Context* context) {
                   "",
                   ": [1..10] int",
                   "foreach i in (foreach j in 1..10 do j) do i",
-                  1, "one", "ChapelArray.chpl__coerceMove#5");
+                  1,
+                  "one",
+                  "ChapelArray.chpl__coerceMove#5");
 }
 
 static void testChangeDimension(Context* context) {
@@ -67,7 +75,9 @@ static void testChangeDimension(Context* context) {
                   "",
                   ": [1..5, 1..5] int",
                   "foreach i in 1..25 do i",
-                  2, "one", "ChapelArray.chpl__coerceMove#5");
+                  2,
+                  "one",
+                  "ChapelArray.chpl__coerceMove#5");
 }
 
 static void testPromotionRange(Context* context) {
@@ -75,7 +85,9 @@ static void testPromotionRange(Context* context) {
                   "proc foo(x) do return x : real;",
                   ": [1..10] real",
                   "foo(1..10)",
-                  1, "one", "ChapelArray.chpl__coerceMove#5");
+                  1,
+                  "one",
+                  "ChapelArray.chpl__coerceMove#5");
 }
 
 static void testPromotionStridedRange(Context* context) {
@@ -83,7 +95,9 @@ static void testPromotionStridedRange(Context* context) {
                   "proc foo(x) do return x : real;",
                   ": [1..5] real",
                   "foo(1..10 by 2)",
-                  1, "one", "ChapelArray.chpl__coerceMove#5");
+                  1,
+                  "one",
+                  "ChapelArray.chpl__coerceMove#5");
 }
 
 static void testPromotionOverDomain(Context* context) {
@@ -91,14 +105,17 @@ static void testPromotionOverDomain(Context* context) {
                   "proc foo(x) do return x : real;",
                   ": [1..10] real",
                   "foo({1..10})",
-                  1, "one", "ChapelArray.chpl__coerceMove#5");
+                  1,
+                  "one",
+                  "ChapelArray.chpl__coerceMove#5");
   testArrayCoerce(context,
                   "proc foo((x, y)) do return (x : real, y : real);",
                   ": [1..10, 1..10] (real, real)",
                   "foo({1..10, 1..10})",
-                  2, "one", "ChapelArray.chpl__coerceMove#5");
+                  2,
+                  "one",
+                  "ChapelArray.chpl__coerceMove#5");
 }
-
 
 int main() {
   auto context = buildStdContext();

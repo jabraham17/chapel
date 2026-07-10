@@ -36,7 +36,8 @@ static void testIntLiteral(Parser* parser,
   std::string toparse = "var x = ";
   toparse += lit;
   toparse += ";\n";
-  auto parseResult = parseStringAndReportErrors(parser, testname, toparse.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, testname, toparse.c_str());
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -56,7 +57,8 @@ static void testUintLiteral(Parser* parser,
   std::string toparse = "var x = ";
   toparse += lit;
   toparse += ";\n";
-  auto parseResult = parseStringAndReportErrors(parser, testname, toparse.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, testname, toparse.c_str());
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -76,7 +78,8 @@ static void testRealLiteral(Parser* parser,
   std::string toparse = "var x = ";
   toparse += lit;
   toparse += ";\n";
-  auto parseResult = parseStringAndReportErrors(parser, testname, toparse.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, testname, toparse.c_str());
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -96,7 +99,8 @@ static void testImagLiteral(Parser* parser,
   std::string toparse = "var x = ";
   toparse += lit;
   toparse += ";\n";
-  auto parseResult = parseStringAndReportErrors(parser, testname, toparse.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, testname, toparse.c_str());
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -109,15 +113,14 @@ static void testImagLiteral(Parser* parser,
   assert(0 == imagLit->text().compare(lit));
 }
 
-
-static void testBadLiteral(Parser* parser,
-                           const char* testname,
-                           const char* lit) {
+static void
+testBadLiteral(Parser* parser, const char* testname, const char* lit) {
   ErrorGuard guard(parser->context());
   std::string toparse = "var x = ";
   toparse += lit;
   toparse += ";\n";
-  auto parseResult = parseStringAndReportErrors(parser, testname, toparse.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, testname, toparse.c_str());
   assert(guard.realizeErrors() >= 1);
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -153,50 +156,57 @@ int main() {
   testIntLiteral(p, "testCH.chpl", "0X10", 16);
 
   testIntLiteral(p, "testDd.chpl", "4294967296", 4294967296);
-  testIntLiteral(p, "testEe.chpl",
-                 "4611686018427387904", 4611686018427387904);
+  testIntLiteral(p, "testEe.chpl", "4611686018427387904", 4611686018427387904);
 
-  testUintLiteral(p, "testFb.chpl",
-      "0b1111111111111111111111111111111111111111111111111111111111111111",
-      18446744073709551615ull);
-  testUintLiteral(p, "testFB.chpl",
-      "0B1111111111111111111111111111111111111111111111111111111111111111",
-      18446744073709551615ull);
-  testUintLiteral(p, "testFd.chpl",
-                 "18446744073709551615", 18446744073709551615ull);
-  testUintLiteral(p, "testFo.chpl",
-                 "0o1777777777777777777777", 18446744073709551615ull);
-  testUintLiteral(p, "testFO.chpl",
-                 "0O1777777777777777777777", 18446744073709551615ull);
-  testUintLiteral(p, "testFh.chpl",
-                 "0xFFFFFFFFFFFFFFFF", 18446744073709551615ull);
-  testUintLiteral(p, "testFh2.chpl",
-                 "0xffffffffffffffff", 18446744073709551615ull);
-  testUintLiteral(p, "testFH.chpl",
-                 "0XFFFFFFFFFFFFFFFF", 18446744073709551615ull);
-  testUintLiteral(p, "testFH2.chpl",
-                 "0Xffffffffffffffff", 18446744073709551615ull);
+  testUintLiteral(
+    p,
+    "testFb.chpl",
+    "0b1111111111111111111111111111111111111111111111111111111111111111",
+    18446744073709551615ull);
+  testUintLiteral(
+    p,
+    "testFB.chpl",
+    "0B1111111111111111111111111111111111111111111111111111111111111111",
+    18446744073709551615ull);
+  testUintLiteral(
+    p, "testFd.chpl", "18446744073709551615", 18446744073709551615ull);
+  testUintLiteral(
+    p, "testFo.chpl", "0o1777777777777777777777", 18446744073709551615ull);
+  testUintLiteral(
+    p, "testFO.chpl", "0O1777777777777777777777", 18446744073709551615ull);
+  testUintLiteral(
+    p, "testFh.chpl", "0xFFFFFFFFFFFFFFFF", 18446744073709551615ull);
+  testUintLiteral(
+    p, "testFh2.chpl", "0xffffffffffffffff", 18446744073709551615ull);
+  testUintLiteral(
+    p, "testFH.chpl", "0XFFFFFFFFFFFFFFFF", 18446744073709551615ull);
+  testUintLiteral(
+    p, "testFH2.chpl", "0Xffffffffffffffff", 18446744073709551615ull);
 
-  testIntLiteral(p, "testGb.chpl",
-      "0b111111111111111111111111111111111111111111111111111111111111111",
-      9223372036854775807ull);
-  testIntLiteral(p, "testGB.chpl",
-      "0B111111111111111111111111111111111111111111111111111111111111111",
-      9223372036854775807ull);
-  testIntLiteral(p, "testGd.chpl",
-                 "9223372036854775807", 9223372036854775807ull);
-  testIntLiteral(p, "testGo.chpl",
-                 "0o777777777777777777777", 9223372036854775807ull);
-  testIntLiteral(p, "testGO.chpl",
-                 "0O777777777777777777777", 9223372036854775807ull);
-  testIntLiteral(p, "testGh.chpl",
-                 "0x7FFFFFFFFFFFFFFF", 9223372036854775807ull);
-  testIntLiteral(p, "testGh2.chpl",
-                 "0x7fffffffffffffff", 9223372036854775807ull);
-  testIntLiteral(p, "testGH.chpl",
-                 "0X7FFFFFFFFFFFFFFF", 9223372036854775807ull);
-  testIntLiteral(p, "testGH2.chpl",
-                 "0X7fffffffffffffff", 9223372036854775807ull);
+  testIntLiteral(
+    p,
+    "testGb.chpl",
+    "0b111111111111111111111111111111111111111111111111111111111111111",
+    9223372036854775807ull);
+  testIntLiteral(
+    p,
+    "testGB.chpl",
+    "0B111111111111111111111111111111111111111111111111111111111111111",
+    9223372036854775807ull);
+  testIntLiteral(
+    p, "testGd.chpl", "9223372036854775807", 9223372036854775807ull);
+  testIntLiteral(
+    p, "testGo.chpl", "0o777777777777777777777", 9223372036854775807ull);
+  testIntLiteral(
+    p, "testGO.chpl", "0O777777777777777777777", 9223372036854775807ull);
+  testIntLiteral(
+    p, "testGh.chpl", "0x7FFFFFFFFFFFFFFF", 9223372036854775807ull);
+  testIntLiteral(
+    p, "testGh2.chpl", "0x7fffffffffffffff", 9223372036854775807ull);
+  testIntLiteral(
+    p, "testGH.chpl", "0X7FFFFFFFFFFFFFFF", 9223372036854775807ull);
+  testIntLiteral(
+    p, "testGH2.chpl", "0X7fffffffffffffff", 9223372036854775807ull);
 
   testRealLiteral(p, "testR0.chpl", "0.0", 0.0);
   testRealLiteral(p, "testR1.chpl", "1.0", 1.0);
@@ -220,9 +230,10 @@ int main() {
   testImagLiteral(p, "testIx11p2.chpl", "0x011.1p2i", 68.25);
   testImagLiteral(p, "testIx11pm2.chpl", "0x01.1p-2i", 0.265625);
 
-
-  testBadLiteral(p, "testHb.chpl",
-      "0b10000000000000000000000000000000000000000000000000000000000000000");
+  testBadLiteral(
+    p,
+    "testHb.chpl",
+    "0b10000000000000000000000000000000000000000000000000000000000000000");
   testBadLiteral(p, "testHd.chpl", "18446744073709551616");
   testBadLiteral(p, "testHo.chpl", "0o2000000000000000000000");
   testBadLiteral(p, "testHh.chpl", "0x10000000000000000");

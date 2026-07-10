@@ -66,7 +66,7 @@ struct Collector {
   std::multimap<std::string, ResolvedExpression> shadowVars;
   std::multimap<std::string, ID> shadowVarIds;
 
-  Collector() { }
+  Collector() {}
 
   bool enter(const uast::NamedDecl* decl, RV& rv) {
     if (rv.hasAst(decl)) {
@@ -116,7 +116,8 @@ struct Collector {
         const TypedFnSignature* sig = result.mostSpecific().only().fn();
         auto fn = resolveFunction(rv.rc(), sig, result.poiScope());
 
-        ResolvedVisitor<Collector> newRV(rv.rc(), nullptr, *this, fn->resolutionById());
+        ResolvedVisitor<Collector> newRV(
+          rv.rc(), nullptr, *this, fn->resolutionById());
         auto untyped = idToAst(rv.rc()->context(), sig->id());
         assert(untyped->id() == sig->id());
         untyped->traverse(newRV);
@@ -136,14 +137,10 @@ struct Collector {
     }
     return true;
   }
-  void exit(const uast::OpCall* op, RV& rv) {
-  }
+  void exit(const uast::OpCall* op, RV& rv) {}
 
-  bool enter(const uast::AstNode* ast, RV& rv) {
-    return true;
-  }
-  void exit(const uast::AstNode* ast, RV& rv) {
-  }
+  bool enter(const uast::AstNode* ast, RV& rv) { return true; }
+  void exit(const uast::AstNode* ast, RV& rv) {}
 
   QualifiedType onlyDecl(std::string name) {
     assert(declTypes.count(name) == 1);
@@ -202,7 +199,10 @@ static void printErrors(const ErrorGuard& guard) {
   }
 }
 
-static Collector customHelper(std::string program, ResolutionContext* rc, Module* moduleOut = nullptr, bool fail = false) {
+static Collector customHelper(std::string program,
+                              ResolutionContext* rc,
+                              Module* moduleOut = nullptr,
+                              bool fail = false) {
   Context* context = rc->context();
   ErrorGuard guard(context);
 
@@ -236,7 +236,10 @@ static Collector customHelper(std::string program, ResolutionContext* rc, Module
 }
 
 // helper for running task intent tests
-static void kindHelper(Qualifier kind, const std::string& constructName, const std::string& initializerValue, const std::string& expectedType) {
+static void kindHelper(Qualifier kind,
+                       const std::string& constructName,
+                       const std::string& initializerValue,
+                       const std::string& expectedType) {
   Context* context = buildStdContext();
   ResolutionContext rcval(context);
   auto rc = &rcval;
@@ -265,14 +268,14 @@ static void kindHelper(Qualifier kind, const std::string& constructName, const s
     if (useKind == Qualifier::CONST_INTENT) {
       useKind = Qualifier::CONST_VAR;
     }
-    auto expected = qualifierToString(useKind) + std::string(" ") + expectedType;
+    auto expected =
+      qualifierToString(useKind) + std::string(" ") + expectedType;
     QualifiedType shadowX = col.onlyIdent("x").type();
 
     std::ostringstream stream;
     shadowX.stringify(stream, chpl::StringifyKind::CHPL_SYNTAX);
     assert(stream.str() == expected);
   }
-
 
   // Test type of variable assigned value of shadow variable
   {
@@ -292,11 +295,7 @@ static void kindHelper(Qualifier kind, const std::string& constructName, const s
 static void testKinds() {
   // all potentially-task-spawning constructs
   static const std::string constructNames[] = {
-    "forall",
-    "coforall",
-    "cobegin",
-    "begin"
-  };
+    "forall", "coforall", "cobegin", "begin"};
   // all valid task intent kinds
   static const Qualifier qualifiers[] = {
     Qualifier::REF,
@@ -343,7 +342,9 @@ static void testTaskVar() {
 }
 
 // helper for running reduce intent tests
-static void reduceHelper(const std::string& constructName, const char* op, const char* opAssign) {
+static void reduceHelper(const std::string& constructName,
+                         const char* op,
+                         const char* opAssign) {
   assert(constructName == "forall" || constructName == "coforall");
 
   Context* context = buildStdContext();
@@ -381,11 +382,11 @@ static void reduceHelper(const std::string& constructName, const char* op, const
 static void testReduce() {
   // all reduce-intent supporting constructs
   static const std::string constructNames[] = {
-      "forall",
-      "coforall",
-      // reduce intents not defined for begin and cobegin
-      // "cobegin",
-      // "begin"
+    "forall",
+    "coforall",
+    // reduce intents not defined for begin and cobegin
+    // "cobegin",
+    // "begin"
   };
   for (const auto& constructName : constructNames) {
     reduceHelper(constructName, "+", "+=");
@@ -411,7 +412,8 @@ static void testReduceAssignNotReduceIntent() {
   std::ignore = resolveTypesOfVariables(ctx, program, {});
 
   assert(guard.numErrors() == 1);
-  assert(guard.errors()[0]->type() == ErrorType::ReductionAssignNotReduceIntent);
+  assert(guard.errors()[0]->type() ==
+         ErrorType::ReductionAssignNotReduceIntent);
   guard.realizeErrors();
 }
 

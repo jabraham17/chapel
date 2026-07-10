@@ -35,7 +35,8 @@ struct ReturnVariant {
   std::string value;
 
   ReturnVariant(std::string intent, std::string type, std::string value)
-    : intent(std::move(intent)), type(std::move(type)), value(std::move(value)) {}
+    : intent(std::move(intent)), type(std::move(type)),
+      value(std::move(value)) {}
 };
 
 static ReturnVariant type(std::string value) {
@@ -82,15 +83,14 @@ static std::string buildProgram(const std::vector<ReturnVariant>& variants) {
   return oss.str();
 }
 
-static std::vector<QualifiedType> extractDefinedTypes(Context* context,
-                                                      const char* program,
-                                                      size_t startAt) {
+static std::vector<QualifiedType>
+extractDefinedTypes(Context* context, const char* program, size_t startAt) {
   std::vector<QualifiedType> types;
   auto m = parseModule(context, program);
   assert(m->numStmts() > 0);
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   for (int i = startAt; i < m->numStmts(); i++) {
-    auto argName = "arg" + std::to_string(i-startAt);
+    auto argName = "arg" + std::to_string(i - startAt);
     auto stmt = m->stmt(i)->toVariable();
     assert(stmt && stmt->name().str() == argName);
     types.push_back(rr.byAst(stmt).type());
@@ -99,7 +99,8 @@ static std::vector<QualifiedType> extractDefinedTypes(Context* context,
 }
 
 template <typename F>
-void testProgram(const std::vector<ReturnVariant>& variants, F func,
+void testProgram(const std::vector<ReturnVariant>& variants,
+                 F func,
                  QualifiedType::Kind kind = QualifiedType::DEFAULT_INTENT) {
   auto context = buildStdContext();
   auto program = buildProgram(variants);
@@ -113,12 +114,13 @@ void testProgram(const std::vector<ReturnVariant>& variants, F func,
   if (kind != QualifiedType::UNKNOWN) {
     requiredKind = kind;
   }
-  auto commonTypeResult = chpl::resolution::commonType(context, types, requiredKind);
+  auto commonTypeResult =
+    chpl::resolution::commonType(context, types, requiredKind);
   auto qt = commonTypeResult.value_or(QualifiedType());
   std::cout << "return type:" << std::endl;
   qt.dump();
   std::cout << std::endl;
-  func((bool) commonTypeResult, qt);
+  func((bool)commonTypeResult, qt);
 }
 
 static std::string buildControlFlowProgram(std::string controlFlow) {
@@ -136,15 +138,18 @@ enum class ControlFlowResult {
   FallsThrough,
 };
 
-static void testControlFlow(std::string controlFlow, ControlFlowResult expectedResult) {
+static void testControlFlow(std::string controlFlow,
+                            ControlFlowResult expectedResult) {
   auto context = buildStdContext();
   ErrorGuard guard(context);
   auto program = buildControlFlowProgram(controlFlow);
   std::cout << "--- test program ---" << std::endl;
   std::cout << program.c_str() << std::endl;
 
-  auto returnType = resolveTypeOfXInit(context, program,
-                                       /* requireTypeKnown */ expectedResult != ControlFlowResult::SomePathsReturn);
+  auto returnType = resolveTypeOfXInit(context,
+                                       program,
+                                       /* requireTypeKnown */ expectedResult !=
+                                         ControlFlowResult::SomePathsReturn);
 
   if (expectedResult == ControlFlowResult::AllPathsReturn) {
     // No errors should be emitted.
@@ -163,9 +168,7 @@ static void testControlFlow(std::string controlFlow, ControlFlowResult expectedR
 
 static void test1() {
   // test returning a single value from value-returning function
-  testProgram({
-      lit("1")
-  }, [](bool found, auto& qt) {
+  testProgram({lit("1")}, [](bool found, auto& qt) {
     assert(found);
     assert(qt.kind() == QualifiedType::VAR);
     assert(qt.type() && qt.type()->isIntType());
@@ -175,10 +178,7 @@ static void test1() {
 static void test2() {
   // test returning multiple of the same type of values from
   // value-returning function
-  testProgram({
-      lit("1"),
-      lit("2")
-  }, [](bool found, auto& qt) {
+  testProgram({lit("1"), lit("2")}, [](bool found, auto& qt) {
     assert(found);
     assert(qt.kind() == QualifiedType::VAR);
     assert(qt.type() && qt.type()->isIntType());
@@ -187,58 +187,52 @@ static void test2() {
 
 static void test3() {
   // test returning a param from a param-returning function
-  testProgram({
-      lit("1")
-  }, [](bool found, auto& qt) {
-    assert(found);
-    assert(qt.type() && qt.type()->isIntType());
-    assert(qt.kind() == QualifiedType::PARAM && qt.param());
-    assert(qt.param()->toIntParam()->value() == 1);
-  }, QualifiedType::PARAM);
+  testProgram(
+    {lit("1")},
+    [](bool found, auto& qt) {
+      assert(found);
+      assert(qt.type() && qt.type()->isIntType());
+      assert(qt.kind() == QualifiedType::PARAM && qt.param());
+      assert(qt.param()->toIntParam()->value() == 1);
+    },
+    QualifiedType::PARAM);
 }
 
 static void test4() {
   // test returning a param from an ambiguous param-returning function
   // non-ambiguous tests are in testParamIf.
-  testProgram({
-      lit("1"),
-      lit("2")
-  }, [](bool found, auto& qt) {
-    assert(!found);
-    assert(qt.isUnknown());
-  }, QualifiedType::PARAM);
+  testProgram(
+    {lit("1"), lit("2")},
+    [](bool found, auto& qt) {
+      assert(!found);
+      assert(qt.isUnknown());
+    },
+    QualifiedType::PARAM);
 }
 
 static void test5() {
   // test allowed coercions
-  testProgram({
-      decl("const", "int(32)"),
-      decl("const", "int(16)")
-  }, [](bool found, auto& qt) {
-    assert(found);
-    assert(qt.kind() == QualifiedType::VAR);
-    assert(qt.type() && qt.type()->isIntType());
-    assert(qt.type()->toIntType()->bitwidth() == 32);
-  });
+  testProgram({decl("const", "int(32)"), decl("const", "int(16)")},
+              [](bool found, auto& qt) {
+                assert(found);
+                assert(qt.kind() == QualifiedType::VAR);
+                assert(qt.type() && qt.type()->isIntType());
+                assert(qt.type()->toIntType()->bitwidth() == 32);
+              });
 }
 
 static void test6() {
   // test disallowed coercions
-  testProgram({
-      decl("const", "int(32)"),
-      decl("const", "string")
-  }, [](bool found, auto& qt) {
-    assert(!found);
-    assert(qt.isUnknown());
-  });
+  testProgram({decl("const", "int(32)"), decl("const", "string")},
+              [](bool found, auto& qt) {
+                assert(!found);
+                assert(qt.isUnknown());
+              });
 }
 
 static void test7() {
   // test param decaying to var
-  testProgram({
-      decl("const", "int(32)"),
-      lit("1")
-  }, [](bool found, auto& qt) {
+  testProgram({decl("const", "int(32)"), lit("1")}, [](bool found, auto& qt) {
     assert(found);
     assert(qt.kind() == QualifiedType::VAR);
     assert(qt.type() && qt.type()->isIntType());
@@ -247,78 +241,92 @@ static void test7() {
 
 static void test8() {
   // test param decaying to var, but for strings
-  testProgram({
-      decl("const", "string"),
-      lit("\"hello\"")
-  }, [](bool found, auto& qt) {
-    assert(found);
-    assert(qt.kind() == QualifiedType::VAR);
-    assert(qt.type() && qt.type()->isStringType());
-  });
+  testProgram({decl("const", "string"), lit("\"hello\"")},
+              [](bool found, auto& qt) {
+                assert(found);
+                assert(qt.kind() == QualifiedType::VAR);
+                assert(qt.type() && qt.type()->isStringType());
+              });
 }
 
 static void test9() {
   // test multiple branches (not just two)
-  testProgram({
+  testProgram(
+    {
       decl("const", "int(16)"),
       lit("1"),
       decl("const", "int"),
       decl("const", "int(32)"),
-  }, [](bool found, auto& qt) {
-    assert(found);
-    assert(qt.kind() == QualifiedType::VAR);
-    assert(qt.type() && qt.type()->isIntType());
-    assert(qt.type()->toIntType()->bitwidth() == 64);
-  });
+    },
+    [](bool found, auto& qt) {
+      assert(found);
+      assert(qt.kind() == QualifiedType::VAR);
+      assert(qt.type() && qt.type()->isIntType());
+      assert(qt.type()->toIntType()->bitwidth() == 64);
+    });
 }
 
 static void test10() {
   // returning types from compile-time unknown function
-  testProgram({
+  testProgram(
+    {
       type("int"),
       type("int"),
-  }, [](bool found, auto& qt) {
-    assert(found);
-    assert(qt.kind() == QualifiedType::TYPE);
-    assert(qt.type() && qt.type()->isIntType());
-    assert(qt.type()->toIntType()->bitwidth() == 64);
-  }, QualifiedType::TYPE);
-  testProgram({
+    },
+    [](bool found, auto& qt) {
+      assert(found);
+      assert(qt.kind() == QualifiedType::TYPE);
+      assert(qt.type() && qt.type()->isIntType());
+      assert(qt.type()->toIntType()->bitwidth() == 64);
+    },
+    QualifiedType::TYPE);
+  testProgram(
+    {
       type("int"),
       type("bool"),
-  }, [](bool found, auto& qt) {
-    assert(!found);
-    assert(qt.isUnknown());
-  }, QualifiedType::TYPE);
+    },
+    [](bool found, auto& qt) {
+      assert(!found);
+      assert(qt.isUnknown());
+    },
+    QualifiedType::TYPE);
 }
 
 static void test11() {
   // test mixing types and values
-  testProgram({
+  testProgram(
+    {
       type("int"),
       lit("1"),
-  }, [](bool found, auto& qt) {
-    assert(!found);
-    assert(qt.isUnknown());
-  }, QualifiedType::TYPE);
-  testProgram({
+    },
+    [](bool found, auto& qt) {
+      assert(!found);
+      assert(qt.isUnknown());
+    },
+    QualifiedType::TYPE);
+  testProgram(
+    {
       type("int"),
       lit("1"),
-  }, [](bool found, auto& qt) {
-    assert(!found);
-    assert(qt.isUnknown());
-  });
+    },
+    [](bool found, auto& qt) {
+      assert(!found);
+      assert(qt.isUnknown());
+    });
 }
 
 static void test12() {
   // test returning non-param from param-intent procedure
-  testProgram({
+  testProgram(
+    {
       decl("const", "int"),
       lit("1"),
-  }, [](bool found, auto& qt) {
-    assert(!found);
-    assert(qt.isUnknown());
-  }, QualifiedType::PARAM);
+    },
+    [](bool found, auto& qt) {
+      assert(!found);
+      assert(qt.isUnknown());
+    },
+    QualifiedType::PARAM);
 }
 
 // ================================================================
@@ -328,70 +336,88 @@ static void test12() {
 // ================================================================
 
 static void test13() {
-  testProgram({
+  testProgram(
+    {
       ref(/* isConst */ true),
       decl("var", "r"),
-  }, [](bool found, auto& qt) {
-    assert(found);
-    assert(qt.kind() == QualifiedType::CONST_VAR);
-    assert(qt.type() && qt.type()->isRecordType());
-  }, QualifiedType::UNKNOWN);
+    },
+    [](bool found, auto& qt) {
+      assert(found);
+      assert(qt.kind() == QualifiedType::CONST_VAR);
+      assert(qt.type() && qt.type()->isRecordType());
+    },
+    QualifiedType::UNKNOWN);
 }
 
 static void test14() {
-  testProgram({
+  testProgram(
+    {
       ref(/* isConst */ true),
       ref(/* isConst */ false),
-  }, [](bool found, auto& qt) {
-    assert(found);
-    assert(qt.kind() == QualifiedType::CONST_REF);
-    assert(qt.type() && qt.type()->isRecordType());
-  }, QualifiedType::UNKNOWN);
+    },
+    [](bool found, auto& qt) {
+      assert(found);
+      assert(qt.kind() == QualifiedType::CONST_REF);
+      assert(qt.type() && qt.type()->isRecordType());
+    },
+    QualifiedType::UNKNOWN);
 }
 
 static void test15() {
-  testProgram({
+  testProgram(
+    {
       ref(/* isConst */ false),
       decl("var", "r"),
-  }, [](bool found, auto& qt) {
-    assert(found);
-    assert(qt.kind() == QualifiedType::VAR);
-    assert(qt.type() && qt.type()->isRecordType());
-  }, QualifiedType::UNKNOWN);
+    },
+    [](bool found, auto& qt) {
+      assert(found);
+      assert(qt.kind() == QualifiedType::VAR);
+      assert(qt.type() && qt.type()->isRecordType());
+    },
+    QualifiedType::UNKNOWN);
 }
 
 static void test16() {
-  testProgram({
+  testProgram(
+    {
       lit("1"),
       decl("var", "int"),
-  }, [](bool found, auto& qt) {
-    assert(found);
-    assert(qt.kind() == QualifiedType::CONST_VAR);
-    assert(qt.type() && qt.type()->isIntType());
-  }, QualifiedType::UNKNOWN);
+    },
+    [](bool found, auto& qt) {
+      assert(found);
+      assert(qt.kind() == QualifiedType::CONST_VAR);
+      assert(qt.type() && qt.type()->isIntType());
+    },
+    QualifiedType::UNKNOWN);
 }
 
 static void test17() {
-  testProgram({
+  testProgram(
+    {
       lit("1"),
       lit("1"),
-  }, [](bool found, auto& qt) {
-    assert(found);
-    assert(qt.kind() == QualifiedType::PARAM);
-    assert(qt.type() && qt.type()->isIntType());
-    assert(qt.param() && qt.param()->toIntParam()->value() == 1);
-  }, QualifiedType::UNKNOWN);
+    },
+    [](bool found, auto& qt) {
+      assert(found);
+      assert(qt.kind() == QualifiedType::PARAM);
+      assert(qt.type() && qt.type()->isIntType());
+      assert(qt.param() && qt.param()->toIntParam()->value() == 1);
+    },
+    QualifiedType::UNKNOWN);
 }
 
 static void test18() {
-  testProgram({
+  testProgram(
+    {
       lit("1"),
       lit("2"),
-  }, [](bool found, auto& qt) {
-    assert(found);
-    assert(qt.kind() == QualifiedType::CONST_VAR);
-    assert(qt.type() && qt.type()->isIntType());
-  }, QualifiedType::UNKNOWN);
+    },
+    [](bool found, auto& qt) {
+      assert(found);
+      assert(qt.kind() == QualifiedType::CONST_VAR);
+      assert(qt.type() && qt.type()->isIntType());
+    },
+    QualifiedType::UNKNOWN);
 }
 
 // Subsequent tests execute some control flow before running `return "hello"`.
@@ -401,46 +427,46 @@ static void test18() {
 
 static void testControlFlow0() {
   testControlFlow(
-      R"""(
-      )"""
-  , ControlFlowResult::FallsThrough);
+    R"""(
+      )""",
+    ControlFlowResult::FallsThrough);
 }
 
 static void testControlFlow1() {
   testControlFlow(
-      R"""(
+    R"""(
       return 1;
-      )"""
-  , ControlFlowResult::AllPathsReturn);
+      )""",
+    ControlFlowResult::AllPathsReturn);
 }
 
 static void testControlFlow2() {
   testControlFlow(
-      R"""(
+    R"""(
       var x = true;
       if (x) {
           return 1;
       }
-      )"""
-  , ControlFlowResult::SomePathsReturn);
+      )""",
+    ControlFlowResult::SomePathsReturn);
 }
 
 static void testControlFlow3() {
   testControlFlow(
-      R"""(
+    R"""(
       var x = true;
       if (x) {
           return 1;
       } else {
           return 2;
       }
-      )"""
-  , ControlFlowResult::AllPathsReturn);
+      )""",
+    ControlFlowResult::AllPathsReturn);
 }
 
 static void testControlFlow4() {
   testControlFlow(
-      R"""(
+    R"""(
       var x, y = true;
       if (x) {
           if (y) {
@@ -451,13 +477,13 @@ static void testControlFlow4() {
       } else {
           return 3;
       }
-      )"""
-  , ControlFlowResult::SomePathsReturn);
+      )""",
+    ControlFlowResult::SomePathsReturn);
 }
 
 static void testControlFlow5() {
   testControlFlow(
-      R"""(
+    R"""(
       var x, y = true;
       if (x) {
           if (y) {
@@ -468,47 +494,47 @@ static void testControlFlow5() {
       } else {
           return 3;
       }
-      )"""
-  , ControlFlowResult::AllPathsReturn);
+      )""",
+    ControlFlowResult::AllPathsReturn);
 }
 
 static void testControlFlow6() {
   testControlFlow(
-      R"""(
+    R"""(
       try! {
           return 1;
       }
-      )"""
-  , ControlFlowResult::AllPathsReturn);
+      )""",
+    ControlFlowResult::AllPathsReturn);
 }
 
 static void testControlFlow7() {
   testControlFlow(
-      R"""(
+    R"""(
       try {
           return 1;
       } catch {
 
       }
-      )"""
-  , ControlFlowResult::SomePathsReturn);
+      )""",
+    ControlFlowResult::SomePathsReturn);
 }
 
 static void testControlFlow8() {
   testControlFlow(
-      R"""(
+    R"""(
       try {
           return 1;
       } catch {
           return 2;
       }
-      )"""
-  , ControlFlowResult::AllPathsReturn);
+      )""",
+    ControlFlowResult::AllPathsReturn);
 }
 
 static void testControlFlow9() {
   testControlFlow(
-      R"""(
+    R"""(
       class MyError: Error {}
       try {
           return 1;
@@ -517,13 +543,13 @@ static void testControlFlow9() {
       } catch {
 
       }
-      )"""
-  , ControlFlowResult::SomePathsReturn);
+      )""",
+    ControlFlowResult::SomePathsReturn);
 }
 
 static void testControlFlow10() {
   testControlFlow(
-      R"""(
+    R"""(
       class MyError: Error {}
       try {
           return 1;
@@ -532,87 +558,87 @@ static void testControlFlow10() {
       } catch {
           return 3;
       }
-      )"""
-  , ControlFlowResult::AllPathsReturn);
+      )""",
+    ControlFlowResult::AllPathsReturn);
 }
 
 static void testControlFlow11() {
   testControlFlow(
-      R"""(
+    R"""(
       while false {
           return 1;
       }
-      )"""
-  , ControlFlowResult::SomePathsReturn);
+      )""",
+    ControlFlowResult::SomePathsReturn);
 }
 
 static void testControlFlow12() {
   testControlFlow(
-      R"""(
+    R"""(
       if true {
         return 1;
       }
-      )"""
-  , ControlFlowResult::AllPathsReturn);
+      )""",
+    ControlFlowResult::AllPathsReturn);
 }
 
 static void testControlFlow13() {
   testControlFlow(
-      R"""(
+    R"""(
       if false {
         return "hello";
       } else {
         return 1;
       }
-      )"""
-  , ControlFlowResult::AllPathsReturn);
+      )""",
+    ControlFlowResult::AllPathsReturn);
 }
 
 static void testControlFlow14() {
   testControlFlow(
-      R"""(
+    R"""(
       if false {
         return 1;
       }
-      )"""
-  , ControlFlowResult::FallsThrough);
+      )""",
+    ControlFlowResult::FallsThrough);
 }
 
 static void testControlFlow15() {
   testControlFlow(
-      R"""(
+    R"""(
       if true {
 
       } else {
         return 1;
       }
-      )"""
-  , ControlFlowResult::FallsThrough);
+      )""",
+    ControlFlowResult::FallsThrough);
 }
 
 static void testControlFlow16() {
   testControlFlow(
-      R"""(
+    R"""(
       if true then return 1;
 
       var b = false;
       if b then /* fall through to the default return */
-      )"""
-  , ControlFlowResult::AllPathsReturn);
+      )""",
+    ControlFlowResult::AllPathsReturn);
 }
 
 static void testControlFlow17() {
   testControlFlow(
-      R"""(
+    R"""(
       throw new Error("nope");
       return 1;
-      )"""
-  , ControlFlowResult::AllPathsReturn);
+      )""",
+    ControlFlowResult::AllPathsReturn);
 }
 
 static void testControlFlow18() {
   testControlFlow(
-      R"""(
+    R"""(
       var arg = false;
       if arg {
         return true;
@@ -620,8 +646,8 @@ static void testControlFlow18() {
         throw new Error("test");
       }
       return 1;
-      )"""
-  , ControlFlowResult::AllPathsReturn);
+      )""",
+    ControlFlowResult::AllPathsReturn);
 }
 
 static void testControlFlowYield1() {
@@ -644,7 +670,8 @@ static void testControlFlowYield1() {
 
   std::ignore = resolveConcreteFunction(context, fn->id());
   assert(guard.numErrors() == 1);
-  assert(guard.error(0)->message() == "could not determine return type for function");
+  assert(guard.error(0)->message() ==
+         "could not determine return type for function");
 
   // Already checked expected errors above.
   guard.realizeErrors();
@@ -748,8 +775,7 @@ static void testSelectVals() {
 
     var x = foo(1);
     )""";
-    QualifiedType qt = resolveTypeOfXInit(context,
-                                         program);
+    QualifiedType qt = resolveTypeOfXInit(context, program);
     assert(qt.type()->isIntType());
   }
   {
@@ -769,11 +795,11 @@ static void testSelectVals() {
 
     var x = foo(1);
     )""";
-    QualifiedType qt = resolveTypeOfXInit(context,
-                                         program);
+    QualifiedType qt = resolveTypeOfXInit(context, program);
     assert(qt.isErroneousType());
     assert(guard.numErrors() == 1);
-    assert(guard.error(0)->message() == "could not determine return type for function");
+    assert(guard.error(0)->message() ==
+           "could not determine return type for function");
     guard.realizeErrors();
   }
   {
@@ -795,8 +821,7 @@ static void testSelectVals() {
 
     var x = foo(1);
     )""";
-    QualifiedType qt = resolveTypeOfXInit(context,
-                                         program);
+    QualifiedType qt = resolveTypeOfXInit(context, program);
     assert(qt.type()->isIntType());
   }
   {
@@ -817,20 +842,19 @@ static void testSelectVals() {
 
     var x = foo(1);
     )""";
-    QualifiedType qt = resolveTypeOfXInit(context,
-                                         program);
+    QualifiedType qt = resolveTypeOfXInit(context, program);
     assert(qt.isErroneousType());
     assert(guard.numErrors() == 1);
-    assert(guard.error(0)->message() == "could not determine return type for function");
+    assert(guard.error(0)->message() ==
+           "could not determine return type for function");
     guard.realizeErrors();
   }
 }
 
 using stringMap = std::map<std::string, std::string>;
 
-static void testSelectCases(std::string base,
-                            stringMap vals,
-                            bool isType = true) {
+static void
+testSelectCases(std::string base, stringMap vals, bool isType = true) {
   for (auto pair : vals) {
     std::string kind = isType ? "type" : "var";
     std::string program = base + kind + " x = foo(" + pair.first + ");";
@@ -954,7 +978,7 @@ static void testSelectTypes() {
     testSelectCases(fooFunc, vals, /*isType=*/false);
   }
   {
-    // demonstrate that when blocks can have multiple 
+    // demonstrate that when blocks can have multiple
     // statements without otherwise
     std::string fooFunc = R"""(
     proc foo(type T) {
@@ -970,14 +994,12 @@ static void testSelectTypes() {
       return y;
     }
     )""";
-    stringMap vals = {{"int", "int(64)"},
-                      {"string", "string"}
-                      };
+    stringMap vals = {{"int", "int(64)"}, {"string", "string"}};
 
     testSelectCases(fooFunc, vals, /*isType=*/false);
   }
   {
-    // demonstrate that when blocks can have multiple 
+    // demonstrate that when blocks can have multiple
     // statements with otherwise
     std::string fooFunc = R"""(
     proc foo(type T) {
@@ -993,9 +1015,7 @@ static void testSelectTypes() {
       return y;
     }
     )""";
-    stringMap vals = {{"int", "int(64)"},
-                      {"string", "real(64)"}
-                      };
+    stringMap vals = {{"int", "int(64)"}, {"string", "real(64)"}};
 
     testSelectCases(fooFunc, vals, /*isType=*/false);
   }
@@ -1066,7 +1086,8 @@ static void testSelectParams() {
 
     assert(qt.isErroneousType());
     assert(guard.numErrors() == 1);
-    assert(guard.error(0)->message() == "could not determine return type for function");
+    assert(guard.error(0)->message() ==
+           "could not determine return type for function");
     guard.realizeErrors();
   }
   {
@@ -1090,14 +1111,16 @@ static void testSelectParams() {
 
     assert(qt.isErroneousType());
     assert(guard.numErrors() == 1);
-    assert(guard.error(0)->message() == "could not determine return type for function");
+    assert(guard.error(0)->message() ==
+           "could not determine return type for function");
     guard.realizeErrors();
   }
 }
 
 // Assumes loop body will return param string "asdf"
 static void paramLoopTestHelper(const char* loopBody,
-                                const char* loopRange, bool returnedFromLoop,
+                                const char* loopRange,
+                                bool returnedFromLoop,
                                 bool useEmptyLoop = false) {
   auto context = buildStdContext();
   ErrorGuard guard(context);
@@ -1116,8 +1139,7 @@ static void paramLoopTestHelper(const char* loopBody,
   std::cout << "Param loop test program:\n";
   std::cout << program.c_str() << "\n";
 
-  QualifiedType qt = resolveTypeOfXInit(context,
-                                       program);
+  QualifiedType qt = resolveTypeOfXInit(context, program);
   assert(!qt.isUnknownOrErroneous());
   if (returnedFromLoop) {
     ensureParamString(qt, "asdf");
@@ -1248,17 +1270,17 @@ static void testNonParamLoop() {
   }
   var x = foo();
   )""";
-  QualifiedType qt = resolveTypeOfXInit(context,
-                                       program);
+  QualifiedType qt = resolveTypeOfXInit(context, program);
 
   assert(qt.isErroneousType());
   assert(guard.numErrors() == 1);
-  assert(guard.error(0)->message() == "could not determine return type for function");
+  assert(guard.error(0)->message() ==
+         "could not determine return type for function");
   guard.realizeErrors();
 }
 
 static void testCPtrEltType() {
-  { 
+  {
     //works for c_ptr
     std::string program = R"""(
     use CTypes;
@@ -1273,8 +1295,8 @@ static void testCPtrEltType() {
     assert(qt.type()->toUintType()->bitwidth() == 8);
   }
   return;
-  { 
-    //works for user-defined class 
+  {
+    //works for user-defined class
     std::string program = R"""(
     use CTypes;
     class c_ptr2 {
@@ -1370,14 +1392,16 @@ static void testChildClasses() {
                          class A : Parent {}
                          class B : Parent {}
                          )""",
-                         {"A", "B"}, "Parent");
+                         {"A", "B"},
+                         "Parent");
 
   // No shared parent
   testChildClassesHelper(R"""(
                          class A {}
                          class B {}
                          )""",
-                         {"A", "B"}, nullptr);
+                         {"A", "B"},
+                         nullptr);
 
   // Some but not all shared parent
   testChildClassesHelper(R"""(
@@ -1386,7 +1410,8 @@ static void testChildClasses() {
                          class B : Parent {}
                          class C {}
                          )""",
-                         {"A", "B", "C"}, nullptr);
+                         {"A", "B", "C"},
+                         nullptr);
 
   // Shared ancestor at different depths in inheritance tree
   testChildClassesHelper(R"""(
@@ -1396,7 +1421,8 @@ static void testChildClasses() {
                          class B : Parent {}
                          class C : Grandparent {}
                          )""",
-                         {"A", "B", "C"}, "Grandparent");
+                         {"A", "B", "C"},
+                         "Grandparent");
 
   // Multiple shared ancestors (should pick closest relation)
   testChildClassesHelper(R"""(
@@ -1406,7 +1432,8 @@ static void testChildClasses() {
                          class B : Parent {}
                          class C : Parent {}
                          )""",
-                         {"A", "B", "C"}, "Parent");
+                         {"A", "B", "C"},
+                         "Parent");
 
   // Shared ancestor, but ref intent
   testChildClassesHelper(R"""(
@@ -1414,7 +1441,10 @@ static void testChildClasses() {
                          class A : Parent {}
                          class B : Parent {}
                          )""",
-                         {"A", "B"}, nullptr, false, "ref");
+                         {"A", "B"},
+                         nullptr,
+                         false,
+                         "ref");
 
   // Shared parent, need nilability
   testChildClassesHelper(R"""(
@@ -1422,7 +1452,9 @@ static void testChildClasses() {
                          class A : Parent {}
                          class B : Parent {}
                          )""",
-                         {"A", "B"}, "Parent", true);
+                         {"A", "B"},
+                         "Parent",
+                         true);
 
   // Shared generic parent, matching type
   testChildClassesHelper(R"""(
@@ -1430,7 +1462,11 @@ static void testChildClasses() {
                          class A : Parent(?) {}
                          class B : Parent(?) {}
                          )""",
-                         {"A(1)", "B(1)"}, "Parent", false, "", 1);
+                         {"A(1)", "B(1)"},
+                         "Parent",
+                         false,
+                         "",
+                         1);
 
   // Shared generic parent, non matching type
   testChildClassesHelper(R"""(
@@ -1438,7 +1474,8 @@ static void testChildClasses() {
                          class A : Parent(?) {}
                          class B : Parent(?) {}
                          )""",
-                         {"A(1)", "B(2)"}, nullptr);
+                         {"A(1)", "B(2)"},
+                         nullptr);
 }
 
 // TODO: test param coercion (param int(32) = 1 and param int(64) = 2)

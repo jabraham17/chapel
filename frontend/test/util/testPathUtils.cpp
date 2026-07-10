@@ -25,7 +25,6 @@
 
 using namespace chpl;
 
-
 static void testCleanLocalPath() {
   assert(cleanLocalPath("foo.chpl") == "foo.chpl");
   assert(cleanLocalPath("./foo.chpl") == "foo.chpl");
@@ -90,7 +89,8 @@ static void checkDeduplicate(std::vector<std::string> input,
   for (size_t i = 0; i < expect.size(); i++) {
     if (expect[i] != got[i]) {
       printf("mismatch, expected %s but got %s\n",
-             expect[i].c_str(), got[i].c_str());
+             expect[i].c_str(),
+             got[i].c_str());
       assert(expect[i] == got[i]);
     }
   }
@@ -100,10 +100,8 @@ static void testDeduplicateSamePaths() {
   checkDeduplicate({"foo", "bar", "baz", "foo"}, {"foo", "bar", "baz"});
   checkDeduplicate({"testPathUtils", "../util/testPathUtils", "foo"},
                    {"testPathUtils", "foo"});
-  checkDeduplicate({"../baz", "../bar/../baz"},
-                   {"../baz"});
+  checkDeduplicate({"../baz", "../bar/../baz"}, {"../baz"});
 }
-
 
 int main(int argc, char** argv) {
   testCleanLocalPath();

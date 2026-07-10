@@ -40,10 +40,10 @@ static void test0() {
   Location locTwo(UniqueString::get(ctx, "aVeryLongFilenameIndeed.chpl"));
   Location locOneCopy(locOne.path());
   Location locTwoCopy(locTwo.path());
-  Location locOneA(locOne.path(),  1, -1, -1, -1);
-  Location locOneB(locOne.path(), -1,  1, -1, -1);
-  Location locOneC(locOne.path(), -1, -1,  1, -1);
-  Location locOneD(locOne.path(), -1, -1, -1,  1);
+  Location locOneA(locOne.path(), 1, -1, -1, -1);
+  Location locOneB(locOne.path(), -1, 1, -1, -1);
+  Location locOneC(locOne.path(), -1, -1, 1, -1);
+  Location locOneD(locOne.path(), -1, -1, -1, 1);
   Location emptyLoc;
 
   assert(emptyLoc == emptyLoc);
@@ -104,7 +104,7 @@ static void test1() {
   assert(!(emptyID != emptyID));
 
   ID idA(shortpath, 1, 2);
-  ID idB(longpath,  1, 2);
+  ID idB(longpath, 1, 2);
   ID idC(shortpath, 9, 2);
   ID idD(shortpath, 1, 9);
 
@@ -139,13 +139,13 @@ static void test1() {
   assert(idA.hash() != idB.hash());
 }
 
-static  void test2() {
+static void test2() {
   Context context;
   Context* ctx = &context;
   ErrorGuard guard(ctx);
 
   auto builder = Builder::createForTopLevelModule(ctx, "path/to/test.chpl");
-  Builder* b   = builder.get();
+  Builder* b = builder.get();
   Location dummyLoc(UniqueString::get(ctx, "path/to/test.chpl"));
 
   {
@@ -252,7 +252,7 @@ static void test3() {
   ErrorGuard guard(ctx);
 
   auto builder = Builder::createForTopLevelModule(ctx, "path/to/test.chpl");
-  Builder* b   = builder.get();
+  Builder* b = builder.get();
   Location dummyLoc(UniqueString::get(ctx, "path/to/test.chpl"));
 
   {
@@ -317,7 +317,7 @@ static void test4() {
   ErrorGuard guard(ctx);
 
   auto builder = Builder::createForTopLevelModule(ctx, "path/to/test.chpl");
-  Builder* b   = builder.get();
+  Builder* b = builder.get();
   Location dummyLoc(UniqueString::get(ctx, "path/to/test.chpl"));
 
   {
@@ -347,7 +347,9 @@ static void test4() {
       ii.push_back(Identifier::build(b, dummyLoc, strA));
       ii.push_back(Identifier::build(b, dummyLoc, strB));
       ii.push_back(Identifier::build(b, dummyLoc, strC));
-      inner.push_back(Module::build(b, dummyLoc, /*attributeGroup*/ nullptr,
+      inner.push_back(Module::build(b,
+                                    dummyLoc,
+                                    /*attributeGroup*/ nullptr,
                                     Decl::DEFAULT_VISIBILITY,
                                     strI,
                                     Module::DEFAULT_MODULE_KIND,
@@ -355,7 +357,9 @@ static void test4() {
     }
     inner.push_back(Identifier::build(b, dummyLoc, strX));
 
-    auto mod = Module::build(b, dummyLoc, /*attributeGroup*/ nullptr,
+    auto mod = Module::build(b,
+                             dummyLoc,
+                             /*attributeGroup*/ nullptr,
                              Decl::DEFAULT_VISIBILITY,
                              strM,
                              Module::DEFAULT_MODULE_KIND,
@@ -442,7 +446,7 @@ static void test5() {
 
   const char* path = "path/to/file-name.sub.chpl";
   auto builder = Builder::createForTopLevelModule(ctx, path);
-  Builder* b   = builder.get();
+  Builder* b = builder.get();
   Location dummyLoc(UniqueString::get(ctx, path));
 
   {
@@ -472,7 +476,6 @@ static void test5() {
   assert(implicitMod->stmt(0)->id().numContainedChildren() == 0);
   assert(implicitMod->stmt(0)->id().symbolPath() == "file-name\\.sub");
 }
-
 
 int main(int argc, char** argv) {
   test0();

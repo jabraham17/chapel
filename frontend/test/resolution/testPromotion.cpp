@@ -49,7 +49,8 @@ struct IterableType {
   }
 
   IterableType& definePromotionType(const char* type) {
-    auto sig = std::string("chpl__promotionType() type do return ") + type + ";";
+    auto sig =
+      std::string("chpl__promotionType() type do return ") + type + ";";
     pushSignature("proc", std::move(sig));
     return *this;
   }
@@ -61,21 +62,26 @@ struct IterableType {
   }
 
   IterableType& defineStandaloneIterator(const char* yieldValue) {
-    auto sig = std::string("these(param tag) where tag == iterKind.standalone do yield ") + yieldValue + ";";
+    auto sig =
+      std::string(
+        "these(param tag) where tag == iterKind.standalone do yield ") +
+      yieldValue + ";";
     pushSignature("iter", std::move(sig));
     return *this;
   }
 
   IterableType& defineLeaderIterator(const char* yieldValue) {
-    auto sig = std::string("these(param tag) where tag == iterKind.leader do yield ") + yieldValue + ";";
+    auto sig =
+      std::string("these(param tag) where tag == iterKind.leader do yield ") +
+      yieldValue + ";";
     pushSignature("iter", std::move(sig));
     return *this;
   }
 
-  IterableType& defineFollowerIterator(const char* followThisType, const char* yieldValue) {
-    auto sig =
-      std::string("these(param tag, followThis: ") + followThisType +
-      ") where tag == iterKind.follower do yield " + yieldValue + ";";
+  IterableType& defineFollowerIterator(const char* followThisType,
+                                       const char* yieldValue) {
+    auto sig = std::string("these(param tag, followThis: ") + followThisType +
+               ") where tag == iterKind.follower do yield " + yieldValue + ";";
     pushSignature("iter", std::move(sig));
     return *this;
   }
@@ -85,11 +91,9 @@ struct IterableType {
 
     // New:
     result.push_back("record " + typeName + " {");
-    for (const auto& line : body)
-      result.push_back("  " + line);
+    for (const auto& line : body) result.push_back("  " + line);
     result.push_back("}");
-    for (const auto& line : nearby)
-      result.push_back(line);
+    for (const auto& line : nearby) result.push_back(line);
 
     return result;
   }
@@ -110,21 +114,19 @@ module ChapelBase {
 )""";
 
   auto addType = [&](auto arg) {
-    for (const auto& line : arg.strs())
-      program += "  " + line + "\n";
+    for (const auto& line : arg.strs()) program += "  " + line + "\n";
   };
 
   program += "module Main {\n  use ChapelBase;\n";
   (addType(types), ...);
-  for (const auto& line : prog)
-    program += "  " + std::string(line) + "\n";
+  for (const auto& line : prog) program += "  " + std::string(line) + "\n";
   program += "\n}\n";
 
   printf("\n--- Program ---\n");
   printf("%s", program.c_str());
   printf("\n\n");
 
-  auto vars = resolveTypesOfVariables(context, program, { "i" });
+  auto vars = resolveTypesOfVariables(context, program, {"i"});
   f(guard, vars.at("i"));
 }
 
@@ -136,335 +138,318 @@ static void runProgram(const char* prog, F&& f, Types... types) {
 static void test0() {
   // Promotion gets triggered, but we still need 'these' to make it iterable.
   runProgram(
-      { "proc foo(x: int) {}",
-        "for i in foo(new R()) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(guard.numErrors() == 1);
-        assert(guard.error(0)->type() == ErrorType::NonIterable);
-        assert(t.isUnknown());
-        guard.realizeErrors();
-      },
-      IterableType("R").definePromotionType("int"));
+    {"proc foo(x: int) {}", "for i in foo(new R()) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(guard.numErrors() == 1);
+      assert(guard.error(0)->type() == ErrorType::NonIterable);
+      assert(t.isUnknown());
+      guard.realizeErrors();
+    },
+    IterableType("R").definePromotionType("int"));
 }
 
 static void test1() {
   // Promotion gets triggered and we can iterate over the result.
   runProgram(
-      { "proc foo(x: int) do return x;",
-        "for i in foo(new R()) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isIntType());
-      },
-      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+    {"proc foo(x: int) do return x;", "for i in foo(new R()) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isIntType());
+    },
+    IterableType("R").definePromotionType("int").defineSerialIterator("1"));
 }
 
 static void test2() {
   // Promotion doesn't get triggered even if there is a 'these'
   runProgram(
-      { "proc foo(x: int) {}",
-        "for i in foo(new R()) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(t.isUnknownOrErroneous());
-        guard.realizeErrors();
-      },
-      IterableType("R").defineSerialIterator("1"));
+    {"proc foo(x: int) {}", "for i in foo(new R()) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(t.isUnknownOrErroneous());
+      guard.realizeErrors();
+    },
+    IterableType("R").defineSerialIterator("1"));
 }
 
 static void test3() {
   // The yield type depends on the return type of the function
   runProgram(
-      { "proc foo(x: int) do return true;",
-        "for i in foo(new R()) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isBoolType());
-      },
-      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+    {"proc foo(x: int) do return true;", "for i in foo(new R()) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isBoolType());
+    },
+    IterableType("R").definePromotionType("int").defineSerialIterator("1"));
 }
 
 static void test4() {
   // Promoting twice works
   runProgram(
-      { "proc foo(x: int) do return true;",
-        "proc bar(x: bool) do return \"hello\";",
-        "for i in bar(foo(new R())) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isStringType());
-      },
-      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+    {"proc foo(x: int) do return true;",
+     "proc bar(x: bool) do return \"hello\";",
+     "for i in bar(foo(new R())) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isStringType());
+    },
+    IterableType("R").definePromotionType("int").defineSerialIterator("1"));
 }
 
 static void test5() {
   // Promoting three times works (for good measure)
   runProgram(
-      { "proc foo(x: int) do return true;",
-        "proc bar(x: bool) do return \"hello\";",
-        "proc baz(x: string) do return 1.0;",
-        "for i in baz(bar(foo(new R()))) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isRealType());
-      },
-      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+    {"proc foo(x: int) do return true;",
+     "proc bar(x: bool) do return \"hello\";",
+     "proc baz(x: string) do return 1.0;",
+     "for i in baz(bar(foo(new R()))) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isRealType());
+    },
+    IterableType("R").definePromotionType("int").defineSerialIterator("1"));
 }
 
 static void test6() {
   // If the scalar type doesn't match, we don't promote
   runProgram(
-      { "proc foo(x: string) do return true;",
-        "for i in foo(new R()) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(t.isUnknownOrErroneous());
-        guard.realizeErrors();
-      },
-      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+    {"proc foo(x: string) do return true;", "for i in foo(new R()) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(t.isUnknownOrErroneous());
+      guard.realizeErrors();
+    },
+    IterableType("R").definePromotionType("int").defineSerialIterator("1"));
 }
 
 static void test7() {
   // If the scalar type matches, but the yield type doesn't, we don't promote.
   runProgram(
-      { "proc foo(x: int) do return true;",
-        "for i in foo(new R()) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(t.isUnknownOrErroneous());
-        assert(guard.numErrors() == 1);
-        assert(guard.error(0)->type() == ErrorType::NonIterable);
-        guard.realizeErrors();
-      },
-      IterableType("R").definePromotionType("int").defineSerialIterator("1.0"));
+    {"proc foo(x: int) do return true;", "for i in foo(new R()) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(t.isUnknownOrErroneous());
+      assert(guard.numErrors() == 1);
+      assert(guard.error(0)->type() == ErrorType::NonIterable);
+      guard.realizeErrors();
+    },
+    IterableType("R").definePromotionType("int").defineSerialIterator("1.0"));
 }
 
 static void test8() {
   // Promotion respects parallelism allowed by loops (can't invoke parallel loop here)
   runProgram(
-      { "proc foo(x: int) do return true;",
-        "for i in foo(new R()) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(t.isUnknownOrErroneous());
-        assert(guard.numErrors() == 1);
-        assert(guard.error(0)->type() == ErrorType::NonIterable);
-        guard.realizeErrors();
-      },
-      IterableType("R").definePromotionType("int")
-        .defineLeaderIterator("1.0")
-        .defineFollowerIterator("real", "1"));
+    {"proc foo(x: int) do return true;", "for i in foo(new R()) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(t.isUnknownOrErroneous());
+      assert(guard.numErrors() == 1);
+      assert(guard.error(0)->type() == ErrorType::NonIterable);
+      guard.realizeErrors();
+    },
+    IterableType("R")
+      .definePromotionType("int")
+      .defineLeaderIterator("1.0")
+      .defineFollowerIterator("real", "1"));
 }
 
 static void test9() {
   // Promotion respects parallelism allowed by loops (invoking parallel iterator)
   runProgram(
-      { "proc foo(x: int) do return true;",
-        "forall i in foo(new R()) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isBoolType());
-      },
-      IterableType("R").definePromotionType("int")
-        .defineStandaloneIterator("1"));
+    {"proc foo(x: int) do return true;", "forall i in foo(new R()) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isBoolType());
+    },
+    IterableType("R").definePromotionType("int").defineStandaloneIterator("1"));
 }
 
 static void test10() {
   // Promotion respects parallelism allowed by loops (invoking leader/follower iterator)
   runProgram(
-      { "proc foo(x: int) do return true;",
-        "forall i in foo(new R()) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isBoolType());
-      },
-      IterableType("R").definePromotionType("int")
-        .defineLeaderIterator("1.0")
-        .defineFollowerIterator("real", "1"));
+    {"proc foo(x: int) do return true;", "forall i in foo(new R()) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isBoolType());
+    },
+    IterableType("R")
+      .definePromotionType("int")
+      .defineLeaderIterator("1.0")
+      .defineFollowerIterator("real", "1"));
 }
 
 static void test11() {
   // promotion on multiple arguments works (serially)
   runProgram(
-      { "proc foo(x: int, y: int) do return true;",
-        "for i in foo(new R(), new R()) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isBoolType());
-      },
-      IterableType("R").definePromotionType("int")
-        .defineSerialIterator("1"));
+    {"proc foo(x: int, y: int) do return true;",
+     "for i in foo(new R(), new R()) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isBoolType());
+    },
+    IterableType("R").definePromotionType("int").defineSerialIterator("1"));
 }
 
 static void test12() {
   // promotion on multiple arguments works (in parallel)
   runProgram(
-      { "proc foo(x: int, y: int) do return true;",
-        "forall i in foo(new R(), new R()) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isBoolType());
-      },
-      IterableType("R").definePromotionType("int")
-        .defineLeaderIterator("1.0")
-        .defineFollowerIterator("real", "1"));
+    {"proc foo(x: int, y: int) do return true;",
+     "forall i in foo(new R(), new R()) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isBoolType());
+    },
+    IterableType("R")
+      .definePromotionType("int")
+      .defineLeaderIterator("1.0")
+      .defineFollowerIterator("real", "1"));
 }
 
 static void test13() {
   // promotion on multiple (distinct) arguments works (serially)
   runProgram(
-      { "proc foo(x: int, y: real) do return true;",
-        "for i in foo(new R(), new S()) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isBoolType());
-      },
-      IterableType("R").definePromotionType("int")
-        .defineSerialIterator("1"),
-      IterableType("S").definePromotionType("real")
-        .defineSerialIterator("1.0"));
+    {"proc foo(x: int, y: real) do return true;",
+     "for i in foo(new R(), new S()) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isBoolType());
+    },
+    IterableType("R").definePromotionType("int").defineSerialIterator("1"),
+    IterableType("S").definePromotionType("real").defineSerialIterator("1.0"));
 }
 
 static void test14() {
   // promotion on multiple (distinct) arguments works (in parallel)
   runProgram(
-      { "proc foo(x: int, y: real) do return true;",
-        "forall i in foo(new R(), new S()) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isBoolType());
-      },
-      IterableType("R").definePromotionType("int")
-        .defineLeaderIterator("\"hello\"")
-        .defineFollowerIterator("string", "1"),
-      IterableType("S").definePromotionType("real")
-        .defineLeaderIterator("\"hello\"")
-        .defineFollowerIterator("string", "1.0"));
+    {"proc foo(x: int, y: real) do return true;",
+     "forall i in foo(new R(), new S()) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isBoolType());
+    },
+    IterableType("R")
+      .definePromotionType("int")
+      .defineLeaderIterator("\"hello\"")
+      .defineFollowerIterator("string", "1"),
+    IterableType("S")
+      .definePromotionType("real")
+      .defineLeaderIterator("\"hello\"")
+      .defineFollowerIterator("string", "1.0"));
 }
 
 static void test15() {
   // Promotion works when instantiating generics.
   runProgram(
-      { "proc foo(x: integral) do return x;",
-        "for i in foo(new R()) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isIntType());
-      },
-      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
-
+    {"proc foo(x: integral) do return x;", "for i in foo(new R()) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isIntType());
+    },
+    IterableType("R").definePromotionType("int").defineSerialIterator("1"));
 }
 
 static void test16() {
   // Promotion works when converting
   runProgram(
-      { "proc foo(x: int) do return x;",
-        "for i in foo(new R()) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isIntType());
-      },
-      IterableType("R").definePromotionType("int(8)").defineSerialIterator("1 : int(8)"));
-
+    {"proc foo(x: int) do return x;", "for i in foo(new R()) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isIntType());
+    },
+    IterableType("R").definePromotionType("int(8)").defineSerialIterator(
+      "1 : int(8)"));
 }
 
 static void test17() {
   // Instantiations from promotion are the scalar type, not the promoted type
   runProgram(
-      { "proc foo(x: integral, y: x.type) do return y;",
-        "for i in foo(new R(), 12) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isIntType());
-      },
-      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
-
+    {"proc foo(x: integral, y: x.type) do return y;",
+     "for i in foo(new R(), 12) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isIntType());
+    },
+    IterableType("R").definePromotionType("int").defineSerialIterator("1"));
 }
 
 static void test18() {
   // Two-element promotion instantiation works
   runProgram(
-      { "proc foo(x: integral, y: integral) do return (x, y);",
-        "for i in foo(new R(), new S()) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isTupleType());
-        assert(t.type()->toTupleType()->elementType(0).type()->isIntType());
-        assert(t.type()->toTupleType()->elementType(1).type()->isIntType());
-      },
-      IterableType("R").definePromotionType("int").defineSerialIterator("1"),
-      IterableType("S").definePromotionType("int").defineSerialIterator("1")
-      );
-
+    {"proc foo(x: integral, y: integral) do return (x, y);",
+     "for i in foo(new R(), new S()) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isTupleType());
+      assert(t.type()->toTupleType()->elementType(0).type()->isIntType());
+      assert(t.type()->toTupleType()->elementType(1).type()->isIntType());
+    },
+    IterableType("R").definePromotionType("int").defineSerialIterator("1"),
+    IterableType("S").definePromotionType("int").defineSerialIterator("1"));
 }
 
 static void test19() {
   // promotion on multiple arguments with default arguments
   runProgram(
-      { "proc foo(x: int = 1, y: int = 2) do return true;",
-        "for i in foo(1, new R()) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isBoolType());
-      },
-      IterableType("R").definePromotionType("int")
-        .defineSerialIterator("1"));
+    {"proc foo(x: int = 1, y: int = 2) do return true;",
+     "for i in foo(1, new R()) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isBoolType());
+    },
+    IterableType("R").definePromotionType("int").defineSerialIterator("1"));
 
   runProgram(
-      { "proc foo(x: int = 1, y: int = 2) do return true;",
-        "for i in foo(x=new R()) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isBoolType());
-      },
-      IterableType("R").definePromotionType("int")
-        .defineSerialIterator("1"));
+    {"proc foo(x: int = 1, y: int = 2) do return true;",
+     "for i in foo(x=new R()) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isBoolType());
+    },
+    IterableType("R").definePromotionType("int").defineSerialIterator("1"));
 
   runProgram(
-      { "proc foo(x: int = 1, y: int = 2) do return true;",
-        "for i in foo(y=new R()) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isBoolType());
-      },
-      IterableType("R").definePromotionType("int")
-        .defineSerialIterator("1"));
+    {"proc foo(x: int = 1, y: int = 2) do return true;",
+     "for i in foo(y=new R()) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isBoolType());
+    },
+    IterableType("R").definePromotionType("int").defineSerialIterator("1"));
 }
 
 static void test20() {
   // check that we can promote a field access, as spec'ed.
   runProgram(
-      {
-        "record pair { var first: int; var second: real; }",
-        "proc R.chpl__promotionType() type do return pair;",
-        "for i in (new R()).second {}",
-      },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isRealType());
-      },
-      IterableType("R").defineSerialIterator("new pair(0, 0.0)"));
+    {
+      "record pair { var first: int; var second: real; }",
+      "proc R.chpl__promotionType() type do return pair;",
+      "for i in (new R()).second {}",
+    },
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isRealType());
+    },
+    IterableType("R").defineSerialIterator("new pair(0, 0.0)"));
 }
 
 static void test21() {
   // we can promoted generated binary operator calls
   runProgram(
-      { "enum color { red = 1, green, blue }",
-        "operator =(ref lhs: color, in rhs: color) {}",
-        "for i in (new R()) : int {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isIntType());
-      },
-      IterableType("R").definePromotionType("color").defineSerialIterator("color.red"));
+    {"enum color { red = 1, green, blue }",
+     "operator =(ref lhs: color, in rhs: color) {}",
+     "for i in (new R()) : int {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isIntType());
+    },
+    IterableType("R").definePromotionType("color").defineSerialIterator(
+      "color.red"));
 }
 
 static void test22() {
   // Promotion gets triggered for methods
   runProgram(
-      { "proc int.foo() do return this;",
-        "for i in (new R()).foo() {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isIntType());
-      },
-      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+    {"proc int.foo() do return this;", "for i in (new R()).foo() {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isIntType());
+    },
+    IterableType("R").definePromotionType("int").defineSerialIterator("1"));
 }
 
 // You can invoke primary methods on a type even if they are not imported
@@ -501,7 +486,8 @@ static void testPromotedMethodNotImported() {
   ErrorGuard guard(context);
 
   setFileText(context, "input.chpl", prog);
-  auto& res = parseFileToBuilderResultAndCheck(context, UniqueString::get(context, "input.chpl"), UniqueString());
+  auto& res = parseFileToBuilderResultAndCheck(
+    context, UniqueString::get(context, "input.chpl"), UniqueString());
   assert(res.numTopLevelExpressions() == 3);
   auto M3 = res.topLevelExpression(2)->toModule();
   assert(M3->numStmts() == 2);
@@ -511,7 +497,12 @@ static void testPromotedMethodNotImported() {
   auto& re = rr.byAst(xInit);
   assert(!re.type().isUnknownOrErroneous());
   assert(re.type().type()->isPromotionIteratorType());
-  assert(re.type().type()->toPromotionIteratorType()->yieldType().type()->isRealType());
+  assert(re.type()
+           .type()
+           ->toPromotionIteratorType()
+           ->yieldType()
+           .type()
+           ->isRealType());
 }
 
 static void testFieldPromotionScoping() {
@@ -537,7 +528,7 @@ static void testFieldPromotionScoping() {
   )""";
 
   auto ctx = buildStdContext();
-  auto vars = resolveTypesOfVariables(ctx, prog, { "B" });
+  auto vars = resolveTypesOfVariables(ctx, prog, {"B"});
 
   assert(!vars.at("B").isUnknownOrErroneous());
   assert(vars.at("B").type()->isArrayType());
@@ -548,17 +539,16 @@ static void testTertiaryMethod() {
   // tertiary method definitions of chpl__promotionType
   // (defined in the scope of iteration) are not allowed.
   runProgram(
-      { "{",
-        "  proc R.chpl__promotionType() type do return int;",
-        "  proc foo(x: int) do return x;",
-        "  for i in foo(new R()) {}",
-        "}"},
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(t.isUnknownOrErroneous());
-        assert(guard.realizeErrors());
-      },
-      IterableType("R").defineSerialIterator("1"));
-
+    {"{",
+     "  proc R.chpl__promotionType() type do return int;",
+     "  proc foo(x: int) do return x;",
+     "  for i in foo(new R()) {}",
+     "}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(t.isUnknownOrErroneous());
+      assert(guard.realizeErrors());
+    },
+    IterableType("R").defineSerialIterator("1"));
 }
 
 static void regressionTestRecursivePromotionTypeBug() {
@@ -569,7 +559,7 @@ static void regressionTestRecursivePromotionTypeBug() {
   auto context = buildStdContext();
 
   auto var = resolveTypeOfX(context,
-      R"""(
+                            R"""(
       use OS;
       var x = createSystemError(0);
       )""");
@@ -582,10 +572,10 @@ static void regressionTestRecursivePromotionTypeBug() {
 
 // Helper to test that promoted functions with return intent overloading
 // choose the expected overload based on priority (ref > const ref > value)
-static void testPromotionChoosesOverload(
-  const char* testName,
-  const char* overloadDecls,
-  uast::Function::ReturnIntent expectedIntent) {
+static void
+testPromotionChoosesOverload(const char* testName,
+                             const char* overloadDecls,
+                             uast::Function::ReturnIntent expectedIntent) {
   printf("%s\n", testName);
 
   auto context = buildStdContext();
@@ -626,7 +616,8 @@ var promoted = foo(new R());
     printf("Test %s failed: expected %s return intent but got %s\n",
            testName,
            uast::Function::returnIntentToString(expectedIntent),
-           uast::Function::returnIntentToString(fnAst->toFunction()->returnIntent()));
+           uast::Function::returnIntentToString(
+             fnAst->toFunction()->returnIntent()));
     assert(false);
   }
 
@@ -636,36 +627,33 @@ var promoted = foo(new R());
 
 // Test that promoted functions with ref and const ref overloads prefer ref
 static void testPromotionReturnIntentOverloading() {
-  testPromotionChoosesOverload(
-    "testPromotionReturnIntentOverloading",
-    R"""(
+  testPromotionChoosesOverload("testPromotionReturnIntentOverloading",
+                               R"""(
 proc foo(x: int) ref { return global; }
 proc foo(x: int) const ref { return global; }
 )""",
-    uast::Function::REF);
+                               uast::Function::REF);
 }
 
 // Test that promoted functions with ref and value overloads prefer ref
 static void testPromotionReturnIntentOverloadingRefValue() {
-  testPromotionChoosesOverload(
-    "testPromotionReturnIntentOverloadingRefValue",
-    R"""(
+  testPromotionChoosesOverload("testPromotionReturnIntentOverloadingRefValue",
+                               R"""(
 proc foo(x: int) ref { return global; }
 proc foo(x: int) { return global; }
 )""",
-    uast::Function::REF);
+                               uast::Function::REF);
 }
 
 // Test that promoted functions with all three return intent overloads prefer ref
 static void testPromotionReturnIntentOverloadingAll() {
-  testPromotionChoosesOverload(
-    "testPromotionReturnIntentOverloadingAll",
-    R"""(
+  testPromotionChoosesOverload("testPromotionReturnIntentOverloadingAll",
+                               R"""(
 proc foo(x: int) ref { return global; }
 proc foo(x: int) const ref { return global; }
 proc foo(x: int) { return global; }
 )""",
-    uast::Function::REF);
+                               uast::Function::REF);
 }
 
 // Test that promoted functions with const ref and value overloads prefer const ref
@@ -681,38 +669,41 @@ proc foo(x: int) { return global; }
 
 // Test that promoted functions with only value overload use value
 static void testPromotionReturnIntentOverloadingValueOnly() {
-  testPromotionChoosesOverload(
-    "testPromotionReturnIntentOverloadingValueOnly",
-    R"""(
+  testPromotionChoosesOverload("testPromotionReturnIntentOverloadingValueOnly",
+                               R"""(
 proc foo(x: int) { return global; }
 )""",
-    uast::Function::DEFAULT_RETURN_INTENT);
+                               uast::Function::DEFAULT_RETURN_INTENT);
 }
 
 static void testRaceyOutInoutInPromotion() {
   printf("testRaceyOutInoutInPromotion\n");
 
   runProgram(
-      { "proc move(in lhs: int, inout rhs: int) { rhs = lhs; }",
-        "var b: int;",
-        "for i in move(new R(), b) {}", },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(guard.numErrors() == 1);
-        assert(guard.error(0)->type() == ErrorType::RaceyOutInoutInPromotion);
-        guard.realizeErrors();
-      },
-      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+    {
+      "proc move(in lhs: int, inout rhs: int) { rhs = lhs; }",
+      "var b: int;",
+      "for i in move(new R(), b) {}",
+    },
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(guard.numErrors() == 1);
+      assert(guard.error(0)->type() == ErrorType::RaceyOutInoutInPromotion);
+      guard.realizeErrors();
+    },
+    IterableType("R").definePromotionType("int").defineSerialIterator("1"));
 
   runProgram(
-      { "proc move(in lhs: int, out rhs: int) { rhs = lhs; }",
-        "var b: int;",
-        "for i in move(new R(), b) {}", },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(guard.numErrors() == 1);
-        assert(guard.error(0)->type() == ErrorType::RaceyOutInoutInPromotion);
-        guard.realizeErrors();
-      },
-      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+    {
+      "proc move(in lhs: int, out rhs: int) { rhs = lhs; }",
+      "var b: int;",
+      "for i in move(new R(), b) {}",
+    },
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(guard.numErrors() == 1);
+      assert(guard.error(0)->type() == ErrorType::RaceyOutInoutInPromotion);
+      guard.realizeErrors();
+    },
+    IterableType("R").definePromotionType("int").defineSerialIterator("1"));
 
   // runProgram(
   //     { "proc foo(out x: int) { x = 10; return x; }",
@@ -723,39 +714,43 @@ static void testRaceyOutInoutInPromotion() {
   // disabled due to https://github.com/chapel-lang/chapel/issues/28790
 
   runProgram(
-      { "proc foo(inout x: int) { x = 10; return x; }",
-         "for i in foo(new R()) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isIntType());
-      },
-      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+    {"proc foo(inout x: int) { x = 10; return x; }",
+     "for i in foo(new R()) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isIntType());
+    },
+    IterableType("R").definePromotionType("int").defineSerialIterator("1"));
 }
 
 static void testRaceyOutInoutInPromotionMethod() {
   printf("testRaceyOutInoutInPromotion\n");
 
   runProgram(
-      { "proc int.move(inout rhs: int) { rhs = this; }",
-        "var b: int;",
-        "for i in (new R()).move(b) {}", },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(guard.numErrors() == 1);
-        assert(guard.error(0)->type() == ErrorType::RaceyOutInoutInPromotion);
-        guard.realizeErrors();
-      },
-      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+    {
+      "proc int.move(inout rhs: int) { rhs = this; }",
+      "var b: int;",
+      "for i in (new R()).move(b) {}",
+    },
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(guard.numErrors() == 1);
+      assert(guard.error(0)->type() == ErrorType::RaceyOutInoutInPromotion);
+      guard.realizeErrors();
+    },
+    IterableType("R").definePromotionType("int").defineSerialIterator("1"));
 
   runProgram(
-      { "proc int.move(out rhs: int) { rhs = this; }",
-        "var b: int;",
-        "for i in (new R()).move(b) {}", },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(guard.numErrors() == 1);
-        assert(guard.error(0)->type() == ErrorType::RaceyOutInoutInPromotion);
-        guard.realizeErrors();
-      },
-      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+    {
+      "proc int.move(out rhs: int) { rhs = this; }",
+      "var b: int;",
+      "for i in (new R()).move(b) {}",
+    },
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(guard.numErrors() == 1);
+      assert(guard.error(0)->type() == ErrorType::RaceyOutInoutInPromotion);
+      guard.realizeErrors();
+    },
+    IterableType("R").definePromotionType("int").defineSerialIterator("1"));
 
   // runProgram(
   //     { "proc int.foo(out x: int) { x = 10; return x; }",
@@ -766,19 +761,19 @@ static void testRaceyOutInoutInPromotionMethod() {
   // disabled due to https://github.com/chapel-lang/chapel/issues/28790
 
   runProgram(
-      { "proc int.foo(inout x: int) { x = 10; return x; }",
-         "for i in (new R()).foo(new R()) {}" },
-      [](ErrorGuard& guard, const QualifiedType& t) {
-        assert(!t.isUnknownOrErroneous());
-        assert(t.type()->isIntType());
-      },
-      IterableType("R").definePromotionType("int").defineSerialIterator("1"));
+    {"proc int.foo(inout x: int) { x = 10; return x; }",
+     "for i in (new R()).foo(new R()) {}"},
+    [](ErrorGuard& guard, const QualifiedType& t) {
+      assert(!t.isUnknownOrErroneous());
+      assert(t.type()->isIntType());
+    },
+    IterableType("R").definePromotionType("int").defineSerialIterator("1"));
 }
 
 int main() {
   // Run tests with primary and secondary method definitions (expecting
   // the same results).
-  for (auto primarySetting : { true, false }) {
+  for (auto primarySetting : {true, false}) {
     primary = primarySetting;
 
     test0();

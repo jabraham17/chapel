@@ -37,21 +37,21 @@
 
 /** Use the name of the enclosing CPP function as the name for a Chapel
     source file. Returns a UniqueString. */
-#define TEST_NAME_FROM_FN_NAME(context__) \
+#define TEST_NAME_FROM_FN_NAME(context__)                         \
   chpl::UniqueString::getConcat(context__, __FUNCTION__, ".chpl")
 
 /** Parse to BuilderResult but report encountered errors to the context. */
-const chpl::uast::BuilderResult&
-parseAndReportErrors(chpl::Context* context, chpl::UniqueString path);
+const chpl::uast::BuilderResult& parseAndReportErrors(chpl::Context* context,
+                                                      chpl::UniqueString path);
 
-const chpl::uast::BuilderResult&
-parseAndReportErrors(chpl::Context* context, const char* path);
+const chpl::uast::BuilderResult& parseAndReportErrors(chpl::Context* context,
+                                                      const char* path);
 
-chpl::uast::BuilderResult
-parseStringAndReportErrors(chpl::parsing::Parser* parser, const char* filename,
-                           const char* content);
+chpl::uast::BuilderResult parseStringAndReportErrors(
+  chpl::parsing::Parser* parser, const char* filename, const char* content);
 
-const chpl::uast::AstNode* findOnlyNamed(const chpl::uast::Module* mod, std::string name);
+const chpl::uast::AstNode* findOnlyNamed(const chpl::uast::Module* mod,
+                                         std::string name);
 
 chpl::Context* buildStdContext(chpl::CompilerFlags flags = {});
 

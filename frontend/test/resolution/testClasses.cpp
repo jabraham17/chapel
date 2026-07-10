@@ -74,12 +74,16 @@ static void test1() {
   auto bct = it->getCompositeType()->toBasicClassType();
   assert(bct);
 
-  auto borrowedNonNil = ClassType::get(context, bct, nullptr,
-                                       ClassTypeDecorator(
-                                         ClassTypeDecorator::BORROWED_NONNIL));
-  auto anyNonNil = ClassType::get(context, bct, nullptr,
-                                  ClassTypeDecorator(
-                                    ClassTypeDecorator::GENERIC_NONNIL));
+  auto borrowedNonNil =
+    ClassType::get(context,
+                   bct,
+                   nullptr,
+                   ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL));
+  auto anyNonNil =
+    ClassType::get(context,
+                   bct,
+                   nullptr,
+                   ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL));
 
   assert(methodT->formalName(0) == "this");
   assert(methodT->formalType(0).kind() == QualifiedType::CONST_IN);
@@ -248,9 +252,11 @@ static void test5() {
   auto bct = it->getCompositeType()->toBasicClassType();
   assert(bct);
 
-  auto borrowedNonNil = ClassType::get(context, bct, nullptr,
-                                       ClassTypeDecorator(
-                                        ClassTypeDecorator::BORROWED_NONNIL));
+  auto borrowedNonNil =
+    ClassType::get(context,
+                   bct,
+                   nullptr,
+                   ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL));
 
   assert(qt.type() == borrowedNonNil);
   assert(guard.realizeErrors() == 0);
@@ -316,9 +322,11 @@ static void test6() {
   auto bct = it->getCompositeType()->toBasicClassType();
   assert(bct);
 
-  auto borrowedNonNil = ClassType::get(context, bct, nullptr,
-                                       ClassTypeDecorator(
-                                        ClassTypeDecorator::BORROWED_NONNIL));
+  auto borrowedNonNil =
+    ClassType::get(context,
+                   bct,
+                   nullptr,
+                   ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL));
   assert(qt.type() == borrowedNonNil);
 
   assert(guard.numErrors() == 0);
@@ -416,14 +424,17 @@ static void testInstantiateManagerRecord() {
     assert(qt.type()->isRecordType());
 
     auto rc = createDummyRC(context);
-    auto fields = fieldsForTypeDecl(&rc, qt.type()->toRecordType(), DefaultsPolicy::IGNORE_DEFAULTS);
+    auto fields = fieldsForTypeDecl(
+      &rc, qt.type()->toRecordType(), DefaultsPolicy::IGNORE_DEFAULTS);
     bool foundField = false;
     for (int i = 0; i < fields.numFields(); i++) {
       if (fields.fieldName(i) == "chpl_t") {
         foundField = true;
         assert(fields.fieldType(i).type()->isClassType());
         assert(fields.fieldType(i).type()->toClassType()->basicClassType());
-        assert(fields.fieldType(i).type()->toClassType()->basicClassType()->name() == "C");
+        assert(
+          fields.fieldType(i).type()->toClassType()->basicClassType()->name() ==
+          "C");
         break;
       }
     }
@@ -459,17 +470,19 @@ static void testInstantiateOutOfManagerRecord() {
 
   auto vars = resolveTypesOfVariables(context, program, {"x", "y", "z", "w"});
 
-  auto checkChplT = [](const QualifiedType qt, const Type* expectManager, bool expectNil) {
-    assert(!qt.isUnknownOrErroneous());
-    assert(qt.type()->isClassType());
+  auto checkChplT =
+    [](const QualifiedType qt, const Type* expectManager, bool expectNil) {
+      assert(!qt.isUnknownOrErroneous());
+      assert(qt.type()->isClassType());
 
-    auto ct = qt.type()->toClassType();
-    assert(ct->decorator().isManaged());
-    assert(expectNil ? ct->decorator().isNilable() : ct->decorator().isNonNilable());
-    assert(ct->manager() == expectManager);
-    assert(ct->basicClassType());
-    assert(ct->basicClassType()->name() == "C");
-  };
+      auto ct = qt.type()->toClassType();
+      assert(ct->decorator().isManaged());
+      assert(expectNil ? ct->decorator().isNilable()
+                       : ct->decorator().isNonNilable());
+      assert(ct->manager() == expectManager);
+      assert(ct->basicClassType());
+      assert(ct->basicClassType()->name() == "C");
+    };
 
   auto owned = AnyOwnedType::get(context);
   auto shared = AnySharedType::get(context);
@@ -511,7 +524,6 @@ static void testBorrowManagerRecord() {
 
   checkChplT(vars.at("x"));
   checkChplT(vars.at("y"));
-
 }
 
 static void testInstantiateParentClass() {

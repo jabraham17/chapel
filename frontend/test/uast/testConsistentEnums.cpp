@@ -28,31 +28,31 @@ using namespace chpl;
 using namespace uast;
 
 static void checkConsistentEnums() {
-  assert((int) Formal::DEFAULT_INTENT == (int) Function::DEFAULT_RETURN_INTENT);
-  assert((int) TaskVar::VAR == (int) Variable::VAR);
+  assert((int)Formal::DEFAULT_INTENT == (int)Function::DEFAULT_RETURN_INTENT);
+  assert((int)TaskVar::VAR == (int)Variable::VAR);
 
-  assert((int) Variable::CONST == (int) Qualifier::CONST_VAR);
-  assert((int) Formal::CONST == (int) Qualifier::CONST_INTENT);
-  assert((int) Function::CONST == (int) Qualifier::CONST_VAR);
-  assert((int) TaskVar::CONST == (int) Qualifier::CONST_VAR);
+  assert((int)Variable::CONST == (int)Qualifier::CONST_VAR);
+  assert((int)Formal::CONST == (int)Qualifier::CONST_INTENT);
+  assert((int)Function::CONST == (int)Qualifier::CONST_VAR);
+  assert((int)TaskVar::CONST == (int)Qualifier::CONST_VAR);
 
-  assert((int) TaskVar::CONST_IN == (int) Formal::CONST_IN);
+  assert((int)TaskVar::CONST_IN == (int)Formal::CONST_IN);
 
-  assert((int) TaskVar::IN == (int) Formal::IN);
+  assert((int)TaskVar::IN == (int)Formal::IN);
 
-  assert((int) Variable::CONST_REF == (int) Formal::CONST_REF);
-  assert((int) Formal::CONST_REF == (int) Function::CONST_REF);
-  assert((int) TaskVar::CONST_REF == (int) Formal::CONST_REF);
+  assert((int)Variable::CONST_REF == (int)Formal::CONST_REF);
+  assert((int)Formal::CONST_REF == (int)Function::CONST_REF);
+  assert((int)TaskVar::CONST_REF == (int)Formal::CONST_REF);
 
-  assert((int) Variable::REF == (int) Formal::REF);
-  assert((int) Formal::REF == (int) Function::REF);
-  assert((int) TaskVar::REF == (int) Formal::REF);
+  assert((int)Variable::REF == (int)Formal::REF);
+  assert((int)Formal::REF == (int)Function::REF);
+  assert((int)TaskVar::REF == (int)Formal::REF);
 
-  assert((int) Variable::PARAM == (int) Formal::PARAM);
-  assert((int) Formal::PARAM == (int) Function::PARAM);
+  assert((int)Variable::PARAM == (int)Formal::PARAM);
+  assert((int)Formal::PARAM == (int)Function::PARAM);
 
-  assert((int) Variable::TYPE == (int) Formal::TYPE);
-  assert((int) Formal::TYPE == (int) Function::TYPE);
+  assert((int)Variable::TYPE == (int)Formal::TYPE);
+  assert((int)Formal::TYPE == (int)Function::TYPE);
 }
 
 int main(int argc, char** argv) {

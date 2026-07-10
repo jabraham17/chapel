@@ -29,15 +29,24 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 
-static void ensureExpectedDefaultValue(Context* context, const char* type, bool hasDefault, const char* prelude = "", bool skipErrors = false) {
+static void ensureExpectedDefaultValue(Context* context,
+                                       const char* type,
+                                       bool hasDefault,
+                                       const char* prelude = "",
+                                       bool skipErrors = false) {
   ErrorGuard guard(context);
 
-  auto primCallProgram = std::string(prelude) + "\nparam result = __primitive(\"type has default value\", " + type + ");";
-  auto defaultInitProgram = std::string(prelude) + "\n" + "proc foo() { var x: " + type + "; }";
+  auto primCallProgram =
+    std::string(prelude) +
+    "\nparam result = __primitive(\"type has default value\", " + type + ");";
+  auto defaultInitProgram =
+    std::string(prelude) + "\n" + "proc foo() { var x: " + type + "; }";
 
   static int userFileCounter = 0;
-  auto filenameA = UniqueString::get(context, "A" + std::to_string(userFileCounter) + ".chpl");
-  auto filenameB = UniqueString::get(context, "B" + std::to_string(userFileCounter++) + ".chpl");
+  auto filenameA =
+    UniqueString::get(context, "A" + std::to_string(userFileCounter) + ".chpl");
+  auto filenameB = UniqueString::get(
+    context, "B" + std::to_string(userFileCounter++) + ".chpl");
 
   setFileText(context, filenameA, primCallProgram);
   setFileText(context, filenameB, defaultInitProgram);
@@ -56,7 +65,8 @@ static void ensureExpectedDefaultValue(Context* context, const char* type, bool 
          hasDefault ? "not expecting errors" : "expecting errors",
          defaultInitProgram.c_str());
   auto modB = parse(context, filenameB, UniqueString())[0];
-  std::ignore = resolveConcreteFunction(context, modB->stmt(modB->numStmts()-1)->id());
+  std::ignore =
+    resolveConcreteFunction(context, modB->stmt(modB->numStmts() - 1)->id());
   if (hasDefault) {
     assert(!guard.realizeErrors());
   } else {
@@ -72,12 +82,19 @@ int main() {
   ensureExpectedDefaultValue(ctx, "(int, int)", true);
   ensureExpectedDefaultValue(ctx, "owned C", false, "class C {}");
   ensureExpectedDefaultValue(ctx, "owned C?", true, "class C {}");
-  ensureExpectedDefaultValue(ctx, "owned C", false, "class C { proc init(x: int) {} }");
-  ensureExpectedDefaultValue(ctx, "owned C?", true, "class C { proc init(x: int) {} }");
+  ensureExpectedDefaultValue(
+    ctx, "owned C", false, "class C { proc init(x: int) {} }");
+  ensureExpectedDefaultValue(
+    ctx, "owned C?", true, "class C { proc init(x: int) {} }");
   ensureExpectedDefaultValue(ctx, "R", true, "record R {}");
-  ensureExpectedDefaultValue(ctx, "R", false, "record R { proc init(x: int) {} }");
+  ensureExpectedDefaultValue(
+    ctx, "R", false, "record R { proc init(x: int) {} }");
   ensureExpectedDefaultValue(ctx, "(R, R)", true, "record R {}");
-  ensureExpectedDefaultValue(ctx, "(R, R)", false, "record R { proc init(x: int) {} }", /*skipErrors=*/true);
+  ensureExpectedDefaultValue(ctx,
+                             "(R, R)",
+                             false,
+                             "record R { proc init(x: int) {} }",
+                             /*skipErrors=*/true);
 
   // seems like we can't build default-initializers for records with default-initializable fields
   // in all cases. Skip these tests as a consequence.

@@ -398,7 +398,8 @@ static void forwardForwardHelper(std::string stmt, bool isVar = false) {
       var b : B;
 
       forwarding b;
-      )"""" + stmt + R""""(
+      )"""" +
+    stmt + R""""(
     }
 
     var r : R;
@@ -418,7 +419,8 @@ static void forwardForwardHelper(std::string stmt, bool isVar = false) {
     assert(guard.error(1)->type() == chpl::NoMatchingCandidates);
   }
 
-  assert(guard.error(guard.numErrors()-1)->type() == chpl::NoMatchingCandidates);
+  assert(guard.error(guard.numErrors() - 1)->type() ==
+         chpl::NoMatchingCandidates);
 
   guard.realizeErrors();
 }
@@ -541,7 +543,6 @@ static void test9() {
   assert(guard.realizeErrors() == 0);
 }
 
-
 int main() {
   test1();
   test2();
@@ -564,4 +565,3 @@ int main() {
 
   return 0;
 }
-

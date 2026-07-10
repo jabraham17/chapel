@@ -32,7 +32,6 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
 
-
 /*
  ============= TODO ============
  These tests are here because we currently don't use the Dyno resolver
@@ -155,7 +154,6 @@ static const char* errorIncompatibleNilability = R"""(
       |
   The formal expects a non-nilable class, but the actual is nilable.
 )""";
-
 
 static const char* progTupleSize = R"""(
 proc f(x: (?, ?, ?)) {}
@@ -427,9 +425,11 @@ static const char* errorNotSplitInit = R"""(
       |
 )""";
 
-static void testResolverError(const char* program, const char* error,
-                              bool standard = true,
-                              ErrorType expectedType = ErrorType::NoMatchingCandidates) {
+static void
+testResolverError(const char* program,
+                  const char* error,
+                  bool standard = true,
+                  ErrorType expectedType = ErrorType::NoMatchingCandidates) {
   Context* context = nullptr;
   Context ctx;
   if (standard) {
@@ -452,7 +452,8 @@ static void testResolverError(const char* program, const char* error,
   assert(guard.error(0)->type() == expectedType);
 
   std::ostringstream oss;
-  ErrorWriter detailedWriter(context, oss, ErrorWriter::DETAILED, /* useColor */ false);
+  ErrorWriter detailedWriter(
+    context, oss, ErrorWriter::DETAILED, /* useColor */ false);
   guard.error(0)->write(detailedWriter);
 
   auto got = oss.str();
@@ -464,7 +465,10 @@ static void testResolverError(const char* program, const char* error,
   for (size_t i = 0; i < minlen; i++) {
     if (error[i] != got[i]) {
       printf("First difference at line %d column %d, (%c vs %c)\n",
-             line, col, error[i], got[i]);
+             line,
+             col,
+             error[i],
+             got[i]);
       break;
     }
     if (error[i] == '\n') {
@@ -492,9 +496,16 @@ int main() {
   testResolverError(progOther, errorOther, false);
   testResolverError(progManyCandidates, errorManyCandidates);
 
-  testResolverError(progBreakNonLoop, errorBreakNonLoop, true,  ErrorType::InvalidContinueBreakTarget);
-  testResolverError(progLabelAsValue, errorLabelAsValue, true, ErrorType::LoopLabelOutsideBreakOrContinue);
-  testResolverError(notSplitInit, errorNotSplitInit, true, ErrorType::NoMatchingCandidates);
+  testResolverError(progBreakNonLoop,
+                    errorBreakNonLoop,
+                    true,
+                    ErrorType::InvalidContinueBreakTarget);
+  testResolverError(progLabelAsValue,
+                    errorLabelAsValue,
+                    true,
+                    ErrorType::LoopLabelOutsideBreakOrContinue);
+  testResolverError(
+    notSplitInit, errorNotSplitInit, true, ErrorType::NoMatchingCandidates);
 
   return 0;
 }

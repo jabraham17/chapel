@@ -123,11 +123,10 @@ static void test2() {
     context->collectGarbage();
   }
 
-
   // Run it a few times to make sure there aren't errors related to
   // collectGarbage being run across multiple revisions.
   for (int i = 0; i < 3; i++) {
-    printf("part %i\n", 3+i);
+    printf("part %i\n", 3 + i);
     context->advanceToNextRevision(true);
     auto path = UniqueString::get(context, "input.chpl");
     std::string contents = "var x: int;\n"
@@ -620,24 +619,27 @@ static void test13() {
   // Make sure no errors make it to the user, even though we will get errors.
   ErrorGuard guard(&context);
   auto variables = resolveTypesOfVariables(&context,
-      R"""(
+                                           R"""(
       param r1 = __primitive("version major");
       param r2 = __primitive("version minor");
       param r3 = __primitive("version update");
       param r4 = __primitive("version sha");
-      )""", { "r1", "r2", "r3", "r4" });
+      )""",
+                                           {"r1", "r2", "r3", "r4"});
   ensureParamInt(variables.at("r1"), getMajorVersion());
   ensureParamInt(variables.at("r2"), getMinorVersion());
   ensureParamInt(variables.at("r3"), getUpdateVersion());
-  ensureParamString(variables.at("r4"), getIsOfficialRelease() ? "" : getCommitHash());
+  ensureParamString(variables.at("r4"),
+                    getIsOfficialRelease() ? "" : getCommitHash());
 }
 
 static void test14() {
   auto context = buildStdContext();
   // Make sure no errors make it to the user, even though we will get errors.
   ErrorGuard guard(context);
-  auto variables = resolveTypesOfVariablesInit(context,
-      R"""(
+  auto variables =
+    resolveTypesOfVariablesInit(context,
+                                R"""(
       param xp = 42;
       var xv = 42;
       const xcv = 42;
@@ -652,12 +654,16 @@ static void test14() {
       var r5 = __primitive("addr of", yv);
       var r6 = __primitive("addr of", ycv);
       var r7 = __primitive("addr of", int);
-      )""", { "r1", "r2", "r3", "r4", "r5", "r6", "r7" });
+      )""",
+                                {"r1", "r2", "r3", "r4", "r5", "r6", "r7"});
 
   auto refInt = QualifiedType(QualifiedType::REF, IntType::get(context, 0));
-  auto constRefInt = QualifiedType(QualifiedType::CONST_REF, IntType::get(context, 0));
-  auto refStr = QualifiedType(QualifiedType::REF, RecordType::getStringType(context));
-  auto constRefStr = QualifiedType(QualifiedType::CONST_REF, RecordType::getStringType(context));
+  auto constRefInt =
+    QualifiedType(QualifiedType::CONST_REF, IntType::get(context, 0));
+  auto refStr =
+    QualifiedType(QualifiedType::REF, RecordType::getStringType(context));
+  auto constRefStr =
+    QualifiedType(QualifiedType::CONST_REF, RecordType::getStringType(context));
 
   assert(variables.at("r1") == constRefInt);
   assert(variables.at("r2") == refInt);
@@ -675,8 +681,9 @@ static void test15() {
   Context context;
   // Make sure no errors make it to the user, even though we will get errors.
   ErrorGuard guard(&context);
-  auto variables = resolveTypesOfVariablesInit(&context,
-      R"""(
+  auto variables = resolveTypesOfVariablesInit(
+    &context,
+    R"""(
       record R {}
 
       var r: R;
@@ -693,7 +700,8 @@ static void test15() {
       type t7 = __primitive("static typeof", x);
       type t8 = __primitive("static typeof", 42);
       type t9 = __primitive("static typeof", (r, r));
-      )""", { "t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9"});
+      )""",
+    {"t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9"});
 
   for (auto& pair : variables) {
     if (!pair.second.isErroneousType()) {
@@ -736,8 +744,9 @@ static void test16() {
   auto context = buildStdContext();
   // Make sure no errors make it to the user, even though we will get errors.
   ErrorGuard guard(context);
-  auto variables = resolveTypesOfVariablesInit(context,
-      R"""(
+  auto variables =
+    resolveTypesOfVariablesInit(context,
+                                R"""(
       record Concrete {
           var x: int;
           var y: string;
@@ -759,7 +768,8 @@ static void test16() {
       param r4 = __primitive("static field type", inst, "x") == int;
       param r5 = __primitive("static field type", inst, "y") == string;
       param r6 = __primitive("static field type", inst, "z") == (int, string);
-      )""", { "r1", "r2", "r3", "r4", "r5", "r6"});
+      )""",
+                                {"r1", "r2", "r3", "r4", "r5", "r6"});
 
   for (auto& pair : variables) {
     pair.second.isParamTrue();
@@ -771,7 +781,7 @@ static void test16b() {
   // Make sure no errors make it to the user, even though we will get errors.
   ErrorGuard guard(context);
   auto variables = resolveTypesOfVariablesInit(context,
-      R"""(
+                                               R"""(
       class Parent {
           var x: int;
           var y: string;
@@ -786,7 +796,8 @@ static void test16b() {
       param r1 = __primitive("static field type", child, "x") == int;
       param r2 = __primitive("static field type", child, "y") == string;
       param r3 = __primitive("static field type", child, "z") == (int, string);
-      )""", { "r1", "r2", "r3" });
+      )""",
+                                               {"r1", "r2", "r3"});
 
   for (auto& pair : variables) {
     pair.second.isParamTrue();
@@ -797,8 +808,9 @@ static void test16b() {
 static void test17() {
   auto context = buildStdContext();
 
-  auto variables = resolveTypesOfVariables(context,
-      R"""(
+  auto variables =
+    resolveTypesOfVariables(context,
+                            R"""(
       var foo;
       foo = 5;
 
@@ -813,7 +825,8 @@ static void test17() {
       param bar_param:string;
       bar_param = "bar_param";
 
-      )""", { "foo", "bar", "foo_param", "bar_param"});
+      )""",
+                            {"foo", "bar", "foo_param", "bar_param"});
 
   auto foo = variables.at("foo");
   assert(foo.kind() == QualifiedType::VAR);
@@ -836,7 +849,7 @@ static void test18() {
   ErrorGuard guard(context);
 
   auto variables = resolveTypesOfVariables(context,
-      R"""(
+                                           R"""(
       var flag = true;
       var foo;
       if (flag) {
@@ -844,7 +857,8 @@ static void test18() {
       } else {
         foo = "asdf";
       }
-      )""", {"foo"});
+      )""",
+                                           {"foo"});
 
   assert(guard.numErrors() == 1);
   assert(guard.error(0)->type() ==
@@ -860,7 +874,7 @@ static void test19() {
   ErrorGuard guard(context);
 
   std::string contents =
-  R""""(
+    R""""(
   module M {
     use N;
     var x;
@@ -907,7 +921,7 @@ static void test20() {
   ErrorGuard guard(context);
 
   std::string contents =
-      R""""(
+    R""""(
       module M {
         module N {
           param CHPL_SOMETHING:string;
@@ -977,13 +991,15 @@ static void test21() {
 
     // foo overload with x arg
     const Function* procFooX = m->stmt(0)->toFunction();
-    assert(procFooX && procFooX->name() == "foo" && procFooX->numFormals() == 1);
+    assert(procFooX && procFooX->name() == "foo" &&
+           procFooX->numFormals() == 1);
     const NamedDecl* procFooXArg = procFooX->formal(0)->toNamedDecl();
     assert(procFooXArg && procFooXArg->name() == "x");
 
     // last resort foo overload with y arg
     const Function* procFooY = m->stmt(1)->toFunction();
-    assert(procFooY && procFooY->name() == "foo" && procFooY->numFormals() == 1);
+    assert(procFooY && procFooY->name() == "foo" &&
+           procFooY->numFormals() == 1);
     const NamedDecl* procFooYArg = procFooY->formal(0)->toNamedDecl();
     assert(procFooYArg && procFooYArg->name() == "y");
 
@@ -1251,7 +1267,7 @@ static void test22() {
     ErrorGuard guard(context);
 
     std::string contents =
-        R""""(
+      R""""(
         module M {
           record Inner {
             proc this(arg: int) {
@@ -1282,7 +1298,7 @@ static void test22() {
     ErrorGuard guard(context);
 
     std::string contents =
-        R""""(
+      R""""(
         module M {
           record Inner {
             proc this(param arg: int) param {
@@ -1311,7 +1327,7 @@ static void test22() {
     ErrorGuard guard(context);
 
     std::string contents =
-        R""""(
+      R""""(
         module M {
           record Inner {
             proc this() {
@@ -1345,7 +1361,7 @@ static void test22() {
     ErrorGuard guard(context);
 
     std::string contents =
-        R""""(
+      R""""(
         module M {
           record Inner {
             proc this(param arg: int) param {
@@ -1382,7 +1398,7 @@ static void test22() {
     ErrorGuard guard(context);
 
     std::string contents =
-        R""""(
+      R""""(
         module M {
           record Inner {
             proc this() param {
@@ -1918,7 +1934,7 @@ static void testCallableAmbiguity() {
   Context* context = &ctx;
   ErrorGuard guard(context);
 
-  std::ignore = resolveTypesOfVariables(context, program, { "y" });
+  std::ignore = resolveTypesOfVariables(context, program, {"y"});
   assert(guard.realizeErrors());
 }
 
@@ -1966,11 +1982,12 @@ static void testGetLocalePrim() {
   ErrorGuard guard(context);
 
   auto variables = resolveTypesOfVariables(context,
-    R"""(
+                                           R"""(
       var x : real;
       var locId = __primitive("_wide_get_locale", x);
       var sublocId = chpl_sublocFromLocaleID(locId);
-    )""", { "locId", "sublocId" });
+    )""",
+                                           {"locId", "sublocId"});
 
   auto locId = variables.at("locId");
   assert(locId.type());
@@ -1987,7 +2004,7 @@ static void testArrayGetPrim() {
   ErrorGuard guard(context);
 
   auto variables = resolveTypesOfVariablesInit(context,
-    R"""(
+                                               R"""(
       use CTypes;
 
       var a: c_ptr(int);
@@ -1999,7 +2016,8 @@ static void testArrayGetPrim() {
       var r2 = __primitive("array_get", b, 0);
       var r3 = __primitive("array_get", c, 0);
       var r4 = __primitive("array_get", d, 0);
-    )""", { "r1", "r2", "r3", "r4" });
+    )""",
+                                               {"r1", "r2", "r3", "r4"});
 
   auto& r1 = variables.at("r1");
   assert(r1.kind() == QualifiedType::REF);
@@ -2025,14 +2043,15 @@ static void testAsciiPrim() {
   ErrorGuard guard(context);
 
   auto variables = resolveTypesOfVariables(context,
-    R"""(
+                                           R"""(
       param b = __primitive("ascii", "b");
       param h = __primitive("ascii", "hi", 0);
       param i = __primitive("ascii", "hi", 1);
       param c = __primitive("ascii", b"c");
       param p = __primitive("ascii", b"po", 0);
       param o = __primitive("ascii", b"po", 1);
-    )""", { "b", "h", "i", "c", "p", "o" });
+    )""",
+                                           {"b", "h", "i", "c", "p", "o"});
 
   auto b = variables.at("b");
   ensureParamUint(b, 98);
@@ -2057,7 +2076,7 @@ static void testDotLocale() {
   ErrorGuard guard(context);
 
   auto loc = resolveTypeOfXInit(context,
-    R"""(
+                                R"""(
       var myVar : int;
       var x = myVar.locale;
     )""");
@@ -2075,13 +2094,14 @@ static void testDotBytes() {
   ErrorGuard guard(context);
 
   auto variables = resolveTypesOfVariables(context,
-    R"""(
+                                           R"""(
       var str = "hello";
       var bts = b"hello";
 
       var x = str.bytes();
       var y = bts.bytes();
-    )""", { "x", "y" });
+    )""",
+                                           {"x", "y"});
 
   for (auto& kv : variables) {
     auto& qt = kv.second;
@@ -2089,7 +2109,9 @@ static void testDotBytes() {
     assert(!qt.isUnknownOrErroneous());
     assert(qt.type()->isArrayType());
     assert(qt.type()->toArrayType()->eltType().type()->isUintType());
-    assert(qt.type()->toArrayType()->eltType().type()->toUintType()->bitwidth() == 8);
+    assert(
+      qt.type()->toArrayType()->eltType().type()->toUintType()->bitwidth() ==
+      8);
   }
 }
 
@@ -2100,7 +2122,7 @@ static void testExplicitlyGenericFormal() {
   Context* context = &ctx;
   ErrorGuard guard(context);
   auto qt = resolveTypeOfXInit(context,
-    R"""(
+                               R"""(
       record R {
         type myType = int;
       }
@@ -2124,7 +2146,7 @@ static void testGlobalMultiDecl() {
   ErrorGuard guard(context);
 
   auto xQt = resolveTypeOfXInit(context,
-    R"""(
+                                R"""(
       operator =(ref lhs: int, const rhs: int) {}
       var a, b: int;
       proc foo() do return a;
@@ -2144,7 +2166,7 @@ static void testGenericTypeInInitialSignature() {
   ErrorGuard guard(context);
 
   std::ignore = resolveTypeOfXInit(context,
-    R"""(
+                                   R"""(
       record R { type field; }
 
       proc compilerWarning(param msg: string...) {
@@ -2161,7 +2183,6 @@ static void testGenericTypeInInitialSignature() {
       var x = sig(new R(int), new R(int));
     )""");
 
-
   // No warnings should have been emitted, because the call to 'foo()' during
   // resolving the initial signature should've been skipped.
 }
@@ -2173,7 +2194,7 @@ static void testEarlyReturn() {
   ErrorGuard guard(context);
 
   auto qt = resolveTypeOfXInit(context,
-    R"""(
+                               R"""(
       record R { type field; }
 
       proc compilerError(param msg: string...) {
@@ -2201,7 +2222,7 @@ static void testRuntimeEarlyReturn() {
   ErrorGuard guard(context);
 
   auto qt = resolveTypeOfXInit(context,
-    R"""(
+                               R"""(
       record R { type field; }
 
       proc compilerError(param msg: string...) {
@@ -2231,7 +2252,7 @@ static void testEarlyContinue() {
   ErrorGuard guard(context);
 
   std::ignore = resolveTypeOfXInit(context,
-    R"""(
+                                   R"""(
       for param i in 1..3 {
         if i == 1 then continue;
         if i == 2 then break;
@@ -2257,7 +2278,7 @@ static void testEarlyRuntimeContinue() {
   ErrorGuard guard(context);
 
   std::ignore = resolveTypeOfXInit(context,
-    R"""(
+                                   R"""(
       for i in 1..3 {
         var cond: bool;
         if cond then {
@@ -2278,7 +2299,7 @@ static void testGenericSync() {
   ErrorGuard guard(context);
 
   auto qt = resolveTypeOfXInit(context,
-    R"""(
+                               R"""(
       proc foo (x: sync) do return 3;
       var a : sync int;
       var x = foo(a);
@@ -2293,7 +2314,7 @@ static void testUseOfUninitializedVar() {
   auto context = buildStdContext();
   ErrorGuard guard(context);
   auto qt = resolveTypeOfXInit(context,
-    R"""(
+                               R"""(
        proc foo() {
         var y;
         return y;
@@ -2339,7 +2360,8 @@ static void testAnyPod() {
     auto ctx = buildStdContext();
     ErrorGuard guard(ctx);
 
-    auto fullProg = std::string(base) +
+    auto fullProg =
+      std::string(base) +
       "proc foo(type arg: chpl_anyPOD) param do return true;\n" +
       "pragma \"last resort\" proc foo(type arg) param do return false;\n" +
       "param x = foo(" + std::string(type) + ");\n";
@@ -2349,12 +2371,17 @@ static void testAnyPod() {
   };
 
   const char* podTypes[] = {
-    "bool", "int", "int(8)", "int(16)", "int(32)",
-    "int(64)", "uint", "uint(8)", "uint(16)",
-    "uint(32)", "uint(64)", "real(32)", "real(64)",
-    "complex", "imag",
-    "r2", "r4", "r9",
-    "borrowed c1", "borrowed c1?", "unmanaged c1", "unmanaged c1?",
+    "bool",         "int",
+    "int(8)",       "int(16)",
+    "int(32)",      "int(64)",
+    "uint",         "uint(8)",
+    "uint(16)",     "uint(32)",
+    "uint(64)",     "real(32)",
+    "real(64)",     "complex",
+    "imag",         "r2",
+    "r4",           "r9",
+    "borrowed c1",  "borrowed c1?",
+    "unmanaged c1", "unmanaged c1?",
   };
   for (size_t i = 0; i < sizeof(podTypes) / sizeof(podTypes[0]); i++) {
     runTest(podTypes[i], true);
@@ -2363,12 +2390,22 @@ static void testAnyPod() {
   // skip "integral", because it's a built-in generic type and we don't
   // resolve calls with this type as an actual.
   const char* nonPodTypes[] = {
-    /* "integral", */ "r1", "r3", "r5", "r6", "r7", "r8", "r10",
+    /* "integral", */ "r1",
+    "r3",
+    "r5",
+    "r6",
+    "r7",
+    "r8",
+    "r10",
     // TODO: Currently marked as non-POD even though all the members are
     // marked as POD - this is because 'r9' is technically generic, which
     // causes problems.
     "r11",
-    "c1", "owned c1", "owned c1?", "shared c1", "shared c1?",
+    "c1",
+    "owned c1",
+    "owned c1?",
+    "shared c1",
+    "shared c1?",
   };
   for (size_t i = 0; i < sizeof(nonPodTypes) / sizeof(nonPodTypes[0]); i++) {
     runTest(nonPodTypes[i], false);
@@ -2384,7 +2421,7 @@ static void testTupleFormalWithDefault() {
   auto context = buildStdContext();
   ErrorGuard guard(context);
   auto qt = resolveTypeOfXInit(context,
-    R"""(
+                               R"""(
        proc foo((x, y) = (1, 2)) {
          return x + y;
        }
@@ -2403,7 +2440,7 @@ static void testSkipUnknownInNew() {
   ErrorGuard guard(context);
 
   auto qt = resolveTypeOfXInit(context,
-    R"""(
+                               R"""(
     class C {
       type argT;
     }
@@ -2427,7 +2464,7 @@ static void testTypeProcOnGenericReceiver() {
   ErrorGuard guard(context);
 
   auto qt = resolveTypeOfXInit(context,
-    R"""(
+                               R"""(
     record R {
       type t;
       proc type tt type do return int;
@@ -2458,14 +2495,15 @@ static void testReindexingForErrors() {
   ErrorGuard guard(context);
 
   std::ignore = resolveTypesOfVariables(context,
-    R"""(
+                                        R"""(
     record R {}
     proc int.foo() {}
     proc R.bar() {
       foo();
     }
     (new R()).bar();
-    )""", {});
+    )""",
+                                        {});
   assert(guard.realizeErrors() == 1);
 }
 
@@ -2480,7 +2518,7 @@ static void testReindexingForErrors2() {
   ErrorGuard guard(context);
 
   std::ignore = resolveTypesOfVariables(context,
-    R"""(
+                                        R"""(
     proc int.bar(arg: int) {}
 
     proc foo() {
@@ -2489,7 +2527,8 @@ static void testReindexingForErrors2() {
       10.bar(y);
     }
     var tmp = foo();
-    )""", {});
+    )""",
+                                        {});
   assert(guard.realizeErrors());
 }
 

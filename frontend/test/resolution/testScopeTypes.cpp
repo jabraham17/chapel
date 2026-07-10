@@ -30,11 +30,12 @@ const IdAndFlags::Flags not_parenful = IdAndFlags::NOT_PARENFUL_FUNCTION;
 
 using FlagSet = IdAndFlags::FlagSet;
 
-template <typename ... Args>
-static FlagSet anyOf(Args...args) {
+template <typename... Args> static FlagSet anyOf(Args... args) {
   FlagSet toReturn;
-  auto temp = {(toReturn.addDisjunction(args), 0)...,};
-  (void) temp;
+  auto temp = {
+    (toReturn.addDisjunction(args), 0)...,
+  };
+  (void)temp;
   return toReturn;
 }
 
@@ -73,7 +74,8 @@ static void testMatchFilter() {
   assert(!IdAndFlags::matchFilter(pub | method, 0, publicOrPrivateMethods));
   assert(!IdAndFlags::matchFilter(pub | not_method, 0, publicOrPrivateMethods));
   assert(!IdAndFlags::matchFilter(not_pub | method, 0, publicOrPrivateMethods));
-  assert(IdAndFlags::matchFilter(not_pub | not_method, 0, publicOrPrivateMethods));
+  assert(
+    IdAndFlags::matchFilter(not_pub | not_method, 0, publicOrPrivateMethods));
 
   // Packing should reduce this to just 'pub'.
   auto justPublic = anyOf(pub | method, pub);
@@ -84,14 +86,22 @@ static void testMatchFilter() {
 
   // Try a three-disjunct condition.
   auto allExceptPrivateParenfulMethods = anyOf(pub, not_method, not_parenful);
-  assert(!IdAndFlags::matchFilter(pub | method | parenful, 0, allExceptPrivateParenfulMethods));
-  assert(!IdAndFlags::matchFilter(pub | method | not_parenful, 0, allExceptPrivateParenfulMethods));
-  assert(!IdAndFlags::matchFilter(pub | not_method | parenful, 0, allExceptPrivateParenfulMethods));
-  assert(!IdAndFlags::matchFilter(pub | not_method | not_parenful, 0, allExceptPrivateParenfulMethods));
-  assert(IdAndFlags::matchFilter(not_pub | method | parenful, 0, allExceptPrivateParenfulMethods));
-  assert(!IdAndFlags::matchFilter(not_pub | method | not_parenful, 0, allExceptPrivateParenfulMethods));
-  assert(!IdAndFlags::matchFilter(not_pub | not_method | parenful, 0, allExceptPrivateParenfulMethods));
-  assert(!IdAndFlags::matchFilter(not_pub | not_method | not_parenful, 0, allExceptPrivateParenfulMethods));
+  assert(!IdAndFlags::matchFilter(
+    pub | method | parenful, 0, allExceptPrivateParenfulMethods));
+  assert(!IdAndFlags::matchFilter(
+    pub | method | not_parenful, 0, allExceptPrivateParenfulMethods));
+  assert(!IdAndFlags::matchFilter(
+    pub | not_method | parenful, 0, allExceptPrivateParenfulMethods));
+  assert(!IdAndFlags::matchFilter(
+    pub | not_method | not_parenful, 0, allExceptPrivateParenfulMethods));
+  assert(IdAndFlags::matchFilter(
+    not_pub | method | parenful, 0, allExceptPrivateParenfulMethods));
+  assert(!IdAndFlags::matchFilter(
+    not_pub | method | not_parenful, 0, allExceptPrivateParenfulMethods));
+  assert(!IdAndFlags::matchFilter(
+    not_pub | not_method | parenful, 0, allExceptPrivateParenfulMethods));
+  assert(!IdAndFlags::matchFilter(
+    not_pub | not_method | not_parenful, 0, allExceptPrivateParenfulMethods));
 }
 
 static IdAndFlags makeTestIdAndFlags(ID id, bool isPublic, bool isMethod) {
@@ -120,7 +130,6 @@ static void testBorrowIds() {
   IdAndFlags pubVar = makeTestIdAndFlags(ID::fromString(context, "M.z"),
                                          /* isPublic */ true,
                                          /* isMethod */ false);
-
 
   {
     // check one id with no filtering
@@ -271,7 +280,6 @@ static void testBorrowIds() {
     assert(foundIds.isEmpty());
   }
 }
-
 
 int main() {
   testMatchFilter();

@@ -54,7 +54,8 @@ static void test2() {
   assert(xs.size() == (size_t)n + 1);
 }
 
-static void test3Check(const std::vector<int*>& xs, const std::vector<int*>& expected) {
+static void test3Check(const std::vector<int*>& xs,
+                       const std::vector<int*>& expected) {
   std::vector<int*> acc;
   for (int* i : chpl::uptoNullptrIterator(xs)) {
     acc.push_back(i);

@@ -38,16 +38,18 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-      "/* c1 */\n"
-      "if /* c2 */ foo /* c3 */ then\n"
-      "  /* c4 */\n"
-      "  bar();\n"
-      "  /* c5 */\n"
-      "else\n"
-      "  /* c6 */\n"
-      "  baz();\n"
-      "/* c7 */\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test0.chpl",
+                               "/* c1 */\n"
+                               "if /* c2 */ foo /* c3 */ then\n"
+                               "  /* c4 */\n"
+                               "  bar();\n"
+                               "  /* c5 */\n"
+                               "else\n"
+                               "  /* c6 */\n"
+                               "  baz();\n"
+                               "/* c7 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -76,10 +78,7 @@ static void test0(Parser* parser) {
   // Make sure the then iterator works as expected.
   {
     AstTag thenStmtList[] = {
-      asttags::Comment,
-      asttags::FnCall,
-      asttags::Comment
-    };
+      asttags::Comment, asttags::FnCall, asttags::Comment};
     auto i = 0;
     for (const auto stmt : cond->thenStmts()) {
       assert(stmt->tag() == thenStmtList[i]);
@@ -89,10 +88,7 @@ static void test0(Parser* parser) {
 
   // Make sure the else iterator works as expected.
   {
-    AstTag elseStmtList[] = {
-      asttags::Comment,
-      asttags::FnCall
-    };
+    AstTag elseStmtList[] = {asttags::Comment, asttags::FnCall};
     auto i = 0;
     for (const auto stmt : cond->thenStmts()) {
       assert(stmt->tag() == elseStmtList[i]);
@@ -103,18 +99,19 @@ static void test0(Parser* parser) {
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
-      "/* c1 */\n"
-      "if /* c2 */ foo() /* c3 */ {\n"
-      "  /* c4 */\n"
-      "  bar();\n"
-      "  /* c5 */\n"
-      "} /* c6 */ else /* c7 */ {\n"
-      "  /* c8 */\n"
-      "  baz();\n"
-      "  /* c9 */\n"
-      "}\n"
-      "/* c10 */\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1.chpl",
+                                                "/* c1 */\n"
+                                                "if /* c2 */ foo() /* c3 */ {\n"
+                                                "  /* c4 */\n"
+                                                "  bar();\n"
+                                                "  /* c5 */\n"
+                                                "} /* c6 */ else /* c7 */ {\n"
+                                                "  /* c8 */\n"
+                                                "  baz();\n"
+                                                "  /* c9 */\n"
+                                                "}\n"
+                                                "/* c10 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -174,15 +171,17 @@ static void test1(Parser* parser) {
 
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
-      "/* c1 */\n"
-      "if /* c2 */ foo /* c3 */ then {\n"
-      "  /* c4 */\n"
-      "  bar();\n"
-      "  baz();\n"
-      "  /* c5 */\n"
-      "} /* c6 */ else /* c7 */ ding();\n"
-      "/* c8 */\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test2.chpl",
+                               "/* c1 */\n"
+                               "if /* c2 */ foo /* c3 */ then {\n"
+                               "  /* c4 */\n"
+                               "  bar();\n"
+                               "  baz();\n"
+                               "  /* c5 */\n"
+                               "} /* c6 */ else /* c7 */ ding();\n"
+                               "/* c8 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -210,12 +209,14 @@ static void test2(Parser* parser) {
 
 static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
-      "/* c1 */\n"
-      "if /* c2 */ foo /* c3 */ then\n"
-      "  /* c4 */\n"
-      "  bar();\n"
-      "/* c5 */\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test3.chpl",
+                               "/* c1 */\n"
+                               "if /* c2 */ foo /* c3 */ then\n"
+                               "  /* c4 */\n"
+                               "  bar();\n"
+                               "/* c5 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -238,10 +239,7 @@ static void test3(Parser* parser) {
 
   // Make sure the then iterator works as expected.
   {
-    AstTag thenStmtList[] = {
-      asttags::Comment,
-      asttags::FnCall
-    };
+    AstTag thenStmtList[] = {asttags::Comment, asttags::FnCall};
     auto i = 0;
     for (const auto stmt : cond->thenStmts()) {
       assert(stmt->tag() == thenStmtList[i]);
@@ -252,11 +250,12 @@ static void test3(Parser* parser) {
 
 static void test4(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
-      "/* c1 */\n"
-      "if foo += bar() then\n"
-      "  baz();\n"
-      "/* c2 */\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test4.chpl",
+                                                "/* c1 */\n"
+                                                "if foo += bar() then\n"
+                                                "  baz();\n"
+                                                "/* c2 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -279,11 +278,12 @@ static void test4(Parser* parser) {
 
 static void test5(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
-      "/* c1 */\n"
-      "if var foo = bar() then\n"
-      "  baz();\n"
-      "/* c2 */\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test5.chpl",
+                                                "/* c1 */\n"
+                                                "if var foo = bar() then\n"
+                                                "  baz();\n"
+                                                "/* c2 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);

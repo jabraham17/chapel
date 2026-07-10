@@ -26,8 +26,7 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-                                         "x;\n");
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl", "x;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -41,10 +40,11 @@ static void test0(Parser* parser) {
 
 static void test0a(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-                                         "/* comment1 */\n"
-                                         "x;\n"
-                                         "/* comment2 */\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test0.chpl",
+                                                "/* comment1 */\n"
+                                                "x;\n"
+                                                "/* comment2 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -58,9 +58,10 @@ static void test0a(Parser* parser) {
 
 static void test0b(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-                                         "/* comment1 */\n"
-                                         "/* comment2 */\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test0.chpl",
+                                                "/* comment1 */\n"
+                                                "/* comment2 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -71,12 +72,10 @@ static void test0b(Parser* parser) {
   assert(mod->stmt(1)->isComment());
 }
 
-
-
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
-                                         "module M { x; }\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test1.chpl", "module M { x; }\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -90,14 +89,15 @@ static void test1(Parser* parser) {
 
 static void test1a(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1a.chpl",
-                                         "/* comment 1 */\n"
-                                         "module M {\n"
-                                         "  /* comment 2 */\n"
-                                         "  x;\n"
-                                         "  /* comment 3 */\n"
-                                         "}\n"
-                                         "/* comment 4 */");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1a.chpl",
+                                                "/* comment 1 */\n"
+                                                "module M {\n"
+                                                "  /* comment 2 */\n"
+                                                "  x;\n"
+                                                "  /* comment 3 */\n"
+                                                "}\n"
+                                                "/* comment 4 */");
   assert(!guard.realizeErrors());
   assert(parseResult.numTopLevelExpressions() == 3);
   assert(parseResult.topLevelExpression(0)->isComment());
@@ -114,9 +114,10 @@ static void test1a(Parser* parser) {
 
 static void test1b(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1b.chpl",
-                                         "module M {\n"
-                                         "}\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1b.chpl",
+                                                "module M {\n"
+                                                "}\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -127,13 +128,14 @@ static void test1b(Parser* parser) {
 
 static void test1c(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1c.chpl",
-                                         "/* comment 1 */\n"
-                                         "module M {\n"
-                                         "  /* comment 2 */\n"
-                                         "  /* comment 3 */\n"
-                                         "}\n"
-                                         "/* comment 4 */");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1c.chpl",
+                                                "/* comment 1 */\n"
+                                                "module M {\n"
+                                                "  /* comment 2 */\n"
+                                                "  /* comment 3 */\n"
+                                                "}\n"
+                                                "/* comment 4 */");
   assert(!guard.realizeErrors());
   assert(parseResult.numTopLevelExpressions() == 3);
   assert(parseResult.topLevelExpression(0)->isComment());
@@ -149,9 +151,10 @@ static void test1c(Parser* parser) {
 
 static void test1d(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1d.chpl",
-                                         "module /* comment */ M {\n"
-                                         "}\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1d.chpl",
+                                                "module /* comment */ M {\n"
+                                                "}\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -162,9 +165,11 @@ static void test1d(Parser* parser) {
 
 static void test1e(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1d.chpl",
-                                         "prototype /* comment */ module M {\n"
-                                         "}\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test1d.chpl",
+                               "prototype /* comment */ module M {\n"
+                               "}\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -175,9 +180,11 @@ static void test1e(Parser* parser) {
 
 static void test1f(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1f.chpl",
-                                         "public /* comment */ module M {\n"
-                                         "}\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test1f.chpl",
+                               "public /* comment */ module M {\n"
+                               "}\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -186,12 +193,12 @@ static void test1f(Parser* parser) {
   assert(mod->numStmts() == 0);
 }
 
-
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
-                                         "module M { x; }\n"
-                                         "module N { y; }\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test2.chpl",
+                                                "module M { x; }\n"
+                                                "module N { y; }\n");
   assert(!guard.realizeErrors());
   assert(parseResult.numTopLevelExpressions() == 2);
   assert(parseResult.topLevelExpression(0)->isModule());
@@ -218,25 +225,26 @@ static void test2(Parser* parser) {
 
 static void test2a(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test2a.chpl",
-                                         "/* comment 1 */\n"
-                                         "module M {\n"
-                                         "  /* comment 2 */\n"
-                                         "  x;\n"
-                                         "  /* comment 3 */\n"
-                                         "}\n"
-                                         "/* comment 4 */\n"
-                                         "module N {\n"
-                                         "  /* comment 5 */\n"
-                                         "  /* comment 6 */\n"
-                                         "  y;\n"
-                                         "  /* comment 7 */\n"
-                                         "  /* comment 8 */\n"
-                                         "  z;\n"
-                                         "  /* comment 9 */\n"
-                                         "  /* comment 10 */\n"
-                                         "}\n"
-                                         "/* comment 11 */\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test2a.chpl",
+                                                "/* comment 1 */\n"
+                                                "module M {\n"
+                                                "  /* comment 2 */\n"
+                                                "  x;\n"
+                                                "  /* comment 3 */\n"
+                                                "}\n"
+                                                "/* comment 4 */\n"
+                                                "module N {\n"
+                                                "  /* comment 5 */\n"
+                                                "  /* comment 6 */\n"
+                                                "  y;\n"
+                                                "  /* comment 7 */\n"
+                                                "  /* comment 8 */\n"
+                                                "  z;\n"
+                                                "  /* comment 9 */\n"
+                                                "  /* comment 10 */\n"
+                                                "}\n"
+                                                "/* comment 11 */\n");
   assert(!guard.realizeErrors());
   assert(parseResult.numTopLevelExpressions() == 5);
   assert(parseResult.topLevelExpression(0)->isComment());
@@ -271,10 +279,11 @@ static void test2a(Parser* parser) {
 
 static void test2b(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test2b.chpl",
-                                         "/* comment */\n"
-                                         "module M { x; }\n"
-                                         "module N { y; }\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test2b.chpl",
+                                                "/* comment */\n"
+                                                "module M { x; }\n"
+                                                "module N { y; }\n");
   assert(!guard.realizeErrors());
   assert(parseResult.numTopLevelExpressions() == 3);
   assert(parseResult.topLevelExpression(0)->isComment());
@@ -284,10 +293,11 @@ static void test2b(Parser* parser) {
 
 static void test2c(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test2c.chpl",
-                                         "module M { x; }\n"
-                                         "/* comment */\n"
-                                         "module N { y; }\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test2c.chpl",
+                                                "module M { x; }\n"
+                                                "/* comment */\n"
+                                                "module N { y; }\n");
   assert(!guard.realizeErrors());
   assert(parseResult.numTopLevelExpressions() == 3);
   assert(parseResult.topLevelExpression(0)->isModule());
@@ -297,10 +307,11 @@ static void test2c(Parser* parser) {
 
 static void test2d(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test2d.chpl",
-                                         "module M { x; }\n"
-                                         "module N { y; }\n"
-                                         "/* comment */\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test2d.chpl",
+                                                "module M { x; }\n"
+                                                "module N { y; }\n"
+                                                "/* comment */\n");
   assert(!guard.realizeErrors());
   assert(parseResult.numTopLevelExpressions() == 3);
   assert(parseResult.topLevelExpression(0)->isModule());

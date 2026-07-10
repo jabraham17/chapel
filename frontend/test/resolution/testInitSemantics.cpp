@@ -139,7 +139,8 @@ static void testInitReturnEarly(void) {
 
   // Check the first error to see if it lines up.
   auto& msg = guard.errors()[0];
-  assert(msg->message() == "cannot return from initializer before initialization is complete");
+  assert(msg->message() ==
+         "cannot return from initializer before initialization is complete");
   assert(msg->location(context).firstLine() == 7);
   assert(guard.realizeErrors());
 }
@@ -214,21 +215,26 @@ static void testInitTryBang(void) {
 
   // Check the first error to see if it lines up.
   auto& msg = guard.errors()[0];
-  assert(msg->message() == "Only catch-less try! statements are allowed in initializers for now");
+  assert(msg->message() ==
+         "Only catch-less try! statements are allowed in initializers for now");
   assert(msg->location(context).firstLine() == 8);
   assert(guard.realizeErrors());
 }
 
 static void testInitInsideLoops(void) {
   std::vector<std::string> inits = {"for i in 1..10 do",
-    "forall i in 1..10 do", "coforall i in 1..10 do", "while true do",
-    "[i in 1..10]", "foreach i in 1..10 do"};
+                                    "forall i in 1..10 do",
+                                    "coforall i in 1..10 do",
+                                    "while true do",
+                                    "[i in 1..10]",
+                                    "foreach i in 1..10 do"};
   for (auto& s : inits) {
     s += " this.x = 5;\n";
   }
   inits.push_back("do { this.x = 5; } while true;\n");
 
-  std::vector<std::string> messages(inits.size(), "cannot initialize fields inside of loops");
+  std::vector<std::string> messages(inits.size(),
+                                    "cannot initialize fields inside of loops");
 
   inits.push_back("begin this.x = 5;");
   messages.push_back("cannot initialize fields inside begin statements");
@@ -499,7 +505,8 @@ static void testInitCondGenericDiff(void) {
 
   // Check the first error to see if it lines up.
   auto& msg = guard.errors()[0];
-  assert(msg->message() == "Initializer must compute the same type in each branch");
+  assert(msg->message() ==
+         "Initializer must compute the same type in each branch");
   assert(msg->location(context).firstLine() == 6);
   assert(guard.realizeErrors());
 }
@@ -720,9 +727,10 @@ static void testOwnedUserInit(void) {
 
 // Replaces a placeholder with possible values to help test more programs.
 // If multuple placeholders are present, tests all combinations.
-static std::vector<std::string> getVersionsWithTypes(const std::string& prog,
-                                                     const std::string& placeholder,
-                                                     const std::vector<std::string> types) {
+static std::vector<std::string>
+getVersionsWithTypes(const std::string& prog,
+                     const std::string& placeholder,
+                     const std::vector<std::string> types) {
   std::vector<std::vector<std::string>> variants;
 
   std::vector<size_t> occurrences;
@@ -733,7 +741,7 @@ static std::vector<std::string> getVersionsWithTypes(const std::string& prog,
   }
 
   std::reverse(occurrences.begin(), occurrences.end());
-  std::vector<std::string> programs = { prog };
+  std::vector<std::string> programs = {prog};
   std::vector<std::string> programsNext;
 
   for (auto occurrence : occurrences) {
@@ -753,11 +761,12 @@ static std::vector<std::string> getVersionsWithTypes(const std::string& prog,
 static std::vector<std::string> getAllVersions(const std::string& prog) {
   // Note, const checker currently balks at non-'this' calls to 'init'.
   std::vector<std::string> initProgs =
-    getVersionsWithTypes(prog, "INIT", { "this.init", "init" });
+    getVersionsWithTypes(prog, "INIT", {"this.init", "init"});
 
   std::vector<std::string> allProgs;
   for (auto initProg : initProgs) {
-    auto versions = getVersionsWithTypes(initProg, "AGGREGATE", { "record", "class" });
+    auto versions =
+      getVersionsWithTypes(initProg, "AGGREGATE", {"record", "class"});
     allProgs.insert(allProgs.end(), versions.begin(), versions.end());
   }
 
@@ -766,7 +775,7 @@ static std::vector<std::string> getAllVersions(const std::string& prog) {
 
 static void testInitFromInit(void) {
   std::string prog =
-      R"""(
+    R"""(
       AGGREGATE pair {
         type fst;
         type snd;
@@ -795,7 +804,8 @@ static void testInitFromInit(void) {
     assert(recType->name() == "pair");
 
     auto rc = createDummyRC(context);
-    auto fields = fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+    auto fields =
+      fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
 
     assert(fields.fieldName(0) == "fst");
     assert(fields.fieldName(1) == "snd");
@@ -821,7 +831,7 @@ static void testInitFromInit(void) {
 static void testInitInParamBranchFromInit(void) {
   // test calling 'this.init' from another initializer.
   std::string prog =
-      R"""(
+    R"""(
       AGGREGATE pair {
         type fst;
         type snd;
@@ -845,13 +855,11 @@ static void testInitInParamBranchFromInit(void) {
       var y = new pair(false);
       )""";
 
-
   for (auto version : getAllVersions(prog)) {
     auto context = buildStdContext();
     ErrorGuard guard(context);
 
     auto qts = resolveTypesOfVariables(context, version, {"x", "y"});
-
 
     {
       auto qt = qts.at("x");
@@ -861,7 +869,8 @@ static void testInitInParamBranchFromInit(void) {
       assert(recType->name() == "pair");
 
       auto rc = createDummyRC(context);
-      auto fields = fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+      auto fields =
+        fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
 
       assert(fields.fieldName(0) == "fst");
       assert(fields.fieldName(1) == "snd");
@@ -890,7 +899,8 @@ static void testInitInParamBranchFromInit(void) {
       assert(recType->name() == "pair");
 
       auto rc = createDummyRC(context);
-      auto fields = fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+      auto fields =
+        fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
 
       assert(fields.fieldName(0) == "fst");
       assert(fields.fieldName(1) == "snd");
@@ -907,7 +917,7 @@ static void testInitInParamBranchFromInit(void) {
 
 static void testInitInBranchFromInit(void) {
   std::string prog =
-      R"""(
+    R"""(
       AGGREGATE pair {
         type fst;
         type snd;
@@ -938,7 +948,6 @@ static void testInitInBranchFromInit(void) {
 
     auto qts = resolveTypesOfVariables(context, version, {"x", "y"});
 
-
     {
       auto qt = qts.at("x");
       assert(qt.type());
@@ -947,7 +956,8 @@ static void testInitInBranchFromInit(void) {
       assert(recType->name() == "pair");
 
       auto rc = createDummyRC(context);
-      auto fields = fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+      auto fields =
+        fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
 
       assert(fields.fieldName(0) == "fst");
       assert(fields.fieldName(1) == "snd");
@@ -976,7 +986,8 @@ static void testInitInBranchFromInit(void) {
       assert(recType->name() == "pair");
 
       auto rc = createDummyRC(context);
-      auto fields = fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+      auto fields =
+        fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
 
       assert(fields.fieldName(0) == "fst");
       assert(fields.fieldName(1) == "snd");
@@ -1002,7 +1013,7 @@ static void testInitInBranchFromInit(void) {
 
 static void testBadInitInBranchFromInit(void) {
   std::string prog =
-      R"""(
+    R"""(
       AGGREGATE pair {
         type fst;
         type snd;
@@ -1039,7 +1050,7 @@ static void testBadInitInBranchFromInit(void) {
 
 static void testAssignThenInit(void) {
   std::string prog =
-      R"""(
+    R"""(
       AGGREGATE pair {
         type fst;
         type snd;
@@ -1064,7 +1075,6 @@ static void testAssignThenInit(void) {
     ErrorGuard guard(context);
 
     std::ignore = resolveTypeOfXInit(context, version);
-
 
     // Can't initialize 'fst' then call initializer. Due to
     //
@@ -1128,7 +1138,8 @@ static void testInitEqOther(void) {
   xt.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
   assert(ss.str() == "R(int(64))");
 
-  ss.str(""); ss.clear();
+  ss.str("");
+  ss.clear();
 
   auto yt = results["y"];
   assert(yt.type()->isRecordType());
@@ -1411,8 +1422,9 @@ static void testInheritance() {
 
     assert(guard.numErrors() == 3);
 
-    auto check = [&context] (const owned<ErrorBase>& err, std::string pid) {
-      auto msg = R"""(Cannot access parent field "x" before super.init() or this.init())""";
+    auto check = [&context](const owned<ErrorBase>& err, std::string pid) {
+      auto msg =
+        R"""(Cannot access parent field "x" before super.init() or this.init())""";
       assert(err->message() == msg);
       assert(err->toErrorMessage(context).id().str() == pid);
     };
@@ -1583,7 +1595,7 @@ static void testInheritance() {
     auto b1 = vars["b1"].type();
     auto b2 = vars["b2"].type();
 
-    auto check = [] (const Type* type) {
+    auto check = [](const Type* type) {
       std::stringstream ss;
       type->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
       assert(ss.str() == "owned B");
@@ -1625,7 +1637,7 @@ static void testInheritance() {
     auto z2 = vars["z2"].type();
     auto z3 = vars["z3"].type();
 
-    auto check = [] (const Type* type) {
+    auto check = [](const Type* type) {
       std::stringstream ss;
       type->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
       assert(ss.str() == "owned Z");
@@ -1702,7 +1714,7 @@ static void testImplicitSuperInit() {
 
     auto vars = resolveTypesOfVariables(context, program, {"x", "y"});
 
-    auto check = [] (QualifiedType qt) {
+    auto check = [](QualifiedType qt) {
       auto t = qt.type();
       assert(t);
       assert(t->isClassType());
@@ -1801,7 +1813,7 @@ static void testInitGenericAfterConcrete() {
 
     assert(guard.errors().size() == 2);
     assert(guard.error(0)->message() ==
-        "cannot default initialize variable using generic or unknown type");
+           "cannot default initialize variable using generic or unknown type");
     assert(guard.error(1)->message() ==
            "unable to instantiate generic type from initializer");
     assert(guard.realizeErrors());
@@ -2050,7 +2062,7 @@ static void testDefaultArgs() {
 
 static void testInitInstantiation(void) {
   std::string prog =
-      R"""(
+    R"""(
       AGGREGATE pair {
         type fst;
         type snd;
@@ -2139,12 +2151,14 @@ static void testInitInstantiationInherit() {
   assert(recType->name() == "B");
 
   auto rc = createDummyRC(context);
-  auto childFields = fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+  auto childFields =
+    fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
   assert(childFields.fieldName(0) == "TB");
   assert(childFields.fieldType(0).type()->isIntType());
 
   auto parent = recType->toBasicClassType()->parentClassType();
-  auto parentFields = fieldsForTypeDecl(&rc, parent, DefaultsPolicy::IGNORE_DEFAULTS);
+  auto parentFields =
+    fieldsForTypeDecl(&rc, parent, DefaultsPolicy::IGNORE_DEFAULTS);
   assert(parentFields.fieldName(0) == "TA");
   assert(parentFields.fieldType(0).type()->isRealType());
 }
@@ -2181,12 +2195,14 @@ static void testInitInstantiationInheritWrong() {
   assert(recType->name() == "B");
 
   auto rc = createDummyRC(context);
-  auto childFields = fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
+  auto childFields =
+    fieldsForTypeDecl(&rc, recType, DefaultsPolicy::IGNORE_DEFAULTS);
   assert(childFields.fieldName(0) == "TB");
   assert(childFields.fieldType(0).type()->isRealType());
 
   auto parent = recType->toBasicClassType()->parentClassType();
-  auto parentFields = fieldsForTypeDecl(&rc, parent, DefaultsPolicy::IGNORE_DEFAULTS);
+  auto parentFields =
+    fieldsForTypeDecl(&rc, parent, DefaultsPolicy::IGNORE_DEFAULTS);
   assert(parentFields.fieldName(0) == "TA");
   assert(parentFields.fieldType(0).type()->isRealType());
 
@@ -2340,17 +2356,20 @@ static void testPartialTypeInitEq() {
 
   auto r1Type = vars["r1"].type();
   assert(r1Type && r1Type->isRecordType());
-  ensureSubs(context, r1Type->toCompositeType(), {
-    {"T", QualifiedType(QualifiedType::TYPE, RecordType::getStringType(context))},
-    {"p", QualifiedType::makeParamString(context, "hi")}
-  });
+  ensureSubs(
+    context,
+    r1Type->toCompositeType(),
+    {{"T",
+      QualifiedType(QualifiedType::TYPE, RecordType::getStringType(context))},
+     {"p", QualifiedType::makeParamString(context, "hi")}});
 
   auto r2Type = vars["r2"].type();
   assert(r2Type && r2Type->isRecordType());
-  ensureSubs(context, r2Type->toCompositeType(), {
-    {"T", QualifiedType(QualifiedType::TYPE, IntType::get(context, 64))},
-    {"p", QualifiedType::makeParamInt(context, 1234)}
-  });
+  ensureSubs(
+    context,
+    r2Type->toCompositeType(),
+    {{"T", QualifiedType(QualifiedType::TYPE, IntType::get(context, 64))},
+     {"p", QualifiedType::makeParamInt(context, 1234)}});
 }
 
 // In types whose later fields invoke type constructor functions in
@@ -2358,27 +2377,28 @@ static void testPartialTypeInitEq() {
 // constructors until we're ready (ie, until we have a substitution).
 static void testPartialTypeConstructor() {
   bool useArray = false;
-  auto helpRunTest = [&useArray](const char* fields, const char* args, bool expectErrors) {
-    const char* nonGenericFn;
-    if (!useArray) {
-      nonGenericFn =
-        R"""(
+  auto helpRunTest =
+    [&useArray](const char* fields, const char* args, bool expectErrors) {
+      const char* nonGenericFn;
+      if (!useArray) {
+        nonGenericFn =
+          R"""(
         proc typeConstructorFnNoGenerics(type t) type {
           if __primitive("is generic type", t) then compilerError("cannot invoke with generic type");
           return t;
         }
         )""";
-    } else {
-      nonGenericFn =
-        R"""(
+      } else {
+        nonGenericFn =
+          R"""(
         proc typeConstructorFnNoGenerics(type t) type {
           return [1..10] t;
         }
         )""";
-    }
+      }
 
-    auto program = std::string("") +
-      R"""(
+      auto program = std::string("") +
+                     R"""(
       record typeConstructor { type wrapping; }
       record typeConstructor2 { type wrapping1; type wrapping2; }
 
@@ -2389,31 +2409,33 @@ static void testPartialTypeConstructor() {
         __primitive("error");
       }
       )""" + nonGenericFn +
-      "record R {" + fields + "}\n" +
-      "var x = new R(" + args + ");\n";
+                     "record R {" + fields + "}\n" + "var x = new R(" + args +
+                     ");\n";
 
-    auto context = buildStdContext();
-    ErrorGuard guard(context);
+      auto context = buildStdContext();
+      ErrorGuard guard(context);
 
-    auto xQt = resolveTypeOfXInit(context, program, /* requireTypeKnown */ !expectErrors);
+      auto xQt = resolveTypeOfXInit(
+        context, program, /* requireTypeKnown */ !expectErrors);
 
-    if (!expectErrors) {
-      assert(xQt.type()->isRecordType());
-      auto rt = xQt.type()->toRecordType();
-      assert(rt->name() == "R");
-    } else {
-      assert(guard.numErrors() > 0);
-      bool foundError = false;
-      for (auto& error : guard.errors()) {
-        if (error->message() == (useArray ? "array element type cannot currently be generic"
-                                          : "cannot invoke with generic type")) {
-          foundError = true;
+      if (!expectErrors) {
+        assert(xQt.type()->isRecordType());
+        auto rt = xQt.type()->toRecordType();
+        assert(rt->name() == "R");
+      } else {
+        assert(guard.numErrors() > 0);
+        bool foundError = false;
+        for (auto& error : guard.errors()) {
+          if (error->message() ==
+              (useArray ? "array element type cannot currently be generic"
+                        : "cannot invoke with generic type")) {
+            foundError = true;
+          }
         }
+        assert(foundError);
+        guard.realizeErrors();
       }
-      assert(foundError);
-      guard.realizeErrors();
-    }
-  };
+    };
 
   for (auto arr : {false, true}) {
     useArray = arr;
@@ -2432,7 +2454,8 @@ static void testPartialTypeConstructor() {
     // avoid resolving until we have a substitution for 't'.
     {
       printf("case 2\n");
-      auto fields = "type t; var A: typeConstructorFnNoGenerics(typeConstructor(t));";
+      auto fields =
+        "type t; var A: typeConstructorFnNoGenerics(typeConstructor(t));";
       helpRunTest(fields, "int", false);
       helpRunTest(fields, "numeric", true);
     }
@@ -2441,7 +2464,8 @@ static void testPartialTypeConstructor() {
     // of a real type constructor.
     {
       printf("case 3\n");
-      auto fields = "type t; var A: typeConstructorFnNoGenerics(typeConstructorFn(t));";
+      auto fields =
+        "type t; var A: typeConstructorFnNoGenerics(typeConstructorFn(t));";
       helpRunTest(fields, "int", false);
       helpRunTest(fields, "numeric", true);
     }
@@ -2461,7 +2485,8 @@ static void testPartialTypeConstructor() {
     // avoid resolving until we have a substitution for 't'.
     {
       printf("case 5\n");
-      auto fields = "type t1; type t2; var A: typeConstructorFnNoGenerics(typeConstructor2(t1, t2));";
+      auto fields = "type t1; type t2; var A: "
+                    "typeConstructorFnNoGenerics(typeConstructor2(t1, t2));";
       helpRunTest(fields, "int, int", false);
       helpRunTest(fields, "numeric, int", true);
       helpRunTest(fields, "int, numeric", true);
@@ -2472,7 +2497,8 @@ static void testPartialTypeConstructor() {
     // of a real type constructor.
     {
       printf("case 6\n");
-      auto fields = "type t1; type t2; var A: typeConstructorFnNoGenerics(typeConstructorFn2(t1, t2));";
+      auto fields = "type t1; type t2; var A: "
+                    "typeConstructorFnNoGenerics(typeConstructorFn2(t1, t2));";
       helpRunTest(fields, "int, int", false);
       helpRunTest(fields, "numeric, int", true);
       helpRunTest(fields, "int, numeric", true);
@@ -2482,7 +2508,8 @@ static void testPartialTypeConstructor() {
     // same as case 2, but with tuples, which used to behave differently.
     {
       printf("case 7\n");
-      auto fields = "type t1; type t2; var A: typeConstructorFnNoGenerics((t1,t2));";
+      auto fields =
+        "type t1; type t2; var A: typeConstructorFnNoGenerics((t1,t2));";
       helpRunTest(fields, "int, int", false);
       helpRunTest(fields, "numeric, int", true);
       helpRunTest(fields, "int, numeric", true);
@@ -2510,11 +2537,11 @@ static void testInitWithGenericMultiDeclExplicit() {
   auto rType = vars.at("r").type();
   assert(rType && rType->isRecordType());
 
-  ensureSubs(ctx, rType->toCompositeType(), {
-    {"x", QualifiedType(QualifiedType::VAR, IntType::get(ctx, 64))},
-    {"y", QualifiedType(QualifiedType::VAR, RealType::get(ctx, 64))},
-    {"z", QualifiedType(QualifiedType::VAR, BoolType::get(ctx))}
-  });
+  ensureSubs(ctx,
+             rType->toCompositeType(),
+             {{"x", QualifiedType(QualifiedType::VAR, IntType::get(ctx, 64))},
+              {"y", QualifiedType(QualifiedType::VAR, RealType::get(ctx, 64))},
+              {"z", QualifiedType(QualifiedType::VAR, BoolType::get(ctx))}});
 }
 
 static void testInitWithGenericMultiDeclDefault() {
@@ -2531,11 +2558,11 @@ static void testInitWithGenericMultiDeclDefault() {
   auto rType = vars.at("r").type();
   assert(rType && rType->isRecordType());
 
-  ensureSubs(ctx, rType->toCompositeType(), {
-    {"x", QualifiedType(QualifiedType::VAR, IntType::get(ctx, 64))},
-    {"y", QualifiedType(QualifiedType::VAR, RealType::get(ctx, 64))},
-    {"z", QualifiedType(QualifiedType::VAR, BoolType::get(ctx))}
-  });
+  ensureSubs(ctx,
+             rType->toCompositeType(),
+             {{"x", QualifiedType(QualifiedType::VAR, IntType::get(ctx, 64))},
+              {"y", QualifiedType(QualifiedType::VAR, RealType::get(ctx, 64))},
+              {"z", QualifiedType(QualifiedType::VAR, BoolType::get(ctx))}});
 }
 
 // If a call to 'super.init' was skipepd, we shouldn't segfault.
@@ -2656,4 +2683,3 @@ int main() {
 
   return 0;
 }
-

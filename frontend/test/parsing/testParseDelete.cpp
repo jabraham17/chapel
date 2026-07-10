@@ -29,10 +29,12 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-      "/* comment 1 */\n"
-      "delete foo, /* comment 2 */ bar, /* comment 3*/ baz;\n"
-      "/* comment 4 */\n");
+  auto parseResult = parseStringAndReportErrors(
+    parser,
+    "test0.chpl",
+    "/* comment 1 */\n"
+    "delete foo, /* comment 2 */ bar, /* comment 3*/ baz;\n"
+    "/* comment 4 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);

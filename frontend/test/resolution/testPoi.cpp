@@ -165,7 +165,6 @@ static void test2a() {
     }
   )"""";
 
-
   setFileText(context, path, contents);
 
   const ModuleVec& vec = parseToplevel(context, path);
@@ -237,7 +236,6 @@ static void test2() {
       }
     }
   )"""";
-
 
   setFileText(context, path, contents);
 
@@ -409,7 +407,6 @@ static void test3() {
     }
   )"""";
 
-
   setFileText(context, path, contents);
 
   const ModuleVec& vec = parseToplevel(context, path);
@@ -492,8 +489,8 @@ static void test3() {
   const ResolvedFunction* rMCallGF =
     resolveOnlyCandidate(context, rMCallFunc->byAst(mCallFuncGCall));
   assert(rMCallGF);
-  const ResolvedFunction* rMGenericCallGF =
-    resolveOnlyCandidate(context, rMGenericCallFunc->byAst(mGenericCallFuncGCall));
+  const ResolvedFunction* rMGenericCallGF = resolveOnlyCandidate(
+    context, rMGenericCallFunc->byAst(mGenericCallFuncGCall));
   assert(rMGenericCallGF);
 
   // now within each one of those, check the
@@ -907,7 +904,6 @@ static void test9() {
     ctx2();
     )""";
 
-
   // just resolve the program, no intermediate variable info needed.
   std::ignore = resolveTypesOfVariables(context, contents, {});
 
@@ -963,7 +959,6 @@ static void test9b() {
     ctx1();
     ctx2();
     )""";
-
 
   // just resolve the program, no intermediate variable info needed.
   std::ignore = resolveTypesOfVariables(context, contents, {});
@@ -1029,7 +1024,6 @@ static void test10() {
 
   assert(vars.at("tmp").type()->isStringType());
 }
-
 
 int main() {
   test1();

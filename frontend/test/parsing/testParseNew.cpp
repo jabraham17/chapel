@@ -34,9 +34,10 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-      "/* comment 1 */\n"
-      "x = new r();\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test0.chpl",
+                                                "/* comment 1 */\n"
+                                                "x = new r();\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -57,9 +58,10 @@ static void test0(Parser* parser) {
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
-      "/* comment 1 */\n"
-      "x = new r(a=b, c);\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1.chpl",
+                                                "/* comment 1 */\n"
+                                                "x = new r(a=b, c);\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -82,9 +84,10 @@ static void test1(Parser* parser) {
 
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
-      "/* comment 1 */\n"
-      "x = new owned C(a=b, c);\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test2.chpl",
+                                                "/* comment 1 */\n"
+                                                "x = new owned C(a=b, c);\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -107,9 +110,10 @@ static void test2(Parser* parser) {
 
 static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
-      "/* comment 1 */\n"
-      "x = new shared C(a=b, c);\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test3.chpl",
+                                                "/* comment 1 */\n"
+                                                "x = new shared C(a=b, c);\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -132,9 +136,11 @@ static void test3(Parser* parser) {
 
 static void test4(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
-      "/* comment 1 */\n"
-      "x = new borrowed C(a=b, c);\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test4.chpl",
+                               "/* comment 1 */\n"
+                               "x = new borrowed C(a=b, c);\n");
   assert(guard.realizeErrors() == 1);
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -157,9 +163,11 @@ static void test4(Parser* parser) {
 
 static void test5(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
-      "/* comment 1 */\n"
-      "x = new unmanaged C(a=b, c);\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test5.chpl",
+                               "/* comment 1 */\n"
+                               "x = new unmanaged C(a=b, c);\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);

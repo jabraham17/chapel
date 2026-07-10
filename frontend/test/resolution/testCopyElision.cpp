@@ -35,8 +35,8 @@
 static void testCopyElision(const char* test,
                             std::string program,
                             std::vector<std::string> expectedPoints,
-                            bool testModule=false,
-                            bool expectErrors=false) {
+                            bool testModule = false,
+                            bool expectErrors = false) {
   printf("%s\n", test);
 
   //Context ctx;
@@ -58,7 +58,7 @@ static void testCopyElision(const char* test,
   assert(M);
   assert(M->numStmts() >= 1);
 
-  const Function* func = M->stmt(M->numStmts()-1)->toFunction();
+  const Function* func = M->stmt(M->numStmts() - 1)->toFunction();
 
   if (func) {
     func->dump();
@@ -77,7 +77,8 @@ static void testCopyElision(const char* test,
 
     splitIds = computeSplitInits(context, func, r->resolutionById());
 
-    elisionPoints = computeElidedCopies(context, func,
+    elisionPoints = computeElidedCopies(context,
+                                        func,
                                         r->resolutionById(),
                                         /* poiScope */ nullptr,
                                         splitIds,
@@ -89,12 +90,13 @@ static void testCopyElision(const char* test,
 
     splitIds = computeSplitInits(context, M, rr);
 
-    elisionPoints = computeElidedCopies(context, M,
-                                        rr,
-                                        /* poiScope */ nullptr,
-                                        splitIds,
-                                        QualifiedType(QualifiedType::VAR,
-                                                      VoidType::get(context)));
+    elisionPoints = computeElidedCopies(
+      context,
+      M,
+      rr,
+      /* poiScope */ nullptr,
+      splitIds,
+      QualifiedType(QualifiedType::VAR, VoidType::get(context)));
   }
 
   std::set<std::string> pointNames;
@@ -110,8 +112,7 @@ static void testCopyElision(const char* test,
   // check that each thing in expectNames is in splitNames
   for (auto expectName : expectNames) {
     if (pointNames.count(expectName) == 0) {
-      printf("%s: missing expected point for '%s'\n",
-             test, expectName.c_str());
+      printf("%s: missing expected point for '%s'\n", test, expectName.c_str());
     }
   }
 
@@ -134,42 +135,41 @@ static void testCopyElision(const char* test,
 
 static void test1() {
   testCopyElision("test1",
-    R""""(
+                  R""""(
 
         proc test() {
           var x:int = 0;
         }
     )"""",
-    {});
+                  {});
 }
 
 static void test2() {
   testCopyElision("test2",
-    R""""(
+                  R""""(
 
         proc test() {
           var x;
           x = 1;
         }
     )"""",
-    {});
+                  {});
 }
 
 static void test3() {
   testCopyElision("test3",
-    R""""(
+                  R""""(
         proc test() {
           var x:int;
           var y = x;
         }
     )"""",
-    {"M.test@3"});
+                  {"M.test@3"});
 }
-
 
 static void test4() {
   testCopyElision("test4",
-    R""""(
+                  R""""(
 
         proc test() {
           var x:int;
@@ -177,12 +177,12 @@ static void test4() {
           x;
         }
     )"""",
-    {});
+                  {});
 }
 
 static void test5() {
   testCopyElision("test5a",
-    R""""(
+                  R""""(
         proc test(cond: bool) {
           var x:int;
           var z = x;
@@ -193,10 +193,10 @@ static void test5() {
           x;
         }
     )"""",
-    {"M.test@8"}); // ID of 'var y'
+                  {"M.test@8"}); // ID of 'var y'
 
   testCopyElision("test5b",
-    R""""(
+                  R""""(
         proc test(cond: bool) {
           var x:int;
           var z = x;
@@ -207,10 +207,10 @@ static void test5() {
           }
         }
     )"""",
-    {"M.test@8"}); // ID of 'var y'
+                  {"M.test@8"}); // ID of 'var y'
 
   testCopyElision("test5c",
-    R""""(
+                  R""""(
         proc test(cond: bool) {
           var x:int;
           var z = x;
@@ -223,10 +223,10 @@ static void test5() {
           }
         }
     )"""",
-    {"M.test@8", "M.test@12"}); // IDs of 'var y' and 'var yy'
+                  {"M.test@8", "M.test@12"}); // IDs of 'var y' and 'var yy'
 
   testCopyElision("test5d",
-    R""""(
+                  R""""(
         proc test(cond: bool) {
           var x:int;
           var z = x;
@@ -237,11 +237,11 @@ static void test5() {
           var zz = x;
         }
     )"""",
-    {"M.test@8", "M.test@13"}); // IDs of 'var y' and 'var zz'
+                  {"M.test@8", "M.test@13"}); // IDs of 'var y' and 'var zz'
 
   // Ensure we don't ignore conditional expression for elision
   testCopyElision("test5e",
-    R""""(
+                  R""""(
         proc helper(in arg: int) { return true; }
         proc test(cond: bool) {
           var x:int;
@@ -254,14 +254,14 @@ static void test5() {
           var c = y;
         }
     )"""",
-    {"M.test@9",    // ID of 'x' in 'helper(x)'
-     "M.test@12",   // ID of 'var b'
-     "M.test@17"}); // ID of 'var c'
+                  {"M.test@9",    // ID of 'x' in 'helper(x)'
+                   "M.test@12",   // ID of 'var b'
+                   "M.test@17"}); // ID of 'var c'
 }
 
 static void test6() {
   testCopyElision("test6a",
-    R""""(
+                  R""""(
         proc test(cond: bool) {
           var x:int;
           var y;
@@ -272,10 +272,10 @@ static void test6() {
           }
         }
     )"""",
-    {"M.test@8", "M.test@12"});
+                  {"M.test@8", "M.test@12"});
 
   testCopyElision("test6b",
-    R""""(
+                  R""""(
         proc test(cond: bool) {
           var x:int;
           if cond {
@@ -289,47 +289,47 @@ static void test6() {
           }
         }
     )"""",
-    {"M.test@6", "M.test@8", "M.test@12", "M.test@14"});
+                  {"M.test@6", "M.test@8", "M.test@12", "M.test@14"});
 }
 
 static void test7() {
   testCopyElision("test7",
-    R""""(
+                  R""""(
         proc test() {
           var i: int;
           ref r = i;
         }
     )"""",
-    {});
+                  {});
 }
 
 static void test8() {
   testCopyElision("test8",
-    R""""(
+                  R""""(
         proc test() {
           var i: int;
           ref r = i;
           ref rr = r;
         }
     )"""",
-    {});
+                  {});
 }
 
 static void test9() {
   testCopyElision("test9",
-    R""""(
+                  R""""(
         proc fIn(arg: int) { }
         proc test() {
           var x:int;
           fIn(x);
         }
     )"""",
-    {"M.test@3"});
+                  {"M.test@3"});
 }
 
 static void test10() {
   testCopyElision("test10",
-    R""""(
+                  R""""(
         proc fIn(arg: int) { }
         proc test() {
           var x:int;
@@ -337,24 +337,24 @@ static void test10() {
           x;
         }
     )"""",
-    {});
+                  {});
 }
 
 static void test11() {
   testCopyElision("test11",
-    R""""(
+                  R""""(
         proc test() {
           var x:int;
           var y;
           y = x;
         }
     )"""",
-    {"M.test@5"});
+                  {"M.test@5"});
 }
 
 static void test12() {
   testCopyElision("test12",
-    R""""(
+                  R""""(
 
         proc test() {
           var x:int;
@@ -363,12 +363,12 @@ static void test12() {
           y = x;
         }
     )"""",
-    {});
+                  {});
 }
 
 static void test13() {
   testCopyElision("test13a",
-    R""""(
+                  R""""(
 
         proc test(cond: bool) {
           var x:int;
@@ -378,9 +378,9 @@ static void test13() {
           }
         }
     )"""",
-    {});
+                  {});
   testCopyElision("test13b",
-    R""""(
+                  R""""(
 
         proc helper(in arg: int) { return 0; }
         proc test(cond: bool) {
@@ -392,12 +392,12 @@ static void test13() {
           }
         }
     )"""",
-    {});
+                  {});
 }
 
 static void test14() {
   testCopyElision("test14",
-    R""""(
+                  R""""(
         proc test(cond: bool) {
           var x:int;
           var y;
@@ -408,12 +408,12 @@ static void test14() {
           }
         }
     )"""",
-    {"M.test@10"});
+                  {"M.test@10"});
 }
 
 static void test15() {
   testCopyElision("test15",
-    R""""(
+                  R""""(
         proc test(cond: bool) {
           var x:int;
           var y;
@@ -424,12 +424,12 @@ static void test15() {
           }
         }
     )"""",
-    {"M.test@8"});
+                  {"M.test@8"});
 }
 
 static void test16() {
   testCopyElision("test16",
-    R""""(
+                  R""""(
         proc test() throws {
           var x:int;
           try {
@@ -437,12 +437,12 @@ static void test16() {
           }
         }
     )"""",
-    {"M.test@3"});
+                  {"M.test@3"});
 }
 
 static void test17() {
   testCopyElision("test17",
-    R""""(
+                  R""""(
 
         proc test() {
           var x:int;
@@ -453,12 +453,12 @@ static void test17() {
           }
         }
     )"""",
-    {});
+                  {});
 }
 
 static void test18() {
   testCopyElision("test18",
-    R""""(
+                  R""""(
 
         proc test() {
           var x:int;
@@ -470,12 +470,12 @@ static void test18() {
           }
         }
     )"""",
-    {});
+                  {});
 }
 
 static void test19() {
   testCopyElision("test19",
-    R""""(
+                  R""""(
         proc test() {
           var x:int;
           var y;
@@ -486,12 +486,12 @@ static void test19() {
           }
         }
     )"""",
-    {"M.test@5"});
+                  {"M.test@5"});
 }
 
 static void test20() {
   testCopyElision("test20",
-    R""""(
+                  R""""(
 
         proc test() {
           var x:int;
@@ -503,12 +503,12 @@ static void test20() {
           }
         }
     )"""",
-    {});
+                  {});
 }
 
 static void test21() {
   testCopyElision("test21",
-    R""""(
+                  R""""(
 
         proc test() {
           var x:int;
@@ -519,12 +519,12 @@ static void test21() {
           }
         }
     )"""",
-    {});
+                  {});
 }
 
 static void test22() {
   testCopyElision("test22",
-    R""""(
+                  R""""(
         proc test() {
           try {
           } catch {
@@ -533,12 +533,12 @@ static void test22() {
           }
         }
     )"""",
-    {"M.test@4"});
+                  {"M.test@4"});
 }
 
 static void test23() {
   testCopyElision("test23",
-    R""""(
+                  R""""(
         record R {
           var field: int;
         }
@@ -546,37 +546,37 @@ static void test23() {
           var x = field;
         }
     )"""",
-    {});
+                  {});
 }
 
 static void test24() {
   // module scope variables aren't subject to copy elision
   testCopyElision("test24",
-    R""""(
+                  R""""(
         var x: int;
         var y = x;
     )"""",
-    {},
-    /* resolveModule */ true);
+                  {},
+                  /* resolveModule */ true);
 }
 
 static void test25() {
   // module scope variables aren't subject to copy elision
   testCopyElision("test25",
-    R""""(
+                  R""""(
         var x: int;
         proc test() {
           var y = x;
         }
     )"""",
-    {});
+                  {});
 }
 
 // test that copy elision only applies to the first assignment
 // when using split init
 static void test26() {
   testCopyElision("test26",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int;
@@ -586,12 +586,12 @@ static void test26() {
           z = y;
         }
     )"""",
-    {"M.test@7"});
+                  {"M.test@7"});
 }
 // including with an inner block
 static void test27() {
   testCopyElision("test27",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int;
@@ -603,12 +603,12 @@ static void test27() {
           z = y;
         }
     )"""",
-    {"M.test@7"});
+                  {"M.test@7"});
 }
 // including with a conditional
 static void test28() {
   testCopyElision("test28",
-    R""""(
+                  R""""(
 
         config const cond = true;
 
@@ -624,12 +624,12 @@ static void test28() {
           z = c;
         }
     )"""",
-    {"M.test@8", "M.test@12"});
+                  {"M.test@8", "M.test@12"});
 }
 // including with a try/catch
 static void test29() {
   testCopyElision("test29",
-    R""""(
+                  R""""(
 
         config const cond = true;
 
@@ -645,52 +645,52 @@ static void test29() {
           z = b;
         }
     )"""",
-    {"M.test@7"});
+                  {"M.test@7"});
 }
 
 // out variable can't be copy elided from b/c it is mentioned by return
 static void test30() {
   testCopyElision("test30",
-    R""""(
+                  R""""(
         proc test(out x: int) {
           var y = x;
           return;
         }
     )"""",
-    {});
+                  {});
 }
 static void test31() {
   testCopyElision("test31",
-    R""""(
+                  R""""(
         proc test(out x: int) {
           var y = x;
         }
     )"""",
-    {});
+                  {});
 }
 static void test32() {
   testCopyElision("test32",
-    R""""(
+                  R""""(
         proc test(inout x: int) {
           var y = x;
           return;
         }
     )"""",
-    {});
+                  {});
 }
 static void test33() {
   testCopyElision("test33",
-    R""""(
+                  R""""(
         proc test(inout x: int) {
           var y = x;
         }
     )"""",
-    {});
+                  {});
 }
 
 static void test34() {
   testCopyElision("test34",
-    R""""(
+                  R""""(
 
         config const cond = true;
 
@@ -706,12 +706,12 @@ static void test34() {
           z = c;
         }
     )"""",
-    {"M.test@8"});
+                  {"M.test@8"});
 }
 
 static void test35() {
   testCopyElision("test35a1",
-    R""""(
+                  R""""(
         config const cond = true;
         proc test() {
           var x: int = 0;
@@ -720,9 +720,9 @@ static void test35() {
           {x;}
         }
     )"""",
-    {});
+                  {});
   testCopyElision("test35a2",
-    R""""(
+                  R""""(
         config const cond = true;
         proc test() {
           var x: int = 0;
@@ -735,10 +735,10 @@ static void test35() {
           }
         }
     )"""",
-    {});
-  
+                  {});
+
   testCopyElision("test35a",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int = 0;
@@ -751,9 +751,9 @@ static void test35() {
           }
         }
     )"""",
-    {});
+                  {});
   testCopyElision("test35b",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int = 0;
@@ -766,12 +766,12 @@ static void test35() {
           }
         }
     )"""",
-    {"M.test@4"});
+                  {"M.test@4"});
 }
 
 static void test36() {
   testCopyElision("test36a",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int = 0;
@@ -782,9 +782,9 @@ static void test36() {
           }
         }
     )"""",
-    {"M.test@4"});
+                  {"M.test@4"});
   testCopyElision("test36b",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int = 0;
@@ -795,9 +795,9 @@ static void test36() {
           }
         }
     )"""",
-    {"M.test@4"});
+                  {"M.test@4"});
   testCopyElision("test36c",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int = 0;
@@ -808,9 +808,9 @@ static void test36() {
           }
         }
     )"""",
-    {"M.test@4"});
+                  {"M.test@4"});
   testCopyElision("test36d",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int = 0;
@@ -821,12 +821,12 @@ static void test36() {
           }
         }
     )"""",
-    {});
+                  {});
 }
 
 static void test37() {
   testCopyElision("test37a",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int = 0;
@@ -839,9 +839,9 @@ static void test37() {
           }
         }
     )"""",
-    {"M.test@4"});
+                  {"M.test@4"});
   testCopyElision("test37b",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int = 0;
@@ -854,9 +854,9 @@ static void test37() {
           }
         }
     )"""",
-    {});
+                  {});
   testCopyElision("test37c",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int = 0;
@@ -869,12 +869,12 @@ static void test37() {
           }
         }
     )"""",
-    {});
+                  {});
 }
 
 static void test38() {
   testCopyElision("test38a",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int = 0;
@@ -886,9 +886,9 @@ static void test38() {
           }
         }
     )"""",
-    {"M.test@4"});
+                  {"M.test@4"});
   testCopyElision("test38b",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int = 0;
@@ -900,9 +900,9 @@ static void test38() {
           }
         }
     )"""",
-    {});
+                  {});
   testCopyElision("test38c",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int = 0;
@@ -914,12 +914,12 @@ static void test38() {
           }
         }
     )"""",
-    {"M.test@4"});
+                  {"M.test@4"});
 }
 
 static void test39() {
   testCopyElision("test39a",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int = 0;
@@ -934,9 +934,9 @@ static void test39() {
           }
         }
     )"""",
-    {"M.test@4"});
+                  {"M.test@4"});
   testCopyElision("test39b",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int = 0;
@@ -951,9 +951,9 @@ static void test39() {
           }
         }
     )"""",
-    {"M.test@4"});
+                  {"M.test@4"});
   testCopyElision("test39c",
-    R""""(
+                  R""""(
         config const cond = true;
         proc test() {
           var x: int = 0;
@@ -974,9 +974,9 @@ static void test39() {
           }
         }
     )"""",
-    {});
+                  {});
   testCopyElision("test39d",
-    R""""(
+                  R""""(
         config const cond = true;
         proc test() {
           var x: int = 0;
@@ -997,12 +997,12 @@ static void test39() {
           }
         }
     )"""",
-    {"M.test@4"});
+                  {"M.test@4"});
 }
 
 static void test40() {
   testCopyElision("test40a",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int = 0;
@@ -1014,9 +1014,9 @@ static void test40() {
           }
         }
     )"""",
-    {});
+                  {});
   testCopyElision("test40b",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int = 0;
@@ -1030,9 +1030,9 @@ static void test40() {
 
         }
     )"""",
-    {"M.test@4"});
+                  {"M.test@4"});
   testCopyElision("test40c",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int = 0;
@@ -1047,9 +1047,9 @@ static void test40() {
 
         }
     )"""",
-    {"M.test@4"});
+                  {"M.test@4"});
   testCopyElision("test40d",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int = 0;
@@ -1062,9 +1062,9 @@ static void test40() {
           }
         }
     )"""",
-    {});
+                  {});
   testCopyElision("test40e",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int = 0;
@@ -1077,9 +1077,9 @@ static void test40() {
 
         }
     )"""",
-    {});
+                  {});
   testCopyElision("test40e",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int = 0;
@@ -1092,9 +1092,9 @@ static void test40() {
 
         }
     )"""",
-    {"M.test@4"});
+                  {"M.test@4"});
   testCopyElision("test40f",
-    R""""(
+                  R""""(
 
         proc test() {
           var x: int = 0;
@@ -1107,12 +1107,12 @@ static void test40() {
           x;
           }
     )"""",
-    {});
+                  {});
 }
 
 static void test41() {
   testCopyElision("test41a",
-    R""""(
+                  R""""(
         config const cond = 2;
         proc test() {
           var x: int = 0;
@@ -1128,9 +1128,9 @@ static void test41() {
           }
         }
     )"""",
-    {});
+                  {});
   testCopyElision("test41b",
-    R""""(
+                  R""""(
         config const cond = 2;
         proc test() {
           var x: int = 0;
@@ -1149,12 +1149,12 @@ static void test41() {
           }
         }
     )"""",
-    {});
+                  {});
 }
 
 static void test42() {
   testCopyElision("test42a",
-    R""""(
+                  R""""(
         proc test() {
           var c: int = 0;
           var x: int = 0;
@@ -1169,9 +1169,9 @@ static void test42() {
           }
         }
     )"""",
-    {});
+                  {});
   testCopyElision("test42b",
-    R""""(
+                  R""""(
         proc test() {
           var c: int = 0;
           var x: int = 0;
@@ -1186,12 +1186,12 @@ static void test42() {
           }
         }
     )"""",
-    {"M.test@12","M.test@18"});
+                  {"M.test@12", "M.test@18"});
 }
 
 static void test43() {
   testCopyElision("test43a",
-    R""""(
+                  R""""(
         proc test() {
           var c: int = 0;
           var x: int = 0;
@@ -1206,9 +1206,9 @@ static void test43() {
           }
         }
     )"""",
-    {});
+                  {});
   testCopyElision("test43b",
-    R""""(
+                  R""""(
         proc test() {
           var c: int = 0;
           var x: int = 0;
@@ -1226,27 +1226,29 @@ static void test43() {
           }
         }
     )"""",
-    {"M.test@7"});
+                  {"M.test@7"});
 }
 
 // test that copy elision is sensitive to control flow
 static void test44(const std::string& controlModifier) {
   testCopyElision("test44",
-    (
-    R"""(
+                  (
+                    R"""(
       proc test() {
         for i in 1..10 {
           var x = 42;
           var y = x;
           if i == 10 {
-            )""" + controlModifier + R"""(;
+            )""" + controlModifier +
+                    R"""(;
             x;
           }
         }
       }
 
-    )"""
-    ).c_str(), {"M.test@7"});
+    )""")
+                    .c_str(),
+                  {"M.test@7"});
 }
 
 static void test44() {
@@ -1255,13 +1257,15 @@ static void test44() {
 }
 
 // test that copy elision is sensitive to control flow across several branches
-static void test45(const std::string& controlModifier1, const std::string controlModifier2, bool expectElision) {
+static void test45(const std::string& controlModifier1,
+                   const std::string controlModifier2,
+                   bool expectElision) {
   std::vector<std::string> expectedPoints;
   if (expectElision) expectedPoints.push_back("M.test@7");
 
   testCopyElision("test45",
-      (
-    R"""(
+                  (
+                    R"""(
       proc test() {
         for i in 1..10 {
           var x = 42;
@@ -1269,17 +1273,20 @@ static void test45(const std::string& controlModifier1, const std::string contro
           if i == 10 {
             var cond: bool;
             if cond {
-              )""" + controlModifier1 + R"""(;
+              )""" + controlModifier1 +
+                    R"""(;
             } else {
-              )""" + controlModifier2 + R"""(;
+              )""" + controlModifier2 +
+                    R"""(;
             }
             x;
           }
         }
       }
 
-    )"""
-    ).c_str(), std::move(expectedPoints));
+    )""")
+                    .c_str(),
+                  std::move(expectedPoints));
 }
 
 static void test45() {
@@ -1299,7 +1306,7 @@ static void test45() {
 
 static void test46() {
   testCopyElision("test46a",
-    R""""(
+                  R""""(
 
         proc helper(in arg: int) { return 0; }
         proc test(cond: bool) {
@@ -1308,9 +1315,9 @@ static void test46() {
           return helper(x) + helper(x);
         }
     )"""",
-    {"M.test@11"}); // ID of 'x' in second 'helper(x)'
+                  {"M.test@11"}); // ID of 'x' in second 'helper(x)'
   testCopyElision("test46b",
-    R""""(
+                  R""""(
 
         proc double(in x: int, in y: int) { return 0; }
         proc helper(in arg: int) { return 0; }
@@ -1320,9 +1327,9 @@ static void test46() {
           return double(helper(x), helper(x));
         }
     )"""",
-    {"M.test@12"}); // ID of 'x' in second 'helper(x)'
+                  {"M.test@12"}); // ID of 'x' in second 'helper(x)'
   testCopyElision("test46c",
-    R""""(
+                  R""""(
 
         proc helper(in arg: int) { return 0; }
         proc test(cond: bool) {
@@ -1332,7 +1339,7 @@ static void test46() {
           return b;
         }
     )"""",
-    {"M.test@8"}); // ID of 'x' in call to 'helper'
+                  {"M.test@8"}); // ID of 'x' in call to 'helper'
 }
 
 static void test47() {
@@ -1341,18 +1348,19 @@ static void test47() {
     std::string name = "test47-";
     name += std::to_string(counter++);
     testCopyElision(name.c_str(),
-      R""""(
+                    R""""(
           iter stuff(in arg: int) { yield 0; }
           proc helper(in arg: int) { return 0; }
           proc test(cond: bool) {
             var x:int = 0;
             var y:int = 0;
-            )"""" + loop + R""""( { // OK to elide in iterand
+            )"""" + loop +
+                      R""""( { // OK to elide in iterand
               var z = y; // should not elide
             }
           }
       )"""",
-      IDs);
+                    IDs);
   };
   test("for i in stuff(x)", {"M.test@10"});
   test("for i in stuff(y)", {}); // 'y' used in loop, should not elide
@@ -1365,7 +1373,8 @@ static void test47() {
 }
 
 static void test48() {
-  testCopyElision("test5a",
+  testCopyElision(
+    "test5a",
     R""""(
         record R { proc foo(){} }
         proc test(cond: bool) {
@@ -1379,7 +1388,7 @@ static void test48() {
 
 static void test49() {
   testCopyElision("test49",
-    R""""(
+                  R""""(
         record R { proc foo(){} }
         proc test(cond: bool) {
           var x: R;
@@ -1389,7 +1398,7 @@ static void test49() {
           }
         }
     )"""",
-    {}); // x is mentioned in a non-eligible block, so no elision
+                  {}); // x is mentioned in a non-eligible block, so no elision
 }
 
 int main() {

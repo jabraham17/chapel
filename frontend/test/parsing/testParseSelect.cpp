@@ -34,16 +34,18 @@
 static void test0(Parser* parser) {
   printf("test0\n");
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-      "/* c1 */\n"
-      "select /* c2 */ foo /* c3 */ {\n"
-      "  when /* c4 */ x do /* c5 */ f1();\n"
-      "  when /* c6 */ y /* c7 */ { f2(); }\n"
-      "  when /* c8 */ z /* c9 */ do { f3(); }\n"
-      "  when a, b, c do f4();\n"
-      "  otherwise /* c10 */ { f5(); }\n"
-      "}\n"
-      "/* c11 */\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test0.chpl",
+                               "/* c1 */\n"
+                               "select /* c2 */ foo /* c3 */ {\n"
+                               "  when /* c4 */ x do /* c5 */ f1();\n"
+                               "  when /* c6 */ y /* c7 */ { f2(); }\n"
+                               "  when /* c8 */ z /* c9 */ do { f3(); }\n"
+                               "  when a, b, c do f4();\n"
+                               "  otherwise /* c10 */ { f5(); }\n"
+                               "}\n"
+                               "/* c11 */\n");
   guard.printErrors();
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -109,15 +111,16 @@ static void test0(Parser* parser) {
 static void test1(Parser* parser) {
   printf("test1\n");
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
-      "/* c1 */\n"
-      "select foo {\n"
-      "  when x do f1();\n"
-      "  otherwise do f2();\n"
-      "  otherwise { f3(); }\n"
-      "  otherwise do { f4(); }\n"
-      "}\n"
-      "/* c2 */\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1.chpl",
+                                                "/* c1 */\n"
+                                                "select foo {\n"
+                                                "  when x do f1();\n"
+                                                "  otherwise do f2();\n"
+                                                "  otherwise { f3(); }\n"
+                                                "  otherwise do { f4(); }\n"
+                                                "}\n"
+                                                "/* c2 */\n");
   guard.printErrors();
   assert(guard.numErrors() == 1);
   auto mod = parseResult.singleModule();
@@ -135,13 +138,14 @@ static void test1(Parser* parser) {
 static void test2(Parser* parser) {
   printf("test2\n");
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
-      "/* c1 */\n"
-      "select foo {\n"
-      "  when x, y do f1();\n"
-      "  otherwise do f2();\n"
-      "}\n"
-      "/* c2 */\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test2.chpl",
+                                                "/* c1 */\n"
+                                                "select foo {\n"
+                                                "  when x, y do f1();\n"
+                                                "  otherwise do f2();\n"
+                                                "}\n"
+                                                "/* c2 */\n");
   guard.printErrors();
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -165,12 +169,13 @@ static void test2(Parser* parser) {
 static void test3(Parser* parser) {
   printf("test3\n");
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
-      "/* c1 */\n"
-      "select foo {\n"
-      "  otherwise do { f1(); }\n"
-      "}\n"
-      "/* c2 */\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test3.chpl",
+                                                "/* c1 */\n"
+                                                "select foo {\n"
+                                                "  otherwise do { f1(); }\n"
+                                                "}\n"
+                                                "/* c2 */\n");
   guard.printErrors();
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -191,14 +196,15 @@ static void test3(Parser* parser) {
 static void test4(Parser* parser) {
   printf("test4\n");
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
-      "/* c1 */\n"
-      "select foo {\n"
-      "  when x do f1();\n"
-      "  otherwise do f2();\n"
-      "  when y { f3(); }\n"
-      "}\n"
-      "/* c2 */\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test4.chpl",
+                                                "/* c1 */\n"
+                                                "select foo {\n"
+                                                "  when x do f1();\n"
+                                                "  otherwise do f2();\n"
+                                                "  when y { f3(); }\n"
+                                                "}\n"
+                                                "/* c2 */\n");
   guard.printErrors();
   assert(guard.numErrors() == 1);
   auto mod = parseResult.singleModule();

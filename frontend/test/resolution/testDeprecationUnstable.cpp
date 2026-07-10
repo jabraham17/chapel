@@ -26,7 +26,7 @@
 #include "chpl/uast/all-uast.h"
 #include "./ErrorGuard.h"
 
-#define TEST_NAME(ctx__)\
+#define TEST_NAME(ctx__)                                      \
   chpl::UniqueString::getConcat(ctx__, __FUNCTION__, ".chpl")
 
 static std::string debugDeclName = "";
@@ -42,8 +42,7 @@ static CompilerFlags warnUnstableFlags() {
   return flags;
 }
 
-static Context*
-buildStdContextWithUnstableWarnings() {
+static Context* buildStdContextWithUnstableWarnings() {
   auto context = buildStdContext(warnUnstableFlags());
   assert(isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE));
   return context;
@@ -55,8 +54,8 @@ static Context* turnOnWarnUnstable(Context* context) {
   return context;
 }
 
-static const AstNode*
-mentionAstFromExpression(const AstNode* ast, bool isReceiver) {
+static const AstNode* mentionAstFromExpression(const AstNode* ast,
+                                               bool isReceiver) {
   if (ast == nullptr) return nullptr;
 
   if (auto ident = ast->toIdentifier()) {
@@ -73,8 +72,8 @@ mentionAstFromExpression(const AstNode* ast, bool isReceiver) {
   return nullptr;
 }
 
-static UniqueString
-mentionNameFromExpression(const AstNode* ast, bool isReceiver) {
+static UniqueString mentionNameFromExpression(const AstNode* ast,
+                                              bool isReceiver) {
   if (auto ident = ast->toIdentifier()) {
     return ident->name();
   } else if (auto dot = ast->toDot()) {
@@ -97,15 +96,13 @@ static std::vector<const NamedDecl*> collectAllNamedDecls(const AstNode* ast) {
   return ret;
 }
 
-
-static void
-assertMatchesWarningPattern(const ErrorGuard& guard,
-                            const Module* mod,
-                            std::string declName,
-                            std::string nameForAstContainingMention,
-                            std::string warningLabel,
-                            bool isDefaultMessage,
-                            bool isMentionInUseImport) {
+static void assertMatchesWarningPattern(const ErrorGuard& guard,
+                                        const Module* mod,
+                                        std::string declName,
+                                        std::string nameForAstContainingMention,
+                                        std::string warningLabel,
+                                        bool isDefaultMessage,
+                                        bool isMentionInUseImport) {
   if (declName == debugDeclName) testDebuggingBreakpoint();
   bool isReceiver = false;
 
@@ -183,7 +180,7 @@ assertMatchesWarningPattern(const ErrorGuard& guard,
 
   // The expected default error message.
   std::string defaultMsg =
-      std::string(named->name().c_str()) + " is " + warningLabel;
+    std::string(named->name().c_str()) + " is " + warningLabel;
 
   // Check some things about the error.
   assert(err->message().size() != 0);
@@ -203,7 +200,9 @@ static void assertIsDeprecated(const ErrorGuard& guard,
                                bool isDefaultMessage) {
   auto nameForAstContainingMention = std::string("v") + std::to_string(varNum);
   bool isMentionInUseImport = false;
-  assertMatchesWarningPattern(guard, mod, declName,
+  assertMatchesWarningPattern(guard,
+                              mod,
+                              declName,
                               nameForAstContainingMention,
                               "deprecated",
                               isDefaultMessage,
@@ -341,10 +340,10 @@ static void test0(void) {
   assertIsDeprecated(guard, mod, "baz1", vn++, isDefault);
   assertIsDeprecated(guard, mod, "baz2", vn++, !isDefault);
 
-  vn++;   // Skip 'k1'
+  vn++; // Skip 'k1'
   assertIsDeprecated(guard, mod, "e1k2", vn++, isDefault);
   assertIsDeprecated(guard, mod, "e1k3", vn++, !isDefault);
-  vn++;   // Skip 'k4'
+  vn++; // Skip 'k4'
   assertIsDeprecated(guard, mod, "e2.", vn++, isDefault);
   assertIsDeprecated(guard, mod, "e3.", vn++, !isDefault);
 
@@ -589,9 +588,8 @@ static void test4(ErrorType expectedError) {
   assert(expectedError == ErrorType::Unstable ||
          expectedError == ErrorType::Deprecation);
 
-  std::string warningLabel = expectedError == ErrorType::Unstable
-        ? "@unstable"
-        : "@deprecated";
+  std::string warningLabel =
+    expectedError == ErrorType::Unstable ? "@unstable" : "@deprecated";
 
   Context* ctx = buildStdContextWithUnstableWarnings();
   ErrorGuard guard(ctx);
@@ -601,7 +599,7 @@ static void test4(ErrorType expectedError) {
   std::cout << path.c_str() << std::endl;
 
   std::string contents = "\n" + warningLabel +
-    R""""(("warning message")
+                         R""""(("warning message")
     class C {}
 
     proc foo(x: C) {}
@@ -697,7 +695,6 @@ static void test5(void) {
   const Function* f3 = mod->stmt(9)->toFunction();
   std::ignore = resolveConcreteFunction(ctx, f3->id());
 
-
   assert(guard.numErrors() == 2);
   assert(guard.error(0)->kind() == ErrorBase::Kind::WARNING);
   assert(guard.error(1)->type() == ErrorType::Deprecation);
@@ -714,4 +711,3 @@ int main() {
   test5();
   return 0;
 }
-

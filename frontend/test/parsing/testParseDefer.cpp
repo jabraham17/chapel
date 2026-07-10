@@ -30,11 +30,12 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-      "/* comment 1 */\n"
-      "defer /* comment 2 */\n"
-      "  foo();\n"
-      "/* comment 3 */\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test0.chpl",
+                                                "/* comment 1 */\n"
+                                                "defer /* comment 2 */\n"
+                                                "  foo();\n"
+                                                "/* comment 3 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -52,10 +53,7 @@ static void test0(Parser* parser) {
 
   // Make sure the statements iterator works as expected.
   {
-    AstTag stmtList[] = {
-      asttags::Comment,
-      asttags::FnCall
-    };
+    AstTag stmtList[] = {asttags::Comment, asttags::FnCall};
     auto i = 0;
     for (const auto stmt : defer->stmts()) {
       assert(stmt->tag() == stmtList[i]);
@@ -66,14 +64,15 @@ static void test0(Parser* parser) {
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
-      "/* comment 1 */\n"
-      "defer /* comment 2 */ {\n"
-      "  /* comment 3 */\n"
-      "  foo();\n"
-      "  /* comment 4 */\n"
-      "}\n"
-      "/* comment 5 */\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1.chpl",
+                                                "/* comment 1 */\n"
+                                                "defer /* comment 2 */ {\n"
+                                                "  /* comment 3 */\n"
+                                                "  foo();\n"
+                                                "  /* comment 4 */\n"
+                                                "}\n"
+                                                "/* comment 5 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -91,11 +90,7 @@ static void test1(Parser* parser) {
 
   // Make sure the statements iterator works as expected.
   {
-    AstTag stmtList[] = {
-      asttags::Comment,
-      asttags::FnCall,
-      asttags::Comment
-    };
+    AstTag stmtList[] = {asttags::Comment, asttags::FnCall, asttags::Comment};
     auto i = 0;
     for (const auto stmt : defer->stmts()) {
       assert(stmt->tag() == stmtList[i]);

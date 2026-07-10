@@ -17,12 +17,11 @@
  * limitations under the License.
  */
 
-
 #include "test-resolution.h"
 
 static void superTest1() {
   testCall("superTest1.chpl",
-         R""""(
+           R""""(
             module M {
               class Parent {
                 proc primary() { return 1; }
@@ -32,14 +31,14 @@ static void superTest1() {
               }
             }
          )"""",
-         "M.C.primary",
-         "M.C.primary@3",
-         "M.Parent.primary");
+           "M.C.primary",
+           "M.C.primary@3",
+           "M.Parent.primary");
 }
 
 static void superTest2() {
   testCall("superTest2.chpl",
-         R""""(
+           R""""(
             module M {
               class Parent {
                 proc primary() { return 1; }
@@ -52,14 +51,14 @@ static void superTest2() {
               }
             }
          )"""",
-         "N.C.primary",
-         "N.C.primary@3",
-         "M.Parent.primary");
+           "N.C.primary",
+           "N.C.primary@3",
+           "M.Parent.primary");
 }
 
 static void superTest3() {
   testCall("superTest3.chpl",
-         R""""(
+           R""""(
             module M {
               class Parent {
                 proc primary() { return 1; }
@@ -72,14 +71,14 @@ static void superTest3() {
               proc C.secondary() { return super.primary(); }
             }
          )"""",
-         "N.secondary",
-         "N.secondary@4",
-         "M.Parent.primary");
+           "N.secondary",
+           "N.secondary@4",
+           "M.Parent.primary");
 }
 
 static void superTest3a() {
   testCall("superTest3a.chpl",
-         R""""(
+           R""""(
             module M {
               class Parent {
               }
@@ -92,14 +91,14 @@ static void superTest3a() {
               proc C.secondary() { return super.secondary(); }
             }
          )"""",
-         "N.secondary",
-         "N.secondary@4",
-         "M.secondary");
+           "N.secondary",
+           "N.secondary@4",
+           "M.secondary");
 }
 
 static void superTest3b() {
   testCall("superTest3b.chpl",
-         R""""(
+           R""""(
             module M {
               class Parent {
               }
@@ -112,14 +111,14 @@ static void superTest3b() {
               proc C.secondary() { return super.tertiary(); }
             }
          )"""",
-         "N.secondary",
-         "N.secondary@4",
-         "N.tertiary");
+           "N.secondary",
+           "N.secondary@4",
+           "N.tertiary");
 }
 
 static void superTest4() {
   testCall("superTest4.chpl",
-         R""""(
+           R""""(
             module M {
               class A {
                 proc primary() { return 1; }
@@ -137,14 +136,14 @@ static void superTest4() {
               }
             }
          )"""",
-         "O.C.primary",
-         "O.C.primary@3",
-         "M.A.primary");
+           "O.C.primary",
+           "O.C.primary@3",
+           "M.A.primary");
 }
 
 static void superTest5() {
   testCall("superTest5.chpl",
-         R""""(
+           R""""(
             module M {
               class Base {
                 proc bar() { return 0; }
@@ -159,14 +158,14 @@ static void superTest5() {
               }
             }
          )"""",
-         "M.Outer.Nested.bar",
-         "M.Outer.Nested.bar@3",
-         "M.Base.bar");
+           "M.Outer.Nested.bar",
+           "M.Outer.Nested.bar@3",
+           "M.Base.bar");
 }
 
 static void superTest6() {
   testCall("superTest6.chpl",
-         R""""(
+           R""""(
             module M {
               class Parent {
                 proc bar() {
@@ -187,9 +186,9 @@ static void superTest6() {
               }
             }
          )"""",
-         "M.Child.foo",
-         "M.Child.foo@3",
-         "M.Parent.bar");
+           "M.Child.foo",
+           "M.Child.foo@3",
+           "M.Parent.bar");
 }
 
 int main() {

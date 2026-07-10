@@ -34,12 +34,15 @@ static void testRectangularSparse(std::string domainType,
   ErrorGuard guard(context);
 
   std::string program =
-R"""(
+    R"""(
 module M {
-  var parent : )""" + domainType + R"""(;
+  var parent : )""" +
+    domainType + R"""(;
   var d : sparse subdomain(parent);
-  param rg = )""" + std::to_string(rank) + R"""(;
-  type ig = )""" + idxType + R"""(;
+  param rg = )""" +
+    std::to_string(rank) + R"""(;
+  type ig = )""" +
+    idxType + R"""(;
   type fullIndex = if rg == 1 then ig else rg*ig;
 
   param r = d.rank;
@@ -119,7 +122,8 @@ module M {
     auto res = rr.byAst(g_ret);
     assert(res.type().type()->isIntType());
 
-    auto call = resolveOnlyCandidate(context, rr.byAst(g_ret->initExpression()));
+    auto call =
+      resolveOnlyCandidate(context, rr.byAst(g_ret->initExpression()));
     // Generic function, should have been instantiated
     assert(call->signature()->instantiatedFrom() != nullptr);
 
@@ -135,6 +139,11 @@ int main() {
   testRectangularSparse("domain(2)", 2, "int", "one");
   testRectangularSparse("domain(1, strides=strideKind.one)", 1, "int", "one");
   testRectangularSparse("domain(2, int(8))", 2, "int(8)", "one");
-  testRectangularSparse("domain(3, int(16), strideKind.negOne)", 3, "int(16)", "negOne");
-  testRectangularSparse("domain(strides=strideKind.negative, idxType=int, rank=1)", 1, "int", "negative");
+  testRectangularSparse(
+    "domain(3, int(16), strideKind.negOne)", 3, "int(16)", "negOne");
+  testRectangularSparse(
+    "domain(strides=strideKind.negative, idxType=int, rank=1)",
+    1,
+    "int",
+    "negative");
 }

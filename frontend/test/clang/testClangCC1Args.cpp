@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
     clangArgs.push_back("test.c");
   }
 
-  if (const char* chpl_home_env  = getenv("CHPL_HOME")) {
+  if (const char* chpl_home_env = getenv("CHPL_HOME")) {
     chpl_home = chpl_home_env;
     printf("CHPL_HOME was set\n");
   } else {
@@ -51,9 +51,8 @@ int main(int argc, char** argv) {
   Context* ctx = &context;
 
   printf("Computing CC1 args\n");
-  const std::vector<std::string>& cc1args = chpl::util::getCC1Arguments(ctx,
-                                                            clangArgs,
-                                                            false);
+  const std::vector<std::string>& cc1args =
+    chpl::util::getCC1Arguments(ctx, clangArgs, false);
   for (auto& arg : cc1args) {
     printf(" %s\n", arg.c_str());
   }

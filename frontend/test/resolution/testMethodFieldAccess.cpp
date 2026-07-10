@@ -38,7 +38,7 @@ static void testIt(const char* testName,
                    const char* methodIdStr,
                    const char* identIdStr,
                    const char* fieldIdStr,
-                   bool scopeResolveOnly=false) {
+                   bool scopeResolveOnly = false) {
   printf("test %s\n", testName);
   Context* context = buildStdContext();
 
@@ -114,7 +114,6 @@ static void test1c() {
          "M.C@1");
 }
 
-
 static void test2r() {
   testIt("test2r.chpl",
          R""""(
@@ -143,7 +142,6 @@ static void test2c() {
          "M.secondary@2",
          "M.C@1");
 }
-
 
 static void test3r() {
   testIt("test3r.chpl",
@@ -179,7 +177,6 @@ static void test3c() {
          "N.tertiary@2",
          "M.C@1");
 }
-
 
 // test with class inheritance & a primary method
 static void test4p() {
@@ -264,7 +261,6 @@ static void test5() {
          "M.A@1");
 }
 
-
 // test with a nested class
 static void test6() {
   testIt("test6.chpl",
@@ -333,7 +329,7 @@ static void test8() {
          )"""",
          "M.secondary",
          "M.secondary@4",
-         "M.secondary@3" /* the formal */ );
+         "M.secondary@3" /* the formal */);
 }
 
 // test with a formal vs a class field
@@ -355,7 +351,7 @@ static void test9p() {
          )"""",
          "M.R.now",
          "M.R.now@8",
-         "M.R.now@3" /* the formal */ );
+         "M.R.now@3" /* the formal */);
 }
 // same but with a secondary method
 static void test9s() {
@@ -376,9 +372,8 @@ static void test9s() {
          )"""",
          "M.now",
          "M.now@9",
-         "M.now@4" /* the formal */ );
+         "M.now@4" /* the formal */);
 }
-
 
 // make sure that we can find nested classes through method visibility rules
 // this is inspired by the test 'test_no_name_collision.chpl'.
@@ -724,11 +719,8 @@ static void testExample5a() {
   const char* methodIdStr = "M.test";
 
   {
-    testCall("example5a.chpl",
-             program,
-             methodIdStr,
-             "M.test@4",
-             "" /* ambiguity */);
+    testCall(
+      "example5a.chpl", program, methodIdStr, "M.test@4", "" /* ambiguity */);
   }
 
   // Ensure we get an ambiguity error for this (as opposed to redeclaration)
@@ -882,7 +874,7 @@ static void testExample10() {
            )"""",
            "C.test",
            "C.test@2",
-           "A.foo" /* the method */ );
+           "A.foo" /* the method */);
 }
 
 static void testExample11() {
@@ -911,7 +903,7 @@ static void testExample11() {
            )"""",
            "C.test",
            "C.test@2",
-           "C.foo" /* the method Child.foo */ );
+           "C.foo" /* the method Child.foo */);
 }
 
 static void testExample12() {

@@ -25,7 +25,8 @@
 #include "chpl/uast/all-uast.h"
 #include <array>
 
-static void assertDotFieldAtLoc(Context* ctx, const Dot* dot,
+static void assertDotFieldAtLoc(Context* ctx,
+                                const Dot* dot,
                                 int firstLine,
                                 int firstColumn) {
   auto loc = parsing::locateDotFieldWithAst(ctx, dot);
@@ -44,13 +45,12 @@ static void test0() {
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME_FROM_FN_NAME(ctx);
-  std::string contents =
-    "x1.field;\n"   // 1:4
-    "x2. field;\n"  // 2:5
-    "x3.\n"         //
-    "   field;\n"   // 4:4
-    "x4\n"          //
-    ".field;\n";    // 6:2
+  std::string contents = "x1.field;\n"  // 1:4
+                         "x2. field;\n" // 2:5
+                         "x3.\n"        //
+                         "   field;\n"  // 4:4
+                         "x4\n"         //
+                         ".field;\n";   // 6:2
 
   setFileText(ctx, path, contents);
   auto& br = parseAndReportErrors(ctx, path);
@@ -73,7 +73,7 @@ struct pos {
   int line;
   int column;
   pos(int line, int column) : line(line), column(column) {}
- ~pos() = default;
+  ~pos() = default;
 };
 
 static void
@@ -96,39 +96,48 @@ static void test1() {
   auto path = TEST_NAME_FROM_FN_NAME(ctx);
   std::string contents =
     // proc
-    "proc foo() {}\n"           // 1:6
-    "proc    foo() {}\n"        // 2:9
-    "proc foo () {}\n"          // 3:6
-    "proc\n"                    //
-    "    foo() {}\n"            // 5:5
-    "proc   foo {}\n"           // 6:8
+    "proc foo() {}\n"    // 1:6
+    "proc    foo() {}\n" // 2:9
+    "proc foo () {}\n"   // 3:6
+    "proc\n"             //
+    "    foo() {}\n"     // 5:5
+    "proc   foo {}\n"    // 6:8
     // iter
-    "iter foo() {}\n"           // 7:6
-    "iter    bar() {}\n"        // 8:9
-    "iter foo () {}\n"          // 9:6
-    "iter\n"                    //
-    "    foo() {}\n"            // 11:5
+    "iter foo() {}\n"    // 7:6
+    "iter    bar() {}\n" // 8:9
+    "iter foo () {}\n"   // 9:6
+    "iter\n"             //
+    "    foo() {}\n"     // 11:5
     // class
-    "class foo : bar {}\n"      // 12:7
+    "class foo : bar {}\n" // 12:7
     // record
-    "record foo {}\n"           // 13:8
+    "record foo {}\n" // 13:8
     // union
-    "union foo {}\n"            // 14:7
+    "union foo {}\n" // 14:7
     // enum
-    "enum foo { bar }\n";       // 15:6
+    "enum foo { bar }\n"; // 15:6
 
   setFileText(ctx, path, contents);
   auto& br = parseAndReportErrors(ctx, path);
   assert(!guard.realizeErrors());
 
-  static const std::array<pos, 13> positions = {{
-    pos(1,6), pos(2,9), pos(3,6), pos(5,5), pos(6,8), pos(7,6), pos(8,9),
-    pos(9,6), pos(11,5), pos(12,7), pos(13,8), pos(14,7), pos(15,6)
-  }};
+  static const std::array<pos, 13> positions = {{pos(1, 6),
+                                                 pos(2, 9),
+                                                 pos(3, 6),
+                                                 pos(5, 5),
+                                                 pos(6, 8),
+                                                 pos(7, 6),
+                                                 pos(8, 9),
+                                                 pos(9, 6),
+                                                 pos(11, 5),
+                                                 pos(12, 7),
+                                                 pos(13, 8),
+                                                 pos(14, 7),
+                                                 pos(15, 6)}};
 
   auto mod = br.singleModule();
   assert(mod && mod->numStmts() == 13);
-  assert(positions.size() == (size_t) mod->numStmts());
+  assert(positions.size() == (size_t)mod->numStmts());
 
   for (int i = 0; i < mod->numStmts(); i++) {
     auto nd = mod->stmt(i)->toNamedDecl();

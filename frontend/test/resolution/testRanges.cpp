@@ -55,7 +55,9 @@ getRangeInfo(Context* context, const RecordType* r) {
   return std::make_tuple(fields.fieldType(0), boundTypeStr, stridesStr);
 }
 
-static QualifiedType getRangeIndexType(Context* context, const RecordType* r, const std::string& ensureBoundedType) {
+static QualifiedType getRangeIndexType(Context* context,
+                                       const RecordType* r,
+                                       const std::string& ensureBoundedType) {
   auto info = getRangeInfo(context, r);
   assert(std::get<1>(info) == ensureBoundedType);
   assert(std::get<2>(info) == "one");
@@ -66,22 +68,23 @@ static void test1() {
   // if the stdlib is not used, ranges should resolve to having
   // unknown types.
   Context context;
-  QualifiedType qt =  resolveTypeOfXInit(&context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(&context,
+                                        R""""(
                          var y : int;
                          var x = 1..5;
-                         )"""", false);
+                         )"""",
+                                        false);
   assert(qt.isUnknown());
 }
 
-
 static void test2() {
   auto context = buildStdContext();
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          var y : int;
                          var x = 1..5;
-                         )"""", true);
+                         )"""",
+                                        true);
   assert(qt.type() != nullptr);
   auto rangeType = qt.type()->toRecordType();
   assert(rangeType != nullptr);
@@ -94,13 +97,14 @@ static void test2() {
 static void test3() {
   auto context = buildStdContext();
   // test coercion
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          var y : int;
                          var lower: int(32);
                          var upper: int(16);
                          var x = lower..upper;
-                         )"""", true);
+                         )"""",
+                                        true);
   assert(qt.type() != nullptr);
   auto rangeType = qt.type()->toRecordType();
   assert(rangeType != nullptr);
@@ -113,12 +117,13 @@ static void test3() {
 static void test4() {
   auto context = buildStdContext();
   // test range without upper bound
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          var y : int;
                          var lower: int(32);
                          var x = lower..;
-                         )"""", true);
+                         )"""",
+                                        true);
   assert(qt.type() != nullptr);
   auto rangeType = qt.type()->toRecordType();
   assert(rangeType != nullptr);
@@ -131,12 +136,13 @@ static void test4() {
 static void test5() {
   auto context = buildStdContext();
   // test range without lower bound
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          var y : int;
                          var upper: int(16);
                          var x = ..upper;
-                         )"""", true);
+                         )"""",
+                                        true);
   assert(qt.type() != nullptr);
   auto rangeType = qt.type()->toRecordType();
   assert(rangeType != nullptr);
@@ -149,11 +155,12 @@ static void test5() {
 static void test6() {
   auto context = buildStdContext();
   // test range without bound
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          var y : int;
                          var x = ..;
-                         )"""", true);
+                         )"""",
+                                        true);
   assert(qt.type() != nullptr);
   auto rangeType = qt.type()->toRecordType();
   assert(rangeType != nullptr);
@@ -167,11 +174,12 @@ static void test7() {
   auto context = buildStdContext();
   // test range without bound
   ErrorGuard guard(context);
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          proc f(r: range(?)) do return 42;
                          var x = f(1..10);
-                         )"""", true);
+                         )"""",
+                                        true);
   assert(qt.type() != nullptr);
   assert(qt.type()->isIntType());
   assert(qt.type()->toIntType()->isDefaultWidth());
@@ -181,10 +189,11 @@ static void test8() {
   auto context = buildStdContext();
   // test range without bound
   ErrorGuard guard(context);
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          var x = new range(int, 0, 10);
-                         )"""", true);
+                         )"""",
+                                        true);
   auto rangeType = qt.type()->toRecordType();
   assert(rangeType != nullptr);
   auto idxType = getRangeIndexType(context, rangeType, "both");
@@ -197,13 +206,14 @@ static void test9() {
   auto context = buildStdContext();
   // test the count operator on a bounded range
   ErrorGuard guard(context);
-  auto qts =  resolveTypesOfVariables(context,
-      R""""(
+  auto qts = resolveTypesOfVariables(context,
+                                     R""""(
       var y : int;
       var lower: int(32);
       var x1 = lower..;
       var x2 = lower..#10;
-      )"""", {"x1", "x2"});
+      )"""",
+                                     {"x1", "x2"});
 
   {
     // Check the first range
@@ -233,13 +243,14 @@ static void test10() {
   auto context = buildStdContext();
   // test the count operator on a bounded range
   ErrorGuard guard(context);
-  auto qts =  resolveTypesOfVariables(context,
-      R""""(
+  auto qts = resolveTypesOfVariables(context,
+                                     R""""(
       var y : int;
       var higher: int(32);
       var x1 = ..higher;
       var x2 = ..higher#10;
-      )"""", {"x1", "x2"});
+      )"""",
+                                     {"x1", "x2"});
 
   {
     // Check the first range
@@ -269,8 +280,9 @@ static void test11() {
   auto context = buildStdContext();
   // test the by operator on a bounded range
   ErrorGuard guard(context);
-  auto qts =  resolveTypesOfVariables(context,
-      R""""(
+  auto qts = resolveTypesOfVariables(
+    context,
+    R""""(
       var x1 = 1..10;
       var x2 = x1 by 2;
       var x3 = x1 by -1;
@@ -284,8 +296,8 @@ static void test11() {
       var y3 = y2 by -1;
       var y4 = y2 by 5;
       var y5 = y2 by -5;
-      )"""", {"x1", "x2", "x3", "x4", "x5", "y1", "y2", "y3", "y4", "y5"});
-
+      )"""",
+    {"x1", "x2", "x3", "x4", "x5", "y1", "y2", "y3", "y4", "y5"});
 
   auto check = [&](const std::string& var, const std::string& stride) {
     auto qt = qts.at(var);
@@ -315,18 +327,18 @@ static void test11() {
 
 static void test12() {
   auto context = buildStdContext();
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          proc foo(arg: range(?) = 0..) do return arg;
                          var x = foo(0..#10);
-                         )"""", true);
+                         )"""",
+                                        true);
   assert(qt.type() != nullptr);
   auto rangeType = qt.type()->toRecordType();
   assert(rangeType != nullptr);
   auto idxType = getRangeIndexType(context, rangeType, "both");
   assert(idxType.type() != nullptr);
   assert(idxType.type()->isIntType());
-
 }
 
 // check that we do partial instantiations of range and use them on the
@@ -335,7 +347,7 @@ static void test13() {
   auto context = buildStdContext();
   ErrorGuard guard(context);
   auto qts = resolveTypesOfVariables(context,
-    R""""(
+                                     R""""(
     type SR = range(strides=strideKind.any, ?);
 
     var A : SR(?) = 1..10;
@@ -343,9 +355,10 @@ static void test13() {
 
     var B : SR(?) = 1:uint .. 10:uint;
     writeln(B.type:string, ": ", B);
-    )"""", {"A", "B"});
+    )"""",
+                                     {"A", "B"});
 
-  for (auto & name : {"A", "B"}) {
+  for (auto& name : {"A", "B"}) {
     auto qt = qts.at(name);
     assert(qt.type() != nullptr);
     auto rangeType = qt.type()->toRecordType();
@@ -355,7 +368,7 @@ static void test13() {
     assert(std::get<0>(info).type() != nullptr);
     if (strcmp(name, "A") == 0) {
       assert(std::get<0>(info).type()->isIntType());
-    } else  {
+    } else {
       assert(std::get<0>(info).type()->isUintType());
     }
     assert(std::get<0>(info).type()->isIntType() ||

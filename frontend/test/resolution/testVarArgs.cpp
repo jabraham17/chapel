@@ -71,10 +71,10 @@ struct Collector {
   std::multimap<std::string, QualifiedType> declTypes;
   std::multimap<std::string, QualifiedType> identTypes;
 
-  Collector() { }
+  Collector() {}
 
-  Collector(const Collector& other) : declTypes(other.declTypes), identTypes(other.identTypes) {
-  }
+  Collector(const Collector& other)
+    : declTypes(other.declTypes), identTypes(other.identTypes) {}
 
   bool enter(const uast::VarLikeDecl* decl, RV& rv) {
     if (rv.hasAst(decl)) {
@@ -116,7 +116,8 @@ struct Collector {
         const TypedFnSignature* sig = result.mostSpecific().only().fn();
         auto fn = resolveFunction(rv.rc(), sig, result.poiScope());
 
-        ResolvedVisitor<Collector> newRV(rv.rc(), nullptr, *this, fn->resolutionById());
+        ResolvedVisitor<Collector> newRV(
+          rv.rc(), nullptr, *this, fn->resolutionById());
         auto untyped = idToAst(rv.context(), sig->id());
         assert(untyped->id() == sig->id());
         untyped->traverse(newRV);
@@ -124,11 +125,8 @@ struct Collector {
     }
   }
 
-  bool enter(const uast::AstNode* ast, RV& rv) {
-    return true;
-  }
-  void exit(const uast::AstNode* ast, RV& rv) {
-  }
+  bool enter(const uast::AstNode* ast, RV& rv) { return true; }
+  void exit(const uast::AstNode* ast, RV& rv) {}
 
   QualifiedType onlyDecl(std::string name) {
     assert(declTypes.count(name) == 1);
@@ -177,9 +175,12 @@ static const char* kindToString(Qualifier kind) {
 
 static const char* typeToVal(std::string type) {
   // supports 'int' and other types like 'int(8)'
-  if (type.find("int") == 0) return "42";
-  else if (type == "real") return "2.0";
-  else if (type == "string") return "\"hello\"";
+  if (type.find("int") == 0)
+    return "42";
+  else if (type == "real")
+    return "2.0";
+  else if (type == "string")
+    return "\"hello\"";
 
   return "";
 }
@@ -194,9 +195,8 @@ static bool isParamEq(QualifiedType qt, int n) {
   return false;
 }
 
-
 struct ArgInfo {
-  using Pair = std::pair<Qualifier,std::string>;
+  using Pair = std::pair<Qualifier, std::string>;
   std::vector<Pair> args;
   bool isValuesOnly = false;
 
@@ -220,8 +220,7 @@ struct ArgInfo {
       args.push_back(Pair(argKind, type));
     }
   }
-  ArgInfo(int count,
-          std::string type) : ArgInfo(Qualifier::VAR, count, type) {}
+  ArgInfo(int count, std::string type) : ArgInfo(Qualifier::VAR, count, type) {}
 
   ArgInfo(Qualifier argKind, std::vector<std::string> types) {
     for (auto s : types) {
@@ -238,7 +237,7 @@ struct ArgInfo {
     }
   }
 
-  std::pair<std::string,std::string> buildArgStrings() {
+  std::pair<std::string, std::string> buildArgStrings() {
     std::string decls;
     int i = 0;
     std::string argList;
@@ -265,7 +264,7 @@ struct ArgInfo {
       }
     }
 
-    return std::pair<std::string,std::string>(decls,argList);
+    return std::pair<std::string, std::string>(decls, argList);
   }
 };
 
@@ -299,7 +298,6 @@ static void printBuiltProgram(Qualifier formalIntent,
       actuals += p.second;
     }
     printf("``%s``\n", actuals.c_str());
-
 
     printf("To VarArgs: ");
     printf("``%s args", kindToString(formalIntent));
@@ -485,18 +483,18 @@ static void validate(std::string formalType,
 }
 
 static void testMatcher(Qualifier formalIntent,
-                       std::string formalType,
-                       std::string count,
-                       ArgInfo info,
-                       bool fail = false) {
+                        std::string formalType,
+                        std::string count,
+                        ArgInfo info,
+                        bool fail = false) {
   if (formalType != "") {
     if (formalType[0] == '?') {
       assert(formalType.size() == 2);
     }
   }
 
-  std::string program = buildProgram(formalIntent, formalType, count,
-                                     info, fail);
+  std::string program =
+    buildProgram(formalIntent, formalType, count, info, fail);
 
   Context* context = buildStdContext();
   ErrorGuard guard(context);
@@ -526,8 +524,9 @@ static void testMatcher(Qualifier formalIntent,
 }
 
 static Collector
-customHelper(std::string program, bool fail = false,
-             std::vector<owned<ErrorBase>>* errorsOut=nullptr) {
+customHelper(std::string program,
+             bool fail = false,
+             std::vector<owned<ErrorBase>>* errorsOut = nullptr) {
   Context* context = buildStdContext();
   ErrorGuard guard(context);
   ResolutionContext rcval(context);
@@ -571,17 +570,19 @@ static void testGenericType() {
   printHeader("fully-generic varargs");
 
   auto irsVar = ArgInfo::IRS(Qualifier::VAR);
-  testMatcher(Qualifier::DEFAULT_INTENT , "" , "" , irsVar);
-  testMatcher(Qualifier::IN             , "" , "" , irsVar);
-  testMatcher(Qualifier::REF            , "" , "" , irsVar);
-  testMatcher(Qualifier::CONST_REF      , "" , "" , irsVar);
-  testMatcher(Qualifier::CONST_INTENT   , "" , "" , irsVar);
-  testMatcher(Qualifier::CONST_IN       , "" , "" , irsVar);
+  testMatcher(Qualifier::DEFAULT_INTENT, "", "", irsVar);
+  testMatcher(Qualifier::IN, "", "", irsVar);
+  testMatcher(Qualifier::REF, "", "", irsVar);
+  testMatcher(Qualifier::CONST_REF, "", "", irsVar);
+  testMatcher(Qualifier::CONST_INTENT, "", "", irsVar);
+  testMatcher(Qualifier::CONST_IN, "", "", irsVar);
 
   testMatcher(Qualifier::PARAM, "", "", ArgInfo::IRS(Qualifier::PARAM));
   testMatcher(Qualifier::TYPE, "", "", ArgInfo::IRS(Qualifier::TYPE));
 
-  testMatcher(Qualifier::DEFAULT_INTENT, "int(?)", "",
+  testMatcher(Qualifier::DEFAULT_INTENT,
+              "int(?)",
+              "",
               ArgInfo({"int(8)", "int", "int(32)"}));
 
   // TODO: Expressions like 'param x : int(8) = 42' are not currently working.
@@ -590,39 +591,35 @@ static void testGenericType() {
 
   // Errors
 
-  testMatcher(Qualifier::DEFAULT_INTENT, "int(?)", "",
-              ArgInfo(3, "string"), true);
+  testMatcher(
+    Qualifier::DEFAULT_INTENT, "int(?)", "", ArgInfo(3, "string"), true);
 }
 
 static void intentActualMismatch() {
   printHeader("passing args to wrong intent");
 
-  testMatcher(Qualifier::PARAM, "", "",
-              ArgInfo::IRS(), true);
-  testMatcher(Qualifier::TYPE, "", "",
-              ArgInfo::IRS(), true);
+  testMatcher(Qualifier::PARAM, "", "", ArgInfo::IRS(), true);
+  testMatcher(Qualifier::TYPE, "", "", ArgInfo::IRS(), true);
 }
 
 static void typeQuery() {
   printHeader("varargs with type query");
 
-  testMatcher(Qualifier::DEFAULT_INTENT, "?i", "",
-              ArgInfo(3, "int"));
-  testMatcher(Qualifier::DEFAULT_INTENT, "?s", "",
-              ArgInfo(3, "string"));
-  testMatcher(Qualifier::PARAM, "?i", "",
-              ArgInfo(Qualifier::PARAM, 3, "int"));
+  testMatcher(Qualifier::DEFAULT_INTENT, "?i", "", ArgInfo(3, "int"));
+  testMatcher(Qualifier::DEFAULT_INTENT, "?s", "", ArgInfo(3, "string"));
+  testMatcher(Qualifier::PARAM, "?i", "", ArgInfo(Qualifier::PARAM, 3, "int"));
 
   // Passing in params to default-intent should not result in the formals
   // being treated as params
-  testMatcher(Qualifier::DEFAULT_INTENT, "?t", "",
-              ArgInfo::Values({"true","false","true"}));
+  testMatcher(Qualifier::DEFAULT_INTENT,
+              "?t",
+              "",
+              ArgInfo::Values({"true", "false", "true"}));
 
   // Errors
 
   // pass different types to type query
-  testMatcher(Qualifier::DEFAULT_INTENT, "?t", "",
-              ArgInfo::IRS(), true);
+  testMatcher(Qualifier::DEFAULT_INTENT, "?t", "", ArgInfo::IRS(), true);
 
   // TODO: Consider the following:
   //   proc fn(args:int(?w)...)
@@ -636,39 +633,46 @@ static void typeQuery() {
   // We currently issue a somewhat helpful error recognizing that we can't make
   // a type query from this argument, but this doesn't prevent resolving the
   // call.
-  testMatcher(Qualifier::DEFAULT_INTENT, "int(?t)", "",
-              ArgInfo({"int(8)", "int", "int(32)"}), true);
+  testMatcher(Qualifier::DEFAULT_INTENT,
+              "int(?t)",
+              "",
+              ArgInfo({"int(8)", "int", "int(32)"}),
+              true);
 }
 
 static void testConcrete() {
   printHeader("varargs with type exprs");
 
   // simple 1:1 cases
-  testMatcher(Qualifier::DEFAULT_INTENT, "int", "",
-              ArgInfo(3, "int"));
+  testMatcher(Qualifier::DEFAULT_INTENT, "int", "", ArgInfo(3, "int"));
 
   // int coercion
-  testMatcher(Qualifier::DEFAULT_INTENT, "int", "",
+  testMatcher(Qualifier::DEFAULT_INTENT,
+              "int",
+              "",
               ArgInfo({"int", "int(8)", "int(32)"}));
 
   // varargs specifying a tuple as the formal type
-  testMatcher(Qualifier::DEFAULT_INTENT, "(int,int,int)", "",
+  testMatcher(Qualifier::DEFAULT_INTENT,
+              "(int,int,int)",
+              "",
               ArgInfo(3, "(int,int,int)"));
 
   // Errors
 
   // pass int(64) to int(8)
-  testMatcher(Qualifier::DEFAULT_INTENT, "int(8)", "",
-              ArgInfo(3, "int"), true);
+  testMatcher(Qualifier::DEFAULT_INTENT, "int(8)", "", ArgInfo(3, "int"), true);
 
-
-  testMatcher(Qualifier::DEFAULT_INTENT, "(int(8),int,int)", "",
-              ArgInfo(3, "(int,int,int)"), true);
+  testMatcher(Qualifier::DEFAULT_INTENT,
+              "(int(8),int,int)",
+              "",
+              ArgInfo(3, "(int,int,int)"),
+              true);
 }
 
 static void testParamCount() {
   auto paramFn = std::string(
-R"""(
+    R"""(
 proc fn(param n : int, args...n) {
   param ret = n;
   return n;
@@ -693,7 +697,7 @@ proc fn(param n : int, args...n) {
 
   // non-integrals should not be valid in count-expressions
   auto paramBoolFn = std::string(
-R"""(
+    R"""(
 proc fn(param n : bool, args...n) {
   var ret : args.type;
   return ret;
@@ -709,41 +713,31 @@ fn(true, true);
 
 static void testCount() {
   printHeader("testing count expressions");
-  testMatcher(Qualifier::DEFAULT_INTENT, "int", "3",
-              ArgInfo(3, "int"));
+  testMatcher(Qualifier::DEFAULT_INTENT, "int", "3", ArgInfo(3, "int"));
 
-  testMatcher(Qualifier::DEFAULT_INTENT, "int", "?",
-              ArgInfo(5, "int"));
-  testMatcher(Qualifier::DEFAULT_INTENT, "int", "?n",
-              ArgInfo(5, "int"));
+  testMatcher(Qualifier::DEFAULT_INTENT, "int", "?", ArgInfo(5, "int"));
+  testMatcher(Qualifier::DEFAULT_INTENT, "int", "?n", ArgInfo(5, "int"));
 
   // With type queries
-  testMatcher(Qualifier::DEFAULT_INTENT, "?t", "?n",
-              ArgInfo(4, "int"));
-  testMatcher(Qualifier::DEFAULT_INTENT, "?t", "3",
-              ArgInfo(3, "int"));
+  testMatcher(Qualifier::DEFAULT_INTENT, "?t", "?n", ArgInfo(4, "int"));
+  testMatcher(Qualifier::DEFAULT_INTENT, "?t", "3", ArgInfo(3, "int"));
 
   testParamCount();
 
   // Errors
 
-  testMatcher(Qualifier::DEFAULT_INTENT, "int", "3",
-              ArgInfo(5, "int"), true);
-  testMatcher(Qualifier::DEFAULT_INTENT, "int", "3",
-              ArgInfo(2, "int"), true);
-  testMatcher(Qualifier::DEFAULT_INTENT, "int", "1",
-              ArgInfo(2, "int"), true);
+  testMatcher(Qualifier::DEFAULT_INTENT, "int", "3", ArgInfo(5, "int"), true);
+  testMatcher(Qualifier::DEFAULT_INTENT, "int", "3", ArgInfo(2, "int"), true);
+  testMatcher(Qualifier::DEFAULT_INTENT, "int", "1", ArgInfo(2, "int"), true);
 
   // TODO: Better error message
-  testMatcher(Qualifier::DEFAULT_INTENT, "int", "0",
-              ArgInfo(2, "int"), true);
+  testMatcher(Qualifier::DEFAULT_INTENT, "int", "0", ArgInfo(2, "int"), true);
 
   // zero actuals, varargs require at least one
-  testMatcher(Qualifier::DEFAULT_INTENT, "int", "",
-              ArgInfo(), true);
+  testMatcher(Qualifier::DEFAULT_INTENT, "int", "", ArgInfo(), true);
 
   auto countTypeFn = std::string(
-R"""(
+    R"""(
 proc fn(args:?t...?n) {
   type tq = t;
   param cq = n;
@@ -758,56 +752,58 @@ fn(1, 2, 3);
 static void testAlignment() {
   printHeader("testing alignment");
 
-{
-  // Alignment tests where args is of fixed-size depending on a param int
+  {
+    // Alignment tests where args is of fixed-size depending on a param int
 
-  auto paramFn = std::string(
-R"""(
+    auto paramFn = std::string(
+      R"""(
 proc fn(param n : int, args...n, y : int, z : real) {
   param ret = n;
   return n;
 }
 )""");
 
-  std::vector<owned<ErrorBase>> errors;
+    std::vector<owned<ErrorBase>> errors;
 
-  auto good = std::string(R"""(var x = fn(3, 1, 2, 3, 4, 5.0);)""");
-  customHelper(paramFn + good);
+    auto good = std::string(R"""(var x = fn(3, 1, 2, 3, 4, 5.0);)""");
+    customHelper(paramFn + good);
 
-  auto less = std::string(R"""(var x = fn(3, 1, 2, 2.0);)""");
-  customHelper(paramFn + less, true, &errors);
-  assert(errors.size() == 1 && errors[0]->type() == chpl::NoMatchingCandidates);
-  errors.clear();
+    auto less = std::string(R"""(var x = fn(3, 1, 2, 2.0);)""");
+    customHelper(paramFn + less, true, &errors);
+    assert(errors.size() == 1 &&
+           errors[0]->type() == chpl::NoMatchingCandidates);
+    errors.clear();
 
-  auto more = std::string(R"""(var x = fn(3, 1, 2, 3, 4, 5, 6, 7.0);)""");
-  customHelper(paramFn + more, true, &errors);
-  assert(errors.size() == 1 && errors[0]->type() == chpl::NoMatchingCandidates);
-  errors.clear();
+    auto more = std::string(R"""(var x = fn(3, 1, 2, 3, 4, 5, 6, 7.0);)""");
+    customHelper(paramFn + more, true, &errors);
+    assert(errors.size() == 1 &&
+           errors[0]->type() == chpl::NoMatchingCandidates);
+    errors.clear();
 
-  auto named = std::string(R"""(var x = fn(z=5.0, 3, 1, 2, 3, 4);)""");
-  customHelper(paramFn + named);
-}
+    auto named = std::string(R"""(var x = fn(z=5.0, 3, 1, 2, 3, 4);)""");
+    customHelper(paramFn + named);
+  }
 
-{
-  // Issue an error for functions with multiple VarArg formals
+  {
+    // Issue an error for functions with multiple VarArg formals
 
-  auto multiVarArg = std::string(
-R"""(
+    auto multiVarArg = std::string(
+      R"""(
 proc fn(left..., right...) {
   var ret = ((...left), (...right));
   return ret;
 }
 )""");
 
-  auto multiCall = std::string(R"""(var x = fn(1,2,3,4,5);)""");
-  customHelper(multiVarArg + multiCall, true);
-}
+    auto multiCall = std::string(R"""(var x = fn(1,2,3,4,5);)""");
+    customHelper(multiVarArg + multiCall, true);
+  }
 
-{
-  // Testing named arguments and alignment
+  {
+    // Testing named arguments and alignment
 
-  auto program = std::string(
-R"""(
+    auto program = std::string(
+      R"""(
 proc reference(args...) {
   var ret : args.type;
   return ret;
@@ -824,14 +820,12 @@ var b = fn(x="hello", 1, "test", 3.0, 5.0);
 var c = fn(y=5.0, "hello", 1, "test", 3.0);
 )""");
 
-  auto pc = customHelper(program);
-  auto ref = pc.onlyDecl("R");
-  assert(ref == pc.onlyDecl("a"));
-  assert(ref == pc.onlyDecl("b"));
-  assert(ref == pc.onlyDecl("c"));
-
-}
-
+    auto pc = customHelper(program);
+    auto ref = pc.onlyDecl("R");
+    assert(ref == pc.onlyDecl("a"));
+    assert(ref == pc.onlyDecl("b"));
+    assert(ref == pc.onlyDecl("c"));
+  }
 }
 
 // regression test for a bug in which two fucntions (see body of the test)
@@ -885,7 +879,6 @@ static void testWhereClauseOnSizeQuery() {
 // showing arguments and formals, and success/failure
 //
 
-
 // normally, generic varargs like `R(?)...` allow mixing instantiations,
 // like passing `R(int)` and `R(real)` in the same call. However, if there's
 // a type query on the record's type field, then we can't mix types, since
@@ -915,8 +908,8 @@ static void testTypeQueryEnforced() {
     var x6 = fooAny(1.0, 1);
     )""");
 
-  auto qts = resolveTypesOfVariables(context, program,
-                                    {"x1","x2","x3","x4","x5","x6"});
+  auto qts = resolveTypesOfVariables(
+    context, program, {"x1", "x2", "x3", "x4", "x5", "x6"});
 
   assert(guard.numErrors() == 3);
   for (auto& err : guard.errors()) {
@@ -932,7 +925,6 @@ static void testTypeQueryEnforced() {
   assert(qts.at("x4").isUnknownOrErroneous());
   assert(qts.at("x6").isUnknownOrErroneous());
 }
-
 
 int main(int argc, char** argv) {
   for (int i = 1; i < argc; i++) {

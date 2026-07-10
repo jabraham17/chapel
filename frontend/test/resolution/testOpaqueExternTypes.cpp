@@ -44,15 +44,14 @@ static void test1() {
     param differentTypes = mytype == anotherType;
     )""";
 
-
-  auto types = resolveTypesOfVariables(context, program, { "mytype", "anotherType", "reflexive", "differentTypes" });
+  auto types = resolveTypesOfVariables(
+    context, program, {"mytype", "anotherType", "reflexive", "differentTypes"});
 
   auto mytype = types.at("mytype");
   assert(mytype.isType());
   assert(mytype.type());
   assert(mytype.type()->isExternType());
   assert(mytype.type()->toExternType()->linkageName() == "mytype");
-
 
   auto anotherType = types.at("anotherType");
   assert(anotherType.isType());
@@ -78,15 +77,14 @@ static void test2() {
     param differentTypes = mytype == anotherType;
     )""";
 
-
-  auto types = resolveTypesOfVariables(context, program, { "mytype", "anotherType", "differentTypes" });
+  auto types = resolveTypesOfVariables(
+    context, program, {"mytype", "anotherType", "differentTypes"});
 
   auto mytype = types.at("mytype");
   assert(mytype.isType());
   assert(mytype.type());
   assert(mytype.type()->isExternType());
   assert(mytype.type()->toExternType()->linkageName() == "mytype");
-
 
   auto anotherType = types.at("anotherType");
   assert(anotherType.isType());
@@ -122,8 +120,8 @@ static void test3() {
     param shouldBeFalse2 = f3() == f2();
     )""";
 
-
-  auto types = resolveTypesOfVariables(context, program, { "shouldBeFalse1", "shouldBeFalse2" });
+  auto types = resolveTypesOfVariables(
+    context, program, {"shouldBeFalse1", "shouldBeFalse2"});
 
   assert(types.at("shouldBeFalse1").isParamFalse());
   assert(types.at("shouldBeFalse2").isParamFalse());
@@ -184,10 +182,14 @@ static void test4() {
     type t10 = externT(string);
     )""";
 
+  auto types = resolveTypesOfVariables(
+    context,
+    program,
+    {"t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9", "t10"});
 
-  auto types = resolveTypesOfVariables(context, program, { "t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9", "t10" });
-
-  auto checkType = [&](const char* name, const char* linkageName, const Type* fallbackType = nullptr) {
+  auto checkType = [&](const char* name,
+                       const char* linkageName,
+                       const Type* fallbackType = nullptr) {
     auto qt = types.at(name);
     assert(qt.kind() == QualifiedType::TYPE);
     assert(qt.type());
@@ -222,15 +224,15 @@ static void test5() {
     extern var notAType;
     )""";
 
-  auto types = resolveTypesOfVariables(context, program, { "notAType" });
+  auto types = resolveTypesOfVariables(context, program, {"notAType"});
   auto notAType = types.at("notAType");
 
   assert(notAType.isUnknown());
   assert(guard.numErrors() == 1);
-  assert(guard.errors()[0]->message() == "variable 'notAType' is declared without an initializer or type");
+  assert(guard.errors()[0]->message() ==
+         "variable 'notAType' is declared without an initializer or type");
   guard.realizeErrors();
 }
-
 
 int main() {
   test1();

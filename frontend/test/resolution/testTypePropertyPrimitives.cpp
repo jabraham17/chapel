@@ -30,23 +30,17 @@
 #include "chpl/uast/Variable.h"
 
 struct Test {
-  enum Output {
-    TRUE,
-    FALSE,
-    STRING,
-    ERROR
-  };
+  enum Output { TRUE, FALSE, STRING, ERROR };
 
   struct PrimitiveCalls {
     std::vector<const char*> actuals;
     Output expected;
     std::string str;
 
-    PrimitiveCalls(std::vector<const char*> actuals, Output expected,
-                   std::string str="")
-      : actuals(std::move(actuals)),
-        expected(expected),
-        str(std::move(str)) {
+    PrimitiveCalls(std::vector<const char*> actuals,
+                   Output expected,
+                   std::string str = "")
+      : actuals(std::move(actuals)), expected(expected), str(std::move(str)) {
       if (expected != STRING) assert(this->str.empty());
     }
   };
@@ -58,9 +52,9 @@ struct Test {
   std::vector<PrimitiveCalls> calls;
 };
 
-static bool
-isParamStringMatch(chpl::types::QualifiedType qt, std::string str,
-                   std::string& out) {
+static bool isParamStringMatch(chpl::types::QualifiedType qt,
+                               std::string str,
+                               std::string& out) {
   if (qt.kind() == QualifiedType::PARAM) {
     if (qt.type()) {
       if (auto p = qt.param()) {
@@ -74,9 +68,9 @@ isParamStringMatch(chpl::types::QualifiedType qt, std::string str,
   return false;
 }
 
-static void
-assertParamStringMatch(chpl::types::QualifiedType qt, std::string str,
-                       std::string& out) {
+static void assertParamStringMatch(chpl::types::QualifiedType qt,
+                                   std::string str,
+                                   std::string& out) {
   bool match = isParamStringMatch(qt, str, out);
   if (!match) {
     std::cout << "Expected " << str << ", but got -> " << out << std::endl;
@@ -107,7 +101,7 @@ static void testPrimitive(const Test& tpg, int unrelatedErrors = 0) {
 
     for (size_t i = 0; i < call.actuals.size(); i++) {
       ps << call.actuals[i];
-      bool last = (i+1) == call.actuals.size();
+      bool last = (i + 1) == call.actuals.size();
       if (!last) ps << ", ";
     }
     ps << ");" << std::endl;
@@ -142,8 +136,7 @@ static void testPrimitive(const Test& tpg, int unrelatedErrors = 0) {
         assert(type.isErroneousType());
         std::cout << "error";
       } break;
-      default: assert(false);
-        break;
+      default: assert(false); break;
     }
     std::cout << std::endl;
   }
@@ -152,7 +145,7 @@ static void testPrimitive(const Test& tpg, int unrelatedErrors = 0) {
 }
 
 static void test0() {
-  Test tpg {
+  Test tpg{
     /* testName */ __FUNCTION__,
     /* useStdContext */ false,
     /* prelude */ R"""(
@@ -164,62 +157,63 @@ static void test0() {
                class c3 { type T=int; var x: T; }
                )""",
     /* primitive */ chpl::uast::primtags::PRIM_IS_GENERIC_TYPE,
-    /* calls */ {
-      { {"r1"}, Test::FALSE },
-      { {"r2"}, Test::TRUE },
-      { {"r3"}, Test::FALSE },
-      { {"r3(?)"}, Test::TRUE },
+    /* calls */
+    {
+      {{"r1"}, Test::FALSE},
+      {{"r2"}, Test::TRUE},
+      {{"r3"}, Test::FALSE},
+      {{"r3(?)"}, Test::TRUE},
       // Concrete class without management is generic.
-      { {"c1"}, Test::TRUE },
-      { {"c2"}, Test::TRUE },
-      { {"c3"}, Test::TRUE },
-      { {"c3(?)"}, Test::TRUE },
-      { {"owned c1"}, Test::FALSE },
-      { {"owned c2"}, Test::TRUE },
-      { {"owned c3"}, Test::FALSE },
-      { {"owned c3(?)"}, Test::TRUE },
-      { {"shared c1"}, Test::FALSE },
-      { {"shared c2"}, Test::TRUE },
-      { {"shared c3"}, Test::FALSE },
-      { {"shared c3(?)"}, Test::TRUE },
-      { {"borrowed c1"}, Test::FALSE },
-      { {"borrowed c2"}, Test::TRUE },
-      { {"borrowed c3"}, Test::FALSE },
-      { {"borrowed c3(?)"}, Test::TRUE },
-      { {"unmanaged c1"}, Test::FALSE },
-      { {"unmanaged c2"}, Test::TRUE },
-      { {"unmanaged c3"}, Test::FALSE },
-      { {"unmanaged c3(?)"}, Test::TRUE },
+      {{"c1"}, Test::TRUE},
+      {{"c2"}, Test::TRUE},
+      {{"c3"}, Test::TRUE},
+      {{"c3(?)"}, Test::TRUE},
+      {{"owned c1"}, Test::FALSE},
+      {{"owned c2"}, Test::TRUE},
+      {{"owned c3"}, Test::FALSE},
+      {{"owned c3(?)"}, Test::TRUE},
+      {{"shared c1"}, Test::FALSE},
+      {{"shared c2"}, Test::TRUE},
+      {{"shared c3"}, Test::FALSE},
+      {{"shared c3(?)"}, Test::TRUE},
+      {{"borrowed c1"}, Test::FALSE},
+      {{"borrowed c2"}, Test::TRUE},
+      {{"borrowed c3"}, Test::FALSE},
+      {{"borrowed c3(?)"}, Test::TRUE},
+      {{"unmanaged c1"}, Test::FALSE},
+      {{"unmanaged c2"}, Test::TRUE},
+      {{"unmanaged c3"}, Test::FALSE},
+      {{"unmanaged c3(?)"}, Test::TRUE},
       // As above but nilable.
-      { {"c1?"}, Test::TRUE },
-      { {"c2?"}, Test::TRUE },
-      { {"c3?"}, Test::TRUE },
-      { {"c3(?)?"}, Test::TRUE },
-      { {"owned c1?"}, Test::FALSE },
-      { {"owned c2?"}, Test::TRUE },
-      { {"owned c3?"}, Test::FALSE },
-      { {"owned c3(?)?"}, Test::TRUE },
-      { {"shared c1?"}, Test::FALSE },
-      { {"shared c2?"}, Test::TRUE },
-      { {"shared c3?"}, Test::FALSE },
-      { {"shared c3(?)?"}, Test::TRUE },
-      { {"borrowed c1?"}, Test::FALSE },
-      { {"borrowed c2?"}, Test::TRUE },
-      { {"borrowed c3?"}, Test::FALSE },
-      { {"borrowed c3(?)?"}, Test::TRUE },
-      { {"unmanaged c1?"}, Test::FALSE },
-      { {"unmanaged c2?"}, Test::TRUE },
-      { {"unmanaged c3?"}, Test::FALSE },
-      { {"unmanaged c3(?)?"}, Test::TRUE },
-      { {"int"}, Test::FALSE },
-      { {"integral"}, Test::TRUE },
-     },
+      {{"c1?"}, Test::TRUE},
+      {{"c2?"}, Test::TRUE},
+      {{"c3?"}, Test::TRUE},
+      {{"c3(?)?"}, Test::TRUE},
+      {{"owned c1?"}, Test::FALSE},
+      {{"owned c2?"}, Test::TRUE},
+      {{"owned c3?"}, Test::FALSE},
+      {{"owned c3(?)?"}, Test::TRUE},
+      {{"shared c1?"}, Test::FALSE},
+      {{"shared c2?"}, Test::TRUE},
+      {{"shared c3?"}, Test::FALSE},
+      {{"shared c3(?)?"}, Test::TRUE},
+      {{"borrowed c1?"}, Test::FALSE},
+      {{"borrowed c2?"}, Test::TRUE},
+      {{"borrowed c3?"}, Test::FALSE},
+      {{"borrowed c3(?)?"}, Test::TRUE},
+      {{"unmanaged c1?"}, Test::FALSE},
+      {{"unmanaged c2?"}, Test::TRUE},
+      {{"unmanaged c3?"}, Test::FALSE},
+      {{"unmanaged c3(?)?"}, Test::TRUE},
+      {{"int"}, Test::FALSE},
+      {{"integral"}, Test::TRUE},
+    },
   };
   testPrimitive(tpg);
 }
 
 static void test1() {
-  Test tpg {
+  Test tpg{
     /* testName */ __FUNCTION__,
     /* useStdContext */ false,
     /* prelude */ R"""(
@@ -227,21 +221,22 @@ static void test1() {
              class c1 { var x: int; }
              )""",
     /* primitive */ chpl::uast::primtags::PRIM_IS_CLASS_TYPE,
-    /* calls */ {
-      { {"r1"}, Test::FALSE },
-      { {"c1"}, Test::TRUE },
-      { {"owned c1"}, Test::TRUE },
-      { {"owned class"}, Test::TRUE },
-      { {"class"}, Test::TRUE },
-      { {"int"}, Test::FALSE },
-      { {"integral"}, Test::FALSE },
-     },
+    /* calls */
+    {
+      {{"r1"}, Test::FALSE},
+      {{"c1"}, Test::TRUE},
+      {{"owned c1"}, Test::TRUE},
+      {{"owned class"}, Test::TRUE},
+      {{"class"}, Test::TRUE},
+      {{"int"}, Test::FALSE},
+      {{"integral"}, Test::FALSE},
+    },
   };
   testPrimitive(tpg);
 }
 
 static void test2() {
-  Test tpg {
+  Test tpg{
     /* testName */ __FUNCTION__,
     /* useStdContext */ false,
     /* prelude */ R"""(
@@ -249,20 +244,21 @@ static void test2() {
              class c1 { var x: int; }
              )""",
     /* primitive */ chpl::uast::primtags::PRIM_IS_NILABLE_CLASS_TYPE,
-    /* calls */ {
-      { {"r1"}, Test::FALSE },
-      { {"owned c1"}, Test::FALSE },
-      { {"int"}, Test::FALSE },
-      { {"integral"}, Test::FALSE },
-      { {"owned c1?"}, Test::TRUE },
-      { {"c1?"}, Test::TRUE },
-     },
+    /* calls */
+    {
+      {{"r1"}, Test::FALSE},
+      {{"owned c1"}, Test::FALSE},
+      {{"int"}, Test::FALSE},
+      {{"integral"}, Test::FALSE},
+      {{"owned c1?"}, Test::TRUE},
+      {{"c1?"}, Test::TRUE},
+    },
   };
   testPrimitive(tpg);
 }
 
 static void test3() {
-  Test tpg {
+  Test tpg{
     /* testName */ __FUNCTION__,
     /* useStdContext */ false,
     /* prelude */ R"""(
@@ -270,21 +266,22 @@ static void test3() {
              class c1 { var x: int; }
              )""",
     /* primitive */ chpl::uast::primtags::PRIM_IS_NON_NILABLE_CLASS_TYPE,
-    /* calls */ {
-      { {"r1"}, Test::FALSE },
-      { {"c1"}, Test::TRUE },
-      { {"owned c1"}, Test::TRUE },
-      { {"int"}, Test::FALSE },
-      { {"integral"}, Test::FALSE },
-      { {"owned c1?"}, Test::FALSE },
-      { {"c1?"}, Test::FALSE },
-     },
+    /* calls */
+    {
+      {{"r1"}, Test::FALSE},
+      {{"c1"}, Test::TRUE},
+      {{"owned c1"}, Test::TRUE},
+      {{"int"}, Test::FALSE},
+      {{"integral"}, Test::FALSE},
+      {{"owned c1?"}, Test::FALSE},
+      {{"c1?"}, Test::FALSE},
+    },
   };
   testPrimitive(tpg);
 }
 
 static void test4() {
-  Test tpg {
+  Test tpg{
     /* testName */ __FUNCTION__,
     /* useStdContext */ false,
     /* prelude */ R"""(
@@ -292,21 +289,22 @@ static void test4() {
              class c1 { var x: int; }
              )""",
     /* primitive */ chpl::uast::primtags::PRIM_IS_RECORD_TYPE,
-    /* calls */ {
-      { {"r1"}, Test::TRUE },
-      { {"c1"}, Test::FALSE },
-      { {"owned c1"}, Test::FALSE },
-      { {"int"}, Test::FALSE },
-      { {"integral"}, Test::FALSE },
-      { {"owned c1?"}, Test::FALSE },
-      { {"c1?"}, Test::FALSE },
-     },
+    /* calls */
+    {
+      {{"r1"}, Test::TRUE},
+      {{"c1"}, Test::FALSE},
+      {{"owned c1"}, Test::FALSE},
+      {{"int"}, Test::FALSE},
+      {{"integral"}, Test::FALSE},
+      {{"owned c1?"}, Test::FALSE},
+      {{"c1?"}, Test::FALSE},
+    },
   };
   testPrimitive(tpg);
 }
 
 static void test5() {
-  Test tpg {
+  Test tpg{
     /* testName */ __FUNCTION__,
     /* useStdContext */ false,
     /* prelude */ R"""(
@@ -315,16 +313,17 @@ static void test5() {
                union u1 { var x: int; }
                )""",
     /* primitive */ chpl::uast::primtags::PRIM_IS_UNION_TYPE,
-    /* calls */ {
-      { {"r1"}, Test::FALSE },
-      { {"c1"}, Test::FALSE },
-      { {"u1"}, Test::TRUE },
-      { {"owned c1"}, Test::FALSE },
-      { {"int"}, Test::FALSE },
-      { {"integral"}, Test::FALSE },
-      { {"owned c1?"}, Test::FALSE },
-      { {"c1?"}, Test::FALSE },
-     },
+    /* calls */
+    {
+      {{"r1"}, Test::FALSE},
+      {{"c1"}, Test::FALSE},
+      {{"u1"}, Test::TRUE},
+      {{"owned c1"}, Test::FALSE},
+      {{"int"}, Test::FALSE},
+      {{"integral"}, Test::FALSE},
+      {{"owned c1?"}, Test::FALSE},
+      {{"c1?"}, Test::FALSE},
+    },
   };
   testPrimitive(tpg);
 }
@@ -351,7 +350,7 @@ static void test6() {
 */
 
 static void test7() {
-  Test tpg {
+  Test tpg{
     /* testName */ __FUNCTION__,
     /* useStdContext */ false,
     /* prelude */ R"""(
@@ -359,23 +358,24 @@ static void test7() {
                class c1 { var x: int; }
                )""",
     /* primitive */ chpl::uast::primtags::PRIM_IS_BORROWED_CLASS_TYPE,
-    /* calls */ {
-      { {"r1"}, Test::FALSE },
-      { {"c1"}, Test::FALSE },
-      { {"c1?"}, Test::FALSE },
-      { {"owned c1"}, Test::FALSE },
-      { {"owned c1?"}, Test::FALSE },
-      { {"borrowed c1"}, Test::TRUE },
-      { {"borrowed c1?"}, Test::TRUE },
-      { {"int"}, Test::FALSE },
-      { {"integral"}, Test::FALSE },
-     },
+    /* calls */
+    {
+      {{"r1"}, Test::FALSE},
+      {{"c1"}, Test::FALSE},
+      {{"c1?"}, Test::FALSE},
+      {{"owned c1"}, Test::FALSE},
+      {{"owned c1?"}, Test::FALSE},
+      {{"borrowed c1"}, Test::TRUE},
+      {{"borrowed c1?"}, Test::TRUE},
+      {{"int"}, Test::FALSE},
+      {{"integral"}, Test::FALSE},
+    },
   };
   testPrimitive(tpg);
 }
 
 static void test8() {
-  Test tpg {
+  Test tpg{
     /* testName */ __FUNCTION__,
     /* useStdContext */ false,
     /* prelude */ R"""(
@@ -395,33 +395,25 @@ static void test8() {
              var x6: e6;
              )""",
     /* primitive */ chpl::uast::primtags::PRIM_IS_ABS_ENUM_TYPE,
-    /* calls */ {
-      { {"r1"}, Test::FALSE },
-      { {"c1"}, Test::FALSE },
-      { {"c1?"}, Test::FALSE },
-      { {"owned c1"}, Test::FALSE },
-      { {"owned c1?"}, Test::FALSE },
-      { {"int"}, Test::FALSE },
-      { {"integral"}, Test::FALSE },
-      { {"e1"}, Test::FALSE },
-      { {"x1"}, Test::FALSE },
-      { {"e2"}, Test::FALSE },
-      { {"x2"}, Test::FALSE },
-      { {"e3"}, Test::TRUE },
-      { {"x3"}, Test::TRUE },
-      { {"e4"}, Test::TRUE },
-      { {"x4"}, Test::TRUE },
-      { {"e5"}, Test::FALSE },
-      { {"x5"}, Test::FALSE },
-      { {"e6"}, Test::FALSE },
-      { {"x6"}, Test::FALSE },
-     },
+    /* calls */
+    {
+      {{"r1"}, Test::FALSE},        {{"c1"}, Test::FALSE},
+      {{"c1?"}, Test::FALSE},       {{"owned c1"}, Test::FALSE},
+      {{"owned c1?"}, Test::FALSE}, {{"int"}, Test::FALSE},
+      {{"integral"}, Test::FALSE},  {{"e1"}, Test::FALSE},
+      {{"x1"}, Test::FALSE},        {{"e2"}, Test::FALSE},
+      {{"x2"}, Test::FALSE},        {{"e3"}, Test::TRUE},
+      {{"x3"}, Test::TRUE},         {{"e4"}, Test::TRUE},
+      {{"x4"}, Test::TRUE},         {{"e5"}, Test::FALSE},
+      {{"x5"}, Test::FALSE},        {{"e6"}, Test::FALSE},
+      {{"x6"}, Test::FALSE},
+    },
   };
   testPrimitive(tpg);
 }
 
 static void test9() {
-  Test tpg {
+  Test tpg{
     /* testName */ __FUNCTION__,
     /* useStdContext */ false,
     /* prelude */ R"""(
@@ -430,28 +422,33 @@ static void test9() {
                class d1 : c1 {}
                )""",
     /* primitive */ chpl::uast::primtags::PRIM_IS_COERCIBLE,
-    /* calls */ {
-      { {"int", "bool"}, Test::TRUE },
-      { {"int(8)", "bool"}, Test::TRUE },
-      { {"int(16)", "bool"}, Test::TRUE },
-      { {"int(32)", "bool"}, Test::TRUE },
-      { {"int(64)", "bool"}, Test::TRUE },
-      { {"r1", "bool"}, Test::FALSE },
-      { {"c1", "bool"}, Test::FALSE },
-      { {"c1?", "bool"}, Test::FALSE },
-      { {"owned c1", "bool"}, Test::FALSE },
-      { {"owned c1?", "bool"}, Test::FALSE },
-      { {"RootClass?", "c1"}, Test::TRUE },
-      { {"RootClass", "c1",}, Test::TRUE },
-      { {"RootClass?", "c1?"}, Test::TRUE },
-      { {"RootClass", "c1?"}, Test::FALSE },
-     },
+    /* calls */
+    {
+      {{"int", "bool"}, Test::TRUE},
+      {{"int(8)", "bool"}, Test::TRUE},
+      {{"int(16)", "bool"}, Test::TRUE},
+      {{"int(32)", "bool"}, Test::TRUE},
+      {{"int(64)", "bool"}, Test::TRUE},
+      {{"r1", "bool"}, Test::FALSE},
+      {{"c1", "bool"}, Test::FALSE},
+      {{"c1?", "bool"}, Test::FALSE},
+      {{"owned c1", "bool"}, Test::FALSE},
+      {{"owned c1?", "bool"}, Test::FALSE},
+      {{"RootClass?", "c1"}, Test::TRUE},
+      {{
+         "RootClass",
+         "c1",
+       },
+       Test::TRUE},
+      {{"RootClass?", "c1?"}, Test::TRUE},
+      {{"RootClass", "c1?"}, Test::FALSE},
+    },
   };
   testPrimitive(tpg);
 }
 
 static void test10() {
-  Test tpg {
+  Test tpg{
     /* testName */ __FUNCTION__,
     /* useStdContext */ false,
     /* prelude */ R"""(
@@ -465,20 +462,21 @@ static void test10() {
             enum e1 { foo }
             )""",
     /* primitive */ chpl::uast::primtags::PRIM_TYPE_TO_STRING,
-    /* calls */ {
-      { {"bool"}, Test::STRING, "bool" },
-      { {"int"}, Test::STRING, "int(64)" },
-      { {"int(8)"}, Test::STRING, "int(8)" },
-      { {"int(16)"}, Test::STRING, "int(16)" },
-      { {"int(32)"}, Test::STRING, "int(32)" },
-      { {"int(64)"}, Test::STRING, "int(64)" },
-      { {"real"}, Test::STRING, "real(64)" },
-      { {"real(32)"}, Test::STRING, "real(32)" },
-      { {"real(64)"}, Test::STRING, "real(64)" },
-      { {"bytes"}, Test::STRING, "bytes" },
-      { {"string"}, Test::STRING, "string" },
-      { {"r1"}, Test::STRING, "r1" },
-      { {"r2"}, Test::STRING, "r2" },
+    /* calls */
+    {
+      {{"bool"}, Test::STRING, "bool"},
+      {{"int"}, Test::STRING, "int(64)"},
+      {{"int(8)"}, Test::STRING, "int(8)"},
+      {{"int(16)"}, Test::STRING, "int(16)"},
+      {{"int(32)"}, Test::STRING, "int(32)"},
+      {{"int(64)"}, Test::STRING, "int(64)"},
+      {{"real"}, Test::STRING, "real(64)"},
+      {{"real(32)"}, Test::STRING, "real(32)"},
+      {{"real(64)"}, Test::STRING, "real(64)"},
+      {{"bytes"}, Test::STRING, "bytes"},
+      {{"string"}, Test::STRING, "string"},
+      {{"r1"}, Test::STRING, "r1"},
+      {{"r2"}, Test::STRING, "r2"},
       // TODO: In production 'r3' and 'r3(int)' are sometimes not the same.
       // TODO: Frontend seems to store dependent substitutions, which is
       //       printing out two+ subs instead of one...
@@ -488,23 +486,23 @@ static void test10() {
       // { {"r3(real)"}, Test::STRING, "r3(real(64))" },
       // { {"r4(real, r1)"}, Test::STRING, "r4(real(64), r1)" },
       // { {"r4(r3, r2(int))"}, Test::STRING, "r4(r3, r2(int(64)))" },
-      { {"c1"}, Test::STRING, "c1" },
-      { {"c1?"}, Test::STRING, "c1?" },
-      { {"d1"}, Test::STRING, "d1" },
-      { {"d1?"}, Test::STRING, "d1?" },
-      { {"borrowed c1"}, Test::STRING, "borrowed c1" },
-      { {"unmanaged c1"}, Test::STRING, "unmanaged c1" },
-      { {"shared c1"}, Test::STRING, "shared c1" },
-      { {"owned c1"}, Test::STRING, "owned c1" },
-      { {"u1"}, Test::STRING, "u1" },
-      { {"e1"}, Test::STRING, "e1" },
-     },
+      {{"c1"}, Test::STRING, "c1"},
+      {{"c1?"}, Test::STRING, "c1?"},
+      {{"d1"}, Test::STRING, "d1"},
+      {{"d1?"}, Test::STRING, "d1?"},
+      {{"borrowed c1"}, Test::STRING, "borrowed c1"},
+      {{"unmanaged c1"}, Test::STRING, "unmanaged c1"},
+      {{"shared c1"}, Test::STRING, "shared c1"},
+      {{"owned c1"}, Test::STRING, "owned c1"},
+      {{"u1"}, Test::STRING, "u1"},
+      {{"e1"}, Test::STRING, "e1"},
+    },
   };
   testPrimitive(tpg);
 }
 
 static void test11() {
-  Test tpg {
+  Test tpg{
     /* testName */ __FUNCTION__,
     /* useStdContext */ false,
     /* prelude */ R"""(
@@ -518,45 +516,46 @@ static void test11() {
             enum e1 { foo }
             )""",
     /* primitive */ chpl::uast::primtags::PRIM_SIMPLE_TYPE_NAME,
-    /* calls */ {
-      { {"bool"}, Test::STRING, "bool" },
-      { {"int"}, Test::STRING, "int(64)" },
-      { {"int(8)"}, Test::STRING, "int(8)" },
-      { {"int(16)"}, Test::STRING, "int(16)" },
-      { {"int(32)"}, Test::STRING, "int(32)" },
-      { {"int(64)"}, Test::STRING, "int(64)" },
-      { {"real"}, Test::STRING, "real(64)" },
-      { {"real(32)"}, Test::STRING, "real(32)" },
-      { {"real(64)"}, Test::STRING, "real(64)" },
-      { {"bytes"}, Test::STRING, "bytes" },
-      { {"string"}, Test::STRING, "string" },
-      { {"r1"}, Test::STRING, "r1" },
-      { {"r2"}, Test::STRING, "r2" },
-      { {"r3"}, Test::STRING, "r3" },
-      { {"r3(int)"}, Test::STRING, "r3" },
-      { {"r2(int)"}, Test::STRING, "r2" },
-      { {"r3(real)"}, Test::STRING, "r3" },
-      { {"r4(real, r1)"}, Test::STRING, "r4" },
-      { {"r4(r3, r2(int))"}, Test::STRING, "r4" },
-      { {"c1"}, Test::STRING, "c1" },
-      { {"c1?"}, Test::STRING, "c1?" },
-      { {"d1"}, Test::STRING, "d1" },
-      { {"d1?"}, Test::STRING, "d1?" },
-      { {"borrowed c1"}, Test::STRING, "borrowed c1" },
-      { {"unmanaged c1"}, Test::STRING, "unmanaged c1" },
-      { {"shared c1"}, Test::STRING, "shared c1" },
-      { {"owned c1"}, Test::STRING, "owned c1" },
-      { {"u1"}, Test::STRING, "u1" },
-      { {"e1"}, Test::STRING, "e1" },
-     },
+    /* calls */
+    {
+      {{"bool"}, Test::STRING, "bool"},
+      {{"int"}, Test::STRING, "int(64)"},
+      {{"int(8)"}, Test::STRING, "int(8)"},
+      {{"int(16)"}, Test::STRING, "int(16)"},
+      {{"int(32)"}, Test::STRING, "int(32)"},
+      {{"int(64)"}, Test::STRING, "int(64)"},
+      {{"real"}, Test::STRING, "real(64)"},
+      {{"real(32)"}, Test::STRING, "real(32)"},
+      {{"real(64)"}, Test::STRING, "real(64)"},
+      {{"bytes"}, Test::STRING, "bytes"},
+      {{"string"}, Test::STRING, "string"},
+      {{"r1"}, Test::STRING, "r1"},
+      {{"r2"}, Test::STRING, "r2"},
+      {{"r3"}, Test::STRING, "r3"},
+      {{"r3(int)"}, Test::STRING, "r3"},
+      {{"r2(int)"}, Test::STRING, "r2"},
+      {{"r3(real)"}, Test::STRING, "r3"},
+      {{"r4(real, r1)"}, Test::STRING, "r4"},
+      {{"r4(r3, r2(int))"}, Test::STRING, "r4"},
+      {{"c1"}, Test::STRING, "c1"},
+      {{"c1?"}, Test::STRING, "c1?"},
+      {{"d1"}, Test::STRING, "d1"},
+      {{"d1?"}, Test::STRING, "d1?"},
+      {{"borrowed c1"}, Test::STRING, "borrowed c1"},
+      {{"unmanaged c1"}, Test::STRING, "unmanaged c1"},
+      {{"shared c1"}, Test::STRING, "shared c1"},
+      {{"owned c1"}, Test::STRING, "owned c1"},
+      {{"u1"}, Test::STRING, "u1"},
+      {{"e1"}, Test::STRING, "e1"},
+    },
   };
   testPrimitive(tpg);
 }
 
 static void test12() {
-  Test tpg {
+  Test tpg{
     /* testName */ __FUNCTION__,
-    /* useStdContext */ false,    // TODO: True...
+    /* useStdContext */ false, // TODO: True...
     /* prelude */ R"""(
             pragma "ignore noinit"
             record r1 {}
@@ -584,57 +583,58 @@ static void test12() {
             operator =(ref lhs: real, const rhs: real) {}
             )""",
     /* primitive */ chpl::uast::primtags::PRIM_IS_POD,
-    /* calls */ {
-      { {"bool"}, Test::TRUE },
-      { {"int"}, Test::TRUE },
-      { {"int(8)"}, Test::TRUE },
-      { {"int(16)"}, Test::TRUE },
-      { {"int(32)"}, Test::TRUE },
-      { {"int(64)"}, Test::TRUE },
-      { {"uint"}, Test::TRUE },
-      { {"uint(8)"}, Test::TRUE },
-      { {"uint(16)"}, Test::TRUE },
-      { {"uint(32)"}, Test::TRUE },
-      { {"uint(64)"}, Test::TRUE },
-      { {"real(32)"}, Test::TRUE },
-      { {"real(64)"}, Test::TRUE },
-      { {"complex"}, Test::TRUE },
-      { {"imag"}, Test::TRUE },
-      { {"integral"}, Test::FALSE },
+    /* calls */
+    {
+      {{"bool"}, Test::TRUE},
+      {{"int"}, Test::TRUE},
+      {{"int(8)"}, Test::TRUE},
+      {{"int(16)"}, Test::TRUE},
+      {{"int(32)"}, Test::TRUE},
+      {{"int(64)"}, Test::TRUE},
+      {{"uint"}, Test::TRUE},
+      {{"uint(8)"}, Test::TRUE},
+      {{"uint(16)"}, Test::TRUE},
+      {{"uint(32)"}, Test::TRUE},
+      {{"uint(64)"}, Test::TRUE},
+      {{"real(32)"}, Test::TRUE},
+      {{"real(64)"}, Test::TRUE},
+      {{"complex"}, Test::TRUE},
+      {{"imag"}, Test::TRUE},
+      {{"integral"}, Test::FALSE},
       // TODO:
       // { {"atomic int"}, Test::FALSE },
       // { {"single int"}, Test::FALSE },
       // { {"sync int"}, Test::FALSE },
-      { {"r1"}, Test::FALSE },
-      { {"r2"}, Test::TRUE },
-      { {"r3"}, Test::FALSE },
-      { {"r4"}, Test::TRUE },
-      { {"r5"}, Test::FALSE },
-      { {"r6"}, Test::FALSE },
-      { {"r7"}, Test::FALSE },
-      { {"r8"}, Test::FALSE },
-      { {"r9"}, Test::TRUE },
-      { {"r10"}, Test::FALSE },
+      {{"r1"}, Test::FALSE},
+      {{"r2"}, Test::TRUE},
+      {{"r3"}, Test::FALSE},
+      {{"r4"}, Test::TRUE},
+      {{"r5"}, Test::FALSE},
+      {{"r6"}, Test::FALSE},
+      {{"r7"}, Test::FALSE},
+      {{"r8"}, Test::FALSE},
+      {{"r9"}, Test::TRUE},
+      {{"r10"}, Test::FALSE},
       // TODO: Currently marked as non-POD even though all the members are
       // marked as POD - this is because 'r9' is technically generic, which
       // causes problems.
-      { {"r11"}, Test::FALSE },
-      { {"c1"}, Test::FALSE },
-      { {"owned c1"}, Test::FALSE },
-      { {"owned c1?"}, Test::FALSE },
-      { {"shared c1"}, Test::FALSE },
-      { {"shared c1?"}, Test::FALSE },
-      { {"borrowed c1"}, Test::TRUE },
-      { {"borrowed c1?"}, Test::TRUE },
-      { {"unmanaged c1"}, Test::TRUE },
-      { {"unmanaged c1?"}, Test::TRUE },
-     },
+      {{"r11"}, Test::FALSE},
+      {{"c1"}, Test::FALSE},
+      {{"owned c1"}, Test::FALSE},
+      {{"owned c1?"}, Test::FALSE},
+      {{"shared c1"}, Test::FALSE},
+      {{"shared c1?"}, Test::FALSE},
+      {{"borrowed c1"}, Test::TRUE},
+      {{"borrowed c1?"}, Test::TRUE},
+      {{"unmanaged c1"}, Test::TRUE},
+      {{"unmanaged c1?"}, Test::TRUE},
+    },
   };
   testPrimitive(tpg);
 }
 
 static void test13() {
-  Test tpg {
+  Test tpg{
     /* testName */ __FUNCTION__,
     /* useStdContext */ false,
     /* prelude */ R"""(
@@ -643,17 +643,18 @@ static void test13() {
                record baz {}
                )""",
     /* primitive */ chpl::uast::primtags::PRIM_IS_EXTERN_TYPE,
-    /* calls */ {
-      { {"int"}, Test::FALSE },
-      { {"foo"}, Test::TRUE },
-      { {"bar"}, Test::TRUE },
-     },
+    /* calls */
+    {
+      {{"int"}, Test::FALSE},
+      {{"foo"}, Test::TRUE},
+      {{"bar"}, Test::TRUE},
+    },
   };
   testPrimitive(tpg);
 }
 
 static void test14() {
-  Test tpg {
+  Test tpg{
     /* testName */ __FUNCTION__,
     /* useStdContext */ true,
     /* prelude */ R"""(
@@ -663,42 +664,43 @@ static void test14() {
                union baz { var f : owned Foo; }
                )""",
     /* primitive */ chpl::uast::primtags::PRIM_HAS_DEFAULT_VALUE,
-    /* calls */ {
+    /* calls */
+    {
       /* primitive types */
-      { {"bool"}, Test::TRUE },
-      { {"int"}, Test::TRUE },
-      { {"int(64)"}, Test::TRUE },
-      { {"int(32)"}, Test::TRUE },
-      { {"uint"}, Test::TRUE },
-      { {"real"}, Test::TRUE },
-      { {"imag"}, Test::TRUE },
-      { {"complex"}, Test::TRUE },
+      {{"bool"}, Test::TRUE},
+      {{"int"}, Test::TRUE},
+      {{"int(64)"}, Test::TRUE},
+      {{"int(32)"}, Test::TRUE},
+      {{"uint"}, Test::TRUE},
+      {{"real"}, Test::TRUE},
+      {{"imag"}, Test::TRUE},
+      {{"complex"}, Test::TRUE},
       /* record-like builtin types */
-      { {"string"}, Test::TRUE },
-      { {"bytes"}, Test::TRUE },
-      { {"range"}, Test::TRUE },
-      { {"sync int"}, Test::TRUE },
-      { {"atomic int"}, Test::TRUE },
+      {{"string"}, Test::TRUE},
+      {{"bytes"}, Test::TRUE},
+      {{"range"}, Test::TRUE},
+      {{"sync int"}, Test::TRUE},
+      {{"atomic int"}, Test::TRUE},
       /* generic builtin types */
-      { {"integral"}, Test::FALSE },
-      { {"numeric"}, Test::FALSE },
-      { {"enum"}, Test::FALSE },
-      { {"record"}, Test::FALSE },
-      { {"class"}, Test::FALSE },
-      { {"class?"}, Test::TRUE },
-      { {"shared"}, Test::FALSE },
-      { {"shared class"}, Test::FALSE },
-      { {"shared class?"}, Test::TRUE },
+      {{"integral"}, Test::FALSE},
+      {{"numeric"}, Test::FALSE},
+      {{"enum"}, Test::FALSE},
+      {{"record"}, Test::FALSE},
+      {{"class"}, Test::FALSE},
+      {{"class?"}, Test::TRUE},
+      {{"shared"}, Test::FALSE},
+      {{"shared class"}, Test::FALSE},
+      {{"shared class?"}, Test::TRUE},
       /* user-defined types */
-      { {"bar"}, Test::TRUE },
-      { {"owned Foo"}, Test::FALSE },
-      { {"owned Foo?"}, Test::TRUE },
-      { {"color"}, Test::TRUE },
-      { {"(int, bool)"}, Test::TRUE },
-      { {"(int, color)"}, Test::TRUE },
-      { {"(int, owned Foo)"}, Test::FALSE },
-      { {"baz"}, Test::FALSE },
-     },
+      {{"bar"}, Test::TRUE},
+      {{"owned Foo"}, Test::FALSE},
+      {{"owned Foo?"}, Test::TRUE},
+      {{"color"}, Test::TRUE},
+      {{"(int, bool)"}, Test::TRUE},
+      {{"(int, color)"}, Test::TRUE},
+      {{"(int, owned Foo)"}, Test::FALSE},
+      {{"baz"}, Test::FALSE},
+    },
   };
   testPrimitive(tpg);
 }

@@ -30,7 +30,7 @@ using namespace uast;
 static BuilderResult makeAST(Context* ctx, const uast::Module*& modOut) {
   ErrorGuard guard(ctx);
   auto builder = Builder::createForTopLevelModule(ctx, "path/to/test.chpl");
-  Builder* b   = builder.get();
+  Builder* b = builder.get();
   Location dummyLoc(UniqueString::get(ctx, "path/to/test.chpl"));
 
   {
@@ -92,7 +92,7 @@ static void test1() {
   Visitor1 v;
   double got = mod->dispatch<double>(v);
   assert(got == 10.0);
-  assert(v.actionsLog.size()==1);
+  assert(v.actionsLog.size() == 1);
   assert(v.actionsLog[0] == "in visit(AstNode) Module test");
 }
 
@@ -119,7 +119,7 @@ static void test2() {
   Visitor2 v;
   double got = ast->dispatch<double>(v);
   assert(got == 10.0);
-  assert(v.actionsLog.size()==1);
+  assert(v.actionsLog.size() == 1);
   assert(v.actionsLog[0] == "in visit(NamedDecl) Module test");
 }
 
@@ -146,7 +146,7 @@ static void test3() {
   Visitor3 v;
   double got = ast->dispatch<double>(v);
   assert(got == 10.0);
-  assert(v.actionsLog.size()==1);
+  assert(v.actionsLog.size() == 1);
   assert(v.actionsLog[0] == "in visit(Module) Module test");
 }
 
@@ -178,7 +178,7 @@ static void test4() {
 
   Visitor4 v;
   ast->traverse(v);
-  assert(v.actionsLog.size()==4);
+  assert(v.actionsLog.size() == 4);
   assert(v.actionsLog[0] == "in enter(Module) Module test");
   assert(v.actionsLog[1] == "in enter(AstNode) Block test@3");
   assert(v.actionsLog[2] == "in exit(AstNode) Block test@3");
@@ -220,7 +220,7 @@ static void test5() {
 
   Visitor5 v;
   ast->traverse(v);
-  assert(v.actionsLog.size()==10);
+  assert(v.actionsLog.size() == 10);
   assert(v.actionsLog[0] == "in enter(Module) Module test");
   assert(v.actionsLog[1] == "in enter(AstNode) Block test@3");
   assert(v.actionsLog[2] == "in enter(Identifier) Identifier test@0");

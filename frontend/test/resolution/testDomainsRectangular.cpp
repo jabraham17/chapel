@@ -24,7 +24,6 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
 
-
 static void testRectangular(std::string domainType,
                             int rank,
                             std::string idxType,
@@ -35,11 +34,14 @@ static void testRectangular(std::string domainType,
   ErrorGuard guard(context);
 
   std::string program =
-R"""(
+    R"""(
 module M {
-  var d : )""" + domainType + R"""(;
-  param rg = )""" + std::to_string(rank) + R"""(;
-  type ig = )""" + idxType + R"""(;
+  var d : )""" +
+    domainType + R"""(;
+  param rg = )""" +
+    std::to_string(rank) + R"""(;
+  type ig = )""" +
+    idxType + R"""(;
   type fullIndex = if rg == 1 then ig else rg*ig;
 
   param r = d.rank;
@@ -63,7 +65,8 @@ module M {
     return 42;
   }
 
-  proc concrete(arg: )""" + domainType + R"""() {
+  proc concrete(arg: )""" +
+    domainType + R"""() {
     type CT = arg.type;
     return 42;
   }
@@ -130,7 +133,8 @@ module M {
     auto res = rr.byAst(g_ret);
     assert(res.type().type()->isIntType());
 
-    auto call = resolveOnlyCandidate(context, rr.byAst(g_ret->initExpression()));
+    auto call =
+      resolveOnlyCandidate(context, rr.byAst(g_ret->initExpression()));
     // Generic function, should have been instantiated
     assert(call->signature()->instantiatedFrom() != nullptr);
 
@@ -143,7 +147,8 @@ module M {
     auto res = rr.byAst(c_ret);
     assert(res.type().type()->isIntType());
 
-    auto call = resolveOnlyCandidate(context, rr.byAst(c_ret->initExpression()));
+    auto call =
+      resolveOnlyCandidate(context, rr.byAst(c_ret->initExpression()));
     // Concrete function, should not be instantiated
     assert(call->signature()->instantiatedFrom() == nullptr);
 
@@ -155,12 +160,14 @@ module M {
 }
 
 // Ensure that we can't, e.g.,  pass a domain(1) to a domain(2)
-static void testBadDomainHelper(std::string domainType, Context* context,
+static void testBadDomainHelper(std::string domainType,
+                                Context* context,
                                 ErrorGuard& guard) {
   std::string program =
-R"""(
+    R"""(
 module M {
-  var d : )""" + domainType + R"""(;
+  var d : )""" +
+    domainType + R"""(;
 }
 )""";
 
@@ -188,8 +195,7 @@ module M {
 // Ensure we gracefully error for bad domain type expressions, with or without
 // the standard modules available.
 static void testBadDomain(std::string domainType) {
-  printf("Testing: cannot resolve %s\n",
-         domainType.c_str());
+  printf("Testing: cannot resolve %s\n", domainType.c_str());
 
   // With standard modules
   {
@@ -206,7 +212,7 @@ static void testDmapped() {
   ErrorGuard guard(context);
 
   auto qt = resolveTypeOfXInit(context,
-    R"""(
+                               R"""(
       use BlockDist;
 
       var Space = {1..10, 1..10};
@@ -223,8 +229,12 @@ int main() {
   testRectangular("domain(2)", 2, "int", "one");
   testRectangular("domain(1, strides=strideKind.one)", 1, "int", "one");
   testRectangular("domain(2, int(8))", 2, "int(8)", "one");
-  testRectangular("domain(3, int(16), strideKind.negOne)", 3, "int(16)", "negOne");
-  testRectangular("domain(strides=strideKind.negative, idxType=int, rank=1)", 1, "int", "negative");
+  testRectangular(
+    "domain(3, int(16), strideKind.negOne)", 3, "int(16)", "negOne");
+  testRectangular("domain(strides=strideKind.negative, idxType=int, rank=1)",
+                  1,
+                  "int",
+                  "negative");
 
   testDomainLiteral("{1..10}", DomainType::Kind::Rectangular);
   testDomainLiteral("{1..10, 1..10}", DomainType::Kind::Rectangular);
@@ -233,7 +243,8 @@ int main() {
   testDomainBadPass("domain(1)", "domain(2)");
   testDomainBadPass("domain(1, int(16))", "domain(1, int(8))");
   testDomainBadPass("domain(1, int(8))", "domain(1, int(16))");
-  testDomainBadPass("domain(1, strides=strideKind.negOne)", "domain(1, strides=strideKind.one)");
+  testDomainBadPass("domain(1, strides=strideKind.negOne)",
+                    "domain(1, strides=strideKind.one)");
 
   testDomainIndex("domain(1)", "int");
   testDomainIndex("domain(2)", "2*int");

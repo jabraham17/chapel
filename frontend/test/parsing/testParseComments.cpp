@@ -30,9 +30,10 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-      "foo();\n"
-      "//c2");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test0.chpl",
+                                                "foo();\n"
+                                                "//c2");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);

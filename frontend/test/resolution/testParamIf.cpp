@@ -31,8 +31,8 @@
 static void test1() {
   Context ctx;
   auto context = &ctx;
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          proc f() {
                            if true {
                              return 1;
@@ -48,8 +48,8 @@ static void test1() {
 static void test2() {
   Context ctx;
   auto context = &ctx;
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          proc f() {
                            if false {
                              return 1;
@@ -65,8 +65,8 @@ static void test2() {
 static void test3() {
   Context ctx;
   auto context = &ctx;
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          proc f() {
                            if false {
                              return 1;

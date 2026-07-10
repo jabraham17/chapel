@@ -27,21 +27,20 @@ static void test1() {
 
   // no declaration (expect cast to fail)
   QualifiedType qt1 = resolveTypeOfXInit(context,
-    R""""(
+                                         R""""(
       record R {
         var field: int;
       }
       var myR: R;
       var x = myR : int;
-    )""""
-  );
+    )"""");
   assert(qt1.kind() == QualifiedType::UNKNOWN);
   assert(qt1.type() && qt1.type()->isErroneousType());
   ctx.advanceToNextRevision(false);
 
   // primary operator method
   QualifiedType qt2 = resolveTypeOfXInit(context,
-    R""""(
+                                         R""""(
       operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
@@ -49,15 +48,14 @@ static void test1() {
       }
       var myR: R;
       var x = myR : int;
-    )""""
-  );
+    )"""");
   assert(qt2.type() && qt2.type()->isIntType());
   assert(qt2.kind() == QualifiedType::CONST_VAR);
   ctx.advanceToNextRevision(false);
 
   // secondary operator method
   QualifiedType qt3 = resolveTypeOfXInit(context,
-    R""""(
+                                         R""""(
       operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
@@ -65,15 +63,14 @@ static void test1() {
       operator R.:(z: R, type t: int) { return z.field; }
       var myR: R;
       var x = myR : int;
-    )""""
-  );
+    )"""");
   assert(qt3.type() && qt3.type()->isIntType());
   assert(qt3.kind() == QualifiedType::CONST_VAR);
   ctx.advanceToNextRevision(false);
 
   // non-method operator
   QualifiedType qt4 = resolveTypeOfXInit(context,
-    R""""(
+                                         R""""(
       operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
@@ -81,8 +78,7 @@ static void test1() {
       operator :(z: R, type t: int) { return z.field; }
       var myR: R;
       var x = myR : int;
-    )""""
-  );
+    )"""");
   assert(qt4.type() && qt4.type()->isIntType());
   assert(qt4.kind() == QualifiedType::CONST_VAR);
   ctx.advanceToNextRevision(false);
@@ -95,7 +91,7 @@ static void test2() {
 
   // method and function operator definitions in the same scope should conflict (ambiguous call)
   QualifiedType qt1 = resolveTypeOfXInit(context,
-    R""""(
+                                         R""""(
       operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
@@ -104,15 +100,14 @@ static void test2() {
       operator :(z: R, type t: int) { return z.field; }
       var myR: R;
       var x = myR : int;
-    )""""
-  );
+    )"""");
   assert(qt1.kind() == QualifiedType::UNKNOWN);
   assert(qt1.type() && qt1.type()->isErroneousType());
   ctx.advanceToNextRevision(false);
 
   // access to R should implicitly grant access to its method operators
   QualifiedType qt2 = resolveTypeOfXInit(context,
-    R""""(
+                                         R""""(
       operator =(ref lhs: int, const rhs: int) {}
       module M {
         record R {
@@ -124,8 +119,7 @@ static void test2() {
       import this.M.R;
       var myR: R;
       var x = myR : int;
-    )""""
-  );
+    )"""");
   assert(qt2.type() && qt2.type()->isIntType());
   assert(qt2.kind() == QualifiedType::CONST_VAR);
   ctx.advanceToNextRevision(false);
@@ -138,7 +132,7 @@ static void test3() {
 
   // incorrectly defined unary operator overload
   QualifiedType qt1 = resolveTypeOfXInit(context,
-    R""""(
+                                         R""""(
       operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
@@ -146,15 +140,14 @@ static void test3() {
       }
       var myR: R;
       var x = !myR;
-    )""""
-  );
+    )"""");
   assert(qt1.kind() == QualifiedType::UNKNOWN);
   assert(qt1.type() && qt1.type()->isErroneousType());
   ctx.advanceToNextRevision(false);
 
   // correct unary operator overload
   QualifiedType qt2 = resolveTypeOfXInit(context,
-    R""""(
+                                         R""""(
       operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
@@ -162,15 +155,14 @@ static void test3() {
       }
       var myR: R;
       var x = !myR;
-    )""""
-  );
+    )"""");
   assert(qt2.type() && qt2.type()->isIntType());
   assert(qt2.kind() == QualifiedType::CONST_VAR);
   ctx.advanceToNextRevision(false);
 
   // overloading more operators
   QualifiedType qt3 = resolveTypeOfXInit(context,
-    R""""(
+                                         R""""(
       operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
@@ -178,14 +170,13 @@ static void test3() {
       }
       var myR: R;
       var x = myR + 3;
-    )""""
-  );
+    )"""");
   assert(qt3.type() && qt3.type()->isIntType());
   assert(qt3.kind() == QualifiedType::CONST_VAR);
   ctx.advanceToNextRevision(false);
 
   QualifiedType qt4 = resolveTypeOfXInit(context,
-    R""""(
+                                         R""""(
       operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
@@ -193,14 +184,13 @@ static void test3() {
       }
       var myR: R;
       var x = myR > 2;
-    )""""
-  );
+    )"""");
   assert(qt4.type() && qt4.type()->isBoolType());
   assert(qt4.kind() == QualifiedType::CONST_VAR);
   ctx.advanceToNextRevision(false);
 
   QualifiedType qt5 = resolveTypeOfXInit(context,
-    R""""(
+                                         R""""(
       operator =(ref lhs: int, const rhs: int) {}
       record R {
         var field: int;
@@ -209,22 +199,20 @@ static void test3() {
       var myR: R;
       var myOtherR: R;
       var x = myR < myOtherR;
-    )""""
-  );
+    )"""");
   assert(qt5.type() && qt5.type()->isIntType());
   assert(qt5.kind() == QualifiedType::CONST_VAR);
   ctx.advanceToNextRevision(false);
 
   // overloading operator for non-compound types
   QualifiedType qt6 = resolveTypeOfXInit(context,
-    R""""(
+                                         R""""(
       operator =(ref lhs: int, const rhs: int) {}
       operator *(a: int, b: int) { return true; }
       var a: int = 2;
       var b: int = 3;
       var x = a * b;
-    )""""
-  );
+    )"""");
   assert(qt6.type() && qt6.type()->isBoolType());
   assert(qt6.kind() == QualifiedType::CONST_VAR);
   ctx.advanceToNextRevision(false);
@@ -465,7 +453,8 @@ static void test9() {
   assert(qt.kind() == QualifiedType::CONST_VAR);
 }
 
-static void helpTestGeneratedComparisons(std::string program, std::vector<std::string> trace) {
+static void helpTestGeneratedComparisons(std::string program,
+                                         std::vector<std::string> trace) {
   std::string wrapper = R"""(
     record wrapper {
       var x;
@@ -511,82 +500,101 @@ static void helpTestGeneratedComparisons(std::string program, std::vector<std::s
 // test compiler-generated comparison operators
 static void test10() {
   helpTestGeneratedComparisons(
-      R"""(
+    R"""(
       record R {
         var x: wrapper(int);
       }
       var tmp = new R() == new R();
-      )""", { "!= with int" });
+      )""",
+    {"!= with int"});
 
   helpTestGeneratedComparisons(
-      R"""(
+    R"""(
       record R {
         var x: wrapper(int);
         var y: wrapper(bool);
       }
       var tmp = new R() == new R();
-      )""", { "!= with int", "!= with bool" });
+      )""",
+    {"!= with int", "!= with bool"});
 
   helpTestGeneratedComparisons(
-      R"""(
+    R"""(
       record R {
         var x: wrapper(int);
         var y: wrapper(bool);
         var z: wrapper(real);
       }
       var tmp = new R() == new R();
-      )""", { "!= with int", "!= with bool", "!= with real" });
+      )""",
+    {"!= with int", "!= with bool", "!= with real"});
 
   helpTestGeneratedComparisons(
-      R"""(
+    R"""(
       record R {
         var x: wrapper(int);
         var y: wrapper(bool);
         var z: wrapper(real);
       }
       var tmp = new R() < new R();
-      )""", { "< with int", "> with int",
-              "< with bool", "> with bool",
-              "< with real", "> with real" });
+      )""",
+    {"< with int",
+     "> with int",
+     "< with bool",
+     "> with bool",
+     "< with real",
+     "> with real"});
 
   helpTestGeneratedComparisons(
-      R"""(
+    R"""(
       record R {
         var x: wrapper(int);
         var y: wrapper(bool);
         var z: wrapper(real);
       }
       var tmp = new R() > new R();
-      )""", { "> with int", "< with int",
-              "> with bool", "< with bool",
-              "> with real", "< with real" });
+      )""",
+    {"> with int",
+     "< with int",
+     "> with bool",
+     "< with bool",
+     "> with real",
+     "< with real"});
 
   helpTestGeneratedComparisons(
-      R"""(
+    R"""(
       record R {
         var x: wrapper(int);
         var y: wrapper(bool);
         var z: wrapper(real);
       }
       var tmp = new R() <= new R();
-      )""", { "< with int", "> with int",
-              "< with bool", "> with bool",
-              "< with real", "> with real" });
+      )""",
+    {"< with int",
+     "> with int",
+     "< with bool",
+     "> with bool",
+     "< with real",
+     "> with real"});
 
   helpTestGeneratedComparisons(
-      R"""(
+    R"""(
       record R {
         var x: wrapper(int);
         var y: wrapper(bool);
         var z: wrapper(real);
       }
       var tmp = new R() >= new R();
-      )""", { "> with int", "< with int",
-              "> with bool", "< with bool",
-              "> with real", "< with real" });
+      )""",
+    {"> with int",
+     "< with int",
+     "> with bool",
+     "< with bool",
+     "> with real",
+     "< with real"});
 
   helpTestGeneratedComparisons(
-      R"""(
+    R"""(
       record R {
         type typeField = int;
         var x: wrapper(int);
@@ -594,9 +602,13 @@ static void test10() {
         var z: wrapper(real);
       }
       var tmp = new R() >= new R();
-      )""", { "> with int", "< with int",
-              "> with bool", "< with bool",
-              "> with real", "< with real" });
+      )""",
+    {"> with int",
+     "< with int",
+     "> with bool",
+     "< with bool",
+     "> with real",
+     "< with real"});
 }
 
 // test that we generate enum-to-string casts if they are not present

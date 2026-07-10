@@ -256,9 +256,9 @@ static void test4() {
   assert(reX.type().type()->isRecordType());
 
   // TODO: Confirm other things.
-  (void) typeExpr;
-  (void) call;
-  (void) tert;
+  (void)typeExpr;
+  (void)call;
+  (void)tert;
 }
 
 // Test a field being named the same as the record.
@@ -396,7 +396,7 @@ static void runAndAssert(std::string program,
 //
 static void test8() {
   std::string base =
-  R"""(
+    R"""(
     record R {
       param flag : bool;
 
@@ -435,41 +435,47 @@ static void test8() {
   )""";
 
   auto isString = [](QualifiedType qt) { return qt.type()->isStringType(); };
-  auto isInt    = [](QualifiedType qt) { return qt.type()->isIntType(); };
+  auto isInt = [](QualifiedType qt) { return qt.type()->isIntType(); };
 
   // Resolve method using a sibling method as an argument's default
   runAndAssert(base + R""""(
     var r : R(false);
     var x = r.withDefault();
-    )"""", isString);
+    )"""",
+               isString);
 
   // Resolve method using a field as an argument's default value
   runAndAssert(base + R""""(
       var r : R(false);
       var x = r.withDefaultField();
-    )"""", isString);
+    )"""",
+               isString);
 
   // Resolve method using another method as the where-clause condition
   runAndAssert(base + R""""(
       var r : R(true);
       var x = r.whereMethod();
-    )"""", isString);
+    )"""",
+               isString);
 
   runAndAssert(base + R""""(
       var r : R(false);
       var x = r.whereMethod();
-    )"""", isInt);
+    )"""",
+               isInt);
 
   // Resolve method using a field as the where-clause condition
   runAndAssert(base + R""""(
       var r : R(true);
       var x = r.whereField();
-    )"""", isString);
+    )"""",
+               isString);
 
   runAndAssert(base + R""""(
       var r : R(false);
       var x = r.whereField();
-    )"""", isInt);
+    )"""",
+               isInt);
 
   // Ensure that methods whose where-clause always results in 'false' cannot
   // be called.
@@ -546,7 +552,7 @@ static void test10() {
     var x2 = r2.myMethod();
     )""";
 
-  auto vars = resolveTypesOfVariables(context, program, { "x1", "x2" });
+  auto vars = resolveTypesOfVariables(context, program, {"x1", "x2"});
 
   auto t1 = vars.at("x1");
   assert(t1.type());
@@ -575,7 +581,7 @@ static void test11() {
     var x3 = (borrowed C?).typeMethod();
   )""";
 
-  auto vars = resolveTypesOfVariables(context, program, { "x1", "x2", "x3" });
+  auto vars = resolveTypesOfVariables(context, program, {"x1", "x2", "x3"});
   assert(!guard.realizeErrors());
 
   for (auto& [name, var] : vars) {
@@ -639,7 +645,7 @@ static void test13() {
     var tmp = (myR.x, myR.y, myR.z);
     )""";
 
-  auto vars = resolveTypesOfVariables(context, program, { "tmp" });
+  auto vars = resolveTypesOfVariables(context, program, {"tmp"});
 
   assert(guard.numErrors());
   for (auto& err : guard.errors()) {
@@ -684,7 +690,7 @@ static void test14() {
       var myFooAsdf = myFoo.asdf;
       )""";
 
-  auto vars = resolveTypesOfVariables(context, program, { "myFooAsdf" });
+  auto vars = resolveTypesOfVariables(context, program, {"myFooAsdf"});
   assert(guard.realizeErrors() == 0);
 }
 
@@ -720,7 +726,8 @@ static void test14b() {
       var myNotConcrete = myFoo.notConcrete;
       )""";
 
-  auto vars = resolveTypesOfVariables(context, program, { "myFooAsdf", "myNotConcrete" });
+  auto vars =
+    resolveTypesOfVariables(context, program, {"myFooAsdf", "myNotConcrete"});
   assert(guard.realizeErrors() == 2);
 }
 
@@ -748,7 +755,7 @@ static void test16() {
         var x = f.doSomething();
         )""";
 
-    auto vars = resolveTypesOfVariables(context, program, { "x" });
+    auto vars = resolveTypesOfVariables(context, program, {"x"});
     assert(guard.realizeErrors() == 0);
   }
 
@@ -773,7 +780,7 @@ static void test16() {
         var x = f.doSomething(anotherTup);
         )""";
 
-    auto vars = resolveTypesOfVariables(context, program, { "x" });
+    auto vars = resolveTypesOfVariables(context, program, {"x"});
     assert(guard.realizeErrors() == 0);
   }
 }
@@ -877,7 +884,7 @@ static void test19() {
     )""";
 
   // should resolve without issue
-  std::ignore = resolveTypesOfVariables(context, program, { "tmp" });
+  std::ignore = resolveTypesOfVariables(context, program, {"tmp"});
   assert(!guard.realizeErrors(/* countWarnings */ false));
 }
 
@@ -910,7 +917,7 @@ static void test20() {
     var cc = new C();
     )""";
 
-  std::ignore = resolveTypesOfVariables(context, program, { "aa", "bb", "cc" });
+  std::ignore = resolveTypesOfVariables(context, program, {"aa", "bb", "cc"});
 
   // Should have 3 warnings for generic memory management
   assert(guard.numErrors() == 3);
@@ -1021,4 +1028,3 @@ int main() {
 
   return 0;
 }
-

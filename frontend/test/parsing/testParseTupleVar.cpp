@@ -29,7 +29,8 @@
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl", "var (x, y);");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test1.chpl", "var (x, y);");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -57,7 +58,8 @@ static void test1(Parser* parser) {
 
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl", "const (x, y);");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test2.chpl", "const (x, y);");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -83,7 +85,8 @@ static void test2(Parser* parser) {
 
 static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl", "var (x, y): typ;");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test3.chpl", "var (x, y): typ;");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -109,7 +112,8 @@ static void test3(Parser* parser) {
 
 static void test4(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl", "var (x, y) = tup;");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test4.chpl", "var (x, y) = tup;");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -135,8 +139,8 @@ static void test4(Parser* parser) {
 
 static void test5(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
-                                         "var (x, y):typ = tup;");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test5.chpl", "var (x, y):typ = tup;");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -190,7 +194,6 @@ static void check6(Parser* parser, const char* path, const char* str) {
   assert(z->initExpression() == nullptr);
   assert(z->kind() == Variable::VAR);
 
-
   auto type = tup->typeExpression()->toIdentifier();
   assert(0 == type->name().compare("typ"));
   auto init = tup->initExpression()->toIdentifier();
@@ -198,53 +201,39 @@ static void check6(Parser* parser, const char* path, const char* str) {
 }
 
 static void test6(Parser* parser) {
-  check6(parser, "test6a.chpl",
-         "var (x, (y, z)):typ = tup;");
+  check6(parser, "test6a.chpl", "var (x, (y, z)):typ = tup;");
 
-  check6(parser, "test6b.chpl",
-         "var /*comment*/ (x, (y, z)):typ = tup;");
+  check6(parser, "test6b.chpl", "var /*comment*/ (x, (y, z)):typ = tup;");
 
-  check6(parser, "test6c.chpl",
-         "var ( /*comment*/ x, (y, z)):typ = tup;");
+  check6(parser, "test6c.chpl", "var ( /*comment*/ x, (y, z)):typ = tup;");
 
-  check6(parser, "test6d.chpl",
-         "var ( x /*comment*/ , (y, z)):typ = tup;");
+  check6(parser, "test6d.chpl", "var ( x /*comment*/ , (y, z)):typ = tup;");
 
-  check6(parser, "test6e.chpl",
-         "var ( x, /*comment*/ (y, z)):typ = tup;");
+  check6(parser, "test6e.chpl", "var ( x, /*comment*/ (y, z)):typ = tup;");
 
-  check6(parser, "test6f.chpl",
-         "var ( x, ( /*comment*/ y, z)):typ = tup;");
+  check6(parser, "test6f.chpl", "var ( x, ( /*comment*/ y, z)):typ = tup;");
 
-  check6(parser, "test6g.chpl",
-         "var ( x, ( y /*comment*/ , z)):typ = tup;");
+  check6(parser, "test6g.chpl", "var ( x, ( y /*comment*/ , z)):typ = tup;");
 
-  check6(parser, "test6h.chpl",
-         "var ( x, ( y, /*comment*/ z)):typ = tup;");
+  check6(parser, "test6h.chpl", "var ( x, ( y, /*comment*/ z)):typ = tup;");
 
-  check6(parser, "test6i.chpl",
-         "var ( x, ( y, z /*comment*/ )):typ = tup;");
+  check6(parser, "test6i.chpl", "var ( x, ( y, z /*comment*/ )):typ = tup;");
 
-  check6(parser, "test6j.chpl",
-         "var ( x, ( y, z) /*comment*/ ):typ = tup;");
+  check6(parser, "test6j.chpl", "var ( x, ( y, z) /*comment*/ ):typ = tup;");
 
-  check6(parser, "test6k.chpl",
-         "var ( x, ( y, z) ) /*comment*/ :typ = tup;");
+  check6(parser, "test6k.chpl", "var ( x, ( y, z) ) /*comment*/ :typ = tup;");
 
-  check6(parser, "test6l.chpl",
-         "var ( x, ( y, z) ) : /*comment*/ typ = tup;");
+  check6(parser, "test6l.chpl", "var ( x, ( y, z) ) : /*comment*/ typ = tup;");
 
-  check6(parser, "test6m.chpl",
-         "var ( x, ( y, z) ) : typ /*comment*/ = tup;");
+  check6(parser, "test6m.chpl", "var ( x, ( y, z) ) : typ /*comment*/ = tup;");
 
-  check6(parser, "test6n.chpl",
-         "var ( x, ( y, z) ) : typ = /*comment*/ tup;");
+  check6(parser, "test6n.chpl", "var ( x, ( y, z) ) : typ = /*comment*/ tup;");
 }
 
 static void test7(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test7.chpl",
-                                         "var (x, y), z;");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test7.chpl", "var (x, y), z;");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -271,7 +260,6 @@ static void test7(Parser* parser) {
   assert(z);
   assert(0 == z->name().compare("z"));
 }
-
 
 int main() {
   Context context;

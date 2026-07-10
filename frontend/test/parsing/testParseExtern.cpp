@@ -29,16 +29,16 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-    R"""(
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test0.chpl",
+                                                R"""(
       extern {
         /* comment */
         // comment
         void foo(void);
         void foo(void) { const char* s = "hello"; }
       }
-    )"""
-  );
+    )""");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -48,12 +48,12 @@ static void test0(Parser* parser) {
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
-    R"""(
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1.chpl",
+                                                R"""(
       extern { }
       {}
-    )"""
-  );
+    )""");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -61,7 +61,6 @@ static void test1(Parser* parser) {
   assert(mod->stmt(0)->isExternBlock());
   assert(mod->stmt(1)->isBlock());
 }
-
 
 int main() {
   Context context;

@@ -40,45 +40,48 @@ static MostSpecificCandidate const& mscQuery(Context* context) {
 
   mscQueryCounter++;
 
-  auto untyped = UntypedFnSignature::get(context,
-      /* ID */ ID(),
-      /* name */ UniqueString::get(context, "foo"),
-      /* isMethod */ false,
-      /* isTypeConstructor */ false,
-      /* isCompilerGenerated */ true,
-      /* throws */ false,
-      /* idTag */ uast::asttags::AstTag::Function,
-      /* kind */ uast::Function::Kind::PROC,
-      /* formals */ { UntypedFnSignature::FormalDetail {
-        UniqueString::get(context, "x"),
-        UntypedFnSignature::DK_NO_DEFAULT,
-        /* decl */ nullptr,
-      }},
-      /* whereClause */ nullptr
-  );
+  auto untyped =
+    UntypedFnSignature::get(context,
+                            /* ID */ ID(),
+                            /* name */ UniqueString::get(context, "foo"),
+                            /* isMethod */ false,
+                            /* isTypeConstructor */ false,
+                            /* isCompilerGenerated */ true,
+                            /* throws */ false,
+                            /* idTag */ uast::asttags::AstTag::Function,
+                            /* kind */ uast::Function::Kind::PROC,
+                            /* formals */
+                            {UntypedFnSignature::FormalDetail{
+                              UniqueString::get(context, "x"),
+                              UntypedFnSignature::DK_NO_DEFAULT,
+                              /* decl */ nullptr,
+                            }},
+                            /* whereClause */ nullptr);
 
-  auto typed = TypedFnSignature::get(context, untyped,
-      /* formalTypes */ { QualifiedType(QualifiedType::CONST_IN, IntType::get(context, 32)) },
-      TypedFnSignature::WHERE_NONE,
-      /* instantiationState */ TypedFnSignature::INST_CONCRETE,
-      /* instantiatedFrom */ nullptr,
-      /* parentFn */ nullptr,
-      /* instantiatedFormals */ Bitmap{},
-      /* erroredFormals */ Bitmap{},
-      {});
+  auto typed = TypedFnSignature::get(
+    context,
+    untyped,
+    /* formalTypes */
+    {QualifiedType(QualifiedType::CONST_IN, IntType::get(context, 32))},
+    TypedFnSignature::WHERE_NONE,
+    /* instantiationState */ TypedFnSignature::INST_CONCRETE,
+    /* instantiatedFrom */ nullptr,
+    /* parentFn */ nullptr,
+    /* instantiatedFormals */ Bitmap{},
+    /* erroredFormals */ Bitmap{},
+    {});
 
   auto ci = CallInfo(
-      /* name */ UniqueString::get(context, "foo"),
-      /* calledType */ QualifiedType(),
-      /* isMethodCall */ false,
-      /* hasQuestionArg */ false,
-      /* isParenless */ false,
-      /* actuals */ {
-        CallInfoActual {
-          QualifiedType(QualifiedType::VAR, IntType::get(context, 32)),
-          UniqueString(),
-        }
-      });
+    /* name */ UniqueString::get(context, "foo"),
+    /* calledType */ QualifiedType(),
+    /* isMethodCall */ false,
+    /* hasQuestionArg */ false,
+    /* isParenless */ false,
+    /* actuals */
+    {CallInfoActual{
+      QualifiedType(QualifiedType::VAR, IntType::get(context, 32)),
+      UniqueString(),
+    }});
 
   auto faMap = FormalActualMap(typed, ci);
   auto promotedFormals = PromotedFormalMap();
@@ -86,7 +89,14 @@ static MostSpecificCandidate const& mscQuery(Context* context) {
   assert(faMap.isValid());
 
   ResolutionContext rc(context);
-  auto msc = MostSpecificCandidate::fromTypedFnSignature(&rc, typed, ci, std::move(faMap), nullptr, nullptr, std::move(promotedFormals));
+  auto msc =
+    MostSpecificCandidate::fromTypedFnSignature(&rc,
+                                                typed,
+                                                ci,
+                                                std::move(faMap),
+                                                nullptr,
+                                                nullptr,
+                                                std::move(promotedFormals));
 
   return QUERY_END(msc);
 }

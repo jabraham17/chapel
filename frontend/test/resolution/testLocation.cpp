@@ -46,8 +46,8 @@ static void test1() {
     const uast::BuilderResult& p =
       parseFileToBuilderResult(context, path, emptyParentSymbolPath);
     const Module* m = oneModule(parseToplevel(context, path));
-    const AstNode *e = m->stmt(0);
-    const Comment *c = m->stmt(1)->toComment();
+    const AstNode* e = m->stmt(0);
+    const Comment* c = m->stmt(1)->toComment();
     assert(locateAst(context, e).firstLine() == 1);
     assert(p.commentToLocation(c).firstLine() == 1);
   }
@@ -59,8 +59,8 @@ static void test1() {
     const uast::BuilderResult& p =
       parseFileToBuilderResult(context, path, emptyParentSymbolPath);
     const Module* m = oneModule(parseToplevel(context, path));
-    const AstNode *e = m->stmt(0);
-    const Comment *c = m->stmt(1)->toComment();
+    const AstNode* e = m->stmt(0);
+    const Comment* c = m->stmt(1)->toComment();
     assert(locateAst(context, e).firstLine() == 3);
     assert(p.commentToLocation(c).firstLine() == 3);
   }
@@ -84,7 +84,7 @@ static void test2() {
       mod->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
     }
     const Module* m = oneModule(vec);
-    const AstNode *e = m->stmt(0);
+    const AstNode* e = m->stmt(0);
     const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
     (void)rr; // use result
 
@@ -108,7 +108,7 @@ static void test2() {
       mod->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
     }
     const Module* m = oneModule(vec);
-    const AstNode *e = m->stmt(0);
+    const AstNode* e = m->stmt(0);
     const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
     (void)rr; // use result
 

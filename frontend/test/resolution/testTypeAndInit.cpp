@@ -34,7 +34,7 @@ static void test1() {
   Context ctx;
   auto context = &ctx;
   auto qt = resolveQualifiedTypeOfX(context,
-                             R""""(
+                                    R""""(
                                var x: bool = true;
                              )"""");
   qt.dump();
@@ -110,7 +110,8 @@ static void testPrimitiveTypeIncompatibleInit() {
       }
       )""";
 
-  auto path = UniqueString::get(context, "testPrimitiveTypeIncompatibleInit.chpl");
+  auto path =
+    UniqueString::get(context, "testPrimitiveTypeIncompatibleInit.chpl");
   setFileText(context, path, program);
   const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 1);
@@ -151,7 +152,8 @@ static void testPrimitiveTypeIncompatibleSplitInit() {
       }
       )""";
 
-  auto path = UniqueString::get(context, "testPrimitiveTypeIncompatibleSplitInit.chpl");
+  auto path =
+    UniqueString::get(context, "testPrimitiveTypeIncompatibleSplitInit.chpl");
   setFileText(context, path, program);
   const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() == 1);

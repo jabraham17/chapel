@@ -53,8 +53,8 @@ static void test3() {
   ErrorGuard guard(context);
 
   // 2nd argument param should not be folded
-  QualifiedType qt = resolveTypeOfXInit(context,
-                                      "var a: bool; var x = a || true;");
+  QualifiedType qt =
+    resolveTypeOfXInit(context, "var a: bool; var x = a || true;");
   assert(!qt.isParam() && !qt.hasParamPtr());
   assert(qt.type() == BoolType::get(context));
 }
@@ -65,8 +65,8 @@ static void test4() {
   ErrorGuard guard(context);
 
   // 2nd argument param should not be folded
-  QualifiedType qt = resolveTypeOfXInit(context,
-                                      "var a: bool; var x = a && false;");
+  QualifiedType qt =
+    resolveTypeOfXInit(context, "var a: bool; var x = a && false;");
   assert(!qt.isParam() && !qt.hasParamPtr());
   assert(qt.type() == BoolType::get(context));
 }
@@ -77,8 +77,7 @@ static void test5() {
   ErrorGuard guard(context);
 
   // both args are params, should make a param init expr
-  QualifiedType qt = resolveTypeOfXInit(context,
-                                      "var x = true && false;");
+  QualifiedType qt = resolveTypeOfXInit(context, "var x = true && false;");
   assert(qt.isParamFalse());
 }
 
@@ -88,8 +87,7 @@ static void test6() {
   ErrorGuard guard(context);
 
   // both args are params, should make a param init expr
-  QualifiedType qt = resolveTypeOfXInit(context,
-                                      "var x = false || true;");
+  QualifiedType qt = resolveTypeOfXInit(context, "var x = false || true;");
   assert(qt.isParamTrue());
 }
 
@@ -99,8 +97,7 @@ static void test7() {
   ErrorGuard guard(context);
 
   // both args are the (or) identity params, should make param false.
-  QualifiedType qt = resolveTypeOfXInit(context,
-                                      "var x = false || false;");
+  QualifiedType qt = resolveTypeOfXInit(context, "var x = false || false;");
   assert(qt.isParamFalse());
 }
 
@@ -110,8 +107,7 @@ static void test8() {
   ErrorGuard guard(context);
 
   // both args are the (and) identity params, should make param true.
-  QualifiedType qt = resolveTypeOfXInit(context,
-                                      "var x = true && true;");
+  QualifiedType qt = resolveTypeOfXInit(context, "var x = true && true;");
   assert(qt.isParamTrue());
 }
 
@@ -121,8 +117,7 @@ static void test9() {
   ErrorGuard guard(context);
 
   // the type of y is unknown, so the whole type is unknown.
-  QualifiedType qt = resolveTypeOfXInit(context,
-                                      "var x = true && y;");
+  QualifiedType qt = resolveTypeOfXInit(context, "var x = true && y;");
   assert(qt.isUnknown());
 
   assert(guard.numErrors() > 0);
@@ -135,8 +130,7 @@ static void test10() {
   ErrorGuard guard(context);
 
   // the type of y is unknown, so the whole type is unknown.
-  QualifiedType qt = resolveTypeOfXInit(context,
-                                      "var x = false || y;");
+  QualifiedType qt = resolveTypeOfXInit(context, "var x = false || y;");
   assert(qt.isUnknown());
 
   assert(guard.numErrors() > 0);

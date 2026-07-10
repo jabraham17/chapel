@@ -26,14 +26,12 @@
 
 // forward declare classes and namespaces
 namespace chpl {
-  class Context;
-  namespace uast {
-    class Module;
-  }
-  namespace parsing {
-  }
-  namespace uast {
-  }
+class Context;
+namespace uast {
+class Module;
+}
+namespace parsing {}
+namespace uast {}
 }
 
 using namespace chpl;

@@ -29,7 +29,7 @@
 #include <algorithm>
 #include <cstdarg>
 
-#define TEST_NAME(ctx__)\
+#define TEST_NAME(ctx__)                                      \
   chpl::UniqueString::getConcat(ctx__, __FUNCTION__, ".chpl")
 
 static std::string debugDeclName = "";
@@ -104,13 +104,13 @@ static void testModulesNamedInUseOrImport(void) {
 
   std::vector<ID> modulesMentioned;
   auto modulesMentionedIt = visStmts->modulesNamedInUseOrImport();
-  std::copy(modulesMentionedIt.begin(), modulesMentionedIt.end(),
+  std::copy(modulesMentionedIt.begin(),
+            modulesMentionedIt.end(),
             std::back_inserter(modulesMentioned));
   assert(modulesMentioned.size() == 2);
   assert(modulesMentioned[0].str() == "M1");
   assert(modulesMentioned[1].str() == "M2");
 }
-
 
 static void testFindUse(void) {
   Context::Configuration config;
@@ -369,7 +369,7 @@ static void testFindMentionFields(void) {
   assert(m1);
 
   // check that we find the correct list of mentioned modules
-  checkMentionedModules(ctx, m1->id(), { });
+  checkMentionedModules(ctx, m1->id(), {});
 
   std::cout << "---" << std::endl;
 
@@ -434,30 +434,36 @@ static void testFindImportSubmoduleIncluded(void) {
 
   std::cout << "testFindImportSubmoduleIncluded\n";
 
-  setFileText(ctx, "TestMultipleModules.chpl",
-    R""""(
+  setFileText(ctx,
+              "TestMultipleModules.chpl",
+              R""""(
       module TestMultipleModules {
         import MultipleModules;
         import MultipleModules.SubModule;
       }
-    )"""");;
+    )"""");
+  ;
 
-  setFileText(ctx, "MultipleModules.chpl",
-    R""""(
+  setFileText(ctx,
+              "MultipleModules.chpl",
+              R""""(
       module MultipleModules {
         include module SubModule;
       }
-    )"""");;
+    )"""");
+  ;
 
-  setFileText(ctx, "MultipleModules/SubModule.chpl",
-    R""""(
+  setFileText(ctx,
+              "MultipleModules/SubModule.chpl",
+              R""""(
       module SubModule { }
     )"""");
 
   setModuleSearchPath(ctx, {UniqueString::get(ctx, ".")});
 
   // Get the module.
-  auto& br = parseAndReportErrors(ctx, UniqueString::get(ctx, "TestMultipleModules.chpl"));
+  auto& br = parseAndReportErrors(
+    ctx, UniqueString::get(ctx, "TestMultipleModules.chpl"));
   assert(br.numTopLevelExpressions() == 1);
   auto m1 = br.topLevelExpression(0)->toModule();
   assert(m1);
@@ -480,16 +486,19 @@ static void testFindMentionSubmoduleIncluded(void) {
 
   std::cout << "testFindMentionSubmoduleIncluded\n";
 
-  setFileText(ctx, "OuterModule.chpl",
-    R""""(
+  setFileText(ctx,
+              "OuterModule.chpl",
+              R""""(
       module OuterModule {
         include module SubModule;
         SubModule.foo();
       }
-    )"""");;
+    )"""");
+  ;
 
-  setFileText(ctx, "OuterModule/SubModule.chpl",
-    R""""(
+  setFileText(ctx,
+              "OuterModule/SubModule.chpl",
+              R""""(
       module SubModule{
         proc foo() { }
       }
@@ -498,7 +507,8 @@ static void testFindMentionSubmoduleIncluded(void) {
   setModuleSearchPath(ctx, {UniqueString::get(ctx, ".")});
 
   // Get the module.
-  auto& br = parseAndReportErrors(ctx, UniqueString::get(ctx, "OuterModule.chpl"));
+  auto& br =
+    parseAndReportErrors(ctx, UniqueString::get(ctx, "OuterModule.chpl"));
   assert(br.numTopLevelExpressions() == 1);
   auto m1 = br.topLevelExpression(0)->toModule();
   assert(m1);
@@ -598,7 +608,6 @@ static void testSpec(void) {
 
   // check to make sure the initialization order is correct.
   checkModuleInitOrder(ctx, m1->id(), {"M4", "M2", "M3", "M1"});
-
 
   std::cout << "---" << std::endl;
 
@@ -799,7 +808,6 @@ static void testMentionedLibrarySub(void) {
   std::cout << std::endl;
 }
 
-
 static void testDeadModule(void) {
   Context::Configuration config;
   config.chplHome = chplHome();
@@ -840,7 +848,6 @@ static void testDeadModule(void) {
 
   // check to make sure the initialization order is correct.
   checkModuleInitOrder(ctx, m1->id(), {"Main"});
-
 
   std::cout << "---" << std::endl;
 
@@ -891,7 +898,6 @@ static void testBundled(void) {
   assert(!guard.realizeErrors());
   std::cout << std::endl;
 }
-
 
 int main() {
   // test of the lower-level modulesNamedInUseOrImport

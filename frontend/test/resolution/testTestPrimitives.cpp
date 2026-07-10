@@ -21,7 +21,9 @@
 #include "test-resolution.h"
 #include "chpl/resolution/resolution-queries.h"
 
-static void testGatherTests(const std::vector<std::pair<std::string, std::string>>& files, std::vector<std::string> expectedTestNames) {
+static void
+testGatherTests(const std::vector<std::pair<std::string, std::string>>& files,
+                std::vector<std::string> expectedTestNames) {
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
@@ -46,7 +48,8 @@ static void testGatherTests(const std::vector<std::pair<std::string, std::string
   // functions we haven't even parsed first.
   for (auto file : files) {
     setFileText(context, file.first, file.second);
-    auto& topLevel = parseToplevel(context, UniqueString::get(context, file.first));
+    auto& topLevel =
+      parseToplevel(context, UniqueString::get(context, file.first));
     for (auto mod : topLevel) {
       mod->traverse(gatherFinder);
     }
@@ -56,7 +59,8 @@ static void testGatherTests(const std::vector<std::pair<std::string, std::string
 
   // Resolve all the files in the order they were given.
   for (auto& file : files) {
-    auto modVec = parseToplevel(context, UniqueString::get(context, file.first));
+    auto modVec =
+      parseToplevel(context, UniqueString::get(context, file.first));
     for (auto mod : modVec) {
       auto resolved = resolveModule(context, mod->id());
 
@@ -70,7 +74,8 @@ static void testGatherTests(const std::vector<std::pair<std::string, std::string
         assert(gatherResult.type().isParam());
         assert(gatherResult.type().param());
         assert(gatherResult.type().param()->isIntParam());
-        assert((size_t)(gatherResult.type().param()->toIntParam()->value()) == expectedTestNames.size());
+        assert((size_t)(gatherResult.type().param()->toIntParam()->value()) ==
+               expectedTestNames.size());
       }
     }
   }
@@ -89,7 +94,9 @@ static void testGatherTests(const std::vector<std::pair<std::string, std::string
   }
 }
 
-static void testAllPermutations(std::vector<std::pair<std::string, std::string>> files, std::vector<std::string> expectedTestNames) {
+static void
+testAllPermutations(std::vector<std::pair<std::string, std::string>> files,
+                    std::vector<std::string> expectedTestNames) {
   std::sort(files.begin(), files.end());
 
   do {
@@ -99,7 +106,7 @@ static void testAllPermutations(std::vector<std::pair<std::string, std::string>>
 
 static void test1() {
   const char* M1 =
-      R"""(
+    R"""(
       record testRec {
 
       }
@@ -119,15 +126,12 @@ static void test1() {
       var tr: testRec;
       __primitive("gather tests", tr);
       )""";
-  testGatherTests(
-    { {"M1", M1} },
-    { "aTest" }
-  );
+  testGatherTests({{"M1", M1}}, {"aTest"});
 }
 
 static void test2() {
   const char* M1 =
-      R"""(
+    R"""(
       record testRec {
 
       }
@@ -135,7 +139,7 @@ static void test2() {
       proc testInM1(test: testRec) throws {}
       )""";
   const char* M2 =
-      R"""(
+    R"""(
       use M1;
 
       proc testInM2(test: testRec) throws {}
@@ -145,16 +149,14 @@ static void test2() {
       use M3;
       )""";
   const char* M3 =
-      R"""(
+    R"""(
       use M1;
 
       proc testInM3(test: testRec) throws {}
       )""";
 
-  testAllPermutations(
-    { {"M1", M1}, {"M2", M2}, {"M3", M3} },
-    { "testInM1", "testInM2", "testInM3" }
-  );
+  testAllPermutations({{"M1", M1}, {"M2", M2}, {"M3", M3}},
+                      {"testInM1", "testInM2", "testInM3"});
 }
 
 int main() {

@@ -32,8 +32,8 @@
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
-                                         "proc f() { }");
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test1.chpl", "proc f() { }");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -57,12 +57,13 @@ static void test1(Parser* parser) {
 }
 static void test1a(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1a.chpl",
-                                         "/* comment 1 */\n"
-                                         "proc f() {\n"
-                                         "  /* comment 2 */\n"
-                                         "}\n"
-                                         "/* comment 3 */\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1a.chpl",
+                                                "/* comment 1 */\n"
+                                                "proc f() {\n"
+                                                "  /* comment 2 */\n"
+                                                "}\n"
+                                                "/* comment 3 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -78,14 +79,15 @@ static void test1a(Parser* parser) {
 }
 static void test1b(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1a.chpl",
-                                         "/* comment 1 */\n"
-                                         "proc f() {\n"
-                                         "  /* comment 2 */\n"
-                                         "  x;\n"
-                                         "  /* comment 3 */\n"
-                                         "}\n"
-                                         "/* comment 4 */\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1a.chpl",
+                                                "/* comment 1 */\n"
+                                                "proc f() {\n"
+                                                "  /* comment 2 */\n"
+                                                "  x;\n"
+                                                "  /* comment 3 */\n"
+                                                "}\n"
+                                                "/* comment 4 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -104,12 +106,13 @@ static void test1b(Parser* parser) {
 
 static void test1c(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1c.chpl",
-                                         "/* comment 1 */\n"
-                                         "public inline\n"
-                                         "proc f() {\n"
-                                         "  x;\n"
-                                         "}\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1c.chpl",
+                                                "/* comment 1 */\n"
+                                                "public inline\n"
+                                                "proc f() {\n"
+                                                "  x;\n"
+                                                "}\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -125,13 +128,14 @@ static void test1c(Parser* parser) {
 
 static void test1d(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1d.chpl",
-                                         "public\n"
-                                         "/* comment 1 */\n"
-                                         "inline\n"
-                                         "proc f() {\n"
-                                         "  x;\n"
-                                         "}\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1d.chpl",
+                                                "public\n"
+                                                "/* comment 1 */\n"
+                                                "inline\n"
+                                                "proc f() {\n"
+                                                "  x;\n"
+                                                "}\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -146,13 +150,14 @@ static void test1d(Parser* parser) {
 
 static void test1e(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1e.chpl",
-                                         "public\n"
-                                         "inline\n"
-                                         "/* comment 1 */\n"
-                                         "proc f() {\n"
-                                         "  x;\n"
-                                         "}\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1e.chpl",
+                                                "public\n"
+                                                "inline\n"
+                                                "/* comment 1 */\n"
+                                                "proc f() {\n"
+                                                "  x;\n"
+                                                "}\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -167,10 +172,11 @@ static void test1e(Parser* parser) {
 
 static void test1f(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1f.chpl",
-                                         "proc f(/* comment 1 */) {\n"
-                                         "  x;\n"
-                                         "}\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1f.chpl",
+                                                "proc f(/* comment 1 */) {\n"
+                                                "  x;\n"
+                                                "}\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -185,12 +191,13 @@ static void test1f(Parser* parser) {
 
 static void test1g(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1g.chpl",
-                                         "proc f()\n"
-                                         "/* comment 1 */ where a \n"
-                                         "{\n"
-                                         "  x;\n"
-                                         "}\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1g.chpl",
+                                                "proc f()\n"
+                                                "/* comment 1 */ where a \n"
+                                                "{\n"
+                                                "  x;\n"
+                                                "}\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -205,12 +212,13 @@ static void test1g(Parser* parser) {
 
 static void test1h(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1h.chpl",
-                                         "proc f()\n"
-                                         "where a /* comment 1 */\n"
-                                         "{\n"
-                                         "  x;\n"
-                                         "}\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1h.chpl",
+                                                "proc f()\n"
+                                                "where a /* comment 1 */\n"
+                                                "{\n"
+                                                "  x;\n"
+                                                "}\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -225,12 +233,13 @@ static void test1h(Parser* parser) {
 
 static void test1i(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1i.chpl",
-                                         "proc f()\n"
-                                         "lifetime /* comment 1 */ a=b\n"
-                                         "{\n"
-                                         "  x;\n"
-                                         "}\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1i.chpl",
+                                                "proc f()\n"
+                                                "lifetime /* comment 1 */ a=b\n"
+                                                "{\n"
+                                                "  x;\n"
+                                                "}\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -245,12 +254,13 @@ static void test1i(Parser* parser) {
 
 static void test1j(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1j.chpl",
-                                         "proc f()\n"
-                                         "lifetime a=b /* comment 1 */\n"
-                                         "{\n"
-                                         "  x;\n"
-                                         "}\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1j.chpl",
+                                                "proc f()\n"
+                                                "lifetime a=b /* comment 1 */\n"
+                                                "{\n"
+                                                "  x;\n"
+                                                "}\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -262,11 +272,6 @@ static void test1j(Parser* parser) {
   assert(functionDecl->numStmts() == 1);
   assert(functionDecl->stmt(0)->isIdentifier());
 }
-
-
-
-
-
 
 static BuilderResult parseFunction(Parser* parser,
                                    const char* filename,
@@ -288,10 +293,7 @@ static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
   const Function* function = nullptr;
   auto parse = parseFunction(
-      parser,
-      "test2.chpl",
-      function,
-      "inline proc f(a: int) ref { x; }");
+    parser, "test2.chpl", function, "inline proc f(a: int) ref { x; }");
 
   assert(function->name().compare("f") == 0);
   assert(function->linkage() == Decl::DEFAULT_LINKAGE);
@@ -326,11 +328,11 @@ static void test2(Parser* parser) {
 static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
   const Function* function = nullptr;
-  auto parse = parseFunction(
-      parser,
-      "test3.chpl",
-      function,
-      "override proc const R.f(ref a: int = b) const ref { }");
+  auto parse =
+    parseFunction(parser,
+                  "test3.chpl",
+                  function,
+                  "override proc const R.f(ref a: int = b) const ref { }");
   assert(function->name().compare("f") == 0);
   assert(function->linkage() == Decl::DEFAULT_LINKAGE);
   assert(function->kind() == Function::PROC);
@@ -378,10 +380,7 @@ static void test4(Parser* parser) {
   ErrorGuard guard(parser->context());
   const Function* function = nullptr;
   auto parse = parseFunction(
-      parser,
-      "test4.chpl",
-      function,
-      "proc f(a: int, b = x) ref { y; z; }");
+    parser, "test4.chpl", function, "proc f(a: int, b = x) ref { y; z; }");
 
   // this test is focused on checking the function iterators
   assert(function->name().compare("f") == 0);
@@ -410,15 +409,14 @@ static void test4(Parser* parser) {
   }
 }
 
-
 static void test5(Parser* p) {
   ErrorGuard guard(p->context());
-  auto parseResult = p->parseString("test5.chpl",
-                                    "private extern proc hello();\n");
+  auto parseResult =
+    p->parseString("test5.chpl", "private extern proc hello();\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
-  assert(mod->numStmts()==1);
+  assert(mod->numStmts() == 1);
   auto fn = mod->stmt(0)->toFunction();
   assert(fn);
   assert(fn->visibility() == Decl::PRIVATE);
@@ -426,7 +424,6 @@ static void test5(Parser* p) {
   assert(fn->numStmts() == 0);
   assert(fn->numFormals() == 0);
 }
-
 
 int main() {
   Context context;

@@ -22,7 +22,6 @@
 using namespace chpl;
 using namespace chpl::parsing;
 
-
 static void test(Context* ctx, const char* program, int numErrors, bool gc) {
   ErrorGuard guard(ctx);
   ctx->advanceToNextRevision(gc);

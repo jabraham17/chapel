@@ -52,8 +52,8 @@ static void testSerializeDeserialize(const char* test, const char* program) {
 
   if (output[0] != '\0') {
     // if 'output' is set, work with that file.
-    outFile = toOwned(new std::ofstream(filename,
-                                        std::ios::out | std::ios::binary));
+    outFile =
+      toOwned(new std::ofstream(filename, std::ios::out | std::ios::binary));
     out = outFile.get();
   } else {
     // otherwise, work with a string stream
@@ -105,15 +105,13 @@ static void testSerializeDeserialize(const char* test, const char* program) {
 
     UniqueString parentSymbolPath;
 
-    auto builder =
-      Builder::createForLibraryFileModule(context,
-                                          libname,
-                                          parentSymbolPath,
-                                          /*LibraryFile*/nullptr);
+    auto builder = Builder::createForLibraryFileModule(context,
+                                                       libname,
+                                                       parentSymbolPath,
+                                                       /*LibraryFile*/ nullptr);
 
-    auto des = Deserializer(context,
-                            serializedData.c_str(), serializedData.size(),
-                            stringCache);
+    auto des = Deserializer(
+      context, serializedData.c_str(), serializedData.size(), stringCache);
 
     for (size_t i = 0; i < nToplevelModules; i++) {
       if (verbose) {

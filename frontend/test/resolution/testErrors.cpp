@@ -31,18 +31,16 @@
 #undef NDEBUG
 #endif
 
-
 using namespace chpl;
 using namespace parsing;
 using namespace resolution;
 using namespace uast;
 
-static void
-computeAndPrintStuff(Context* context,
-                     const AstNode* ast,
-                     const ResolvedFunction* inFn,
-                     std::set<const ResolvedFunction*>& calledFns,
-                     bool scopeResolveOnly) {
+static void computeAndPrintStuff(Context* context,
+                                 const AstNode* ast,
+                                 const ResolvedFunction* inFn,
+                                 std::set<const ResolvedFunction*>& calledFns,
+                                 bool scopeResolveOnly) {
   ResolutionContext rcval(context);
   auto rc = &rcval;
   // Scope resolve / resolve concrete functions before printing
@@ -86,7 +84,7 @@ static void setupSearchPaths(Context* ctx,
 
 int main(int argc, char** argv) {
   bool brief = false;
-  (void) brief;
+  (void)brief;
   std::string chpl_home;
   std::vector<std::string> cmdLinePaths;
   std::vector<std::string> files;
@@ -120,7 +118,7 @@ int main(int argc, char** argv) {
   setupSearchPaths(ctx, cmdLinePaths, files);
   std::set<const ResolvedFunction*> calledFns;
 
-  for (auto p: files) {
+  for (auto p : files) {
     auto filepath = UniqueString::get(ctx, p);
 
     const ModuleVec& mods = parseToplevel(ctx, filepath);

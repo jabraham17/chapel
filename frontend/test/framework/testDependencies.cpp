@@ -132,7 +132,6 @@ static const int& querySeven(Context* context, int unused) {
   return QUERY_END(result);
 }
 
-
 static void test0() {
   printf("test0\n");
 
@@ -400,7 +399,6 @@ static void test5() {
   assert(nQuerySevenRuns == 0);
   assert(q6 == "hello there giant wrld..");
 
-
   // run it again changing to odd length
   printf("part 4\n");
   context->advanceToNextRevision(false);
@@ -449,7 +447,8 @@ static void test6a() {
 
   context->advanceToNextRevision(false);
   printf("part 2\n");
-  inputString = "world hello"; /* Same parity as hello world, should not re-compute query 7. */
+  inputString =
+    "world hello"; /* Same parity as hello world, should not re-compute query 7. */
   std::ignore = querySeven(context, /* unused */ 0);
   assert(nInputQueryRuns == 2);
   assert(nQueryOneRuns == 2);
@@ -505,7 +504,8 @@ static void test6b() {
 
   context->advanceToNextRevision(false);
   printf("part 3\n");
-  inputString = "world hello"; /* Same parity as hello world, should not re-compute query 7. */
+  inputString =
+    "world hello"; /* Same parity as hello world, should not re-compute query 7. */
   std::ignore = querySeven(context, /* unused */ 0);
   assert(nInputQueryRuns == 3);
   assert(nQueryOneRuns == 2);

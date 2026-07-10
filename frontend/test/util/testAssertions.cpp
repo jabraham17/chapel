@@ -26,17 +26,13 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-
 using namespace chpl;
 
 /*
   Signal handler for when the child process aborts
   Helps ensure that we detect an appropriate signal in test4
 */
-static void handler(int sig)
-{
-  assert(sig == SIGCHLD);
-}
+static void handler(int sig) { assert(sig == SIGCHLD); }
 
 // test that we can see initial values for globals and edit them
 static void test1() {
@@ -87,7 +83,7 @@ static void test4() {
     // in child process
     // expect we crash because assertion is false
     CHPL_ASSERT(false);
-  } else if (childPid > 0 ) {
+  } else if (childPid > 0) {
     // in parent process
     waitpid(childPid, &status, 0);
     // filter status down to key bits

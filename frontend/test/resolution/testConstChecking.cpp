@@ -29,11 +29,10 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
 
-static void
-testConstChecking(const char* test,
-                  const char* program,
-                  // vector of line numbers with an error expected
-                  std::vector<int> expectedErrorLines) {
+static void testConstChecking(const char* test,
+                              const char* program,
+                              // vector of line numbers with an error expected
+                              std::vector<int> expectedErrorLines) {
   printf("\n### %s\n", test);
 
   Context* context = buildStdContext();
@@ -85,7 +84,7 @@ testConstChecking(const char* test,
 
 static void test1a() {
   testConstChecking("test1a",
-    R""""(
+                    R""""(
       module M {
         proc acceptsRef(ref arg) { }
         proc test() {
@@ -94,11 +93,11 @@ static void test1a() {
         }
       }
     )"""",
-    {6});
+                    {6});
 }
 static void test1b() {
   testConstChecking("test1b",
-    R""""(
+                    R""""(
       module M {
         proc acceptsRef(ref arg) { }
         proc test() {
@@ -107,11 +106,11 @@ static void test1b() {
         }
       }
     )"""",
-    {});
+                    {});
 }
 static void test1c() {
   testConstChecking("test1c",
-    R""""(
+                    R""""(
       module M {
         proc acceptsConstRef(const ref arg) { }
         proc test() {
@@ -120,12 +119,12 @@ static void test1c() {
         }
       }
     )"""",
-    {});
+                    {});
 }
 
 static void test2a() {
   testConstChecking("test2a",
-    R""""(
+                    R""""(
       module M {
         proc acceptsRef(ref arg) { }
         proc test() {
@@ -135,12 +134,12 @@ static void test2a() {
         }
       }
     )"""",
-    {7});
+                    {7});
 }
 
 static void test3a() {
   testConstChecking("test3a",
-    R""""(
+                    R""""(
       module M {
         proc acceptsRef(ref arg) { }
         var global: int;
@@ -150,12 +149,12 @@ static void test3a() {
         }
       }
     )"""",
-    {});
+                    {});
 }
 
 static void test3b() {
   testConstChecking("test3b",
-    R""""(
+                    R""""(
       module M {
         proc acceptsRef(ref arg) { }
         var global: int;
@@ -165,12 +164,12 @@ static void test3b() {
         }
       }
     )"""",
-    {7});
+                    {7});
 }
 
 static void test3c() {
   testConstChecking("test3c",
-    R""""(
+                    R""""(
       module M {
         proc acceptsRef(ref arg) { }
         var global: int;
@@ -180,11 +179,11 @@ static void test3c() {
         }
       }
     )"""",
-    {7});
+                    {7});
 }
 static void test3d() {
   testConstChecking("test3d",
-    R""""(
+                    R""""(
       module M {
         proc acceptsRef(ref arg) { }
         var global: int;
@@ -194,12 +193,12 @@ static void test3d() {
         }
       }
     )"""",
-    {7});
+                    {7});
 }
 
 static void test4a() {
   testConstChecking("test4a",
-    R""""(
+                    R""""(
       module M {
         proc acceptsRef(ref arg) { }
         var global: int;
@@ -210,12 +209,12 @@ static void test4a() {
         }
       }
     )"""",
-    {});
+                    {});
 }
 
 static void test4b() {
   testConstChecking("test4b",
-    R""""(
+                    R""""(
       module M {
         proc acceptsRef(ref arg) { }
         var global: int;
@@ -226,12 +225,12 @@ static void test4b() {
         }
       }
     )"""",
-    {});
+                    {});
 }
 
 static void test4c() {
   testConstChecking("test4c",
-    R""""(
+                    R""""(
       module M {
         proc acceptsRef(ref arg) { }
         var global: int;
@@ -242,12 +241,12 @@ static void test4c() {
         }
       }
     )"""",
-    {8});
+                    {8});
 }
 
 static void test4d() {
   testConstChecking("test4d",
-    R""""(
+                    R""""(
       module M {
         proc acceptsRef(ref arg) { }
         var global: int;
@@ -259,12 +258,12 @@ static void test4d() {
         }
       }
     )"""",
-    {});
+                    {});
 }
 
 static void test5a() {
   testConstChecking("test5a",
-    R""""(
+                    R""""(
       module M {
         proc acceptsOut(out arg: int) { }
         proc test() {
@@ -273,11 +272,11 @@ static void test5a() {
         }
       }
     )"""",
-    {});
+                    {});
 }
 static void test5b() {
   testConstChecking("test5b",
-    R""""(
+                    R""""(
       module M {
         proc acceptsInout(inout arg: int) { }
         proc test() {
@@ -286,12 +285,12 @@ static void test5b() {
         }
       }
     )"""",
-    {6});
+                    {6});
 }
 
 static void test6a() {
   testConstChecking("test6a",
-    R""""(
+                    R""""(
       module M {
         proc test() {
           const x: int = 0;
@@ -299,11 +298,11 @@ static void test6a() {
         }
       }
     )"""",
-    {5});
+                    {5});
 }
 static void test6b() {
   testConstChecking("test6b",
-    R""""(
+                    R""""(
       module M {
         proc test() {
           const x: int = 0;
@@ -312,11 +311,11 @@ static void test6b() {
         }
       }
     )"""",
-    {6});
+                    {6});
 }
 static void test6c() {
   testConstChecking("test6c",
-    R""""(
+                    R""""(
       module M {
         proc test() {
           const x: int = 0;
@@ -325,7 +324,7 @@ static void test6c() {
         }
       }
     )"""",
-    {5});
+                    {5});
 }
 
 static void test7a() {
@@ -336,7 +335,7 @@ static void test7a() {
   // arguments 'x' and 'constThing'. This resulted in a "failure" as the
   // frontend thought we were passing 'constThing' to 'ref A'.
   testConstChecking("test7a",
-    R"""(
+                    R"""(
       module M {
         record R {
           var x : int;
@@ -356,16 +355,15 @@ static void test7a() {
         }
       }
     )""",
-  {});
+                    {});
 }
-
 
 // modifying a const field in a method used to be okay, in some contexts,
 // but we decided (https://github.com/chapel-lang/chapel/discussions/28306?notification_referrer_id=NT_kwHOAEKMQtoAJlJlcG9zaXRvcnk7MjE2NjMyODU7RGlzY3Vzc2lvbjs5MzM5NTI0#discussioncomment-15553885)
 // that this is not the case. This test locks down the updated behavior.
 static void test8() {
   testConstChecking("test8-1",
-      R"""(
+                    R"""(
       module M {
         record R {
           const x: int;
@@ -382,10 +380,10 @@ static void test8() {
         }
       }
     )""",
-    {7});
+                    {7});
 
   testConstChecking("test8-2",
-      R"""(
+                    R"""(
       module M {
         record R {
           const x: int;
@@ -403,11 +401,11 @@ static void test8() {
         }
       }
     )""",
-    {7});
+                    {7});
 
   // same as the previous two cases, but use 'out' formals
   testConstChecking("test8-3",
-      R"""(
+                    R"""(
       module M {
         proc setField(out field: int) do field = 1;
 
@@ -426,10 +424,10 @@ static void test8() {
         }
       }
     )""",
-    {9});
+                    {9});
 
   testConstChecking("test8-4",
-      R"""(
+                    R"""(
       module M {
         proc setField(out field: int) do field = 1;
 
@@ -449,11 +447,11 @@ static void test8() {
         }
       }
     )""",
-    {9});
+                    {9});
 
   // same as above, but use 'this.x' instead of 'x'.
   testConstChecking("test8-5",
-      R"""(
+                    R"""(
       module M {
         record R {
           const x: int;
@@ -470,10 +468,10 @@ static void test8() {
         }
       }
     )""",
-    {7});
+                    {7});
 
   testConstChecking("test8-6",
-      R"""(
+                    R"""(
       module M {
         record R {
           const x: int;
@@ -491,11 +489,11 @@ static void test8() {
         }
       }
     )""",
-    {7});
+                    {7});
 
   // same as the previous two cases, but use 'out' formals
   testConstChecking("test8-7",
-      R"""(
+                    R"""(
       module M {
         proc setField(out field: int) do field = 1;
 
@@ -514,10 +512,10 @@ static void test8() {
         }
       }
     )""",
-    {9});
+                    {9});
 
   testConstChecking("test8-8",
-      R"""(
+                    R"""(
       module M {
         proc setField(out field: int) do field = 1;
 
@@ -537,11 +535,10 @@ static void test8() {
         }
       }
     )""",
-    {9});
+                    {9});
 }
 
 // TODO: test const checking for associated functions
-
 
 int main() {
   test1a();

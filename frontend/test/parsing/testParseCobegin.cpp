@@ -31,15 +31,17 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-      "/* comment 1 */\n"
-      "cobegin /* comment 2 */\n"
-      "with /* comment 3 */ (ref a, var b = foo()) /* comment 4 */ {\n"
-      "  /* comment 5 */\n"
-      "  writeln(a);\n"
-      "  /* comment 6 */\n"
-      "}\n"
-      "/* comment 7 */\n");
+  auto parseResult = parseStringAndReportErrors(
+    parser,
+    "test0.chpl",
+    "/* comment 1 */\n"
+    "cobegin /* comment 2 */\n"
+    "with /* comment 3 */ (ref a, var b = foo()) /* comment 4 */ {\n"
+    "  /* comment 5 */\n"
+    "  writeln(a);\n"
+    "  /* comment 6 */\n"
+    "}\n"
+    "/* comment 7 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -67,10 +69,7 @@ static void test0(Parser* parser) {
   {
     // Include comments even if they have no meaning.
     AstTag taskBodyList[] = {
-      asttags::Comment,
-      asttags::FnCall,
-      asttags::Comment
-    };
+      asttags::Comment, asttags::FnCall, asttags::Comment};
     auto i = 0;
     for (const auto taskBody : cobegin->taskBodies()) {
       assert(taskBody->tag() == taskBodyList[i]);
@@ -81,14 +80,15 @@ static void test0(Parser* parser) {
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
-      "/* comment 1 */\n"
-      "cobegin /* comment 2 */ {\n"
-      "  /* comment 5 */\n"
-      "  writeln(a);\n"
-      "  /* comment 6 */\n"
-      "}\n"
-      "/* comment 7 */\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1.chpl",
+                                                "/* comment 1 */\n"
+                                                "cobegin /* comment 2 */ {\n"
+                                                "  /* comment 5 */\n"
+                                                "  writeln(a);\n"
+                                                "  /* comment 6 */\n"
+                                                "}\n"
+                                                "/* comment 7 */\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -108,16 +108,18 @@ static void test1(Parser* parser) {
 
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
-      "cobegin with (re A) {;;}\n"
-      "cobegin with () {;;}\n"
-      "cobegin with ref A {;;}\n"
-);
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test2.chpl",
+                                                "cobegin with (re A) {;;}\n"
+                                                "cobegin with () {;;}\n"
+                                                "cobegin with ref A {;;}\n");
   auto numErrors = 5;
-  assert(guard.errors().size() == (size_t) numErrors);
-  assert("invalid intent expression in 'with' clause" == guard.error(1)->message());
+  assert(guard.errors().size() == (size_t)numErrors);
+  assert("invalid intent expression in 'with' clause" ==
+         guard.error(1)->message());
   assert("'with' clause cannot be empty" == guard.error(2)->message());
-  assert("missing parentheses around 'with' clause intents" == guard.error(4)->message());
+  assert("missing parentheses around 'with' clause intents" ==
+         guard.error(4)->message());
   // The other errors are from the parser as "near ...".
   // It would be really nice to not have those be emitted at all.
   assert(guard.realizeErrors() == numErrors);

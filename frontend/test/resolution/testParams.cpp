@@ -31,8 +31,7 @@ static void test1() {
   printf("test1\n");
   Context ctx;
 
-  QualifiedType qt = getTypeForFirstStmt(&ctx,
-                                         "__primitive('+', 1, 2);\n");
+  QualifiedType qt = getTypeForFirstStmt(&ctx, "__primitive('+', 1, 2);\n");
   assert(qt.hasTypePtr());
   assert(qt.hasParamPtr());
 
@@ -44,8 +43,8 @@ static void test2() {
   printf("test2\n");
   Context ctx;
 
-  QualifiedType qt = getTypeForFirstStmt(&ctx,
-                                         "__primitive('*', 2.25, 4.25);\n");
+  QualifiedType qt =
+    getTypeForFirstStmt(&ctx, "__primitive('*', 2.25, 4.25);\n");
   assert(qt.hasTypePtr());
   assert(qt.hasParamPtr());
 
@@ -57,8 +56,8 @@ static void test3() {
   printf("test3\n");
   Context ctx;
 
-  QualifiedType qt = getTypeForFirstStmt(&ctx,
-                                         "__primitive('+', 3.0, 2.0i);\n");
+  QualifiedType qt =
+    getTypeForFirstStmt(&ctx, "__primitive('+', 3.0, 2.0i);\n");
   assert(qt.hasTypePtr());
   assert(qt.hasParamPtr());
 
@@ -123,7 +122,8 @@ static void test4() {
   assert(bestFn->formalType(0).isParam());
   assert(bestFn->formalName(0) == UniqueString::get(context, "this"));
   assert(bestFn->formalType(0).param()->isEnumParam());
-  assert(bestFn->formalType(0).param()->toEnumParam()->value().id == greenEnum->id());
+  assert(bestFn->formalType(0).param()->toEnumParam()->value().id ==
+         greenEnum->id());
   const ResolvedFunction* rfn = scopeResolveFunction(context, isBlueFn->id());
   const auto tsi = typedSignatureInitial(rc, rfn->signature()->untyped());
   assert(tsi->formalType(0).isParam());
@@ -133,11 +133,11 @@ static void test5() {
   printf("test5\n");
   Context ctx;
 
-  QualifiedType qtString =
-  getTypeForFirstStmt(&ctx, "__primitive('string_length_bytes', 'myString');\n");
+  QualifiedType qtString = getTypeForFirstStmt(
+    &ctx, "__primitive('string_length_bytes', 'myString');\n");
   ctx.advanceToNextRevision(true);
-  QualifiedType qtBytes =
-  getTypeForFirstStmt(&ctx, "__primitive('string_length_bytes', b'myBytes');\n");
+  QualifiedType qtBytes = getTypeForFirstStmt(
+    &ctx, "__primitive('string_length_bytes', b'myBytes');\n");
   assert(qtString.hasTypePtr());
   assert(qtBytes.hasTypePtr());
   assert(qtString.hasParamPtr());
@@ -202,10 +202,11 @@ static void test7() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       param x = chpl_INFINITY;
       param y = chpl_NAN;
-      )""", {"x", "y"});
+      )""",
+                                      {"x", "y"});
 
   ensureParamReal(vars.at("x"), std::numeric_limits<double>::infinity());
   ensureParamReal(vars.at("y"), std::numeric_limits<double>::quiet_NaN());
@@ -218,13 +219,14 @@ static void test8() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-      R"""(
+                                      R"""(
       param s = "Türkçe";
       param x = s.size;
       param y = s[1];
       param z = s.item(1);
       param w = b"Türkçe".item(1);
-      )""", {"x", "y", "z", "w"});
+      )""",
+                                      {"x", "y", "z", "w"});
 
   ensureParamInt(vars.at("x"), 6);
   ensureParamString(vars.at("y"), "ü");

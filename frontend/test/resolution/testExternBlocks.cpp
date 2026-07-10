@@ -52,7 +52,7 @@ static void testIt(const char* testName,
   // parse it so that Context knows about the IDs
   const ModuleVec& vec = parseToplevel(context, path);
   assert(vec.size() >= 1);
-  const Module* M = vec[vec.size()-1];
+  const Module* M = vec[vec.size() - 1];
   const Identifier* lastIdent = nullptr;
 
   for (auto stmt : M->stmts()) {
@@ -161,14 +161,14 @@ static void test8() {
   {
     Context* context = buildStdContext();
     ErrorGuard guard(context);
-    QualifiedType qt =
-      resolveTypeOfXInit(context,
-                         R""""(
+    QualifiedType qt = resolveTypeOfXInit(context,
+                                          R""""(
                           module M {
                             extern { int i; }
                             var x = i;
                           }
-                         )"""", true);
+                         )"""",
+                                          true);
 
     assert(!qt.isUnknownOrErroneous());
     assert(qt.type()->isIntType());
@@ -180,14 +180,14 @@ static void test8() {
   {
     Context* context = buildStdContext();
     ErrorGuard guard(context);
-    QualifiedType qt =
-      resolveTypeOfXInit(context,
-                         R""""(
+    QualifiedType qt = resolveTypeOfXInit(context,
+                                          R""""(
                           module M {
                             extern { }
                             var x = 1;
                           }
-                         )"""", true);
+                         )"""",
+                                          true);
 
     assert(!qt.isUnknownOrErroneous());
 
@@ -200,9 +200,8 @@ static void test9() {
   {
     Context* context = buildStdContext();
     ErrorGuard guard(context);
-    QualifiedType qt =
-      resolveTypeOfXInit(context,
-                         R""""(
+    QualifiedType qt = resolveTypeOfXInit(context,
+                                          R""""(
                           module M {
                             module CDemo {
                               extern {
@@ -214,7 +213,8 @@ static void test9() {
 
                             var x = CDemo.square(2.0);
                           }
-                         )"""", true);
+                         )"""",
+                                          true);
 
     assert(!qt.isUnknownOrErroneous());
     assert(qt.type()->isRealType());
@@ -227,9 +227,8 @@ static void test9() {
   {
     Context* context = buildStdContext();
     ErrorGuard guard(context);
-    QualifiedType qt =
-      resolveTypeOfXInit(context,
-                         R""""(
+    QualifiedType qt = resolveTypeOfXInit(context,
+                                          R""""(
                           module M {
                             module CDemo {
                               extern {
@@ -243,7 +242,8 @@ static void test9() {
 
                             var x = CDemo.square(2.0);
                           }
-                         )"""", true);
+                         )"""",
+                                          true);
 
     assert(!qt.isUnknownOrErroneous());
     assert(qt.type()->isRealType());
@@ -257,9 +257,8 @@ static void test10() {
   printf("%s\n", __FUNCTION__);
   Context* context = buildStdContext();
   ErrorGuard guard(context);
-  QualifiedType qt =
-    resolveTypeOfXInit(context,
-                       R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                         module M {
                           module CDemo {
                             extern {
@@ -271,7 +270,8 @@ static void test10() {
 
                           var x = CDemo.main();
                         }
-                       )"""", true);
+                       )"""",
+                                        true);
 
   assert(!qt.isUnknownOrErroneous());
   assert(qt.type()->isIntType());
@@ -284,9 +284,8 @@ static void test11() {
   printf("%s\n", __FUNCTION__);
   Context* context = buildStdContext();
   ErrorGuard guard(context);
-  QualifiedType qt =
-    resolveTypeOfXInit(context,
-                       R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                         module M {
                           module CDemo {
                             extern {
@@ -298,7 +297,8 @@ static void test11() {
 
                           var x = CDemo.foo();
                         }
-                       )"""", true);
+                       )"""",
+                                        true);
 
   assert(!qt.isUnknownOrErroneous());
   assert(qt.type()->isVoidType());
@@ -310,9 +310,8 @@ static void test12() {
   printf("%s\n", __FUNCTION__);
   Context* context = buildStdContext();
   ErrorGuard guard(context);
-  QualifiedType qt =
-    resolveTypeOfXInit(context,
-                       R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                         module M {
                           use CTypes;
                           extern {
@@ -335,9 +334,8 @@ static void test13() {
   printf("%s\n", __FUNCTION__);
   Context* context = buildStdContext();
   ErrorGuard guard(context);
-  std::ignore =
-    resolveTypeOfXInit(context,
-                       R""""(
+  std::ignore = resolveTypeOfXInit(context,
+                                   R""""(
                         module M {
                           use CTypes;
                           extern {
@@ -350,20 +348,19 @@ static void test13() {
                           var yp: c_ptrConst(c_int) = c_ptrToConst(y);
                           var x = bar(yp);
                         }
-                       )"""", false);
+                       )"""",
+                                   false);
 
   assert(guard.numErrors() == 1);
   assert(guard.errors().at(0)->type() == ErrorType::NoMatchingCandidates);
-  auto error = static_cast<ErrorNoMatchingCandidates*>(guard.errors().at(0).get());
+  auto error =
+    static_cast<ErrorNoMatchingCandidates*>(guard.errors().at(0).get());
   auto& candidates = std::get<2>(error->info());
   assert(candidates.size() == 1);
   assert(candidates[0].reason() == resolution::FAIL_CANNOT_PASS);
 
   guard.realizeErrors();
 }
-
-
-
 
 int main() {
   test1();

@@ -22,8 +22,9 @@
 #include "test-resolution.h"
 #include "chpl/resolution/resolution-queries.h"
 
-
-static void testHelper(Context* context, std::string program, const Type* expectedType,
+static void testHelper(Context* context,
+                       std::string program,
+                       const Type* expectedType,
                        const Param* expectedParam) {
 
   QualifiedType qt = resolveQualifiedTypeOfX(context, program);
@@ -38,16 +39,20 @@ static void testHelper(Context* context, std::string program, const Type* expect
 static void test1() {
   printf("test1\n");
   Context ctx;
-  testHelper(&ctx, "param x = 0x8000000000000000 : int;\n",
-             IntType::get(&ctx, 0), IntParam::get(&ctx, 0x8000000000000000));
+  testHelper(&ctx,
+             "param x = 0x8000000000000000 : int;\n",
+             IntType::get(&ctx, 0),
+             IntParam::get(&ctx, 0x8000000000000000));
 }
 
 // uint -> int
 static void test2() {
   printf("test2\n");
   Context ctx;
-  testHelper(&ctx, "param x = 0x7fffffffffffffff : int;\n",
-             IntType::get(&ctx, 0), IntParam::get(&ctx, 0x7fffffffffffffff));
+  testHelper(&ctx,
+             "param x = 0x7fffffffffffffff : int;\n",
+             IntType::get(&ctx, 0),
+             IntParam::get(&ctx, 0x7fffffffffffffff));
 }
 
 static void test3() {
@@ -68,7 +73,7 @@ static void test3() {
 }
 
 static void test4() {
-    printf("test4\n");
+  printf("test4\n");
   Context ctx;
 
   std::string program = R""""(
@@ -222,7 +227,6 @@ static void test20() {
 
   std::string program = "param x = 0x0000000000000000 : bool; ";
   testHelper(&ctx, program, BoolType::get(&ctx), BoolParam::get(&ctx, false));
-
 }
 
 //uint -> real
@@ -231,7 +235,10 @@ static void test21() {
   Context ctx;
 
   std::string program = "param x = 0x8000000000000000 : real; ";
-  testHelper(&ctx, program, RealType::get(&ctx, 0), RealParam::get(&ctx, 9.223372036854776e+18));
+  testHelper(&ctx,
+             program,
+             RealType::get(&ctx, 0),
+             RealParam::get(&ctx, 9.223372036854776e+18));
 }
 
 static void test22() {
@@ -247,7 +254,10 @@ static void test23() {
   Context ctx;
 
   std::string program = "param x = 0x7fffffffffffffff : real; ";
-  testHelper(&ctx, program, RealType::get(&ctx, 0), RealParam::get(&ctx, 9.223372036854776e+18));
+  testHelper(&ctx,
+             program,
+             RealType::get(&ctx, 0),
+             RealParam::get(&ctx, 9.223372036854776e+18));
 }
 
 // real -> int (data loss)
@@ -323,7 +333,10 @@ static void test33() {
   printf("test33\n");
   Context ctx;
   std::string program = "param x = 0x8000000000000000 : uint; ";
-  testHelper(&ctx, program, UintType::get(&ctx, 0), UintParam::get(&ctx, 0x8000000000000000));
+  testHelper(&ctx,
+             program,
+             UintType::get(&ctx, 0),
+             UintParam::get(&ctx, 0x8000000000000000));
 }
 
 // real -> real
@@ -373,10 +386,10 @@ static void test38() {
   QualifiedType qt = resolveQualifiedTypeOfX(&ctx, program);
 
   assert(qt.hasTypePtr());
-  assert(qt.type() == EnumType::get(&ctx, enumId, UniqueString::get(&ctx, "E")));
+  assert(qt.type() ==
+         EnumType::get(&ctx, enumId, UniqueString::get(&ctx, "E")));
   assert(qt.param() == EnumParam::get(&ctx, {eltId, "A"}));
 }
-
 
 // enum to nothing cast (error)
 static void test39() {
@@ -448,17 +461,20 @@ static void test43() {
   printf("test43\n");
   Context ctx;
   Context* context = &ctx;
-  testHelper(context, "param x = \"hello\" : bytes;",
-                      RecordType::getBytesType(context),
-                      StringParam::get(context, UniqueString::get(context, "hello")));
+  testHelper(context,
+             "param x = \"hello\" : bytes;",
+             RecordType::getBytesType(context),
+             StringParam::get(context, UniqueString::get(context, "hello")));
 }
 
 // param bytes to string (formely throwing assertions)
 static void test44() {
   printf("test44\n");
   auto context = buildStdContext();
-  testHelper(context, "param x = b\"hello\" : string;",
-                      ErroneousType::get(context), nullptr);
+  testHelper(context,
+             "param x = b\"hello\" : string;",
+             ErroneousType::get(context),
+             nullptr);
 }
 
 static void test45() {
@@ -574,7 +590,8 @@ static void test47() {
     assert(xInit.type());
     assert(xInit.type()->isClassType());
     assert(xInit.type()->toClassType()->decorator().isBorrowed());
-    assert(xInit.type()->toClassType()->decorator().isNilable() == expectNilable);
+    assert(xInit.type()->toClassType()->decorator().isNilable() ==
+           expectNilable);
   };
 
   testBorrow("var cu = new unmanaged C();\n var c = cu : borrowed;", false);
@@ -585,13 +602,13 @@ static void test47() {
 
 static void test48() {
   {
-  // Mimics a situation found in CTypes, involving the casts for c_ptr(void)
-  // Technically these are ambiguous, but we avoid the cast entirely becase
-  // the src/dest types are the same.
-  Context* context = buildStdContext();
-  ErrorGuard guard(context);
-  std::string program =
-    R"""(
+    // Mimics a situation found in CTypes, involving the casts for c_ptr(void)
+    // Technically these are ambiguous, but we avoid the cast entirely becase
+    // the src/dest types are the same.
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+    std::string program =
+      R"""(
     record R {
       type T;
       var x : T;
@@ -609,19 +626,19 @@ static void test48() {
     var x = r:R(int);
     )""";
 
-  auto xInit = resolveQualifiedTypeOfX(context, program);
+    auto xInit = resolveQualifiedTypeOfX(context, program);
 
-  assert(toString(xInit) == "R(int(64))");
+    assert(toString(xInit) == "R(int(64))");
   }
 
   {
-  // Mimics a situation found in CTypes, involving the casts for c_ptr(void)
-  // These should not be ambiguous because the second cast is more specific
-  // by having declared the type as `R(nothing)`.
-  Context* context = buildStdContext();
-  ErrorGuard guard(context);
-  std::string program =
-    R"""(
+    // Mimics a situation found in CTypes, involving the casts for c_ptr(void)
+    // These should not be ambiguous because the second cast is more specific
+    // by having declared the type as `R(nothing)`.
+    Context* context = buildStdContext();
+    ErrorGuard guard(context);
+    std::string program =
+      R"""(
     record R {
       type T;
       var x : T;
@@ -640,9 +657,9 @@ static void test48() {
     var x = r:R(nothing);
     )""";
 
-  auto xInit = resolveQualifiedTypeOfX(context, program);
+    auto xInit = resolveQualifiedTypeOfX(context, program);
 
-  assert(toString(xInit) == "R(nothing)");
+    assert(toString(xInit) == "R(nothing)");
   }
 }
 
@@ -658,8 +675,10 @@ static void test49() {
   {
     // ... but it's not a param cast.
     auto context = buildStdContext();
-    testHelper(context, "param x = \"hello\" : int;",
-                        ErroneousType::get(context), nullptr);
+    testHelper(context,
+               "param x = \"hello\" : int;",
+               ErroneousType::get(context),
+               nullptr);
   }
 }
 
@@ -743,7 +762,8 @@ static void test54() {
   printf("test54\n");
   auto context = buildStdContext();
 
-  std::string program = "var x = ((1, 2), (3, 4)) : ((real, real), (real, real));";
+  std::string program =
+    "var x = ((1, 2), (3, 4)) : ((real, real), (real, real));";
   auto vars = resolveTypesOfVariables(context, program, {"x"});
   auto xType = vars.at("x").type();
   assert(xType);
@@ -769,7 +789,8 @@ static void test55() {
   printf("test55\n");
   auto context = buildStdContext();
 
-  std::string program = "var x = (((1, 2), 3), 4) : (((real, real), real), real);";
+  std::string program =
+    "var x = (((1, 2), 3), 4) : (((real, real), real), real);";
   auto vars = resolveTypesOfVariables(context, program, {"x"});
   auto xType = vars.at("x").type();
   assert(xType);
@@ -790,7 +811,6 @@ static void test55() {
   assert(midTuple->elementType(1).type() == RealType::get(context, 0));
   assert(outerTuple->elementType(1).type() == RealType::get(context, 0));
 }
-
 
 // Error: tuple size mismatch (source larger)
 static void test56() {
@@ -866,7 +886,7 @@ static void test60() {
     var x = (1, 2) : (real, real);
     )""";
 
-    auto m = parseModule(context, std::move(program));
+  auto m = parseModule(context, std::move(program));
   auto& rr = resolveModule(context, m->id());
 
   auto xVar = findVariable(m, "x");
@@ -897,23 +917,22 @@ static void test60() {
 static void testAdjustCastCalls() {
   printf("testAdjustCastCalls\n");
 
-
   // Helper to test casts - works for both type-level and value-level
   // expectedManager: owned/shared type for managed, nullptr for unmanaged/borrowed
   // expectedClassName: name of the class in the result (C or D)
   // expectError: true if we expect the cast to produce an error
-  auto testCast = [](const char* program, const char* varName,
-                            const typetags::TypeTag expectedManager,
-                            const char* expectedClassName,
-                            bool expectError = false) {
+  auto testCast = [](const char* program,
+                     const char* varName,
+                     const typetags::TypeTag expectedManager,
+                     const char* expectedClassName,
+                     bool expectError = false) {
     auto stdContext = buildStdContext();
     ErrorGuard guard(stdContext);
 
-    std::string fullProgram =
-      "class C { }\n"
-      "class D : C { }\n"
-      "class E { }\n" +
-      std::string(program);
+    std::string fullProgram = "class C { }\n"
+                              "class D : C { }\n"
+                              "class E { }\n" +
+                              std::string(program);
 
     auto varType = resolveTypeOfVariable(stdContext, fullProgram, varName);
 
@@ -924,7 +943,8 @@ static void testAdjustCastCalls() {
       assert(varType.type());
       auto ct = varType.type()->toClassType();
       assert(ct);
-      assert(ct->basicClassType()->name() == UniqueString::get(stdContext, expectedClassName));
+      assert(ct->basicClassType()->name() ==
+             UniqueString::get(stdContext, expectedClassName));
 
       if (expectedManager != typetags::NUM_TYPE_TAGS) {
         assert(ct->decorator().isManaged());
@@ -947,24 +967,70 @@ static void testAdjustCastCalls() {
   testCast("type t = borrowed C : owned C;", "t", typetags::AnyOwnedType, "C");
   testCast("type t = unmanaged C : owned;", "t", typetags::AnyOwnedType, "C");
   testCast("type t = unmanaged C : owned C;", "t", typetags::AnyOwnedType, "C");
-  testCast("type t = owned C : shared D;", "t", typetags::AnySharedType, "D");  // RHS class used
-  testCast("type t = owned D : shared C;", "t", typetags::AnySharedType, "C");  // RHS class used
+  testCast("type t = owned C : shared D;",
+           "t",
+           typetags::AnySharedType,
+           "D"); // RHS class used
+  testCast("type t = owned D : shared C;",
+           "t",
+           typetags::AnySharedType,
+           "C"); // RHS class used
 
   // Type-level cast that should fail (unrelated classes)
-  testCast("type t = owned C : shared E;", "t", typetags::NUM_TYPE_TAGS, nullptr, true);
+  testCast("type t = owned C : shared E;",
+           "t",
+           typetags::NUM_TYPE_TAGS,
+           nullptr,
+           true);
 
   // Value-level casts
-  testCast("var oc = new owned C();\nvar v = oc.borrow();\nvar x = v : unmanaged;", "x", typetags::NUM_TYPE_TAGS, "C");
-  testCast("var oc = new owned C();\nvar v = oc.borrow();\nvar x = v : borrowed;", "x", typetags::NUM_TYPE_TAGS, "C");
+  testCast(
+    "var oc = new owned C();\nvar v = oc.borrow();\nvar x = v : unmanaged;",
+    "x",
+    typetags::NUM_TYPE_TAGS,
+    "C");
+  testCast(
+    "var oc = new owned C();\nvar v = oc.borrow();\nvar x = v : borrowed;",
+    "x",
+    typetags::NUM_TYPE_TAGS,
+    "C");
 
   // Value-level casts that should fail
-  testCast("var oc = new owned C();\nvar x = oc : shared;", "x", typetags::NUM_TYPE_TAGS, nullptr, true);
-  testCast("var oc = new owned C();\nvar x = oc : shared C;", "x", typetags::NUM_TYPE_TAGS, nullptr, true);
-  testCast("var oc = new owned C();\nvar x = oc : shared D;", "x", typetags::NUM_TYPE_TAGS, nullptr, true);  // C is parent of D
-  testCast("var od = new owned D();\nvar x = od : shared C;", "x", typetags::NUM_TYPE_TAGS, nullptr, true);  // D is child of C
-  testCast("var oc = new owned C();\nvar x = oc : shared E;", "x", typetags::NUM_TYPE_TAGS, nullptr, true);  // unrelated
-  testCast("var bc = (new owned C()).borrow();\nvar x = bc : owned;", "x", typetags::NUM_TYPE_TAGS, nullptr, true);
-  testCast("var bc = (new owned C()).borrow();\nvar x = bc : owned C;", "x", typetags::NUM_TYPE_TAGS, nullptr, true);
+  testCast("var oc = new owned C();\nvar x = oc : shared;",
+           "x",
+           typetags::NUM_TYPE_TAGS,
+           nullptr,
+           true);
+  testCast("var oc = new owned C();\nvar x = oc : shared C;",
+           "x",
+           typetags::NUM_TYPE_TAGS,
+           nullptr,
+           true);
+  testCast("var oc = new owned C();\nvar x = oc : shared D;",
+           "x",
+           typetags::NUM_TYPE_TAGS,
+           nullptr,
+           true); // C is parent of D
+  testCast("var od = new owned D();\nvar x = od : shared C;",
+           "x",
+           typetags::NUM_TYPE_TAGS,
+           nullptr,
+           true); // D is child of C
+  testCast("var oc = new owned C();\nvar x = oc : shared E;",
+           "x",
+           typetags::NUM_TYPE_TAGS,
+           nullptr,
+           true); // unrelated
+  testCast("var bc = (new owned C()).borrow();\nvar x = bc : owned;",
+           "x",
+           typetags::NUM_TYPE_TAGS,
+           nullptr,
+           true);
+  testCast("var bc = (new owned C()).borrow();\nvar x = bc : owned C;",
+           "x",
+           typetags::NUM_TYPE_TAGS,
+           nullptr,
+           true);
 }
 
 int main() {

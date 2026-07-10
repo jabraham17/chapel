@@ -36,8 +36,8 @@ static constexpr bool testExact = !testType;
 // callDotType). callDotType means expr will have '.type' appended.
 // preamble: Code to insert before the generated test code, for declarations.
 static void testPrimitive(
-    std::string preamble,
-    std::vector<std::tuple<const char*, const char*, bool, bool>> args) {
+  std::string preamble,
+  std::vector<std::tuple<const char*, const char*, bool, bool>> args) {
   auto context = buildStdContext();
   /* ErrorGuard guard(context); */
 
@@ -60,7 +60,8 @@ static void testPrimitive(
 
     // Generate prim call like:
     // param x3 = __primitive("PRIM_IS_CONST_ASSIGNABLE", (myFoo).type);
-    ps << "param " << variableName << " = " << "__primitive(\"" << prim << "\", (" << expr << ")";
+    ps << "param " << variableName << " = " << "__primitive(\"" << prim
+       << "\", (" << expr << ")";
     if (callDotType) ps << ".type ";
     ps << ");" << std::endl;
 
@@ -84,16 +85,18 @@ static void testPrimitive(
   }
 }
 
-static void testExprCopyAndAssignability(const char* preamble, const char* expr,
+static void testExprCopyAndAssignability(const char* preamble,
+                                         const char* expr,
                                          bool expectRefCopyable,
                                          bool expectConstCopyable,
                                          bool expectRefAssignable,
                                          bool expectConstAssignable) {
-  testPrimitive(preamble,
-      {{"is copyable type", expr, expectRefCopyable, testExact},
-       {"is const copyable type", expr, expectConstCopyable, testExact},
-       {"is assignable type", expr, expectRefAssignable, testExact},
-       {"is const assignable type", expr, expectConstAssignable, testExact}});
+  testPrimitive(
+    preamble,
+    {{"is copyable type", expr, expectRefCopyable, testExact},
+     {"is const copyable type", expr, expectConstCopyable, testExact},
+     {"is assignable type", expr, expectRefAssignable, testExact},
+     {"is const assignable type", expr, expectConstAssignable, testExact}});
 }
 
 static constexpr int all = 0;
@@ -113,39 +116,36 @@ static void testCases(const char* preamble,
         testExprCopyAndAssignability(preamble, expr, true, false, true, false);
         break;
       case none:
-        testExprCopyAndAssignability(preamble, expr, false, false, false,
-                                     false);
+        testExprCopyAndAssignability(
+          preamble, expr, false, false, false, false);
         break;
-      default:
-        assert(false && "unhandled case, bug in test");
-        break;
+      default: assert(false && "unhandled case, bug in test"); break;
     }
   }
 }
 
-
 // Class types with different management
 static void test1() {
   testCases(
-      R"""(
+    R"""(
       class C { }
       )""",
-      {
-          {"owned C", none},
-          {"owned C?", refOnly},
-          {"shared C", all},
-          {"shared C?", all},
-          {"borrowed C", all},
-          {"borrowed C?", all},
-          {"unmanaged C", all},
-          {"unmanaged C?", all},
-      });
+    {
+      {"owned C", none},
+      {"owned C?", refOnly},
+      {"shared C", all},
+      {"shared C?", all},
+      {"borrowed C", all},
+      {"borrowed C?", all},
+      {"unmanaged C", all},
+      {"unmanaged C?", all},
+    });
 }
 
 // Record types with different contents
 static void test2() {
   testCases(
-      R"""(
+    R"""(
       class C { }
 
       record PlainRecord { }
@@ -211,47 +211,47 @@ static void test2() {
         lhs.x = new owned C();
       }
       )""",
-      {
-          {"PlainRecord", all},
-          {"RecordWithNilableOwned", refOnly},
-          {"RecordWithNonNilableOwned", none},
-          {"RecordWithNilableOwnedIndirect", refOnly},
-          {"RecordWithNonNilableOwnedIndirect", none},
-          {"CustomRecordWithNilableOwned", all},
-          {"CustomRecordWithNonNilableOwned", all},
-          {"CustomRecordWithNilableOwnedOp", all},
-          {"CustomRecordWithNonNilableOwnedOp", all},
-      });
+    {
+      {"PlainRecord", all},
+      {"RecordWithNilableOwned", refOnly},
+      {"RecordWithNonNilableOwned", none},
+      {"RecordWithNilableOwnedIndirect", refOnly},
+      {"RecordWithNonNilableOwnedIndirect", none},
+      {"CustomRecordWithNilableOwned", all},
+      {"CustomRecordWithNonNilableOwned", all},
+      {"CustomRecordWithNilableOwnedOp", all},
+      {"CustomRecordWithNonNilableOwnedOp", all},
+    });
 }
 
 // Tuple and enum types
 static void test3() {
   testCases(
-      R"""(
+    R"""(
       class C { }
       enum E { x }
       )""",
-      {
-          {"E", all},
-          {"(int, string)", all},
-          {"(int, owned C)", none},
-          {"(int, owned C?)", refOnly},
-      });
+    {
+      {"E", all},
+      {"(int, string)", all},
+      {"(int, owned C)", none},
+      {"(int, owned C?)", refOnly},
+    });
 }
 
 // Plain old primitive types
 static void test4() {
   testCases(
-      R"""(
+    R"""(
       )""",
-      {
-          {"int", all},
-          {"int(32)", all},
-          {"string", all},
-          {"real", all},
-          {"bool", all},
-          {"complex", all},
-      });
+    {
+      {"int", all},
+      {"int(32)", all},
+      {"string", all},
+      {"real", all},
+      {"bool", all},
+      {"complex", all},
+    });
 }
 
 // Atomic type
@@ -278,7 +278,7 @@ static void test4() {
 // Generic types
 static void test7() {
   testCases(
-      R"""(
+    R"""(
       record GenericRecord {
         type t;
         var x : t;
@@ -289,13 +289,13 @@ static void test7() {
         var x : t;
       }
       )""",
-      {
-          {"GenericRecord", none},
-          {"GenericRecord(int)", all},
-          {"GenericRecordWithDefault", all},
-          {"GenericRecordWithDefault(real)", all},
-          {"integral", all}, // generic but not composite
-      });
+    {
+      {"GenericRecord", none},
+      {"GenericRecord(int)", all},
+      {"GenericRecordWithDefault", all},
+      {"GenericRecordWithDefault(real)", all},
+      {"integral", all}, // generic but not composite
+    });
 }
 
 int main() {

@@ -34,7 +34,7 @@ static void test1() {
   auto context = buildStdContext();
 
   auto t1 = resolveTypeOfX(context,
-                R""""(
+                           R""""(
                   proc f(arg: ?) { return arg; }
                   var x = f(1);
                 )"""");
@@ -42,7 +42,7 @@ static void test1() {
   assert(t1 && t1->isIntType());
 
   auto t2 = resolveTypeOfX(context,
-                R""""(
+                           R""""(
                   proc f(arg: ?) { var ret: arg.type; return ret; }
                   var x = f(1);
                 )"""");
@@ -50,7 +50,7 @@ static void test1() {
   assert(t2 && t2->isIntType());
 
   auto t3 = resolveTypeOfX(context,
-                R""""(
+                           R""""(
                   proc f(arg: ?t) { var ret: arg.type; return ret; }
                   var x = f(1);
                 )"""");
@@ -58,7 +58,7 @@ static void test1() {
   assert(t3 && t3->isIntType());
 
   auto t4 = resolveTypeOfX(context,
-                R""""(
+                           R""""(
                   proc f(arg: ?t) { var ret: t; return ret; }
                   var x = f(1);
                 )"""");
@@ -71,7 +71,7 @@ static void test2() {
   auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
-                R""""(
+                          R""""(
                   record R { type tt; }
                   proc R.init=(other: R) { this.tt = other.tt; }
 
@@ -93,7 +93,7 @@ static void test3() {
   auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
-                R""""(
+                          R""""(
                   record R { type tt; }
                   proc R.init=(other: R) { this.tt = other.tt; }
 
@@ -115,7 +115,7 @@ static void test4() {
   auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
-                R""""(
+                          R""""(
                   record R { type tt; }
                   proc R.init=(other: R) { this.tt = other.tt; }
 
@@ -137,7 +137,7 @@ static void test5() {
   auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
-                R""""(
+                          R""""(
                   record R { type tt; }
                   proc R.init=(other: R) { this.tt = other.tt; }
 
@@ -154,7 +154,7 @@ static void test6() {
   auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
-                R""""(
+                          R""""(
                   record RR { type ttt; }
                   record R { type tt; }
                   proc R.init=(other: R) { this.tt = other.tt; }
@@ -172,7 +172,7 @@ static void test7() {
   auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
-                R""""(
+                          R""""(
                   proc f(arg: int(?)) { return arg; }
                   var a: int(8);
                   var x = f(a);
@@ -188,7 +188,7 @@ static void test8() {
   auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
-                R""""(
+                          R""""(
                   proc f(arg: int(?w)) { return arg; }
                   var a: int(8);
                   var x = f(a);
@@ -207,11 +207,12 @@ static void test7b() {
   ErrorGuard guard(context);
 
   auto t = resolveTypeOfXInit(context,
-                R""""(
+                              R""""(
                   proc f(arg: bool(?)) { return arg; }
                   var a: bool;
                   var x = f(a);
-                )"""", /* requireTypeKnown */ false);
+                )"""",
+                              /* requireTypeKnown */ false);
 
   assert(t.isErroneousType());
 
@@ -225,11 +226,12 @@ static void test8b() {
   ErrorGuard guard(context);
 
   auto t = resolveTypeOfXInit(context,
-                R""""(
+                              R""""(
                   proc f(arg: bool(?w)) { return arg; }
                   var a: bool;
                   var x = f(a);
-                )"""", /* requireTypeKnown */ false);
+                )"""",
+                              /* requireTypeKnown */ false);
 
   assert(t.isErroneousType());
 
@@ -244,12 +246,13 @@ static void test7c() {
   ErrorGuard guard(context);
 
   auto t = resolveTypeOfXInit(context,
-                R""""(
+                              R""""(
                   type mybool = bool;
                   proc f(arg: mybool(?)) { return arg; }
                   var a: mybool;
                   var x = f(a);
-                )"""", /* requireTypeKnown */ false);
+                )"""",
+                              /* requireTypeKnown */ false);
 
   assert(t.isErroneousType());
 
@@ -264,12 +267,13 @@ static void test8c() {
   ErrorGuard guard(context);
 
   auto t = resolveTypeOfXInit(context,
-                R""""(
+                              R""""(
                   type mybool = bool;
                   proc f(arg: mybool(?w)) { return arg; }
                   var a: mybool;
                   var x = f(a);
-                )"""", /* requireTypeKnown */ false);
+                )"""",
+                              /* requireTypeKnown */ false);
 
   assert(t.isErroneousType());
 
@@ -282,7 +286,7 @@ static void test9() {
   auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
-                R""""(
+                          R""""(
                   proc f(arg: int(?w)) {
                     var y: uint(w);
                     return y;
@@ -363,7 +367,7 @@ static void test11() {
   auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
-                R""""(
+                          R""""(
                   proc g(a: int(?w), b: int(__primitive("*", 2, w))) {
                     return b;
                   }
@@ -382,7 +386,7 @@ static void test12a() {
   auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
-                R""""(
+                          R""""(
                   record R { type t1; type t2; }
                   proc R.init=(other: R) {
                     this.t1 = other.t1;
@@ -410,7 +414,7 @@ static void test12b() {
   auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
-                R""""(
+                          R""""(
                   record R { param p1: int; param p2: int; }
                   proc R.init=(other: R) {
                     this.p1 = other.p1;
@@ -442,7 +446,7 @@ static void test13a() {
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
-                R""""(
+                               R""""(
                   record R { type t1; type t2; }
                   proc R.init=(other: R) {
                     this.t1 = other.t1;
@@ -454,7 +458,8 @@ static void test13a() {
                   }
                   var a: R(int, string);
                   var x = f(a);
-                )"""", false);
+                )"""",
+                               false);
   assert(qt.isErroneousType());
 }
 
@@ -463,7 +468,7 @@ static void test13b() {
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
-                R""""(
+                               R""""(
                   record R { param p1: int; param p2: int; }
                   proc R.init=(other: R) {
                     this.p1 = other.p1;
@@ -475,7 +480,8 @@ static void test13b() {
                   }
                   var a: R(1, 2);
                   var x = f(a);
-                )"""", false);
+                )"""",
+                               false);
   assert(qt.isErroneousType());
 }
 
@@ -484,7 +490,7 @@ static void test14() {
   auto context = buildStdContext();
 
   auto t = resolveTypeOfX(context,
-                R""""(
+                          R""""(
                   record R { type t1; type t2; }
                   proc R.init=(other: R) {
                     this.t1 = other.t1;
@@ -512,7 +518,7 @@ static void test15() {
   auto context = buildStdContext();
 
   auto qt = resolveTypeOfXInit(context,
-                R""""(
+                               R""""(
                   record R { type t1; type t2; }
                   proc R.init(type t1, type t2) {
                     this.t1 = t1;
@@ -528,7 +534,8 @@ static void test15() {
                   }
                   var a: R(bool, int);
                   var x = f(a);
-                )"""", false);
+                )"""",
+                               false);
   assert(qt.isErroneousType());
 }
 
@@ -537,7 +544,7 @@ static void test16() {
   auto context = buildStdContext();
 
   std::string setup =
-                R""""(
+    R""""(
                   record R { type t1; type t2; }
                   proc R.init(type t1, type t2) {
                     this.t1 = t1;
@@ -548,16 +555,18 @@ static void test16() {
                   }
                 )"""";
 
-  auto qt = resolveQualifiedTypeOfX(context, setup +
-                R""""(
+  auto qt = resolveQualifiedTypeOfX(context,
+                                    setup +
+                                      R""""(
                   var a: R(bool, string);
                   type x = f(a);
                 )"""");
   assert(qt.type() && qt.type()->isBoolType());
 
   context = buildStdContext();
-  qt = resolveQualifiedTypeOfX(context, setup +
-                R""""(
+  qt = resolveQualifiedTypeOfX(context,
+                               setup +
+                                 R""""(
                   var a: R(bool, string);
                   var b: R(bool, string);
                   type x = f(a, b);
@@ -565,8 +574,9 @@ static void test16() {
   assert(qt.type() && qt.type()->isBoolType());
 
   context = buildStdContext();
-  qt = resolveQualifiedTypeOfX(context, setup +
-                R""""(
+  qt = resolveQualifiedTypeOfX(context,
+                               setup +
+                                 R""""(
                   var a: R(bool, string);
                   var b: R(bool, string);
                   var c: R(bool, string);
@@ -580,7 +590,7 @@ static void test17() {
   auto context = buildStdContext();
 
   std::string setup =
-                R""""(
+    R""""(
                   record R { type t1; type t2; }
                   proc R.init(type t1, type t2) {
                     this.t1 = t1;
@@ -591,8 +601,9 @@ static void test17() {
                   }
                 )"""";
 
-  auto qt = resolveQualifiedTypeOfX(context, setup +
-                R""""(
+  auto qt = resolveQualifiedTypeOfX(context,
+                                    setup +
+                                      R""""(
                   var a: R(bool, string);
                   var b: R(bool, int);
                   type x = f(a, b);
@@ -600,8 +611,9 @@ static void test17() {
   assert(qt.isErroneousType());
 
   context = buildStdContext();
-  qt = resolveQualifiedTypeOfX(context, setup+
-                R""""(
+  qt = resolveQualifiedTypeOfX(context,
+                               setup +
+                                 R""""(
                   var a: R(bool, int);
                   var b: R(bool, string);
                   type x = f(a, b);
@@ -609,8 +621,9 @@ static void test17() {
   assert(qt.isErroneousType());
 
   context = buildStdContext();
-  qt = resolveQualifiedTypeOfX(context, setup +
-                R""""(
+  qt = resolveQualifiedTypeOfX(context,
+                               setup +
+                                 R""""(
                   var a: R(bool, int);
                   type x = f(a);
                 )"""");
@@ -650,7 +663,7 @@ static void test19() {
   ErrorGuard guard(context);
 
   auto qt = resolveQualifiedTypeOfX(context,
-                R""""(
+                                    R""""(
                 proc helper(param cond : bool) type {
                   if cond then return int;
                   else return string;
@@ -673,7 +686,7 @@ static void test20() {
   ErrorGuard guard(context);
 
   auto varTypes = resolveTypesOfVariables(context,
-                R""""(
+                                          R""""(
                 class C {
                   type elementType;
                   type indexType;
@@ -698,11 +711,15 @@ static void test20() {
                 var r3 = h(c, 1.0, 2, 3);
                 var r4 = h(c, 1.0, 1.0, 3);
                 var r5 = h(c, 1.0, 1, 3.0);
-                )"""", {"r1", "r2", "r3", "r4", "r5"});
+                )"""",
+                                          {"r1", "r2", "r3", "r4", "r5"});
 
-  assert(!varTypes.at("r1").isUnknownOrErroneous() && varTypes.at("r1").type()->isIntType());
-  assert(!varTypes.at("r2").isUnknownOrErroneous() && varTypes.at("r2").type()->isRealType());
-  assert(!varTypes.at("r3").isUnknownOrErroneous() && varTypes.at("r3").type()->isIntType());
+  assert(!varTypes.at("r1").isUnknownOrErroneous() &&
+         varTypes.at("r1").type()->isIntType());
+  assert(!varTypes.at("r2").isUnknownOrErroneous() &&
+         varTypes.at("r2").type()->isRealType());
+  assert(!varTypes.at("r3").isUnknownOrErroneous() &&
+         varTypes.at("r3").type()->isIntType());
   assert(varTypes.at("r4").isErroneousType());
   assert(varTypes.at("r5").isErroneousType());
 
@@ -715,14 +732,15 @@ static void test21() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-                R""""(
+                                      R""""(
                   proc f(arg: [?D] ?t) { return D; }
                   proc g(arg: [?D] ?t) type { return t; }
 
                   var A: [1..10] int;
                   var D = f(A);
                   type t = g(A);
-                )"""", {"D", "t"});
+                )"""",
+                                      {"D", "t"});
 
   assert(!vars.at("D").isUnknownOrErroneous());
   assert(vars.at("D").type()->isDomainType());
@@ -739,14 +757,15 @@ static void test22() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-                R""""(
+                                      R""""(
                   proc f(arg: [?D]) { return D; }
 
                   var A: [1..10] int,
                       B: [1..10] real;
                   var D1 = f(A);
                   var D2 = f(B);
-                )"""", {"D1", "D2"});
+                )"""",
+                                      {"D1", "D2"});
 
   auto check = [&vars](const std::string& name) {
     assert(!vars.at(name).isUnknownOrErroneous());
@@ -764,7 +783,7 @@ static void test23() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-                R""""(
+                                      R""""(
                   proc f(arg: ?k*?t) param { return k; }
                   proc g(arg: ?k*?t) type { return t; }
 
@@ -772,7 +791,8 @@ static void test23() {
                   param y = f((1,2,3,4));
                   param z = f((1,2));
                   type t = g((1,2,3));
-                )"""", {"x", "y", "z", "t"});
+                )"""",
+                                      {"x", "y", "z", "t"});
 
   ensureParamInt(vars.at("x"), 3);
   ensureParamInt(vars.at("y"), 4);
@@ -787,7 +807,7 @@ static void test24() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-                R""""(
+                                      R""""(
                   proc f(arg: (?a, ?b, ?c)) type { return a; }
                   proc g(arg: (?a, ?b, ?c)) type { return b; }
                   proc h(arg: (?a, ?b, ?c)) type { return c; }
@@ -795,9 +815,10 @@ static void test24() {
                   type x = f((1, 2.0, true));
                   type y = g((1, 2.0, true));
                   type z = h((1, 2.0, true));
-                )"""", {"x", "y", "z"});
+                )"""",
+                                      {"x", "y", "z"});
 
-  for (auto& [name, qt] : vars)  {
+  for (auto& [name, qt] : vars) {
     assert(!qt.isUnknownOrErroneous());
   }
   assert(vars.at("x").type()->isIntType());
@@ -812,10 +833,11 @@ static void test25() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-                R""""(
+                                      R""""(
                   var x: bool(?) = true;
                   var y: bool(?w) = false;
-                )"""", {"x", "y"});
+                )"""",
+                                      {"x", "y"});
   assert(vars.at("x").isUnknown());
   assert(vars.at("y").isUnknown());
   assert(guard.realizeErrors() == 2);
@@ -828,11 +850,12 @@ static void test25b() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-                R""""(
+                                      R""""(
                   type mybool = bool;
                   var x: mybool(?) = true;
                   var y: mybool(?w) = false;
-                )"""", {"x", "y"});
+                )"""",
+                                      {"x", "y"});
   assert(vars.at("x").isUnknown());
   assert(vars.at("y").isUnknown());
   assert(guard.realizeErrors() == 2);
@@ -844,7 +867,7 @@ static void test26() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-                R""""(
+                                      R""""(
                   record wrapper { var x; }
                   class Wrapper { var x; }
 
@@ -853,12 +876,13 @@ static void test26() {
 
                   type a = unwrapRec(wrapper(int(8)));
                   type b = unwrapClass(owned Wrapper(bool));
-                )"""", {"a", "b"});
-
+                )"""",
+                                      {"a", "b"});
 
   auto& a = vars.at("a");
   auto& b = vars.at("b");
-  assert(a.isType() && a.type()->isIntType() && a.type()->toIntType()->bitwidth() == 8);
+  assert(a.isType() && a.type()->isIntType() &&
+         a.type()->toIntType()->bitwidth() == 8);
   assert(b.isType() && b.type()->isBoolType());
 }
 
@@ -917,32 +941,54 @@ static void test27() {
 
   std::pair<const char*, const char*> cases[] = {
     {"f(A)", "one-dim real (domain(1, int(64), strideKind.one))"},
-    {"f(B)", "two-dim real (domain(1, int(64), strideKind.negOne), domain(1, int(64), strideKind.positive))"},
-    {"f(C)", "one-dim owned (domain(1, int(64), strideKind.one)) with elt type owned MyClass"},
-    {"f((A, C))", "pair of real, owned (domain(1, int(64), strideKind.one), domain(1, int(64), strideKind.one))"},
-    {"sameElts(A, A)", "sameElts with elt type real(64) (domain(1, int(64), strideKind.one), domain(1, int(64), strideKind.one))"},
-    {"sameElts(C, C)", "sameElts with elt type owned MyClass (domain(1, int(64), strideKind.one), domain(1, int(64), strideKind.one))"},
-    {"foo(D)", "wrapper with elt type int(64) (domain(1, int(64), strideKind.one))"},
-    {"foo(E)", "wrapper with elt type real(64) (domain(1, int(64), strideKind.one))"},
-    {"foo(D)", "wrapper with elt type int(64) (domain(1, int(64), strideKind.one))"},
-    {"foo(D, D)", "2 wrappers with elt type int(64) (domain(1, int(64), strideKind.one))"},
-    {"foo(D, D, D)", "3 wrappers with elt type int(64) (domain(1, int(64), strideKind.one))"},
-    {"f(F64)", "two-dim int with width 64 (domain(1, int(64), strideKind.one), domain(1, int(64), strideKind.one))"},
-    {"f(F32)", "two-dim int with width 32 (domain(1, int(64), strideKind.one), domain(1, int(64), strideKind.one))"},
-    {"f(F16)", "two-dim int with width 16 (domain(1, int(64), strideKind.one), domain(1, int(64), strideKind.one))"},
+    {"f(B)",
+     "two-dim real (domain(1, int(64), strideKind.negOne), domain(1, int(64), "
+     "strideKind.positive))"},
+    {"f(C)",
+     "one-dim owned (domain(1, int(64), strideKind.one)) with elt type owned "
+     "MyClass"},
+    {"f((A, C))",
+     "pair of real, owned (domain(1, int(64), strideKind.one), domain(1, "
+     "int(64), strideKind.one))"},
+    {"sameElts(A, A)",
+     "sameElts with elt type real(64) (domain(1, int(64), strideKind.one), "
+     "domain(1, int(64), strideKind.one))"},
+    {"sameElts(C, C)",
+     "sameElts with elt type owned MyClass (domain(1, int(64), "
+     "strideKind.one), domain(1, int(64), strideKind.one))"},
+    {"foo(D)",
+     "wrapper with elt type int(64) (domain(1, int(64), strideKind.one))"},
+    {"foo(E)",
+     "wrapper with elt type real(64) (domain(1, int(64), strideKind.one))"},
+    {"foo(D)",
+     "wrapper with elt type int(64) (domain(1, int(64), strideKind.one))"},
+    {"foo(D, D)",
+     "2 wrappers with elt type int(64) (domain(1, int(64), strideKind.one))"},
+    {"foo(D, D, D)",
+     "3 wrappers with elt type int(64) (domain(1, int(64), strideKind.one))"},
+    {"f(F64)",
+     "two-dim int with width 64 (domain(1, int(64), strideKind.one), domain(1, "
+     "int(64), strideKind.one))"},
+    {"f(F32)",
+     "two-dim int with width 32 (domain(1, int(64), strideKind.one), domain(1, "
+     "int(64), strideKind.one))"},
+    {"f(F16)",
+     "two-dim int with width 16 (domain(1, int(64), strideKind.one), domain(1, "
+     "int(64), strideKind.one))"},
     {"sameElts(A, C)", nullptr}, // should error
     {"sameElts(C, A)", nullptr}, // should error
-    {"foo(D, E)", nullptr}, // should error
+    {"foo(D, E)", nullptr},      // should error
   };
 
-  for (size_t i = 0; i < sizeof(cases)/sizeof(cases[0]); i++) {
+  for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
     printf("%s case %zu\n", __FUNCTION__, i);
     auto context = buildStdContext();
     ErrorGuard guard(context);
 
     auto qt = resolveQualifiedTypeOfX(context,
-                  prelude + R""""(
-                    param x = )"""" + cases[i].first + R""""(;
+                                      prelude + R""""(
+                    param x = )"""" + cases[i].first +
+                                        R""""(;
                   )"""");
 
     if (cases[i].second != nullptr) {
@@ -964,13 +1010,13 @@ static void test28() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-                R""""(
+                                      R""""(
                 proc foo((t,): (int(?w),)) param {
                   return w;
                 }
                 param x = foo((3, ));
-                )"""", {"x"});
-
+                )"""",
+                                      {"x"});
 
   ensureParamInt(vars.at("x"), 64);
 }
@@ -981,7 +1027,7 @@ static void test29() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-                R""""(
+                                      R""""(
                 record pair { type first; type second; }
                 proc foo(x: pair(?, first=?t)) param do return t : string;
                 proc bar(x: pair(?, second=?t)) param do return t : string;
@@ -989,7 +1035,8 @@ static void test29() {
                 param y = foo(new pair(real, int));
                 param z = bar(new pair(int, real));
                 param w = bar(new pair(real, int));
-                )"""", {"x", "y", "z", "w"});
+                )"""",
+                                      {"x", "y", "z", "w"});
 
   ensureParamString(vars.at("x"), "int(64)");
   ensureParamString(vars.at("y"), "real(64)");

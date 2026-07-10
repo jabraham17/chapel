@@ -27,7 +27,6 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
 
-
 // testing a simple variable declaration and subsequent identifier
 static void test1() {
   printf("test1\n");
@@ -50,7 +49,6 @@ static void test1() {
   assert(x);
   const Identifier* xIdent = m->stmt(1)->toIdentifier();
   assert(xIdent);
-
 
   const Scope* scopeForIdent = scopeForId(context, xIdent->id());
   assert(scopeForIdent);
@@ -82,7 +80,6 @@ static void test2() {
   assert(x);
   const Identifier* xIdent = m->stmt(1)->toIdentifier();
   assert(xIdent);
-
 
   const Scope* scopeForIdent = scopeForId(context, xIdent->id());
   assert(scopeForIdent);
@@ -587,7 +584,6 @@ static void test11() {
   const auto& my = findInnermostDecl(context, scopeForIdent, yIdent->name());
   assert(my.id() == y->id());
   assert(my.found() == InnermostMatch::ONE);
-
 }
 
 // testing import of a nested module
@@ -730,10 +726,12 @@ static void test15() {
 
   setModuleSearchPath(context, searchPath);
 
-  setFileText(context, "/test/path/program/Program.chpl",
-                       "module Program { use Library; libY; }");
-  setFileText(context, "/test/path/library/Library.chpl",
-                       "module Library { var libY = 3; }");
+  setFileText(context,
+              "/test/path/program/Program.chpl",
+              "module Program { use Library; libY; }");
+  setFileText(context,
+              "/test/path/library/Library.chpl",
+              "module Library { var libY = 3; }");
 
   auto Program = UniqueString::get(context, "Program");
   auto Library = UniqueString::get(context, "Library");
@@ -747,8 +745,8 @@ static void test15() {
   const Scope* scopeForIdent = scopeForId(context, libYIdent->id());
   assert(scopeForIdent);
 
-  const auto& match = findInnermostDecl(context, scopeForIdent,
-                                        libYIdent->name());
+  const auto& match =
+    findInnermostDecl(context, scopeForIdent, libYIdent->name());
   assert(match.found() == InnermostMatch::ONE);
 
   auto lMod = getToplevelModule(context, Library);
@@ -841,11 +839,11 @@ static void test17() {
   const Scope* scopeForIdent = scopeForId(context, ClassIdent->id());
   assert(scopeForIdent);
 
-  const auto& m1 = findInnermostDecl(context, scopeForIdent, ClassIdent->name());
+  const auto& m1 =
+    findInnermostDecl(context, scopeForIdent, ClassIdent->name());
   assert(m1.id() == ClassDecl->id());
   assert(m1.found() == InnermostMatch::ONE);
 }
-
 
 int main() {
   test1();

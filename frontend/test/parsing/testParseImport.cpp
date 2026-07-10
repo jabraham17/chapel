@@ -36,10 +36,12 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-      "/*c1*/\n"
-      "import /*c2*/ Foo as X /*c3*/;\n"
-      "/*c4*/\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test0.chpl",
+                               "/*c1*/\n"
+                               "import /*c2*/ Foo as X /*c3*/;\n"
+                               "/*c4*/\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -63,10 +65,12 @@ static void test0(Parser* parser) {
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
-      "/*c1*/\n"
-      "public import /*c2*/ A as X, /*c3*/ B.SM1 as Y, /*c4*/ C as Z;\n"
-      "/*c5*/\n");
+  auto parseResult = parseStringAndReportErrors(
+    parser,
+    "test1.chpl",
+    "/*c1*/\n"
+    "public import /*c2*/ A as X, /*c3*/ B.SM1 as Y, /*c4*/ C as Z;\n"
+    "/*c5*/\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -131,10 +135,12 @@ static void test1(Parser* parser) {
 
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
-      "/*c1*/\n"
-      "private import /*c2*/ A as X, B.{Y, Z};\n"
-      "/*c7*/\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test2.chpl",
+                               "/*c1*/\n"
+                               "private import /*c2*/ A as X, B.{Y, Z};\n"
+                               "/*c7*/\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -188,10 +194,11 @@ static void test2(Parser* parser) {
 
 static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
-      "/*c1*/\n"
-      "private import /*c2*/ B.{Y};\n"
-      "/*c7*/\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test3.chpl",
+                                                "/*c1*/\n"
+                                                "private import /*c2*/ B.{Y};\n"
+                                                "/*c7*/\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -210,10 +217,11 @@ static void test3(Parser* parser) {
 
 static void test4(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
-      "/*c1*/\n"
-      "import /*c2*/ B.{Y as Z};\n"
-      "/*c7*/\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test4.chpl",
+                                                "/*c1*/\n"
+                                                "import /*c2*/ B.{Y as Z};\n"
+                                                "/*c7*/\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -237,10 +245,11 @@ static void test4(Parser* parser) {
 
 static void test5(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
-      "/*c1*/\n"
-      "import /*c2*/ 1+1;\n"
-      "/*c7*/\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test5.chpl",
+                                                "/*c1*/\n"
+                                                "import /*c2*/ 1+1;\n"
+                                                "/*c7*/\n");
   assert(guard.realizeErrors() >= 1);
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -252,10 +261,11 @@ static void test5(Parser* parser) {
 
 static void test6(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test6.chpl",
-      "/*c1*/\n"
-      "private import /*c2*/ B.{+};\n"
-      "/*c7*/\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test6.chpl",
+                                                "/*c1*/\n"
+                                                "private import /*c2*/ B.{+};\n"
+                                                "/*c7*/\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);

@@ -48,12 +48,12 @@ static bool areAttributesEqual(const Decl* lhs, const Decl* rhs) {
   }
 
   return lhsAttr->isDeprecated() == rhsAttr->isDeprecated() &&
-    lhsAttr->deprecationMessage() == rhsAttr->deprecationMessage() &&
-    equalPragmas;
+         lhsAttr->deprecationMessage() == rhsAttr->deprecationMessage() &&
+         equalPragmas;
 }
 
-static void toggleCompilerFlag(Context* ctx, CompilerFlags::Name flag,
-                               bool value) {
+static void
+toggleCompilerFlag(Context* ctx, CompilerFlags::Name flag, bool value) {
   chpl::CompilerFlags flags;
   ctx->advanceToNextRevision(false);
   flags.set(flag, value);
@@ -63,9 +63,10 @@ static void toggleCompilerFlag(Context* ctx, CompilerFlags::Name flag,
 // Make sure MultiDecl attributeGroup equal component attributeGroup.
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-      "@chpldoc.nodoc\n"
-      "var a, b, c = 0;\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test0.chpl",
+                                                "@chpldoc.nodoc\n"
+                                                "var a, b, c = 0;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -78,8 +79,8 @@ static void test0(Parser* parser) {
   assert(parentAttr);
   assert(!parentAttr->isDeprecated());
   assert(parentAttr->deprecationMessage().isEmpty());
-  auto noDoc = parentAttr->getAttributeNamed(UniqueString::get(parser->context(),
-                                                              "chpldoc.nodoc"));
+  auto noDoc = parentAttr->getAttributeNamed(
+    UniqueString::get(parser->context(), "chpldoc.nodoc"));
   assert(noDoc);
 
   for (auto decl : multiVar->decls()) {
@@ -91,9 +92,10 @@ static void test0(Parser* parser) {
 // Make sure TupleDecl attributeGroup equal component attributeGroup.
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
-      "@chpldoc.nodoc\n"
-      "var (a, b, c) = foo;\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1.chpl",
+                                                "@chpldoc.nodoc\n"
+                                                "var (a, b, c) = foo;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -106,8 +108,8 @@ static void test1(Parser* parser) {
   assert(parentAttr);
   assert(!parentAttr->isDeprecated());
   assert(parentAttr->deprecationMessage().isEmpty());
-  auto noDoc = parentAttr->getAttributeNamed(UniqueString::get(parser->context(),
-                                                              "chpldoc.nodoc"));
+  auto noDoc = parentAttr->getAttributeNamed(
+    UniqueString::get(parser->context(), "chpldoc.nodoc"));
   assert(noDoc);
 
   for (auto decl : tupleVar->decls()) {
@@ -120,9 +122,10 @@ static void test1(Parser* parser) {
 // attribute group on the outermost TupleDecl.
 static void test1a(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1a.chpl",
-      "@chpldoc.nodoc\n"
-      "var (a, (x, y), c);\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1a.chpl",
+                                                "@chpldoc.nodoc\n"
+                                                "var (a, (x, y), c);\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -135,8 +138,8 @@ static void test1a(Parser* parser) {
   assert(parentAttr);
   assert(!parentAttr->isDeprecated());
   assert(parentAttr->deprecationMessage().isEmpty());
-  auto noDoc = parentAttr->getAttributeNamed(UniqueString::get(parser->context(),
-                                                              "chpldoc.nodoc"));
+  auto noDoc = parentAttr->getAttributeNamed(
+    UniqueString::get(parser->context(), "chpldoc.nodoc"));
   assert(noDoc);
 
   for (auto decl : tupleVar->decls()) {
@@ -151,9 +154,10 @@ static void test1a(Parser* parser) {
 // attributeGroup on the outer multiDecl
 static void test1b(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1b.chpl",
-      "@chpldoc.nodoc\n"
-      "var z, v, (a, (x, y), c);\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1b.chpl",
+                                                "@chpldoc.nodoc\n"
+                                                "var z, v, (a, (x, y), c);\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -180,8 +184,8 @@ static void test1b(Parser* parser) {
 
   assert(!parentAttr->isDeprecated());
   assert(parentAttr->deprecationMessage().isEmpty());
-  auto noDoc = parentAttr->getAttributeNamed(UniqueString::get(parser->context(),
-                                                              "chpldoc.nodoc"));
+  auto noDoc = parentAttr->getAttributeNamed(
+    UniqueString::get(parser->context(), "chpldoc.nodoc"));
   assert(noDoc);
 
   for (auto decl : multiDecl->decls()) {
@@ -198,9 +202,10 @@ static void test1b(Parser* parser) {
 // placing it on the multi-decl.
 static void test1c(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1c.chpl",
-      "@chpldoc.nodoc\n"
-      "var (a, (x, y), c), z, v;\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test1c.chpl",
+                                                "@chpldoc.nodoc\n"
+                                                "var (a, (x, y), c), z, v;\n");
 
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -212,8 +217,8 @@ static void test1c(Parser* parser) {
   assert(parentAttr);
   assert(!parentAttr->isDeprecated());
   assert(parentAttr->deprecationMessage().isEmpty());
-  auto noDoc = parentAttr->getAttributeNamed(UniqueString::get(parser->context(),
-                                                              "chpldoc.nodoc"));
+  auto noDoc = parentAttr->getAttributeNamed(
+    UniqueString::get(parser->context(), "chpldoc.nodoc"));
   assert(noDoc);
   auto tupleDecl = multiDecl->declOrComment(0)->toTupleDecl();
   assert(tupleDecl);
@@ -231,7 +236,7 @@ static void test1c(Parser* parser) {
 }
 
 static PragmaTag genPragmaTag(int idx) {
-  auto ret = (PragmaTag)((idx+1) % NUM_KNOWN_PRAGMAS);
+  auto ret = (PragmaTag)((idx + 1) % NUM_KNOWN_PRAGMAS);
   return ret;
 }
 
@@ -268,7 +273,7 @@ static std::string genAggregateAttributesTest(asttags::AstTag aggKind,
     ret += "\n";
   }
 
-  switch(aggKind) {
+  switch (aggKind) {
     case asttags::Class: ret += "class"; break;
     case asttags::Record: ret += "record"; break;
     case asttags::Union: ret += "union"; break;
@@ -307,13 +312,14 @@ static void testAggregateAttributes(Parser* parser,
                                     int numPragmas,
                                     bool doChildrenHavePragmas,
                                     int numChildVars) {
-  auto code = genAggregateAttributesTest(aggKind, isDeprecated,
+  auto code = genAggregateAttributesTest(aggKind,
+                                         isDeprecated,
                                          hasDeprecationMsg,
                                          numPragmas,
                                          doChildrenHavePragmas,
                                          numChildVars);
-  auto parseResult = parseStringAndReportErrors(parser, "test-aggregate.chpl",
-                                         code.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test-aggregate.chpl", code.c_str());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -368,43 +374,50 @@ static void testAggregateAttributes(Parser* parser,
 // Make sure attributeGroup for aggregates get attached properly.
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  testAggregateAttributes(parser, /*aggKind*/ asttags::Class,
+  testAggregateAttributes(parser,
+                          /*aggKind*/ asttags::Class,
                           /*isDeprecated*/ false,
                           /*hasDeprecationMsg*/ false,
                           /*numPragmas*/ 0,
                           /*doChildrenHavePragmas*/ false,
                           /*numChildVars*/ 0);
-  testAggregateAttributes(parser, /*aggKind*/ asttags::Record,
+  testAggregateAttributes(parser,
+                          /*aggKind*/ asttags::Record,
                           /*isDeprecated*/ true,
                           /*hasDeprecationMsg*/ false,
                           /*numPragmas*/ 8,
                           /*doChildrenHavePragmas*/ false,
                           /*numChildVars*/ 1);
-  testAggregateAttributes(parser, /*aggKind*/ asttags::Union,
+  testAggregateAttributes(parser,
+                          /*aggKind*/ asttags::Union,
                           /*isDeprecated*/ true,
                           /*hasDeprecationMsg*/ true,
                           /*numPragmas*/ 0,
                           /*doChildrenHavePragmas*/ true,
                           /*numChildVars*/ 3);
-  testAggregateAttributes(parser, /*aggKind*/ asttags::Class,
+  testAggregateAttributes(parser,
+                          /*aggKind*/ asttags::Class,
                           /*isDeprecated*/ true,
                           /*hasDeprecationMsg*/ true,
                           /*numPragmas*/ 0,
                           /*doChildrenHavePragmas*/ true,
                           /*numChildVars*/ 4);
-  testAggregateAttributes(parser, /*aggKind*/ asttags::Record,
+  testAggregateAttributes(parser,
+                          /*aggKind*/ asttags::Record,
                           /*isDeprecated*/ true,
                           /*hasDeprecationMsg*/ true,
                           /*numPragmas*/ 16,
                           /*doChildrenHavePragmas*/ true,
                           /*numChildVars*/ 1);
-  testAggregateAttributes(parser, /*aggKind*/ asttags::Union,
+  testAggregateAttributes(parser,
+                          /*aggKind*/ asttags::Union,
                           /*isDeprecated*/ false,
                           /*hasDeprecationMsg*/ false,
                           /*numPragmas*/ 8,
                           /*doChildrenHavePragmas*/ false,
                           /*numChildVars*/ 0);
-  testAggregateAttributes(parser, /*aggKind*/ asttags::Class,
+  testAggregateAttributes(parser,
+                          /*aggKind*/ asttags::Class,
                           /*isDeprecated*/ true,
                           /*hasDeprecationMsg*/ false,
                           /*numPragmas*/ 128,
@@ -415,10 +428,12 @@ static void test2(Parser* parser) {
 // Simple test for deprecation message on a variable.
 static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
-      "@chpldoc.nodoc\n"
-      "@deprecated(\"Thingy is deprecated\")\n"
-      "var x = 0;\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test3.chpl",
+                               "@chpldoc.nodoc\n"
+                               "@deprecated(\"Thingy is deprecated\")\n"
+                               "var x = 0;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -430,8 +445,8 @@ static void test3(Parser* parser) {
   auto varAttr = var->attributeGroup();
   assert(varAttr);
 
-  auto noDoc = varAttr->getAttributeNamed(UniqueString::get(parser->context(),
-                                                            "chpldoc.nodoc"));
+  auto noDoc = varAttr->getAttributeNamed(
+    UniqueString::get(parser->context(), "chpldoc.nodoc"));
   assert(noDoc);
   assert(varAttr->isDeprecated());
   assert(varAttr->deprecationMessage() == "Thingy is deprecated");
@@ -440,16 +455,18 @@ static void test3(Parser* parser) {
 // Module, enum, and a var decl.
 static void test4(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
-      "@chpldoc.nodoc\n"
-      "@deprecated(notes=\"Module is deprecated\")\n"
-      "module Foo {\n"
-      "  var x = 0;\n"
-      "  @deprecated(\"Enum is deprecated\")\n"
-      "  enum Y { a, b, c }\n"
-      "  pragma \"ref\"\n"
-      "  var y = 0;\n"
-      "}\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test4.chpl",
+                               "@chpldoc.nodoc\n"
+                               "@deprecated(notes=\"Module is deprecated\")\n"
+                               "module Foo {\n"
+                               "  var x = 0;\n"
+                               "  @deprecated(\"Enum is deprecated\")\n"
+                               "  enum Y { a, b, c }\n"
+                               "  pragma \"ref\"\n"
+                               "  var y = 0;\n"
+                               "}\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -458,33 +475,35 @@ static void test4(Parser* parser) {
   assert(modAttr);
   assert(modAttr->isDeprecated());
   assert(modAttr->deprecationMessage() == "Module is deprecated");
-  auto noDoc = modAttr->getAttributeNamed(UniqueString::get(parser->context(),
-                                                            "chpldoc.nodoc"));
+  auto noDoc = modAttr->getAttributeNamed(
+    UniqueString::get(parser->context(), "chpldoc.nodoc"));
   assert(noDoc);
 }
 
 // Procedures, formals, nested procedures.
 static void test5(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
-      "@chpldoc.nodoc\n"
-      "@deprecated(\"P1 is deprecated\")\n"
-      "proc p1() {}\n"
-      "proc p2() {}\n"
-      "pragma \"ref\"\n"
-      "proc p3() {\n"
-      "  proc n1() {}\n"
-      "  pragma \"no init\"\n"
-      "  @deprecated(\"N2 is deprecated\")\n"
-      "  proc n2() {}\n"
-      "}\n"
-      "@chpldoc.nodoc\n"
-      "@deprecated(\"P4 is deprecated\")\n"
-      "proc p4(pragma \"no init\" x, y) {}\n"
-      "@deprecated(\"P5 is deprecated\")\n"
-      "proc p5(x, pragma \"no init\" y) {}\n"
-      "@chpldoc.nodoc\n"
-      "proc p6() { var x = 0; }\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test5.chpl",
+                               "@chpldoc.nodoc\n"
+                               "@deprecated(\"P1 is deprecated\")\n"
+                               "proc p1() {}\n"
+                               "proc p2() {}\n"
+                               "pragma \"ref\"\n"
+                               "proc p3() {\n"
+                               "  proc n1() {}\n"
+                               "  pragma \"no init\"\n"
+                               "  @deprecated(\"N2 is deprecated\")\n"
+                               "  proc n2() {}\n"
+                               "}\n"
+                               "@chpldoc.nodoc\n"
+                               "@deprecated(\"P4 is deprecated\")\n"
+                               "proc p4(pragma \"no init\" x, y) {}\n"
+                               "@deprecated(\"P5 is deprecated\")\n"
+                               "proc p5(x, pragma \"no init\" y) {}\n"
+                               "@chpldoc.nodoc\n"
+                               "proc p6() { var x = 0; }\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -496,8 +515,8 @@ static void test5(Parser* parser) {
   assert(p1Attr);
   assert(p1Attr->isDeprecated());
   assert(p1Attr->deprecationMessage() == "P1 is deprecated");
-  auto noDoc = p1Attr->getAttributeNamed(UniqueString::get(parser->context(),
-                                                           "chpldoc.nodoc"));
+  auto noDoc = p1Attr->getAttributeNamed(
+    UniqueString::get(parser->context(), "chpldoc.nodoc"));
   assert(noDoc);
 
   auto p2 = mod->stmt(1)->toFunction();
@@ -529,8 +548,8 @@ static void test5(Parser* parser) {
   assert(p4Attr);
   assert(p4Attr->isDeprecated());
   assert(p4Attr->deprecationMessage() == "P4 is deprecated");
-  auto p4noDoc = p4Attr->getAttributeNamed(UniqueString::get(parser->context(),
-                                                             "chpldoc.nodoc"));
+  auto p4noDoc = p4Attr->getAttributeNamed(
+    UniqueString::get(parser->context(), "chpldoc.nodoc"));
   assert(p4noDoc);
   assert(p4->numFormals() == 2);
   auto p4f1 = p4->formal(0)->toFormal();
@@ -568,8 +587,8 @@ static void test5(Parser* parser) {
   auto p6Attr = p6->attributeGroup();
   assert(p6Attr);
   assert(!p6Attr->isDeprecated());
-  auto p6noDoc = p6Attr->getAttributeNamed(UniqueString::get(parser->context(),
-                                                             "chpldoc.nodoc"));
+  auto p6noDoc = p6Attr->getAttributeNamed(
+    UniqueString::get(parser->context(), "chpldoc.nodoc"));
   assert(p6noDoc);
   assert(p6->numStmts() == 1);
   auto p6v1 = p6->stmt(0)->toVariable();
@@ -580,15 +599,17 @@ static void test5(Parser* parser) {
 // Enum elements can be deprecated.
 static void test6(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test6.chpl",
-      "@chpldoc.nodoc\n"
-      "@deprecated(\"Enum is deprecated\")\n"
-      "enum Foo {\n"
-      "  a,\n"
-      "  @deprecated(\"Element b is deprecated\")\n"
-      "  b = 0,\n"
-      "  c,\n"
-      "}\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test6.chpl",
+                               "@chpldoc.nodoc\n"
+                               "@deprecated(\"Enum is deprecated\")\n"
+                               "enum Foo {\n"
+                               "  a,\n"
+                               "  @deprecated(\"Element b is deprecated\")\n"
+                               "  b = 0,\n"
+                               "  c,\n"
+                               "}\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -599,8 +620,8 @@ static void test6(Parser* parser) {
   assert(enAttr);
   assert(enAttr->isDeprecated());
   assert(enAttr->deprecationMessage() == "Enum is deprecated");
-  auto enNoDoc = enAttr->getAttributeNamed(UniqueString::get(parser->context(),
-                                                             "chpldoc.nodoc"));
+  auto enNoDoc = enAttr->getAttributeNamed(
+    UniqueString::get(parser->context(), "chpldoc.nodoc"));
   assert(enNoDoc);
   assert(en->numDeclOrComments() == 3);
   auto ee1 = en->declOrComment(0)->toEnumElement();
@@ -631,8 +652,8 @@ static void test7(Parser* parser) {
       c,
     }
   )"""";
-  auto parseResult = parseStringAndReportErrors(parser, "test7.chpl",
-                                                program.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test7.chpl", program.c_str());
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -643,8 +664,8 @@ static void test7(Parser* parser) {
   assert(enAttr);
   assert(enAttr->isDeprecated());
   assert(enAttr->deprecationMessage() == "Enum is deprecated");
-  auto enNoDoc = enAttr->getAttributeNamed(UniqueString::get(parser->context(),
-                                                             "chpldoc.nodoc"));
+  auto enNoDoc = enAttr->getAttributeNamed(
+    UniqueString::get(parser->context(), "chpldoc.nodoc"));
   assert(enNoDoc);
   assert(en->numDeclOrComments() == 3);
   auto ee1 = en->declOrComment(0)->toEnumElement();
@@ -679,8 +700,8 @@ static void test8(Parser* parser) {
     }
   )"""";
   auto ctx = parser->context();
-  auto parseResult = parseStringAndReportErrors(parser, "test8.chpl",
-                                                program.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test8.chpl", program.c_str());
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -691,7 +712,8 @@ static void test8(Parser* parser) {
   assert(enAttr);
   assert(enAttr->isUnstable());
   assert(enAttr->unstableMessage() == "Foo contains b and d");
-  auto enNoDoc = enAttr->getAttributeNamed(UniqueString::get(ctx, "chpldoc.nodoc"));
+  auto enNoDoc =
+    enAttr->getAttributeNamed(UniqueString::get(ctx, "chpldoc.nodoc"));
   assert(enNoDoc);
   auto enumAttribute = enAttr->getAttributeNamed(USTR("unstable"));
   assert(enumAttribute);
@@ -761,7 +783,6 @@ static void test8(Parser* parser) {
 
 // TODO: test attributes on all the other places they can go
 
-
 // test for @unstable, @stable attributes
 // test for @chpldoc.nodoc
 static void test9(Parser* parser) {
@@ -777,8 +798,8 @@ static void test9(Parser* parser) {
     }
   )"""";
   auto ctx = parser->context();
-  auto parseResult = parseStringAndReportErrors(parser, "test9.chpl",
-                                                program.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test9.chpl", program.c_str());
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -832,7 +853,6 @@ static void test9(Parser* parser) {
   assert(!ee3->attributeGroup());
 }
 
-
 // test that we don't warn or error on @chpldoc.unknown, etc
 static void test10(Parser* parser) {
   ErrorGuard guard(parser->context());
@@ -845,8 +865,8 @@ static void test10(Parser* parser) {
   auto ctx = parser->context();
   toggleCompilerFlag(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS, true);
   assert(isCompilerFlagSet(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS));
-  auto parseResult = parseStringAndReportErrors(parser, "test10.chpl",
-                                                program.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test10.chpl", program.c_str());
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -870,9 +890,9 @@ static void test10(Parser* parser) {
   assert(subname->numActuals() == 1);
 
   toggleCompilerFlag(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS, false);
-  assert(!isCompilerFlagSet(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS));
+  assert(
+    !isCompilerFlagSet(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS));
 }
-
 
 // test that we reject invalid attribute names
 static void test11(Parser* parser) {
@@ -881,14 +901,13 @@ static void test11(Parser* parser) {
     @unknown
     proc Foo() {  }
   )"""";
-  auto parseResult = parseStringAndReportErrors(parser, "test11.chpl",
-                                                program.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test11.chpl", program.c_str());
   assert(guard.numErrors() == 1);
   assert(guard.error(0)->message() == "Unknown top-level attribute 'unknown'");
   assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
   assert(guard.realizeErrors() == 1);
 }
-
 
 // test that we reject invalid attribute argument names
 // test that we reject invalid attribute argument types
@@ -902,38 +921,41 @@ static void test12(Parser* parser) {
     @stable(sienc=1.27)
     var x: string;
   )"""";
-  auto parseResult = parseStringAndReportErrors(parser, "test12.chpl",
-                                                program.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test12.chpl", program.c_str());
   assert(guard.numErrors() == 6);
-  assert(guard.error(0)->message() == "unrecognized argument name 'issues'. "
+  assert(guard.error(0)->message() ==
+         "unrecognized argument name 'issues'. "
          "'@unstable' attribute only accepts 'category', 'issue', and 'reason' "
          "arguments");
   assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
 
   assert(guard.error(1)->message() == "unstable attribute arguments must be "
-         "string literals for now");
+                                      "string literals for now");
   assert(guard.error(1)->kind() == ErrorBase::Kind::ERROR);
 
-  assert(guard.error(2)->message() == "unrecognized argument name 'sincer'. "
-         "'@deprecated' attribute only accepts 'since', 'notes', 'parenful', and "
-         "'suggestion' arguments");
+  assert(
+    guard.error(2)->message() ==
+    "unrecognized argument name 'sincer'. "
+    "'@deprecated' attribute only accepts 'since', 'notes', 'parenful', and "
+    "'suggestion' arguments");
   assert(guard.error(2)->kind() == ErrorBase::Kind::ERROR);
 
   assert(guard.error(3)->message() == "deprecated attribute arguments must be "
-         "string literals for now");
+                                      "string literals for now");
   assert(guard.error(3)->kind() == ErrorBase::Kind::ERROR);
 
-  assert(guard.error(4)->message() == "unrecognized argument name 'sienc'. "
+  assert(guard.error(4)->message() ==
+         "unrecognized argument name 'sienc'. "
          "'@stable' attribute only accepts 'since' or unnamed argument");
   assert(guard.error(4)->kind() == ErrorBase::Kind::ERROR);
 
   assert(guard.error(5)->message() == "stable attribute arguments must be "
-         "string literals for now");
+                                      "string literals for now");
   assert(guard.error(5)->kind() == ErrorBase::Kind::ERROR);
 
   assert(guard.realizeErrors() == 6);
 }
-
 
 // test that we skip attribute names with toolspaces by default
 static void test13(Parser* parser) {
@@ -943,12 +965,12 @@ static void test13(Parser* parser) {
     @linter.ignoreArgument("bar")
     proc Foo(bar) {  }
   )"""";
-  assert(!isCompilerFlagSet(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS));
-  auto parseResult = parseStringAndReportErrors(parser, "test13.chpl",
-                                                program.c_str());
+  assert(
+    !isCompilerFlagSet(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS));
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test13.chpl", program.c_str());
   assert(!guard.realizeErrors());
 }
-
 
 // test warning on invalid attribute toolspaces with flag
 // test excepting some toolspace names from warning with flag
@@ -961,21 +983,21 @@ static void test14(Parser* parser) {
     proc Foo(bar) {  }
   )"""";
   toggleCompilerFlag(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS, true);
-  std::vector<UniqueString> toolNames = {UniqueString::get(ctx,"linter")};
+  std::vector<UniqueString> toolNames = {UniqueString::get(ctx, "linter")};
   assert(isCompilerFlagSet(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS));
   parsing::setAttributeToolNames(ctx, toolNames);
-  auto parseResult = parseStringAndReportErrors(parser, "test14.chpl",
-                                                program.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test14.chpl", program.c_str());
 
   assert(guard.numErrors() == 1);
-  assert(guard.error(0)->message() == "Unknown attribute tool name 'othertool'");
+  assert(guard.error(0)->message() ==
+         "Unknown attribute tool name 'othertool'");
   assert(guard.error(0)->kind() == ErrorBase::Kind::WARNING);
   assert(guard.realizeErrors() == 1);
   toggleCompilerFlag(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS, false);
-  assert(!isCompilerFlagSet(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS));
+  assert(
+    !isCompilerFlagSet(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS));
 }
-
-
 
 // test for setting an attribute more than once on the same decl
 static void test15(Parser* parser) {
@@ -987,14 +1009,13 @@ static void test15(Parser* parser) {
     @chpldoc.nodoc
     proc Foo(bar) {  }
   )"""";
-  auto parseResult = parseStringAndReportErrors(parser, "test15.chpl",
-                                                program.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test15.chpl", program.c_str());
   assert(guard.numErrors() == 1);
   assert(guard.error(0)->message() == "repeated attribute 'chpldoc.nodoc'");
   assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
   assert(guard.realizeErrors() == 1);
 }
-
 
 // test for setting a named attribute argument more than once
 static void test16(Parser* parser) {
@@ -1004,8 +1025,8 @@ static void test16(Parser* parser) {
     @unstable(reason="foo", reason='bar')
     proc Foo(bar) {  }
   )"""";
-  auto parseResult = parseStringAndReportErrors(parser, "test16.chpl",
-                                                program.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test16.chpl", program.c_str());
   assert(guard.numErrors() == 1);
   assert(guard.error(0)->message() == "repeated argument name 'reason'");
   assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
@@ -1024,8 +1045,8 @@ static void test17(Parser* parser) {
     @stable("1.28")
     var y: int;
   )"""";
-  auto parseResult = parseStringAndReportErrors(parser, "test17.chpl",
-                                                program.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test17.chpl", program.c_str());
 
   assert(!guard.realizeErrors());
 }
@@ -1042,18 +1063,18 @@ static void test18(Parser* parser) {
     @stable("1.28", "1.29")
     var y: int;
   )"""";
-  auto parseResult = parseStringAndReportErrors(parser, "test18.chpl",
-                                                program.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test18.chpl", program.c_str());
 
   assert(guard.numErrors() == 3);
   assert(guard.error(0)->message() == "unstable attribute only accepts one "
-         "unnamed argument");
+                                      "unnamed argument");
   assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
   assert(guard.error(1)->message() == "deprecated attribute only accepts one "
-         "unnamed argument");
+                                      "unnamed argument");
   assert(guard.error(1)->kind() == ErrorBase::Kind::ERROR);
   assert(guard.error(2)->message() == "stable attribute only accepts one "
-         "argument");
+                                      "argument");
   assert(guard.error(2)->kind() == ErrorBase::Kind::ERROR);
   assert(guard.realizeErrors() == 3);
 }
@@ -1066,12 +1087,12 @@ static void test19(Parser* parser) {
     @unstable category="experimental", reason="Enum is unstable", issue="82566"
     proc Foo(bar) {  }
   )"""";
-  auto parseResult = parseStringAndReportErrors(parser, "test19.chpl",
-                                                program.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test19.chpl", program.c_str());
 
   assert(guard.error(0)->message() == "near 'category'");
   assert(guard.error(0)->kind() == ErrorBase::Kind::SYNTAX);
-  assert(guard.realizeErrors()==1);
+  assert(guard.realizeErrors() == 1);
 }
 
 // test that we reject attributes with a single unnamed argument not inside parens
@@ -1082,11 +1103,11 @@ static void test20(Parser* parser) {
     @stable "1.28"
     proc Foo(bar) {  }
   )"""";
-  auto parseResult = parseStringAndReportErrors(parser, "test20.chpl",
-                                                program.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test20.chpl", program.c_str());
   assert(guard.error(0)->message() == "near '\"'");
   assert(guard.error(0)->kind() == ErrorBase::Kind::SYNTAX);
-  assert(guard.realizeErrors()==1);
+  assert(guard.realizeErrors() == 1);
 }
 
 // test that we reject attributes with a single named argument not inside parens
@@ -1097,11 +1118,11 @@ static void test21(Parser* parser) {
     @deprecated suggestion="use Baz instead"
     proc Foo(bar) {  }
   )"""";
-  auto parseResult = parseStringAndReportErrors(parser, "test21.chpl",
-                                                program.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test21.chpl", program.c_str());
   assert(guard.error(0)->message() == "near 'suggestion'");
   assert(guard.error(0)->kind() == ErrorBase::Kind::SYNTAX);
-  assert(guard.realizeErrors()==1);
+  assert(guard.realizeErrors() == 1);
 }
 
 // test that we reject attributes with a list of unnamed arguments not inside parens
@@ -1112,12 +1133,12 @@ static void test22(Parser* parser) {
     @unstable "this thing is unstable", "experimental", "15634"
     proc Foo(bar) {  }
   )"""";
-  auto parseResult = parseStringAndReportErrors(parser, "test22.chpl",
-                                                program.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test22.chpl", program.c_str());
 
   assert(guard.error(0)->message() == "near '\"'");
   assert(guard.error(0)->kind() == ErrorBase::Kind::SYNTAX);
-  assert(guard.realizeErrors()==1);
+  assert(guard.realizeErrors() == 1);
 }
 
 // check interfaces
@@ -1133,8 +1154,8 @@ static void test23(Parser* parser) {
       proc Self.bar();
     }
   )"""";
-  auto parseResult = parseStringAndReportErrors(parser, "test23.chpl",
-                                                program.c_str());
+  auto parseResult =
+    parseStringAndReportErrors(parser, "test23.chpl", program.c_str());
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -1168,8 +1189,6 @@ static void test23(Parser* parser) {
   auto intfMethodAttr = intfMethod->attributeGroup();
   assert(intfMethodAttr);
   assert(intfMethodAttr->isDeprecated());
-
-
 }
 
 int main() {

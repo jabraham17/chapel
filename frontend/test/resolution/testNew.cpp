@@ -34,11 +34,10 @@ static void testEmptyRecordUserInit() {
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);
-  std::string contents =
-    " record r {\n"
-    "   proc init() {}\n"
-    " }\n"
-    " var obj = new r();\n";
+  std::string contents = " record r {\n"
+                         "   proc init() {}\n"
+                         " }\n"
+                         " var obj = new r();\n";
 
   setFileText(ctx, path, contents);
 
@@ -101,10 +100,9 @@ static void testEmptyRecordCompilerGenInit() {
   ErrorGuard guard(ctx);
 
   auto path = TEST_NAME(ctx);
-  std::string contents =
-    " record r {\n"
-    " }\n"
-    " var obj = new r();\n";
+  std::string contents = " record r {\n"
+                         " }\n"
+                         " var obj = new r();\n";
 
   setFileText(ctx, path, contents);
 
@@ -246,9 +244,8 @@ static void testTertMethodCallCrossModule() {
   assert(tfsInit->numFormals() == 1);
   assert(tfsInit->formalName(0) == "this");
   auto recvDecor = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
-  auto recvType = ClassType::get(ctx, clsX->basicClassType(),
-                                 nullptr,
-                                 recvDecor);
+  auto recvType =
+    ClassType::get(ctx, clsX->basicClassType(), nullptr, recvDecor);
   auto qtReceiver = QualifiedType(QualifiedType::CONST_IN, recvType);
   assert(tfsInit->formalType(0) == qtReceiver);
   assert(!tfsInit->needsInstantiation());
@@ -279,12 +276,8 @@ static void determineManagerAndDecorator(Context* ctx,
       decorTag = ClassTypeDecorator::MANAGED;
       manager = AnySharedType::get(ctx);
       break;
-    case New::BORROWED:
-      decorTag = ClassTypeDecorator::BORROWED;
-      break;
-    case New::UNMANAGED:
-      decorTag = ClassTypeDecorator::UNMANAGED;
-      break;
+    case New::BORROWED: decorTag = ClassTypeDecorator::BORROWED; break;
+    case New::UNMANAGED: decorTag = ClassTypeDecorator::UNMANAGED; break;
     default: break;
   }
 
@@ -447,8 +440,8 @@ static void testGenericRecordUserInitDependentField() {
   assert(rt->substitutions().size() == 2);
 
   // Check the first field of the instantiated record via substitutions.
-  auto idf1 = parsing::fieldIdWithName(context, rt->id(),
-                                       UniqueString::get(context, "f1"));
+  auto idf1 = parsing::fieldIdWithName(
+    context, rt->id(), UniqueString::get(context, "f1"));
   assert(!idf1.isEmpty());
   auto qtf1 = rt->substitution(idf1);
   assert(qtf1.kind() == QualifiedType::TYPE);
@@ -456,8 +449,8 @@ static void testGenericRecordUserInitDependentField() {
   assert(qtf1.param() == nullptr);
 
   // Check the second field of the instantiated record via substitutions.
-  auto idf2 = parsing::fieldIdWithName(context, rt->id(),
-                                       UniqueString::get(context, "f2"));
+  auto idf2 = parsing::fieldIdWithName(
+    context, rt->id(), UniqueString::get(context, "f2"));
   assert(!idf2.isEmpty());
   auto qtf2 = rt->substitution(idf2);
   assert(qtf2.kind() == QualifiedType::PARAM);
@@ -477,8 +470,8 @@ static void testGenericRecordUserInitDependentField() {
   assert(rf.fieldType(0) == ft1);
 
   // Second is 'param int = 8'
-  auto ft2 = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
-                           IntParam::get(context, 8));
+  auto ft2 = QualifiedType(
+    QualifiedType::PARAM, IntType::get(context, 0), IntParam::get(context, 8));
   assert(rf.fieldType(1) == ft2);
 
   // Last is 'var int'
@@ -535,7 +528,7 @@ static void testGenericRecordUserSecondaryInitDependentField() {
   ErrorGuard guard(context);
 
   auto qt = resolveTypeOfXInit(context,
-    R"""(
+                               R"""(
     proc defaultValueFor(type t: int) param do return 42;
 
     record r {
@@ -586,7 +579,7 @@ static void testNewGenericWithDefaults() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-    R"""(
+                                      R"""(
     record r {
       type f1 = int;
     }
@@ -597,8 +590,8 @@ static void testNewGenericWithDefaults() {
 
     var x1 = new r(int);
     var x2 = new r(bool);
-    )""", { "x1", "x2" });
-
+    )""",
+                                      {"x1", "x2"});
 
   {
     auto ct = vars.at("x1").type()->toCompositeType();
@@ -637,7 +630,7 @@ static void testCompilerGeneratedGenericNewWithDefaultInit() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-    R"""(
+                                      R"""(
     record r {
       param flag : bool;
       var x : if flag then int else real;
@@ -645,8 +638,8 @@ static void testCompilerGeneratedGenericNewWithDefaultInit() {
 
     var x1 = new r(true);
     var x2 = new r(false);
-    )""", { "x1", "x2" });
-
+    )""",
+                                      {"x1", "x2"});
 
   {
     auto ct = vars.at("x1").type()->toCompositeType();
@@ -692,7 +685,7 @@ static void testCompilerGeneratedGenericNew() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-    R"""(
+                                      R"""(
     record r {
       param flag : bool;
       var x : if flag then int else real;
@@ -702,8 +695,8 @@ static void testCompilerGeneratedGenericNew() {
     var x2 = new r(false, 1.0);
     var x3 = new r(true, 1.0);
     var x4 = new r(false, 1);
-    )""", { "x1", "x2", "x3", "x4" });
-
+    )""",
+                                      {"x1", "x2", "x3", "x4"});
 
   {
     auto ct = vars.at("x1").type()->toCompositeType();
@@ -775,7 +768,7 @@ static void testCompilerGeneratedGenericNewWithDefaultInitClass() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-    R"""(
+                                      R"""(
     class C {
       param flag : bool;
       var x : if flag then int else real;
@@ -783,8 +776,8 @@ static void testCompilerGeneratedGenericNewWithDefaultInitClass() {
 
     var x1 = new C(true);
     var x2 = new C(false);
-    )""", { "x1", "x2" });
-
+    )""",
+                                      {"x1", "x2"});
 
   {
     auto clt = vars.at("x1").type()->toClassType();
@@ -834,7 +827,7 @@ static void testCompilerGeneratedGenericNewClass() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-    R"""(
+                                      R"""(
     class C {
       param flag : bool;
       var x : if flag then int else real;
@@ -844,8 +837,8 @@ static void testCompilerGeneratedGenericNewClass() {
     var x2 = new C(false, 1.0);
     var x3 = new C(true, 1.0);
     var x4 = new C(false, 1);
-    )""", { "x1", "x2", "x3", "x4" });
-
+    )""",
+                                      {"x1", "x2", "x3", "x4"});
 
   {
     auto clt = vars.at("x1").type()->toClassType();
@@ -920,7 +913,7 @@ static void testSimpleUserGenericNew() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-    R"""(
+                                      R"""(
     class C {
       var x;
 
@@ -931,8 +924,8 @@ static void testSimpleUserGenericNew() {
 
     var x1 = new C(42);
     var x2 = new C(1.0);
-    )""", { "x1", "x2" });
-
+    )""",
+                                      {"x1", "x2"});
 
   {
     auto ct = vars.at("x1").type()->getCompositeType();
@@ -974,7 +967,7 @@ static void testUserGenericNew() {
   ErrorGuard guard(context);
 
   auto vars = resolveTypesOfVariables(context,
-    R"""(
+                                      R"""(
     record r {
       param flag : bool;
       var x : if flag then int else real;
@@ -989,8 +982,8 @@ static void testUserGenericNew() {
     var x2 = new r(false, 1.0);
     var x3 = new r(true, 1.0);
     var x4 = new r(false, 1);
-    )""", { "x1", "x2", "x3", "x4" });
-
+    )""",
+                                      {"x1", "x2", "x3", "x4"});
 
   {
     auto ct = vars.at("x1").type()->toCompositeType();
@@ -1062,7 +1055,7 @@ static void testExplicitManagementNew() {
   ErrorGuard guard(ctx);
 
   auto var = resolveTypeOfXInit(ctx,
-      R"""(
+                                R"""(
       class C{}
 
       proc getType() type do return unmanaged C;
@@ -1073,7 +1066,6 @@ static void testExplicitManagementNew() {
   assert(var.type()->isClassType());
   assert(var.type()->toClassType()->decorator().isUnmanaged());
 }
-
 
 int main() {
   testEmptyRecordUserInit();
@@ -1094,4 +1086,3 @@ int main() {
 
   return 0;
 }
-

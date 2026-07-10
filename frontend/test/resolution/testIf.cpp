@@ -30,8 +30,8 @@
 
 static void test1() {
   auto context = buildStdContext();
-  QualifiedType qt =  resolveQualifiedTypeOfX(context,
-                         R""""(
+  QualifiedType qt = resolveQualifiedTypeOfX(context,
+                                             R""""(
                          var x : if true then string else "not-a-type";
                          )"""");
   assert(qt.type() && qt.type()->isStringType());
@@ -39,8 +39,8 @@ static void test1() {
 
 static void test2() {
   auto context = buildStdContext();
-  QualifiedType qt =  resolveQualifiedTypeOfX(context,
-                         R""""(
+  QualifiedType qt = resolveQualifiedTypeOfX(context,
+                                             R""""(
                          var x : if false then "not-a-type" else int;
                          )"""");
   assert(qt.type() && qt.type()->isIntType());
@@ -48,8 +48,8 @@ static void test2() {
 
 static void test3() {
   auto context = buildStdContext();
-  QualifiedType qt =  resolveQualifiedTypeOfX(context,
-                         R""""(
+  QualifiedType qt = resolveQualifiedTypeOfX(context,
+                                             R""""(
                          var b : bool;
                          var x = if b then 0 else "string";
                          )"""");
@@ -60,8 +60,8 @@ static void test3() {
 
 static void test4() {
   auto context = buildStdContext();
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          var b : bool;
                          var x = if b then 1 else 0;
                          )"""");
@@ -73,8 +73,8 @@ static void test4() {
 
 static void test5() {
   auto context = buildStdContext();
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          record r {}
                          var temp: r;
                          const ref tempRef = temp;
@@ -89,11 +89,12 @@ static void test5() {
 
 static void test6() {
   auto context = buildStdContext();
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
+  QualifiedType qt = resolveTypeOfXInit(context,
+                                        R""""(
                          param b : bool;
                          var x = if b then 1 else "hello";
-                         )"""", false);
+                         )"""",
+                                        false);
   qt.dump();
   std::cout << std::endl;
   assert(qt.kind() == QualifiedType::UNKNOWN);

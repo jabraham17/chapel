@@ -103,7 +103,6 @@ static void test2() {
   checkCalledSetMatches(transitiveCalls, {"M.bar", "M.foo"});
 }
 
-
 int main() {
   test1();
   test2();

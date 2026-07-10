@@ -24,12 +24,12 @@
 
 #include <cmath>
 
-
-QualifiedType
-resolveTypeOfXInit(Context* context, std::string program, bool requireTypeKnown) {
+QualifiedType resolveTypeOfXInit(Context* context,
+                                 std::string program,
+                                 bool requireTypeKnown) {
   auto m = parseModule(context, std::move(program));
   assert(m->numStmts() > 0);
-  const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
+  const Variable* x = m->stmt(m->numStmts() - 1)->toVariable();
   assert(x);
   assert(x->name() == "x");
   auto initExpr = x->initExpression();
@@ -43,8 +43,7 @@ resolveTypeOfXInit(Context* context, std::string program, bool requireTypeKnown)
   return qt;
 }
 
-QualifiedType
-resolveQualifiedTypeOfX(Context* context, std::string program) {
+QualifiedType resolveQualifiedTypeOfX(Context* context, std::string program) {
   auto m = parseModule(context, std::move(program));
   assert(m->numStmts() > 0);
   // Walk backwards and find the first variable named 'x'.
@@ -67,11 +66,10 @@ resolveQualifiedTypeOfX(Context* context, std::string program) {
   return qt;
 }
 
-const Type*
-resolveTypeOfX(Context* context, std::string program) {
+const Type* resolveTypeOfX(Context* context, std::string program) {
   auto m = parseModule(context, std::move(program));
   assert(m->numStmts() > 0);
-  const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
+  const Variable* x = m->stmt(m->numStmts() - 1)->toVariable();
   assert(x);
   assert(x->name() == "x");
 
@@ -85,10 +83,10 @@ resolveTypeOfX(Context* context, std::string program) {
   return t;
 }
 
-const ResolvedExpression*
-resolvedExpressionForAst(Context* context, const AstNode* ast,
-                         const ResolvedFunction* inFn,
-                         bool scopeResolveOnly) {
+const ResolvedExpression* resolvedExpressionForAst(Context* context,
+                                                   const AstNode* ast,
+                                                   const ResolvedFunction* inFn,
+                                                   bool scopeResolveOnly) {
   // TODO: Use 'inFn' to reconstruct the correct 'ResolutionContext' state.
   ResolutionContext rcval(context);
   auto rc = &rcval;
@@ -261,8 +259,8 @@ resolveTypesOfVariables(Context* context,
 
 std::unordered_map<std::string, QualifiedType>
 resolveTypesOfVariablesInit(Context* context,
-                        std::string program,
-                        const std::vector<std::string>& variables) {
+                            std::string program,
+                            const std::vector<std::string>& variables) {
   auto m = parseModule(context, std::move(program));
   auto& rr = resolveModule(context, m->id());
 
@@ -276,9 +274,10 @@ resolveTypesOfVariablesInit(Context* context,
   return toReturn;
 }
 
-QualifiedType resolveTypeOfVariable(Context* context, std::string program,
+QualifiedType resolveTypeOfVariable(Context* context,
+                                    std::string program,
                                     const std::string& variable) {
-  auto m = resolveTypesOfVariables(context, std::move(program), { variable });
+  auto m = resolveTypesOfVariables(context, std::move(program), {variable});
   // If there is no key for 'variable', this constructs an empty value.
   return m[variable];
 }
@@ -310,16 +309,20 @@ void ensureParamBool(const QualifiedType& type, bool expectedValue) {
   assert(type.param()->toBoolParam()->value() == expectedValue);
 }
 
-void ensureParamString(const QualifiedType& type, const std::string& expectedValue, bool isByteString) {
+void ensureParamString(const QualifiedType& type,
+                       const std::string& expectedValue,
+                       bool isByteString) {
   assert(type.kind() == QualifiedType::PARAM);
   assert(type.type() != nullptr);
-  assert(isByteString ? type.type()->isBytesType() : type.type()->isStringType());
+  assert(isByteString ? type.type()->isBytesType()
+                      : type.type()->isStringType());
   assert(type.param() != nullptr);
   assert(type.param()->isStringParam());
   assert(type.param()->toStringParam()->value() == expectedValue);
 }
 
-void ensureParamEnumStr(const QualifiedType& type, const std::string& expectedName) {
+void ensureParamEnumStr(const QualifiedType& type,
+                        const std::string& expectedName) {
   assert(type.kind() == QualifiedType::PARAM);
   assert(type.type() != nullptr);
   assert(type.type()->isEnumType());
@@ -344,12 +347,11 @@ void ensureParamReal(const QualifiedType& type, double expectedValue) {
 }
 
 void ensureSubs(Context* context,
-              const CompositeType* ct,
-              const std::map<std::string, QualifiedType>& expected) {
+                const CompositeType* ct,
+                const std::map<std::string, QualifiedType>& expected) {
   assert(ct);
   auto rc = createDummyRC(context);
-  auto fields =
-    fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
+  auto fields = fieldsForTypeDecl(&rc, ct, DefaultsPolicy::IGNORE_DEFAULTS);
 
   for (int i = 0; i < fields.numFields(); i++) {
     auto name = fields.fieldName(i);
@@ -369,7 +371,6 @@ void ensureErroneousType(const QualifiedType& type) {
   assert(type.type() != nullptr);
   assert(type.type()->isErroneousType());
 }
-
 
 QualifiedType getTypeForFirstStmt(Context* context,
                                   const std::string& program) {
@@ -427,18 +428,17 @@ QualifiedType findVarType(const Module* m,
   return rr.byAst(var).type();
 }
 
-void testDomainLiteral(std::string domainLiteral,
-                       DomainType::Kind domainKind) {
+void testDomainLiteral(std::string domainLiteral, DomainType::Kind domainKind) {
   printf("Testing: %s\n", domainLiteral.c_str());
 
   auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
-      R"""(
+    R"""(
 module M {
   var d = )""" +
-      domainLiteral + R"""(;
+    domainLiteral + R"""(;
 
   type i = d.idxType;
   param rk = d.isRectangular();
@@ -473,21 +473,20 @@ module M {
   assert(guard.realizeErrors() == 0);
 }
 
-void testDomainIndex(std::string domainType,
-                     std::string expectedType) {
-  printf("Testing: index(%s) == %s\n", domainType.c_str(),
-         expectedType.c_str());
+void testDomainIndex(std::string domainType, std::string expectedType) {
+  printf(
+    "Testing: index(%s) == %s\n", domainType.c_str(), expectedType.c_str());
 
   auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
-      R"""(
+    R"""(
 module M {
   var d : )""" +
-      domainType + R"""(;
+    domainType + R"""(;
   type t = )""" +
-      expectedType + R"""(;
+    expectedType + R"""(;
   type i = index(d);
 
   param equal = i == t;
@@ -511,24 +510,23 @@ module M {
   assert(guard.realizeErrors() == 0);
 }
 
-void testDomainBadPass(std::string argType,
-                       std::string actualType) {
-  printf("Testing: cannot pass %s to %s\n", actualType.c_str(),
-         argType.c_str());
+void testDomainBadPass(std::string argType, std::string actualType) {
+  printf(
+    "Testing: cannot pass %s to %s\n", actualType.c_str(), argType.c_str());
 
   auto context = buildStdContext();
   ErrorGuard guard(context);
 
   std::string program =
-      R"""(
+    R"""(
 module M {
   proc foo(arg: )""" +
-      argType + R"""() {
+    argType + R"""() {
     return 42;
   }
 
   var d : )""" +
-      actualType + R"""(;
+    actualType + R"""(;
   var c_ret = foo(d);
 }
 )""";
@@ -552,12 +550,21 @@ module M {
   guard.clearErrors();
 }
 
-void testArrayAssign(Context* context, const char* prelude, const char* typeExpr, const char* iterable, int expectedRank, const char* expectedStride, AssociatedAction::Action actionKind, const char* expectedCopyInitFn) {
+void testArrayAssign(Context* context,
+                     const char* prelude,
+                     const char* typeExpr,
+                     const char* iterable,
+                     int expectedRank,
+                     const char* expectedStride,
+                     AssociatedAction::Action actionKind,
+                     const char* expectedCopyInitFn) {
   std::string ops = R"""(
     operator =(ref lhs: int, const rhs: int) {}
     operator =(ref lhs: real, const rhs: real) {}
   )""";
-  std::string wholeString = ops + std::string(prelude) + "\n\n" + "proc main() { var A" + typeExpr + " = " + iterable + "; }\n";
+  std::string wholeString = ops + std::string(prelude) + "\n\n" +
+                            "proc main() { var A" + typeExpr + " = " +
+                            iterable + "; }\n";
   printf("=== Resolving program: ===\n");
   printf("%s\n", wholeString.c_str());
 
@@ -565,11 +572,14 @@ void testArrayAssign(Context* context, const char* prelude, const char* typeExpr
 
   static int inputIndex = 0;
 
-  auto filename = UniqueString::get(context, std::string("input") + std::to_string(inputIndex++) + ".chpl");
+  auto filename = UniqueString::get(
+    context, std::string("input") + std::to_string(inputIndex++) + ".chpl");
   setFileText(context, filename, wholeString);
   auto mods = parse(context, filename, UniqueString());
   assert(mods.size() == 1);
-  auto& byPostorder = resolveConcreteFunction(context, mods[0]->stmt(mods[0]->numStmts()-1)->id())->resolutionById();
+  auto& byPostorder = resolveConcreteFunction(
+                        context, mods[0]->stmt(mods[0]->numStmts() - 1)->id())
+                        ->resolutionById();
   auto var = findVariable(mods[0], "A");
   assert(var);
   auto& rr = byPostorder.byAst(var);
@@ -597,12 +607,37 @@ void testArrayAssign(Context* context, const char* prelude, const char* typeExpr
   assert(!guard.realizeErrors());
 }
 
-void testArrayMaterialize(Context* context, const char* prelude, const char* iterable, int expectedRank, const char* expectedStride, const char* expectedCopyInitFn) {
-  testArrayAssign(context, prelude, "", iterable, expectedRank, expectedStride, AssociatedAction::CUSTOM_COPY_INIT, expectedCopyInitFn);
+void testArrayMaterialize(Context* context,
+                          const char* prelude,
+                          const char* iterable,
+                          int expectedRank,
+                          const char* expectedStride,
+                          const char* expectedCopyInitFn) {
+  testArrayAssign(context,
+                  prelude,
+                  "",
+                  iterable,
+                  expectedRank,
+                  expectedStride,
+                  AssociatedAction::CUSTOM_COPY_INIT,
+                  expectedCopyInitFn);
 }
 
-void testArrayCoerce(Context* context, const char* prelude, const char* typeExpr, const char* iterable, int expectedRank, const char* expectedStride, const char* expectedCopyInitFn) {
-  testArrayAssign(context, prelude, typeExpr, iterable, expectedRank, expectedStride, AssociatedAction::INIT_OTHER, expectedCopyInitFn);
+void testArrayCoerce(Context* context,
+                     const char* prelude,
+                     const char* typeExpr,
+                     const char* iterable,
+                     int expectedRank,
+                     const char* expectedStride,
+                     const char* expectedCopyInitFn) {
+  testArrayAssign(context,
+                  prelude,
+                  typeExpr,
+                  iterable,
+                  expectedRank,
+                  expectedStride,
+                  AssociatedAction::INIT_OTHER,
+                  expectedCopyInitFn);
 }
 
 std::string toString(QualifiedType type) {

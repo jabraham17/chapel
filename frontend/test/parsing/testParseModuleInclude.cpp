@@ -46,7 +46,6 @@ static void test1() {
    )"""";
   setFileText(context, pathMMSub, contentsMMSub);
 
-
   const ModuleVec& vec = parseToplevel(context, pathMM);
   assert(vec.size() == 1);
   const Module* mm = vec[0];

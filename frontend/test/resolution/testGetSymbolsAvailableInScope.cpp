@@ -43,14 +43,13 @@ struct NameFinder {
     return true;
   }
 
-  bool enter(const AstNode* node) {
-    return true;
-  }
+  bool enter(const AstNode* node) { return true; }
 
   void exit(const AstNode* node) {}
 };
 
-static void checkScopeContents(Context* context, const Module* mod,
+static void checkScopeContents(Context* context,
+                               const Module* mod,
                                std::vector<std::string>&& expected) {
   auto scope = scopeForId(context, mod->id());
 
@@ -67,8 +66,8 @@ static void checkScopeContents(Context* context, const Module* mod,
   }
 }
 
-static void checkScopeContentsViaLookup(Context* context, const Module* mod,
-                                        const std::set<UniqueString>& allNames) {
+static void checkScopeContentsViaLookup(
+  Context* context, const Module* mod, const std::set<UniqueString>& allNames) {
   // Verify that looking up identifiers in the scope and asking for
   // all identifiers matches up.
   //
@@ -86,10 +85,12 @@ static void checkScopeContentsViaLookup(Context* context, const Module* mod,
     // ditto for the module's name
     if (name == mod->name()) continue;
 
-    auto result = lookupNameInScope(context, scope,
+    auto result = lookupNameInScope(context,
+                                    scope,
                                     /* methodLookupHelper */ nullptr,
                                     /* receiverScopeHelper */ nullptr,
-                                    name, IDENTIFIER_LOOKUP_CONFIG);
+                                    name,
+                                    IDENTIFIER_LOOKUP_CONFIG);
 
     if (result.isEmpty()) {
       assert(allSyms.find(name) == allSyms.end());
@@ -147,7 +148,8 @@ static void test1() {
   checkScopeContents(context, vec[0], {"x", "f1", "f2"});
   checkScopeContents(context, vec[1], {"y", "f3", "f4"});
   checkScopeContents(context, vec[2], {"z", "f5", "f6"});
-  checkScopeContents(context, vec[3], {"x", "y", "z", "f2", "f4", "f6", "N", "O"});
+  checkScopeContents(
+    context, vec[3], {"x", "y", "z", "f2", "f4", "f6", "N", "O"});
   checkScopeContents(context, vec[4], {"x", "z", "f2", "f6", "O", "P"});
 
   NameFinder finder;

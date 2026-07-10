@@ -36,16 +36,18 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-    "/*c1*/\n"
-    "var thing = 0;\n"
-    "label outer for i in myRange1 {\n"
-    "  /*c2*/\n"
-    "  for j in myRange2 do\n"
-    "    if !(i%j) { found = j; break outer; }\n"
-    "  /*c3*/\n"
-    "}\n"
-    "/*c12*/\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test0.chpl",
+                               "/*c1*/\n"
+                               "var thing = 0;\n"
+                               "label outer for i in myRange1 {\n"
+                               "  /*c2*/\n"
+                               "  for j in myRange2 do\n"
+                               "    if !(i%j) { found = j; break outer; }\n"
+                               "  /*c3*/\n"
+                               "}\n"
+                               "/*c12*/\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -79,7 +81,9 @@ static void test0(Parser* parser) {
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
+  auto parseResult = parseStringAndReportErrors(
+    parser,
+    "test1.chpl",
     "/*c1*/\n"
     "label outer for i in myRange {\n"
     "  if i%2 then /*c2*/ continue /*c3*/ outer /*c4*/;\n"

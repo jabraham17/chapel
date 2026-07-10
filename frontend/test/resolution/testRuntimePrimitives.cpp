@@ -22,10 +22,12 @@
 #include "chpl/types/all-types.h"
 
 template <typename F>
-static void predicatePrimTypeHelper(const char* primName, std::vector<const char*> args,
-                                    F&& predicate,
-                                    const char* prelude = "",
-                                    QualifiedType::Kind expectedKind = QualifiedType::CONST_VAR) {
+static void predicatePrimTypeHelper(
+  const char* primName,
+  std::vector<const char*> args,
+  F&& predicate,
+  const char* prelude = "",
+  QualifiedType::Kind expectedKind = QualifiedType::CONST_VAR) {
   std::string program = prelude;
   program += "var x = __primitive(\"";
   program += primName;
@@ -36,7 +38,7 @@ static void predicatePrimTypeHelper(const char* primName, std::vector<const char
   }
   program += ");";
   auto context = buildStdContext();
-  QualifiedType qt =  resolveTypeOfXInit(context, std::move(program));
+  QualifiedType qt = resolveTypeOfXInit(context, std::move(program));
   assert(qt.kind() == expectedKind);
   auto typePtr = qt.type();
   assert(typePtr);
@@ -44,28 +46,65 @@ static void predicatePrimTypeHelper(const char* primName, std::vector<const char
 }
 
 template <typename T>
-static void primTypeHelper(const char* primName, std::vector<const char*> args, const char* prelude = "", QualifiedType::Kind expectedKind = QualifiedType::CONST_VAR) {
-  predicatePrimTypeHelper(primName, args, [](const Type* typePtr, const Param* param) {
-    return typePtr->is<T>();
-  }, prelude, expectedKind);
+static void
+primTypeHelper(const char* primName,
+               std::vector<const char*> args,
+               const char* prelude = "",
+               QualifiedType::Kind expectedKind = QualifiedType::CONST_VAR) {
+  predicatePrimTypeHelper(
+    primName,
+    args,
+    [](const Type* typePtr, const Param* param) { return typePtr->is<T>(); },
+    prelude,
+    expectedKind);
 }
 
-static void intPrimTypeHelper(int width, const char* primName, std::vector<const char*> args, const char* prelude = "", QualifiedType::Kind expectedKind = QualifiedType::CONST_VAR) {
-  predicatePrimTypeHelper(primName, args, [width](const Type* typePtr, const Param* param) {
-    return typePtr->isIntType() && typePtr->toIntType()->bitwidth() == width;
-  }, prelude, expectedKind);
+static void
+intPrimTypeHelper(int width,
+                  const char* primName,
+                  std::vector<const char*> args,
+                  const char* prelude = "",
+                  QualifiedType::Kind expectedKind = QualifiedType::CONST_VAR) {
+  predicatePrimTypeHelper(
+    primName,
+    args,
+    [width](const Type* typePtr, const Param* param) {
+      return typePtr->isIntType() && typePtr->toIntType()->bitwidth() == width;
+    },
+    prelude,
+    expectedKind);
 }
 
-static void realPrimTypeHelper(int width, const char* primName, std::vector<const char*> args, const char* prelude = "", QualifiedType::Kind expectedKind = QualifiedType::CONST_VAR) {
-  predicatePrimTypeHelper(primName, args, [width](const Type* typePtr, const Param* param) {
-    return typePtr->isRealType() && typePtr->toRealType()->bitwidth() == width;
-  }, prelude, expectedKind);
+static void realPrimTypeHelper(
+  int width,
+  const char* primName,
+  std::vector<const char*> args,
+  const char* prelude = "",
+  QualifiedType::Kind expectedKind = QualifiedType::CONST_VAR) {
+  predicatePrimTypeHelper(
+    primName,
+    args,
+    [width](const Type* typePtr, const Param* param) {
+      return typePtr->isRealType() &&
+             typePtr->toRealType()->bitwidth() == width;
+    },
+    prelude,
+    expectedKind);
 }
 
-static void voidPtrPrimTypeHelper(const char* primName, std::vector<const char*> args, const char* prelude = "", QualifiedType::Kind expectedKind = QualifiedType::CONST_VAR) {
-  predicatePrimTypeHelper(primName, args, [](const Type* typePtr, const Param* param) {
-    return typePtr->isCPtrType() && typePtr->toCPtrType()->isVoidPtr();
-  }, prelude, expectedKind);
+static void voidPtrPrimTypeHelper(
+  const char* primName,
+  std::vector<const char*> args,
+  const char* prelude = "",
+  QualifiedType::Kind expectedKind = QualifiedType::CONST_VAR) {
+  predicatePrimTypeHelper(
+    primName,
+    args,
+    [](const Type* typePtr, const Param* param) {
+      return typePtr->isCPtrType() && typePtr->toCPtrType()->isVoidPtr();
+    },
+    prelude,
+    expectedKind);
 }
 
 // tests for primitives that should return void
@@ -112,32 +151,38 @@ static void testVoidPrims() {
 
 // test that we can handle non-param string for string_length_bytes
 static void test1() {
-  intPrimTypeHelper(IntType::defaultBitwidth(), "string_length_bytes", {"s"}, "var s: string;");
+  intPrimTypeHelper(
+    IntType::defaultBitwidth(), "string_length_bytes", {"s"}, "var s: string;");
 }
 
 // test that we can handle non-param bytes for string_length_bytes
 static void test2() {
-  intPrimTypeHelper(IntType::defaultBitwidth(), "string_length_bytes", {"b"}, "var b: bytes;");
+  intPrimTypeHelper(
+    IntType::defaultBitwidth(), "string_length_bytes", {"b"}, "var b: bytes;");
 }
 
 static void test3() {
   // test for primitive return type for get real/imag
-  realPrimTypeHelper(64, "complex_get_real", {"a"}, "var a: complex(128);", QualifiedType::REF);
+  realPrimTypeHelper(
+    64, "complex_get_real", {"a"}, "var a: complex(128);", QualifiedType::REF);
 }
 
 static void test4() {
   // test for primitive return type for get real/imag
-  realPrimTypeHelper(32, "complex_get_real", {"a"}, "var a: complex(64);", QualifiedType::REF);
+  realPrimTypeHelper(
+    32, "complex_get_real", {"a"}, "var a: complex(64);", QualifiedType::REF);
 }
 
 static void test5() {
   // test for primitive return type for get real/imag
-  realPrimTypeHelper(64, "complex_get_imag", {"a"}, "var a: complex(128);", QualifiedType::REF);
+  realPrimTypeHelper(
+    64, "complex_get_imag", {"a"}, "var a: complex(128);", QualifiedType::REF);
 }
 
 static void test6() {
   // test for primitive return type for get real/imag
-  realPrimTypeHelper(32, "complex_get_imag", {"a"}, "var a: complex(64);", QualifiedType::REF);
+  realPrimTypeHelper(
+    32, "complex_get_imag", {"a"}, "var a: complex(64);", QualifiedType::REF);
 }
 
 static void test7() {
@@ -146,9 +191,7 @@ static void test7() {
 }
 
 // test for primitive "_wide_get_addr", which should return a void ptr
-static void test8() {
-  voidPtrPrimTypeHelper("_wide_get_addr", {});
-}
+static void test8() { voidPtrPrimTypeHelper("_wide_get_addr", {}); }
 
 // test for primitive "steal", which should return the type of the argument
 static void test9() {
@@ -159,9 +202,7 @@ static void test9() {
 }
 
 // test for primitive "getcid", which should return an int32
-static void test10() {
-  intPrimTypeHelper(32, "getcid", {});
-}
+static void test10() { intPrimTypeHelper(32, "getcid", {}); }
 
 // test for primitive "get_union_id", which should return a default int
 static void test11() {
@@ -174,19 +215,13 @@ static void test12() {
 }
 
 // "class name by id", which should return a cString
-static void test13() {
-  primTypeHelper<CStringType>("class name by id", {});
-}
+static void test13() { primTypeHelper<CStringType>("class name by id", {}); }
 
 // "ref to string", which should return a cString
-static void test14() {
-  primTypeHelper<CStringType>("ref to string", {});
-}
+static void test14() { primTypeHelper<CStringType>("ref to string", {}); }
 
 // "chpl_lookupFilename", which should return a cString
-static void test15() {
-  primTypeHelper<CStringType>("chpl_lookupFilename", {});
-}
+static void test15() { primTypeHelper<CStringType>("chpl_lookupFilename", {}); }
 
 // "_get_user_line", which should return a default int.
 static void test16() {
@@ -194,9 +229,7 @@ static void test16() {
 }
 
 // "_get_user_file", which should return an int32
-static void test17() {
-  intPrimTypeHelper(32, "_get_user_file", {});
-}
+static void test17() { intPrimTypeHelper(32, "_get_user_file", {}); }
 
 // various GPU x/y/z primitives, which all return int(32).
 static void test18() {
@@ -217,27 +250,29 @@ static void test18() {
 static void test19() {
   voidPtrPrimTypeHelper("gpu allocShared", {"512"});
   voidPtrPrimTypeHelper("gpu allocShared", {"1024"});
-  primTypeHelper<ErroneousType>("gpu allocShared", {"v"}, "var v = 1024;", QualifiedType::UNKNOWN);
+  primTypeHelper<ErroneousType>(
+    "gpu allocShared", {"v"}, "var v = 1024;", QualifiedType::UNKNOWN);
 }
 
-static void test20() {
-  primTypeHelper<VoidType>("gpu syncThreads", {});
-}
+static void test20() { primTypeHelper<VoidType>("gpu syncThreads", {}); }
 
 static void test21() {
   primTypeHelper<VoidType>("chpl_assert_on_gpu", {"true"});
   primTypeHelper<VoidType>("chpl_assert_on_gpu", {"false"});
-  primTypeHelper<ErroneousType>("chpl_assert_on_gpu", {"v"}, "var v: bool;", QualifiedType::UNKNOWN);
+  primTypeHelper<ErroneousType>(
+    "chpl_assert_on_gpu", {"v"}, "var v: bool;", QualifiedType::UNKNOWN);
 }
 
 static void test22() {
   primTypeHelper<VoidType>("gpu set blockSize", {"128"});
   primTypeHelper<VoidType>("gpu set blockSize", {"v"}, "var v = 128;");
-  primTypeHelper<ErroneousType>("gpu set blockSize", {"v"}, "var v: string;", QualifiedType::UNKNOWN);
+  primTypeHelper<ErroneousType>(
+    "gpu set blockSize", {"v"}, "var v: string;", QualifiedType::UNKNOWN);
 
   primTypeHelper<VoidType>("gpu set itersPerThread", {"128"});
   primTypeHelper<VoidType>("gpu set itersPerThread", {"v"}, "var v = 128;");
-  primTypeHelper<ErroneousType>("gpu set itersPerThread", {"v"}, "var v: string;", QualifiedType::UNKNOWN);
+  primTypeHelper<ErroneousType>(
+    "gpu set itersPerThread", {"v"}, "var v: string;", QualifiedType::UNKNOWN);
 }
 
 static void test23() {
@@ -254,16 +289,13 @@ static void test23() {
 }
 
 // test for prim "_wide_get_node", which should return an int(32)
-static void test24() {
-  intPrimTypeHelper(32, "_wide_get_node", {});
-}
+static void test24() { intPrimTypeHelper(32, "_wide_get_node", {}); }
 
 // test for prim "sizeof_bundle" and "sizeof_ddata_element", which should return an int(64)
 static void test25() {
   intPrimTypeHelper(64, "sizeof_bundle", {});
   intPrimTypeHelper(64, "sizeof_ddata_element", {});
 }
-
 
 int main() {
   testVoidPrims();

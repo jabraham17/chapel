@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 
-
 #include "test-resolution.h"
 
 #include "chpl/parsing/parsing-queries.h"
@@ -79,219 +78,291 @@ void testCPtrArg(const char* formalType, const char* actualType, F&& test) {
 }
 
 static void test1() {
-  testCPtrArg("c_ptr", "c_ptr(int)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(fn);
-    assert(t);
-    auto eltT = t->eltType();
-    assert(eltT && eltT->isIntType());
-    assert(eltT->toIntType()->isDefaultWidth());
-  });
+  testCPtrArg(
+    "c_ptr",
+    "c_ptr(int)",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(fn);
+      assert(t);
+      auto eltT = t->eltType();
+      assert(eltT && eltT->isIntType());
+      assert(eltT->toIntType()->isDefaultWidth());
+    });
 }
 
 static void test2() {
-  testCPtrArg("c_ptr", "c_ptr(real)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(fn);
-    assert(t);
-    auto eltT = t->eltType();
-    assert(eltT && eltT->isRealType());
-    assert(eltT->toRealType()->isDefaultWidth());
-  });
+  testCPtrArg(
+    "c_ptr",
+    "c_ptr(real)",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(fn);
+      assert(t);
+      auto eltT = t->eltType();
+      assert(eltT && eltT->isRealType());
+      assert(eltT->toRealType()->isDefaultWidth());
+    });
 }
 
 static void test3() {
-  testCPtrArg("c_ptr(int(?w))", "c_ptr(int(32))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(fn);
-    assert(t);
-    auto eltT = t->eltType();
-    assert(eltT && eltT->isIntType());
-    assert(eltT == IntType::get(eg.context(), 32));
-  });
+  testCPtrArg(
+    "c_ptr(int(?w))",
+    "c_ptr(int(32))",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(fn);
+      assert(t);
+      auto eltT = t->eltType();
+      assert(eltT && eltT->isIntType());
+      assert(eltT == IntType::get(eg.context(), 32));
+    });
 }
 
 static void test4() {
-  testCPtrArg("c_ptr(rec(?t))", "c_ptr(rec(int))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(fn);
-    assert(t);
-    auto eltT = t->eltType();
-    assert(eltT && eltT->isRecordType());
-    auto rt = eltT->toRecordType();
-    assert(rt->name() == "rec");
-    auto rc = createDummyRC(eg.context());
-    auto& fields = fieldsForTypeDecl(&rc, rt, DefaultsPolicy::IGNORE_DEFAULTS);
-    assert(fields.numFields() == 1 && fields.fieldType(0).type()->isIntType());
-  });
+  testCPtrArg(
+    "c_ptr(rec(?t))",
+    "c_ptr(rec(int))",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(fn);
+      assert(t);
+      auto eltT = t->eltType();
+      assert(eltT && eltT->isRecordType());
+      auto rt = eltT->toRecordType();
+      assert(rt->name() == "rec");
+      auto rc = createDummyRC(eg.context());
+      auto& fields =
+        fieldsForTypeDecl(&rc, rt, DefaultsPolicy::IGNORE_DEFAULTS);
+      assert(fields.numFields() == 1 &&
+             fields.fieldType(0).type()->isIntType());
+    });
 }
 
 static void test5() {
-  testCPtrArg("c_ptr(int(?w))", "c_ptr(uint(32))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(!fn);
-    assert(eg.realizeErrors() == 1);
-  });
+  testCPtrArg(
+    "c_ptr(int(?w))",
+    "c_ptr(uint(32))",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(!fn);
+      assert(eg.realizeErrors() == 1);
+    });
 }
 
 static void test6() {
-  testCPtrArg("c_ptr(int(64))", "c_ptr(int(32))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(!fn);
-    assert(eg.realizeErrors() == 1);
-  });
+  testCPtrArg(
+    "c_ptr(int(64))",
+    "c_ptr(int(32))",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(!fn);
+      assert(eg.realizeErrors() == 1);
+    });
 }
 
 static void test7() {
-  testCPtrArg("c_ptr(int)", "c_ptr(int)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(fn);
-    assert(t);
-    auto eltT = t->eltType();
-    assert(eltT && eltT->isIntType());
-    assert(eltT->toIntType()->isDefaultWidth());
-  });
+  testCPtrArg(
+    "c_ptr(int)",
+    "c_ptr(int)",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(fn);
+      assert(t);
+      auto eltT = t->eltType();
+      assert(eltT && eltT->isIntType());
+      assert(eltT->toIntType()->isDefaultWidth());
+    });
 }
 
 static void test8() {
-  testCPtrArg("c_ptr(void)", "c_ptr(int)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(t);
-    assert(t->isVoidPtr());
-    // expect no errors; this should be valid.
-  });
+  testCPtrArg(
+    "c_ptr(void)",
+    "c_ptr(int)",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(t);
+      assert(t->isVoidPtr());
+      // expect no errors; this should be valid.
+    });
 }
 
 static void test9() {
-  testCPtrArg("c_ptrConst", "c_ptrConst(int)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(fn);
-    assert(t);
-    assert(t->isConst());
-    auto eltT = t->eltType();
-    assert(eltT && eltT->isIntType());
-    assert(eltT->toIntType()->isDefaultWidth());
-  });
+  testCPtrArg(
+    "c_ptrConst",
+    "c_ptrConst(int)",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(fn);
+      assert(t);
+      assert(t->isConst());
+      auto eltT = t->eltType();
+      assert(eltT && eltT->isIntType());
+      assert(eltT->toIntType()->isDefaultWidth());
+    });
 }
 
 static void test10() {
-  testCPtrArg("c_ptrConst", "c_ptrConst(real)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(fn);
-    assert(t);
-    assert(t->isConst());
-    auto eltT = t->eltType();
-    assert(eltT && eltT->isRealType());
-    assert(eltT->toRealType()->isDefaultWidth());
-  });
+  testCPtrArg(
+    "c_ptrConst",
+    "c_ptrConst(real)",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(fn);
+      assert(t);
+      assert(t->isConst());
+      auto eltT = t->eltType();
+      assert(eltT && eltT->isRealType());
+      assert(eltT->toRealType()->isDefaultWidth());
+    });
 }
 
 static void test11() {
-  testCPtrArg("c_ptrConst(int(?w))", "c_ptrConst(int(32))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(fn);
-    assert(t);
-    assert(t->isConst());
-    auto eltT = t->eltType();
-    assert(eltT && eltT->isIntType());
-    assert(eltT == IntType::get(eg.context(), 32));
-  });
+  testCPtrArg(
+    "c_ptrConst(int(?w))",
+    "c_ptrConst(int(32))",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(fn);
+      assert(t);
+      assert(t->isConst());
+      auto eltT = t->eltType();
+      assert(eltT && eltT->isIntType());
+      assert(eltT == IntType::get(eg.context(), 32));
+    });
 }
 
 static void test12() {
-  testCPtrArg("c_ptrConst(rec(?t))", "c_ptrConst(rec(int))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(fn);
-    assert(t);
-    assert(t->isConst());
-    auto eltT = t->eltType();
-    assert(eltT && eltT->isRecordType());
-    auto rt = eltT->toRecordType();
-    assert(rt->name() == "rec");
-    auto rc = createDummyRC(eg.context());
-    auto& fields = fieldsForTypeDecl(&rc, rt, DefaultsPolicy::IGNORE_DEFAULTS);
-    assert(fields.numFields() == 1 && fields.fieldType(0).type()->isIntType());
-  });
+  testCPtrArg(
+    "c_ptrConst(rec(?t))",
+    "c_ptrConst(rec(int))",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(fn);
+      assert(t);
+      assert(t->isConst());
+      auto eltT = t->eltType();
+      assert(eltT && eltT->isRecordType());
+      auto rt = eltT->toRecordType();
+      assert(rt->name() == "rec");
+      auto rc = createDummyRC(eg.context());
+      auto& fields =
+        fieldsForTypeDecl(&rc, rt, DefaultsPolicy::IGNORE_DEFAULTS);
+      assert(fields.numFields() == 1 &&
+             fields.fieldType(0).type()->isIntType());
+    });
 }
 
 static void test13() {
-  testCPtrArg("c_ptrConst(int(?w))", "c_ptrConst(uint(32))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(!fn);
-    assert(eg.realizeErrors() == 1);
-  });
+  testCPtrArg(
+    "c_ptrConst(int(?w))",
+    "c_ptrConst(uint(32))",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(!fn);
+      assert(eg.realizeErrors() == 1);
+    });
 }
 
 static void test14() {
-  testCPtrArg("c_ptrConst(int(64))", "c_ptrConst(int(32))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(!fn);
-    assert(eg.realizeErrors() == 1);
-  });
+  testCPtrArg(
+    "c_ptrConst(int(64))",
+    "c_ptrConst(int(32))",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(!fn);
+      assert(eg.realizeErrors() == 1);
+    });
 }
 
 static void test15() {
-  testCPtrArg("c_ptrConst(int)", "c_ptrConst(int)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(fn);
-    assert(t);
-    assert(t->isConst());
-    auto eltT = t->eltType();
-    assert(eltT && eltT->isIntType());
-    assert(eltT->toIntType()->isDefaultWidth());
-  });
+  testCPtrArg(
+    "c_ptrConst(int)",
+    "c_ptrConst(int)",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(fn);
+      assert(t);
+      assert(t->isConst());
+      auto eltT = t->eltType();
+      assert(eltT && eltT->isIntType());
+      assert(eltT->toIntType()->isDefaultWidth());
+    });
 }
 
 static void test16() {
-  testCPtrArg("c_ptrConst(void)", "c_ptrConst(int)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(t);
-    assert(t->isConst());
-    assert(t->isVoidPtr());
-    // expect no errors; this should be valid.
-  });
+  testCPtrArg(
+    "c_ptrConst(void)",
+    "c_ptrConst(int)",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(t);
+      assert(t->isConst());
+      assert(t->isVoidPtr());
+      // expect no errors; this should be valid.
+    });
 }
 
 static void test17() {
-  testCPtrArg("c_ptr(void)", "c_ptrConst(int)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(fn);
-    assert(t);
-    assert(!t->isConst());
-    assert(t->isVoidPtr());
-    // expect no errors; this is the pattern of passing a const to deallocate
-  });
+  testCPtrArg(
+    "c_ptr(void)",
+    "c_ptrConst(int)",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(fn);
+      assert(t);
+      assert(!t->isConst());
+      assert(t->isVoidPtr());
+      // expect no errors; this is the pattern of passing a const to deallocate
+    });
 }
 
 static void test18() {
-  testCPtrArg("c_ptrConst(int)", "c_ptr(int)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(fn);
-    assert(t);
-    assert(t->isConst());
-    assert(t->eltType()->isIntType());
-  });
+  testCPtrArg(
+    "c_ptrConst(int)",
+    "c_ptr(int)",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(fn);
+      assert(t);
+      assert(t->isConst());
+      assert(t->eltType()->isIntType());
+    });
 }
 
 static void test19() {
-  testCPtrArg("c_ptrConst(int(?w))", "c_ptr(int(32))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(fn);
-    assert(t);
-    assert(t->isConst());
-    auto eltT = t->eltType();
-    assert(eltT && eltT->isIntType());
-    assert(eltT == IntType::get(eg.context(), 32));
-  });
+  testCPtrArg(
+    "c_ptrConst(int(?w))",
+    "c_ptr(int(32))",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(fn);
+      assert(t);
+      assert(t->isConst());
+      auto eltT = t->eltType();
+      assert(eltT && eltT->isIntType());
+      assert(eltT == IntType::get(eg.context(), 32));
+    });
 }
 
 static void test20() {
-  testCPtrArg("c_ptrConst(rec(?t))", "c_ptr(rec(int))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(fn);
-    assert(t);
-    auto eltT = t->eltType();
-    assert(eltT && eltT->isRecordType());
-    auto rt = eltT->toRecordType();
-    assert(rt->name() == "rec");
-    auto rc = createDummyRC(eg.context());
-    auto& fields = fieldsForTypeDecl(&rc, rt, DefaultsPolicy::IGNORE_DEFAULTS);
-    assert(fields.numFields() == 1 && fields.fieldType(0).type()->isIntType());
-  });
+  testCPtrArg(
+    "c_ptrConst(rec(?t))",
+    "c_ptr(rec(int))",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(fn);
+      assert(t);
+      auto eltT = t->eltType();
+      assert(eltT && eltT->isRecordType());
+      auto rt = eltT->toRecordType();
+      assert(rt->name() == "rec");
+      auto rc = createDummyRC(eg.context());
+      auto& fields =
+        fieldsForTypeDecl(&rc, rt, DefaultsPolicy::IGNORE_DEFAULTS);
+      assert(fields.numFields() == 1 &&
+             fields.fieldType(0).type()->isIntType());
+    });
 }
 
 static void test21() {
-  testCPtrArg("c_ptr(int(?w))", "c_ptrConst(int(32))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(!fn);
-    assert(eg.realizeErrors() == 1);
-  });
+  testCPtrArg(
+    "c_ptr(int(?w))",
+    "c_ptrConst(int(32))",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(!fn);
+      assert(eg.realizeErrors() == 1);
+    });
 }
 
 static void test22() {
-  testCPtrArg("c_ptr(rec(?t))", "c_ptrConst(rec(int))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(!fn);
-    assert(eg.realizeErrors() == 1);
-  });
+  testCPtrArg(
+    "c_ptr(rec(?t))",
+    "c_ptrConst(rec(int))",
+    [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+      assert(!fn);
+      assert(eg.realizeErrors() == 1);
+    });
 }
 
 static void test23() {
@@ -322,9 +393,11 @@ static void test23() {
 }
 
 static void test24() {
-  testCPtrArg("chpl_c_string", "c_ptrConst(c_char)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
-    assert(fn);
-  });
+  testCPtrArg("chpl_c_string",
+              "c_ptrConst(c_char)",
+              [](const TypedFnSignature* fn,
+                 const CPtrType* t,
+                 ErrorGuard& eg) { assert(fn); });
 }
 
 int main() {

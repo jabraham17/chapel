@@ -31,11 +31,13 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-      "/* comment 1 */\n"
-      "for /*comment 2*/ foo /*comment 3*/ do\n"
-      "  /* comment 4 */\n"
-      "  var a;\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test0.chpl",
+                               "/* comment 1 */\n"
+                               "for /*comment 2*/ foo /*comment 3*/ do\n"
+                               "  /* comment 4 */\n"
+                               "  var a;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -57,11 +59,13 @@ static void test0(Parser* parser) {
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
-      "/* comment 1 */\n"
-      "for foo in /* comment 2 */ bar do\n"
-      "  /* comment 3 */\n"
-      "  var a;\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test1.chpl",
+                               "/* comment 1 */\n"
+                               "for foo in /* comment 2 */ bar do\n"
+                               "  /* comment 3 */\n"
+                               "  var a;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -84,11 +88,13 @@ static void test1(Parser* parser) {
 
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
-      "/* comment 1 */\n"
-      "for /* comment 2 */ param foo in bar do\n"
-      "  /* comment 3 */\n"
-      "  var a;\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test2.chpl",
+                               "/* comment 1 */\n"
+                               "for /* comment 2 */ param foo in bar do\n"
+                               "  /* comment 3 */\n"
+                               "  var a;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -111,13 +117,15 @@ static void test2(Parser* parser) {
 
 static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
-      "/* comment 1 */\n"
-      "for foo in bar /* comment 2 */ {\n"
-      "  /* comment 3 */\n"
-      "  var a;\n"
-      "  /* comment 4 */\n"
-      "}\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test3.chpl",
+                               "/* comment 1 */\n"
+                               "for foo in bar /* comment 2 */ {\n"
+                               "  /* comment 3 */\n"
+                               "  var a;\n"
+                               "  /* comment 4 */\n"
+                               "}\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -141,15 +149,16 @@ static void test3(Parser* parser) {
 
 static void test4(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
-      "/* comment 1 */\n"
-      "for foo in bar do\n"
-      "/* comment 2 */\n"
-      "{\n"
-      "  /* comment 2 */\n"
-      "  var a;\n"
-      "  /* comment 3 */\n"
-      "}\n");
+  auto parseResult = parseStringAndReportErrors(parser,
+                                                "test4.chpl",
+                                                "/* comment 1 */\n"
+                                                "for foo in bar do\n"
+                                                "/* comment 2 */\n"
+                                                "{\n"
+                                                "  /* comment 2 */\n"
+                                                "  var a;\n"
+                                                "  /* comment 3 */\n"
+                                                "}\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -173,27 +182,34 @@ static void test4(Parser* parser) {
 
 static void test5(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
-      "for i in 1..10 with (ref A) { }");
+  auto parseResult = parseStringAndReportErrors(
+    parser, "test5.chpl", "for i in 1..10 with (ref A) { }");
   auto numErrors = 1;
-  assert(guard.errors().size() == (size_t) numErrors);
-  assert("'with' clauses are not supported on 'for' loops" == guard.error(0)->message());
+  assert(guard.errors().size() == (size_t)numErrors);
+  assert("'with' clauses are not supported on 'for' loops" ==
+         guard.error(0)->message());
   assert(guard.realizeErrors() == numErrors);
 }
 
 static void test6(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test6.chpl",
-      "for i in 1..10 with (re A) { }\n"
-      "for i in 1..10 with () { }\n"
-      "for i in 1..10 with ref A { }\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test6.chpl",
+                               "for i in 1..10 with (re A) { }\n"
+                               "for i in 1..10 with () { }\n"
+                               "for i in 1..10 with ref A { }\n");
   auto numErrors = 7;
   assert(guard.errors().size() == (size_t)numErrors);
-  assert("invalid intent expression in 'with' clause" == guard.error(1)->message());
-  assert("'with' clauses are not supported on 'for' loops" == guard.error(2)->message());
+  assert("invalid intent expression in 'with' clause" ==
+         guard.error(1)->message());
+  assert("'with' clauses are not supported on 'for' loops" ==
+         guard.error(2)->message());
   assert("'with' clause cannot be empty" == guard.error(3)->message());
-  assert("'with' clauses are not supported on 'for' loops" == guard.error(4)->message());
-  assert("missing parentheses around 'with' clause intents" == guard.error(6)->message());
+  assert("'with' clauses are not supported on 'for' loops" ==
+         guard.error(4)->message());
+  assert("missing parentheses around 'with' clause intents" ==
+         guard.error(6)->message());
   // The other errors are from the parser as "near ...".
   // It would be really nice to not have those be emitted at all.
   assert(guard.realizeErrors() == numErrors);

@@ -36,7 +36,8 @@ static const UniqueString& recursiveQuery(Context* context, UniqueString arg) {
 }
 
 static const char* recHandlerMessage = "recursive query handler executed";
-static const UniqueString& recursiveQueryWithHandler(Context* context, UniqueString arg) {
+static const UniqueString& recursiveQueryWithHandler(Context* context,
+                                                     UniqueString arg) {
   QUERY_BEGIN(recursiveQueryWithHandler, context, arg);
 
   UniqueString result = recursiveQueryWithHandler(context, arg);
@@ -58,9 +59,10 @@ static void test0() {
 
   auto s = UniqueString::get(context, "Nice To See You Again World, Hello");
   assert(recursiveQuery(context, s).isEmpty());
-  assert(std::any_of(guard.errors().begin(), guard.errors().end(), [](auto& error) {
-    return error->type() == ErrorType::Recursion;
-  }));
+  assert(
+    std::any_of(guard.errors().begin(), guard.errors().end(), [](auto& error) {
+      return error->type() == ErrorType::Recursion;
+    }));
   guard.clearErrors();
 
   // Run again without bumping recursion to ensure consistent results.
@@ -73,9 +75,10 @@ static void test0() {
   context->advanceToNextRevision(false);
   s = UniqueString::get(context, "Nice To See You Again World, Hello");
   assert(recursiveQuery(context, s).isEmpty());
-  assert(std::any_of(guard.errors().begin(), guard.errors().end(), [](auto& error) {
-    return error->type() == ErrorType::Recursion;
-  }));
+  assert(
+    std::any_of(guard.errors().begin(), guard.errors().end(), [](auto& error) {
+      return error->type() == ErrorType::Recursion;
+    }));
   guard.clearErrors();
 }
 
@@ -88,9 +91,10 @@ static void test1() {
 
   auto s = UniqueString::get(context, "Nice To See You Again World, Hello");
   assert(recursiveQueryWithHandler(context, s).isEmpty());
-  assert(std::any_of(guard.errors().begin(), guard.errors().end(), [](auto& error) {
-    return error->message() == recHandlerMessage;
-  }));
+  assert(
+    std::any_of(guard.errors().begin(), guard.errors().end(), [](auto& error) {
+      return error->message() == recHandlerMessage;
+    }));
   guard.clearErrors();
 
   // Run again without bumping recursion to ensure consistent results.
@@ -103,9 +107,10 @@ static void test1() {
   context->advanceToNextRevision(false);
   s = UniqueString::get(context, "Nice To See You Again World, Hello");
   assert(recursiveQueryWithHandler(context, s).isEmpty());
-  assert(std::any_of(guard.errors().begin(), guard.errors().end(), [](auto& error) {
-    return error->message() == recHandlerMessage;
-  }));
+  assert(
+    std::any_of(guard.errors().begin(), guard.errors().end(), [](auto& error) {
+      return error->message() == recHandlerMessage;
+    }));
   guard.clearErrors();
 }
 
@@ -188,16 +193,20 @@ static void test2() {
   Context* context = &ctx;
   ErrorGuard guard(context);
 
-  assert(queryF(context, /* callFFirst */ true, /* runHandler */ false) == false);
-  assert(std::count_if(guard.errors().begin(), guard.errors().end(), [](auto& error) {
-    return error->type() == ErrorType::Recursion;
-  }) == 2);
+  assert(queryF(context, /* callFFirst */ true, /* runHandler */ false) ==
+         false);
+  assert(std::count_if(
+           guard.errors().begin(), guard.errors().end(), [](auto& error) {
+             return error->type() == ErrorType::Recursion;
+           }) == 2);
   guard.clearErrors();
 
-  assert(queryF(context, /* callFFirst */ false, /* runHandler */ false) == false);
-  assert(std::count_if(guard.errors().begin(), guard.errors().end(), [](auto& error) {
-    return error->type() == ErrorType::Recursion;
-  }) == 2);
+  assert(queryF(context, /* callFFirst */ false, /* runHandler */ false) ==
+         false);
+  assert(std::count_if(
+           guard.errors().begin(), guard.errors().end(), [](auto& error) {
+             return error->type() == ErrorType::Recursion;
+           }) == 2);
   guard.clearErrors();
 }
 
@@ -207,22 +216,28 @@ static void test3() {
   Context* context = &ctx;
   ErrorGuard guard(context);
 
-  assert(queryF(context, /* callFFirst */ true, /* runHandler */ true) == false);
-  assert(std::count_if(guard.errors().begin(), guard.errors().end(), [](auto& error) {
-    return error->message() == "f";
-  }) == 1);
-  assert(std::count_if(guard.errors().begin(), guard.errors().end(), [](auto& error) {
-    return error->message() == "g";
-  }) == 1);
+  assert(queryF(context, /* callFFirst */ true, /* runHandler */ true) ==
+         false);
+  assert(std::count_if(
+           guard.errors().begin(), guard.errors().end(), [](auto& error) {
+             return error->message() == "f";
+           }) == 1);
+  assert(std::count_if(
+           guard.errors().begin(), guard.errors().end(), [](auto& error) {
+             return error->message() == "g";
+           }) == 1);
   guard.clearErrors();
 
-  assert(queryF(context, /* callFFirst */ false, /* runHandler */ true) == false);
-  assert(std::count_if(guard.errors().begin(), guard.errors().end(), [](auto& error) {
-    return error->message() == "f";
-  }) == 1);
-  assert(std::count_if(guard.errors().begin(), guard.errors().end(), [](auto& error) {
-    return error->message() == "g";
-  }) == 1);
+  assert(queryF(context, /* callFFirst */ false, /* runHandler */ true) ==
+         false);
+  assert(std::count_if(
+           guard.errors().begin(), guard.errors().end(), [](auto& error) {
+             return error->message() == "f";
+           }) == 1);
+  assert(std::count_if(
+           guard.errors().begin(), guard.errors().end(), [](auto& error) {
+             return error->message() == "g";
+           }) == 1);
   guard.clearErrors();
 }
 
@@ -262,9 +277,10 @@ static void test4() {
   ErrorGuard guard(context);
 
   assert(queryH(context, /* parity */ true, /* runHandler */ false) == false);
-  assert(std::count_if(guard.errors().begin(), guard.errors().end(), [](auto& error) {
-    return error->type() == ErrorType::Recursion;
-  }) == 1);
+  assert(std::count_if(
+           guard.errors().begin(), guard.errors().end(), [](auto& error) {
+             return error->type() == ErrorType::Recursion;
+           }) == 1);
   guard.clearErrors();
 }
 
@@ -274,9 +290,10 @@ static void test5() {
   ErrorGuard guard(context);
 
   assert(queryH(context, /* parity */ true, /* runHandler */ true) == false);
-  assert(std::count_if(guard.errors().begin(), guard.errors().end(), [](auto& error) {
-    return error->message() == "h(true)";
-  }) == 1);
+  assert(std::count_if(
+           guard.errors().begin(), guard.errors().end(), [](auto& error) {
+             return error->message() == "h(true)";
+           }) == 1);
   guard.clearErrors();
 }
 

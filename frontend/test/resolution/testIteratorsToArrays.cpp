@@ -28,121 +28,159 @@ static void testIterFn(Context* context) {
   testArrayMaterialize(context,
                        "iter foo() do yield 1;",
                        "foo()",
-                       1, "one", "ChapelArray.chpl__initCopy#6");
+                       1,
+                       "one",
+                       "ChapelArray.chpl__initCopy#6");
 }
 
 static void testForeachRange(Context* context) {
   testArrayMaterialize(context,
                        "",
                        "foreach i in 1..10 do i",
-                       1, "one", "ChapelArray.chpl__initCopy#5");
+                       1,
+                       "one",
+                       "ChapelArray.chpl__initCopy#5");
 }
 
 static void testForeachStridedRange(Context* context) {
   testArrayMaterialize(context,
                        "",
                        "foreach i in 1..10 by 2 do i",
-                       1, "positive", "ChapelArray.chpl__initCopy#5");
+                       1,
+                       "positive",
+                       "ChapelArray.chpl__initCopy#5");
 }
 
 static void testForeachReverseRange(Context* context) {
   testArrayMaterialize(context,
                        "",
                        "foreach i in 10..1 by -1 do i",
-                       1, "negOne", "ChapelArray.chpl__initCopy#5");
+                       1,
+                       "negOne",
+                       "ChapelArray.chpl__initCopy#5");
 }
 
 static void testForeachReverseStridedRange(Context* context) {
   testArrayMaterialize(context,
                        "",
                        "foreach i in 10..1 by -2 do i",
-                       1, "negative", "ChapelArray.chpl__initCopy#5");
+                       1,
+                       "negative",
+                       "ChapelArray.chpl__initCopy#5");
 }
 
 static void testForeachOverForeach(Context* context) {
   testArrayMaterialize(context,
                        "",
                        "foreach i in (foreach j in 1..10 do j) do i",
-                       1, "one", "ChapelArray.chpl__initCopy#5");
+                       1,
+                       "one",
+                       "ChapelArray.chpl__initCopy#5");
 }
 
 static void testForeachOverStridedForeach(Context* context) {
   testArrayMaterialize(context,
                        "",
                        "foreach i in (foreach j in 1..10 by 2 do j) do i",
-                       1, "positive", "ChapelArray.chpl__initCopy#5");
+                       1,
+                       "positive",
+                       "ChapelArray.chpl__initCopy#5");
 }
 
 static void testForeachOverDomain(Context* context) {
   testArrayMaterialize(context,
                        "",
                        "foreach i in {1..10} do i",
-                       1, "one", "ChapelArray.chpl__initCopy#4");
+                       1,
+                       "one",
+                       "ChapelArray.chpl__initCopy#4");
   testArrayMaterialize(context,
                        "",
                        "foreach i in {1..10, 1..10} do i",
-                       2, "one", "ChapelArray.chpl__initCopy#4");
+                       2,
+                       "one",
+                       "ChapelArray.chpl__initCopy#4");
   testArrayMaterialize(context,
                        "",
                        "foreach i in {1..10 by 2, 1..10} do i",
-                       2, "positive", "ChapelArray.chpl__initCopy#4");
+                       2,
+                       "positive",
+                       "ChapelArray.chpl__initCopy#4");
 }
 
 static void testForRange(Context* context) {
   testArrayMaterialize(context,
                        "",
                        "for i in 1..10 do i",
-                       1, "one", "ChapelArray.chpl__initCopy#6");
+                       1,
+                       "one",
+                       "ChapelArray.chpl__initCopy#6");
 }
 
 static void testForStridedRange(Context* context) {
   testArrayMaterialize(context,
                        "",
                        "for i in 1..10 by 2 do i",
-                       1, "positive", "ChapelArray.chpl__initCopy#6");
+                       1,
+                       "positive",
+                       "ChapelArray.chpl__initCopy#6");
 }
 
 static void testForReverseRange(Context* context) {
   testArrayMaterialize(context,
                        "",
                        "for i in 10..1 by -1 do i",
-                       1, "negOne", "ChapelArray.chpl__initCopy#6");
+                       1,
+                       "negOne",
+                       "ChapelArray.chpl__initCopy#6");
 }
 
 static void testForReverseStridedRange(Context* context) {
   testArrayMaterialize(context,
                        "",
                        "for i in 10..1 by -2 do i",
-                       1, "negative", "ChapelArray.chpl__initCopy#6");
+                       1,
+                       "negative",
+                       "ChapelArray.chpl__initCopy#6");
 }
 
 static void testForOverFor(Context* context) {
   testArrayMaterialize(context,
                        "",
                        "for i in (for j in 1..10 do j) do i",
-                       1, "one", "ChapelArray.chpl__initCopy#6");
+                       1,
+                       "one",
+                       "ChapelArray.chpl__initCopy#6");
 }
 
 static void testForOverStridedFor(Context* context) {
   testArrayMaterialize(context,
                        "",
                        "for i in (for j in 1..10 by 2 do j) do i",
-                       1, "positive", "ChapelArray.chpl__initCopy#6");
+                       1,
+                       "positive",
+                       "ChapelArray.chpl__initCopy#6");
 }
 
 static void testForOverDomain(Context* context) {
   testArrayMaterialize(context,
                        "",
                        "for i in {1..10} do i",
-                       1, "one", "ChapelArray.chpl__initCopy#4");
+                       1,
+                       "one",
+                       "ChapelArray.chpl__initCopy#4");
   testArrayMaterialize(context,
                        "",
                        "for i in {1..10, 1..10} do i",
-                       2, "one", "ChapelArray.chpl__initCopy#4");
+                       2,
+                       "one",
+                       "ChapelArray.chpl__initCopy#4");
   testArrayMaterialize(context,
                        "",
                        "for i in {1..10 by 2, 1..10} do i",
-                       2, "positive", "ChapelArray.chpl__initCopy#4");
+                       2,
+                       "positive",
+                       "ChapelArray.chpl__initCopy#4");
 }
 
 int main() {

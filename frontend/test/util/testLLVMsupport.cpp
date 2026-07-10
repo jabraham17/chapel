@@ -31,7 +31,6 @@ static void test1() {
   assert(!err);
 }
 
-
 int main(int argc, char** argv) {
   test1();
   return 0;

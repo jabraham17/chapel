@@ -31,16 +31,18 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-      "/* comment 1 */\n"
-      "include module Foo;\n"
-      "/* comment 2 */\n"
-      "include private module Bar;\n"
-      "include prototype module Baz;\n"
-      "/* comment 3*/\n"
-      "include private prototype module Zing;\n"
-      "include public prototype module A;\n"
-      "include public module B;\n");
+  auto parseResult =
+    parseStringAndReportErrors(parser,
+                               "test0.chpl",
+                               "/* comment 1 */\n"
+                               "include module Foo;\n"
+                               "/* comment 2 */\n"
+                               "include private module Bar;\n"
+                               "include prototype module Baz;\n"
+                               "/* comment 3*/\n"
+                               "include private prototype module Zing;\n"
+                               "include public prototype module A;\n"
+                               "include public module B;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
