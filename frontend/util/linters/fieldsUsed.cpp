@@ -63,7 +63,7 @@ struct PrintInfo {
 
 using FieldDeclSet = std::unordered_set<const FieldDecl*>;
 using MethodFieldUseMap =
-    std::unordered_map<const CXXMethodDecl*, FieldDeclSet>;
+  std::unordered_map<const CXXMethodDecl*, FieldDeclSet>;
 using PtrPrintInfoMap = std::unordered_map<const void*, PrintInfo>;
 
 // Create a set of type `Out` with each element in `range` where the predicate
@@ -97,10 +97,11 @@ static auto filterIntoSet(F f, const Range& range) {
 template <typename F>
 class MemberExprsCallback : public MatchFinder::MatchCallback {
  public:
-  MemberExprsCallback(PtrPrintInfoMap& infoMap, MethodFieldUseMap& useMap,
+  MemberExprsCallback(PtrPrintInfoMap& infoMap,
+                      MethodFieldUseMap& useMap,
                       F filterFields)
-      : infoMap_(infoMap), methodFieldsUsed_(useMap),
-        filterFields_(filterFields) {}
+    : infoMap_(infoMap), methodFieldsUsed_(useMap),
+      filterFields_(filterFields) {}
 
   void run(const MatchFinder::MatchResult& result) override {
     const auto* member = result.Nodes.getNodeAs<MemberExpr>("member");
@@ -114,11 +115,11 @@ class MemberExprsCallback : public MatchFinder::MatchCallback {
       recordMethod(sm, method);
       const CXXRecordDecl* record = method->getParent();
       it = methodFieldsUsed_.emplace_hint(
-          it, method,
-          filterIntoSet<FieldDeclSet>(filterFields_, record->fields()));
+        it,
+        method,
+        filterIntoSet<FieldDeclSet>(filterFields_, record->fields()));
       // Capture info on all fields in our set
-      for (const auto& field : it->second)
-        recordField(sm, field);
+      for (const auto& field : it->second) recordField(sm, field);
     }
     auto& fieldsNotUsedYet = it->second;
 
@@ -134,7 +135,8 @@ class MemberExprsCallback : public MatchFinder::MatchCallback {
   void recordField(const clang::SourceManager& sm, const FieldDecl* field) {
     auto it = infoMap_.find(field);
     if (it == infoMap_.end()) {
-      infoMap_.emplace_hint(it, field,
+      infoMap_.emplace_hint(it,
+                            field,
                             PrintInfo{field->getNameAsString(),
                                       field->getBeginLoc().printToString(sm)});
     }
@@ -143,7 +145,8 @@ class MemberExprsCallback : public MatchFinder::MatchCallback {
                     const CXXMethodDecl* method) {
     auto it = infoMap_.find(method);
     if (it == infoMap_.end()) {
-      infoMap_.emplace_hint(it, method,
+      infoMap_.emplace_hint(it,
+                            method,
                             PrintInfo{method->getQualifiedNameAsString(),
                                       method->getBeginLoc().printToString(sm)});
     }
@@ -159,13 +162,13 @@ class MemberExprsCallback : public MatchFinder::MatchCallback {
 
 static auto makeMemberExprsMatcher(llvm::StringRef pattern) {
   return namespaceDecl(
-      hasName("chpl"),
-      forEachDescendant(
-          cxxMethodDecl(
-              matchesName(pattern),
-              forEachDescendant(memberExpr(hasObjectExpression(cxxThisExpr()))
-                                    .bind("member")))
-              .bind("method")));
+    hasName("chpl"),
+    forEachDescendant(
+      cxxMethodDecl(
+        matchesName(pattern),
+        forEachDescendant(
+          memberExpr(hasObjectExpression(cxxThisExpr())).bind("member")))
+        .bind("method")));
 }
 
 // Run MemberExprsCallback over functions which match `pattern`.
@@ -174,7 +177,8 @@ static auto makeMemberExprsMatcher(llvm::StringRef pattern) {
 // F: const FieldDecl* -> bool
 template <typename F>
 static size_t runMemberExprsMatcher(clang::tooling::ToolExecutor* ex,
-                                    llvm::StringRef pattern, F requireField) {
+                                    llvm::StringRef pattern,
+                                    F requireField) {
   ast_matchers::MatchFinder finder;
   PtrPrintInfoMap infoMap;
   MethodFieldUseMap useMap;
@@ -220,8 +224,7 @@ static bool allFields(const FieldDecl* fd) {
 
 static bool fieldsForMarkFunction(const FieldDecl* fd) {
   auto t = fd->getType();
-  if (t->isBuiltinType() || t->isEnumeralType())
-    return false;
+  if (t->isBuiltinType() || t->isEnumeralType()) return false;
   std::string name = fd->getType().getAsString();
   auto re = llvm::Regex("std::string");
   if (re.match(name)) {
@@ -238,7 +241,7 @@ int main(int argc, const char** argv) {
   llvm::sys::PrintStackTraceOnErrorSignal(argv[0]);
 
   auto executor = clang::tooling::createExecutorFromCommandLineArgs(
-      argc, argv, toolTemplateCategory);
+    argc, argv, toolTemplateCategory);
 
   if (!executor) {
     llvm::errs() << llvm::toString(executor.takeError()) << "\n";
@@ -251,7 +254,7 @@ int main(int argc, const char** argv) {
   size_t errCount = 0;
 
   errCount +=
-      runMemberExprsMatcher(ex, "update$|swap$|hash$|operator==", allFields);
+    runMemberExprsMatcher(ex, "update$|swap$|hash$|operator==", allFields);
   errCount += runMemberExprsMatcher(ex, "mark$", fieldsForMarkFunction);
 
   return errCount > 0;
