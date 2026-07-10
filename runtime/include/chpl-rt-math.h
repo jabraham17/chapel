@@ -30,7 +30,7 @@
   * res, x, and y should be plain identifers of type __stype
   * __utype should be the unsigned version of __stype
   * __smax should be the maximum representable value in __stype
-  
+
   __builtin_elementwise_add_sat is a clang extension, use that if available.
   Its more efficent to use __builtin_add_overflow (gcc/clang) but if not available
   the fall back is OK.
@@ -51,7 +51,7 @@
             } \
           } while (0)
     #endif
-  #endif 
+  #endif
 #endif
 #ifndef CHPL_SAT_SADD
   #define CHPL_SAT_SADD(__res, __x, __y, __stype, __utype, __smax) \
