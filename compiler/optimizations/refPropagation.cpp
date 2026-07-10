@@ -32,13 +32,13 @@
 
 #include "global-ast-vecs.h"
 
-static size_t s_ref_repl_count; ///< The number of references replaced this pass.
+static size_t
+  s_ref_repl_count; ///< The number of references replaced this pass.
 
 // If there is exactly one definition of var by something of reference type,
 // then return the call that defines it.
 // Otherwise, return NULL.
-static CallExpr*
-findRefDef(Map<Symbol*,Vec<SymExpr*>*>& defMap, Symbol* var) {
+static CallExpr* findRefDef(Map<Symbol*, Vec<SymExpr*>*>& defMap, Symbol* var) {
   CallExpr* ret = NULL;
   for_defs(def, defMap, var) {
     if (CallExpr* call = toCallExpr(def->parentExpr)) {
@@ -65,18 +65,19 @@ findRefDef(Map<Symbol*,Vec<SymExpr*>*>& defMap, Symbol* var) {
 //
 // (move B (deref A))     --->    (move B foo)
 //
-void
-eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                                   Map<Symbol*,Vec<SymExpr*>*>& useMap,
-                                   Symbol* var) {
+void eliminateSingleAssignmentReference(Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                                        Map<Symbol*, Vec<SymExpr*>*>& useMap,
+                                        Symbol* var) {
   if (CallExpr* move = findRefDef(defMap, var)) {
     if (CallExpr* rhs = toCallExpr(move->get(2))) {
-      if (rhs->isPrimitive(PRIM_ADDR_OF) || rhs->isPrimitive(PRIM_SET_REFERENCE)) {
+      if (rhs->isPrimitive(PRIM_ADDR_OF) ||
+          rhs->isPrimitive(PRIM_SET_REFERENCE)) {
         bool stillAlive = false;
         for_uses(se, useMap, var) {
           CallExpr* parent = toCallExpr(se->parentExpr);
           SET_LINENO(se);
-          if (parent && (parent->isPrimitive(PRIM_DEREF) || isDerefMove(parent))) {
+          if (parent &&
+              (parent->isPrimitive(PRIM_DEREF) || isDerefMove(parent))) {
             SymExpr* se = toSymExpr(rhs->get(1)->copy());
             INT_ASSERT(se);
             Expr* toReplace = parent;
@@ -86,18 +87,17 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
             toReplace->replace(se);
             ++s_ref_repl_count;
             addUse(useMap, se);
-          } else if (parent &&
-                     (parent->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-                      parent->isPrimitive(PRIM_GET_MEMBER) ||
-                      parent->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-                      parent->isPrimitive(PRIM_GET_MEMBER))) {
+          } else if (parent && (parent->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+                                parent->isPrimitive(PRIM_GET_MEMBER) ||
+                                parent->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+                                parent->isPrimitive(PRIM_GET_MEMBER))) {
             SymExpr* se = toSymExpr(rhs->get(1)->copy());
             INT_ASSERT(se);
             parent->get(1)->replace(se);
             ++s_ref_repl_count;
             addUse(useMap, se);
-          }
-          else if (parent && (parent->isPrimitive(PRIM_MOVE) || parent->isPrimitive(PRIM_SET_REFERENCE))) {
+          } else if (parent && (parent->isPrimitive(PRIM_MOVE) ||
+                                parent->isPrimitive(PRIM_SET_REFERENCE))) {
             CallExpr* rhsCopy = rhs->copy();
             if (parent->isPrimitive(PRIM_SET_REFERENCE)) {
               // Essentially a pointer copy like a (move refA refB)
@@ -117,7 +117,8 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
             // (= call_tmp i_foo)
             //
             // Should that turn into (= call_tmp bar)?
-          } else if (parent && parent->isPrimitive(PRIM_ASSIGN) && parent->get(1) == se) {
+          } else if (parent && parent->isPrimitive(PRIM_ASSIGN) &&
+                     parent->get(1) == se) {
             // for_defs should handle this case
           } else if (parent && parent->isResolved()) {
             stillAlive = true;
@@ -129,8 +130,7 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
         for_defs(se, defMap, var) {
           CallExpr* parent = toCallExpr(se->parentExpr);
           SET_LINENO(se);
-          if (parent == move)
-            continue;
+          if (parent == move) continue;
           if (parent && isMoveOrAssign(parent)) {
             SymExpr* se = toSymExpr(rhs->get(1)->copy());
             INT_ASSERT(se);
@@ -156,7 +156,8 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
         for_uses(se, useMap, var) {
           CallExpr* parent = toCallExpr(se->parentExpr);
           SET_LINENO(se);
-          if (parent && (parent->isPrimitive(PRIM_DEREF) || isDerefMove(parent))) {
+          if (parent &&
+              (parent->isPrimitive(PRIM_DEREF) || isDerefMove(parent))) {
             Expr* toReplace = parent;
             if (isMoveOrAssign(parent)) {
               toReplace = parent->get(2);
@@ -164,17 +165,14 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
             SymExpr* se = toSymExpr(rhs->get(1)->copy());
             INT_ASSERT(se);
             if (!isSvec)
-              toReplace->replace(new CallExpr(PRIM_GET_MEMBER_VALUE,
-                                           se,
-                                           rhs->get(2)->copy()));
+              toReplace->replace(
+                new CallExpr(PRIM_GET_MEMBER_VALUE, se, rhs->get(2)->copy()));
             else
-              toReplace->replace(new CallExpr(PRIM_GET_SVEC_MEMBER_VALUE,
-                                           se,
-                                           rhs->get(2)->copy()));
+              toReplace->replace(new CallExpr(
+                PRIM_GET_SVEC_MEMBER_VALUE, se, rhs->get(2)->copy()));
             ++s_ref_repl_count;
             addUse(useMap, se);
-          }
-          else if (parent && isMoveOrAssign(parent) && parent->get(2) == se) {
+          } else if (parent && isMoveOrAssign(parent) && parent->get(2) == se) {
             CallExpr* rhsCopy = rhs->copy();
             parent->get(2)->replace(rhsCopy);
             ++s_ref_repl_count;
@@ -187,17 +185,14 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
         for_defs(se, defMap, var) {
           CallExpr* parent = toCallExpr(se->parentExpr);
           SET_LINENO(se);
-          if (parent == move)
-            continue;
+          if (parent == move) continue;
           if (parent && isMoveOrAssign(parent)) {
             if (SymExpr* rtmp = toSymExpr(parent->get(2))) {
               SymExpr* se = toSymExpr(rhs->get(1)->copy());
               INT_ASSERT(se);
               if (!isSvec)
-                parent->replace(new CallExpr(PRIM_SET_MEMBER,
-                                             se,
-                                             rhs->get(2)->copy(),
-                                             rtmp->remove()));
+                parent->replace(new CallExpr(
+                  PRIM_SET_MEMBER, se, rhs->get(2)->copy(), rtmp->remove()));
               else
                 parent->replace(new CallExpr(PRIM_SET_SVEC_MEMBER,
                                              se,
@@ -209,19 +204,16 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
               QualifiedType qt = parent->get(2)->qualType();
               VarSymbol* tmp = newTemp(qt);
               parent->getStmtExpr()->insertBefore(new DefExpr(tmp));
-              parent->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, parent->get(2)->remove()));
+              parent->getStmtExpr()->insertBefore(
+                new CallExpr(PRIM_MOVE, tmp, parent->get(2)->remove()));
               SymExpr* se = toSymExpr(rhs->get(1)->copy());
               INT_ASSERT(se);
               if (!isSvec)
-                parent->replace(new CallExpr(PRIM_SET_MEMBER,
-                                             se,
-                                             rhs->get(2)->copy(),
-                                             tmp));
+                parent->replace(
+                  new CallExpr(PRIM_SET_MEMBER, se, rhs->get(2)->copy(), tmp));
               else
-                parent->replace(new CallExpr(PRIM_SET_MEMBER,
-                                             se,
-                                             rhs->get(2)->copy(),
-                                             tmp));
+                parent->replace(
+                  new CallExpr(PRIM_SET_MEMBER, se, rhs->get(2)->copy(), tmp));
               ++s_ref_repl_count;
               addUse(useMap, se);
             }
@@ -258,7 +250,6 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
   }
 }
 
-
 size_t singleAssignmentRefPropagation(FnSymbol* fn) {
   std::vector<BaseAST*> asts;
   collect_asts(fn, asts);
@@ -269,7 +260,7 @@ size_t singleAssignmentRefPropagation(FnSymbol* fn) {
   for_vector(BaseAST, ast, asts) {
     if (VarSymbol* var = toVarSymbol(ast)) {
       if (var->isRef()) {
-        if(var->hasFlag(FLAG_EXEMPT_REF_PROPAGATION)) {
+        if (var->hasFlag(FLAG_EXEMPT_REF_PROPAGATION)) {
           continue;
         }
 
@@ -281,8 +272,8 @@ size_t singleAssignmentRefPropagation(FnSymbol* fn) {
 
   // Build def/use maps across all symexprs in the function,
   // but restricted to only the ref variables therein.
-  Map<Symbol*,Vec<SymExpr*>*> defMap;
-  Map<Symbol*,Vec<SymExpr*>*> useMap;
+  Map<Symbol*, Vec<SymExpr*>*> defMap;
+  Map<Symbol*, Vec<SymExpr*>*> useMap;
   buildDefUseMaps(refSet, defMap, useMap);
 
   s_ref_repl_count = 0;
@@ -345,8 +336,7 @@ void refPropagation() {
   if (!fNoCopyPropagation) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       singleAssignmentRefPropagation(fn);
-      if (!fNoDeadCodeElimination)
-        deadVariableElimination(fn);
+      if (!fNoDeadCodeElimination) deadVariableElimination(fn);
     }
   }
 }

@@ -44,7 +44,6 @@
 #include <queue>
 #include <utility>
 
-
 /* This file includes analysis that determines non-trivial
    no-alias relationships. It is particularly focused on:
      * reference arguments
@@ -80,10 +79,8 @@
 
 #define MAX_ANALYZED_FORMALS_PER_FUNCTION 100
 
-
-static
-void addNoAliasSetForFormal(ArgSymbol* arg,
-                            std::vector<ArgSymbol*> notAliasingThese) {
+static void addNoAliasSetForFormal(ArgSymbol* arg,
+                                   std::vector<ArgSymbol*> notAliasingThese) {
   SET_LINENO(arg);
 
   CallExpr* c = new CallExpr(PRIM_NO_ALIAS_SET, new SymExpr(arg));
@@ -96,63 +93,52 @@ void addNoAliasSetForFormal(ArgSymbol* arg,
   fn->body->insertAtHead(c);
 }
 
-static
-bool isNonAliasingArrayImplType(Type* t) {
+static bool isNonAliasingArrayImplType(Type* t) {
   return isArrayImplType(t) && !isAliasingArrayImplType(t);
 }
 
-static
-bool isNonAliasingArrayType(Type* t) {
+static bool isNonAliasingArrayType(Type* t) {
   if (AggregateType* at = toAggregateType(t)) {
     if (isRecordWrappedType(at)) {
       Symbol* instanceField = at->getField("_instance", false);
 
-      if (instanceField)
-        return isNonAliasingArrayImplType(instanceField->type);
+      if (instanceField) return isNonAliasingArrayImplType(instanceField->type);
     }
   }
 
   return false;
 }
 
-static
-bool isRuntimeType(Symbol* sym) {
+static bool isRuntimeType(Symbol* sym) {
   if (sym->hasFlag(FLAG_TEMP) && 0 == strcmp("_runtime_type_tmp_", sym->name))
     return true;
 
   return false;
 }
 
-static
-bool shouldAddNoAliasSetForVariable(Symbol* var) {
-  if (!var->isRef() &&
-      isNonAliasingArrayType(var->type) &&
-      !isRuntimeType(var))
+static bool shouldAddNoAliasSetForVariable(Symbol* var) {
+  if (!var->isRef() && isNonAliasingArrayType(var->type) && !isRuntimeType(var))
     return true;
 
   return false;
 }
 
-static
-bool isUsedInArrayGet(Symbol* sym) {
+static bool isUsedInArrayGet(Symbol* sym) {
   for_SymbolSymExprs(se, sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr))
       if (call->isPrimitive(PRIM_ARRAY_GET))
-        if (se == call->get(1))
-          return true;
+        if (se == call->get(1)) return true;
   }
 
   return false;
 }
 
-static
-void reportAliases(std::map<Symbol*, CallExpr*> &noAliasCallsForSymbol) {
+static void reportAliases(std::map<Symbol*, CallExpr*>& noAliasCallsForSymbol) {
   std::map<Symbol*, CallExpr*>::iterator it;
   std::map<Symbol*, CallExpr*>::iterator it2;
 
   if (developer) {
-    for (it = noAliasCallsForSymbol.begin();
-         it != noAliasCallsForSymbol.end();
+    for (it = noAliasCallsForSymbol.begin(); it != noAliasCallsForSymbol.end();
          ++it) {
       Symbol* sym = it->first;
       CallExpr* call = it->second;
@@ -164,15 +150,15 @@ void reportAliases(std::map<Symbol*, CallExpr*> &noAliasCallsForSymbol) {
 
       Symbol* scope = toSymExpr(call->get(1))->symbol();
 
-      printf(" %s (%i) scope %s (%i)\n",
-             sym->name, sym->id, scope->name, scope->id);
+      printf(
+        " %s (%i) scope %s (%i)\n", sym->name, sym->id, scope->name, scope->id);
 
       bool first = true;
       for_actuals(actual, call) {
         if (!first) {
           Symbol* noAliasSym = toSymExpr(actual)->symbol();
-          printf("   noalias scope %s (%i)\n",
-                 noAliasSym->name, noAliasSym->id);
+          printf(
+            "   noalias scope %s (%i)\n", noAliasSym->name, noAliasSym->id);
         }
         first = false;
       }
@@ -180,8 +166,7 @@ void reportAliases(std::map<Symbol*, CallExpr*> &noAliasCallsForSymbol) {
   }
 
   // Print out doesn't-alias pairs
-  for (it = noAliasCallsForSymbol.begin();
-       it != noAliasCallsForSymbol.end();
+  for (it = noAliasCallsForSymbol.begin(); it != noAliasCallsForSymbol.end();
        ++it) {
     Symbol* sym = it->first;
     CallExpr* call = it->second;
@@ -212,8 +197,8 @@ void reportAliases(std::map<Symbol*, CallExpr*> &noAliasCallsForSymbol) {
         Symbol* otherScope = toSymExpr(otherCall->get(1))->symbol();
 
         bool symTemp = (sym->hasFlag(FLAG_TEMP) && !isArgSymbol(sym));
-        bool otherTemp = (otherSym->hasFlag(FLAG_TEMP) &&
-                          !isArgSymbol(otherSym));
+        bool otherTemp =
+          (otherSym->hasFlag(FLAG_TEMP) && !isArgSymbol(otherSym));
 
         bool symInArrayGet = isUsedInArrayGet(sym);
         bool otherInArrayGet = isUsedInArrayGet(otherSym);
@@ -229,8 +214,7 @@ void reportAliases(std::map<Symbol*, CallExpr*> &noAliasCallsForSymbol) {
         for_actuals(actual, call) {
           if (!first) {
             Symbol* noAliasSym = toSymExpr(actual)->symbol();
-            if (otherScope == noAliasSym)
-              otherScopeInCall = true;
+            if (otherScope == noAliasSym) otherScopeInCall = true;
           }
           first = false;
         }
@@ -238,15 +222,13 @@ void reportAliases(std::map<Symbol*, CallExpr*> &noAliasCallsForSymbol) {
         for_actuals(actual, otherCall) {
           if (!first) {
             Symbol* noAliasSym = toSymExpr(actual)->symbol();
-            if (scope == noAliasSym)
-              scopeInOtherCall = true;
+            if (scope == noAliasSym) scopeInOtherCall = true;
           }
           first = false;
         }
 
         // shouldn't no-alias when containing same scope
-        if (sameScope)
-          INT_ASSERT(!otherScopeInCall && !scopeInOtherCall);
+        if (sameScope) INT_ASSERT(!otherScopeInCall && !scopeInOtherCall);
 
         // analysis should be symmetric
         INT_ASSERT(otherScopeInCall == scopeInOtherCall);
@@ -287,9 +269,7 @@ void reportAliases(std::map<Symbol*, CallExpr*> &noAliasCallsForSymbol) {
   }
 }
 
-
-static
-void addNoAliasSetsInFn(FnSymbol* fn) {
+static void addNoAliasSetsInFn(FnSymbol* fn) {
   std::map<Symbol*, CallExpr*> noAliasCallsForSymbol;
   CallExpr* lastNoAliasCall = NULL;
   CallExpr* noop = NULL;
@@ -337,8 +317,7 @@ void addNoAliasSetsInFn(FnSymbol* fn) {
             if (CallExpr* call = toCallExpr(defSe->parentExpr)) {
               if (call->isPrimitive(PRIM_MOVE) ||
                   call->isPrimitive(PRIM_ASSIGN)) {
-                if (defSe == call->get(1))
-                  createdByMove = true;
+                if (defSe == call->get(1)) createdByMove = true;
               }
             }
           }
@@ -378,9 +357,8 @@ void addNoAliasSetsInFn(FnSymbol* fn) {
     //  - includes local array value variables
     //  - includes array arguments
     std::map<Symbol*, CallExpr*>::iterator it;
-    for (it = noAliasCallsForSymbol.begin();
-        it != noAliasCallsForSymbol.end();
-        ++it) {
+    for (it = noAliasCallsForSymbol.begin(); it != noAliasCallsForSymbol.end();
+         ++it) {
       Symbol* otherSym = it->first;
       if (otherSym != var) {
         if (ArgSymbol* arg = toArgSymbol(otherSym)) {
@@ -420,8 +398,7 @@ void addNoAliasSetsInFn(FnSymbol* fn) {
       Symbol* toSym = NULL;
 
       // Check for cases where propagation is needed
-      if (call->isPrimitive(PRIM_MOVE) ||
-          call->isPrimitive(PRIM_ASSIGN)) {
+      if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
         Symbol* lhs = toSymExpr(call->get(1))->symbol();
         if (lhs->hasFlag(FLAG_RETARG)) {
           // Don't propagate to _retArg
@@ -435,7 +412,7 @@ void addNoAliasSetsInFn(FnSymbol* fn) {
               toSym = lhs;
             }
 
-          // Check for getting reference to an element
+            // Check for getting reference to an element
           } else if (rhsCall->isPrimitive(PRIM_ARRAY_GET)) {
             if (lhs->isRef() && call->isPrimitive(PRIM_MOVE)) {
               fromSym = toSymExpr(rhsCall->get(1))->symbol();
@@ -462,16 +439,14 @@ void addNoAliasSetsInFn(FnSymbol* fn) {
             fromSym = rhs;
             toSym = lhs;
 
-          // Check for PRIM_MOVE/ASSIGN of array records added by opts
+            // Check for PRIM_MOVE/ASSIGN of array records added by opts
           } else if (isNonAliasingArrayType(lhs->type)) {
             Symbol* rhs = toSymExpr(call->get(2))->symbol();
             fromSym = rhs;
             toSym = lhs;
-
           }
         }
       }
-
 
       if (fromSym != NULL) {
         if (noAliasCallsForSymbol.count(fromSym)) {
@@ -504,22 +479,18 @@ void addNoAliasSetsInFn(FnSymbol* fn) {
   if (fReportAliases) {
     if (fn->getModule()->modTag == MOD_USER) {
       // Don't produce output for specific functions in most cases.
-      if (developer ||
-          (!fn->hasFlag(FLAG_MODULE_INIT) &&
-           !fn->hasFlag(FLAG_GEN_MAIN_FUNC))) {
+      if (developer || (!fn->hasFlag(FLAG_MODULE_INIT) &&
+                        !fn->hasFlag(FLAG_GEN_MAIN_FUNC))) {
         printf("noAliasSets: no-aliases for function %s:\n", fn->name);
         reportAliases(noAliasCallsForSymbol);
       }
     }
   }
 
-  if (noop)
-    noop->remove();
+  if (noop) noop->remove();
 }
 
-
-static
-bool isAddrTaken(Symbol* var) {
+static bool isAddrTaken(Symbol* var) {
   // Only handles values
   INT_ASSERT(!var->isRef());
 
@@ -532,8 +503,7 @@ bool isAddrTaken(Symbol* var) {
         // Return true for non-ref passed by ref
         for_formals_actuals(formal, actual, call) {
           if (actual == se) {
-            if (formal->intent & INTENT_FLAG_REF)
-              return true;
+            if (formal->intent & INTENT_FLAG_REF) return true;
           }
         }
       }
@@ -542,23 +512,19 @@ bool isAddrTaken(Symbol* var) {
   return false;
 }
 
-static
-bool isRefFormal(ArgSymbol* formal) {
+static bool isRefFormal(ArgSymbol* formal) {
   return (formal->intent & INTENT_FLAG_REF);
 }
 
-static
-bool fnHasRefFormal(FnSymbol* fn) {
+static bool fnHasRefFormal(FnSymbol* fn) {
   for_formals(formal, fn) {
-    if (isRefFormal(formal))
-      return true;
+    if (isRefFormal(formal)) return true;
   }
 
   return false;
 }
 
-static
-BitVec makeBitVec(int size) {
+static BitVec makeBitVec(int size) {
   BitVec ret(size);
   return ret;
 }
@@ -569,11 +535,10 @@ BitVec makeBitVec(int size) {
 // but creates the BitVec if it doesn't exist yet, with size bitVecSize
 //
 // returns true if it changed something
-static
-bool addAlias(std::map<Symbol*, BitVec> &map,
-              int bitVecSize,
-              Symbol* sym,
-              int index) {
+static bool addAlias(std::map<Symbol*, BitVec>& map,
+                     int bitVecSize,
+                     Symbol* sym,
+                     int index) {
 
   bool changed = false;
   std::map<Symbol*, BitVec>::iterator it = map.find(sym);
@@ -585,7 +550,7 @@ bool addAlias(std::map<Symbol*, BitVec> &map,
     changed = true;
   }
 
-  BitVec &bits = it->second;
+  BitVec& bits = it->second;
   if (bits.get(index) == false) {
     bits.set(index);
     changed = true;
@@ -594,11 +559,10 @@ bool addAlias(std::map<Symbol*, BitVec> &map,
   return changed;
 }
 
-static
-bool addAliases(std::map<Symbol*, BitVec> &map,
-                int bitVecSize,
-                Symbol* sym,
-                BitVec& from) {
+static bool addAliases(std::map<Symbol*, BitVec>& map,
+                       int bitVecSize,
+                       Symbol* sym,
+                       BitVec& from) {
 
   bool changed = false;
   std::map<Symbol*, BitVec>::iterator it = map.find(sym);
@@ -608,7 +572,7 @@ bool addAliases(std::map<Symbol*, BitVec> &map,
     changed = true;
   }
 
-  BitVec &bits = it->second;
+  BitVec& bits = it->second;
   BitVec toSet = from - bits;
   if (toSet.any()) {
     bits += toSet;
@@ -618,11 +582,9 @@ bool addAliases(std::map<Symbol*, BitVec> &map,
   return changed;
 }
 
-
 void computeNoAliasSets() {
 
-  if (fNoInterproceduralAliasAnalysis)
-    return;
+  if (fNoInterproceduralAliasAnalysis) return;
 
   // TODO: retArg and in --
   //  these never alias any other arguments.
@@ -641,7 +603,6 @@ void computeNoAliasSets() {
   //   storing pairs of arguments that can alias
   std::map<Symbol*, BitVec> fpairs;
 
-
   // reused a few times in this function
   std::vector<CallExpr*> calls;
 
@@ -652,9 +613,7 @@ void computeNoAliasSets() {
   {
     int id = 1;
     for_alive_in_Vec(VarSymbol, var, gVarSymbols) {
-      if (isGlobal(var) &&
-          !var->isRef() &&
-          isAddrTaken(var)) {
+      if (isGlobal(var) && !var->isRef() && isAddrTaken(var)) {
         if (addrTakenGlobalsToIds.count(var) == 0) {
           addrTakenGlobalsToIds[var] = id;
           id++;
@@ -701,7 +660,8 @@ void computeNoAliasSets() {
                       // add the global to the set
                       addAlias(formalsAliasingGlobals,
                                nAddrTakenGlobals,
-                               fnFormal, globalId);
+                               fnFormal,
+                               globalId);
                       // local *value* variables don't add to alias sets
                     }
                   }
@@ -719,7 +679,7 @@ void computeNoAliasSets() {
   // f1 is passed to f2 in a call q(...) inside of the body of p.
   // See Kennedy p 564
 
-  std::map<ArgSymbol*, std::set<ArgSymbol*> > bindingGraph;
+  std::map<ArgSymbol*, std::set<ArgSymbol*>> bindingGraph;
 
   for_alive_in_Vec(FnSymbol, p, gFnSymbols) {
     if (fnHasRefFormal(p)) {
@@ -770,11 +730,11 @@ void computeNoAliasSets() {
   do {
     lastiter = niters == maxiters;
     changed = false;
-    std::map<ArgSymbol*, std::set<ArgSymbol*> >::const_iterator it;
+    std::map<ArgSymbol*, std::set<ArgSymbol*>>::const_iterator it;
 
     for (it = bindingGraph.begin(); it != bindingGraph.end(); ++it) {
       ArgSymbol* f1 = it->first;
-      const std::set<ArgSymbol*> &toSet = it->second;
+      const std::set<ArgSymbol*>& toSet = it->second;
       for_set(ArgSymbol, f2, toSet) {
         // Propagate alias information from f1 to f2
 
@@ -792,10 +752,9 @@ void computeNoAliasSets() {
           std::map<Symbol*, BitVec>::iterator it =
             formalsAliasingGlobals.find(f1);
           if (it != formalsAliasingGlobals.end()) {
-            BitVec &fromBits = it->second;
-            newGlobals = addAliases(formalsAliasingGlobals,
-                                    nAddrTakenGlobals,
-                                    f2, fromBits);
+            BitVec& fromBits = it->second;
+            newGlobals = addAliases(
+              formalsAliasingGlobals, nAddrTakenGlobals, f2, fromBits);
             if (newGlobals) {
               changed = true;
               if (lastiter) {
@@ -819,8 +778,7 @@ void computeNoAliasSets() {
         int i = 1;
         bool anyRefs = false;
         for_formals(fnFormal, fn) {
-          if (i >= MAX_ANALYZED_FORMALS_PER_FUNCTION &&
-              isRefFormal(fnFormal)) {
+          if (i >= MAX_ANALYZED_FORMALS_PER_FUNCTION && isRefFormal(fnFormal)) {
             anyRefs = true;
             formalsAliasingAnything.insert(fnFormal);
           }
@@ -846,7 +804,7 @@ void computeNoAliasSets() {
   // Now compute the set of formals aliasing other formals
   // This follows Figure 11.8 in Allen & Kennedy
   int nFormalPairs = maxFormals * maxFormals;
-  std::queue<std::pair<ArgSymbol*, ArgSymbol*> > worklist;
+  std::queue<std::pair<ArgSymbol*, ArgSymbol*>> worklist;
 
   // for each alias introduction site, e.g. f(X, X),
   // insert the resulting formal pair in fpairs and worklist
@@ -876,18 +834,19 @@ void computeNoAliasSets() {
                 for_formals_actuals(fnFormal2, actual2, call) {
                   SymExpr* actual2Se = toSymExpr(actual2);
                   Symbol* actual2Sym = actual2Se->symbol();
-                  if (formalIdx1 < formalIdx2 &&
-                      actualSym == actual2Sym) {
+                  if (formalIdx1 < formalIdx2 && actualSym == actual2Sym) {
                     // The same actual was passed in positions
                     // formalIdx1 and formalIdx2
 
                     if (formalIdx1 < maxFormals && formalIdx2 < maxFormals) {
                       // add the pair to fpairs
-                      addAlias(fpairs, nFormalPairs,
-                               fn, maxFormals*formalIdx1 + formalIdx2);
+                      addAlias(fpairs,
+                               nFormalPairs,
+                               fn,
+                               maxFormals * formalIdx1 + formalIdx2);
                     } else {
                       INT_ASSERT(maxFormals >=
-                          MAX_ANALYZED_FORMALS_PER_FUNCTION);
+                                 MAX_ANALYZED_FORMALS_PER_FUNCTION);
                     }
 
                     // add the pair to the worklist
@@ -957,8 +916,8 @@ void computeNoAliasSets() {
         INT_ASSERT(idx3 < idx4);
 
         // add the pair to fpairs
-        bool added = addAlias(fpairs, nFormalPairs,
-                              q, maxFormals*idx3 + idx4);
+        bool added =
+          addAlias(fpairs, nFormalPairs, q, maxFormals * idx3 + idx4);
         if (added) {
           worklist.push(std::make_pair(f3, f4));
         }
@@ -996,15 +955,13 @@ void computeNoAliasSets() {
                 bool pairCanAlias = false;
 
                 // f2 is in formalsAliasingAnything
-                if (formalsAliasingAnything.count(formal2))
-                  pairCanAlias = true;
+                if (formalsAliasingAnything.count(formal2)) pairCanAlias = true;
 
                 // Does (idx1,idx2) appear in fpairs(p) ?
                 std::map<Symbol*, BitVec>::iterator it = fpairs.find(p);
                 if (it != fpairs.end()) {
-                  BitVec &bits = it->second;
-                  if (bits.get(maxFormals*idx1 + idx2))
-                    pairCanAlias = true;
+                  BitVec& bits = it->second;
+                  if (bits.get(maxFormals * idx1 + idx2)) pairCanAlias = true;
                 }
                 // Is formalsAliasingGlobals non-intersecting?
                 std::map<Symbol*, BitVec>::iterator it2;
@@ -1012,11 +969,10 @@ void computeNoAliasSets() {
                 it2 = formalsAliasingGlobals.find(formal2);
                 if (it != formalsAliasingGlobals.end() &&
                     it2 != formalsAliasingGlobals.end()) {
-                  BitVec &bits1 = it->second;
-                  BitVec &bits2 = it2->second;
+                  BitVec& bits1 = it->second;
+                  BitVec& bits2 = it2->second;
                   BitVec intersect = bits1 & bits2;
-                  if (intersect.any())
-                    pairCanAlias = true;
+                  if (intersect.any()) pairCanAlias = true;
                 }
 
                 if (pairCanAlias == false) {
@@ -1033,9 +989,9 @@ void computeNoAliasSets() {
     }
   }
 
-
   // Lastly, construct alias sets for local array variables.
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
-    addNoAliasSetsInFn(fn);  // map from ArgSymbol -> BitVecs of size nAddrTakenGlobals
+    addNoAliasSetsInFn(
+      fn); // map from ArgSymbol -> BitVecs of size nAddrTakenGlobals
   }
 }

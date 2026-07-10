@@ -38,311 +38,301 @@
 
 #include <vector>
 
-int classifyPrimitive(CallExpr *call, bool inLocal);
-bool inLocalBlock(CallExpr *call);
+int classifyPrimitive(CallExpr* call, bool inLocal);
+bool inLocalBlock(CallExpr* call);
 
 //
 // Return NOT_FAST, NOT_LOCAL, IS_LOCAL, or IS_FAST.
 //
-static int
-classifyPrimitive(CallExpr *call) {
+static int classifyPrimitive(CallExpr* call) {
   INT_ASSERT(call->primitive);
   // Check primitives for suitability for executeOnFast and for communication
   switch (call->primitive->tag) {
 
+    case NUM_KNOWN_PRIMS:
+// This snippet creates a single case statement for all the primitives
+// that should not exist at code-generation time. That way, most of them
+// can simply cause an assertion.
+//
+// case PRIM_NEW:
+// ...
+#define PRIMITIVE_G(NAME, str)
+#define PRIMITIVE_R(NAME, str) case PRIM_##NAME:
+#include "chpl/uast/prim-ops-list.h"
+#undef PRIMITIVE_R
+#undef PRIMITIVE_G
+      switch (call->primitive->tag) {
+        case PRIM_GET_USER_LINE:
+        case PRIM_GET_USER_FILE:
+        case PRIM_BLOCK_LOCAL:
+        case PRIM_GPU_SET_BLOCKSIZE:
+        case PRIM_GPU_SET_ITERS_PER_THREAD:
+        case PRIM_TASK_PRIVATE_SVAR_CAPTURE: return FAST_AND_LOCAL;
 
-  case NUM_KNOWN_PRIMS:
-  // This snippet creates a single case statement for all the primitives
-  // that should not exist at code-generation time. That way, most of them
-  // can simply cause an assertion.
-  //
-  // case PRIM_NEW:
-  // ...
-  #define PRIMITIVE_G(NAME, str)
-  #define PRIMITIVE_R(NAME, str) case PRIM_ ## NAME:
-  #include "chpl/uast/prim-ops-list.h"
-  #undef PRIMITIVE_R
-  #undef PRIMITIVE_G
-    switch (call->primitive->tag) {
-      case PRIM_GET_USER_LINE:
-      case PRIM_GET_USER_FILE:
-      case PRIM_BLOCK_LOCAL:
-      case PRIM_GPU_SET_BLOCKSIZE:
-      case PRIM_GPU_SET_ITERS_PER_THREAD:
-      case PRIM_TASK_PRIVATE_SVAR_CAPTURE:
-        return FAST_AND_LOCAL;
+        // Loops can have arbitrary trip counts, don't consider fast
+        case PRIM_BLOCK_WHILEDO_LOOP:
+        case PRIM_BLOCK_DOWHILE_LOOP:
+        case PRIM_BLOCK_FOR_LOOP:
+        case PRIM_BLOCK_C_FOR_LOOP: return LOCAL_NOT_FAST;
 
-      // Loops can have arbitrary trip counts, don't consider fast
-      case PRIM_BLOCK_WHILEDO_LOOP:
-      case PRIM_BLOCK_DOWHILE_LOOP:
-      case PRIM_BLOCK_FOR_LOOP:
-      case PRIM_BLOCK_C_FOR_LOOP:
-        return LOCAL_NOT_FAST;
-
-      default:
-        INT_FATAL("primitive should have been removed from the tree by now.");
-    }
-    break;
-
-  case PRIM_UNKNOWN:
-  case PRIM_STRING_COMPARE:
-  case PRIM_STRING_CONTAINS:
-  case PRIM_STRING_CONCAT:
-  case PRIM_STRING_LENGTH_BYTES:
-  case PRIM_STRING_LENGTH_CODEPOINTS:
-  case PRIM_ASCII:
-  case PRIM_STRING_INDEX:
-  case PRIM_STRING_SELECT:
-  case PRIM_SLEEP:
-  case PRIM_REAL_TO_INT:
-  case PRIM_OBJECT_TO_INT:
-  case PRIM_CHPL_EXIT_ANY:
-    // TODO: Return FAST_AND_LOCAL for these that are side-effect free
-    return NOT_FAST_NOT_LOCAL;
-
-  case PRIM_NOOP:
-  case PRIM_REF_TO_STRING:
-  case PRIM_RETURN:
-  case PRIM_UNARY_MINUS:
-  case PRIM_UNARY_PLUS:
-  case PRIM_UNARY_NOT:
-  case PRIM_UNARY_LNOT:
-  case PRIM_ADD:
-  case PRIM_SUBTRACT:
-  case PRIM_MULT:
-  case PRIM_DIV:
-  case PRIM_MOD:
-  case PRIM_FMA:
-  case PRIM_LSH:
-  case PRIM_RSH:
-  case PRIM_EQUAL:
-  case PRIM_NOTEQUAL:
-  case PRIM_LESSOREQUAL:
-  case PRIM_GREATEROREQUAL:
-  case PRIM_LESS:
-  case PRIM_GREATER:
-  case PRIM_AND:
-  case PRIM_OR:
-  case PRIM_XOR:
-  case PRIM_MIN:
-  case PRIM_MAX:
-  case PRIM_SQRT:
-  case PRIM_ABS:
-
-  case PRIM_GET_MEMBER:
-  case PRIM_GET_SVEC_MEMBER:
-  case PRIM_NEW_PRIV_CLASS:
-
-  case PRIM_CHECK_NIL:
-  case PRIM_GET_REAL:
-  case PRIM_GET_IMAG:
-
-  case PRIM_ADDR_OF:
-  case PRIM_SET_REFERENCE:
-  case PRIM_LOCAL_CHECK:
-  case PRIM_IS_LOCAL:
-
-  case PRIM_PTR_EQUAL:
-  case PRIM_PTR_NOTEQUAL:
-  case PRIM_CAST:
-
-  case PRIM_ON_LOCALE_NUM:
-  case PRIM_GET_SERIAL:
-  case PRIM_SET_SERIAL:
-
-  case PRIM_START_RMEM_FENCE:
-  case PRIM_FINISH_RMEM_FENCE:
-
-  case PRIM_CAST_TO_VOID_STAR:
-  case PRIM_CAST_TO_TYPE:
-  case PRIM_SIZEOF_BUNDLE:
-  case PRIM_SIZEOF_DDATA_ELEMENT:
-
-  case PRIM_LOOKUP_FILENAME:
-
-  case PRIM_STACK_ALLOCATE_CLASS:
-
-  case PRIM_ZERO_VARIABLE:
-
-  case PRIM_CLASS_NAME_BY_ID:
-
-  case PRIM_INVARIANT_START:
-  case PRIM_NO_ALIAS_SET:
-  case PRIM_COPIES_NO_ALIAS_SET:
-  case PRIM_OPTIMIZATION_INFO:
-    return FAST_AND_LOCAL;
-
-  case PRIM_MOVE:
-  case PRIM_ASSIGN:
-  case PRIM_UNORDERED_ASSIGN:
-  case PRIM_ADD_ASSIGN:
-  case PRIM_SUBTRACT_ASSIGN:
-  case PRIM_MULT_ASSIGN:
-  case PRIM_DIV_ASSIGN:
-  case PRIM_MOD_ASSIGN:
-  case PRIM_LSH_ASSIGN:
-  case PRIM_RSH_ASSIGN:
-  case PRIM_AND_ASSIGN:
-  case PRIM_OR_ASSIGN:
-  case PRIM_XOR_ASSIGN:
-  case PRIM_LOGICALAND_ASSIGN:
-  case PRIM_LOGICALOR_ASSIGN:
-    if (isCallExpr(call->get(2))) { // callExprs checked in calling function
-      // Not necessarily true, but we return true because
-      // the callExpr will be checked in the calling function
-      return FAST_AND_LOCAL;
-    } else {
-      bool arg1wide = call->get(1)->isWideRef();
-      bool arg2wide = call->get(2)->isWideRef();
-
-      // If neither argument is a wide reference, OK: no communication
-      if (!arg1wide && !arg2wide) {
-        return FAST_AND_LOCAL;
+        default:
+          INT_FATAL("primitive should have been removed from the tree by now.");
       }
+      break;
 
-      if (call->isPrimitive(PRIM_MOVE)) {
-        bool arg1ref = call->get(1)->isRef();
-        bool arg2ref = call->get(2)->isRef();
-        // Handle (move tmp:ref, other_tmp:wide_ref)
-        // and    (move tmp:wide_ref, other_tmp:ref)
-        // these does not require communication and merely adjust
-        // the wideness of the ref.
-        if ((arg1wide && arg2ref) || (arg1ref && arg2wide)) {
+    case PRIM_UNKNOWN:
+    case PRIM_STRING_COMPARE:
+    case PRIM_STRING_CONTAINS:
+    case PRIM_STRING_CONCAT:
+    case PRIM_STRING_LENGTH_BYTES:
+    case PRIM_STRING_LENGTH_CODEPOINTS:
+    case PRIM_ASCII:
+    case PRIM_STRING_INDEX:
+    case PRIM_STRING_SELECT:
+    case PRIM_SLEEP:
+    case PRIM_REAL_TO_INT:
+    case PRIM_OBJECT_TO_INT:
+    case PRIM_CHPL_EXIT_ANY:
+      // TODO: Return FAST_AND_LOCAL for these that are side-effect free
+      return NOT_FAST_NOT_LOCAL;
+
+    case PRIM_NOOP:
+    case PRIM_REF_TO_STRING:
+    case PRIM_RETURN:
+    case PRIM_UNARY_MINUS:
+    case PRIM_UNARY_PLUS:
+    case PRIM_UNARY_NOT:
+    case PRIM_UNARY_LNOT:
+    case PRIM_ADD:
+    case PRIM_SUBTRACT:
+    case PRIM_MULT:
+    case PRIM_DIV:
+    case PRIM_MOD:
+    case PRIM_FMA:
+    case PRIM_LSH:
+    case PRIM_RSH:
+    case PRIM_EQUAL:
+    case PRIM_NOTEQUAL:
+    case PRIM_LESSOREQUAL:
+    case PRIM_GREATEROREQUAL:
+    case PRIM_LESS:
+    case PRIM_GREATER:
+    case PRIM_AND:
+    case PRIM_OR:
+    case PRIM_XOR:
+    case PRIM_MIN:
+    case PRIM_MAX:
+    case PRIM_SQRT:
+    case PRIM_ABS:
+
+    case PRIM_GET_MEMBER:
+    case PRIM_GET_SVEC_MEMBER:
+    case PRIM_NEW_PRIV_CLASS:
+
+    case PRIM_CHECK_NIL:
+    case PRIM_GET_REAL:
+    case PRIM_GET_IMAG:
+
+    case PRIM_ADDR_OF:
+    case PRIM_SET_REFERENCE:
+    case PRIM_LOCAL_CHECK:
+    case PRIM_IS_LOCAL:
+
+    case PRIM_PTR_EQUAL:
+    case PRIM_PTR_NOTEQUAL:
+    case PRIM_CAST:
+
+    case PRIM_ON_LOCALE_NUM:
+    case PRIM_GET_SERIAL:
+    case PRIM_SET_SERIAL:
+
+    case PRIM_START_RMEM_FENCE:
+    case PRIM_FINISH_RMEM_FENCE:
+
+    case PRIM_CAST_TO_VOID_STAR:
+    case PRIM_CAST_TO_TYPE:
+    case PRIM_SIZEOF_BUNDLE:
+    case PRIM_SIZEOF_DDATA_ELEMENT:
+
+    case PRIM_LOOKUP_FILENAME:
+
+    case PRIM_STACK_ALLOCATE_CLASS:
+
+    case PRIM_ZERO_VARIABLE:
+
+    case PRIM_CLASS_NAME_BY_ID:
+
+    case PRIM_INVARIANT_START:
+    case PRIM_NO_ALIAS_SET:
+    case PRIM_COPIES_NO_ALIAS_SET:
+    case PRIM_OPTIMIZATION_INFO: return FAST_AND_LOCAL;
+
+    case PRIM_MOVE:
+    case PRIM_ASSIGN:
+    case PRIM_UNORDERED_ASSIGN:
+    case PRIM_ADD_ASSIGN:
+    case PRIM_SUBTRACT_ASSIGN:
+    case PRIM_MULT_ASSIGN:
+    case PRIM_DIV_ASSIGN:
+    case PRIM_MOD_ASSIGN:
+    case PRIM_LSH_ASSIGN:
+    case PRIM_RSH_ASSIGN:
+    case PRIM_AND_ASSIGN:
+    case PRIM_OR_ASSIGN:
+    case PRIM_XOR_ASSIGN:
+    case PRIM_LOGICALAND_ASSIGN:
+    case PRIM_LOGICALOR_ASSIGN:
+      if (isCallExpr(call->get(2))) { // callExprs checked in calling function
+        // Not necessarily true, but we return true because
+        // the callExpr will be checked in the calling function
+        return FAST_AND_LOCAL;
+      } else {
+        bool arg1wide = call->get(1)->isWideRef();
+        bool arg2wide = call->get(2)->isWideRef();
+
+        // If neither argument is a wide reference, OK: no communication
+        if (!arg1wide && !arg2wide) {
           return FAST_AND_LOCAL;
         }
+
+        if (call->isPrimitive(PRIM_MOVE)) {
+          bool arg1ref = call->get(1)->isRef();
+          bool arg2ref = call->get(2)->isRef();
+          // Handle (move tmp:ref, other_tmp:wide_ref)
+          // and    (move tmp:wide_ref, other_tmp:ref)
+          // these does not require communication and merely adjust
+          // the wideness of the ref.
+          if ((arg1wide && arg2ref) || (arg1ref && arg2wide)) {
+            return FAST_AND_LOCAL;
+          }
+        }
+
+        // Otherwise, communication is required if we're not in a local block
+        return FAST_NOT_LOCAL;
       }
 
-      // Otherwise, communication is required if we're not in a local block
+    case PRIM_WIDE_MAKE:
       return FAST_NOT_LOCAL;
-    }
 
-  case PRIM_WIDE_MAKE:
-    return FAST_NOT_LOCAL;
-
-// I think these can always return true. <hilde>
-// But that works only if the remote get is removed from code generation.
-  case PRIM_WIDE_GET_LOCALE:
-  case PRIM_WIDE_GET_NODE:
-  case PRIM_WIDE_GET_ADDR:
-    // If this test is true, a remote get is required.
-    if (!(call->get(1)->isWideRef() &&
-          call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))) {
-      return FAST_AND_LOCAL;
-    }
-    return FAST_NOT_LOCAL;
-
-  case PRIM_ARRAY_SHIFT_BASE_POINTER:
-    // SHIFT_BASE_POINTER is fast as long as none of the
-    // arguments are wide references.
-    if (call->get(1)->isWideRef() ||
-        call->get(2)->isWideRef() ||
-        call->get(3)->isWideRef())
+      // I think these can always return true. <hilde>
+      // But that works only if the remote get is removed from code generation.
+    case PRIM_WIDE_GET_LOCALE:
+    case PRIM_WIDE_GET_NODE:
+    case PRIM_WIDE_GET_ADDR:
+      // If this test is true, a remote get is required.
+      if (!(call->get(1)->isWideRef() &&
+            call->get(1)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS))) {
+        return FAST_AND_LOCAL;
+      }
       return FAST_NOT_LOCAL;
-    else
+
+    case PRIM_ARRAY_SHIFT_BASE_POINTER:
+      // SHIFT_BASE_POINTER is fast as long as none of the
+      // arguments are wide references.
+      if (call->get(1)->isWideRef() || call->get(2)->isWideRef() ||
+          call->get(3)->isWideRef())
+        return FAST_NOT_LOCAL;
+      else
+        return FAST_AND_LOCAL;
+
+    case PRIM_SET_UNION_ID:
+    case PRIM_GET_UNION_ID:
+    case PRIM_GET_MEMBER_VALUE:
+    case PRIM_GET_SVEC_MEMBER_VALUE:
+      if (!call->get(1)->isWideRef()) {
+        return FAST_AND_LOCAL;
+      }
+      return FAST_NOT_LOCAL;
+
+    case PRIM_ARRAY_SET:
+    case PRIM_ARRAY_SET_FIRST:
+    case PRIM_SETCID:
+    case PRIM_TESTCID:
+    case PRIM_GETCID:
+    case PRIM_ARRAY_GET:
+    case PRIM_DYNAMIC_CAST:
+      if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        return FAST_AND_LOCAL;
+      }
+      return FAST_NOT_LOCAL;
+
+    case PRIM_DEREF:
+    case PRIM_SET_MEMBER:
+    case PRIM_SET_SVEC_MEMBER:
+      if (!call->get(1)->isWideRef() &&
+          !call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+        return FAST_AND_LOCAL;
+      }
+      return FAST_NOT_LOCAL;
+
+    case PRIM_CHPL_COMM_GET:
+    case PRIM_CHPL_COMM_PUT:
+    case PRIM_CHPL_COMM_ARRAY_GET:
+    case PRIM_CHPL_COMM_ARRAY_PUT:
+    case PRIM_CHPL_COMM_REMOTE_PREFETCH:
+    case PRIM_CHPL_COMM_GET_STRD:
+    case PRIM_CHPL_COMM_PUT_STRD:
+      // These involve communication
+      // MPF: Couldn't these be fast if in a local block?
+      // Shouldn't this be return FAST_NOT_LOCAL ?
+      return NOT_FAST_NOT_LOCAL;
+
+      // These don't block in the Chapel sense, but they may require a system
+      // call so we don't consider them fast-eligible.
+      // However, they are communication free.
+      //
+    case PRIM_STRING_COPY: return LOCAL_NOT_FAST;
+
+    case PRIM_GET_DYNAMIC_END_COUNT:
+    case PRIM_SET_DYNAMIC_END_COUNT:
+    case PRIM_GPU_THREADIDX_X:
+    case PRIM_GPU_THREADIDX_Y:
+    case PRIM_GPU_THREADIDX_Z:
+    case PRIM_GPU_BLOCKIDX_X:
+    case PRIM_GPU_BLOCKIDX_Y:
+    case PRIM_GPU_BLOCKIDX_Z:
+    case PRIM_GPU_BLOCKDIM_X:
+    case PRIM_GPU_BLOCKDIM_Y:
+    case PRIM_GPU_BLOCKDIM_Z:
+    case PRIM_GPU_GRIDDIM_X:
+    case PRIM_GPU_GRIDDIM_Y:
+    case PRIM_GPU_GRIDDIM_Z:
+    case PRIM_GPU_ALLOC_SHARED:
+    case PRIM_GPU_SYNC_THREADS:
+    case PRIM_ASSERT_ON_GPU:
+    case PRIM_GET_REQUESTED_SUBLOC:
+    case PRIM_GPU_INIT_KERNEL_CFG:
+    case PRIM_GPU_INIT_KERNEL_CFG_3D:
+    case PRIM_GPU_DEINIT_KERNEL_CFG:
+    case PRIM_GPU_ARG:
+    case PRIM_GPU_PID_OFFLOAD:
+    case PRIM_GPU_BLOCK_REDUCE:
+    case PRIM_GPU_REDUCE_WRAPPER:
+    case PRIM_RT_GPU_HALT:
       return FAST_AND_LOCAL;
 
-  case PRIM_SET_UNION_ID:
-  case PRIM_GET_UNION_ID:
-  case PRIM_GET_MEMBER_VALUE:
-  case PRIM_GET_SVEC_MEMBER_VALUE:
-    if (!call->get(1)->isWideRef()) {
+      // Temporarily unclassified (legacy) cases.
+      // These formerly defaulted to false (slow), so we leave them
+      // here until they are proven fast.
+    case PRIM_REGISTER_GLOBAL_VAR:
+    case PRIM_BROADCAST_GLOBAL_VARS:
+    case PRIM_PRIVATE_BROADCAST:
+    case PRIM_RT_ERROR:
+    case PRIM_RT_WARNING:
+    case PRIM_FTABLE_CALL:
+    case PRIM_VIRTUAL_METHOD_CALL:
+    case PRIM_INT_ERROR: return NOT_FAST_NOT_LOCAL;
+
+    case PRIM_GPU_KERNEL_LAUNCH: return LOCAL_NOT_FAST;
+
+    case PRIM_DEBUG_TRAP: return FAST_AND_LOCAL;
+
+    case PRIM_CONST_ARG_HASH:
+    case PRIM_CHECK_CONST_ARG_HASH:
       return FAST_AND_LOCAL;
-    }
-    return FAST_NOT_LOCAL;
 
-  case PRIM_ARRAY_SET:
-  case PRIM_ARRAY_SET_FIRST:
-  case PRIM_SETCID:
-  case PRIM_TESTCID:
-  case PRIM_GETCID:
-  case PRIM_ARRAY_GET:
-  case PRIM_DYNAMIC_CAST:
-    if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      return FAST_AND_LOCAL;
-    }
-    return FAST_NOT_LOCAL;
-
-  case PRIM_DEREF:
-  case PRIM_SET_MEMBER:
-  case PRIM_SET_SVEC_MEMBER:
-    if (!call->get(1)->isWideRef() &&
-        !call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      return FAST_AND_LOCAL;
-    }
-    return FAST_NOT_LOCAL;
-
-  case PRIM_CHPL_COMM_GET:
-  case PRIM_CHPL_COMM_PUT:
-  case PRIM_CHPL_COMM_ARRAY_GET:
-  case PRIM_CHPL_COMM_ARRAY_PUT:
-  case PRIM_CHPL_COMM_REMOTE_PREFETCH:
-  case PRIM_CHPL_COMM_GET_STRD:
-  case PRIM_CHPL_COMM_PUT_STRD:
-    // These involve communication
-    // MPF: Couldn't these be fast if in a local block?
-    // Shouldn't this be return FAST_NOT_LOCAL ?
-    return NOT_FAST_NOT_LOCAL;
-
-    // These don't block in the Chapel sense, but they may require a system
-    // call so we don't consider them fast-eligible.
-    // However, they are communication free.
-    //
-  case PRIM_STRING_COPY:
-    return LOCAL_NOT_FAST;
-
-  case PRIM_GET_DYNAMIC_END_COUNT:
-  case PRIM_SET_DYNAMIC_END_COUNT:
-  case PRIM_GPU_THREADIDX_X:
-  case PRIM_GPU_THREADIDX_Y:
-  case PRIM_GPU_THREADIDX_Z:
-  case PRIM_GPU_BLOCKIDX_X:
-  case PRIM_GPU_BLOCKIDX_Y:
-  case PRIM_GPU_BLOCKIDX_Z:
-  case PRIM_GPU_BLOCKDIM_X:
-  case PRIM_GPU_BLOCKDIM_Y:
-  case PRIM_GPU_BLOCKDIM_Z:
-  case PRIM_GPU_GRIDDIM_X:
-  case PRIM_GPU_GRIDDIM_Y:
-  case PRIM_GPU_GRIDDIM_Z:
-  case PRIM_GPU_ALLOC_SHARED:
-  case PRIM_GPU_SYNC_THREADS:
-  case PRIM_ASSERT_ON_GPU:
-  case PRIM_GET_REQUESTED_SUBLOC:
-  case PRIM_GPU_INIT_KERNEL_CFG:
-  case PRIM_GPU_INIT_KERNEL_CFG_3D:
-  case PRIM_GPU_DEINIT_KERNEL_CFG:
-  case PRIM_GPU_ARG:
-  case PRIM_GPU_PID_OFFLOAD:
-  case PRIM_GPU_BLOCK_REDUCE:
-  case PRIM_GPU_REDUCE_WRAPPER:
-  case PRIM_RT_GPU_HALT:
-    return FAST_AND_LOCAL;
-
-    // Temporarily unclassified (legacy) cases.
-    // These formerly defaulted to false (slow), so we leave them
-    // here until they are proven fast.
-  case PRIM_REGISTER_GLOBAL_VAR:
-  case PRIM_BROADCAST_GLOBAL_VARS:
-  case PRIM_PRIVATE_BROADCAST:
-  case PRIM_RT_ERROR:
-  case PRIM_RT_WARNING:
-  case PRIM_FTABLE_CALL:
-  case PRIM_VIRTUAL_METHOD_CALL:
-  case PRIM_INT_ERROR:
-    return NOT_FAST_NOT_LOCAL;
-
-  case PRIM_GPU_KERNEL_LAUNCH:
-   return LOCAL_NOT_FAST;
-
-  case PRIM_DEBUG_TRAP:
-    return FAST_AND_LOCAL;
-
-  case PRIM_CONST_ARG_HASH:
-  case PRIM_CHECK_CONST_ARG_HASH:
-    return FAST_AND_LOCAL;
-
-  // no default, so that it is usually a C compilation
-  // error when a primitive is added but not included here.
+      // no default, so that it is usually a C compilation
+      // error when a primitive is added but not included here.
   }
 
   // At the end of the switch statement.
@@ -351,37 +341,27 @@ classifyPrimitive(CallExpr *call) {
   return NOT_FAST_NOT_LOCAL;
 }
 
-static int
-setLocal(int is, bool inLocal)
-{
+static int setLocal(int is, bool inLocal) {
   // If it's in a local block, it's always local.
   if (inLocal) {
-    if (is == NOT_FAST_NOT_LOCAL ) is = LOCAL_NOT_FAST;
-    if (is == FAST_NOT_LOCAL )     is = FAST_AND_LOCAL;
+    if (is == NOT_FAST_NOT_LOCAL) is = LOCAL_NOT_FAST;
+    if (is == FAST_NOT_LOCAL) is = FAST_AND_LOCAL;
   }
 
   return is;
 }
 
-static bool
-isFast(int is)
-{
+static bool isFast(int is) {
   if (is == FAST_AND_LOCAL || is == FAST_NOT_LOCAL) return true;
   return false;
 }
 
-static bool
-isLocal(int is)
-{
+static bool isLocal(int is) {
   if (is == FAST_AND_LOCAL || is == LOCAL_NOT_FAST) return true;
   return false;
 }
 
-
-
-int
-classifyPrimitive(CallExpr *call, bool inLocal)
-{
+int classifyPrimitive(CallExpr* call, bool inLocal) {
   int is = classifyPrimitive(call);
 
   // If it's in a local block, it's always local.
@@ -390,14 +370,14 @@ classifyPrimitive(CallExpr *call, bool inLocal)
   return is;
 }
 
-bool
-inLocalBlock(CallExpr *call) {
+bool inLocalBlock(CallExpr* call) {
   for (Expr* parent = call->parentExpr; parent; parent = parent->parentExpr) {
     if (BlockStmt* blk = toBlockStmt(parent)) {
       // NOAKES 2014/11/25  Transitional. Do not trip over blockInfoGet for a Loop
       if (blk->isLoopStmt() == true)
         ;
-      else if (blk->blockInfoGet() && blk->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))
+      else if (blk->blockInfoGet() &&
+               blk->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))
         return true;
     }
   }
@@ -405,14 +385,12 @@ inLocalBlock(CallExpr *call) {
 }
 
 static int
-markFastSafeFn(FnSymbol *fn, int recurse, std::set<FnSymbol*>& visited) {
+markFastSafeFn(FnSymbol* fn, int recurse, std::set<FnSymbol*>& visited) {
 
   // First, handle functions we've already visited.
   if (visited.count(fn) != 0) {
-    if (fn->hasFlag(FLAG_FAST_ON))
-      return FAST_AND_LOCAL;
-    if (fn->hasFlag(FLAG_LOCAL_FN))
-      return LOCAL_NOT_FAST;
+    if (fn->hasFlag(FLAG_FAST_ON)) return FAST_AND_LOCAL;
+    if (fn->hasFlag(FLAG_LOCAL_FN)) return LOCAL_NOT_FAST;
     return NOT_FAST_NOT_LOCAL;
   }
 
@@ -427,7 +405,7 @@ markFastSafeFn(FnSymbol *fn, int recurse, std::set<FnSymbol*>& visited) {
       fn->addFlag(FLAG_FAST_ON);
       fn->addFlag(FLAG_LOCAL_FN);
       return FAST_AND_LOCAL;
-    } else if(fn->hasFlag(FLAG_LOCAL_FN)) {
+    } else if (fn->hasFlag(FLAG_LOCAL_FN)) {
       return LOCAL_NOT_FAST;
     } else {
       // Other extern functions are not fast or local.
@@ -443,8 +421,7 @@ markFastSafeFn(FnSymbol *fn, int recurse, std::set<FnSymbol*>& visited) {
   // in the function that is not local.
   bool maybefast = true;
 
-  if (fn->hasFlag(FLAG_NON_BLOCKING))
-    maybefast = false;
+  if (fn->hasFlag(FLAG_NON_BLOCKING)) maybefast = false;
 
   std::vector<CallExpr*> calls;
 
@@ -467,7 +444,7 @@ markFastSafeFn(FnSymbol *fn, int recurse, std::set<FnSymbol*>& visited) {
       }
 
     } else {
-      if (recurse<=0 || !call->isResolved()) {
+      if (recurse <= 0 || !call->isResolved()) {
         // didn't resolve or past too much recursion.
         // No function calls allowed
         return NOT_FAST_NOT_LOCAL;
@@ -483,9 +460,7 @@ markFastSafeFn(FnSymbol *fn, int recurse, std::set<FnSymbol*>& visited) {
         }
 
         // is the call to a fast/local function?
-        int is = markFastSafeFn(call->resolvedFunction(),
-                                recurse - 1,
-                                visited);
+        int is = markFastSafeFn(call->resolvedFunction(), recurse - 1, visited);
 
         // Remove NOT_LOCAL parts if it's in a local block
         is = setLocal(is, inLocal);
@@ -534,9 +509,7 @@ markFastSafeFn(FnSymbol *fn, int recurse, std::set<FnSymbol*>& visited) {
 // from the passed function.
 // For reporting purposes, returns true if the function actually
 // changed the function.
-static bool
-removeUnnecessaryFences(FnSymbol* fn)
-{
+static bool removeUnnecessaryFences(FnSymbol* fn) {
   bool ret = false;
 
   // These fences are only present if one of these flags
@@ -612,8 +585,7 @@ static void addRunningTaskModifiers(void) {
   }
 }
 
-void
-optimizeOnClauses(void) {
+void optimizeOnClauses(void) {
   if (fNoOptimizeOnClauses) {
     addRunningTaskModifiers();
     return;
@@ -629,8 +601,7 @@ optimizeOnClauses(void) {
     bool fastFork = isFast(is);
     bool removeRmemFences = isLocal(is);
 
-    if (!fn->hasFlag(FLAG_ON_BLOCK))
-      fastFork = false;
+    if (!fn->hasFlag(FLAG_ON_BLOCK)) fastFork = false;
 
     if (fastFork) {
       // Code generation will use executeOnFast because
@@ -650,17 +621,23 @@ optimizeOnClauses(void) {
       removeRmemFences = removeUnnecessaryFences(fn);
     }
 
-    if ( (fastFork || removeRmemFences) && fReportOptimizedOn) {
-      ModuleSymbol *mod = toModuleSymbol(fn->defPoint->parentSymbol);
+    if ((fastFork || removeRmemFences) && fReportOptimizedOn) {
+      ModuleSymbol* mod = toModuleSymbol(fn->defPoint->parentSymbol);
       INT_ASSERT(mod);
       if (developer ||
           ((mod->modTag != MOD_INTERNAL) && (mod->modTag != MOD_STANDARD))) {
         if (fastFork) {
           printf("Optimized on clause (%s) in module %s (%s:%d)\n",
-               fn->cname, mod->name, fn->fname(), fn->linenum());
+                 fn->cname,
+                 mod->name,
+                 fn->fname(),
+                 fn->linenum());
         } else if (removeRmemFences) {
           printf("Optimized rmem fence (%s) in module %s (%s:%d)\n",
-               fn->cname, mod->name, fn->fname(), fn->linenum());
+                 fn->cname,
+                 mod->name,
+                 fn->fname(),
+                 fn->linenum());
         }
         if (developer) printf("(id %i)\n", fn->id);
       }

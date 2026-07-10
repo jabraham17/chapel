@@ -30,7 +30,6 @@
 #include "stmt.h"
 #include "stringutil.h"
 
-
 #include <cstdio>
 
 // ---------- LocalizeGlobals ----------
@@ -57,7 +56,7 @@ void LocalizeGlobals::process(FnSymbol* fn) {
     bool inAddrOf = parentExpr && (parentExpr->isPrimitive(PRIM_ADDR_OF) ||
                                    parentExpr->isPrimitive(PRIM_SET_REFERENCE));
     bool lhsOfMove =
-        parentExpr && isMoveOrAssign(parentExpr) && (parentExpr->get(1) == se);
+      parentExpr && isMoveOrAssign(parentExpr) && (parentExpr->get(1) == se);
 
     // Is var a global constant?
     // Don't replace the var name in its init function since that's
@@ -66,14 +65,9 @@ void LocalizeGlobals::process(FnSymbol* fn) {
     // If the parentSymbol is the rootModule, the var is 'void,'
     //      'false,' '0,' ...
     // Also don't replace it when it's in an addr of primitive.
-    if (parentmod &&
-        fn != parentmod->initFn &&
-        fn != initStringLiterals &&
-        !inAddrOf &&
-        !lhsOfMove &&
-        var->hasFlag(FLAG_CONST) &&
-        !var->hasFlag(FLAG_EXTERN) &&
-        !var->isImmediate() &&
+    if (parentmod && fn != parentmod->initFn && fn != initStringLiterals &&
+        !inAddrOf && !lhsOfMove && var->hasFlag(FLAG_CONST) &&
+        !var->hasFlag(FLAG_EXTERN) && !var->isImmediate() &&
         var->defPoint->parentSymbol != rootModule) {
       VarSymbol* local_global = globals.get(var);
       SET_LINENO(se); // Set the se line number for output

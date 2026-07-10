@@ -18,7 +18,6 @@
  * limitations under the License.
  */
 
-
 #include "optimizations.h"
 
 #include "astutil.h"
@@ -49,7 +48,7 @@ typedef std::set<BasicBlock*> BasicBlockSet;
 static void deadBlockElimination(FnSymbol* fn);
 static void findReachableBlocks(FnSymbol* fn, BasicBlockSet& reachable);
 static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable);
-static bool         isInCForLoopHeader(Expr* expr);
+static bool isInCForLoopHeader(Expr* expr);
 
 static unsigned int deadBlockCount;
 static unsigned int deadModuleCount;
@@ -94,22 +93,18 @@ void deadVariableElimination(FnSymbol* fn) {
   // Note: this code is sensitive to traversal order.
   // Currently, symSet is iterated in Symbol::id order.
   std::queue<Symbol*> todo;
-  for_set(Symbol, sym, symSet) {
-    todo.push(sym);
-  }
+  for_set(Symbol, sym, symSet) { todo.push(sym); }
 
-  while(todo.empty() == false) {
+  while (todo.empty() == false) {
     Symbol* sym = todo.front();
     todo.pop();
     symSet.erase(sym);
 
     // We're interested only in VarSymbols.
-    if (!isVarSymbol(sym))
-      continue;
+    if (!isVarSymbol(sym)) continue;
 
     // A method must have a _this symbol, even if it is not used.
-    if (sym == fn->_this)
-      continue;
+    if (sym == fn->_this) continue;
 
     if (isDeadVariable(sym)) {
       std::set<Symbol*> potentiallyChanged;
@@ -125,8 +120,8 @@ void deadVariableElimination(FnSymbol* fn) {
 
         rhs->remove();
         CallExpr* rhsCall = toCallExpr(rhs);
-        if (rhsCall && (rhsCall->isResolved() || rhsCall->isPrimitive(
-          PRIM_VIRTUAL_METHOD_CALL))) {
+        if (rhsCall && (rhsCall->isResolved() ||
+                        rhsCall->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))) {
           // RHS might have side-effects, leave it alone
           call->replace(rhs);
         } else {
@@ -170,21 +165,17 @@ void deadExpressionElimination(FnSymbol* fn) {
     } else if (CallExpr* expr = toCallExpr(ast)) {
       if (expr->isPrimitive(PRIM_CAST) ||
           expr->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-          expr->isPrimitive(PRIM_GET_MEMBER) ||
-          expr->isPrimitive(PRIM_DEREF) ||
+          expr->isPrimitive(PRIM_GET_MEMBER) || expr->isPrimitive(PRIM_DEREF) ||
           expr->isPrimitive(PRIM_ARRAY_GET) ||
           expr->isPrimitive(PRIM_ADDR_OF) ||
           expr->isPrimitive(PRIM_SET_REFERENCE)) {
-        if (expr->isStmtExpr())
-          expr->remove();
+        if (expr->isStmtExpr()) expr->remove();
       }
 
-      if (expr->isPrimitive(PRIM_MOVE) ||
-          expr->isPrimitive(PRIM_ASSIGN))
+      if (expr->isPrimitive(PRIM_MOVE) || expr->isPrimitive(PRIM_ASSIGN))
         if (SymExpr* lhs = toSymExpr(expr->get(1)))
           if (SymExpr* rhs = toSymExpr(expr->get(2)))
-            if (lhs->symbol() == rhs->symbol())
-              expr->remove();
+            if (lhs->symbol() == rhs->symbol()) expr->remove();
 
       // remove calls to chpl__convertValueToRuntimeType or other
       // functions returning a runtime type where the returned value
@@ -192,8 +183,7 @@ void deadExpressionElimination(FnSymbol* fn) {
       // are not currently subject to the return-by-ref transformation.
       if (FnSymbol* calledFn = expr->resolvedFunction()) {
         if (calledFn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
-          if (expr->isStmtExpr())
-            expr->remove();
+          if (expr->isStmtExpr()) expr->remove();
       }
 
     } else if (CondStmt* cond = toCondStmt(ast)) {
@@ -214,7 +204,7 @@ void deadExpressionElimination(FnSymbol* fn) {
           cond->replaceChild(cond->thenStmt, cond->elseStmt);
           cond->replaceChild(cond->elseStmt, NULL);
 
-        // NOAKES 2014/11/14 It's "odd" that folding is being done here
+          // NOAKES 2014/11/14 It's "odd" that folding is being done here
         } else {
           cond->foldConstantCondition(false);
         }
@@ -228,7 +218,7 @@ void deadExpressionElimination(FnSymbol* fn) {
 
 static bool isInCForLoopHeader(Expr* expr) {
   Expr* stmtExpr = expr->parentExpr;
-  bool  retval   = false;
+  bool retval = false;
 
   if (BlockStmt* blockStmt = toBlockStmt(stmtExpr)) {
     retval = (blockStmt->blockTag == BLOCK_C_FOR_LOOP) ? true : false;
@@ -283,9 +273,8 @@ static void deadStringLiteralElimination() {
   //   Rather than handle the variations we simply leak if these flags are
   //   on.  We anticipate that this will be easier to handle when record
   //   initializers are in production and have been applied to strings.
-  if (fNoCopyPropagation == false &&
-      fNoInline          == false) {
-    int numStmt        = 0;
+  if (fNoCopyPropagation == false && fNoInline == false) {
+    int numStmt = 0;
     int numDeadLiteral = 0;
 
     for_alist(stmt, stringLiteralModule->block->body) {
@@ -333,9 +322,7 @@ static bool isDeadStringOrBytesLiteral(VarSymbol* string) {
   return retval;
 }
 
-static void removeDeadStringLiteral(DefExpr* defExpr) {
-  defExpr->remove();
-}
+static void removeDeadStringLiteral(DefExpr* defExpr) { defExpr->remove(); }
 
 /************************************* | **************************************
 *                                                                             *
@@ -348,25 +335,21 @@ static void removeDeadStringLiteral(DefExpr* defExpr) {
 ************************************** | *************************************/
 
 static bool isDeadModule(ModuleSymbol* mod) {
-  AList body   = mod->block->body;
+  AList body = mod->block->body;
 
   // The main module should never be considered dead; the init function
   // can be explicitly called from the runtime or other c code
-  if (mod == ModuleSymbol::mainModule())
-    return false;
+  if (mod == ModuleSymbol::mainModule()) return false;
 
   // Modules named on the command line should not be considered dead
   // either since the init function should be called.
-  if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE))
-    return false;
+  if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE)) return false;
 
   // Ditto for the string literals module
-  if (mod == stringLiteralModule)
-    return false;
+  if (mod == stringLiteralModule) return false;
 
   // Ditto for an exported module
-  if (mod->hasFlag(FLAG_EXPORT_INIT))
-    return false;
+  if (mod->hasFlag(FLAG_EXPORT_INIT)) return false;
 
   // Because of the way modules are initialized, we never consider a nested
   // module to be dead.
@@ -384,8 +367,7 @@ static bool isDeadModule(ModuleSymbol* mod) {
 
         // ignore the init function
         if (mod->initFn == fn)
-          if (mod->initFn->body->body.length == 1)
-            continue;
+          if (mod->initFn->body->body.length == 1) continue;
       }
 
       // Any other DefExpr means the module is not dead
@@ -398,7 +380,6 @@ static bool isDeadModule(ModuleSymbol* mod) {
 
   return true;
 }
-
 
 // Eliminates all dead modules
 static void deadModuleElimination() {
@@ -432,15 +413,14 @@ static bool removeVoidFunction(FnSymbol* fn) {
   if (fn == chplUserMain) return false;
   // various functions that should not be removed
   if (fn->hasEitherFlag(FLAG_EXPORT, FLAG_EXTERN) ||
-      fn->hasFlag(FLAG_MODULE_INIT) ||  fn->hasFlag(FLAG_MODULE_DEINIT) ||
+      fn->hasFlag(FLAG_MODULE_INIT) || fn->hasFlag(FLAG_MODULE_DEINIT) ||
       fn->hasFlag(FLAG_NO_FN_BODY) || fn->hasFlag(FLAG_DESTRUCTOR) ||
       fn->hasFlag(FLAG_VIRTUAL) ||
       fn->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION))
     return false;
 
   // don't remove on functions
-  if (fn->hasEitherFlag(FLAG_ON, FLAG_ON_BLOCK))
-    return false;
+  if (fn->hasEitherFlag(FLAG_ON, FLAG_ON_BLOCK)) return false;
 
   // remove functions which return void and do nothing
   if (fn->retType == dtVoid && fn->body && fn->body->length() == 1) {
@@ -471,7 +451,6 @@ static void deadFunctionElimination() {
     }
   } while (changed);
 }
-
 
 void deadCodeElimination() {
   if (!fNoDeadCodeElimination) {
@@ -513,8 +492,7 @@ void deadCodeElimination() {
   createInitStringLiterals();
 }
 
-void deadBlockElimination()
-{
+void deadBlockElimination() {
   deadBlockCount = 0;
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -522,14 +500,11 @@ void deadBlockElimination()
     if (!fn->hasFlag(FLAG_NO_FN_BODY)) deadBlockElimination(fn);
   }
 
-  if (fReportDeadBlocks)
-    printf("\tRemoved %d dead blocks.\n", deadBlockCount);
-
+  if (fReportDeadBlocks) printf("\tRemoved %d dead blocks.\n", deadBlockCount);
 }
 
 // Look for and remove unreachable blocks.
-static void deadBlockElimination(FnSymbol* fn)
-{
+static void deadBlockElimination(FnSymbol* fn) {
   // We need the basic block information to be correct, so recompute it.
   BasicBlock::buildBasicBlocks(fn);
 
@@ -543,8 +518,7 @@ static void deadBlockElimination(FnSymbol* fn)
 // Muchnick says we can enumerate the unreachable blocks first and then just
 // remove them.  We only need to do this once, because removal of an
 // unreachable block cannot possibly make any reachable block unreachable.
-static void findReachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
-{
+static void findReachableBlocks(FnSymbol* fn, BasicBlockSet& reachable) {
   // We set up a work queue to perform a BFS on reachable blocks, and seed it
   // with the first block in the function.
   std::queue<BasicBlock*> work_queue;
@@ -554,41 +528,33 @@ static void findReachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
   work_queue.push((*fn->basicBlocks)[0]);
 
   // Then we iterate until there are no more blocks to visit.
-  while (!work_queue.empty())
-  {
+  while (!work_queue.empty()) {
     // Fetch and remove the next block.
     BasicBlock* bb = work_queue.front();
 
     work_queue.pop();
 
     // Ignore it if we've already seen it.
-    if (reachable.count(bb))
-      continue;
+    if (reachable.count(bb)) continue;
 
     // Otherwise, mark it as reachable, and append all of its successors to the
     // work queue.
     reachable.insert(bb);
 
-    for_vector(BasicBlock, out, bb->outs)
-      work_queue.push(out);
+    for_vector(BasicBlock, out, bb->outs) work_queue.push(out);
   }
 }
 
-static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
-{
+static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable) {
   // Visit all the blocks, deleting all those that are not reachable
-  for_vector(BasicBlock, bb, *fn->basicBlocks)
-  {
-    if (reachable.count(bb))
-      continue;
+  for_vector(BasicBlock, bb, *fn->basicBlocks) {
+    if (reachable.count(bb)) continue;
 
     ++deadBlockCount;
 
     // Remove all of its expressions.
-    for_vector(Expr, expr, bb->exprs)
-    {
-      if (! expr->parentExpr)
-        continue;   // This node is no longer in the tree.
+    for_vector(Expr, expr, bb->exprs) {
+      if (!expr->parentExpr) continue; // This node is no longer in the tree.
 
       // Do not remove def expressions (for now)
       // In some cases (associated with iterator code), defs appear in dead
@@ -598,13 +564,12 @@ static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
       // TODO: Perhaps this reformulation of unreachable block removal does a
       // better job and those blocks are now removed as well.  If so, this IF
       // can be removed.
-      if (toDefExpr(expr))
-        continue;
+      if (toDefExpr(expr)) continue;
 
-      CondStmt*    condStmt    = toCondStmt(expr->parentExpr);
+      CondStmt* condStmt = toCondStmt(expr->parentExpr);
       DoWhileStmt* doWhileStmt = toDoWhileStmt(expr->parentExpr);
-      WhileStmt*   whileStmt   = toWhileStmt(expr->parentExpr);
-      ForLoop*     forLoop     = toForLoop(expr->parentExpr);
+      WhileStmt* whileStmt = toWhileStmt(expr->parentExpr);
+      ForLoop* forLoop = toForLoop(expr->parentExpr);
 
       if (condStmt && condStmt->condExpr == expr)
         // If the expr is the condition expression of an if statement,
@@ -618,16 +583,16 @@ static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
           // Do nothing. (NOTE 3)
           ;
 
-      else if (whileStmt   && whileStmt->condExprGet()   == expr)
+      else if (whileStmt && whileStmt->condExprGet() == expr)
         // If the expr is the condition expression of a while statement,
         // then remove the entire While. (NOTE 1)
         whileStmt->remove();
 
-      else if (forLoop     && forLoop->indexGet()         == expr)
+      else if (forLoop && forLoop->indexGet() == expr)
         // Do nothing. (NOTE 2)
         ;
 
-      else if (forLoop     && forLoop->iteratorGet()      == expr)
+      else if (forLoop && forLoop->iteratorGet() == expr)
         // Do nothing. (NOTE 2)
         ;
 
@@ -657,7 +622,7 @@ void verifyRemovedIterResumeGotos() {
   forv_Vec(LabelSymbol, labsym, removedIterResumeLabels) {
     if (!isAlive(labsym) && isAlive(labsym->iterResumeGoto))
       INT_FATAL("unexpected live goto for a dead removedIterResumeLabels label "
-        "- missing a call to removeDeadIterResumeGotos?");
+                "- missing a call to removeDeadIterResumeGotos?");
   }
 }
 
@@ -694,7 +659,7 @@ void cleanupLoopBlocks(FnSymbol* fn) {
 
   collect_stmts(fn->body, stmts);
 
-  for_vector (Expr, expr, stmts) {
+  for_vector(Expr, expr, stmts) {
     if (BlockStmt* stmt = toBlockStmt(expr)) {
       stmt->deadBlockCleanup();
     }

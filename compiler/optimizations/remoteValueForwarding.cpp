@@ -42,17 +42,17 @@ static void buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet);
 
 static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                           Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                          Symbol*                       field,
-                          Symbol*                       ref);
+                          Symbol* field,
+                          Symbol* ref);
 
 class DotInfo {
-  public:
-    bool finalized;
-    bool usesDotLocale;
-    std::vector<SymExpr*> todo;
-    DotInfo();
+ public:
+  bool finalized;
+  bool usesDotLocale;
+  std::vector<SymExpr*> todo;
+  DotInfo();
 };
-DotInfo::DotInfo() : finalized(false), usesDotLocale(false) { }
+DotInfo::DotInfo() : finalized(false), usesDotLocale(false) {}
 
 static std::map<Symbol*, DotInfo*> dotLocaleMap;
 typedef std::map<Symbol*, DotInfo*>::iterator DotInfoIter;
@@ -75,8 +75,7 @@ static void computeUsesDotLocale();
 
 void remoteValueForwarding() {
 
-  if (fNoInferConstRefs == false)
-    inferConstRefs();
+  if (fNoInferConstRefs == false) inferConstRefs();
 
   if (fNoRemoteValueForwarding == false && requireOutlinedOn()) {
     computeUsesDotLocale();
@@ -90,13 +89,13 @@ void remoteValueForwarding() {
 
     freeDefUseMaps(defMap, useMap);
 
-    for (DotInfoIter it = dotLocaleMap.begin(); it != dotLocaleMap.end(); ++it) {
+    for (DotInfoIter it = dotLocaleMap.begin(); it != dotLocaleMap.end();
+         ++it) {
       delete it->second;
     }
     dotLocaleMap.clear();
   }
 }
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -108,7 +107,7 @@ void remoteValueForwarding() {
 
 static bool isSafeToDerefField(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                                Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                               Symbol*                       field);
+                               Symbol* field);
 
 static void updateLoopBodyClasses(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                                   Map<Symbol*, Vec<SymExpr*>*>& useMap) {
@@ -127,8 +126,8 @@ static void updateLoopBodyClasses(Map<Symbol*, Vec<SymExpr*>*>& defMap,
               SET_LINENO(call);
 
               if (call->isPrimitive(PRIM_SET_MEMBER)) {
-                Symbol*   tmp   = newTemp(vt);
-                Expr*     value = call->get(3)->remove();
+                Symbol* tmp = newTemp(vt);
+                Expr* value = call->get(3)->remove();
                 CallExpr* deref = new CallExpr(PRIM_DEREF, value);
 
                 call->insertBefore(new DefExpr(tmp));
@@ -137,9 +136,9 @@ static void updateLoopBodyClasses(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                 call->insertAtTail(tmp);
 
               } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
-                CallExpr* move  = toCallExpr(call->parentExpr);
-                Symbol*   tmp   = newTemp(vt);
-                Expr*     value = call->remove();
+                CallExpr* move = toCallExpr(call->parentExpr);
+                Symbol* tmp = newTemp(vt);
+                Expr* value = call->remove();
 
                 INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
 
@@ -164,7 +163,7 @@ static void updateLoopBodyClasses(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
 static bool isSafeToDerefField(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                                Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                               Symbol*                       field) {
+                               Symbol* field) {
   bool retval = true;
 
   INT_ASSERT(!defMap.get(field));
@@ -176,7 +175,7 @@ static bool isSafeToDerefField(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
     if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) == true) {
       CallExpr* move = toCallExpr(call->parentExpr);
-      SymExpr*  lhs  = toSymExpr(move->get(1));
+      SymExpr* lhs = toSymExpr(move->get(1));
 
       INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
       INT_ASSERT(lhs);
@@ -202,27 +201,24 @@ static bool isSafeToDerefField(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
 static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                             Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                            Vec<FnSymbol*>&               syncFns,
-                            FnSymbol*                     fn,
-                            ArgSymbol*                    arg);
+                            Vec<FnSymbol*>& syncFns,
+                            FnSymbol* fn,
+                            ArgSymbol* arg);
 
 static bool isSufficientlyConst(ArgSymbol* arg);
 
 static CallExpr* findDestroyCallForArg(ArgSymbol* arg);
 
 static void defaultForwarding(Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                              FnSymbol*                     fn,
-                              ArgSymbol*                    arg);
-static void insertSerialization(FnSymbol*  fn,
-                                ArgSymbol* arg);
-
+                              FnSymbol* fn,
+                              ArgSymbol* arg);
+static void insertSerialization(FnSymbol* fn, ArgSymbol* arg);
 
 static bool shouldSerialize(ArgSymbol* arg) {
   bool retval = false;
   Type* argType = arg->getValType();
 
-  if (!argType->isSerializable() ||
-      arg->hasFlag(FLAG_TYPE_VARIABLE)) {
+  if (!argType->isSerializable() || arg->hasFlag(FLAG_TYPE_VARIABLE)) {
     retval = false;
   } else if (isRecordWrappedType(argType)) {
     // OK to serialize if the record-wrapped type's underlying class is not
@@ -235,7 +231,8 @@ static bool shouldSerialize(ArgSymbol* arg) {
     // BHARSH TODO: This seems a bit flimsy. If 'arg' is a reference to a
     // const domain (as written by the user), why doesn't it have the flag
     // FLAG_REF_TO_IMMUTABLE? That said, we don't seem to be leaking...
-    retval = arg->intent == INTENT_CONST_REF && arg->hasFlag(FLAG_REF_TO_IMMUTABLE);
+    retval =
+      arg->intent == INTENT_CONST_REF && arg->hasFlag(FLAG_REF_TO_IMMUTABLE);
   } else {
     retval = true;
   }
@@ -270,9 +267,9 @@ static void updateTaskFunctions(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
 static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                             Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                            Vec<FnSymbol*>&               syncFns,
-                            FnSymbol*                     fn,
-                            ArgSymbol*                    arg) {
+                            Vec<FnSymbol*>& syncFns,
+                            FnSymbol* fn,
+                            ArgSymbol* arg) {
   bool retval = false;
 
   if (arg->hasFlag(FLAG_NO_RVF)) {
@@ -280,38 +277,38 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   } else if (arg->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF)) {
     retval = true;
 
-  // Forward array values and references to array values.
-  // This is OK because the array/domain/distribution wrapper
-  // records have fields that do not vary.
-  // It does not matter if the on-body synchronizes.
-  //   It is the fields of the array class, e.g. DefaultRectangularArr,
-  //   that may change. Also, the array class contains a pointer
-  //   to the actual data, which might be replaced with another pointer.
-  // An alternative strategy would be to migrate the contents of the
-  // array header class into the wrapper record - but that would require
-  // quite a lot of code changes, and some other features have entangled
-  // designs (including privatization and the DSI interface).
+    // Forward array values and references to array values.
+    // This is OK because the array/domain/distribution wrapper
+    // records have fields that do not vary.
+    // It does not matter if the on-body synchronizes.
+    //   It is the fields of the array class, e.g. DefaultRectangularArr,
+    //   that may change. Also, the array class contains a pointer
+    //   to the actual data, which might be replaced with another pointer.
+    // An alternative strategy would be to migrate the contents of the
+    // array header class into the wrapper record - but that would require
+    // quite a lot of code changes, and some other features have entangled
+    // designs (including privatization and the DSI interface).
   } else if (isRecordWrappedType(arg->getValType())) {
     // If it is passed by value already, forwarding would add nothing.
     retval = arg->isRef();
 
-  // Similar arguments should hold for iterator records, as well.
+    // Similar arguments should hold for iterator records, as well.
   } else if (arg->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     retval = arg->isRef();
 
-  // If this function accesses sync vars and the argument is not
-  // const, then we cannot remote value forward the argument due
-  // to the fence implied by the sync var accesses
+    // If this function accesses sync vars and the argument is not
+    // const, then we cannot remote value forward the argument due
+    // to the fence implied by the sync var accesses
   } else if (syncFns.set_in(fn) && isSufficientlyConst(arg) == false) {
     retval = false;
 
-  // If this argument is a reference atomic type, we need to preserve
-  // reference semantics, i.e. that the referenced atomic gets updated.
-  // Therefore, dereferencing a ref atomic and forwarding its value is not
-  // what we want.  That is, all atomics implicitly disable remote value
-  // forwarding.
-  // See resolveFormals() [functionResolution.cpp:839] for where we decide
-  // to convert atomic formals to ref formals.
+    // If this argument is a reference atomic type, we need to preserve
+    // reference semantics, i.e. that the referenced atomic gets updated.
+    // Therefore, dereferencing a ref atomic and forwarding its value is not
+    // what we want.  That is, all atomics implicitly disable remote value
+    // forwarding.
+    // See resolveFormals() [functionResolution.cpp:839] for where we decide
+    // to convert atomic formals to ref formals.
   } else if (isAtomicType(arg->type)) {
     retval = false;
 
@@ -342,7 +339,7 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 }
 
 static bool isSufficientlyConst(ArgSymbol* arg) {
-  bool  retval     = false;
+  bool retval = false;
 
   //
   // See if this argument is 'const in'; if it is, it's a good candidate for
@@ -363,14 +360,13 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
   //
   //     test/multilocale/bradc/needMultiLocales/remoteReal.chpl
   //
-  if (arg->intent == INTENT_CONST_IN  &&
-      !arg->type->symbol->hasFlag(FLAG_REF)) {
+  if (arg->intent == INTENT_CONST_IN && !arg->type->symbol->hasFlag(FLAG_REF)) {
     retval = true;
 
   } else if (arg->hasFlag(FLAG_REF_TO_IMMUTABLE)) {
     retval = true;
 
-  // otherwise, conservatively assume it varies
+    // otherwise, conservatively assume it varies
   } else {
     retval = false;
   }
@@ -382,8 +378,7 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
 // adjust its intent as well.
 static void adjustArgIntentForDeref(ArgSymbol* arg) {
   INT_ASSERT(!arg->type->isRef());
-  if (!(arg->intent & INTENT_FLAG_REF))
-    return;
+  if (!(arg->intent & INTENT_FLAG_REF)) return;
 
   arg->intent = (IntentTag)((arg->intent & ~INTENT_FLAG_REF) | INTENT_FLAG_IN);
 
@@ -403,10 +398,12 @@ static void adjustArgIntentForDeref(ArgSymbol* arg) {
 }
 
 // Update each callsite to invoke the serializer.
-static void serializeAtCallSites(FnSymbol* fn,  ArgSymbol* arg,
-                       Type* dataType,          CallExpr* argDestroyCall,
-                       FnSymbol* serializeFn,   bool newStyleInIntent)
-{
+static void serializeAtCallSites(FnSymbol* fn,
+                                 ArgSymbol* arg,
+                                 Type* dataType,
+                                 CallExpr* argDestroyCall,
+                                 FnSymbol* serializeFn,
+                                 bool newStyleInIntent) {
   forv_Vec(CallExpr, call, *fn->calledBy) {
     SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
     SET_LINENO(actual);
@@ -440,7 +437,8 @@ static void serializeAtCallSites(FnSymbol* fn,  ArgSymbol* arg,
 
       if (initArg->getValType() == actual->getValType()) {
         actualInput = initArg->symbol();
-        initExpr->replace(new CallExpr(PRIM_MOVE, actual->symbol(), actualInput));
+        initExpr->replace(
+          new CallExpr(PRIM_MOVE, actual->symbol(), actualInput));
       }
     }
 
@@ -453,7 +451,8 @@ static void serializeAtCallSites(FnSymbol* fn,  ArgSymbol* arg,
     if (serializeFn->hasFlag(FLAG_FN_RETARG)) {
       call->insertBefore(new CallExpr(serializeFn, actualInput, data));
     } else {
-      call->insertBefore(new CallExpr(PRIM_MOVE, data, new CallExpr(serializeFn, actualInput)));
+      call->insertBefore(
+        new CallExpr(PRIM_MOVE, data, new CallExpr(serializeFn, actualInput)));
     }
 
     // Old argument not passed so we can't destroy the original
@@ -529,7 +528,8 @@ static void serializeAtCallSites(FnSymbol* fn,  ArgSymbol* arg,
  *  - This ref is directly assigned to the field inside the main deserializer.
  *
  */
-static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
+static CallExpr* handleRefDeserializers(Expr* anchor,
+                                        FnSymbol* fn,
                                         FnSymbol* baseDeserializeFn,
                                         Symbol* arg) {
 
@@ -544,7 +544,7 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
   CallExpr* modifiedCall = new CallExpr(deserializeFn, arg);
 
   bool modified = false;
-  for_alist (stmt, deserializeFn->body->body) {
+  for_alist(stmt, deserializeFn->body->body) {
     if (CondStmt* cond = toCondStmt(stmt)) {
       SymExpr* flagExpr = toSymExpr(cond->condExpr);
       if (flagExpr->symbol()->hasFlag(FLAG_DESERIALIZATION_BLOCK_MARKER)) {
@@ -557,7 +557,7 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
         bool useThenBlock = true;
         CallExpr* setMemberCall = NULL;
         Type* fieldType = NULL;
-        for_alist_backward (innerStmt, cond->elseStmt->body) {
+        for_alist_backward(innerStmt, cond->elseStmt->body) {
           if (CallExpr* call = toCallExpr(innerStmt)) {
             if (call->isPrimitive(PRIM_SET_MEMBER)) {
               setMemberCall = call;
@@ -569,8 +569,7 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
                 useThenBlock = false;
                 fieldType = field->symbol()->type;
                 break;
-              }
-              else {
+              } else {
                 useThenBlock = true;
                 break;
               }
@@ -583,19 +582,18 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
           // Phase 2a: We are not doing ref deserialization for this
           // field. Put all the statements in the `then` block in before the
           // conditional. The conditional will be discarded later.
-          for_alist (stmt, cond->thenStmt->body) {
+          for_alist(stmt, cond->thenStmt->body) {
             cond->insertBefore(stmt->remove());
           }
-        }
-        else {
+        } else {
           // Phase 2b: We are doing ref deserialization for this field. Find the
           // symbol used for the serial data. (It is typically replaced with a
           // formal temp). We will have to replace that symbol with the actual
           // argument, when we hoist the val serialization block.
 
           SymbolMap map;
-          Symbol* partialData = NULL;  // part of the serial buffer used
-          for_alist (innerStmt, cond->thenStmt->body) {
+          Symbol* partialData = NULL; // part of the serial buffer used
+          for_alist(innerStmt, cond->thenStmt->body) {
             if (CallExpr* call = toCallExpr(innerStmt)) {
               if (call->isPrimitive(PRIM_MOVE)) {
                 if (CallExpr* rhs = toCallExpr(call->get(2))) {
@@ -624,11 +622,11 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
           // argument to the main deserializer.
           VarSymbol* hoistedRefField = NULL;
           CallExpr* nestedDeser = NULL;
-          for_alist_backward (hoistedDeserStmt, hoistedDeser->body) {
+          for_alist_backward(hoistedDeserStmt, hoistedDeser->body) {
             if (CallExpr* call = toCallExpr(hoistedDeserStmt)) {
               if (call->isPrimitive(PRIM_SET_MEMBER)) {
-                hoistedRefField = new VarSymbol("hoisted_ref",
-                                                fieldType->getRefType());
+                hoistedRefField =
+                  new VarSymbol("hoisted_ref", fieldType->getRefType());
 
                 // probably not necessary, but just in case:
                 hoistedRefField->addFlag(FLAG_INSERT_AUTO_DESTROY);
@@ -636,24 +634,24 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
                 SymExpr* hoistedField = toSymExpr(call->get(3)->remove());
 
                 call->insertBefore(new DefExpr(hoistedRefField));
-                call->insertBefore(new CallExpr(PRIM_MOVE, hoistedRefField,
-                                                new CallExpr(PRIM_ADDR_OF,
-                                                             hoistedField)));
+                call->insertBefore(
+                  new CallExpr(PRIM_MOVE,
+                               hoistedRefField,
+                               new CallExpr(PRIM_ADDR_OF, hoistedField)));
                 call->remove();
 
                 // destroy the val at the end of the `on_fn`
-                if (FnSymbol* destroy = getAutoDestroy(hoistedField->getValType())) {
+                if (FnSymbol* destroy =
+                      getAutoDestroy(hoistedField->getValType())) {
                   CallExpr* lastExpr = toCallExpr(fn->body->body.tail);
                   INT_ASSERT(lastExpr && lastExpr->isPrimitive(PRIM_RETURN));
 
-                  lastExpr->insertBefore(new CallExpr(destroy,
-                                                      hoistedField->copy()));
+                  lastExpr->insertBefore(
+                    new CallExpr(destroy, hoistedField->copy()));
                 }
-              }
-              else if (call->isNamed("chpl__autoDestroy")) {
+              } else if (call->isNamed("chpl__autoDestroy")) {
                 call->remove(); // we'll destroy in the outer scope (above)
-              }
-              else if (call->isNamed("chpl__deserialize")) {
+              } else if (call->isNamed("chpl__deserialize")) {
                 // if there is any nested deserializer in the deserializer that
                 // we just hoisted, we need to recursively check for that.
                 // However, this is not a very clean recursion. See below.
@@ -667,15 +665,14 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
             Symbol* argToNestedCall = NULL;
 
             // Find the serial data argument to the nested call:
-            for_actuals (actual, nestedDeser) {
+            for_actuals(actual, nestedDeser) {
               SymExpr* actualSE = toSymExpr(actual);
               INT_ASSERT(actualSE);
-              Symbol *sym = actualSE->symbol();
+              Symbol* sym = actualSE->symbol();
 
               if (isTypeSymbol(sym)) {
                 continue;
-              }
-              else if (sym->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+              } else if (sym->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
                 continue;
               }
 
@@ -689,7 +686,7 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
             // we hoist it out. So, basically the statement after this move is
             // going to be our anchor.
             CallExpr* moveToArg = NULL;
-            for_alist (stmt, hoistedDeser->body) {
+            for_alist(stmt, hoistedDeser->body) {
               if (CallExpr* call = toCallExpr(stmt)) {
                 if (call->isPrimitive(PRIM_MOVE)) {
                   SymExpr* lhs = toSymExpr(call->get(1));
@@ -700,13 +697,10 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
               }
             }
 
-
             // recurse
             FnSymbol* curDeserializer = nestedDeser->resolvedFunction();
-            CallExpr* replCall = handleRefDeserializers(moveToArg->next,
-                                                        fn,
-                                                        curDeserializer,
-                                                        argToNestedCall);
+            CallExpr* replCall = handleRefDeserializers(
+              moveToArg->next, fn, curDeserializer, argToNestedCall);
 
             // handle retargs and rtts in the call. This is similar to the logic
             // in `insertSerialization`. There might be a refactor where we
@@ -717,8 +711,10 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
               replCall->insertAtTail(nestedDeser->argList.tail->remove());
             }
 
-            if (DefExpr* firstFormal = toDefExpr(curDeserializer->formals.head)) {
-              if (firstFormal->sym->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+            if (DefExpr* firstFormal =
+                  toDefExpr(curDeserializer->formals.head)) {
+              if (firstFormal->sym->type->symbol->hasFlag(
+                    FLAG_RUNTIME_TYPE_VALUE)) {
                 replCall->insertAtHead(nestedDeser->argList.head->remove());
               }
             }
@@ -734,21 +730,19 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
           // field as an argument, changing the setMemberCall to make use of
           // this argument to the function. Note that `modifiedCall` will
           // receive its retarg/rtt in `insertSerialization`.
-          ArgSymbol *newArg = new ArgSymbol(INTENT_REF, "hoisted_field",
-                                            hoistedRefField->type);
+          ArgSymbol* newArg =
+            new ArgSymbol(INTENT_REF, "hoisted_field", hoistedRefField->type);
           if (deserializeFn->hasFlag(FLAG_FN_RETARG)) {
             Expr* retArg = deserializeFn->formals.tail->remove();
             deserializeFn->insertFormalAtTail(newArg);
             deserializeFn->insertFormalAtTail(retArg);
-          }
-          else {
+          } else {
             deserializeFn->insertFormalAtTail(newArg);
           }
           modifiedCall->insertAtTail(new SymExpr(hoistedRefField));
 
           setMemberCall->get(3)->replace(new SymExpr(newArg));
           cond->insertBefore(setMemberCall->remove());
-
         }
 
         // cleanup
@@ -761,8 +755,7 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
   if (!modified) {
     regularDeserializers.insert(baseDeserializeFn);
     return baseCall;
-  }
-  else {
+  } else {
     modifiedCall->setResolvedFunction(deserializeFn);
     return modifiedCall;
   }
@@ -772,15 +765,15 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
 // instance of 'arg'.
 // Replace all references to 'arg' within the task function
 // with local references to that temp.
-static VarSymbol* replaceArgWithDeserialized(FnSymbol* fn, ArgSymbol* arg,
-                                Type* oldArgType, FnSymbol* deserializeFn,
-                                bool needsRuntimeType)
-{
+static VarSymbol* replaceArgWithDeserialized(FnSymbol* fn,
+                                             ArgSymbol* arg,
+                                             Type* oldArgType,
+                                             FnSymbol* deserializeFn,
+                                             bool needsRuntimeType) {
   VarSymbol* deserialized = newTemp(arg->cname, oldArgType->getValType());
-  VarSymbol* dsRef = newTemp(arg->cname, QualifiedType(QUAL_REF, oldArgType->getValType()));
-  for_SymbolSymExprs(se, arg) {
-    se->setSymbol(dsRef);
-  }
+  VarSymbol* dsRef =
+    newTemp(arg->cname, QualifiedType(QUAL_REF, oldArgType->getValType()));
+  for_SymbolSymExprs(se, arg) { se->setSymbol(dsRef); }
 
   Expr* anchor = fn->body->body.head;
   anchor->insertBefore(new DefExpr(deserialized));
@@ -788,12 +781,13 @@ static VarSymbol* replaceArgWithDeserialized(FnSymbol* fn, ArgSymbol* arg,
 
   // TODO we should probably create the call as normal, then replace it. It'll
   // help with easier recursion w.r.t retarg functions
-  CallExpr* deserializeCall = handleRefDeserializers(anchor, fn, deserializeFn,
-                                                     arg);
+  CallExpr* deserializeCall =
+    handleRefDeserializers(anchor, fn, deserializeFn, arg);
   CallExpr* callToAdd = NULL;
 
   if (needsRuntimeType) {
-    FnSymbol* runtimeTypeFn = valueToRuntimeTypeMap.get(oldArgType->getValType());
+    FnSymbol* runtimeTypeFn =
+      valueToRuntimeTypeMap.get(oldArgType->getValType());
     INT_ASSERT(runtimeTypeFn != NULL);
     VarSymbol* info = new VarSymbol("ds_info", runtimeTypeFn->retType);
     anchor->insertBefore(new DefExpr(info));
@@ -804,23 +798,27 @@ static VarSymbol* replaceArgWithDeserialized(FnSymbol* fn, ArgSymbol* arg,
 
   if (deserializeFn->hasFlag(FLAG_FN_RETARG)) {
     VarSymbol* refTemp = newTemp(deserialized->qualType().toRef());
-    anchor->insertBefore(new DefExpr(refTemp));;
-    anchor->insertBefore(new CallExpr(PRIM_MOVE, refTemp, new CallExpr(PRIM_SET_REFERENCE, deserialized)));
+    anchor->insertBefore(new DefExpr(refTemp));
+    ;
+    anchor->insertBefore(new CallExpr(
+      PRIM_MOVE, refTemp, new CallExpr(PRIM_SET_REFERENCE, deserialized)));
     deserializeCall->insertAtTail(new SymExpr(refTemp));
     callToAdd = deserializeCall;
   } else {
     callToAdd = new CallExpr(PRIM_MOVE, deserialized, deserializeCall);
   }
   anchor->insertBefore(callToAdd);
-  anchor->insertBefore(new CallExpr(PRIM_MOVE, dsRef, new CallExpr(PRIM_SET_REFERENCE, deserialized)));
+  anchor->insertBefore(new CallExpr(
+    PRIM_MOVE, dsRef, new CallExpr(PRIM_SET_REFERENCE, deserialized)));
 
   return deserialized;
 }
 
 // Destroy 'arg' and 'deserialized' before returning from the task function.
-static void destroyArgAndDeserialized(FnSymbol* fn, ArgSymbol* arg,
-                             bool newStyleInIntent, VarSymbol* deserialized)
-{
+static void destroyArgAndDeserialized(FnSymbol* fn,
+                                      ArgSymbol* arg,
+                                      bool newStyleInIntent,
+                                      VarSymbol* deserialized) {
   CallExpr* lastExpr = toCallExpr(fn->body->body.tail);
   INT_ASSERT(lastExpr && lastExpr->isPrimitive(PRIM_RETURN));
 
@@ -871,18 +869,18 @@ static void destroyArgAndDeserialized(FnSymbol* fn, ArgSymbol* arg,
 // BHARSH TODO: Split this function into better easily-digestible pieces
 // BHARSH TODO: capture the assumptions made here in documentation
 //
-static void insertSerialization(FnSymbol*  fn,
-                                ArgSymbol* arg) {
-  Type* oldArgType    = arg->type;
+static void insertSerialization(FnSymbol* fn, ArgSymbol* arg) {
+  Type* oldArgType = arg->type;
   bool newStyleInIntent = shouldAddInFormalTempAtCallSite(arg, fn);
 
   Serializers ser = serializeMap[oldArgType->getValType()];
 
-  FnSymbol* serializeFn   = ser.serializer;
+  FnSymbol* serializeFn = ser.serializer;
   FnSymbol* deserializeFn = ser.deserializer;
   INT_ASSERT(serializeFn != NULL && deserializeFn != NULL);
 
-  bool needsRuntimeType = oldArgType->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
+  bool needsRuntimeType =
+    oldArgType->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
 
   Type* dataType = NULL;
   if (serializeFn->hasFlag(FLAG_FN_RETARG)) {
@@ -909,8 +907,8 @@ static void insertSerialization(FnSymbol*  fn,
   else
     INT_ASSERT(!argDestroyCall);
 
-  serializeAtCallSites(fn, arg, dataType, argDestroyCall, serializeFn,
-                       newStyleInIntent);
+  serializeAtCallSites(
+    fn, arg, dataType, argDestroyCall, serializeFn, newStyleInIntent);
 
   // Remove the old auto-destroy call from the task fn.
   if (argDestroyCall) {
@@ -920,8 +918,8 @@ static void insertSerialization(FnSymbol*  fn,
   SET_LINENO(fn);
 
   // The deserialized instance.
-  VarSymbol* deserialized = replaceArgWithDeserialized(fn, arg, oldArgType,
-                                             deserializeFn, needsRuntimeType);
+  VarSymbol* deserialized = replaceArgWithDeserialized(
+    fn, arg, oldArgType, deserializeFn, needsRuntimeType);
 
   destroyArgAndDeserialized(fn, arg, newStyleInIntent, deserialized);
 }
@@ -931,25 +929,22 @@ static CallExpr* findDestroyCallForArg(ArgSymbol* arg) {
   // in the function defining arg.
 
   FnSymbol* fn = arg->getFunction();
-  for (Expr* stmt = fn->body->body.tail;
-       stmt != NULL;
-       stmt = stmt->prev) {
+  for (Expr* stmt = fn->body->body.tail; stmt != NULL; stmt = stmt->prev) {
 
     // Look for a CallExpr to auto destroy fn with argument arg
     if (CallExpr* call = toCallExpr(stmt))
       if (FnSymbol* calledFn = call->resolvedFunction())
         if (calledFn->hasFlag(FLAG_AUTO_DESTROY_FN))
           if (SymExpr* se = toSymExpr(call->get(1)))
-            if (se->symbol() == arg)
-              return call;
+            if (se->symbol() == arg) return call;
   }
 
   return NULL;
 }
 
 static void defaultForwarding(Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                              FnSymbol*                     fn,
-                              ArgSymbol*                    arg) {
+                              FnSymbol* fn,
+                              ArgSymbol* arg) {
   // Dereference the arg type.
   Type* prevArgType = arg->type;
 
@@ -977,9 +972,7 @@ static void defaultForwarding(Map<Symbol*, Vec<SymExpr*>*>& useMap,
     }
 
     call->insertBefore(new DefExpr(deref));
-    call->insertBefore(new CallExpr(PRIM_MOVE,
-                                    deref,
-                                    rhs));
+    call->insertBefore(new CallExpr(PRIM_MOVE, deref, rhs));
 
     actual->replace(new SymExpr(deref));
   }
@@ -1000,7 +993,7 @@ static void defaultForwarding(Map<Symbol*, Vec<SymExpr*>*>& useMap,
       use->replace(new CallExpr(PRIM_SET_REFERENCE, arg));
 
     } else {
-      Expr*      stmt   = use->getStmtExpr();
+      Expr* stmt = use->getStmtExpr();
       VarSymbol* reref = newTemp("rvfRerefTmp", prevArgType);
 
       Expr* rhs = NULL;
@@ -1011,9 +1004,7 @@ static void defaultForwarding(Map<Symbol*, Vec<SymExpr*>*>& useMap,
       }
 
       stmt->insertBefore(new DefExpr(reref));
-      stmt->insertBefore(new CallExpr(PRIM_MOVE,
-                                      reref,
-                                      rhs));
+      stmt->insertBefore(new CallExpr(PRIM_MOVE, reref, rhs));
 
       use->replace(new SymExpr(reref));
     }
@@ -1054,10 +1045,7 @@ static void buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
         syncAccessFunctionSet.set_add(fn);
         syncAccessFunctionVec.add(fn);
 #ifdef DEBUG_SYNC_ACCESS_FUNCTION_SET
-        printf("%s:%d %s\n",
-               fn->getModule()->name,
-               fn->linenum(),
-               fn->name);
+        printf("%s:%d %s\n", fn->getModule()->name, fn->linenum(), fn->name);
 #endif
       }
     }
@@ -1086,10 +1074,7 @@ static void buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
                parent->linenum(),
                parent->name);
 
-        printf("  %s:%d %s\n",
-               fn->getModule()->name,
-               fn->linenum(),
-               fn->name);
+        printf("  %s:%d %s\n", fn->getModule()->name, fn->linenum(), fn->name);
 #endif
       }
     }
@@ -1112,41 +1097,37 @@ static void buildSyncAccessFunctionSet(Vec<FnSymbol*>& syncAccessFunctionSet) {
 
 static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                           Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                          Symbol*                       field,
-                          Symbol*                       ref,
-                          Vec<Symbol*>&                 visited);
+                          Symbol* field,
+                          Symbol* ref,
+                          Vec<Symbol*>& visited);
 
 static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                           Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                          Symbol*                       field,
-                          Symbol*                       ref,
-                          Vec<Symbol*>&                 visited,
-                          SymExpr*                      use);
-
-
-
+                          Symbol* field,
+                          Symbol* ref,
+                          Vec<Symbol*>& visited,
+                          SymExpr* use);
 
 //
 // Implement the start of the recursion
 //
 static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                           Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                          Symbol*                       field,
-                          Symbol*                       ref) {
+                          Symbol* field,
+                          Symbol* ref) {
   Vec<Symbol*> visited;
 
   return isSafeToDeref(defMap, useMap, field, ref, visited);
 }
-
 
 //
 // The recursive loop
 //
 static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                           Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                          Symbol*                       field,
-                          Symbol*                       ref,
-                          Vec<Symbol*>&                 visited) {
+                          Symbol* field,
+                          Symbol* ref,
+                          Vec<Symbol*>& visited) {
   bool retval = true;
 
   if (visited.set_in(ref) == NULL) {
@@ -1162,12 +1143,7 @@ static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
     } else {
       for_uses(use, useMap, ref) {
-        if (isSafeToDeref(defMap,
-                          useMap,
-                          field,
-                          ref,
-                          visited,
-                          use) == false) {
+        if (isSafeToDeref(defMap, useMap, field, ref, visited, use) == false) {
           retval = false;
           break;
         }
@@ -1183,10 +1159,10 @@ static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 //
 static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                           Map<Symbol*, Vec<SymExpr*>*>& useMap,
-                          Symbol*                       field,
-                          Symbol*                       ref,
-                          Vec<Symbol*>&                 visited,
-                          SymExpr*                      use) {
+                          Symbol* field,
+                          Symbol* ref,
+                          Vec<Symbol*>& visited,
+                          SymExpr* use) {
   bool retval = true;
 
   if (CallExpr* call = toCallExpr(use->parentExpr)) {
@@ -1204,14 +1180,9 @@ static bool isSafeToDeref(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
       INT_ASSERT(newRef);
 
-      retval = isSafeToDeref(defMap,
-                             useMap,
-                             field,
-                             newRef->symbol(),
-                             visited);
+      retval = isSafeToDeref(defMap, useMap, field, newRef->symbol(), visited);
 
-    } else if (call->isPrimitive(PRIM_SET_MEMBER) == true &&
-               field                              != NULL) {
+    } else if (call->isPrimitive(PRIM_SET_MEMBER) == true && field != NULL) {
       SymExpr* se = toSymExpr(call->get(2));
 
       INT_ASSERT(se);
@@ -1277,7 +1248,8 @@ static bool computeDotLocale(Symbol* sym) {
       }
     } else if (call->isPrimitive(PRIM_MOVE)) {
       SymExpr* LHS = toSymExpr(call->get(1));
-      if (LHS->isRef() && use != LHS && computeDotLocale(LHS->symbol())) retval = true;
+      if (LHS->isRef() && use != LHS && computeDotLocale(LHS->symbol()))
+        retval = true;
     } else if (call->isPrimitive(PRIM_SET_MEMBER) && use == call->get(3)) {
       // See if the field we're setting may use .locale
       // This could be improved by only looking at the base object's instance,
@@ -1321,7 +1293,5 @@ static void computeUsesDotLocale() {
     info->todo.push_back(se);
   }
 
-  for_vector(Symbol, sym, todo) {
-    computeDotLocale(sym);
-  }
+  for_vector(Symbol, sym, todo) { computeDotLocale(sym); }
 }

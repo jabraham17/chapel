@@ -30,10 +30,8 @@
 
 #include "global-ast-vecs.h"
 
-void
-removeEmptyRecords() {
-  if (fNoRemoveEmptyRecords)
-    return;
+void removeEmptyRecords() {
+  if (fNoRemoveEmptyRecords) return;
 
   std::set<Type*> emptyRecordTypeSet;
   int numEmptyRecordTypes = 0;
@@ -72,8 +70,7 @@ removeEmptyRecords() {
     }
   }
 
-  if (!numEmptyRecordTypes)
-    return;
+  if (!numEmptyRecordTypes) return;
 
   compute_call_sites();
 

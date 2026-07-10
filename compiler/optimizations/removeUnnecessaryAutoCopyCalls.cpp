@@ -62,8 +62,7 @@ bool RemoveUnnecessaryAutoCopyCalls::shouldProcess(FnSymbol* fn) {
 }
 
 // TODO this uses removeInitOrAutoCopyPostResolution
-void RemoveUnnecessaryAutoCopyCalls::process(FnSymbol* fn)
-{
+void RemoveUnnecessaryAutoCopyCalls::process(FnSymbol* fn) {
   calls.clear();
   assert(isPOD(fn->retType)); // precondition from shouldProcess
 
@@ -119,8 +118,7 @@ void RemoveUnnecessaryAutoCopyCalls::process(FnSymbol* fn)
 #include "global-ast-vecs.h"
 
 void removeUnnecessaryAutoCopyCalls() {
-  if (fNoRemoveCopyCalls)
-    return;
+  if (fNoRemoveCopyCalls) return;
 
   PassManager pm;
   pm.runPass<FnSymbol*>(RemoveUnnecessaryAutoCopyCalls(), gFnSymbols);

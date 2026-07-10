@@ -33,20 +33,15 @@
 #include "stlUtil.h"
 #include "resolution.h" // isPOD
 
-bool BulkCopyRecords::isAssignment(FnSymbol* fn)
-{
-  if (! fn->hasFlag(FLAG_ASSIGNOP))
-    return false;
-  if (fn->name != astrSassign)
-    return false;
+bool BulkCopyRecords::isAssignment(FnSymbol* fn) {
+  if (!fn->hasFlag(FLAG_ASSIGNOP)) return false;
+  if (fn->name != astrSassign) return false;
 
   return true;
 }
 
-bool BulkCopyRecords::typeContainsRef(Type* t, bool isRoot)
-{
-  if (containsRef.count(t))
-    return containsRef[t];
+bool BulkCopyRecords::typeContainsRef(Type* t, bool isRoot) {
+  if (containsRef.count(t)) return containsRef[t];
 
   bool hasRef = false;
 
@@ -54,9 +49,7 @@ bool BulkCopyRecords::typeContainsRef(Type* t, bool isRoot)
     hasRef = true;
   } else if (AggregateType* at = toAggregateType(t)) {
     if (!at->isClass()) {
-      for_fields(field, at) {
-        hasRef |= typeContainsRef(field->type, false);
-      }
+      for_fields(field, at) { hasRef |= typeContainsRef(field->type, false); }
     }
   }
 
@@ -74,44 +67,36 @@ bool BulkCopyRecords::typeContainsRef(Type* t, bool isRoot)
     - the lhs and rhs arguments are POD types
     - the lhs and rhs arguments do not contain references
  */
-bool BulkCopyRecords::isTrivialAssignment(FnSymbol* fn)
-{
-  if (! isAssignment(fn))
-    return false;
+bool BulkCopyRecords::isTrivialAssignment(FnSymbol* fn) {
+  if (!isAssignment(fn)) return false;
 
   // The base argument types must match.
   ArgSymbol* lhs = fn->getFormal(1);
   ArgSymbol* rhs = fn->getFormal(2);
   Type* argType = lhs->type->getValType();
-  if (argType != rhs->type->getValType())
-    return false;
+  if (argType != rhs->type->getValType()) return false;
 
   // Skip this optimization for string/wide string types
   // (due to problems providing additional arguments for
   //  PRIM_ASSIGN).
-  if (argType == dtString)
-    return false;
+  if (argType == dtString) return false;
 
   // Neither type may contain references
   // (since these would be dereferenced in the assignment)
-  if (typeContainsRef(lhs->type) || typeContainsRef(rhs->type))
-    return false;
+  if (typeContainsRef(lhs->type) || typeContainsRef(rhs->type)) return false;
 
   // Both argument types must be POD types
   // (but at this point they are the same type, so we only check one)
-  if (isPOD(argType))
-    return true;
+  if (isPOD(argType)) return true;
 
   return false;
 }
-
 
 // Replace functions marked as simple assignments with a bulk copy
 // (PRIM_ASSIGN) operation.  In the generated code, PRIM_ASSIGN on a type that
 // is represented by a C struct will be rendered as a struct assignment, which
 // the C compiler can implement as a memcpy.
-void BulkCopyRecords::replaceSimpleAssignment(FnSymbol* fn)
-{
+void BulkCopyRecords::replaceSimpleAssignment(FnSymbol* fn) {
   SET_LINENO(fn);
   SymExpr* lhs = new SymExpr(fn->getFormal(1));
   SymExpr* rhs = new SymExpr(fn->getFormal(2));
@@ -124,8 +109,7 @@ void BulkCopyRecords::replaceSimpleAssignment(FnSymbol* fn)
 bool BulkCopyRecords::shouldProcess(FnSymbol* fn) {
   // We do not convert wrapper functions (only the functions that do the
   // actual assignment).
-  if (fn->hasFlag(FLAG_WRAPPER))
-    return false;
+  if (fn->hasFlag(FLAG_WRAPPER)) return false;
 
   return isTrivialAssignment(fn);
 }

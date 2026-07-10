@@ -167,25 +167,25 @@
 //
 
 class ConstInfo {
-  public:
-    bool                  finalizedConstness;
-    bool                  finalizedRefToConst;
-    bool                  alreadyCalled;
-    Symbol*               sym;
-    SymExpr*              fnUses;
+ public:
+  bool finalizedConstness;
+  bool finalizedRefToConst;
+  bool alreadyCalled;
+  Symbol* sym;
+  SymExpr* fnUses;
 
-    // TODO: Should we use the linked-list embedded in each Symbol?
-    std::vector<SymExpr*> todo;
+  // TODO: Should we use the linked-list embedded in each Symbol?
+  std::vector<SymExpr*> todo;
 
-    ConstInfo(Symbol*);
+  ConstInfo(Symbol*);
 
-    SymExpr* next();
-    void     reset();
-    bool     hasMore();
+  SymExpr* next();
+  void reset();
+  bool hasMore();
 
-  private:
-    size_t curTodo;
-    ConstInfo();
+ private:
+  size_t curTodo;
+  ConstInfo();
 };
 
 ConstInfo::ConstInfo(Symbol* s) {
@@ -214,9 +214,7 @@ ConstInfo::ConstInfo(Symbol* s) {
   alreadyCalled = false;
 }
 
-SymExpr* ConstInfo::next() {
-  return todo[curTodo++];
-}
+SymExpr* ConstInfo::next() { return todo[curTodo++]; }
 
 // Reset certain states so another loop over the infoMap can use these
 // properties
@@ -225,9 +223,7 @@ void ConstInfo::reset() {
   alreadyCalled = false;
 }
 
-bool ConstInfo::hasMore() {
-  return curTodo < todo.size();
-}
+bool ConstInfo::hasMore() { return curTodo < todo.size(); }
 
 std::map<Symbol*, ConstInfo*> infoMap;
 typedef std::map<Symbol*, ConstInfo*>::iterator ConstInfoIter;
@@ -277,10 +273,8 @@ static bool isSafeRefPrimitive(SymExpr* use) {
     case PRIM_PTR_NOTEQUAL:
     case PRIM_SIZEOF_BUNDLE:
     case PRIM_SIZEOF_DDATA_ELEMENT:
-    case PRIM_WIDE_GET_NODE:
-      return true;
-    default:
-      return false;
+    case PRIM_WIDE_GET_NODE: return true;
+    default: return false;
   }
 }
 
@@ -306,8 +300,7 @@ static bool canRHSBeConstRef(CallExpr* parent, SymExpr* use) {
   switch (rhs->primitive->tag) {
     case PRIM_GET_MEMBER_VALUE:
     case PRIM_GET_SVEC_MEMBER_VALUE:
-      if (LHS->isRef() == false &&
-          isClass(LHS->typeInfo()) == false) {
+      if (LHS->isRef() == false && isClass(LHS->typeInfo()) == false) {
         return true;
       }
       // fallthrough
@@ -330,8 +323,7 @@ static bool canRHSBeConstRef(CallExpr* parent, SymExpr* use) {
         return inferConstRef(LHS->symbol());
       }
     }
-    default:
-      break;
+    default: break;
   }
   return isSafeRefPrimitive(use);
 }
@@ -405,18 +397,15 @@ static bool inferConstRef(Symbol* sym) {
       if (form->isRef() && !inferConstRef(form)) {
         isConstRef = false;
       }
-    }
-    else if (call->isIndirectCall()) {
+    } else if (call->isIndirectCall()) {
       if (isPassedToRefFormalInIndirectCall(use, call)) {
         isConstRef = false;
       }
-    }
-    else if (parent && isMoveOrAssign(parent)) {
+    } else if (parent && isMoveOrAssign(parent)) {
       if (!canRHSBeConstRef(parent, use)) {
         isConstRef = false;
       }
-    }
-    else if (call->isPrimitive(PRIM_MOVE)) {
+    } else if (call->isPrimitive(PRIM_MOVE)) {
       //
       // Handles three cases:
       // 1) MOVE use value - writing to a reference, so 'use' cannot be const
@@ -440,14 +429,12 @@ static bool inferConstRef(Symbol* sym) {
         }
         // else CASE 3: do nothing because isConstRef is already true
       }
-    }
-    else if (call->isPrimitive(PRIM_ASSIGN)) {
+    } else if (call->isPrimitive(PRIM_ASSIGN)) {
       if (use == call->get(1)) {
         isConstRef = false;
       }
-    }
-    else if (call->isPrimitive(PRIM_SET_MEMBER) ||
-             call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
+    } else if (call->isPrimitive(PRIM_SET_MEMBER) ||
+               call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
       // BHARSH 2016-11-02
       // In the expr (set_member base member rhs),
       // If use == base, I take the conservative approach and decide that 'use'
@@ -494,17 +481,15 @@ static bool inferConstRef(Symbol* sym) {
   return isConstRef;
 }
 
-static bool passedToInitOrRetarg(SymExpr* use,
-                                 ArgSymbol* form, FnSymbol* calledFn)
-{
-  if (form->hasFlag(FLAG_RETARG))
-    return true;
+static bool
+passedToInitOrRetarg(SymExpr* use, ArgSymbol* form, FnSymbol* calledFn) {
+  if (form->hasFlag(FLAG_RETARG)) return true;
 
-  if ((calledFn->isInitializer() || calledFn->isCopyInit())  &&
+  if ((calledFn->isInitializer() || calledFn->isCopyInit()) &&
       form->hasFlag(FLAG_ARG_THIS))
     return true;
 
-  return false;  // neither init nor retarg
+  return false; // neither init nor retarg
 }
 
 //
@@ -531,18 +516,17 @@ static bool onlyUsedForInitOrRetarg(Symbol* ref, CallExpr* defCall) {
   INT_ASSERT(defCall != NULL);
 
   for_SymbolSymExprs(use, ref) {
-    if (use->parentExpr == defCall)
-      continue;
+    if (use->parentExpr == defCall) continue;
 
     CallExpr* call = toCallExpr(use->parentExpr);
 
-    if (FnSymbol*  fn = call->resolvedFunction()) {
+    if (FnSymbol* fn = call->resolvedFunction()) {
       ArgSymbol* form = actual_to_formal(use);
       if (passedToInitOrRetarg(use, form, fn)) {
         INT_ASSERT(!seenInitOrRetarg); // init/retarg happens just once
         seenInitOrRetarg = true;
       } else {
-        return false;  // a use other than what we are looking for
+        return false; // a use other than what we are looking for
       }
     }
   }
@@ -591,11 +575,9 @@ static bool inferConst(Symbol* sym) {
           isConstVal = false;
         }
       }
-    }
-    else if (isPassedToRefFormalInIndirectCall(use, call)) {
+    } else if (isPassedToRefFormalInIndirectCall(use, call)) {
       isConstVal = false;
-    }
-    else if (parent && isMoveOrAssign(parent)) {
+    } else if (parent && isMoveOrAssign(parent)) {
       if (call->isPrimitive(PRIM_ADDR_OF) ||
           call->isPrimitive(PRIM_SET_REFERENCE)) {
         Symbol* LHS = toSymExpr(parent->get(1))->symbol();
@@ -607,8 +589,7 @@ static bool inferConst(Symbol* sym) {
           isConstVal = false;
         }
       }
-    }
-    else if (isMoveOrAssign(call)) {
+    } else if (isMoveOrAssign(call)) {
       if (use == call->get(1)) {
         numDefs += 1;
       }
@@ -666,8 +647,7 @@ static bool inferRefToConst(Symbol* sym) {
     // Check each call and set isRefToConst to false if any actual is not a ref
     // to a const.
     FnSymbol* fn = toFnSymbol(sym->defPoint->parentSymbol);
-    if (fn->hasFlag(FLAG_VIRTUAL) ||
-        fn->hasFlag(FLAG_EXPORT)  ||
+    if (fn->hasFlag(FLAG_VIRTUAL) || fn->hasFlag(FLAG_EXPORT) ||
         fn->hasFlag(FLAG_EXTERN)) {
       // Not sure how to best handle virtual calls, so simply set false for now
       //
@@ -725,8 +705,7 @@ static bool inferRefToConst(Symbol* sym) {
           if (se->isRef() && !inferRefToConst(se->symbol())) {
             isRefToConst = false;
           }
-        }
-        else {
+        } else {
           CallExpr* RHS = toCallExpr(call->get(2));
           INT_ASSERT(RHS);
           if (RHS->isPrimitive(PRIM_ADDR_OF) ||
@@ -746,8 +725,7 @@ static bool inferRefToConst(Symbol* sym) {
           }
         }
       }
-    }
-    else if (call->isResolved() || call->isIndirectCall()) {
+    } else if (call->isResolved() || call->isIndirectCall()) {
       isRefToConst = true;
     } else if (call->isPrimitive()) {
       isRefToConst = isSafeRefPrimitive(use);

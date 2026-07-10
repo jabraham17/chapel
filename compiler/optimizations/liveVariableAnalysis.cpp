@@ -29,7 +29,6 @@
 
 //#define DEBUG_LIVE
 
-
 //
 // Given a function fn, computes:
 //
@@ -42,13 +41,12 @@
 // if OUT(i)(j) is true then the jth local variable is live at the
 // exit of basic block i
 //
-void
-liveVariableAnalysis(FnSymbol* fn,
-                     Vec<Symbol*>& locals,
-                     Map<Symbol*,int>& localMap,
-                     Vec<SymExpr*>& useSet,
-                     Vec<SymExpr*>& defSet,
-                     std::vector<BitVec*>& OUT) {
+void liveVariableAnalysis(FnSymbol* fn,
+                          Vec<Symbol*>& locals,
+                          Map<Symbol*, int>& localMap,
+                          Vec<SymExpr*>& useSet,
+                          Vec<SymExpr*>& defSet,
+                          std::vector<BitVec*>& OUT) {
   BasicBlock::buildLocalsVectorMap(fn, locals, localMap);
 
 #ifdef DEBUG_LIVE
@@ -81,8 +79,7 @@ liveVariableAnalysis(FnSymbol* fn,
         if (SymExpr* se = toSymExpr(ast)) {
           if (useSet.set_in(se)) {
             int id = localMap.get(se->symbol());
-            if (!def->get(id))
-              use->set(id);
+            if (!def->get(id)) use->set(id);
           }
         }
       }
@@ -90,8 +87,7 @@ liveVariableAnalysis(FnSymbol* fn,
         if (SymExpr* se = toSymExpr(ast1)) {
           if (defSet.set_in(se)) {
             int id = localMap.get(se->symbol());
-            if (!use->get(id))
-              def->set(id);
+            if (!use->get(id)) def->set(id);
           }
         }
       }
@@ -103,18 +99,17 @@ liveVariableAnalysis(FnSymbol* fn,
   }
 
 #ifdef DEBUG_LIVE
-  printf("DEF\n"); BasicBlock::printLocalsVectorSets(DEF, locals);
-  printf("USE\n"); BasicBlock::printLocalsVectorSets(USE, locals);
+  printf("DEF\n");
+  BasicBlock::printLocalsVectorSets(DEF, locals);
+  printf("USE\n");
+  BasicBlock::printLocalsVectorSets(USE, locals);
 #endif
 
   BasicBlock::backwardFlowAnalysis(fn, USE, DEF, IN, OUT);
 
-  for_vector(BitVec, use, USE)
-    delete use, use = 0;
+  for_vector(BitVec, use, USE) delete use, use = 0;
 
-  for_vector(BitVec, def, DEF)
-    delete def, def = 0;
+  for_vector(BitVec, def, DEF) delete def, def = 0;
 
-  for_vector(BitVec, in, IN)
-    delete in, in = 0;
+  for_vector(BitVec, in, IN) delete in, in = 0;
 }

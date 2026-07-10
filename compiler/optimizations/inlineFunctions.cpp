@@ -73,7 +73,7 @@ static void inlineFunctionsImpl() {
 
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_INLINE) == true &&
-          inlinedSet.find(fn)      == inlinedSet.end()) {
+          inlinedSet.find(fn) == inlinedSet.end()) {
         if (fn->hasFlag(FLAG_EXTERN)) {
           USR_WARN(fn, "inline keyword has no effect on an 'extern proc'");
         } else {
@@ -149,7 +149,7 @@ static void simplifyBody(FnSymbol* fn) {
 
   removeUnnecessaryGotos(fn);
 
-#if DEBUG_CP < 2    // That is, disabled if DEBUG_CP >= 2
+#if DEBUG_CP < 2 // That is, disabled if DEBUG_CP >= 2
   if (fNoCopyPropagation == false) {
     singleAssignmentRefPropagation(fn);
     localCopyPropagation(fn);
@@ -196,8 +196,8 @@ static void inlineCall(CallExpr* call) {
   // Note that if the function does not return a value or if the
   // call does not consume the return value, then stmt == call
   //
-  Expr*      stmt  = call->getStmtExpr();
-  FnSymbol*  fn    = call->resolvedFunction();
+  Expr* stmt = call->getStmtExpr();
+  FnSymbol* fn = call->resolvedFunction();
   BlockStmt* bCopy = copyFnBodyForInlining(call, fn, stmt);
 
   // Transfer most of the statements from the body to immediately before
@@ -216,14 +216,14 @@ static void inlineCall(CallExpr* call) {
 
       stmt->insertBefore(copy->remove());
 
-    // The function does not return a value.  Remove the calling statement.
+      // The function does not return a value.  Remove the calling statement.
     } else if (fn->retType == dtVoid) {
       stmt->remove();
 
-    // Replace the call with the return value
+      // Replace the call with the return value
     } else {
-      CallExpr* returnStmt  = toCallExpr(copy);
-      Expr*     returnValue = returnStmt->get(1);
+      CallExpr* returnStmt = toCallExpr(copy);
+      Expr* returnValue = returnStmt->get(1);
 
       call->replace(returnValue->remove());
     }
@@ -247,14 +247,14 @@ static void markTaskFunctionsInlined(BlockStmt* body);
 
 BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* stmt) {
   SET_LINENO(call);
-  SymbolMap  map;
+  SymbolMap map;
 
   for_formals_actuals(formal, actual, call) {
     Symbol* sym = toSymExpr(actual)->symbol();
 
     // Replace an immediate actual with a temp var "just in case"
     if (sym->isImmediate() == true) {
-      VarSymbol* tmp  = newTemp("inlineImm", sym->type);
+      VarSymbol* tmp = newTemp("inlineImm", sym->type);
 
       actual->replace(new SymExpr(tmp));
 
@@ -268,15 +268,13 @@ BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* stmt) {
       // create a reference temporary so that nothing in the
       // inlined code changes meaning.
 
-      VarSymbol* tmp  = newTemp(astr("i_", formal->name),
-                                formal->type);
-      DefExpr*   def  = new DefExpr(tmp);
-      CallExpr*  move = NULL;
+      VarSymbol* tmp = newTemp(astr("i_", formal->name), formal->type);
+      DefExpr* def = new DefExpr(tmp);
+      CallExpr* move = NULL;
 
       tmp->qual = QUAL_REF;
-      move      = new CallExpr(PRIM_MOVE,
-                               tmp,
-                               new CallExpr(PRIM_SET_REFERENCE, sym));
+      move =
+        new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_SET_REFERENCE, sym));
 
       stmt->insertBefore(def);
       stmt->insertBefore(move);
@@ -300,14 +298,12 @@ BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* stmt) {
   return retval;
 }
 
-static void markTaskFunctionsInlined(BlockStmt* body)
-{
+static void markTaskFunctionsInlined(BlockStmt* body) {
   std::vector<CallExpr*> fnCalls;
   collectFnCalls(body, fnCalls);
   for_vector(CallExpr, call, fnCalls) {
     if (FnSymbol* cfn = call->resolvedFunction()) {
-      bool taskOrWrapper = isTaskFun(cfn) ||
-                           cfn->hasFlag(FLAG_ON_BLOCK) ||
+      bool taskOrWrapper = isTaskFun(cfn) || cfn->hasFlag(FLAG_ON_BLOCK) ||
                            cfn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
                            cfn->hasFlag(FLAG_BEGIN_BLOCK);
 
@@ -318,7 +314,6 @@ static void markTaskFunctionsInlined(BlockStmt* body)
     }
   }
 }
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -354,10 +349,9 @@ static void updateDerefCalls() {
 
 static void inlineCleanup() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fNoInline                 == false &&
-        fn->hasFlag(FLAG_INLINE)  ==  true &&
-        fn->hasFlag(FLAG_EXTERN)  ==  false &&
-        fn->hasFlag(FLAG_EXPORT)  ==  false &&
+    if (fNoInline == false && fn->hasFlag(FLAG_INLINE) == true &&
+        fn->hasFlag(FLAG_EXTERN) == false &&
+        fn->hasFlag(FLAG_EXPORT) == false &&
         fn->hasFlag(FLAG_VIRTUAL) == false) {
       fn->defPoint->remove();
     } else {
@@ -413,21 +407,18 @@ static void updateRefCalls() {
             //
             //   a) Introduce a tmp with qualified type ref t
             //   b) Pass that tmp instead
-            if ((formal->intent & INTENT_REF) != 0     &&
+            if ((formal->intent & INTENT_REF) != 0 &&
                 isReferenceType(formal->type) == false &&
-                formal->type->getRefType()    == actual->typeInfo()) {
+                formal->type->getRefType() == actual->typeInfo()) {
 
               // Introduce a ref temp
-              VarSymbol* tmp  = newTemp(astr("i_", formal->name),
-                                        formal->type);
-              DefExpr*   def  = new DefExpr(tmp);
-              CallExpr*  move = NULL;
+              VarSymbol* tmp = newTemp(astr("i_", formal->name), formal->type);
+              DefExpr* def = new DefExpr(tmp);
+              CallExpr* move = NULL;
 
               tmp->qual = QUAL_REF;
-              move      = new CallExpr(PRIM_MOVE,
-                                       tmp,
-                                       new CallExpr(PRIM_SET_REFERENCE,
-                                                    se->symbol()));
+              move = new CallExpr(
+                PRIM_MOVE, tmp, new CallExpr(PRIM_SET_REFERENCE, se->symbol()));
 
               stmt->insertBefore(def);
               stmt->insertBefore(move);
@@ -444,7 +435,7 @@ static void updateRefCalls() {
 
 static bool hasFormalWithRefIntent(FnSymbol* fn) {
   for_formals(formal, fn) {
-    if ((formal->intent & INTENT_REF) != 0     &&
+    if ((formal->intent & INTENT_REF) != 0 &&
         isReferenceType(formal->type) == false) {
       return true;
     }

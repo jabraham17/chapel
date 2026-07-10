@@ -58,12 +58,11 @@ void removeUnnecessaryGotos(FnSymbol* fn, bool removeEpilogueLabel) {
     if (DefExpr* def = toDefExpr(ast2))
       if (LabelSymbol* label = toLabelSymbol(def->sym))
         if (!label->hasFlag(FLAG_EPILOGUE_LABEL) || removeEpilogueLabel)
-          if (labels.find(label) == labels.end())
-            def->remove();
+          if (labels.find(label) == labels.end()) def->remove();
   }
 
   for_set(LoopStmt, loop, loops) {
-    LabelSymbol* breakLabel    = loop->breakLabelGet();
+    LabelSymbol* breakLabel = loop->breakLabelGet();
     LabelSymbol* continueLabel = loop->continueLabelGet();
 
     if (breakLabel && isAlive(breakLabel) == false) {

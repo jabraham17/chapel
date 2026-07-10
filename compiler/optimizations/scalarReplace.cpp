@@ -56,31 +56,28 @@ static int srRecordReplaced = 0;
 //
 static Vec<AggregateType*> typeVec;
 static Vec<Symbol*> varSet;
-static Map<AggregateType*,int> typeOrder;
-static Map<AggregateType*,Vec<Symbol*>*> typeVarMap;
-static Map<Symbol*,Vec<SymExpr*>*> defMap;
-static Map<Symbol*,Vec<SymExpr*>*> useMap;
+static Map<AggregateType*, int> typeOrder;
+static Map<AggregateType*, Vec<Symbol*>*> typeVarMap;
+static Map<Symbol*, Vec<SymExpr*>*> defMap;
+static Map<Symbol*, Vec<SymExpr*>*> useMap;
 
-typedef Map<AggregateType*,Vec<Symbol*>*> AggregateTypeToVecSymbolMap;
-typedef MapElem<AggregateType*,Vec<Symbol*>*> AggregateTypeToVecSymbolMapElem;
+typedef Map<AggregateType*, Vec<Symbol*>*> AggregateTypeToVecSymbolMap;
+typedef MapElem<AggregateType*, Vec<Symbol*>*> AggregateTypeToVecSymbolMapElem;
 
 //
 // compute topological order for types; this functions assumes that
 // there are no cycles and that the typeOrder map is initialized to -1
 // for all class types
 //
-static int
-computeOrder(AggregateType* ct) {
-  if (typeOrder.get(ct) != -1)
-    return typeOrder.get(ct);
+static int computeOrder(AggregateType* ct) {
+  if (typeOrder.get(ct) != -1) return typeOrder.get(ct);
 
   typeOrder.put(ct, -2);
   int order = 0;
   for_fields(field, ct) {
     if (AggregateType* fct = toAggregateType(field->type)) {
       int fieldOrder = computeOrder(fct);
-      if (fieldOrder >= order)
-        order = fieldOrder+1;
+      if (fieldOrder >= order) order = fieldOrder + 1;
     }
   }
   typeOrder.put(ct, order);
@@ -90,10 +87,9 @@ computeOrder(AggregateType* ct) {
 //
 // comparison function for quick sort of types based on typeOrder map
 //
-static int
-compareTypesByOrder(const void* v1, const void* v2) {
-  AggregateType* ct1 = *(AggregateType* const *)v1;
-  AggregateType* ct2 = *(AggregateType* const *)v2;
+static int compareTypesByOrder(const void* v1, const void* v2) {
+  AggregateType* ct1 = *(AggregateType* const*)v1;
+  AggregateType* ct2 = *(AggregateType* const*)v2;
   int order1 = typeOrder.get(ct1);
   int order2 = typeOrder.get(ct2);
   if (order1 < order2)
@@ -104,8 +100,7 @@ compareTypesByOrder(const void* v1, const void* v2) {
     return 0;
 }
 
-static bool
-removeIdentityDefs(Symbol* sym) {
+static bool removeIdentityDefs(Symbol* sym) {
   bool change = false;
 
   for_defs(def, defMap, sym) {
@@ -121,16 +116,14 @@ removeIdentityDefs(Symbol* sym) {
   return change;
 }
 
-static bool
-removeUnusedClassInstance(Symbol* sym) {
+static bool removeUnusedClassInstance(Symbol* sym) {
   bool change = false;
   bool unused = !useMap.get(sym) || useMap.get(sym)->n == 0;
 
   if (!unused) {
     unused = true;
     for_uses(use, useMap, sym) {
-      if (use->parentSymbol)
-        unused = false;
+      if (use->parentSymbol) unused = false;
     }
   }
 
@@ -148,46 +141,36 @@ removeUnusedClassInstance(Symbol* sym) {
   return change;
 }
 
-static bool
-unifyClassInstances(Symbol* sym) {
-  if (!defMap.get(sym))
-    return false;
+static bool unifyClassInstances(Symbol* sym) {
+  if (!defMap.get(sym)) return false;
 
   SymExpr* rhs = NULL;
 
   for_defs(def, defMap, sym) {
     if (def->parentSymbol) {
       CallExpr* move = toCallExpr(def->parentExpr);
-      if (!move || !isMoveOrAssign(move))
-        return false;
+      if (!move || !isMoveOrAssign(move)) return false;
       SymExpr* se = toSymExpr(move->get(2));
-      if (!se)
-        return false;
-      if (rhs && rhs->symbol() != gNil && se->symbol() != gNil)
-        return false;
-      if (!rhs || se->symbol() != gNil)
-        rhs = se;
+      if (!se) return false;
+      if (rhs && rhs->symbol() != gNil && se->symbol() != gNil) return false;
+      if (!rhs || se->symbol() != gNil) rhs = se;
     }
   }
 
-  if (!rhs)
-    return false;
+  if (!rhs) return false;
 
   for_uses(se, useMap, sym) {
     se->setSymbol(rhs->symbol());
     addUse(useMap, se);
   }
 
-  for_defs(def, defMap, sym) {
-    def->parentExpr->remove();
-  }
+  for_defs(def, defMap, sym) { def->parentExpr->remove(); }
 
   sym->defPoint->remove();
   return true;
 }
 
-static bool
-scalarReplaceClass(AggregateType* ct, Symbol* sym) {
+static bool scalarReplaceClass(AggregateType* ct, Symbol* sym) {
 
   if (fReportScalarReplace) srClass++;
   //
@@ -195,26 +178,20 @@ scalarReplaceClass(AggregateType* ct, Symbol* sym) {
   // an allocation primitive
   //
   Vec<SymExpr*>* defs = defMap.get(sym);
-  if (!defs || defs->n != 1)
-    return false;
+  if (!defs || defs->n != 1) return false;
   // As of r21945, if this variable is allocated in this scope, the
   // first definition is the cast to the appropriate type.  The
   // statement previous to that is the allocation.
   CallExpr* move = toCallExpr(defs->v[0]->parentExpr);
-  if (!move || !isMoveOrAssign(move))
-    return false;
+  if (!move || !isMoveOrAssign(move)) return false;
   CallExpr* cast = toCallExpr(move->get(2));
-  if (!cast || !cast->isPrimitive(PRIM_CAST))
-    return false;
+  if (!cast || !cast->isPrimitive(PRIM_CAST)) return false;
   CallExpr* prevMove = toCallExpr(move->prev);
-  if (!prevMove || !isMoveOrAssign(prevMove))
-    return false;
+  if (!prevMove || !isMoveOrAssign(prevMove)) return false;
   CallExpr* alloc = toCallExpr(prevMove->get(2));
-  if (!alloc)
-    return false;
-  if (!
-      (alloc->isResolved() &&
-       alloc->resolvedFunction()->hasFlag(FLAG_ALLOCATOR)))
+  if (!alloc) return false;
+  if (!(alloc->isResolved() &&
+        alloc->resolvedFunction()->hasFlag(FLAG_ALLOCATOR)))
     return false;
 
   //
@@ -223,8 +200,7 @@ scalarReplaceClass(AggregateType* ct, Symbol* sym) {
   for_uses(se, useMap, sym) {
     if (se->parentSymbol) {
       CallExpr* call = toCallExpr(se->parentExpr);
-      if (!call)
-        return false;
+      if (!call) return false;
 
       // The use must appear as the first argument in the containing
       // expression, or second in a PRIM_CAST to c_ptr(void).
@@ -266,11 +242,9 @@ scalarReplaceClass(AggregateType* ct, Symbol* sym) {
     var->qual = field->qualType().getQual();
     fieldMap.put(field, var);
     sym->defPoint->insertBefore(new DefExpr(var));
-    if (sym->hasFlag(FLAG_TEMP))
-      var->addFlag(FLAG_TEMP);
+    if (sym->hasFlag(FLAG_TEMP)) var->addFlag(FLAG_TEMP);
     if (AggregateType* fct = toAggregateType(field->type))
-      if (Vec<Symbol*>* varVec = typeVarMap.get(fct))
-        varVec->add(var);
+      if (Vec<Symbol*>* varVec = typeVarMap.get(fct)) varVec->add(var);
   }
   sym->defPoint->remove();
 
@@ -313,8 +287,7 @@ scalarReplaceClass(AggregateType* ct, Symbol* sym) {
         CallExpr* parent = toCallExpr(call->parentExpr);
         INT_ASSERT(parent);
         CallExpr* parentNext = toCallExpr(parent->next);
-        if (parentNext &&
-            parentNext->isResolved() &&
+        if (parentNext && parentNext->isResolved() &&
             parentNext->resolvedFunction()->hasFlag(FLAG_LOCALE_MODEL_FREE))
           parentNext->remove();
         parent->remove();
@@ -327,7 +300,8 @@ scalarReplaceClass(AggregateType* ct, Symbol* sym) {
         call->insertAtHead(def);
         addDef(defMap, def);
         if (call->get(1)->isRef() && call->get(2)->isRef() == false) {
-          call->insertAtTail(new CallExpr(PRIM_SET_REFERENCE, call->get(2)->remove()));
+          call->insertAtTail(
+            new CallExpr(PRIM_SET_REFERENCE, call->get(2)->remove()));
         }
       } else {
         /*
@@ -374,8 +348,7 @@ static bool isHandledRecordUse(SymExpr* se) {
   return ret;
 }
 
-static bool
-scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
+static bool scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
 
   if (fReportScalarReplace) srRecord++;
   //
@@ -384,8 +357,7 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
   for_defs(se, defMap, sym) {
     if (se->parentSymbol) {
       CallExpr* call = toCallExpr(se->parentExpr);
-      if (!call ||
-          !isMoveOrAssign(call)  ||
+      if (!call || !isMoveOrAssign(call) ||
           // Do we need to add PRIM_ASSIGN here?
           !(isSymExpr(call->get(2)) ||
             toCallExpr(call->get(2))->isPrimitive(PRIM_GET_MEMBER_VALUE))) {
@@ -431,11 +403,9 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
     var->qual = field->qualType().getQual();
     fieldMap.put(field, var);
     sym->defPoint->insertBefore(new DefExpr(var));
-    if (sym->hasFlag(FLAG_TEMP))
-      var->addFlag(FLAG_TEMP);
+    if (sym->hasFlag(FLAG_TEMP)) var->addFlag(FLAG_TEMP);
     if (AggregateType* fct = toAggregateType(field->type))
-      if (Vec<Symbol*>* varVec = typeVarMap.get(fct))
-        varVec->add(var);
+      if (Vec<Symbol*>* varVec = typeVarMap.get(fct)) varVec->add(var);
   }
 
   //
@@ -445,31 +415,31 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       SET_LINENO(sym);
       INT_ASSERT(isMoveOrAssign(call));
-      Symbol *rhs;
+      Symbol* rhs;
       if (isSymExpr(call->get(2))) {
         rhs = toSymExpr(call->get(2))->symbol();
       } else if (isCallExpr(call->get(2))) {
         // rhs is a tuple in a record
         CallExpr* oldrhs = toCallExpr(call->get(2));
-        INT_ASSERT(toCallExpr(call->get(2))->isPrimitive(PRIM_GET_MEMBER_VALUE));
-        SymExpr *base = toSymExpr(oldrhs->get(1))->copy();
-        SymExpr *member = toSymExpr(oldrhs->get(2))->copy();
+        INT_ASSERT(
+          toCallExpr(call->get(2))->isPrimitive(PRIM_GET_MEMBER_VALUE));
+        SymExpr* base = toSymExpr(oldrhs->get(1))->copy();
+        SymExpr* member = toSymExpr(oldrhs->get(2))->copy();
 
         // create a temporary to hold a reference to the tuple field
-        rhs = newTemp(astr(sym->name, "_"),
-                      oldrhs->qualType().toRef());
+        rhs = newTemp(astr(sym->name, "_"), oldrhs->qualType().toRef());
         sym->defPoint->insertBefore(new DefExpr(rhs));
 
         // get the reference to the field to use for the rhs
         // BHARSH TODO: Teach PRIM_GET_MEMBER that if it's accessing a ref
         // field, it should behave like PRIM_GET_MEMBER_VALUE
-        SymExpr *a3 = new SymExpr(rhs);
+        SymExpr* a3 = new SymExpr(rhs);
         PrimitiveTag op = PRIM_GET_MEMBER;
         if (member->isRef() && a3->isRef()) {
           op = PRIM_GET_MEMBER_VALUE;
         }
-        call->insertBefore(new CallExpr(PRIM_MOVE, a3,
-                             new CallExpr(op, base, member)));
+        call->insertBefore(
+          new CallExpr(PRIM_MOVE, a3, new CallExpr(op, base, member)));
         addUse(useMap, base);
         addUse(useMap, member);
         addDef(defMap, a3);
@@ -480,9 +450,8 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
       for_fields(field, ct) {
         SymExpr* rhsCopy = new SymExpr(rhs);
         SymExpr* use = new SymExpr(fieldMap.get(field));
-        call->insertBefore(
-          new CallExpr(PRIM_MOVE, use,
-            new CallExpr(PRIM_GET_MEMBER_VALUE, rhsCopy, field)));
+        call->insertBefore(new CallExpr(
+          PRIM_MOVE, use, new CallExpr(PRIM_GET_MEMBER_VALUE, rhsCopy, field)));
         addDef(defMap, use);
         addUse(useMap, rhsCopy);
       }
@@ -495,8 +464,7 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
   // method's _this.  If the containing function is not a method, then its
   // _this field will be NULL (so will not match any valid sym).
   if (FnSymbol* parent = toFnSymbol(sym->defPoint->parentSymbol))
-    if (parent->_this != sym)
-      sym->defPoint->remove();
+    if (parent->_this != sym) sym->defPoint->remove();
 
   //
   // replace uses of sym with new vars
@@ -536,7 +504,8 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
         call->insertAtHead(def);
         addDef(defMap, def);
         if (call->get(1)->isRef() && call->get(2)->isRef() == false) {
-          call->insertAtTail(new CallExpr(PRIM_SET_REFERENCE, call->get(2)->remove()));
+          call->insertAtTail(
+            new CallExpr(PRIM_SET_REFERENCE, call->get(2)->remove()));
         }
       } else {
         /*
@@ -556,25 +525,19 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
   return true;
 }
 
-
-static void
-debugScalarReplacementFailure(Symbol* var) {
+static void debugScalarReplacementFailure(Symbol* var) {
   printf("failed to scalar replace %s[%d]\n", var->cname, var->id);
   printf("defs:\n");
   for_defs(def, defMap, var) {
-    if (def->parentSymbol)
-      nprint_view(def->getStmtExpr());
+    if (def->parentSymbol) nprint_view(def->getStmtExpr());
   }
   printf("uses:\n");
   for_uses(use, useMap, var) {
-    if (use->parentSymbol)
-      nprint_view(use->getStmtExpr());
+    if (use->parentSymbol) nprint_view(use->getStmtExpr());
   }
 }
 
-
-void
-scalarReplace() {
+void scalarReplace() {
   if (!fNoScalarReplacement) {
 
     //
@@ -588,7 +551,7 @@ scalarReplace() {
         if (ts->hasFlag(FLAG_ITERATOR_CLASS) ||
             ts->hasFlag(FLAG_ITERATOR_RECORD) ||
             (ts->hasFlag(FLAG_TUPLE) &&
-             (ct->fields.length<=scalar_replace_limit))) {
+             (ct->fields.length <= scalar_replace_limit))) {
           typeVec.add(ct);
           typeVarMap.put(ct, new Vec<Symbol*>());
           if (AggregateType* rct = toAggregateType(ct->refType))
@@ -600,9 +563,7 @@ scalarReplace() {
     //
     // compute topological order of types
     //
-    forv_Vec(AggregateType, ct, typeVec) {
-      computeOrder(ct);
-    }
+    forv_Vec(AggregateType, ct, typeVec) { computeOrder(ct); }
 
     //
     // sort types based on topological order
@@ -636,11 +597,11 @@ scalarReplace() {
     //
     // scalar replace vars as possible and in topological order
     //
-    if (debugScalarReplacement)
-      printf("\n");
+    if (debugScalarReplacement) printf("\n");
     if (fReportScalarReplace) {
       printf("SCALAR REPLACEMENT (limit=%d): %d types\n",
-             scalar_replace_limit, typeVec.n);
+             scalar_replace_limit,
+             typeVec.n);
     }
     forv_Vec(AggregateType, ct, typeVec) {
       if (debugScalarReplacement)

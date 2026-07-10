@@ -98,26 +98,24 @@ static Expr* skipIgnoredStmts(Expr* last) {
   while (true) {
     CallExpr* call = toCallExpr(last);
     FnSymbol* calledFn = NULL;
-    if (call)
-      calledFn = call->resolvedFunction();
+    if (call) calledFn = call->resolvedFunction();
 
     // Ignore calls to chpl_rmem_consist_maybe_acquire that were added
     // by the compiler. We will remove these if we optimize an atomic op.
     if (calledFn && calledFn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE)) {
       last = last->prev;
 
-    // Ignore calls to PRIM_END_OF_STATEMENT
+      // Ignore calls to PRIM_END_OF_STATEMENT
     } else if (call && call->isPrimitive(PRIM_END_OF_STATEMENT)) {
       last = last->prev;
 
-    // Ignore PRIM_OPTIMIZATION_INFO and related DefExpr
-    // (move last before these if they are present)
+      // Ignore PRIM_OPTIMIZATION_INFO and related DefExpr
+      // (move last before these if they are present)
     } else if (call && call->isPrimitive(PRIM_OPTIMIZATION_INFO)) {
       Symbol* optSym = toSymExpr(call->get(1))->symbol();
       last = last->prev;
       if (DefExpr* def = toDefExpr(last)) {
-        if (def->sym == optSym)
-          last = last->prev;
+        if (def->sym == optSym) last = last->prev;
       }
 
     } else {
@@ -128,14 +126,14 @@ static Expr* skipIgnoredStmts(Expr* last) {
   return last;
 }
 
-static bool shouldCheckElseStmtForLastStmts(CondStmt *cond) {
+static bool shouldCheckElseStmtForLastStmts(CondStmt* cond) {
   if (cond->elseStmt == NULL) {
     return false;
   }
   // if this conditional was generated for aggregation, the else block has all
   // the aggregation code, and as such, there is no applicable "last statement"
   // within that block
-  if (SymExpr *condSymExpr = toSymExpr(cond->condExpr)) {
+  if (SymExpr* condSymExpr = toSymExpr(cond->condExpr)) {
     if (condSymExpr->symbol()->hasFlag(FLAG_AGG_MARKER)) {
       return false;
     }
@@ -146,8 +144,7 @@ static bool shouldCheckElseStmtForLastStmts(CondStmt *cond) {
 
 static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
 
-  if (last == NULL)
-    return;
+  if (last == NULL) return;
 
   last = skipIgnoredStmts(last);
 
@@ -172,8 +169,7 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
       Symbol* optSym = toSymExpr(call->get(1))->symbol();
       last = last->prev;
       if (DefExpr* def = toDefExpr(last)) {
-        if (def->sym == optSym)
-          last = last->prev;
+        if (def->sym == optSym) last = last->prev;
       }
     }
   }
@@ -182,8 +178,8 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
   stmts.push_back(last);
 }
 
-std::vector<Expr *> getLastStmtsForForallUnorderedOps(ForallStmt *forall) {
-  std::vector<Expr *> lastStmts;
+std::vector<Expr*> getLastStmtsForForallUnorderedOps(ForallStmt* forall) {
+  std::vector<Expr*> lastStmts;
   for (BlockStmt* block : forall->loopBodies()) {
     getLastStmts(block, lastStmts);
   }
@@ -196,18 +192,16 @@ std::vector<Expr *> getLastStmtsForForallUnorderedOps(ForallStmt *forall) {
 static bool isBlockWithinBlock(BlockStmt* a, BlockStmt* b) {
   Expr* findParent = b;
   for (Expr* cur = a; cur; cur = cur->parentExpr) {
-    if (cur == findParent)
-      return true;
+    if (cur == findParent) return true;
   }
   return false;
 }
 
-
 // Returns true if the symbol refers to something that will
 // outlive the loop.
-static
-bool symbolOutlivesLoop(BlockStmt* loop, Symbol* sym,
-                        LifetimeInformation* lifetimeInfo) {
+static bool symbolOutlivesLoop(BlockStmt* loop,
+                               Symbol* sym,
+                               LifetimeInformation* lifetimeInfo) {
   BlockStmt* defInBlock = toBlockStmt(sym->defPoint->parentExpr);
   if (defInBlock && isBlockWithinBlock(defInBlock, loop)) {
     return outlivesBlock(lifetimeInfo, sym, loop);
@@ -217,9 +211,9 @@ bool symbolOutlivesLoop(BlockStmt* loop, Symbol* sym,
   }
 }
 
-static
-bool exprIsOptimizable(BlockStmt* loop, Expr* lastStmt,
-                        LifetimeInformation* lifetimeInfo) {
+static bool exprIsOptimizable(BlockStmt* loop,
+                              Expr* lastStmt,
+                              LifetimeInformation* lifetimeInfo) {
   if (CallExpr* call = toCallExpr(lastStmt)) {
     if (call->isPrimitive(PRIM_ASSIGN)) {
       Symbol* lhs = toSymExpr(call->get(1))->symbol();
@@ -230,7 +224,7 @@ bool exprIsOptimizable(BlockStmt* loop, Expr* lastStmt,
       Symbol* lhs = toSymExpr(call->get(1))->symbol();
       Symbol* rhs = toSymExpr(call->get(2))->symbol();
       if (lhs->getValType() == rhs->getValType()) // same type
-        if (isPOD(lhs->getValType())) // no custom = overloads
+        if (isPOD(lhs->getValType()))             // no custom = overloads
           return true;
     } else if (FnSymbol* fn = call->resolvedFunction()) {
       if (fn->_this &&
@@ -246,7 +240,7 @@ bool exprIsOptimizable(BlockStmt* loop, Expr* lastStmt,
 }
 
 static bool forallNoTaskPrivate(ForallStmt* forall) {
-  for_shadow_vars (shadow, temp, forall) {
+  for_shadow_vars(shadow, temp, forall) {
     if (shadow->isReduce()) {
       if (ShadowVarSymbol* op = shadow->ReduceOpForAccumState())
         if (ModuleSymbol* mod = op->type->symbol->defPoint->getModule())
@@ -264,8 +258,7 @@ static bool forallNoTaskPrivate(ForallStmt* forall) {
       return false;
     } else if (shadow->intent == TFI_IN || shadow->intent == TFI_CONST_IN) {
       // copy-init or = for in intent could compute a task ID
-      if (!isPOD(shadow->type))
-        return false;
+      if (!isPOD(shadow->type)) return false;
     }
   }
 
@@ -274,11 +267,11 @@ static bool forallNoTaskPrivate(ForallStmt* forall) {
 
 class MarkOptimizableForallLastStmts final : public AstVisitorTraverse {
 
-  public:
-    LifetimeInformation* lifetimeInfo;
+ public:
+  LifetimeInformation* lifetimeInfo;
 
-    bool enterForallStmt(ForallStmt* forall) override;
-    void markLoopsInForall(ForallStmt* forall);
+  bool enterForallStmt(ForallStmt* forall) override;
+  void markLoopsInForall(ForallStmt* forall);
 };
 
 bool MarkOptimizableForallLastStmts::enterForallStmt(ForallStmt* forall) {
@@ -299,7 +292,7 @@ bool MarkOptimizableForallLastStmts::enterForallStmt(ForallStmt* forall) {
 void MarkOptimizableForallLastStmts::markLoopsInForall(ForallStmt* forall) {
 
   bool addNoTaskPrivate = forallNoTaskPrivate(forall);
-  std::vector< std::vector<Expr*> > lastStatementsPerBody;
+  std::vector<std::vector<Expr*>> lastStatementsPerBody;
 
   // Gather the last statements in each loop body
   std::vector<BlockStmt*> bodies = forall->loopBodies();
@@ -312,10 +305,8 @@ void MarkOptimizableForallLastStmts::markLoopsInForall(ForallStmt* forall) {
   // Compute the number of last statements
   // (expecting it matches across fast-follower/follower bodies)
   int numLastStmts = -1;
-  for (size_t loopNum = 0;
-       loopNum < lastStatementsPerBody.size();
-       loopNum++) {
-    int numThisLoop = (int) lastStatementsPerBody[loopNum].size();
+  for (size_t loopNum = 0; loopNum < lastStatementsPerBody.size(); loopNum++) {
+    int numThisLoop = (int)lastStatementsPerBody[loopNum].size();
     if (numLastStmts == -1)
       numLastStmts = numThisLoop;
     else if (numLastStmts != numThisLoop)
@@ -340,10 +331,8 @@ void MarkOptimizableForallLastStmts::markLoopsInForall(ForallStmt* forall) {
         SymExpr* lhs = NULL;
         SymExpr* rhs = NULL;
         if (CallExpr* call = toCallExpr(stmt)) {
-          if (call->numActuals() >= 1)
-            lhs = toSymExpr(call->get(1));
-          if (call->numActuals() >= 2)
-            rhs = toSymExpr(call->get(2));
+          if (call->numActuals() >= 1) lhs = toSymExpr(call->get(1));
+          if (call->numActuals() >= 2) rhs = toSymExpr(call->get(2));
         }
         if (lhs && symbolOutlivesLoop(block, lhs->symbol(), lifetimeInfo))
           addLhsOutlivesForall = true;
@@ -363,10 +352,8 @@ void MarkOptimizableForallLastStmts::markLoopsInForall(ForallStmt* forall) {
         SymExpr* lhs = NULL;
         SymExpr* rhs = NULL;
         if (CallExpr* call = toCallExpr(stmt)) {
-          if (call->numActuals() >= 1)
-            lhs = toSymExpr(call->get(1));
-          if (call->numActuals() >= 2)
-            rhs = toSymExpr(call->get(2));
+          if (call->numActuals() >= 1) lhs = toSymExpr(call->get(1));
+          if (call->numActuals() >= 2) rhs = toSymExpr(call->get(2));
         }
         if (lhs && addLhsOutlivesForall)
           addOptimizationFlag(stmt, FLAG_OPT_INFO_LHS_OUTLIVES_FORALL);
@@ -393,7 +380,6 @@ void checkLifetimesForForallUnorderedOps(FnSymbol* fn,
   fn->accept(&mark);
 }
 
-
 // ---- may-block analysis
 
 // the numeric values matter here
@@ -415,32 +401,21 @@ static const char* blockStateString(MayBlockState state) {
   const char* ret = "";
 
   // STATE_COMPUTED is intentionally not here.
-  if (state & STATE_RECURSIVE)
-    ret = astr(ret, ",recursive");
-  if (state & STATE_COMPLETES_TASKS)
-    ret = astr(ret, ",completes-tasks");
-  if (state & STATE_CREATES_TASKS)
-    ret = astr(ret, ",creates-tasks");
-  if (state & STATE_YIELDS_TASKS)
-    ret = astr(ret, ",yields-tasks");
-  if (state & STATE_JOINS_TASKS)
-    ret = astr(ret, ",joins-tasks");
-  if (state & STATE_USES_ATOMICS)
-    ret = astr(ret, ",atomics");
-  if (state & STATE_CRITICAL_SECTION)
-    ret = astr(ret, ",critical-section");
-  if (state & STATE_MAYBE_BLOCKING)
-    ret = astr(ret, ",blocking");
-  if (state & STATE_EXTERN_ANYTHING)
-    ret = astr(ret, ",anything");
+  if (state & STATE_RECURSIVE) ret = astr(ret, ",recursive");
+  if (state & STATE_COMPLETES_TASKS) ret = astr(ret, ",completes-tasks");
+  if (state & STATE_CREATES_TASKS) ret = astr(ret, ",creates-tasks");
+  if (state & STATE_YIELDS_TASKS) ret = astr(ret, ",yields-tasks");
+  if (state & STATE_JOINS_TASKS) ret = astr(ret, ",joins-tasks");
+  if (state & STATE_USES_ATOMICS) ret = astr(ret, ",atomics");
+  if (state & STATE_CRITICAL_SECTION) ret = astr(ret, ",critical-section");
+  if (state & STATE_MAYBE_BLOCKING) ret = astr(ret, ",blocking");
+  if (state & STATE_EXTERN_ANYTHING) ret = astr(ret, ",anything");
 
   // Leave out the leading ','
-  if (ret[0] == ',')
-    ret = astr(&ret[1]);
+  if (ret[0] == ',') ret = astr(&ret[1]);
 
   // put a word there so the output doesn't look too weird
-  if (ret[0] == '\0' && (state & STATE_COMPUTED))
-    ret = astr("computed");
+  if (ret[0] == '\0' && (state & STATE_COMPUTED)) ret = astr("computed");
 
   return ret;
 }
@@ -449,54 +424,49 @@ static std::map<FnSymbol*, MayBlockState> fnMayBlock;
 
 class GatherBlockingFunctions final : public AstVisitorTraverse {
 
-  public:
-    std::stack<MayBlockState> blockingLoopStack;
+ public:
+  std::stack<MayBlockState> blockingLoopStack;
 
-    GatherBlockingFunctions();
+  GatherBlockingFunctions();
 
-    void updateState(MayBlockState newState);
-    MayBlockState finalState();
+  void updateState(MayBlockState newState);
+  MayBlockState finalState();
 
-    void beginLoop();
-    void endLoop();
+  void beginLoop();
+  void endLoop();
 
-    bool enterCallExpr(CallExpr* node) override;
-    void exitCallExpr(CallExpr* node) override;
+  bool enterCallExpr(CallExpr* node) override;
+  void exitCallExpr(CallExpr* node) override;
 
-    bool enterWhileDoStmt(WhileDoStmt* node) override;
-    void exitWhileDoStmt(WhileDoStmt* node) override;
-    bool enterDoWhileStmt(DoWhileStmt* node) override;
-    void exitDoWhileStmt(DoWhileStmt* node) override;
-    bool enterCForLoop(CForLoop* node) override;
-    void exitCForLoop(CForLoop* node) override;
-    bool enterForLoop(ForLoop* node) override;
-    void exitForLoop(ForLoop* node) override;
+  bool enterWhileDoStmt(WhileDoStmt* node) override;
+  void exitWhileDoStmt(WhileDoStmt* node) override;
+  bool enterDoWhileStmt(DoWhileStmt* node) override;
+  void exitDoWhileStmt(DoWhileStmt* node) override;
+  bool enterCForLoop(CForLoop* node) override;
+  void exitCForLoop(CForLoop* node) override;
+  bool enterForLoop(ForLoop* node) override;
+  void exitForLoop(ForLoop* node) override;
 };
 
 static bool loopContainsBlocking(BlockStmt* block) {
   // Do the may-block analysis on each statement within the loop.
   GatherBlockingFunctions gather;
-  for_alist(stmt, block->body) {
-    stmt->accept(&gather);
-  }
+  for_alist(stmt, block->body) { stmt->accept(&gather); }
   MayBlockState state = gather.finalState();
 
   if (fReportBlocking)
     if (developer || printsUserLocation(block))
-      USR_PRINT(block, "loopContainsBlocking = %s",
-                blockStateString(state));
+      USR_PRINT(block, "loopContainsBlocking = %s", blockStateString(state));
 
   return (state & STATE_MAYBE_BLOCKING) || (state & STATE_EXTERN_ANYTHING);
 }
 
 static bool isTaskFunOrWrapper(FnSymbol* fn) {
-  return fn->hasFlag(FLAG_ON) ||
-         fn->hasFlag(FLAG_ON_BLOCK) ||
+  return fn->hasFlag(FLAG_ON) || fn->hasFlag(FLAG_ON_BLOCK) ||
          fn->hasFlag(FLAG_NON_BLOCKING) ||
          fn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
          fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
-         fn->hasFlag(FLAG_BEGIN) ||
-         fn->hasFlag(FLAG_BEGIN_BLOCK) ||
+         fn->hasFlag(FLAG_BEGIN) || fn->hasFlag(FLAG_BEGIN_BLOCK) ||
          fn->hasFlag(FLAG_LOCAL_ON);
 }
 
@@ -524,17 +494,17 @@ static MayBlockState mayBlock(FnSymbol* fn) {
       ModuleSymbol* inModule = fn->defPoint->getModule();
       if (inModule->hasFlag(FLAG_ATOMIC_MODULE))
         state = STATE_USES_ATOMICS;
-     else if (0 == strcmp(fn->name, "chpl_task_yield"))
+      else if (0 == strcmp(fn->name, "chpl_task_yield"))
         state = STATE_YIELDS_TASKS;
-     //else if (0 == strcmp(fn->name, "chpl_comm_task_end"))
-     //   state = STATE_COMPLETES_TASKS;
-     else
+      //else if (0 == strcmp(fn->name, "chpl_comm_task_end"))
+      //   state = STATE_COMPLETES_TASKS;
+      else
         state = STATE_EXTERN_ANYTHING;
     } else if (0 == strcmp(fn->name, "dsiAccess")) {
       // Assume array access calls do not block
       // (but may contain a critical section)
       state = STATE_CRITICAL_SECTION;
-    /*} else if (0 == strcmp(fn->name, "chpl_save_task_error_owned") ||
+      /*} else if (0 == strcmp(fn->name, "chpl_save_task_error_owned") ||
                0 == strcmp(fn->name, "chpl_save_task_error")) {
       // These are a normal part of task completion
       state = STATE_COMPLETES_TASKS;*/
@@ -542,7 +512,7 @@ static MayBlockState mayBlock(FnSymbol* fn) {
       int fnstate = STATE_RECURSIVE;
       // Set the state in the map.
       // This is the base case for recursive functions.
-      state = (MayBlockState) fnstate;
+      state = (MayBlockState)fnstate;
 
       GatherBlockingFunctions gather;
 
@@ -555,15 +525,16 @@ static MayBlockState mayBlock(FnSymbol* fn) {
         fnstate |= STATE_MAYBE_BLOCKING;
 
       if (fReportBlocking) {
-        bool user = (printsUserLocation(fn->defPoint) &&
-                     !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
-                     !isTaskFunOrWrapper(fn));
+        bool user =
+          (printsUserLocation(fn->defPoint) &&
+           !fn->hasFlag(FLAG_COMPILER_GENERATED) && !isTaskFunOrWrapper(fn));
 
         if (user || developer)
-          USR_PRINT(fn->defPoint, "%s %s",
-                    blockStateString((MayBlockState)fnstate), fn->name);
-        if (developer)
-          USR_PRINT("fn id %i", fn->id);
+          USR_PRINT(fn->defPoint,
+                    "%s %s",
+                    blockStateString((MayBlockState)fnstate),
+                    fn->name);
+        if (developer) USR_PRINT("fn id %i", fn->id);
       }
 
       // Remove any recursive portion of the state, since that
@@ -571,7 +542,7 @@ static MayBlockState mayBlock(FnSymbol* fn) {
       fnstate = fnstate & ~STATE_RECURSIVE;
 
       // Save it in the map
-      state = (MayBlockState) fnstate;
+      state = (MayBlockState)fnstate;
     }
   }
   return state;
@@ -584,7 +555,7 @@ static MayBlockState combineBlockState(MayBlockState aIn, MayBlockState bIn) {
 
   state = a | b;
 
-  return (MayBlockState) state;
+  return (MayBlockState)state;
 }
 
 GatherBlockingFunctions::GatherBlockingFunctions() {
@@ -613,8 +584,7 @@ void GatherBlockingFunctions::endLoop() {
   INT_ASSERT(!blockingLoopStack.empty());
 
   // Adjust the parent based on what we saw.
-  if (loopState & STATE_USES_ATOMICS)
-    loopState |= STATE_MAYBE_BLOCKING;
+  if (loopState & STATE_USES_ATOMICS) loopState |= STATE_MAYBE_BLOCKING;
 
   MayBlockState& state = blockingLoopStack.top();
   state = combineBlockState(state, (MayBlockState)loopState);
@@ -626,8 +596,7 @@ bool GatherBlockingFunctions::enterCallExpr(CallExpr* node) {
   CallExpr* call = node;
 
   if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
-    if (CallExpr* rhsCall = toCallExpr(call->get(2)))
-      call = rhsCall;
+    if (CallExpr* rhsCall = toCallExpr(call->get(2))) call = rhsCall;
   }
 
   if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
@@ -651,79 +620,75 @@ bool GatherBlockingFunctions::enterCallExpr(CallExpr* node) {
   updateState(callstate);
   return false;
 }
-void GatherBlockingFunctions::exitCallExpr(CallExpr* node) {
-}
+void GatherBlockingFunctions::exitCallExpr(CallExpr* node) {}
 bool GatherBlockingFunctions::enterWhileDoStmt(WhileDoStmt* node) {
   beginLoop();
   return true;
 }
-void GatherBlockingFunctions::exitWhileDoStmt(WhileDoStmt* node) {
-  endLoop();
-}
+void GatherBlockingFunctions::exitWhileDoStmt(WhileDoStmt* node) { endLoop(); }
 bool GatherBlockingFunctions::enterDoWhileStmt(DoWhileStmt* node) {
   beginLoop();
   return true;
 }
-void GatherBlockingFunctions::exitDoWhileStmt(DoWhileStmt* node) {
-  endLoop();
-}
+void GatherBlockingFunctions::exitDoWhileStmt(DoWhileStmt* node) { endLoop(); }
 bool GatherBlockingFunctions::enterCForLoop(CForLoop* node) {
   beginLoop();
   return true;
 }
-void GatherBlockingFunctions::exitCForLoop(CForLoop* node) {
-  endLoop();
-}
+void GatherBlockingFunctions::exitCForLoop(CForLoop* node) { endLoop(); }
 bool GatherBlockingFunctions::enterForLoop(ForLoop* node) {
   beginLoop();
   return true;
 }
-void GatherBlockingFunctions::exitForLoop(ForLoop* node) {
-  endLoop();
-}
-
+void GatherBlockingFunctions::exitForLoop(ForLoop* node) { endLoop(); }
 
 // ---- the main optimization that runs around LICM
 
-static
-CallExpr* findMarkerNear(Expr* stmt) {
- for (Expr* cur = stmt; cur != NULL; cur = cur->next) {
-  if (CallExpr* call = toCallExpr(cur))
-    if (call->isPrimitive(PRIM_OPTIMIZATION_INFO))
-      return call;
+static CallExpr* findMarkerNear(Expr* stmt) {
+  for (Expr* cur = stmt; cur != NULL; cur = cur->next) {
+    if (CallExpr* call = toCallExpr(cur))
+      if (call->isPrimitive(PRIM_OPTIMIZATION_INFO)) return call;
   }
   return NULL;
 }
 
-static const char* optimizableFunctionTable[] =
- {
-   "chpl_comm_atomic_add_", "chpl_comm_atomic_add_unordered_",
-   "chpl_comm_atomic_sub_", "chpl_comm_atomic_sub_unordered_",
-   "chpl_comm_atomic_and_", "chpl_comm_atomic_and_unordered_",
-   "chpl_comm_atomic_or_", "chpl_comm_atomic_or_unordered_",
-   "chpl_comm_atomic_xor_", "chpl_comm_atomic_xor_unordered_",
-   // These are for optimization reporting purposes
-   "atomic_fetch_add_explicit_", NULL,
-   "atomic_fetch_sub_explicit_", NULL,
-   "atomic_fetch_and_explicit_", NULL,
-   "atomic_fetch_or_explicit_", NULL,
-   "atomic_fetch_xor_explicit_", NULL,
-   // These indicate to code using this table that the end is reached
-   NULL, NULL };
+static const char* optimizableFunctionTable[] = {
+  "chpl_comm_atomic_add_",
+  "chpl_comm_atomic_add_unordered_",
+  "chpl_comm_atomic_sub_",
+  "chpl_comm_atomic_sub_unordered_",
+  "chpl_comm_atomic_and_",
+  "chpl_comm_atomic_and_unordered_",
+  "chpl_comm_atomic_or_",
+  "chpl_comm_atomic_or_unordered_",
+  "chpl_comm_atomic_xor_",
+  "chpl_comm_atomic_xor_unordered_",
+  // These are for optimization reporting purposes
+  "atomic_fetch_add_explicit_",
+  NULL,
+  "atomic_fetch_sub_explicit_",
+  NULL,
+  "atomic_fetch_and_explicit_",
+  NULL,
+  "atomic_fetch_or_explicit_",
+  NULL,
+  "atomic_fetch_xor_explicit_",
+  NULL,
+  // These indicate to code using this table that the end is reached
+  NULL,
+  NULL};
 
 static bool isOptimizableAtomicFunction(const char* cname) {
-  for (int i=0; optimizableFunctionTable[i]; i+=2) {
+  for (int i = 0; optimizableFunctionTable[i]; i += 2) {
     const char* from = optimizableFunctionTable[i];
-    const char* to = optimizableFunctionTable[i+1];
+    const char* to = optimizableFunctionTable[i + 1];
     if (startsWith(cname, from)) {
       // Pass this test for the purpose of optimization testing
       // (we won't actually transform it later)
-      if (to == NULL)
-        return true;
+      if (to == NULL) return true;
 
       // Otherwise, optimize only if it's not already unordered
-      if (!startsWith(cname, to))
-        return true;
+      if (!startsWith(cname, to)) return true;
     }
   }
 
@@ -757,19 +722,17 @@ static bool isOptimizableAtomicStmt(Expr* stmt, BlockStmt* loop) {
         if (CallExpr* marker = findMarkerNear(stmt))
           if (hasOptimizationFlag(marker, FLAG_OPT_INFO_LHS_OUTLIVES_FORALL) &&
               hasOptimizationFlag(marker, FLAG_OPT_INFO_NO_TASK_PRIVATE))
-            if (loopContainsBlocking(loop) == false)
-              return true;
+            if (loopContainsBlocking(loop) == false) return true;
 
   return false;
 }
 
 static const char* getUnorderedAtomicFunction(const char* cname) {
 
-  for (int i=0; optimizableFunctionTable[i]; i+=2) {
+  for (int i = 0; optimizableFunctionTable[i]; i += 2) {
     if (startsWith(cname, optimizableFunctionTable[i])) {
-      const char* newPrefix = optimizableFunctionTable[i+1];
-      if (newPrefix == NULL)
-        return NULL;
+      const char* newPrefix = optimizableFunctionTable[i + 1];
+      if (newPrefix == NULL) return NULL;
       size_t len = strlen(optimizableFunctionTable[i]);
       const char* suffix = cname + len;
       return astr(newPrefix, suffix);
@@ -778,7 +741,6 @@ static const char* getUnorderedAtomicFunction(const char* cname) {
 
   return NULL;
 }
-
 
 // atomic functions
 // cname -> FnSymbol*
@@ -796,8 +758,7 @@ static void transformAtomicStmt(Expr* stmt) {
   // We might have newFnCName == NULL if we just wanted
   // to test the compiler optimization but there is no
   // runtime support / value in the optimization
-  if (newFnCName == NULL)
-    return;
+  if (newFnCName == NULL) return;
 
   // Now lookup up newFn in the map
   if (atomicFns.count(newFnCName) > 0) {
@@ -833,8 +794,7 @@ static void transformAtomicStmt(Expr* stmt) {
     for (Expr* cur = call->getStmtExpr()->prev; cur != NULL; cur = cur->prev) {
       if (CallExpr* call = toCallExpr(cur)) {
         if (FnSymbol* fn = call->resolvedFunction()) {
-          if (fn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE))
-            cur->remove();
+          if (fn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE)) cur->remove();
           // if we encountered a function call, including the added fence, stop
           break;
         }
@@ -848,8 +808,7 @@ static void transformAtomicStmt(Expr* stmt) {
     for (Expr* cur = call->getStmtExpr()->next; cur != NULL; cur = cur->next) {
       if (CallExpr* call = toCallExpr(cur)) {
         if (FnSymbol* fn = call->resolvedFunction()) {
-          if (fn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE))
-            cur->remove();
+          if (fn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE)) cur->remove();
           // if we encountered a function call, including the added fence, stop
           break;
         }
@@ -882,15 +841,13 @@ static void transformAtomicStmt(Expr* stmt) {
   SymExpr* se = toSymExpr(call->baseExpr);
   INT_ASSERT(se && se->symbol() == oldFn);
   se->setSymbol(newFn);
-
 }
 
 static bool isOptimizableAssignStmt(Expr* stmt, BlockStmt* loop) {
   Symbol* lhs = NULL;
   if (CallExpr* call = toCallExpr(stmt))
     if (call->isPrimitive(PRIM_ASSIGN))
-      if (SymExpr* lhsSe = toSymExpr(call->get(1)))
-        lhs = lhsSe->symbol();
+      if (SymExpr* lhsSe = toSymExpr(call->get(1))) lhs = lhsSe->symbol();
 
   if (lhs)
     if (BlockStmt* defInBlock = toBlockStmt(lhs->defPoint->parentExpr))
@@ -903,7 +860,7 @@ static bool isOptimizableAssignStmt(Expr* stmt, BlockStmt* loop) {
   return false;
 }
 
-static CondStmt *getAggregationCondStmt(Expr *stmt) {
+static CondStmt* getAggregationCondStmt(Expr* stmt) {
 
   // if this was an aggregatable assignment, it must be inside a then block of
   // an:
@@ -917,8 +874,8 @@ static CondStmt *getAggregationCondStmt(Expr *stmt) {
   //
   // In that scenario, the immediate parent of `stmt` is the then block, and its
   // parent is the actual conditional
-  if (CondStmt *aggCond = toCondStmt(stmt->parentExpr->parentExpr)) {
-    if (SymExpr *condExpr = toSymExpr(aggCond->condExpr)) {
+  if (CondStmt* aggCond = toCondStmt(stmt->parentExpr->parentExpr)) {
+    if (SymExpr* condExpr = toSymExpr(aggCond->condExpr)) {
       if (condExpr->symbol()->hasFlag(FLAG_AGG_MARKER)) {
         return aggCond;
       }
@@ -984,11 +941,9 @@ static void transformAssignStmt(Expr* stmt) {
 
     call->insertBefore(new CallExpr(PRIM_UNORDERED_ASSIGN, lhs, rhs->copy()));
     call->remove();
-    if (callToRemove)
-      callToRemove->remove();
+    if (callToRemove) callToRemove->remove();
   }
 }
-
 
 void optimizeForallUnorderedOps() {
 
@@ -998,16 +953,14 @@ void optimizeForallUnorderedOps() {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       ModuleSymbol* mod = fn->defPoint->getModule();
       if (printsUserLocation(fn->defPoint) &&
-          !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
-          fn != mod->initFn &&
+          !fn->hasFlag(FLAG_COMPILER_GENERATED) && fn != mod->initFn &&
           fn != mod->deinitFn) {
         mayBlock(fn);
       }
     }
   }
 
-  if (fNoOptimizeForallUnordered)
-    return;
+  if (fNoOptimizeForallUnordered) return;
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     // Does it start with chpl_comm_atomic_? Add to map.
@@ -1036,12 +989,10 @@ void optimizeForallUnorderedOps() {
         for_vector(Expr, lastStmt, lastStmts) {
           if (isOptimizableAtomicStmt(lastStmt, loop)) {
             atomicsToOptimize.push_back(lastStmt);
-          }
-          else if (isOptimizableAssignStmt(lastStmt, loop)) {
-            if (CondStmt *aggCond = getAggregationCondStmt(lastStmt)) {
+          } else if (isOptimizableAssignStmt(lastStmt, loop)) {
+            if (CondStmt* aggCond = getAggregationCondStmt(lastStmt)) {
               aggCondsToTransform.push_back(aggCond);
-            }
-            else {
+            } else {
               assignsToOptimize.push_back(lastStmt);
             }
           }
@@ -1051,15 +1002,11 @@ void optimizeForallUnorderedOps() {
   }
 
   // Now apply the transformation
-  for_vector(Expr, atomic, atomicsToOptimize) {
-    transformAtomicStmt(atomic);
-  }
+  for_vector(Expr, atomic, atomicsToOptimize) { transformAtomicStmt(atomic); }
   for_vector(CondStmt, cond, aggCondsToTransform) {
     transformConditionalAggregation(cond);
   }
-  for_vector(Expr, assign, assignsToOptimize) {
-    transformAssignStmt(assign);
-  }
+  for_vector(Expr, assign, assignsToOptimize) { transformAssignStmt(assign); }
 
   cleanupRemainingAggCondStmts();
 }

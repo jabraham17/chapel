@@ -98,8 +98,8 @@
 static const char* createConstProtoSlice = "chpl__createConstProtoSlice";
 static const char* createProtoSlice = "chpl__createProtoSlice";
 
-ArrayViewElisionTransformer::ArrayViewElisionTransformer(CallExpr* origCall):
-    origCall_(origCall) {
+ArrayViewElisionTransformer::ArrayViewElisionTransformer(CallExpr* origCall)
+  : origCall_(origCall) {
 
   origLhs_ = toCallExpr(origCall_->get(1));
   origRhs_ = toCallExpr(origCall_->get(2));
@@ -119,8 +119,8 @@ ArrayViewElisionTransformer::ArrayViewElisionTransformer(CallExpr* origCall):
   }
 
   // further analysis per call
-  if ( !(exprSuitableForProtoSlice(origLhs_, /*isLhs*/ true) &&
-         exprSuitableForProtoSlice(origRhs_, /*isLhs*/ false)) ) {
+  if (!(exprSuitableForProtoSlice(origLhs_, /*isLhs*/ true) &&
+        exprSuitableForProtoSlice(origRhs_, /*isLhs*/ false))) {
     candidate_ = false;
     return;
   }
@@ -148,19 +148,15 @@ void ArrayViewElisionTransformer::transform() {
 
   thenBlock->insertAtTail(new DefExpr(lhsPS, lhsPSCall));
   thenBlock->insertAtTail(new DefExpr(rhsPS, rhsPSCall));
-  thenBlock->insertAtTail(new CallExpr(PRIM_PROTO_SLICE_ASSIGN, lhsPS,
-                                       rhsPS));
+  thenBlock->insertAtTail(new CallExpr(PRIM_PROTO_SLICE_ASSIGN, lhsPS, rhsPS));
 
   BlockStmt* elseBlock = new BlockStmt();
 
-  CondStmt* cond = new CondStmt(new SymExpr(placeholder), thenBlock,
-                                elseBlock);
+  CondStmt* cond = new CondStmt(new SymExpr(placeholder), thenBlock, elseBlock);
 
   origCall_->insertBefore(cond);
   elseBlock->insertAtTail(origCall_->remove());
 }
-
-
 
 bool ArrayViewElisionTransformer::exprSuitableForProtoSlice(CallExpr* call,
                                                             bool isLhs) {
@@ -186,18 +182,15 @@ CallExpr* ArrayViewElisionTransformer::genCreateProtoSlice(CallExpr* call) {
   const char* factory = isConst ? createConstProtoSlice : createProtoSlice;
 
   CallExpr* ret = new CallExpr(factory, base->copy());
-  for_actuals(actual, call) {
-    ret->insertAtTail(actual->copy());
-  }
+  for_actuals(actual, call) { ret->insertAtTail(actual->copy()); }
 
   return ret;
 }
 
-
 void arrayViewElision() {
   if (!fArrayViewElision) return;
 
-  for_alive_in_Vec (CallExpr, call, gCallExprs) {
+  for_alive_in_Vec(CallExpr, call, gCallExprs) {
     if (FnSymbol* parentFn = toFnSymbol(call->parentSymbol)) {
       if (parentFn->hasFlag(FLAG_NO_ARRAY_VIEW_ELISION)) {
         continue;
@@ -205,29 +198,24 @@ void arrayViewElision() {
     }
 
     if (call->getModule()->modTag == MOD_USER) {
-    if (call->isNamed("=")) {
-      ArrayViewElisionTransformer transformer(call);
+      if (call->isNamed("=")) {
+        ArrayViewElisionTransformer transformer(call);
 
-      if (transformer.candidate()) {
-        transformer.transform();
+        if (transformer.candidate()) {
+          transformer.transform();
+        }
       }
-    }
     }
   }
 }
 
-ArrayViewElisionPrefolder::ArrayViewElisionPrefolder(CallExpr* call):
-    call_(call),
-    newProtoSliceLhs_(nullptr),
-    newProtoSliceRhs_(nullptr),
-    condStmt_(nullptr),
-    supported_(false),
-    staticCheckBlock_(nullptr) {
+ArrayViewElisionPrefolder::ArrayViewElisionPrefolder(CallExpr* call)
+  : call_(call), newProtoSliceLhs_(nullptr), newProtoSliceRhs_(nullptr),
+    condStmt_(nullptr), supported_(false), staticCheckBlock_(nullptr) {
 
   findProtoSlices();
   INT_ASSERT(newProtoSliceLhs_);
   INT_ASSERT(newProtoSliceRhs_);
-
 
   // this is just a temporary block. we add some AST in it, resolve and then
   // remove them. I cannot be sure if those operations could leave any AST in.
@@ -238,8 +226,7 @@ ArrayViewElisionPrefolder::ArrayViewElisionPrefolder(CallExpr* call):
   parentBlock->insertAtHead(staticCheckBlock_);
 
   supported_ = handleOneProtoSlice(/* isLhs */ true) &&
-               handleOneProtoSlice(/* isLhs */ false) &&
-               canAssign();
+               handleOneProtoSlice(/* isLhs */ false) && canAssign();
 
   findCondStmt();
   INT_ASSERT(condStmt_);
@@ -259,12 +246,10 @@ Symbol* ArrayViewElisionPrefolder::getFlagReplacement() {
   if (!supported_) {
     // we can't optimize
     return gFalse;
-  }
-  else if (fLocal) {
+  } else if (fLocal) {
     // no need to check anything else, we can determine this statically
     return gTrue;
-  }
-  else {
+  } else {
     INT_ASSERT(lhsBase_);
     INT_ASSERT(rhsBase_);
     // we need to check if the arrays are on the same locale at run time
@@ -295,21 +280,20 @@ void ArrayViewElisionPrefolder::report() {
   }
 
   std::string isSupported = supported() ? "supported" : "not supported";
-  std::string isDynamic = (supported() && !fLocal) ?
-                            " (dynamic locality check required)" :
-                            "";
-  std::cout << "ArrayViewElision " << isSupported <<  isDynamic << " " <<
-               call_->stringLoc() << std::endl;
+  std::string isDynamic =
+    (supported() && !fLocal) ? " (dynamic locality check required)" : "";
+  std::cout << "ArrayViewElision " << isSupported << isDynamic << " "
+            << call_->stringLoc() << std::endl;
 
   std::cout << "\t" << "lhsBaseType: " << lhsBaseType_ << std::endl;
   std::cout << "\t" << "lhsIndexingExprs: " << std::endl;
-  for (auto typeName: lhsIndexExprTypes_) {
+  for (auto typeName : lhsIndexExprTypes_) {
     std::cout << "\t\t" << typeName << std::endl;
   }
 
   std::cout << "\t" << "rhsBaseType: " << rhsBaseType_ << std::endl;
   std::cout << "\t" << "rhsIndexingExprs: " << std::endl;
-  for (auto typeName: rhsIndexExprTypes_) {
+  for (auto typeName : rhsIndexExprTypes_) {
     std::cout << "\t\t" << typeName << std::endl;
   }
 
@@ -325,17 +309,16 @@ bool ArrayViewElisionPrefolder::handleOneProtoSlice(bool isLhs) {
   // stash some information while working on the call
   if (fReportArrayViewElision) {
     std::string& baseType = isLhs ? lhsBaseType_ : rhsBaseType_;
-    std::vector<std::string>& indexExprTypes = isLhs ? lhsIndexExprTypes_ :
-                                                       rhsIndexExprTypes_;
+    std::vector<std::string>& indexExprTypes =
+      isLhs ? lhsIndexExprTypes_ : rhsIndexExprTypes_;
 
     bool baseRecorded = false;
-    for_actuals (actual, call) {
+    for_actuals(actual, call) {
       std::string typeName = std::string(actual->typeInfo()->symbol->name);
       if (!baseRecorded) {
         baseType = typeName;
         baseRecorded = true;
-      }
-      else {
+      } else {
         indexExprTypes.push_back(typeName);
       }
     }
@@ -345,9 +328,10 @@ bool ArrayViewElisionPrefolder::handleOneProtoSlice(bool isLhs) {
 
   // add the isConst flag for a workaround
   //   See: https://github.com/chapel-lang/chapel/issues/26626
-  typeCheck->insertAtTail(call->isNamed(createConstProtoSlice) ? gTrue:gFalse);
+  typeCheck->insertAtTail(call->isNamed(createConstProtoSlice) ? gTrue
+                                                               : gFalse);
 
-  for_actuals (actual, call) {
+  for_actuals(actual, call) {
     INT_ASSERT(isSymExpr(actual));
     typeCheck->insertAtTail(actual->copy());
   }
@@ -430,8 +414,7 @@ void ArrayViewElisionPrefolder::findCondStmt() {
           tmpCondFlag_ = condExpr->symbol();
           condStmt_ = condStmt;
           break;
-        }
-        else {
+        } else {
           // this is an unknown conditional, this shouldn't have happened
           INT_FATAL(call_,
                     "unexpected syntax tree generated by arrayview elision");
@@ -444,8 +427,6 @@ void ArrayViewElisionPrefolder::findCondStmt() {
 
   if (condStmt_ == nullptr) {
     // where is the conditional?
-    INT_FATAL(call_,
-              "unexpected syntax tree generated by arrayview elision");
+    INT_FATAL(call_, "unexpected syntax tree generated by arrayview elision");
   }
 }
-

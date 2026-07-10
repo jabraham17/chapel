@@ -115,18 +115,17 @@ static bool anyAssignmentsToArray(std::vector<ContextCallExpr*> allContextCalls,
 //   }
 //
 void replaceArrayAccessesWithRefTemps() {
-  if (!fReplaceArrayAccessesWithRefTemps)
-    return;
+  if (!fReplaceArrayAccessesWithRefTemps) return;
 
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (ForLoop* forLoop = toForLoop(block)) {
-      std::vector<ContextCallExpr*>                     allContextCalls;
-      std::vector<BaseAST*>                             asts;
-      std::map<Symbol*, std::vector<ContextCallExpr*> > arrayAccessMap;
+      std::vector<ContextCallExpr*> allContextCalls;
+      std::vector<BaseAST*> asts;
+      std::map<Symbol*, std::vector<ContextCallExpr*>> arrayAccessMap;
 
-      SymExpr*  loopIdx   = forLoop->indexGet();
+      SymExpr* loopIdx = forLoop->indexGet();
       CallExpr* indexMove = NULL;
-      Symbol*   indexVar  = NULL;
+      Symbol* indexVar = NULL;
 
       collect_asts(forLoop, asts);
 
@@ -156,7 +155,8 @@ void replaceArrayAccessesWithRefTemps() {
         if (DEBUG_RAAWRT) {
           printf("%s:%d: Couldn't find index move.  "
                  "Not replacing accesses in loop\n",
-                 forLoop->fname(), forLoop->linenum());
+                 forLoop->fname(),
+                 forLoop->linenum());
         }
 
         continue;
@@ -192,9 +192,9 @@ void replaceArrayAccessesWithRefTemps() {
                   arrayAccessMap[arraySym].push_back(contextCall);
 
                   if (DEBUG_RAAWRT) {
-                    CallExpr* call  = toCallExpr(contextCall);
-                    SymExpr*  array = toSymExpr(call->get(1));
-                    SymExpr*  idx   = toSymExpr(call->get(2));
+                    CallExpr* call = toCallExpr(contextCall);
+                    SymExpr* array = toSymExpr(call->get(1));
+                    SymExpr* idx = toSymExpr(call->get(2));
 
                     printf("%s:%d: found removable array access %s[%s] (%d)\n",
                            contextCall->fname(),
@@ -210,15 +210,18 @@ void replaceArrayAccessesWithRefTemps() {
         }
       }
 
-      for (std::map<Symbol*, std::vector<ContextCallExpr*> >::iterator it = arrayAccessMap.begin(); it != arrayAccessMap.end(); ++it) {
-        int              vecSize   = it->second.size();
+      for (std::map<Symbol*, std::vector<ContextCallExpr*>>::iterator it =
+             arrayAccessMap.begin();
+           it != arrayAccessMap.end();
+           ++it) {
+        int vecSize = it->second.size();
         ContextCallExpr* firstCall = it->second.front();
 
         if (vecSize <= 2) {
           if (DEBUG_RAAWRT) {
-            CallExpr* call  = toCallExpr(firstCall);
-            SymExpr*  array = toSymExpr(call->get(1));
-            SymExpr*  idx   = toSymExpr(call->get(2));
+            CallExpr* call = toCallExpr(firstCall);
+            SymExpr* array = toSymExpr(call->get(1));
+            SymExpr* idx = toSymExpr(call->get(2));
 
             printf("%s:%d: not replacing array access %s[%s] (%d), "
                    "number of accesses %d is under threshold\n",
@@ -226,19 +229,19 @@ void replaceArrayAccessesWithRefTemps() {
                    firstCall->linenum(),
                    array->symbol()->name,
                    idx->symbol()->name,
-                   firstCall->id, vecSize);
+                   firstCall->id,
+                   vecSize);
           }
 
         } else /*if (vecSize > 2) */ { // TODO: tune this threshold
           SET_LINENO(indexMove);
 
-          CallExpr*  accessCall = toCallExpr(firstCall);
-          SymExpr*   array      = toSymExpr(accessCall->get(1));
+          CallExpr* accessCall = toCallExpr(firstCall);
+          SymExpr* array = toSymExpr(accessCall->get(1));
 
           // assign an array indexing context call in the vector to a 'ref'
           // variable at the top of the loop
-          VarSymbol* ref        = newTemp("arrayAccessTmp",
-                                          firstCall->typeInfo());
+          VarSymbol* ref = newTemp("arrayAccessTmp", firstCall->typeInfo());
 
           if (anyAssignmentsToArray(allContextCalls, array)) {
             // If any assignment to the array happens in the loop, mark the
@@ -252,25 +255,25 @@ void replaceArrayAccessesWithRefTemps() {
             ref->addFlag(FLAG_REF_VAR);
           }
 
-          indexMove->insertAfter(new CallExpr(PRIM_MOVE,
-                                              ref,
-                                              firstCall->copy()));
+          indexMove->insertAfter(
+            new CallExpr(PRIM_MOVE, ref, firstCall->copy()));
 
           indexMove->insertAfter(new DefExpr(ref));
 
           // then replace all of the indexing context calls in the vector
           // with uses of that 'ref'
-          for (std::vector<ContextCallExpr*>::iterator calls = it->second.begin();
+          for (std::vector<ContextCallExpr*>::iterator calls =
+                 it->second.begin();
                calls != it->second.end();
                ++calls) {
 
             ContextCallExpr* call = *calls;
 
             if (DEBUG_RAAWRT) {
-              CallExpr*   accessCall = toCallExpr(call);
-              SymExpr*    array      = toSymExpr(accessCall->get(1));
-              SymExpr*    idx        = toSymExpr(accessCall->get(2));
-              const char* sayref     = NULL;
+              CallExpr* accessCall = toCallExpr(call);
+              SymExpr* array = toSymExpr(accessCall->get(1));
+              SymExpr* idx = toSymExpr(accessCall->get(2));
+              const char* sayref = NULL;
 
               sayref = ref->hasFlag(FLAG_REF_VAR) ? " ref " : " ";
 
