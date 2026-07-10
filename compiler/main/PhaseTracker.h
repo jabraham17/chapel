@@ -69,12 +69,12 @@ class Phase;
 class Pass;
 
 struct PhaseData {
-  unsigned long                timeInUsecs;
+  unsigned long timeInUsecs;
   MemoryTracker::MemoryInBytes memory;
 
   PhaseData() : timeInUsecs(0), memory(0) {}
   PhaseData(unsigned long time, MemoryTracker::MemoryInBytes memory)
-      : timeInUsecs(time), memory(memory) {}
+    : timeInUsecs(time), memory(memory) {}
 
   std::string serialize() const {
     char buffer[256];
@@ -108,7 +108,7 @@ struct PhaseData {
 };
 
 class PhaseTracker {
-public:
+ public:
   enum SubPhase { kPrimary, kVerify, kCleanAst };
 
   PhaseTracker();
@@ -142,29 +142,29 @@ public:
     return printPassesFile != nullptr ? printPassesFile : stderr;
   }
 
-private:
+ private:
   void PassesCollect(std::vector<Pass>& passes) const;
 
   void StartPhase(const char* phaseName, int passId, SubPhase subPhase);
 
-  Timer               mTimer;
-  MemoryTracker       mMemoryTracker;
-  int                 mPhaseId;
+  Timer mTimer;
+  MemoryTracker mMemoryTracker;
+  int mPhaseId;
   std::vector<Phase*> mPhases;
 };
 
 // Used to collect the times as the program runs
 class Phase {
-public:
-  Phase(const char*            name,
-        int                    passId,
+ public:
+  Phase(const char* name,
+        int passId,
         PhaseTracker::SubPhase subPhase,
-        PhaseData              start);
+        PhaseData start);
   ~Phase();
 
   bool IsStartOfPass() const;
 
-  void        ReportPass(PhaseData now) const;
+  void ReportPass(PhaseData now) const;
   static void ReportPassGroup(const char* suffix, PhaseData total);
 
   static void ReportTime(const char* name, double secs);
@@ -172,39 +172,39 @@ public:
   static void ReportData(const char* name, PhaseData data);
   static void ReportText(const char* text);
 
-  char*                  mName; // Only set for kPrimary
-  int                    mPassId;
+  char* mName; // Only set for kPrimary
+  int mPassId;
   PhaseTracker::SubPhase mSubPhase;
-  PhaseData              mStart; // Elapsed from main()
+  PhaseData mStart; // Elapsed from main()
 
-private:
+ private:
   Phase();
 };
 
 // Group the phases in to passes and report on passes
 class Pass {
-public:
+ public:
   Pass();
   ~Pass();
 
   static void Header(FILE* fp);
-  static void Footer(FILE*     fp,
+  static void Footer(FILE* fp,
                      PhaseData main,
                      PhaseData check,
                      PhaseData clean,
                      PhaseData total);
 
-  bool                         CompareByTime(Pass const& ref) const;
-  bool                         CompareByMemory(Pass const& ref) const;
-  void                         Reset();
-  unsigned long                TotalTime() const;
+  bool CompareByTime(Pass const& ref) const;
+  bool CompareByMemory(Pass const& ref) const;
+  void Reset();
+  unsigned long TotalTime() const;
   MemoryTracker::MemoryInBytes TotalMemory() const;
 
   void Print(FILE* fp, PhaseData accum, PhaseData total) const;
 
-  char*     mName;
-  int       mPassId;
-  int       mIndex;
+  char* mName;
+  int mPassId;
+  int mIndex;
   PhaseData mPrimary;
   PhaseData mVerify;
   PhaseData mCleanAst;

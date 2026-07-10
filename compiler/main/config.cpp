@@ -30,14 +30,14 @@
 #include "chpl/uast/Builder.h"
 #include <utility>
 
-
 using namespace chpl;
 
 static Map<const char*, Expr*> configMap; // map from configs to vals
-static Map<const char*, VarSymbol*> usedConfigParams; // map from configs to uses
+static Map<const char*, VarSymbol*>
+  usedConfigParams; // map from configs to uses
 
-bool                           mainHasArgs;
-bool                           mainPreserveDelimiter;
+bool mainHasArgs;
+bool mainPreserveDelimiter;
 
 void checkConfigs() {
   if (uast::Builder::checkAllConfigVarsAssigned(gContext)) {
@@ -67,9 +67,7 @@ void parseCmdLineConfig(const char* name, const char* value) {
   gDynoParams.push_back(std::move(pair));
 }
 
-Expr* getCmdLineConfig(const char* name) {
-  return configMap.get(astr(name));
-}
+Expr* getCmdLineConfig(const char* name) { return configMap.get(astr(name)); }
 
 void useCmdLineConfig(const char* name, VarSymbol* byWhom) {
   usedConfigParams.put(astr(name), byWhom);
@@ -85,8 +83,7 @@ bool isSetCmdLineConfig(const char* moduleName, const char* paramName) {
   // However, there would never be >20-ish params if we're being
   // reasonable. So it's not that bad.
   for (const auto& pair : gDynoParams) {
-    if (pair.first == fullName ||
-        strcmp(pair.first.c_str(), paramName) == 0){
+    if (pair.first == fullName || strcmp(pair.first.c_str(), paramName) == 0) {
       return true;
     }
   }
@@ -104,13 +101,12 @@ bool isSetCmdLineConfig(const char* moduleName, const char* paramName) {
 //   }
 //   return flag;
 // }
-VarSymbol*
-getConfigParamBool(ModuleSymbol* modSym, const char* configParamName) {
+VarSymbol* getConfigParamBool(ModuleSymbol* modSym,
+                              const char* configParamName) {
   VarSymbol* ret = nullptr;
 
   if (!modSym->initFn || !modSym->initFn->isResolved()) {
-    INT_FATAL(modSym, "Called before '%s' is resolved",
-                      modSym->name);
+    INT_FATAL(modSym, "Called before '%s' is resolved", modSym->name);
   }
 
   for (auto varSym : modSym->getTopLevelConfigVars()) {

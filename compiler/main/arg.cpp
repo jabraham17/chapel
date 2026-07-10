@@ -68,30 +68,25 @@ static const char* get_envvar_setting(const ArgumentDescription& desc);
 *                                                                             *
 ************************************** | *************************************/
 
-static void  print_n_spaces(int n);
-static void  word_wrap_print(const char* text, int startCol, int endCol);
+static void print_n_spaces(int n);
+static void word_wrap_print(const char* text, int startCol, int endCol);
 
 void usage(const ArgumentState* state,
-           int                  status,
-           bool                 printEnvHelp,
-           bool                 printCurrentSettings)
-{
-  const ArgumentDescription* desc           = state->desc;
-  const int                  desc_start_col = 39;
-  const int                  end_col        = 79;
+           int status,
+           bool printEnvHelp,
+           bool printCurrentSettings) {
+  const ArgumentDescription* desc = state->desc;
+  const int desc_start_col = 39;
+  const int end_col = 79;
 
   fprintf(stdout, "Usage: %s [flags] [source files]\n", state->program_name);
 
   // The last row is the only row where the name is NULL
-  for (int i = 0; desc[i].name != 0; i++)
-  {
+  for (int i = 0; desc[i].name != 0; i++) {
     // If this is a header row (the name is the empty string)
-    if (desc[i].name[0] == '\0')
-    {
-      if (strncmp(desc[i].description, "Developer Flags", 15) == 0)
-      {
-        if (developer == false)
-        {
+    if (desc[i].name[0] == '\0') {
+      if (strncmp(desc[i].description, "Developer Flags", 15) == 0) {
+        if (developer == false) {
           // We assume that developer flags are listed at the end of the
           // argument list in driver.cpp.  If we encounter a section header
           // whose prefix matches "Developer Flags" and (developer == false),
@@ -101,9 +96,7 @@ void usage(const ArgumentState* state,
       }
 
       fprintf(stdout, "\n%s:\n", desc[i].description);
-    }
-    else
-    {
+    } else {
       int nprinted = 0;
 
       if (desc[i].key != ' ')
@@ -120,29 +113,23 @@ void usage(const ArgumentState* state,
       if (desc[i].argumentOptions)
         nprinted += fprintf(stdout, " %s", desc[i].argumentOptions);
 
-      if (nprinted > (desc_start_col - 2))
-      {
+      if (nprinted > (desc_start_col - 2)) {
         fprintf(stdout, "\n");
         print_n_spaces(desc_start_col - 1);
-      }
-      else
-      {
+      } else {
         print_n_spaces(desc_start_col - nprinted - 1);
       }
 
       word_wrap_print(desc[i].description, desc_start_col, end_col);
 
-      if (printEnvHelp || printCurrentSettings)
-      {
+      if (printEnvHelp || printCurrentSettings) {
         /* print environment variable stuff */
-        if (printEnvHelp)
-        {
+        if (printEnvHelp) {
           const char* envvar = desc[i].env;
 
           printf("          env var:   ");
 
-          if (envvar)
-          {
+          if (envvar) {
             const char* setting = get_envvar_setting(desc[i]);
 
             if (*envvar == '_') {
@@ -154,9 +141,7 @@ void usage(const ArgumentState* state,
               printf(" (set to '%s')", setting);
             else
               printf(" (not set)");
-          }
-          else
-          {
+          } else {
             printf("<none>");
           }
 
@@ -164,89 +149,83 @@ void usage(const ArgumentState* state,
         }
 
         /* print default setting stuff */
-        if (printCurrentSettings)
-        {
+        if (printCurrentSettings) {
           char type = desc[i].type[0];
 
           printf("          currently: ");
 
-          switch (type)
-          {
-          case 'I':
-          case '+':
-            if (desc[i].location != 0)
-              printf("%d", *(int*) desc[i].location);
-            else
-              printf("''");
+          switch (type) {
+            case 'I':
+            case '+':
+              if (desc[i].location != 0)
+                printf("%d", *(int*)desc[i].location);
+              else
+                printf("''");
 
-            break;
+              break;
 
-          case 'P':
-            if (desc[i].location != 0)
-              printf("'%s'", ((std::string*) desc[i].location)->c_str());
-            else
-              printf("''");
-            break;
+            case 'P':
+              if (desc[i].location != 0)
+                printf("'%s'", ((std::string*)desc[i].location)->c_str());
+              else
+                printf("''");
+              break;
 
-          case 'S':
-            if (desc[i].location != 0)
-              printf("'%s'", (char*) desc[i].location);
-            else
-              printf("''");
+            case 'S':
+              if (desc[i].location != 0)
+                printf("'%s'", (char*)desc[i].location);
+              else
+                printf("''");
 
-            break;
+              break;
 
-          case 'D':
-            if (desc[i].location != 0)
-              printf("%g", *(double*) desc[i].location);
-            else
-              printf("''");
+            case 'D':
+              if (desc[i].location != 0)
+                printf("%g", *(double*)desc[i].location);
+              else
+                printf("''");
 
-            break;
+              break;
 
-          case 'f':
-          case 'F':
-          case 'T':
-            if (desc[i].location != 0)
-            {
-              bool sel = *((bool*) desc[i].location);
+            case 'f':
+            case 'F':
+            case 'T':
+              if (desc[i].location != 0) {
+                bool sel = *((bool*)desc[i].location);
 
-              printf("%s", (sel == true) ? "selected" : "not selected");
-            }
-            else
-              printf("''");
+                printf("%s", (sel == true) ? "selected" : "not selected");
+              } else
+                printf("''");
 
-            break;
+              break;
 
-          case 'L':
-            if (desc[i].location != 0)
-              printf("%" PRId64, *(int64_t*) desc[i].location);
-            else
-              printf("''");
+            case 'L':
+              if (desc[i].location != 0)
+                printf("%" PRId64, *(int64_t*)desc[i].location);
+              else
+                printf("''");
 
-            break;
+              break;
 
-          case 'N':
-          case 'n':
-            if (desc[i].location != 0)
-              printf("--%s%s",
-                     (*(bool*) desc[i].location ^ (type == 'N')) ? "no-" : "",
-                     desc[i].name);
-            else
-              printf("''");
+            case 'N':
+            case 'n':
+              if (desc[i].location != 0)
+                printf("--%s%s",
+                       (*(bool*)desc[i].location ^ (type == 'N')) ? "no-" : "",
+                       desc[i].name);
+              else
+                printf("''");
 
-            break;
+              break;
 
-          case 'X':
-            if (desc[i].location != 0)
-              printf("0x%lx", *(unsigned long*) desc[i].location);
-            else
-              printf("''");
-            break;
+            case 'X':
+              if (desc[i].location != 0)
+                printf("0x%lx", *(unsigned long*)desc[i].location);
+              else
+                printf("''");
+              break;
 
-          default:
-            arg_fatalError("Unexpected case in usage()");
-            break;
+            default: arg_fatalError("Unexpected case in usage()"); break;
           }
 
           printf("\n");
@@ -260,14 +239,11 @@ void usage(const ArgumentState* state,
   clean_exit(status);
 }
 
-static void print_n_spaces(int n)
-{
-  for (int i = 0; i < n; i++)
-    putchar(' ');
+static void print_n_spaces(int n) {
+  for (int i = 0; i < n; i++) putchar(' ');
 }
 
-static void word_wrap_print(const char* text, int startCol, int endCol)
-{
+static void word_wrap_print(const char* text, int startCol, int endCol) {
   /*
    * Print the buffer "text" to stdout with all non-whitespace text at or
    * after startCol, and print at most endCol characters per line.
@@ -275,32 +251,25 @@ static void word_wrap_print(const char* text, int startCol, int endCol)
    * stdout must be in a state such that the next character fprintf will print
    * is in startCol.
    */
-  char*       textDup   = strdup(text);
-  const char* delims    = " ";
-  char*       savePtr   = 0;
+  char* textDup = strdup(text);
+  const char* delims = " ";
+  char* savePtr = 0;
 
-  char*       word      = strtok_r(textDup, delims, &savePtr);
+  char* word = strtok_r(textDup, delims, &savePtr);
 
-  int         spaceLeft = 1 + endCol - startCol;
-  bool        first     = true;
+  int spaceLeft = 1 + endCol - startCol;
+  bool first = true;
 
-  while (word)
-  {
+  while (word) {
     int wordlength = strlen(word);
 
-    if (first)
-    {
+    if (first) {
       spaceLeft = spaceLeft - fprintf(stdout, "%s", word);
-      first      = false;
-    }
-    else
-    {
-      if (wordlength + 1 < spaceLeft)
-      {
+      first = false;
+    } else {
+      if (wordlength + 1 < spaceLeft) {
         spaceLeft -= fprintf(stdout, " %s", word);
-      }
-      else
-      {
+      } else {
         fprintf(stdout, "\n");
 
         print_n_spaces(startCol - 1);
@@ -327,13 +296,12 @@ void init_args(ArgumentState* state, const char* argv0, void* mainAddr) {
   char* name = strdup(argv0);
 
   if (char* firstSlash = strrchr(name, '/')) {
-    name  = firstSlash + 1;
+    name = firstSlash + 1;
   }
 
   state->program_name = name;
-  state->program_loc  = arg_programLoc(argv0, mainAddr);
+  state->program_loc = arg_programLoc(argv0, mainAddr);
 }
-
 
 /*
  * Initialize arg_desc member.
@@ -374,7 +342,7 @@ bool process_args(ArgumentState* state, int argc, char* argv[]) {
   astlocMarker markAstLoc(0, "<command line>");
 #endif
 
-  if(!ProcessEnvironment(state)) {
+  if (!ProcessEnvironment(state)) {
     return false;
   }
   ProcessCommandLine(state, argc, argv);
@@ -387,66 +355,59 @@ bool process_args(ArgumentState* state, int argc, char* argv[]) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void ApplyValue(const ArgumentState*       state,
+static void ApplyValue(const ArgumentState* state,
                        const ArgumentDescription* desc,
-                       const char*                value);
-
+                       const char* value);
 
 static bool ProcessEnvironment(ArgumentState* state) {
   ArgumentDescription* desc = state->desc;
   bool hadError = false;
 
   // The name field is defined by every row except the final guard
-  for (int i = 0; desc[i].name != 0; i++)
-  {
-    if (desc[i].env)
-    {
+  for (int i = 0; desc[i].name != 0; i++) {
+    if (desc[i].env) {
       const char* env = get_envvar_setting(desc[i]);
 
-      if (env != NULL)
-      {
+      if (env != NULL) {
         char sel = desc[i].type[0];
 
-        if (sel == 'N' || sel == 'n')
-        {
-          switch (env[0])
-          {
-          case 'Y':
-          case 'y':
-          case 'T':
-          case 't':
-          case '1':
-            env = (sel == 'N') ? "true" : "false";
-          break;
+        if (sel == 'N' || sel == 'n') {
+          switch (env[0]) {
+            case 'Y':
+            case 'y':
+            case 'T':
+            case 't':
+            case '1': env = (sel == 'N') ? "true" : "false"; break;
 
-          case 'N':
-          case 'n':
-          case 'F':
-          case 'f':
-          case '0':
-            env = (sel == 'N') ? "false" : "true";
-          break;
+            case 'N':
+            case 'n':
+            case 'F':
+            case 'f':
+            case '0': env = (sel == 'N') ? "false" : "true"; break;
 
-          default:
-            char msg[0xFF];
-            snprintf(msg, 0xFF,
-              "When the environment variable %s is set and not empty, it must "
-              "start with one of Y y T t 1 (indicates 'yes') or N n F f 0 "
-              "(indicates '--no'). Currently it is set to \"%s\".",
-              desc[i].env, env);
-            arg_fatalErrorCont(msg);
-            hadError = true;
-            break;
+            default:
+              char msg[0xFF];
+              snprintf(
+                msg,
+                0xFF,
+                "When the environment variable %s is set and not empty, it "
+                "must "
+                "start with one of Y y T t 1 (indicates 'yes') or N n F f 0 "
+                "(indicates '--no'). Currently it is set to \"%s\".",
+                desc[i].env,
+                env);
+              arg_fatalErrorCont(msg);
+              hadError = true;
+              break;
           }
         }
 
-        state->env_argument =
-          (const char **)realloc(state->env_argument,
-                                 sizeof(char*) * (state->nenv_arguments + 3));
+        state->env_argument = (const char**)realloc(
+          state->env_argument, sizeof(char*) * (state->nenv_arguments + 3));
 
         state->env_argument[state->nenv_arguments++] = strdup(desc[i].env);
         state->env_argument[state->nenv_arguments++] = strdup(env);
-        state->env_argument[state->nenv_arguments]   = NULL;
+        state->env_argument[state->nenv_arguments] = NULL;
 
         ApplyValue(state, &desc[i], env);
       }
@@ -455,75 +416,56 @@ static bool ProcessEnvironment(ArgumentState* state) {
   return !hadError;
 }
 
-static void ApplyValue(const ArgumentState*       state,
+static void ApplyValue(const ArgumentState* state,
                        const ArgumentDescription* desc,
-                       const char*                value)
-{
+                       const char* value) {
   void* location = desc->location;
 
-  if (location != 0)
-  {
+  if (location != 0) {
     char type = desc->type[0];
 
-    switch (type)
-    {
-      case '+':
-        *((int*)     location) = *((int*) location) + 1;
-        break;
+    switch (type) {
+      case '+': *((int*)location) = *((int*)location) + 1; break;
 
-      case 'T':
-        *((int*)     location) = !(*((int*) location));
-        break;
+      case 'T': *((int*)location) = !(*((int*)location)); break;
 
       case 'F':
-      case 'f':
-        *((bool*)    location) = (type == 'F') ? 1 : 0;
-        break;
+      case 'f': *((bool*)location) = (type == 'F') ? 1 : 0; break;
 
       case 'n':
       case 'N':
-        *((bool*)    location) = (strcmp(value, "true") == 0) ? true : false;
+        *((bool*)location) = (strcmp(value, "true") == 0) ? true : false;
         break;
 
-      case 'I':
-        *((int*)     location) = strtol(value, NULL, 0);
-        break;
+      case 'I': *((int*)location) = strtol(value, NULL, 0); break;
 
       case 'L':
-        *((int64_t*) location) = str2int64(value, false, NULL, -1);
+        *((int64_t*)location) = str2int64(value, false, NULL, -1);
         break;
 
-      case 'D':
-        *((double*)  location) = strtod(value, NULL);
-        break;
+      case 'D': *((double*)location) = strtod(value, NULL); break;
 
-      case 'P':
-        *((std::string*) location) = value;
-        break;
+      case 'P': *((std::string*)location) = value; break;
 
-      case 'S':
-      {
+      case 'S': {
         long bufSize = strtol(desc->type + 1, NULL, 10);
 
-        strncpy((char*) location, value, bufSize);
+        strncpy((char*)location, value, bufSize);
 
         break;
       }
-      case 'U':
-      {
-        *((size_t*) location) = str2uint64(value, false, NULL, -1);
+      case 'U': {
+        *((size_t*)location) = str2uint64(value, false, NULL, -1);
         break;
       }
-      case 'X':
-      {
-        *((size_t*) location) = hexStr2uint64(value, false, NULL, -1);
+      case 'X': {
+        *((size_t*)location) = hexStr2uint64(value, false, NULL, -1);
         break;
       }
     }
   }
 
-  if (desc->pfn)
-    desc->pfn(desc, value);
+  if (desc->pfn) desc->pfn(desc, value);
 }
 
 /************************************* | **************************************
@@ -534,23 +476,26 @@ static void ApplyValue(const ArgumentState*       state,
 *                                                                             *
 ************************************** | *************************************/
 
-static void process_arg(const ArgumentState*       state,
+static void process_arg(const ArgumentState* state,
                         const ArgumentDescription* desc,
-                        char***                    argv,
-                        const char*                currentFlag);
+                        char*** argv,
+                        const char* currentFlag);
 
-static void print_suggestions(const char* flag, const ArgumentDescription* desc);
-static void bad_flag(const char* flag, const char* arg, const ArgumentDescription* desc);
-static void extraneous_arg(const char* flag, const char* extras, const ArgumentDescription* desc);
+static void print_suggestions(const char* flag,
+                              const ArgumentDescription* desc);
+static void
+bad_flag(const char* flag, const char* arg, const ArgumentDescription* desc);
+static void extraneous_arg(const char* flag,
+                           const char* extras,
+                           const ArgumentDescription* desc);
 
 static void missing_arg(const char* currentFlag);
 
-static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
-{
-  ArgumentDescription* desc     = state->desc;
-  char**               argvSave = (char**) malloc((argc + 1) * sizeof(char*));
-  char**               argvBase = (char**) malloc((argc + 1) * sizeof(char*));
-  char**               argv     = argvBase;
+static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[]) {
+  ArgumentDescription* desc = state->desc;
+  char** argvSave = (char**)malloc((argc + 1) * sizeof(char*));
+  char** argvBase = (char**)malloc((argc + 1) * sizeof(char*));
+  char** argv = argvBase;
 
   for (int i = 0; i < argc; i++) {
     argvSave[i] = strdup(aargv[i]);
@@ -558,28 +503,22 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
 
   argvSave[argc] = NULL;
 
-  for (int i = 0; i < argc + 1; i++)
-    argvBase[i] = argvSave[i];
+  for (int i = 0; i < argc + 1; i++) argvBase[i] = argvSave[i];
 
-  while (*++argv)
-  {
-    if ((*argv)[0] == '-')
-    {
-      if ((*argv)[1] == '-')
-      {
-        char* end   = strchr((*argv) + 2, '=');
-        int   len   = (end != 0) ? end - ((*argv) + 2) : strlen((*argv) + 2);
-        bool  found = false;
+  while (*++argv) {
+    if ((*argv)[0] == '-') {
+      if ((*argv)[1] == '-') {
+        char* end = strchr((*argv) + 2, '=');
+        int len = (end != 0) ? end - ((*argv) + 2) : strlen((*argv) + 2);
+        bool found = false;
 
-        for (int i = 0; desc[i].name != 0 && found == false; i++)
-        {
+        for (int i = 0; desc[i].name != 0 && found == false; i++) {
           // Skip sections headers
-          if (desc[i].type != 0)
-          {
+          if (desc[i].type != 0) {
             int flagLen = strlen(desc[i].name);
 
-            if (len == flagLen && strncmp(desc[i].name, (*argv) + 2, len) == 0)
-            {
+            if (len == flagLen &&
+                strncmp(desc[i].name, (*argv) + 2, len) == 0) {
               const char* currentFlag = *argv;
 
               *argv = (end == 0) ? *argv + strlen(*argv) : end;
@@ -588,15 +527,13 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
 
               found = true;
               break;
-            }
-            else if ((desc[i].type[0] == 'N' || desc[i].type[0] == 'n')         &&
-                     len                                         == flagLen + 3 &&
-                     strncmp("no-",        (*argv) + 2,       3) == 0           &&
-                     strncmp(desc[i].name, (*argv) + 5, len - 3) == 0)
-            {
+            } else if ((desc[i].type[0] == 'N' || desc[i].type[0] == 'n') &&
+                       len == flagLen + 3 &&
+                       strncmp("no-", (*argv) + 2, 3) == 0 &&
+                       strncmp(desc[i].name, (*argv) + 5, len - 3) == 0) {
               const char* currentFlag = *argv;
 
-              *argv        = (end == 0) ? *argv + strlen(*argv) - 1 : end;
+              *argv = (end == 0) ? *argv + strlen(*argv) - 1 : end;
 
               desc[i].type = (desc[i].type[0] == 'N') ? "f" : "F";
 
@@ -610,53 +547,41 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
           }
         }
 
-        if (found == false)
-        {
+        if (found == false) {
           // This does not return
           bad_flag(*argv, *argv, desc);
         }
-      }
-      else
-      {
+      } else {
         char singleDashArg = *++(*argv);
-        char errFlag[3]    = { '-', singleDashArg, '\0' };
-        bool found         = false;
+        char errFlag[3] = {'-', singleDashArg, '\0'};
+        bool found = false;
 
-        for (int i = 0; desc[i].name != 0 && found == false; i++)
-        {
+        for (int i = 0; desc[i].name != 0 && found == false; i++) {
           // Skip sections headers
-          if (desc[i].type != 0)
-          {
-            if (desc[i].key == singleDashArg)
-            {
+          if (desc[i].type != 0) {
+            if (desc[i].key == singleDashArg) {
               ++(*argv);
 
-              process_arg(state, &(state->desc[i]), &argv, (*argv)-2);
+              process_arg(state, &(state->desc[i]), &argv, (*argv) - 2);
 
-              if (**argv != '\0')
-                extraneous_arg(errFlag, *argv, desc);
+              if (**argv != '\0') extraneous_arg(errFlag, *argv, desc);
 
               found = true;
             }
           }
         }
 
-        if (found == false)
-        {
+        if (found == false) {
           // This does not return
           bad_flag(errFlag, *argv, desc);
         }
-
       }
-    }
-    else
-    {
-      state->file_argument = (const char **)realloc(
-        state->file_argument,
-        sizeof(char*) * (state->nfile_arguments + 2));
+    } else {
+      state->file_argument = (const char**)realloc(
+        state->file_argument, sizeof(char*) * (state->nfile_arguments + 2));
 
       state->file_argument[state->nfile_arguments++] = strdup(*argv);
-      state->file_argument[state->nfile_arguments]   = NULL;
+      state->file_argument[state->nfile_arguments] = NULL;
     }
   }
 
@@ -670,54 +595,42 @@ static void ProcessCommandLine(ArgumentState* state, int argc, char* aargv[])
   free(argvBase);
 }
 
-static void process_arg(const ArgumentState*       state,
+static void process_arg(const ArgumentState* state,
                         const ArgumentDescription* desc,
-                        char***                    argv,
-                        const char*                currentFlag)
-{
+                        char*** argv,
+                        const char* currentFlag) {
   const char* arg = NULL;
 
-  if (desc->type)
-  {
+  if (desc->type) {
     char type = desc->type[0];
 
     if (type == 'F' || type == 'f')
-      *((bool*) desc->location) = (type == 'F') ? true : false;
+      *((bool*)desc->location) = (type == 'F') ? true : false;
 
     else if (type == 'N' || type == 'n')
-      *((bool*) desc->location) = (type == 'N') ? true : false;
+      *((bool*)desc->location) = (type == 'N') ? true : false;
 
-    else if (type=='T')
-      *((int*)  desc->location) = !(*((int*) desc->location));
+    else if (type == 'T')
+      *((int*)desc->location) = !(*((int*)desc->location));
 
     else if (type == '+')
-      *((int*)  desc->location) = *((int*)  desc->location) + 1;
+      *((int*)desc->location) = *((int*)desc->location) + 1;
 
-    else
-    {
+    else {
       // If there's an equal sign or characters remain, take the current arg.
       // Otherwise, take the next one (which may be null).
       arg = ***argv ? **argv : *++(*argv);
 
-      if (!arg)
-        missing_arg(currentFlag);
+      if (!arg) missing_arg(currentFlag);
 
-      if (*arg == '=')
-        ++arg;
+      if (*arg == '=') ++arg;
 
-      switch (type)
-      {
-        case 'I':
-          *((int*)     desc->location) = atoi(arg);
-          break;
+      switch (type) {
+        case 'I': *((int*)desc->location) = atoi(arg); break;
 
-        case 'D':
-          *((double*)  desc->location) = atof(arg);
-          break;
+        case 'D': *((double*)desc->location) = atof(arg); break;
 
-        case 'L':
-          *((int64_t*) desc->location) = atoll(arg);
-          break;
+        case 'L': *((int64_t*)desc->location) = atoll(arg); break;
 
         case 'P':
           if (desc->location != NULL) {
@@ -726,30 +639,27 @@ static void process_arg(const ArgumentState*       state,
           break;
 
         case 'S':
-          if( desc->location ) {
+          if (desc->location) {
             int len = strlen(arg);
             int maxlen = atoi(desc->type + 1);
-            if( len > maxlen ) {
+            if (len > maxlen) {
               char msg[0xFF];
               snprintf(msg, 0xFF, "argument for --%s is too long", desc->name);
               arg_fatalUserError(msg);
             }
-            strncpy((char*) desc->location, arg, maxlen);
+            strncpy((char*)desc->location, arg, maxlen);
           }
           break;
 
-        case 'U':
-          *((size_t*) desc->location) = std::stoull(arg);
-          break;
+        case 'U': *((size_t*)desc->location) = std::stoull(arg); break;
 
         case 'X':
-          *((size_t*) desc->location) = std::stoull(arg, nullptr, 16);
+          *((size_t*)desc->location) = std::stoull(arg, nullptr, 16);
           break;
 
         default:
-          fprintf(stdout,
-                  "%s: bad argument description\n",
-                 state->program_name);
+          fprintf(
+            stdout, "%s: bad argument description\n", state->program_name);
 
           clean_exit(1);
           break;
@@ -759,20 +669,18 @@ static void process_arg(const ArgumentState*       state,
     }
   }
 
-  if (desc->pfn)
-    desc->pfn(desc, arg);
+  if (desc->pfn) desc->pfn(desc, arg);
 }
 
-static void print_suggestions(const char* flag, const ArgumentDescription* desc)
-{
+static void print_suggestions(const char* flag,
+                              const ArgumentDescription* desc) {
   const char* nodashes = flag;
   // skip past any '-' characters at the start of flag
   while (*nodashes == '-') nodashes++;
   char* usearg = strdup(nodashes);
   // Chop off the string after '='
   for (int i = 0; usearg[i]; i++) {
-    if (usearg[i] == '=')
-      usearg[i] = '\0';
+    if (usearg[i] == '=') usearg[i] = '\0';
   }
 
   // Find the first developer only flag
@@ -792,24 +700,22 @@ static void print_suggestions(const char* flag, const ArgumentDescription* desc)
   // Find some common confusions and print a suggestion
   for (int i = 0; desc[i].name != 0; i++) {
     // Skip developer-only options for non-developer compile
-    if (!developer && i >= firstDeveloperOnly)
-      break;
+    if (!developer && i >= firstDeveloperOnly) break;
 
     // Ignore empty entries
-    if (desc[i].name[0] == '\0')
-      continue;
+    if (desc[i].name[0] == '\0') continue;
 
     if (usearg[0] == desc[i].key && usearg[1] == '\0') {
       // e.g. --s was used instead of -s
       fprintf(stderr, "       Did you mean -%c ?\n", desc[i].key);
       helped = true;
-    } if (0 == strcmp(usearg, desc[i].name)) {
+    }
+    if (0 == strcmp(usearg, desc[i].name)) {
       fprintf(stderr, "       Did you mean --%s ?\n", desc[i].name);
       helped = true;
-    } else if (desc[i].env &&
-               (0 == strcmp(usearg, desc[i].env) ||
-                (desc[i].env[0] == '_' &&
-                 0 == strcmp(usearg, desc[i].env+1)))) {
+    } else if (desc[i].env && (0 == strcmp(usearg, desc[i].env) ||
+                               (desc[i].env[0] == '_' &&
+                                0 == strcmp(usearg, desc[i].env + 1)))) {
       fprintf(stderr, "       Did you mean --%s ?\n", desc[i].name);
       helped = true;
     }
@@ -820,12 +726,10 @@ static void print_suggestions(const char* flag, const ArgumentDescription* desc)
   if (!helped) {
     for (int i = 0; desc[i].name != 0; i++) {
       // Skip developer-only options for non-developer compile
-      if (!developer && i >= firstDeveloperOnly)
-        break;
+      if (!developer && i >= firstDeveloperOnly) break;
 
       // Ignore empty entries
-      if (desc[i].name[0] == '\0')
-        continue;
+      if (desc[i].name[0] == '\0') continue;
 
       if (startsWith(usearg, desc[i].name)) {
         fprintf(stderr, "       Did you mean --%s ?\n", desc[i].name);
@@ -838,12 +742,10 @@ static void print_suggestions(const char* flag, const ArgumentDescription* desc)
   if (!helped) {
     for (int i = 0; desc[i].name != 0; i++) {
       // Skip developer-only options for non-developer compile
-      if (!developer && i >= firstDeveloperOnly)
-        break;
+      if (!developer && i >= firstDeveloperOnly) break;
 
       // Ignore empty entries
-      if (desc[i].name[0] == '\0')
-        continue;
+      if (desc[i].name[0] == '\0') continue;
 
       if (startsWith(desc[i].name, usearg)) {
         fprintf(stderr, "       Did you mean --%s ?\n", desc[i].name);
@@ -854,15 +756,16 @@ static void print_suggestions(const char* flag, const ArgumentDescription* desc)
   free(usearg);
 }
 
-static void bad_flag(const char* flag, const char* arg, const ArgumentDescription* desc)
-{
+static void
+bad_flag(const char* flag, const char* arg, const ArgumentDescription* desc) {
   fprintf(stderr, "Unrecognized flag: '%s' (use '-h' for help)\n", flag);
   print_suggestions(arg, desc);
   clean_exit(1);
 }
 
-static void extraneous_arg(const char* flag, const char* extras, const ArgumentDescription* desc)
-{
+static void extraneous_arg(const char* flag,
+                           const char* extras,
+                           const ArgumentDescription* desc) {
   fprintf(stderr,
           "Extra characters after flag '%s': '%s' (use 'h' for help)\n",
           flag,
@@ -871,8 +774,7 @@ static void extraneous_arg(const char* flag, const char* extras, const ArgumentD
   clean_exit(1);
 }
 
-static void missing_arg(const char* currentFlag)
-{
+static void missing_arg(const char* currentFlag) {
   fprintf(stderr,
           "Missing argument for flag: '%s' (use '-h' for help)\n",
           currentFlag);
@@ -896,18 +798,15 @@ static void missing_arg(const char* currentFlag)
 *                                                                             *
 ************************************** | *************************************/
 
-static const char* get_envvar_setting(const ArgumentDescription& desc)
-{
+static const char* get_envvar_setting(const ArgumentDescription& desc) {
   const char* retval = 0;
 
-  if (desc.env != 0)
-  {
+  if (desc.env != 0) {
     // The result of getenv() must not be modified or free'd
     const char* env = getenv(desc.env);
 
     // The environment variable is not set
-    if (env == 0)
-      retval = 0;
+    if (env == 0) retval = 0;
 
     // The environment variable IS the empty string
     else if (env[0] == '\0')
@@ -928,6 +827,5 @@ static const char* get_envvar_setting(const ArgumentDescription& desc)
 ************************************** | *************************************/
 
 void free_args(ArgumentState* state) {
-  if (state->file_argument)
-    free(state->file_argument);
+  if (state->file_argument) free(state->file_argument);
 }

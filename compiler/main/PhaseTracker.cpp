@@ -65,7 +65,7 @@ void PhaseTracker::StartPhase(const char* name) {
   StartPhase(name, 0, kPrimary);
 }
 
-void PhaseTracker::StartPhase(const char*            name,
+void PhaseTracker::StartPhase(const char* name,
                               PhaseTracker::SubPhase subPhase) {
   if (subPhase == kPrimary) mPhaseId = mPhaseId + 1;
 
@@ -73,12 +73,11 @@ void PhaseTracker::StartPhase(const char*            name,
 }
 
 void PhaseTracker::StartPhase(const char* name, int passId, SubPhase subPhase) {
-  Phase* phase = new Phase(
-    name,
-    passId,
-    subPhase,
-    PhaseData(mTimer.elapsedUsecs(), mMemoryTracker.usedBytes())
-  );
+  Phase* phase =
+    new Phase(name,
+              passId,
+              subPhase,
+              PhaseData(mTimer.elapsedUsecs(), mMemoryTracker.usedBytes()));
 
   mPhases.push_back(phase);
 }
@@ -96,12 +95,10 @@ void PhaseTracker::Resume() {
 void PhaseTracker::ReportPass() const {
   int index = mPhases.size() - 1;
 
-  while (index >= 0 && !mPhases[index]->IsStartOfPass())
-    index = index - 1;
+  while (index >= 0 && !mPhases[index]->IsStartOfPass()) index = index - 1;
 
   mPhases[index]->ReportPass(
-    PhaseData(mTimer.elapsedUsecs(),
-              mMemoryTracker.usedBytes()));
+    PhaseData(mTimer.elapsedUsecs(), mMemoryTracker.usedBytes()));
 }
 
 static auto passGroups = std::array{
@@ -126,7 +123,7 @@ void PhaseTracker::ReportPassGroupTotals(
   for (size_t i = 0; i < passGroups.size(); i++) {
     // can't capture structured bindings in the lambda without C++20
     // auto [groupName, groupLastPhase] = passGroups[i];
-    auto groupName      = passGroups[i].first;
+    auto groupName = passGroups[i].first;
     auto groupLastPhase = passGroups[i].second;
     if (!useSaved) {
       // No times provided, so calculate them.
@@ -247,12 +244,12 @@ void PhaseTracker::PassesCollect(std::vector<Pass>& passes) const {
 
       switch (mPhases[i]->mSubPhase) {
         case PhaseTracker::kPrimary:
-          pass.mName    = mPhases[i]->mName;
-          pass.mPassId  = mPhases[i]->mPassId;
-          pass.mIndex   = (int)passes.size();
+          pass.mName = mPhases[i]->mName;
+          pass.mPassId = mPhases[i]->mPassId;
+          pass.mIndex = (int)passes.size();
           pass.mPrimary = elapsed;
           break;
-        case PhaseTracker::kVerify:   pass.mVerify = elapsed; break;
+        case PhaseTracker::kVerify: pass.mVerify = elapsed; break;
         case PhaseTracker::kCleanAst: pass.mCleanAst = elapsed; break;
       }
     }
@@ -275,12 +272,12 @@ PassesReport(FILE* fp, const std::vector<Pass>& passes, PhaseData total) {
 
   Pass::Header(fp);
 
-  for (auto& p: passes) {
+  for (auto& p : passes) {
     accum += PhaseData(p.TotalTime(), p.TotalMemory());
     p.Print(fp, accum, total);
   }
 
-  for (auto& p: passes) {
+  for (auto& p : passes) {
     main += p.mPrimary;
     check += p.mVerify;
     clean += p.mCleanAst;
@@ -295,14 +292,14 @@ PassesReport(FILE* fp, const std::vector<Pass>& passes, PhaseData total) {
 *                                                                             *
 ************************************** | *************************************/
 
-Phase::Phase(const char*            name,
-             int                    passId,
+Phase::Phase(const char* name,
+             int passId,
              PhaseTracker::SubPhase subPhase,
-             PhaseData              start) {
-  mName     = (subPhase == PhaseTracker::kPrimary) ? strdup(name) : 0;
-  mPassId   = passId;
+             PhaseData start) {
+  mName = (subPhase == PhaseTracker::kPrimary) ? strdup(name) : 0;
+  mPassId = passId;
   mSubPhase = subPhase;
-  mStart    = start;
+  mStart = start;
 }
 
 Phase::~Phase() {
@@ -346,7 +343,8 @@ void Phase::ReportPassGroup(const char* suffix, PhaseData data) {
 
 void Phase::ReportTime(const char* name, double secs) {
   if (PhaseTracker::shouldReportPasses())
-    fprintf(PhaseTracker::passesOutputFile(), "%32s :%8.3f seconds", name, secs);
+    fprintf(
+      PhaseTracker::passesOutputFile(), "%32s :%8.3f seconds", name, secs);
 }
 
 void Phase::ReportMemory(const char* name, MemoryTracker::MemoryInMB MB) {
@@ -356,9 +354,14 @@ void Phase::ReportMemory(const char* name, MemoryTracker::MemoryInMB MB) {
 
 void Phase::ReportData(const char* name, PhaseData data) {
   if (PhaseTracker::shouldReportPasses()) {
-    fprintf(PhaseTracker::passesOutputFile(), "%32s :%8.3f seconds", name, data.timeInUsecs / 1e6);
+    fprintf(PhaseTracker::passesOutputFile(),
+            "%32s :%8.3f seconds",
+            name,
+            data.timeInUsecs / 1e6);
     if (printPassesMemory)
-      fprintf(PhaseTracker::passesOutputFile(), "  %8.3f MB", MemoryTracker::toMB(data.memory));
+      fprintf(PhaseTracker::passesOutputFile(),
+              "  %8.3f MB",
+              MemoryTracker::toMB(data.memory));
   }
 }
 
@@ -378,11 +381,11 @@ Pass::Pass() { Reset(); }
 Pass::~Pass() {}
 
 void Pass::Reset() {
-  mName     = 0;
-  mPassId   = 0;
-  mIndex    = 0;
-  mPrimary  = PhaseData();
-  mVerify   = PhaseData();
+  mName = 0;
+  mPassId = 0;
+  mIndex = 0;
+  mPrimary = PhaseData();
+  mVerify = PhaseData();
   mCleanAst = PhaseData();
 }
 
@@ -461,21 +464,21 @@ void Pass::Header(FILE* fp) {
 
 void Pass::Print(FILE* fp, PhaseData accum, PhaseData total) const {
 
-  unsigned long passTime  = TotalTime();
-  double        passFrac  = (100.0 * passTime) / total.timeInUsecs;
-  double        accumFrac = (100.0 * accum.timeInUsecs) / total.timeInUsecs;
+  unsigned long passTime = TotalTime();
+  double passFrac = (100.0 * passTime) / total.timeInUsecs;
+  double accumFrac = (100.0 * accum.timeInUsecs) / total.timeInUsecs;
 
   double primary = mPrimary.timeInUsecs / 1e6;
-  double verify  = mVerify.timeInUsecs / 1e6;
-  double clean   = mCleanAst.timeInUsecs / 1e6;
+  double verify = mVerify.timeInUsecs / 1e6;
+  double clean = mCleanAst.timeInUsecs / 1e6;
 
-  auto passMemory      = TotalMemory();
-  auto passMemoryFrac  = (100.0 * passMemory) / total.memory;
+  auto passMemory = TotalMemory();
+  auto passMemoryFrac = (100.0 * passMemory) / total.memory;
   auto accumMemoryFrac = (100.0 * accum.memory) / total.memory;
 
   auto primaryMem = MemoryTracker::toMB(mPrimary.memory);
-  auto verifyMem  = MemoryTracker::toMB(mVerify.memory);
-  auto cleanMem   = MemoryTracker::toMB(mCleanAst.memory);
+  auto verifyMem = MemoryTracker::toMB(mVerify.memory);
+  auto cleanMem = MemoryTracker::toMB(mCleanAst.memory);
 
   if (mPassId > 0)
     fprintf(fp, "%4d ", mPassId);
@@ -484,22 +487,21 @@ void Pass::Print(FILE* fp, PhaseData accum, PhaseData total) const {
 
   fprintf(fp, "%-33s", mName);
   fprintf(fp, "  %7.3f  %7.3f  %7.3f", primary, verify, clean);
-  fprintf(fp, "  %7.3f %5.1f", passTime  / 1e6, passFrac );
+  fprintf(fp, "  %7.3f %5.1f", passTime / 1e6, passFrac);
   fprintf(fp, "  %7.3f %5.1f", accum.timeInUsecs / 1e6, accumFrac);
   if (printPassesMemory) {
     fprintf(fp, "  ");
     fprintf(fp, "  %12.3f  %12.3f  %12.3f", primaryMem, verifyMem, cleanMem);
-    fprintf(fp, "  %7.3f %5.1f", MemoryTracker::toMB(passMemory), passMemoryFrac);
-    fprintf(fp, "  %7.3f %5.1f", MemoryTracker::toMB(accum.memory), accumMemoryFrac);
+    fprintf(
+      fp, "  %7.3f %5.1f", MemoryTracker::toMB(passMemory), passMemoryFrac);
+    fprintf(
+      fp, "  %7.3f %5.1f", MemoryTracker::toMB(accum.memory), accumMemoryFrac);
   }
   fprintf(fp, "\n");
 }
 
-void Pass::Footer(FILE*     fp,
-                  PhaseData main,
-                  PhaseData check,
-                  PhaseData clean,
-                  PhaseData total) {
+void Pass::Footer(
+  FILE* fp, PhaseData main, PhaseData check, PhaseData clean, PhaseData total) {
 
   fprintf(fp,
           "\n     %-33s  %7.3f  %7.3f  %7.3f  %7.3f ",

@@ -34,19 +34,9 @@ void get_major_minor_version(char* buf, size_t bufsize) {
   snprintf(buf, bufsize, "%d.%d", get_major_version(), get_minor_version());
 }
 
-const char* get_configured_prefix() {
-  return chpl::getConfiguredPrefix();
-}
+const char* get_configured_prefix() { return chpl::getConfiguredPrefix(); }
 
-int get_major_version() {
-  return chpl::getMajorVersion();
-}
-int get_minor_version() {
-  return chpl::getMinorVersion();
-}
-int get_update_version() {
-  return chpl::getUpdateVersion();
-}
-bool get_is_official_release() {
-  return chpl::getIsOfficialRelease();
-}
+int get_major_version() { return chpl::getMajorVersion(); }
+int get_minor_version() { return chpl::getMinorVersion(); }
+int get_update_version() { return chpl::getUpdateVersion(); }
+bool get_is_official_release() { return chpl::getIsOfficialRelease(); }

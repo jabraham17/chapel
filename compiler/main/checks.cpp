@@ -30,7 +30,6 @@
 #include "resolution.h"
 #include "TryStmt.h"
 
-
 #include "global-ast-vecs.h"
 
 //
@@ -40,8 +39,8 @@
 //
 
 static void check_afterEveryPass(); // Checks to be performed after every pass.
-static void check_afterScopeResolve(); // Checks to be performed after the
-                                       // scopeResolve pass.
+static void check_afterScopeResolve();  // Checks to be performed after the
+                                        // scopeResolve pass.
 static void check_afterNormalization(); // Checks to be performed after
                                         // normalization.
 static void check_afterResolution(); // Checks to be performed after every pass
@@ -67,80 +66,61 @@ static void checkFormalActualBaseTypesMatch();
 static void checkRetTypeMatchesRetVarType();
 static void checkFormalActualTypesMatch();
 
-
 //
 // Implementations.
 //
 
-void check_parseAndConvertUast()
-{
-  check_afterEveryPass();
-}
+void check_parseAndConvertUast() { check_afterEveryPass(); }
 
-void check_checkGeneratedAst()
-{
+void check_checkGeneratedAst() {
   // checkIsIterator() will crash if there were certain USR_FATAL_CONT()
   // e.g. functions/vass/proc-iter/error-yield-in-proc-*
   exitIfFatalErrorsEncountered();
   checkIsIterator();
 }
 
-void check_readExternC()
-{
+void check_readExternC() {
   check_afterEveryPass();
   // Suggestion: Ensure extern C types defined.
 }
 
-void check_expandExternArrayCalls()
-{
-  check_afterEveryPass();
-}
+void check_expandExternArrayCalls() { check_afterEveryPass(); }
 
-void check_cleanup()
-{
+void check_cleanup() {
   check_afterEveryPass();
   // Suggestion: Identify and check normalizations applied by cleanup pass.
 }
 
-void check_scopeResolve()
-{
+void check_scopeResolve() {
   check_afterEveryPass();
   check_afterScopeResolve();
   // Suggestion: Ensure identifiers resolved to scope.
 }
 
-void check_flattenClasses()
-{
+void check_flattenClasses() {
   check_afterEveryPass();
   // Suggestion: Ensure classes have no nested class definitions.
 }
 
-void check_normalize()
-{
-  check_afterEveryPass();
-}
+void check_normalize() { check_afterEveryPass(); }
 
-void check_checkNormalized()
-{
+void check_checkNormalized() {
   // The checkNormalized pass should not make any changes, so skip checks.
 }
 
-void check_buildDefaultFunctions()
-{
+void check_buildDefaultFunctions() {
   check_afterEveryPass();
   check_afterNormalization();
   // Suggestion: Ensure each class/record type has its own default functions.
 }
 
-void check_createTaskFunctions()
-{
+void check_createTaskFunctions() {
   checkTaskRemovedPrims();
   check_afterEveryPass();
   check_afterNormalization();
 }
 
-void check_resolve()
-{
+void check_resolve() {
   checkResolveRemovedPrims();
   check_afterEveryPass();
   check_afterNormalization();
@@ -149,8 +129,7 @@ void check_resolve()
   checkInitEqAssignCast();
 }
 
-void check_resolveIntents()
-{
+void check_resolveIntents() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterResolution();
@@ -158,21 +137,18 @@ void check_resolveIntents()
   // Suggestion: Ensure now using a reduced set of intents.
 }
 
-void check_checkResolved()
-{
+void check_checkResolved() {
   // The checkResolved pass should not make any changes, so skip checks.
 }
 
-void check_replaceArrayAccessesWithRefTemps()
-{
+void check_replaceArrayAccessesWithRefTemps() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterResolution();
   check_afterResolveIntents();
 }
 
-void check_flattenFunctions()
-{
+void check_flattenFunctions() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterResolution();
@@ -180,8 +156,7 @@ void check_flattenFunctions()
   // Suggestion: Ensure no nested functions.
 }
 
-static
-bool symbolIsUsedAsRef(Symbol* sym) {
+static bool symbolIsUsedAsRef(Symbol* sym) {
 
   auto checkForMove = [](SymExpr* use, CallExpr* call) {
     SymExpr* lhs = toSymExpr(call->get(1));
@@ -195,8 +170,7 @@ bool symbolIsUsedAsRef(Symbol* sym) {
   return false;
 }
 
-static
-void checkForPromotionsThatMayRace() {
+static void checkForPromotionsThatMayRace() {
   // skip check if warning is off
   if (!fWarnPotentialRaces) return;
 
@@ -218,7 +192,7 @@ void checkForPromotionsThatMayRace() {
         if (CallExpr* parentCe = toCallExpr(ce->parentExpr)) {
           if (isMoveOrAssign(parentCe)) {
             if (SymExpr* lhs = toSymExpr(parentCe->get(1))) {
-              if(symbolIsUsedAsRef(lhs->symbol())) {
+              if (symbolIsUsedAsRef(lhs->symbol())) {
                 USR_WARN(ce,
                          "modifying the result of a promoted index expression "
                          "is a potential race condition");
@@ -231,8 +205,7 @@ void checkForPromotionsThatMayRace() {
   }
 }
 
-void check_cullOverReferences()
-{
+void check_cullOverReferences() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterResolution();
@@ -263,29 +236,26 @@ void check_cullOverReferences()
   checkForPromotionsThatMayRace();
 }
 
-void check_lowerErrorHandling()
-{
+void check_lowerErrorHandling() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterLowerErrorHandling();
 }
 
-void check_callDestructors()
-{
+void check_callDestructors() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
   // Suggestion: Ensure every constructor call has a matching destructor call.
 }
 
-void check_lowerIterators()
-{
+void check_lowerIterators() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
   check_afterResolveIntents();
-//  check_afterResolution(); // Oho! Iterator functions do not obey the invariant
+  //  check_afterResolution(); // Oho! Iterator functions do not obey the invariant
   // checked in checkReturnPaths() [semanticChecks.cpp:250].
   // So check_afterResolution has been disabled in this and all subsequent post-pass
   // checks.
@@ -293,8 +263,7 @@ void check_lowerIterators()
   // invariants and then these (paranoid) tests re-enabled.
 }
 
-void check_parallel()
-{
+void check_parallel() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
@@ -303,8 +272,7 @@ void check_parallel()
   // Suggestion: Ensure parallelization applied (if not --local).
 }
 
-void check_prune()
-{
+void check_prune() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
@@ -313,8 +281,7 @@ void check_prune()
   // Suggestion: Ensure no dead classes or functions.
 }
 
-void check_bulkCopyRecords()
-{
+void check_bulkCopyRecords() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
@@ -322,8 +289,7 @@ void check_bulkCopyRecords()
   check_afterResolveIntents();
 }
 
-void check_removeUnnecessaryAutoCopyCalls()
-{
+void check_removeUnnecessaryAutoCopyCalls() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
@@ -332,8 +298,7 @@ void check_removeUnnecessaryAutoCopyCalls()
   // Suggestion: Ensure no unnecessary autoCopy calls.
 }
 
-void check_inlineFunctions()
-{
+void check_inlineFunctions() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
@@ -342,8 +307,7 @@ void check_inlineFunctions()
   check_afterInlineFunctions();
 }
 
-void check_scalarReplace()
-{
+void check_scalarReplace() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
@@ -353,8 +317,7 @@ void check_scalarReplace()
   // Suggestion: Ensure no constant expressions.
 }
 
-void check_refPropagation()
-{
+void check_refPropagation() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
@@ -363,8 +326,7 @@ void check_refPropagation()
   check_afterInlineFunctions();
 }
 
-void check_copyPropagation()
-{
+void check_copyPropagation() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
@@ -373,9 +335,7 @@ void check_copyPropagation()
   check_afterInlineFunctions();
 }
 
-
-void check_deadCodeElimination()
-{
+void check_deadCodeElimination() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
@@ -385,8 +345,7 @@ void check_deadCodeElimination()
   // Suggestion: Ensure no dead code.
 }
 
-void check_removeEmptyRecords()
-{
+void check_removeEmptyRecords() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
@@ -396,8 +355,7 @@ void check_removeEmptyRecords()
   // Suggestion: Ensure no empty records.
 }
 
-void check_localizeGlobals()
-{
+void check_localizeGlobals() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
@@ -406,8 +364,7 @@ void check_localizeGlobals()
   check_afterInlineFunctions();
 }
 
-void check_loopInvariantCodeMotion()
-{
+void check_loopInvariantCodeMotion() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
@@ -416,8 +373,7 @@ void check_loopInvariantCodeMotion()
   check_afterInlineFunctions();
 }
 
-void check_prune2()
-{
+void check_prune2() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
@@ -427,8 +383,7 @@ void check_prune2()
   // Suggestion: Ensure no dead classes or functions.
 }
 
-void check_returnStarTuplesByRefArgs()
-{
+void check_returnStarTuplesByRefArgs() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
@@ -437,8 +392,7 @@ void check_returnStarTuplesByRefArgs()
   check_afterInlineFunctions();
 }
 
-void check_insertWideReferences()
-{
+void check_insertWideReferences() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
@@ -447,8 +401,7 @@ void check_insertWideReferences()
   check_afterInlineFunctions();
 }
 
-void check_optimizeOnClauses()
-{
+void check_optimizeOnClauses() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
@@ -457,8 +410,7 @@ void check_optimizeOnClauses()
   check_afterInlineFunctions();
 }
 
-void check_addInitCalls()
-{
+void check_addInitCalls() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
@@ -467,8 +419,7 @@ void check_addInitCalls()
   check_afterInlineFunctions();
 }
 
-void check_insertLineNumbers()
-{
+void check_insertLineNumbers() {
   check_afterEveryPass();
   check_afterNormalization();
   check_afterCallDestructors();
@@ -477,8 +428,7 @@ void check_insertLineNumbers()
 
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (auto ft = toFunctionType(ts->type)) {
-      if (ft->numFormals() < 2 && !ft->hasForeignLinkage() &&
-          ts->isUsed()) {
+      if (ft->numFormals() < 2 && !ft->hasForeignLinkage() && ts->isUsed()) {
         INT_FATAL("Non-foreign procedure types without line/file formals "
                   "should not be used after this point");
       }
@@ -491,13 +441,11 @@ void check_denormalize() {
   //or implement new checks ?
 }
 
-void check_codegen()
-{
+void check_codegen() {
   // This pass should not change the AST, so no checks are required.
 }
 
-void check_makeBinary()
-{
+void check_makeBinary() {
   // This pass should not change the AST, so no checks are required.
 }
 
@@ -506,10 +454,8 @@ void check_makeBinary()
 //
 
 // Extra structural checks on the AST, applicable to all passes.
-void check_afterEveryPass()
-{
-  if (fVerify)
-  {
+void check_afterEveryPass() {
+  if (fVerify) {
     verify();
     checkForDuplicateUses();
     checkFlagRelationships();
@@ -517,8 +463,7 @@ void check_afterEveryPass()
   }
 }
 
-static void check_afterScopeResolve()
-{
+static void check_afterScopeResolve() {
   // Check that 'out' arguments are not referred to by later arguments.
   // An alternative to this code would be to make scopeResolve not find
   // them at all when processing the other formals.
@@ -542,15 +487,15 @@ static void check_afterScopeResolve()
 
         for_formals(earlierFormal, fn) {
           // stop if we get to the same formal as the above loop
-          if (earlierFormal == formal)
-            break;
+          if (earlierFormal == formal) break;
           if (earlierFormal->intent == INTENT_OUT) {
             // check that earlierFormal is not used in formal's defExpr
             if (findSymExprFor(formal->defPoint, earlierFormal))
               USR_FATAL_CONT(formal,
                              "out-intent formal '%s' is used within "
                              "later formal '%s'",
-                             earlierFormal->name, formal->name);
+                             earlierFormal->name,
+                             formal->name);
           }
         }
       }
@@ -559,24 +504,20 @@ static void check_afterScopeResolve()
 }
 
 // Checks that should remain true after the normalization pass is complete.
-static void check_afterNormalization()
-{
-  if (fVerify)
-  {
+static void check_afterNormalization() {
+  if (fVerify) {
     checkNormalized();
   }
 }
 
 // Checks that should remain true after the functionResolution pass is complete.
-static void check_afterResolution()
-{
+static void check_afterResolution() {
   checkReturnTypesHaveRefTypes();
-  if (fVerify)
-  {
+  if (fVerify) {
     checkTaskRemovedPrims();
     checkResolveRemovedPrims();
-// Disabled for now because user warnings should not be logged multiple times:
-//    checkResolved();
+    // Disabled for now because user warnings should not be logged multiple times:
+    //    checkResolved();
     checkFormalActualBaseTypesMatch();
     checkRetTypeMatchesRetVarType();
     checkAutoCopyMap();
@@ -618,8 +559,7 @@ static void check_afterResolution()
   }
 }
 
-static void check_afterResolveIntents()
-{
+static void check_afterResolveIntents() {
   if (fVerify) {
     for_alive_in_Vec(DefExpr, def, gDefExprs) {
       Symbol* sym = def->sym;
@@ -632,11 +572,12 @@ static void check_afterResolveIntents()
         // It would be better to treat run-time types as
         // normal records.
         if (ArgSymbol* arg = toArgSymbol(sym))
-          if (arg->intent == INTENT_TYPE)
-            continue;
+          if (arg->intent == INTENT_TYPE) continue;
 
         if (qual.getQual() == QUAL_UNKNOWN) {
-          INT_FATAL("Symbol should not have unknown qualifier: %s (%d)", sym->cname, sym->id);
+          INT_FATAL("Symbol should not have unknown qualifier: %s (%d)",
+                    sym->cname,
+                    sym->id);
         }
 
       } else if (sym->type && isFunctionType(sym->getValType())) {
@@ -654,8 +595,7 @@ static void check_afterResolveIntents()
           isSymbolToCheck = false;
 
         } else if (parent->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF) &&
-                   isVarSymbol(sym) &&
-                   isTypeSymbol(parent)) {
+                   isVarSymbol(sym) && isTypeSymbol(parent)) {
           // Check types, but ignore the fields of 'ref'/'wide-ref' types.
           isSymbolToCheck = false;
         }
@@ -676,7 +616,8 @@ static void check_afterResolveIntents()
                       "diverged. Make sure that any pass that changes "
                       "the signature of a function also recomputes its "
                       "type and handles the consequences of doing so",
-                      fn->name, fn->id);
+                      fn->name,
+                      fn->id);
           }
         }
       }
@@ -684,14 +625,10 @@ static void check_afterResolveIntents()
   }
 }
 
-
-static void check_afterLowerErrorHandling()
-{
-  if (fVerify)
-  {
+static void check_afterLowerErrorHandling() {
+  if (fVerify) {
     // check that TryStmt is not in the tree
-    forv_Vec(TryStmt, stmt, gTryStmts)
-    {
+    forv_Vec(TryStmt, stmt, gTryStmts) {
       if (stmt->inTree())
         INT_FATAL(stmt, "TryStmt should no longer be in the tree");
     }
@@ -706,47 +643,41 @@ static void check_afterLowerErrorHandling()
 
       auto ft = call->isIndirectCall() ? call->functionType() : nullptr;
       if (ft && ft->throws()) {
-        INT_FATAL(call, "Indirect calls to throwing functions should not "
-                        "appear after this point!");
+        INT_FATAL(call,
+                  "Indirect calls to throwing functions should not "
+                  "appear after this point!");
       }
     }
   }
 }
 
-
 // Checks that should remain true after the callDestructors pass is complete.
-static void check_afterCallDestructors()
-{
+static void check_afterCallDestructors() {
   // Disabled because it is not true after the first prune pass.
   //  checkReturnTypesHaveRefTypes();
-  if (fVerify)
-  {
-// Disabled for now because user warnings should not be logged multiple times:
-//    checkResolved();
+  if (fVerify) {
+    // Disabled for now because user warnings should not be logged multiple times:
+    //    checkResolved();
     checkFormalActualTypesMatch();
   }
 }
 
-
-static void check_afterLowerIterators()
-{
+static void check_afterLowerIterators() {
   checkLowerIteratorsRemovedPrims();
-  if (fVerify)
-    checkArgsAndLocals();
+  if (fVerify) checkArgsAndLocals();
 }
 
 static void check_afterInlineFunctions() {
   if (fVerify) {
     forv_Vec(DefExpr, def, gDefExprs) {
       Symbol* sym = def->sym;
-      if (isLcnSymbol(sym) &&
-          def->inTree() && // symbol is in the tree
+      if (isLcnSymbol(sym) && def->inTree() && // symbol is in the tree
           def->parentSymbol->hasFlag(FLAG_WIDE_REF) == false) {
         if (sym->type->symbol->hasFlag(FLAG_REF) ||
             sym->type->symbol->hasFlag(FLAG_WIDE_REF)) {
-         // "_interim" args added in gpuTransforms.cpp have ref types
-         if (! def->parentSymbol->hasFlag(FLAG_GPU_CODEGEN))
-          INT_FATAL("Found reference type: %s[%d]\n", sym->cname, sym->id);
+          // "_interim" args added in gpuTransforms.cpp have ref types
+          if (!def->parentSymbol->hasFlag(FLAG_GPU_CODEGEN))
+            INT_FATAL("Found reference type: %s[%d]\n", sym->cname, sym->id);
         }
       }
     }
@@ -763,15 +694,13 @@ static void checkIsIterator() {
   }
 }
 
-
 //
 // Checks that certain primitives are removed after function resolution
 //
-static void
-checkResolveRemovedPrims(void) {
+static void checkResolveRemovedPrims(void) {
   for_alive_in_Vec(CallExpr, call, gCallExprs) {
     if (call->primitive) {
-      switch(call->primitive->tag) {
+      switch (call->primitive->tag) {
         case PRIM_BLOCK_PARAM_LOOP:
 
         case PRIM_DEFAULT_INIT_VAR:
@@ -796,61 +725,44 @@ checkResolveRemovedPrims(void) {
           if (call->parentSymbol)
             INT_FATAL("Primitive should no longer be in AST");
           break;
-        default:
-          break;
+        default: break;
       }
     }
   }
 }
 
-static void
-checkTaskRemovedPrims()
-{
-  for_alive_in_Vec(CallExpr, call, gCallExprs)
-    if (call->primitive)
-      switch(call->primitive->tag)
-      {
-       case PRIM_BLOCK_BEGIN:
-       case PRIM_BLOCK_COBEGIN:
-       case PRIM_BLOCK_COFORALL:
-       case PRIM_BLOCK_ON:
-       case PRIM_BLOCK_BEGIN_ON:
-       case PRIM_BLOCK_COBEGIN_ON:
-       case PRIM_BLOCK_COFORALL_ON:
-        if (call->parentSymbol)
-          INT_FATAL("Primitive should no longer be in AST");
-        break;
-       default:
-        break;
-      }
+static void checkTaskRemovedPrims() {
+  for_alive_in_Vec(CallExpr, call, gCallExprs) if (call->primitive) switch (
+    call->primitive->tag) {
+    case PRIM_BLOCK_BEGIN:
+    case PRIM_BLOCK_COBEGIN:
+    case PRIM_BLOCK_COFORALL:
+    case PRIM_BLOCK_ON:
+    case PRIM_BLOCK_BEGIN_ON:
+    case PRIM_BLOCK_COBEGIN_ON:
+    case PRIM_BLOCK_COFORALL_ON:
+      if (call->parentSymbol) INT_FATAL("Primitive should no longer be in AST");
+      break;
+    default: break;
+  }
 }
 
-static void
-checkLowerIteratorsRemovedPrims()
-{
-  for_alive_in_Vec(CallExpr, call, gCallExprs)
-    if (call->primitive)
-      switch(call->primitive->tag)
-      {
-       case PRIM_YIELD:
-        if (call->parentSymbol)
-          INT_FATAL("Primitive should no longer be in AST");
-        break;
-       default:
-        break;
-      }
+static void checkLowerIteratorsRemovedPrims() {
+  for_alive_in_Vec(CallExpr, call, gCallExprs) if (call->primitive) switch (
+    call->primitive->tag) {
+    case PRIM_YIELD:
+      if (call->parentSymbol) INT_FATAL("Primitive should no longer be in AST");
+      break;
+    default: break;
+  }
 }
 
 // Some flags imply other flags.
 // Make sure that these relations always hold.
-static void
-checkFlagRelationships()
-{
-  for_alive_in_Vec(DefExpr, def, gDefExprs)
-  {
+static void checkFlagRelationships() {
+  for_alive_in_Vec(DefExpr, def, gDefExprs) {
     // These tests apply to function symbols.
-    if (FnSymbol* fn = toFnSymbol(def->sym))
-    {
+    if (FnSymbol* fn = toFnSymbol(def->sym)) {
       // FLAG_EXTERN => FLAG_LOCAL_ARGS
       INT_ASSERT(!fn->hasFlag(FLAG_EXTERN) || fn->hasFlag(FLAG_LOCAL_ARGS));
 
@@ -860,13 +772,10 @@ checkFlagRelationships()
   }
 }
 
-static void
-checkAutoCopyMap()
-{
+static void checkAutoCopyMap() {
   Vec<Type*> keys;
   getAutoCopyTypeKeys(keys);
-  forv_Vec(Type, key, keys)
-  {
+  forv_Vec(Type, key, keys) {
     if (hasAutoCopyForType(key)) {
       FnSymbol* fn = getAutoCopyForType(key);
       if (fn->numFormals() > 1) {
@@ -881,13 +790,11 @@ checkAutoCopyMap()
 
 static FnSymbol* findUserInitEq(AggregateType* at) {
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->name == astrInitEquals &&
-        !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+    if (fn->name == astrInitEquals && !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
         fn->numFormals() >= 1) {
       ArgSymbol* lhs = fn->getFormal(1);
       Type* t = lhs->getValType();
-      if (t == at)
-        return fn;
+      if (t == at) return fn;
     }
   }
   return NULL;
@@ -896,21 +803,17 @@ static FnSymbol* findUserInitEq(AggregateType* at) {
 static FnSymbol* findUserAssign(AggregateType* at) {
 
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->name == astrSassign &&
-        !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+    if (fn->name == astrSassign && !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
         fn->numFormals() >= 1) {
       ArgSymbol* lhs = fn->getFormal(1);
       Type* t = lhs->getValType();
-      if (t == at)
-        return fn;
+      if (t == at) return fn;
     }
   }
   return NULL;
 }
 
-
-static void checkInitEqAssignCast()
-{
+static void checkInitEqAssignCast() {
   for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->hasFlag(FLAG_EXTERN))
       continue; // can't make init= for extern types today anyway
@@ -923,35 +826,41 @@ static void checkInitEqAssignCast()
     bool defaultAssign = ts->hasFlag(FLAG_TYPE_DEFAULT_ASSIGN);
     bool customAssign = ts->hasFlag(FLAG_TYPE_CUSTOM_ASSIGN);
     if (defaultInitEq && customAssign) {
-      USR_FATAL_CONT(ts, "Type '%s' uses compiler-generated default 'init=' "
-                         "but has a custom '=' function. "
-                         "Please add an 'init=' method",
-                         toString(ts->type));
+      USR_FATAL_CONT(ts,
+                     "Type '%s' uses compiler-generated default 'init=' "
+                     "but has a custom '=' function. "
+                     "Please add an 'init=' method",
+                     toString(ts->type));
       if (FnSymbol* userAssign = findUserAssign(at))
         USR_PRINT(userAssign, "'=' for '%s' defined here", toString(ts->type));
     }
     if (defaultInitEq && customInitEq) {
-      USR_FATAL_CONT(ts, "Type '%s' uses compiler-generated default 'init=' "
-                         "but also has a custom 'init=' method. "
-                         "Please add an 'init=' method with the same RHS type",
-                         toString(ts->type));
+      USR_FATAL_CONT(ts,
+                     "Type '%s' uses compiler-generated default 'init=' "
+                     "but also has a custom 'init=' method. "
+                     "Please add an 'init=' method with the same RHS type",
+                     toString(ts->type));
       if (FnSymbol* userInitEq = findUserInitEq(at))
-        USR_PRINT(userInitEq, "'init=' for '%s' defined here", toString(ts->type));
+        USR_PRINT(
+          userInitEq, "'init=' for '%s' defined here", toString(ts->type));
     }
 
     if (customInitEq && defaultAssign) {
-      USR_FATAL_CONT(ts, "Type '%s' uses compiler-generated default '=' "
-                         "but has a custom 'init=' method. "
-                         "Please add a '=' function.",
-                         toString(ts->type));
+      USR_FATAL_CONT(ts,
+                     "Type '%s' uses compiler-generated default '=' "
+                     "but has a custom 'init=' method. "
+                     "Please add a '=' function.",
+                     toString(ts->type));
       if (FnSymbol* userInitEq = findUserInitEq(at))
-        USR_PRINT(userInitEq, "'init=' for '%s' defined here", toString(ts->type));
+        USR_PRINT(
+          userInitEq, "'init=' for '%s' defined here", toString(ts->type));
     }
     if (defaultAssign && customAssign) {
-      USR_FATAL_CONT(ts, "Type '%s' uses compiler-generated default '=' "
-                         "but also has a custom '=' function. "
-                         "Please add a '=' function with the same RHS type.",
-                         toString(ts->type));
+      USR_FATAL_CONT(ts,
+                     "Type '%s' uses compiler-generated default '=' "
+                     "but also has a custom '=' function. "
+                     "Please add a '=' function with the same RHS type.",
+                     toString(ts->type));
       if (FnSymbol* userAssign = findUserAssign(at))
         USR_PRINT(userAssign, "'=' for '%s' defined here", toString(ts->type));
     }
@@ -964,21 +873,19 @@ static void checkInitEqAssignCast()
 //
 // They must be inside a CondStmt's else block, where the condExpr has
 // FLAG_DESERIALIZATION_BLOCK_MARKER.
-static bool
-isTemporaryDeserializeCall(CallExpr* call) {
-  if (! call->isNamed("chpl__deserialize")) {
+static bool isTemporaryDeserializeCall(CallExpr* call) {
+  if (!call->isNamed("chpl__deserialize")) {
     return false;
   }
 
   Expr* parent = call->parentExpr;
   BlockStmt* parentBlock = NULL;
   do {
-    if (parentBlock == NULL) {  // first note the parent block
+    if (parentBlock == NULL) { // first note the parent block
       if (BlockStmt* block = toBlockStmt(parent)) {
         parentBlock = block;
       }
-    }
-    else {  // we have it, now find the conditional
+    } else { // we have it, now find the conditional
       if (CondStmt* cond = toCondStmt(parent)) {
         if (cond->elseStmt == parentBlock) {
           if (SymExpr* condSE = toSymExpr(cond->condExpr)) {
@@ -995,35 +902,25 @@ isTemporaryDeserializeCall(CallExpr* call) {
   return false;
 }
 
-
 // TODO: Can this be merged with checkFormalActualTypesMatch()?
-static void
-checkFormalActualBaseTypesMatch()
-{
-  for_alive_in_Vec(CallExpr, call, gCallExprs)
-  {
-    if (! call->parentSymbol)
+static void checkFormalActualBaseTypesMatch() {
+  for_alive_in_Vec(CallExpr, call, gCallExprs) {
+    if (!call->parentSymbol)
       // Call is not in tree
       continue;
 
     // Only look at calls in functions that have been resolved.
-    if (! call->parentSymbol->hasFlag(FLAG_RESOLVED))
-      continue;
+    if (!call->parentSymbol->hasFlag(FLAG_RESOLVED)) continue;
 
     // Skip verifying some degenerate chpl__deserialize calls
-    if (isTemporaryDeserializeCall(call))
-      continue;
+    if (isTemporaryDeserializeCall(call)) continue;
 
-    if (FnSymbol* fn = call->resolvedFunction())
-    {
-      if (fn->hasFlag(FLAG_EXTERN))
-        continue;
+    if (FnSymbol* fn = call->resolvedFunction()) {
+      if (fn->hasFlag(FLAG_EXTERN)) continue;
 
-      if (! fn->hasFlag(FLAG_RESOLVED))
-        continue;
+      if (!fn->hasFlag(FLAG_RESOLVED)) continue;
 
-      for_formals_actuals(formal, actual, call)
-      {
+      for_formals_actuals(formal, actual, call) {
         if (actual->typeInfo()->getValType() == dtNil) {
           if (formal->type->getValType() == dtNil)
             // Exact match, so OK.
@@ -1034,7 +931,8 @@ checkFormalActualBaseTypesMatch()
             continue;
 
           // All other cases == error.
-          INT_FATAL(call, "nil is passed to the formal %s of a non-class type",
+          INT_FATAL(call,
+                    "nil is passed to the formal %s of a non-class type",
                     formal->name);
         }
 
@@ -1051,8 +949,7 @@ checkFormalActualBaseTypesMatch()
 
 // After resolution the retType field is just a cached version of the type of
 // the return value variable.
-static void
-checkRetTypeMatchesRetVarType() {
+static void checkRetTypeMatchesRetVarType() {
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
 
     // Iterators break this rule.
@@ -1072,22 +969,15 @@ checkRetTypeMatchesRetVarType() {
   }
 }
 
-static void
-checkFormalActualTypesMatch()
-{
-  for_alive_in_Vec(CallExpr, call, gCallExprs)
-  {
+static void checkFormalActualTypesMatch() {
+  for_alive_in_Vec(CallExpr, call, gCallExprs) {
     // Skip verifying some degenerate chpl__deserialize calls
-    if (isTemporaryDeserializeCall(call))
-      continue;
+    if (isTemporaryDeserializeCall(call)) continue;
 
-    if (FnSymbol* fn = call->resolvedFunction())
-    {
-      if (fn->hasFlag(FLAG_EXTERN))
-        continue;
+    if (FnSymbol* fn = call->resolvedFunction()) {
+      if (fn->hasFlag(FLAG_EXTERN)) continue;
 
-      for_formals_actuals(formal, actual, call)
-      {
+      for_formals_actuals(formal, actual, call) {
         if (actual->typeInfo()->getValType() == dtNil) {
           if (formal->type->getValType() == dtNil)
             // Exact match, so OK.
@@ -1098,7 +988,8 @@ checkFormalActualTypesMatch()
             continue;
 
           // All other cases == error.
-          INT_FATAL(call, "nil is passed to the formal %s of a non-class type",
+          INT_FATAL(call,
+                    "nil is passed to the formal %s of a non-class type",
                     formal->name);
         }
 
@@ -1121,11 +1012,11 @@ checkFormalActualTypesMatch()
 
         if ((isCPtrConstChar(formal->getValType()) ||
              isCPtrConstChar(actual->getValType())) &&
-            (formal->getValType()==dtStringC ||
-             actual->getValType()==dtStringC)) {
-            // we allow conversion between these types in function resolution
-            // TODO: remove this once we get rid of c_string remnants
-            continue;
+            (formal->getValType() == dtStringC ||
+             actual->getValType() == dtStringC)) {
+          // we allow conversion between these types in function resolution
+          // TODO: remove this once we get rid of c_string remnants
+          continue;
         }
 
         if (formal->getValType() != actual->getValType()) {

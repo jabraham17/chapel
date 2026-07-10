@@ -33,22 +33,22 @@
 #include <string>
 #include <sys/stat.h>
 
-std::string           log_dir                                = "./log";
+std::string log_dir = "./log";
 std::set<std::string> log_modules;
 
-bool             fLog                                   =    false;
-bool             fLogDir                                =    false;
-bool             fLogIds                                =    true;
-LogFormat        fLogFormat                             =    LogFormat::DEFAULT;
+bool fLog = false;
+bool fLogDir = false;
+bool fLogIds = true;
+LogFormat fLogFormat = LogFormat::DEFAULT;
 
-int              fdump_html                             =       0;
-std::string      fdump_html_chpl_home                   =      "";
-bool             fdump_html_include_system_modules      =    true;
-bool             fdump_html_wrap_lines                  =    true;
-bool             fdump_html_print_block_IDs             =   false;
+int fdump_html = 0;
+std::string fdump_html_chpl_home = "";
+bool fdump_html_include_system_modules = true;
+bool fdump_html_wrap_lines = true;
+bool fdump_html_print_block_IDs = false;
 
-FILE*            deletedIdHandle                        =    NULL;
-std::string      deletedIdFilename                      =      "";
+FILE* deletedIdHandle = NULL;
+std::string deletedIdFilename = "";
 
 // Keeping names of available passes
 static bool availableInitialized = false;
@@ -59,8 +59,7 @@ static std::vector<char> logAvailableShortNames;
 static bool logAll = true;
 static std::set<std::string> logOnlyName;
 
-void logMakePassAvailable(const char* name, char shortname)
-{
+void logMakePassAvailable(const char* name, char shortname) {
   logAvailableNames.push_back(name);
   logAvailableShortNames.push_back(shortname);
 }
@@ -79,7 +78,7 @@ void logSelectPass(const char* arg) {
   logAll = false;
 
   // Check first for a match in the available pass names
-  for( size_t i = 0; i < logAvailableNames.size(); i++ ) {
+  for (size_t i = 0; i < logAvailableNames.size(); i++) {
     if (logAvailableNames[i] == arg) {
       logOnlyName.insert(logAvailableNames[i]);
       return;
@@ -87,10 +86,8 @@ void logSelectPass(const char* arg) {
   }
 
   // If none found, check for a match in the short names.
-  if (strlen(arg) == 1 &&
-      arg[0] != LOG_NO_SHORT &&
-      arg[0] != LOG_NEVER) {
-    for( size_t i = 0; i < logAvailableShortNames.size(); i++ ) {
+  if (strlen(arg) == 1 && arg[0] != LOG_NO_SHORT && arg[0] != LOG_NEVER) {
+    for (size_t i = 0; i < logAvailableShortNames.size(); i++) {
       if (logAvailableShortNames[i] == arg[0]) {
         logOnlyName.insert(logAvailableNames[i]);
         return;
@@ -104,25 +101,24 @@ void logSelectPass(const char* arg) {
 }
 
 void logSelectFormat(const char* arg) {
-  if(!strcmp(arg, "default")) {
+  if (!strcmp(arg, "default")) {
     fLogFormat = LogFormat::DEFAULT;
-  } else if(!strcmp(arg, "nprint")) {
+  } else if (!strcmp(arg, "nprint")) {
     fLogFormat = LogFormat::NPRINT;
   } else {
-    USR_FATAL("Unrecognized log format: %s (may be set to 'default' or 'nprint')\n", arg);
+    USR_FATAL(
+      "Unrecognized log format: %s (may be set to 'default' or 'nprint')\n",
+      arg);
   }
 }
 
 void setupLogfiles() {
   // Enable logging if --log-module is passed.
-  if (!log_modules.empty())
-    fLog = true;
+  if (!log_modules.empty()) fLog = true;
   // Enable logging if --log-pass is used
-  if (logOnlyName.size() > 0)
-    fLog = true;
+  if (logOnlyName.size() > 0) fLog = true;
   // Enable logging if --log-dir is used
-  if (fLogDir == true)
-    fLog = true;
+  if (fLogDir == true) fLog = true;
 
   if (fLog || fdump_html || !deletedIdFilename.empty()) {
     // Remove the log directory to make sure there is no stale data.
@@ -130,7 +126,8 @@ void setupLogfiles() {
     // avoid overwriting.
     if (fDriverDoMonolithic || fDriverCompilationPhase) {
       deleteDir(log_dir.c_str());
-      ensureDirExists(log_dir.c_str(), "ensuring directory for log files exists");
+      ensureDirExists(log_dir.c_str(),
+                      "ensuring directory for log files exists");
     }
   }
 
@@ -144,7 +141,8 @@ void setupLogfiles() {
 
   if (!deletedIdFilename.empty()) {
     if ((deletedIdHandle = fopen(deletedIdFilename.c_str(), "w")) == 0) {
-      USR_FATAL("cannot open file \"%s\", to log deleted AST ids, for writing", deletedIdFilename.c_str());
+      USR_FATAL("cannot open file \"%s\", to log deleted AST ids, for writing",
+                deletedIdFilename.c_str());
     }
   }
 }
@@ -173,6 +171,4 @@ void logWriteLog(const char* passName, int passNum, char logTag) {
   }
 }
 
-bool deletedIdON() {
-  return (!deletedIdFilename.empty()) ? true : false;
-}
+bool deletedIdON() { return (!deletedIdFilename.empty()) ? true : false; }
