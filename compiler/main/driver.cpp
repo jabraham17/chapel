@@ -362,6 +362,8 @@ char stopAfterPass[128] = "";
 
 const char* compileCommandFilename = "compileCommand.tmp";
 const char* compileCommand = NULL;
+const char* compileEnvsFilename = "compileEnvs.tmp";
+std::string compileEnvs = "";
 char compileVersion[64];
 
 std::array<std::string, 2> editions ({{"2.0", "preview"}});
@@ -564,7 +566,7 @@ static void setupChplLLVM(void) {
 #endif
 }
 
-static void recordCodeGenStrings(int argc, char* argv[]) {
+static void recordCodeGenStrings(ArgumentState* argState, int argc, char* argv[]) {
   compileCommand = astr("chpl ");
   // WARNING: This does not handle arbitrary sequences of escaped characters
   //  in string arguments
@@ -591,6 +593,11 @@ static void recordCodeGenStrings(int argc, char* argv[]) {
   }
 
   get_version(compileVersion, sizeof(compileVersion));
+
+  for (int i = 0; i < argState->nenv_arguments; i += 2) {
+    compileEnvs += std::string("  ") + argState->env_argument[i] + "=" +
+                                       argState->env_argument[i+1] + "\\n";
+  }
 }
 
 static void setHome(const ArgumentDescription* desc, const char* arg) {
@@ -844,6 +851,7 @@ static void runAsCompilerDriver(int argc, char* argv[]) {
 
   // Save initial compilation command before re-invocations.
   saveDriverTmp(compileCommandFilename, compileCommand);
+  saveDriverTmp(compileEnvsFilename, compileEnvs);
 
   // invoke compilation phase
   if ((status = runDriverCompilationPhase(argc, argv)) != 0) {
@@ -1714,7 +1722,9 @@ static ArgumentDescription arg_desc[] = {
 };
 
 static ArgumentState sArgState = {
+  NULL,
   0,
+  NULL,
   0,
   "program",
   "path",
@@ -2824,7 +2834,7 @@ int main(int argc, char* argv[]) {
 
     initCompilerGlobals(); // must follow argument parsing
 
-    recordCodeGenStrings(argc, argv);
+    recordCodeGenStrings(&sArgState, argc, argv);
   } // astlocMarker scope
 
   // We print things (--help*, --copyright, etc.) before validating

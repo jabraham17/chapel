@@ -124,9 +124,8 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
 // from compileline
 static std::string getCompilelineOption(std::string option) {
   std::string fullCommand = "";
-  for (std::map<std::string, const char*>::iterator env=envMap.begin();
-       env!=envMap.end(); ++env) {
-    fullCommand += std::string(env->first) + "=\"" + std::string(env->second) +
+  for (const auto& env: envMap) {
+    fullCommand += std::string(env.first) + "=\"" + std::string(env.second) +
       "\" ";
   }
   fullCommand += "$CHPL_HOME/util/config/compileline --" + option;
