@@ -37,43 +37,41 @@
 *                                                                           *
 ************************************* | ************************************/
 
-GenRet DoWhileStmt::codegen()
-{
-  GenInfo* info    = gGenInfo;
-  FILE*    outfile = info->cfile;
-  GenRet   ret;
+GenRet DoWhileStmt::codegen() {
+  GenInfo* info = gGenInfo;
+  FILE* outfile = info->cfile;
+  GenRet ret;
 
   codegenStmt(this);
 
   reportVectorizable();
 
-  if (outfile)
-  {
+  if (outfile) {
     info->cStatements.push_back("do ");
 
-    if (this != getFunction()->body)
-      info->cStatements.push_back("{\n");
+    if (this != getFunction()->body) info->cStatements.push_back("{\n");
 
     body.codegen("");
 
-    std::string ftr= "} while (" + codegenValue(condExprGet()).c + ");\n";
+    std::string ftr = "} while (" + codegenValue(condExprGet()).c + ");\n";
 
     info->cStatements.push_back(ftr);
   }
 
-  else
-  {
+  else {
 #ifdef HAVE_LLVM
-    llvm::Function*   func             = info->irBuilder->GetInsertBlock()->getParent();
+    llvm::Function* func = info->irBuilder->GetInsertBlock()->getParent();
 
-    llvm::BasicBlock* blockStmtBody    = NULL;
-    llvm::BasicBlock* blockStmtEnd     = NULL;
+    llvm::BasicBlock* blockStmtBody = NULL;
+    llvm::BasicBlock* blockStmtEnd = NULL;
     llvm::BasicBlock* blockStmtEndCond = NULL;
 
     getFunction()->codegenUniqueNum++;
 
-    blockStmtBody = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_body"));
-    blockStmtEnd  = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_end"));
+    blockStmtBody =
+      llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_body"));
+    blockStmtEnd =
+      llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_end"));
     trackLLVMValue(blockStmtBody);
     trackLLVMValue(blockStmtEnd);
 
@@ -95,7 +93,8 @@ GenRet DoWhileStmt::codegen()
     info->lvt->removeLayer();
 
     // Add the condition block.
-    blockStmtEndCond = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_end_cond"));
+    blockStmtEndCond = llvm::BasicBlock::Create(info->module->getContext(),
+                                                FNAME("blk_end_cond"));
     trackLLVMValue(blockStmtEndCond);
 
 #if HAVE_LLVM_VER >= 160
@@ -111,18 +110,20 @@ GenRet DoWhileStmt::codegen()
     // set insert point
     info->irBuilder->SetInsertPoint(blockStmtEndCond);
 
-    GenRet       condValueRet = codegenValue(condExprGet());
-    llvm::Value* condValue    = condValueRet.val;
+    GenRet condValueRet = codegenValue(condExprGet());
+    llvm::Value* condValue = condValueRet.val;
 
-    if (condValue->getType() != llvm::Type::getInt1Ty(info->module->getContext()))
-    {
-      condValue = info->irBuilder->CreateICmpNE(condValue,
-                                                llvm::ConstantInt::get(condValue->getType(), 0),
-                                                FNAME("condition"));
+    if (condValue->getType() !=
+        llvm::Type::getInt1Ty(info->module->getContext())) {
+      condValue = info->irBuilder->CreateICmpNE(
+        condValue,
+        llvm::ConstantInt::get(condValue->getType(), 0),
+        FNAME("condition"));
       trackLLVMValue(condValue);
     }
 
-    llvm::BranchInst* condBr = info->irBuilder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
+    llvm::BranchInst* condBr =
+      info->irBuilder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
     trackLLVMValue(condBr);
 
 #if HAVE_LLVM_VER >= 160
@@ -133,9 +134,9 @@ GenRet DoWhileStmt::codegen()
 
     info->irBuilder->SetInsertPoint(blockStmtEnd);
 
-    if (blockStmtBody   ) INT_ASSERT(blockStmtBody->getParent()    == func);
+    if (blockStmtBody) INT_ASSERT(blockStmtBody->getParent() == func);
     if (blockStmtEndCond) INT_ASSERT(blockStmtEndCond->getParent() == func);
-    if (blockStmtEnd    ) INT_ASSERT(blockStmtEnd->getParent()     == func);
+    if (blockStmtEnd) INT_ASSERT(blockStmtEnd->getParent() == func);
 #endif
   }
 

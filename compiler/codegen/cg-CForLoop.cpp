@@ -38,20 +38,20 @@
 
 #ifdef HAVE_LLVM
 
-
 // constructs !0 = !name
 static llvm::Metadata* constructLLVMMetadata(llvm::StringRef name) {
   GenInfo* info = gGenInfo;
-  auto &ctx = info->module->getContext();
+  auto& ctx = info->module->getContext();
   return llvm::MDString::get(ctx, name);
 }
 
 // constructs !0 = !{!name, !value}
-static llvm::Metadata* constructLLVMMetadata(llvm::StringRef name, llvm::Metadata* value) {
+static llvm::Metadata* constructLLVMMetadata(llvm::StringRef name,
+                                             llvm::Metadata* value) {
   GenInfo* info = gGenInfo;
-  auto &ctx = info->module->getContext();
+  auto& ctx = info->module->getContext();
 
-  llvm::Metadata *metaArray[] = {
+  llvm::Metadata* metaArray[] = {
     llvm::MDString::get(ctx, name),
     value,
   };
@@ -59,12 +59,14 @@ static llvm::Metadata* constructLLVMMetadata(llvm::StringRef name, llvm::Metadat
 }
 // constructs !0 = !{!name, !1}
 //            !1 = value
-static llvm::Metadata* constructLLVMMetadata(llvm::StringRef name, llvm::ArrayRef<llvm::Metadata*> array) {
+static llvm::Metadata*
+constructLLVMMetadata(llvm::StringRef name,
+                      llvm::ArrayRef<llvm::Metadata*> array) {
   GenInfo* info = gGenInfo;
-  auto &ctx = info->module->getContext();
+  auto& ctx = info->module->getContext();
 
   auto value = llvm::MDNode::get(ctx, array);
-  llvm::Metadata *metaArray[] = {
+  llvm::Metadata* metaArray[] = {
     llvm::MDString::get(ctx, name),
     value,
   };
@@ -74,28 +76,28 @@ static llvm::Metadata* constructLLVMMetadata(llvm::StringRef name, llvm::ArrayRe
 // constructs !0 = !{!name, i1 value}
 static llvm::Metadata* constructLLVMMetadata(llvm::StringRef name, bool value) {
   GenInfo* info = gGenInfo;
-  auto &ctx = info->module->getContext();
+  auto& ctx = info->module->getContext();
 
   auto constant = llvm::ConstantAsMetadata::get(
-    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx), value)
-  );
+    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx), value));
   return constructLLVMMetadata(name, constant);
 }
 // constructs !0 = !{!name, i64 value}
-static llvm::Metadata* constructLLVMMetadata(llvm::StringRef name, int64_t value) {
+static llvm::Metadata* constructLLVMMetadata(llvm::StringRef name,
+                                             int64_t value) {
   GenInfo* info = gGenInfo;
-  auto &ctx = info->module->getContext();
+  auto& ctx = info->module->getContext();
 
   auto constant = llvm::ConstantAsMetadata::get(
-    llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), value)
-  );
+    llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), value));
   return constructLLVMMetadata(name, constant);
 }
 // constructs !0 = !{!name, !1}
 //            !1 = !{value}
-static llvm::Metadata* constructLLVMMetadata(llvm::StringRef name, llvm::StringRef value) {
+static llvm::Metadata* constructLLVMMetadata(llvm::StringRef name,
+                                             llvm::StringRef value) {
   GenInfo* info = gGenInfo;
-  auto &ctx = info->module->getContext();
+  auto& ctx = info->module->getContext();
 
   llvm::Metadata* strArr[] = {llvm::MDString::get(ctx, value)};
   auto arrRef = llvm::ArrayRef<llvm::Metadata*>(strArr, 1);
@@ -105,8 +107,8 @@ static llvm::Metadata* constructLLVMMetadata(llvm::StringRef name, llvm::StringR
 static bool loopHasAnyParallelAccess(bool thisLoopParallelAccess,
                                      llvm::MDNode*& accessGroup) {
   GenInfo* info = gGenInfo;
-  auto &ctx = info->module->getContext();
-    // Does the current loop, or any outer loop in the loop stack,
+  auto& ctx = info->module->getContext();
+  // Does the current loop, or any outer loop in the loop stack,
   // require llvm.loop.parallel_accesses metadata?
   bool anyParallelAccesses = false;
   if (thisLoopParallelAccess) {
@@ -114,9 +116,8 @@ static bool loopHasAnyParallelAccess(bool thisLoopParallelAccess,
     accessGroup = llvm::MDNode::getDistinct(ctx, {});
   } else {
     accessGroup = NULL;
-    for (auto & loopData : info->loopStack) {
-      if (loopData.markMemoryOps)
-        anyParallelAccesses = true;
+    for (auto& loopData : info->loopStack) {
+      if (loopData.markMemoryOps) anyParallelAccesses = true;
     }
   }
   return anyParallelAccesses;
@@ -126,7 +127,7 @@ static void addLoopParallelAccess(std::vector<llvm::Metadata*>& args,
                                   bool thisLoopParallelAccess,
                                   llvm::MDNode*& accessGroup) {
   GenInfo* info = gGenInfo;
-  auto &ctx = info->module->getContext();
+  auto& ctx = info->module->getContext();
 
   std::vector<llvm::Metadata*> v;
   v.push_back(constructLLVMMetadata("llvm.loop.parallel_accesses"));
@@ -137,7 +138,7 @@ static void addLoopParallelAccess(std::vector<llvm::Metadata*>& args,
   if (thisLoopParallelAccess) {
     v.push_back(accessGroup);
   }
-  for (auto & loopData : info->loopStack) {
+  for (auto& loopData : info->loopStack) {
     if (loopData.markMemoryOps) {
       v.push_back(loopData.accessGroup);
     }
@@ -150,7 +151,7 @@ static void addLoopParallelAccess(std::vector<llvm::Metadata*>& args,
 GenRet LLVMMetadata::codegen() {
 
   GenInfo* info = gGenInfo;
-  auto &ctx = info->module->getContext();
+  auto& ctx = info->module->getContext();
 
   llvm::Metadata* metadata = nullptr;
   if (kind == LAT_NO_VALUE) {
@@ -182,10 +183,10 @@ GenRet LLVMMetadata::codegen() {
   return ret;
 }
 
-
-
-static void addLoopUserMetadata(LoopStmt* loop, std::vector<llvm::Metadata*>& args, LLVMMetadataList attrs) {
-  for (const auto& attr: attrs) {
+static void addLoopUserMetadata(LoopStmt* loop,
+                                std::vector<llvm::Metadata*>& args,
+                                LLVMMetadataList attrs) {
+  for (const auto& attr : attrs) {
     auto ret = attr->codegen();
     if (auto* MD = llvm::dyn_cast<llvm::MetadataAsValue>(ret.val))
       args.push_back(MD->getMetadata());
@@ -199,17 +200,16 @@ static void addLoopUserMetadata(LoopStmt* loop, std::vector<llvm::Metadata*>& ar
 // metadata node to use in llvm.access.group metadata for this loop.
 static llvm::MDNode* generateLoopMetadata(LoopStmt* loop,
                                           bool thisLoopParallelAccess,
-                                          llvm::MDNode*& accessGroup)
-{
+                                          llvm::MDNode*& accessGroup) {
   GenInfo* info = gGenInfo;
-  auto &ctx = info->module->getContext();
+  auto& ctx = info->module->getContext();
 
   std::vector<llvm::Metadata*> args;
   // Resolve operand 0 for the loop id self reference
-  auto tmpNode        = llvm::MDNode::getTemporary(ctx, {});
+  auto tmpNode = llvm::MDNode::getTemporary(ctx, {});
   args.push_back(tmpNode.get());
 
-  if(fNoVectorize == false && loop->isVectorizable()) {
+  if (fNoVectorize == false && loop->isVectorizable()) {
 
     // llvm.loop.vectorize.enable metadata is only used by LoopVectorizer to:
     // 1) Explicitly disable vectorization of particular loop
@@ -218,27 +218,27 @@ static llvm::MDNode* generateLoopMetadata(LoopStmt* loop,
     // Here we do not emit that metadata; instead emitting parallel
     // llvm.loop.parallel_accesses.
 
-    bool anyParallelAccesses = loopHasAnyParallelAccess(thisLoopParallelAccess, accessGroup);
+    bool anyParallelAccesses =
+      loopHasAnyParallelAccess(thisLoopParallelAccess, accessGroup);
 
     if (anyParallelAccesses) {
       addLoopParallelAccess(args, thisLoopParallelAccess, accessGroup);
     }
 
     // When using the Region Vectorizer, emit rv.loop.vectorize.enable metadata
-    if(fRegionVectorizer) {
+    if (fRegionVectorizer) {
       args.push_back(constructLLVMMetadata("rv.loop.vectorize.enable", true));
 
       // Note that the Region Vectorizer once required
       // llvm.loop.vectorize.width but no longer does.
     }
-
   }
 
   addLoopUserMetadata(loop, args, loop->getAdditionalLLVMMetadata());
 
   // only construct metadata if there is metadata to be had
-  if(args.size() > 1) {
-    llvm::MDNode *loopMetadata = llvm::MDNode::get(ctx, args);
+  if (args.size() > 1) {
+    llvm::MDNode* loopMetadata = llvm::MDNode::get(ctx, args);
     loopMetadata->replaceOperandWith(0, loopMetadata);
     return loopMetadata;
   }
@@ -250,8 +250,7 @@ static llvm::MDNode* generateLoopMetadata(LoopStmt* loop,
 //   as well as any enclosing loops (from loopStack).
 static void addLoopMetadata(llvm::Instruction* instruction,
                             llvm::MDNode* loopMetadata,
-                            llvm::MDNode* accessGroup)
-{
+                            llvm::MDNode* accessGroup) {
   instruction->setMetadata("llvm.loop", loopMetadata);
 }
 
@@ -263,76 +262,70 @@ static void addLoopMetadata(llvm::Instruction* instruction,
 *                                                                           *
 ************************************* | ************************************/
 
-GenRet CForLoop::codegen()
-{
-  if (id == breakOnCodegenID)
-    debuggerBreakHere();
+GenRet CForLoop::codegen() {
+  if (id == breakOnCodegenID) debuggerBreakHere();
 
-  GenInfo* info    = gGenInfo;
-  FILE*    outfile = info->cfile;
-  GenRet   ret;
+  GenInfo* info = gGenInfo;
+  FILE* outfile = info->cfile;
+  GenRet ret;
 
   codegenStmt(this);
 
   reportVectorizable();
 
-  if (outfile)
-  {
-    BlockStmt*  initBlock = initBlockGet();
+  if (outfile) {
+    BlockStmt* initBlock = initBlockGet();
 
     // These copy calls are needed or else values get code generated twice.
-    std::string init      = codegenCForLoopHeader(initBlock->copy());
+    std::string init = codegenCForLoopHeader(initBlock->copy());
 
-    BlockStmt*  testBlock = testBlockGet();
-    std::string test      = codegenCForLoopHeader(testBlock->copy());
+    BlockStmt* testBlock = testBlockGet();
+    std::string test = codegenCForLoopHeader(testBlock->copy());
 
     // wrap the test with paren. Could probably check if it already has
     // outer paren to make the code a little cleaner.
-    if (test != "")
-      test = "(" + test + ")";
+    if (test != "") test = "(" + test + ")";
 
-    BlockStmt*  incrBlock = incrBlockGet();
-    std::string incr      = codegenCForLoopHeader(incrBlock->copy());
-    std::string hdr       = "for (" + init + "; " + test + "; " + incr + ") ";
+    BlockStmt* incrBlock = incrBlockGet();
+    std::string incr = codegenCForLoopHeader(incrBlock->copy());
+    std::string hdr = "for (" + init + "; " + test + "; " + incr + ") ";
 
     info->cStatements.push_back(hdr);
 
-    if (this != getFunction()->body)
-      info->cStatements.push_back("{\n");
+    if (this != getFunction()->body) info->cStatements.push_back("{\n");
 
     body.codegen("");
 
-    if (this != getFunction()->body)
-    {
-      std::string end  = "}";
-      CondStmt*   cond = toCondStmt(parentExpr);
+    if (this != getFunction()->body) {
+      std::string end = "}";
+      CondStmt* cond = toCondStmt(parentExpr);
 
-      if (!cond || !(cond->thenStmt == this && cond->elseStmt))
-        end += "\n";
+      if (!cond || !(cond->thenStmt == this && cond->elseStmt)) end += "\n";
 
       info->cStatements.push_back(end);
     }
   }
 
-  else
-  {
+  else {
 #ifdef HAVE_LLVM
-    llvm::Function*   func          = info->irBuilder->GetInsertBlock()->getParent();
+    llvm::Function* func = info->irBuilder->GetInsertBlock()->getParent();
 
     llvm::BasicBlock* blockStmtInit = NULL;
     llvm::BasicBlock* blockStmtBody = NULL;
-    llvm::BasicBlock* blockStmtEnd  = NULL;
+    llvm::BasicBlock* blockStmtEnd = NULL;
 
-    BlockStmt*        initBlock     = initBlockGet();
-    BlockStmt*        testBlock     = testBlockGet();
-    BlockStmt*        incrBlock     = incrBlockGet();
+    BlockStmt* initBlock = initBlockGet();
+    BlockStmt* testBlock = testBlockGet();
+    BlockStmt* incrBlock = incrBlockGet();
 
     assert(initBlock && testBlock && incrBlock);
 
     getFunction()->codegenUniqueNum++;
 
-    blockStmtBody = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_body"));
-    blockStmtEnd  = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_end"));
+    blockStmtBody =
+      llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_body"));
+    blockStmtEnd =
+      llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_end"));
     trackLLVMValue(blockStmtBody);
     trackLLVMValue(blockStmtEnd);
 
@@ -347,7 +340,8 @@ GenRet CForLoop::codegen()
     //   * could avoid problems identifying induction variables
 
     // Create the init basic block
-    blockStmtInit = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_c_for_init"));
+    blockStmtInit = llvm::BasicBlock::Create(info->module->getContext(),
+                                             FNAME("blk_c_for_init"));
     trackLLVMValue(blockStmtInit);
 
 #if HAVE_LLVM_VER >= 160
@@ -367,19 +361,22 @@ GenRet CForLoop::codegen()
     initBlock->body.codegen("");
 
     // Add the loop condition to figure out if we run the loop at all.
-    GenRet       test0      = codegenCForLoopCondition(testBlock);
+    GenRet test0 = codegenCForLoopCondition(testBlock);
     llvm::Value* condValue0 = test0.val;
 
     // Normalize it to boolean
-    if (condValue0->getType() != llvm::Type::getInt1Ty(info->module->getContext())) {
-      condValue0 = info->irBuilder->CreateICmpNE(condValue0,
-                                               llvm::ConstantInt::get(condValue0->getType(), 0),
-                                               FNAME("condition"));
+    if (condValue0->getType() !=
+        llvm::Type::getInt1Ty(info->module->getContext())) {
+      condValue0 = info->irBuilder->CreateICmpNE(
+        condValue0,
+        llvm::ConstantInt::get(condValue0->getType(), 0),
+        FNAME("condition"));
       trackLLVMValue(condValue0);
     }
 
     // Create the conditional branch
-    llvm::BranchInst* condBr = info->irBuilder->CreateCondBr(condValue0, blockStmtBody, blockStmtEnd);
+    llvm::BranchInst* condBr =
+      info->irBuilder->CreateCondBr(condValue0, blockStmtBody, blockStmtEnd);
     trackLLVMValue(condBr);
 
     // Now add the body.
@@ -395,40 +392,40 @@ GenRet CForLoop::codegen()
     llvm::MDNode* accessGroup = nullptr;
     llvm::MDNode* loopMetadata = nullptr;
 
-    loopMetadata = generateLoopMetadata(this,
-                                        isParallelAccessVectorizable(),
-                                        accessGroup);
-    if(loopMetadata) {
+    loopMetadata =
+      generateLoopMetadata(this, isParallelAccessVectorizable(), accessGroup);
+    if (loopMetadata) {
       LoopData data(accessGroup, isParallelAccessVectorizable());
       info->loopStack.push_back(data);
     }
 
     body.codegen("");
 
-    if(loopMetadata)
-      info->loopStack.pop_back();
+    if (loopMetadata) info->loopStack.pop_back();
 
     info->lvt->removeLayer();
 
     incrBlock->body.codegen("");
 
-    GenRet       test1      = codegenCForLoopCondition(testBlock);
+    GenRet test1 = codegenCForLoopCondition(testBlock);
     llvm::Value* condValue1 = test1.val;
 
     // Normalize it to boolean
-    if (condValue1->getType() != llvm::Type::getInt1Ty(info->module->getContext())) {
-      condValue1 = info->irBuilder->CreateICmpNE(condValue1,
-                                                 llvm::ConstantInt::get(condValue1->getType(), 0),
-                                                 FNAME("condition"));
+    if (condValue1->getType() !=
+        llvm::Type::getInt1Ty(info->module->getContext())) {
+      condValue1 = info->irBuilder->CreateICmpNE(
+        condValue1,
+        llvm::ConstantInt::get(condValue1->getType(), 0),
+        FNAME("condition"));
       trackLLVMValue(condValue1);
     }
 
     // Create the conditional branch
-    llvm::Instruction* endLoopBranch = info->irBuilder->CreateCondBr(condValue1, blockStmtBody, blockStmtEnd);
+    llvm::Instruction* endLoopBranch =
+      info->irBuilder->CreateCondBr(condValue1, blockStmtBody, blockStmtEnd);
     trackLLVMValue(endLoopBranch);
 
-    if(loopMetadata)
-      addLoopMetadata(endLoopBranch, loopMetadata, accessGroup);
+    if (loopMetadata) addLoopMetadata(endLoopBranch, loopMetadata, accessGroup);
 
 #if HAVE_LLVM_VER >= 160
     func->insert(func->end(), blockStmtEnd);
@@ -439,7 +436,7 @@ GenRet CForLoop::codegen()
     info->irBuilder->SetInsertPoint(blockStmtEnd);
 
     if (blockStmtBody) INT_ASSERT(blockStmtBody->getParent() == func);
-    if (blockStmtEnd ) INT_ASSERT(blockStmtEnd->getParent()  == func);
+    if (blockStmtEnd) INT_ASSERT(blockStmtEnd->getParent() == func);
 #endif
   }
 
@@ -454,19 +451,16 @@ GenRet CForLoop::codegen()
 //
 // We need to generate:
 // i = 4, j = 4
-std::string CForLoop::codegenCForLoopHeader(BlockStmt* block)
-{
-  GenInfo*    info = gGenInfo;
-  std::string seg  = "";
+std::string CForLoop::codegenCForLoopHeader(BlockStmt* block) {
+  GenInfo* info = gGenInfo;
+  std::string seg = "";
 
-  for_alist(expr, block->body)
-  {
+  for_alist(expr, block->body) {
     CallExpr* call = toCallExpr(expr);
 
     // Generate defExpr normally (they always get codegenned at the top of a
     // function currently, if that changes this code will probably be wrong.)
-    if (DefExpr* defExpr = toDefExpr(expr))
-    {
+    if (DefExpr* defExpr = toDefExpr(expr)) {
       defExpr->codegen();
     }
 
@@ -481,23 +475,19 @@ std::string CForLoop::codegenCForLoopHeader(BlockStmt* block)
     // imagining we'll want a separate function that can check if a primitive
     // is a conditional as I think we'll need that info elsewhere.)
     else if (call && (call->isResolved() || isRelationalOperator(call) ||
-        call->isPrimitive(PRIM_GET_MEMBER_VALUE)))
-    {
+                      call->isPrimitive(PRIM_GET_MEMBER_VALUE))) {
       std::string callStr = codegenValue(call).c;
 
-      if (callStr != "")
-      {
+      if (callStr != "") {
         seg += callStr + ';';
       }
     }
 
     // Similar to above, generate symExprs
-    else if (SymExpr* symExpr = toSymExpr(expr))
-    {
+    else if (SymExpr* symExpr = toSymExpr(expr)) {
       std::string symStr = codegenValue(symExpr).c;
 
-      if (symStr != "")
-      {
+      if (symStr != "") {
         seg += symStr + ';';
       }
     }
@@ -506,18 +496,17 @@ std::string CForLoop::codegenCForLoopHeader(BlockStmt* block)
     // them which ends up putting whatever got codegenned into CStatements. We
     // pop all of those back off (note that the order we pop and attach to our
     // segment is important.)
-    else
-    {
-      int prevStatements = (int) info->cStatements.size();
+    else {
+      int prevStatements = (int)info->cStatements.size();
 
       expr->codegen();
 
-      int newStatements  = (int) info->cStatements.size() - prevStatements;
+      int newStatements = (int)info->cStatements.size() - prevStatements;
 
-      for (std::vector<std::string>::iterator it = info->cStatements.end() - newStatements;
+      for (std::vector<std::string>::iterator it =
+             info->cStatements.end() - newStatements;
            it != info->cStatements.end();
-           ++it)
-      {
+           ++it) {
         seg += *it;
       }
 
@@ -534,21 +523,16 @@ std::string CForLoop::codegenCForLoopHeader(BlockStmt* block)
 
   // remove the last character if any were generated (it's a trailing comma
   // since we previously had an appropriate "trailing" semicolon)
-  if (seg.size () > 0)
-    seg.resize (seg.size () - 1);
+  if (seg.size() > 0) seg.resize(seg.size() - 1);
 
   return seg;
 }
 
-GenRet CForLoop::codegenCForLoopCondition(BlockStmt* block)
-{
+GenRet CForLoop::codegenCForLoopCondition(BlockStmt* block) {
   GenRet ret;
 
 #ifdef HAVE_LLVM
-  for_alist(expr, block->body)
-  {
-    ret = expr->codegen();
-  }
+  for_alist(expr, block->body) { ret = expr->codegen(); }
 
   return codegenValue(ret);
 

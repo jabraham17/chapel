@@ -23,14 +23,12 @@
 #include "codegen.h"
 #include "driver.h"
 
-void LoopStmt::reportVectorizable()
-{
+void LoopStmt::reportVectorizable() {
   if (fReportVectorizedLoops) {
-    ModuleSymbol *mod = toModuleSymbol(this->getModule());
+    ModuleSymbol* mod = toModuleSymbol(this->getModule());
     INT_ASSERT(mod);
 
-    if (developer || mod->modTag == MOD_USER)
-    {
+    if (developer || mod->modTag == MOD_USER) {
       if (this->isVectorizable()) {
         const char* kind = NULL;
 
@@ -44,11 +42,13 @@ void LoopStmt::reportVectorizable()
           kind = "loop vectorization (with parallel access)";
 
         if (developer)
-          USR_PRINT(this, "%s hinted for %s [%i]", kind,
-                    this->astTagAsString(), this->id);
+          USR_PRINT(this,
+                    "%s hinted for %s [%i]",
+                    kind,
+                    this->astTagAsString(),
+                    this->id);
         else
-          USR_PRINT(this, "%s hinted for %s", kind,
-                    this->astTagAsString());
+          USR_PRINT(this, "%s hinted for %s", kind, this->astTagAsString());
       }
     }
   }

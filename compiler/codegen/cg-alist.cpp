@@ -30,7 +30,7 @@
 GenRet AList::codegen(const char* separator) {
   GenInfo* info = gGenInfo;
   GenRet ret;
-  if( info->cfile ) {
+  if (info->cfile) {
     // only for C...
     for_alist(node, *this) {
       ret.c += node->codegen().c;

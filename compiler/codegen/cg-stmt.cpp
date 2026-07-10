@@ -45,23 +45,21 @@
 #include <vector>
 
 void codegenStmt(Expr* stmt) {
-  GenInfo* info    = gGenInfo;
-  FILE*    outfile = info->cfile;
+  GenInfo* info = gGenInfo;
+  FILE* outfile = info->cfile;
 
-  info->lineno   = stmt->linenum();
+  info->lineno = stmt->linenum();
   info->filename = stmt->fname();
 
-  if( outfile ) {
+  if (outfile) {
     if (printCppLineno && stmt->linenum() > 0)
-        info->cStatements.push_back(zlineToString(stmt));
-    if (fGenIDS)
-      info->cStatements.push_back(idCommentTemp(stmt));
+      info->cStatements.push_back(zlineToString(stmt));
+    if (fGenIDS) info->cStatements.push_back(idCommentTemp(stmt));
   } else {
 #ifdef HAVE_LLVM
-    if (debugInfo &&
-        stmt->linenum() > 0 &&
+    if (debugInfo && stmt->linenum() > 0 &&
         (!stmt->parentSymbol ||
-          debugInfo->shouldAddDebugInfoFor(stmt->parentSymbol))) {
+         debugInfo->shouldAddDebugInfoFor(stmt->parentSymbol))) {
       // Adjust the current line number, but leave the scope alone.
       llvm::MDNode* scope;
 
@@ -72,15 +70,18 @@ void codegenStmt(Expr* stmt) {
       }
 
       info->irBuilder->SetCurrentDebugLocation(
-                  llvm::DILocation::get(scope->getContext(), stmt->linenum(),
-                                        /*col=*/ 0, scope, nullptr, false));
+        llvm::DILocation::get(scope->getContext(),
+                              stmt->linenum(),
+                              /*col=*/0,
+                              scope,
+                              nullptr,
+                              false));
     }
 #endif
   }
 
   ++gStmtCount;
 }
-
 
 /******************************** | *********************************
 *                                                                   *
@@ -115,9 +116,9 @@ GenRet ImportStmt::codegen() {
 ********************************* | ********************************/
 
 GenRet BlockStmt::codegen() {
-  GenInfo* info    = gGenInfo;
-  FILE*    outfile = info->cfile;
-  GenRet   ret;
+  GenInfo* info = gGenInfo;
+  FILE* outfile = info->cfile;
+  GenRet ret;
 
   codegenStmt(this);
 
@@ -134,23 +135,23 @@ GenRet BlockStmt::codegen() {
     body.codegen("");
 
     if (this != getFunction()->body) {
-      std::string end  = "}";
-      CondStmt*   cond = toCondStmt(parentExpr);
+      std::string end = "}";
+      CondStmt* cond = toCondStmt(parentExpr);
 
-      if (!cond || !(cond->thenStmt == this && cond->elseStmt))
-        end += "\n";
+      if (!cond || !(cond->thenStmt == this && cond->elseStmt)) end += "\n";
 
       info->cStatements.push_back(end);
     }
 
   } else {
 #ifdef HAVE_LLVM
-    llvm::Function*   func          = info->irBuilder->GetInsertBlock()->getParent();
+    llvm::Function* func = info->irBuilder->GetInsertBlock()->getParent();
     llvm::BasicBlock* blockStmtBody = NULL;
 
     getFunction()->codegenUniqueNum++;
 
-    blockStmtBody = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_body"));
+    blockStmtBody =
+      llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_body"));
     trackLLVMValue(blockStmtBody);
 
     llvm::BranchInst* toBody = info->irBuilder->CreateBr(blockStmtBody);
@@ -167,9 +168,7 @@ GenRet BlockStmt::codegen() {
 
     info->lvt->addLayer();
 
-    for_alist(node, this->body) {
-      node->codegen();
-    }
+    for_alist(node, this->body) { node->codegen(); }
 
     info->lvt->removeLayer();
 
@@ -194,21 +193,19 @@ static BlockStmt* chooseCpuVsGpuBranch(CondStmt* cond) {
   return nullptr;
 }
 
-GenRet
-CondStmt::codegen() {
-  GenInfo* info    = gGenInfo;
-  FILE*    outfile = info->cfile;
-  GenRet   ret;
+GenRet CondStmt::codegen() {
+  GenInfo* info = gGenInfo;
+  FILE* outfile = info->cfile;
+  GenRet ret;
 
   if (BlockStmt* chosenBlock = chooseCpuVsGpuBranch(this)) {
-    for_alist(node, chosenBlock->body)
-      node->codegen();
+    for_alist(node, chosenBlock->body) node->codegen();
     return ret;
   }
 
   codegenStmt(this);
 
-  if ( outfile ) {
+  if (outfile) {
     //here it's very possible that we end up with ( ) around condExpr. Extra
     //parentheses generated warnings from the backend compiler in some cases.
     //It didn't feel very safe to strip them at expr level as it might mess up
@@ -219,12 +216,12 @@ CondStmt::codegen() {
     int numExtraPar = 0;
     //if (c_condExpr[0] == '(' && c_condExpr[c_condExpr.size()-1] == ')') {
     if (c_condExpr[numExtraPar] == '(' &&
-        c_condExpr[c_condExpr.size()-(numExtraPar+1)] == ')') {
+        c_condExpr[c_condExpr.size() - (numExtraPar + 1)] == ')') {
       numExtraPar++;
     }
-    c_condExpr = c_condExpr.substr(numExtraPar,
-        c_condExpr.length()-2*numExtraPar);
-    info->cStatements.push_back("if (" + c_condExpr  + ") ");
+    c_condExpr =
+      c_condExpr.substr(numExtraPar, c_condExpr.length() - 2 * numExtraPar);
+    info->cStatements.push_back("if (" + c_condExpr + ") ");
 
     thenStmt->codegen();
 
@@ -254,19 +251,16 @@ CondStmt::codegen() {
 
     getFunction()->codegenUniqueNum++;
 
-    llvm::BasicBlock *condStmtIf = llvm::BasicBlock::Create(
-        info->module->getContext(),
-        FNAME("cond_if"));
+    llvm::BasicBlock* condStmtIf =
+      llvm::BasicBlock::Create(info->module->getContext(), FNAME("cond_if"));
 
-    llvm::BasicBlock *condStmtThen = llvm::BasicBlock::Create(
-        info->module->getContext(),
-        FNAME("cond_then"));
+    llvm::BasicBlock* condStmtThen =
+      llvm::BasicBlock::Create(info->module->getContext(), FNAME("cond_then"));
 
-    llvm::BasicBlock *condStmtElse = NULL;
+    llvm::BasicBlock* condStmtElse = NULL;
 
-    llvm::BasicBlock *condStmtEnd = llvm::BasicBlock::Create(
-        info->module->getContext(),
-        FNAME("cond_end"));
+    llvm::BasicBlock* condStmtEnd =
+      llvm::BasicBlock::Create(info->module->getContext(), FNAME("cond_end"));
 
     trackLLVMValue(condStmtIf);
     trackLLVMValue(condStmtThen);
@@ -292,21 +286,19 @@ CondStmt::codegen() {
 
     GenRet condValueRet = codegenValue(condExpr);
 
-    llvm::Value *condValue = condValueRet.val;
+    llvm::Value* condValue = condValueRet.val;
 
-    if( condValue->getType() !=
-        llvm::Type::getInt1Ty(info->module->getContext()) ) {
+    if (condValue->getType() !=
+        llvm::Type::getInt1Ty(info->module->getContext())) {
       condValue = info->irBuilder->CreateICmpNE(
-          condValue,
-          llvm::ConstantInt::get(condValue->getType(), 0),
-          FNAME("condition"));
+        condValue,
+        llvm::ConstantInt::get(condValue->getType(), 0),
+        FNAME("condition"));
       trackLLVMValue(condValue);
     }
 
     llvm::BranchInst* condBr = info->irBuilder->CreateCondBr(
-        condValue,
-        condStmtThen,
-        (elseStmt) ? condStmtElse : condStmtEnd);
+      condValue, condStmtThen, (elseStmt) ? condStmtElse : condStmtEnd);
     trackLLVMValue(condBr);
 
 #if HAVE_LLVM_VER >= 160
@@ -323,7 +315,7 @@ CondStmt::codegen() {
     trackLLVMValue(toEnd1);
     info->lvt->removeLayer();
 
-    if(elseStmt) {
+    if (elseStmt) {
 #if HAVE_LLVM_VER >= 160
       func->insert(func->end(), condStmtElse);
 #else
@@ -362,22 +354,21 @@ GenRet GotoStmt::codegen() {
   GenRet ret;
 
   codegenStmt(this);
-  if( outfile ) {
+  if (outfile) {
     info->cStatements.push_back("goto " + label->codegen().c + ";\n");
   } else {
 #ifdef HAVE_LLVM
-    llvm::Function *func = info->irBuilder->GetInsertBlock()->getParent();
+    llvm::Function* func = info->irBuilder->GetInsertBlock()->getParent();
 
-    const char *cname;
-    if(isDefExpr(label)) {
+    const char* cname;
+    if (isDefExpr(label)) {
       cname = toDefExpr(label)->sym->cname;
-    }
-    else {
+    } else {
       cname = toSymExpr(label)->symbol()->cname;
     }
 
-    llvm::BasicBlock *blockLabel;
-    if(!(blockLabel = info->lvt->getBlock(cname))) {
+    llvm::BasicBlock* blockLabel;
+    if (!(blockLabel = info->lvt->getBlock(cname))) {
       blockLabel = llvm::BasicBlock::Create(info->module->getContext(), cname);
       trackLLVMValue(blockLabel);
       info->lvt->addBlock(cname, blockLabel);
@@ -388,8 +379,8 @@ GenRet GotoStmt::codegen() {
 
     getFunction()->codegenUniqueNum++;
 
-    llvm::BasicBlock *afterGoto = llvm::BasicBlock::Create(
-        info->module->getContext(), FNAME("afterGoto"));
+    llvm::BasicBlock* afterGoto =
+      llvm::BasicBlock::Create(info->module->getContext(), FNAME("afterGoto"));
     trackLLVMValue(afterGoto);
 #if HAVE_LLVM_VER >= 160
     func->insert(func->end(), afterGoto);

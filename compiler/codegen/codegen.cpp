@@ -94,9 +94,9 @@
 #include <sys/wait.h>
 
 namespace {
-  int getFilenameTableIndex(const std::string& str) {
-    return InsertLineNumbers::getFilenameTableIndex(str);
-  }
+int getFilenameTableIndex(const std::string& str) {
+  return InsertLineNumbers::getFilenameTableIndex(str);
+}
 }
 
 // function prototypes
@@ -104,22 +104,20 @@ static bool compareSymbol(const void* v1, const void* v2);
 
 // Global so that we don't have to pass around
 // to all of the codegen() routines
-GenInfo* gGenInfo   =  0;
-int      gMaxVMT    = -1;
-int      gStmtCount =  0;
-bool     gCodegenGPU = false;
+GenInfo* gGenInfo = 0;
+int gMaxVMT = -1;
+int gStmtCount = 0;
+bool gCodegenGPU = false;
 
 std::map<std::string, int> commIDMap;
 
-
 // ensure these two produce consistent output
 std::string zlineToString(BaseAST* ast) {
-  return "/* ZLINE: " + numToString(ast->linenum())
-         + " " + ast->fname() + " */\n";
+  return "/* ZLINE: " + numToString(ast->linenum()) + " " + ast->fname() +
+         " */\n";
 }
 void zlineToFileIfNeeded(BaseAST* ast, FILE* outfile) {
-  if (printCppLineno)
-    fprintf(outfile, "%s", zlineToString(ast).c_str());
+  if (printCppLineno) fprintf(outfile, "%s", zlineToString(ast).c_str());
 }
 
 static char idCommentBuffer[32];
@@ -129,14 +127,13 @@ const char* idCommentTemp(BaseAST* ast) {
   return idCommentBuffer;
 }
 
-
 const char* legalizeName(const char* name) {
   std::string ret = "";
 
   for (const char* ch = name; *ch != '\0'; ch++) {
     switch (*ch) {
       case '=':
-        if (*(ch+1) == '=') { // matched ==
+        if (*(ch + 1) == '=') { // matched ==
           ret += "_EQUALS_";
           ch++;
         } else {
@@ -144,25 +141,24 @@ const char* legalizeName(const char* name) {
         }
         break;
 
-      case '>': ret += "_GREATER_";     break;
-      case '<': ret += "_LESS_";        break;
-      case '*': ret += "_ASTERISK_";    break;
-      case '/': ret += "_SLASH_";       break;
-      case '%': ret += "_PERCENT_";     break;
-      case '+': ret += "_PLUS_";        break;
-      case '-': ret += "_HYPHEN_";      break;
-      case '^': ret += "_CARET_";       break;
-      case '&': ret += "_AMPERSAND_";   break;
-      case '|': ret += "_BAR_";         break;
+      case '>': ret += "_GREATER_"; break;
+      case '<': ret += "_LESS_"; break;
+      case '*': ret += "_ASTERISK_"; break;
+      case '/': ret += "_SLASH_"; break;
+      case '%': ret += "_PERCENT_"; break;
+      case '+': ret += "_PLUS_"; break;
+      case '-': ret += "_HYPHEN_"; break;
+      case '^': ret += "_CARET_"; break;
+      case '&': ret += "_AMPERSAND_"; break;
+      case '|': ret += "_BAR_"; break;
       case '!': ret += "_EXCLAMATION_"; break;
-      case '#': ret += "_POUND_";       break;
-      case '?': ret += "_QUESTION_";    break;
-      case '~': ret += "_TILDE_";       break;
-      case ':': ret += "_COLON_";       break;
-      case '.': ret += "_DOT_";         break;
-      case ' ': ret +=  "_SPACE_";      break;
-      default:
-      {
+      case '#': ret += "_POUND_"; break;
+      case '?': ret += "_QUESTION_"; break;
+      case '~': ret += "_TILDE_"; break;
+      case ':': ret += "_COLON_"; break;
+      case '.': ret += "_DOT_"; break;
+      case ' ': ret += "_SPACE_"; break;
+      default: {
         char c = *ch;
         ret += c;
         break;
@@ -174,11 +170,9 @@ const char* legalizeName(const char* name) {
 }
 
 static void legalizeSymbolName(Symbol* sym) {
-  if (fIdBasedMunging)
-    return;
+  if (fIdBasedMunging) return;
 
-  if (!fLibraryCompile && !sym->isRenameable())
-    return;
+  if (!fLibraryCompile && !sym->isRenameable()) return;
 
   const char* newName = legalizeName(sym->cname);
 
@@ -189,8 +183,8 @@ static void legalizeSymbolName(Symbol* sym) {
       if (fn->hasFlag(FLAG_EXPORT) && isUserRoutine(fn) &&
           strcmp(sym->cname, newName)) {
         const char* fmt = fn->hasFlag(FLAG_MODULE_INIT)
-            ? "Cannot export module initializer with name '%s'"
-            : "Cannot export function with name '%s'";
+                            ? "Cannot export module initializer with name '%s'"
+                            : "Cannot export function with name '%s'";
 
         USR_FATAL_CONT(fmt, sym->cname);
 
@@ -205,57 +199,54 @@ static void legalizeSymbolName(Symbol* sym) {
     }
   }
 
-  if (!sym->isRenameable())
-    return;
+  if (!sym->isRenameable()) return;
 
   // Everything is fine, set the new legalized name.
   sym->cname = newName;
 
   // Add chpl_ to operator names.
   if ((sym->cname[0] == '_' &&
-      (sym->cname[1] == '_' || (sym->cname[1] >= 'A' && sym->cname[1] <= 'Z'))))
-  {
+       (sym->cname[1] == '_' ||
+        (sym->cname[1] >= 'A' && sym->cname[1] <= 'Z')))) {
     sym->cname = astr("chpl__", sym->cname);
   }
 
   // Append number of array dimensions to polly_array_index
   // It helps Polly Optimizer to select the correct function
-  if (strcmp("polly_array_index",sym->name) == 0){
+  if (strcmp("polly_array_index", sym->name) == 0) {
     int numDims = (toFnSymbol(sym)->numFormals() - 1) / 2;
-    sym->cname = astr("polly_array_index_",istr(numDims));
+    sym->cname = astr("polly_array_index_", istr(numDims));
   }
 }
 
-static void
-genGlobalDefClassId(const char* cname, int id, bool isHeader) {
+static void genGlobalDefClassId(const char* cname, int id, bool isHeader) {
   GenInfo* info = gGenInfo;
   const char* id_type_name = "chpl__class_id";
   std::string name("chpl__cid_");
   name += cname;
 
-  if( info->cfile ) {
-    if(isHeader)
-      fprintf(info->cfile, "extern const %s %s;\n",
-                      id_type_name, name.c_str());
+  if (info->cfile) {
+    if (isHeader)
+      fprintf(info->cfile, "extern const %s %s;\n", id_type_name, name.c_str());
     else
-      fprintf(info->cfile, "const %s %s = %d;\n",
-                      id_type_name, name.c_str(), id);
+      fprintf(
+        info->cfile, "const %s %s = %d;\n", id_type_name, name.c_str(), id);
   } else {
 #ifdef HAVE_LLVM
-    if (!isHeader)
-      return;
+    if (!isHeader) return;
     GenRet id_type_g = CLASS_ID_TYPE->codegen();
-    llvm::Type *id_type = id_type_g.type;
-    llvm::GlobalVariable * gv = llvm::cast<llvm::GlobalVariable>(
-        info->module->getOrInsertGlobal(name, id_type));
+    llvm::Type* id_type = id_type_g.type;
+    llvm::GlobalVariable* gv = llvm::cast<llvm::GlobalVariable>(
+      info->module->getOrInsertGlobal(name, id_type));
     gv->setInitializer(info->irBuilder->getInt32(id));
     gv->setConstant(true);
-    info->lvt->addGlobalValue(name, gv, GEN_PTR, ! isSignedType(CLASS_ID_TYPE), CLASS_ID_TYPE);
+    info->lvt->addGlobalValue(
+      name, gv, GEN_PTR, !isSignedType(CLASS_ID_TYPE), CLASS_ID_TYPE);
 #endif
   }
 }
 static void
-genGlobalString(const char *cname, const char *value, bool isConstant=true) {
+genGlobalString(const char* cname, const char* value, bool isConstant = true) {
   GenInfo* info = gGenInfo;
   bool hasValue = value != nullptr;
   FILE* fp = info->cfile;
@@ -276,7 +267,8 @@ genGlobalString(const char *cname, const char *value, bool isConstant=true) {
 
       if (hasValue) {
         gVar->setInitializer(llvm::cast<llvm::GlobalVariable>(
-              new_CStringSymbol(value)->codegen().val)->getInitializer());
+                               new_CStringSymbol(value)->codegen().val)
+                               ->getInitializer());
       } else {
         gVar->setInitializer(llvm::Constant::getNullValue(llvmPtrType));
       }
@@ -290,25 +282,27 @@ genGlobalString(const char *cname, const char *value, bool isConstant=true) {
 }
 
 #ifdef HAVE_LLVM
-static void genGlobalRawString(const char *cname, std::string &value, size_t len) {
+static void
+genGlobalRawString(const char* cname, std::string& value, size_t len) {
   GenInfo* info = gGenInfo;
-  if( info->cfile ) {
+  if (info->cfile) {
     // TODO: Currently we don't have this codepath. Maybe one day we will. If so, we
     // will add escapes.
     INT_FATAL("Do not expect to see this codepath");
   } else {
-    if(gCodegenGPU == false) {
-      llvm::GlobalVariable *globalString = llvm::cast<llvm::GlobalVariable>(
-              info->module->getOrInsertGlobal(
-                      cname, getPointerType(info->module->getContext())));
+    if (gCodegenGPU == false) {
+      llvm::GlobalVariable* globalString =
+        llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(
+          cname, getPointerType(info->module->getContext())));
       auto globalStringIr = info->irBuilder->CreateGlobalString(value);
       trackLLVMValue(globalStringIr);
       llvm::Type* ty = nullptr;
       ty = globalStringIr->getValueType();
-      auto correctlyTypedValue = info->irBuilder->CreateConstInBoundsGEP2_32(
-        ty, globalStringIr, 0, 0);
+      auto correctlyTypedValue =
+        info->irBuilder->CreateConstInBoundsGEP2_32(ty, globalStringIr, 0, 0);
       trackLLVMValue(correctlyTypedValue);
-      globalString->setInitializer(llvm::cast<llvm::Constant>(correctlyTypedValue));
+      globalString->setInitializer(
+        llvm::cast<llvm::Constant>(correctlyTypedValue));
       globalString->setConstant(true);
       info->lvt->addGlobalValue(cname, globalString, GEN_PTR, true, dtStringC);
     }
@@ -319,70 +313,76 @@ static void genGlobalRawString(const char *cname, std::string &value, size_t len
 #ifdef HAVE_LLVM
 // this is currently only used for GPU compilation
 static void
-genGlobalVoidPtr(const char* cname, bool isHeader, bool isConstant=true) {
+genGlobalVoidPtr(const char* cname, bool isHeader, bool isConstant = true) {
   GenInfo* info = gGenInfo;
   auto voidPtrTy = getPointerType(info->module->getContext(), 1);
-  llvm::GlobalVariable *global = llvm::cast<llvm::GlobalVariable>(
-      info->module->getOrInsertGlobal(cname, voidPtrTy));
+  llvm::GlobalVariable* global = llvm::cast<llvm::GlobalVariable>(
+    info->module->getOrInsertGlobal(cname, voidPtrTy));
   global->setInitializer(llvm::Constant::getNullValue(voidPtrTy));
   global->setConstant(isConstant);
   info->lvt->addGlobalValue(cname, global, GEN_PTR, false, dtCVoidPtr);
 }
 #endif
 
-static void
-genGlobalInt(const char* cname, int value, bool isHeader,
-             bool isConstant=true) {
+static void genGlobalInt(const char* cname,
+                         int value,
+                         bool isHeader,
+                         bool isConstant = true) {
   GenInfo* info = gGenInfo;
-  if( info->cfile ) {
-    if(isHeader)
+  if (info->cfile) {
+    if (isHeader)
       fprintf(info->cfile, "extern const int %s;\n", cname);
     else
-    fprintf(info->cfile, "const int %s = %d;\n", cname, value);
+      fprintf(info->cfile, "const int %s = %d;\n", cname, value);
   } else {
 #ifdef HAVE_LLVM
-    llvm::GlobalVariable *globalInt = llvm::cast<llvm::GlobalVariable>(
-        info->module->getOrInsertGlobal(
-          cname, llvm::IntegerType::getInt32Ty(info->module->getContext())));
+    llvm::GlobalVariable* globalInt =
+      llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(
+        cname, llvm::IntegerType::getInt32Ty(info->module->getContext())));
     globalInt->setInitializer(info->irBuilder->getInt32(value));
     globalInt->setConstant(isConstant);
-    info->lvt->addGlobalValue(cname, globalInt, GEN_PTR, false, dtInt[INT_SIZE_32]);
+    info->lvt->addGlobalValue(
+      cname, globalInt, GEN_PTR, false, dtInt[INT_SIZE_32]);
 #endif
   }
 }
 
-void codegenGlobalInt64(const char* cname, int64_t value, bool isHeader,
+void codegenGlobalInt64(const char* cname,
+                        int64_t value,
+                        bool isHeader,
                         bool isConstant) {
   GenInfo* info = gGenInfo;
-  if( info->cfile ) {
-    if(isHeader)
+  if (info->cfile) {
+    if (isHeader)
       fprintf(info->cfile, "extern const int64_t %s;\n", cname);
     else
-    fprintf(info->cfile, "const int64_t %s = %" PRId64 ";\n", cname, value);
+      fprintf(info->cfile, "const int64_t %s = %" PRId64 ";\n", cname, value);
   } else {
 #ifdef HAVE_LLVM
-    llvm::GlobalVariable *globalInt = llvm::cast<llvm::GlobalVariable>(
-        info->module->getOrInsertGlobal(
-          cname, llvm::IntegerType::getInt64Ty(info->module->getContext())));
+    llvm::GlobalVariable* globalInt =
+      llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(
+        cname, llvm::IntegerType::getInt64Ty(info->module->getContext())));
     globalInt->setInitializer(info->irBuilder->getInt64(value));
     globalInt->setConstant(isConstant);
-    info->lvt->addGlobalValue(cname, globalInt, GEN_PTR, false, dtInt[INT_SIZE_64]);
+    info->lvt->addGlobalValue(
+      cname, globalInt, GEN_PTR, false, dtInt[INT_SIZE_64]);
 #endif
   }
 }
 
-static void genGlobalInt32(const char *cname, int value) {
-  GenInfo *info = gGenInfo;
+static void genGlobalInt32(const char* cname, int value) {
+  GenInfo* info = gGenInfo;
   if (info->cfile) {
     fprintf(info->cfile, "const int32_t %s = %d;\n", cname, value);
   } else {
 #ifdef HAVE_LLVM
-    llvm::GlobalVariable *globalInt =
-        llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(
-            cname, llvm::IntegerType::getInt32Ty(info->module->getContext())));
+    llvm::GlobalVariable* globalInt =
+      llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(
+        cname, llvm::IntegerType::getInt32Ty(info->module->getContext())));
     globalInt->setInitializer(info->irBuilder->getInt32(value));
     globalInt->setConstant(true);
-    info->lvt->addGlobalValue(cname, globalInt, GEN_PTR, false, dtInt[INT_SIZE_32]);
+    info->lvt->addGlobalValue(
+      cname, globalInt, GEN_PTR, false, dtInt[INT_SIZE_32]);
 #endif
   }
 }
@@ -390,26 +390,25 @@ static void genGlobalInt32(const char *cname, int value) {
 // this is currently only used for GPU compilation, and gets unused function
 // warnings without HAVE_LLVM
 #ifdef HAVE_LLVM
-static void genGlobalUInt64(const char *cname, uint64_t value) {
-  GenInfo *info = gGenInfo;
+static void genGlobalUInt64(const char* cname, uint64_t value) {
+  GenInfo* info = gGenInfo;
   if (info->cfile) {
     fprintf(info->cfile, "const uint64_t %s = %" PRIu64 ";\n", cname, value);
   } else {
 #ifdef HAVE_LLVM
-    llvm::GlobalVariable *globalInt =
-        llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(
-            cname, llvm::IntegerType::getInt64Ty(info->module->getContext())));
+    llvm::GlobalVariable* globalInt =
+      llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(
+        cname, llvm::IntegerType::getInt64Ty(info->module->getContext())));
     globalInt->setInitializer(info->irBuilder->getInt64(value));
     globalInt->setConstant(true);
-    info->lvt->addGlobalValue(cname, globalInt, GEN_PTR, false, dtInt[INT_SIZE_64]);
+    info->lvt->addGlobalValue(
+      cname, globalInt, GEN_PTR, false, dtInt[INT_SIZE_64]);
 #endif
   }
 }
 #endif
 
-static bool
-isObjectOrSubclass(Type* t)
-{
+static bool isObjectOrSubclass(Type* t) {
   if (AggregateType* ct = toAggregateType(t))
     if (!isReferenceType(ct) && isClass(ct) &&
         (ct == dtObject || ct->symbol->hasFlag(FLAG_OBJECT_CLASS) ||
@@ -419,8 +418,7 @@ isObjectOrSubclass(Type* t)
   return false;
 }
 
-static void
-genClassIDs(std::vector<TypeSymbol*> & typeSymbol, bool isHeader) {
+static void genClassIDs(std::vector<TypeSymbol*>& typeSymbol, bool isHeader) {
   genComment("Class Type Identification Numbers");
 
   forv_Vec(TypeSymbol, ts, typeSymbol) {
@@ -436,11 +434,10 @@ genClassIDs(std::vector<TypeSymbol*> & typeSymbol, bool isHeader) {
 
 struct compareSymbolFunctor {
   // This is really operator less-than
-  bool operator() (const Symbol* a, const Symbol* b) const {
+  bool operator()(const Symbol* a, const Symbol* b) const {
     return compareSymbol(a, b);
   }
 };
-
 
 // Visit class types in depth-first preorder order.
 // Assigns class IDs to classes in that order.
@@ -450,8 +447,8 @@ static void preorderVisitClassesComputeIds(TypeSymbol* ts, int* nextNumber) {
   children_set children;
 
   if (ts != NULL) {
-    AggregateType* at   = toAggregateType(ts->type);
-    int            myN1 = *nextNumber;
+    AggregateType* at = toAggregateType(ts->type);
+    int myN1 = *nextNumber;
 
     INT_ASSERT(at != NULL);
 
@@ -465,9 +462,8 @@ static void preorderVisitClassesComputeIds(TypeSymbol* ts, int* nextNumber) {
       }
     }
 
-    for (children_set::iterator it = children.begin();
-         it != children.end();
-         ++it ) {
+    for (children_set::iterator it = children.begin(); it != children.end();
+         ++it) {
       TypeSymbol* child = *it;
 
       preorderVisitClassesComputeIds(child, nextNumber);
@@ -485,7 +481,6 @@ static void assignClassIds() {
   gMaxClassId = next - 1;
 }
 
-
 // Computes a maximum ID of subclasses and stores that in n2.
 // Returns the maximum ID of a subclass.
 // This helps with Schubert numbering
@@ -493,9 +488,9 @@ static int computeMaxSubclass(TypeSymbol* ts, std::vector<int>& n2) {
   int retval = 0;
 
   if (ts != NULL) {
-    AggregateType* at    = toAggregateType(ts->type);
-    int            myId  = at->classId;
-    int            maxN1 = myId;
+    AggregateType* at = toAggregateType(ts->type);
+    int myId = at->classId;
+    int maxN1 = myId;
 
     forv_Vec(AggregateType, child, at->dispatchChildren) {
       if (child != NULL) {
@@ -507,28 +502,27 @@ static int computeMaxSubclass(TypeSymbol* ts, std::vector<int>& n2) {
       }
     }
 
-    if ((size_t) myId >= n2.size()) {
+    if ((size_t)myId >= n2.size()) {
       n2.resize(myId + 1);
     }
 
     // set n2 for node, which is max of this n1
     // and child n1s.
     n2[myId] = maxN1;
-    retval   = maxN1;
+    retval = maxN1;
   }
 
   return retval;
 }
 
-
-static void codegenGlobalConstArray(const char*          name,
-                                    const char*          eltType,
+static void codegenGlobalConstArray(const char* name,
+                                    const char* eltType,
                                     std::vector<GenRet>* vals,
-                                    bool                 isHeader) {
+                                    bool isHeader) {
   GenInfo* info = gGenInfo;
 
-  if(isHeader) {
-    if( info->cfile ) {
+  if (isHeader) {
+    if (info->cfile) {
       FILE* hdrfile = info->cfile;
       fprintf(hdrfile, "extern const %s %s[];\n", eltType, name);
     }
@@ -536,15 +530,14 @@ static void codegenGlobalConstArray(const char*          name,
   }
 
   // Now generate arrays
-  if( info->cfile ) {
+  if (info->cfile) {
     FILE* f = info->cfile;
     fprintf(f, "const %s %s[] = {\n", eltType, name);
     bool first = true;
-    std::vector<GenRet> & array = *vals;
+    std::vector<GenRet>& array = *vals;
     int n = array.size();
-    for(int i = 0; i < n; i++ ) {
-      if (!first)
-        fprintf(f, ",\n");
+    for (int i = 0; i < n; i++) {
+      if (!first) fprintf(f, ",\n");
       fprintf(f, "/* %d */ %s", i, array[i].c.c_str());
       first = false;
     }
@@ -552,34 +545,36 @@ static void codegenGlobalConstArray(const char*          name,
   } else {
 #ifdef HAVE_LLVM
 
-  llvm::Type *llvmEltType = getTypeLLVM(eltType);
+    llvm::Type* llvmEltType = getTypeLLVM(eltType);
 
-  INT_ASSERT(llvmEltType);
+    INT_ASSERT(llvmEltType);
 
-  std::vector<llvm::Constant *> table;
+    std::vector<llvm::Constant*> table;
 
-  std::vector<GenRet> & array = *vals;
-  int n = array.size();
-  table.resize(n);
-  for(int i = 0; i < n; i++ ) {
-    llvm::Value* val = array[i].val;
-    INT_ASSERT(val);
-    table[i] = llvm::cast<llvm::Constant>(val);
-  }
+    std::vector<GenRet>& array = *vals;
+    int n = array.size();
+    table.resize(n);
+    for (int i = 0; i < n; i++) {
+      llvm::Value* val = array[i].val;
+      INT_ASSERT(val);
+      table[i] = llvm::cast<llvm::Constant>(val);
+    }
 
-  llvm::ArrayType *tableType =
-    llvm::ArrayType::get(llvmEltType, table.size());
+    llvm::ArrayType* tableType =
+      llvm::ArrayType::get(llvmEltType, table.size());
 
-  if(llvm::GlobalVariable *globalTable = info->module->getNamedGlobal(name)) {
-    globalTable->eraseFromParent();
-  }
+    if (llvm::GlobalVariable* globalTable =
+          info->module->getNamedGlobal(name)) {
+      globalTable->eraseFromParent();
+    }
 
-  llvm::GlobalVariable *globalTable =llvm::cast<llvm::GlobalVariable>(
+    llvm::GlobalVariable* globalTable = llvm::cast<llvm::GlobalVariable>(
       info->module->getOrInsertGlobal(name, tableType));
-  globalTable->setInitializer(llvm::ConstantArray::get(tableType, table));
-  globalTable->setConstant(true);
+    globalTable->setInitializer(llvm::ConstantArray::get(tableType, table));
+    globalTable->setConstant(true);
 
-  info->lvt->addGlobalValue(name, globalTable, GEN_VAL, true, /* chplType=*/ nullptr);
+    info->lvt->addGlobalValue(
+      name, globalTable, GEN_VAL, true, /* chplType=*/nullptr);
 #endif
   }
 }
@@ -589,12 +584,11 @@ static void codegenGlobalConstArray(const char*          name,
 // See
 // "Implementing statically typed object-oriented programming languages",
 // by Roland Ducournau
-static void
-genSubclassArray(bool isHeader) {
+static void genSubclassArray(bool isHeader) {
   const char* eltType = "chpl__class_id";
   const char* name = "chpl_subclass_max_id";
 
-  if(isHeader) {
+  if (isHeader) {
     // Just pass NULL when generating header
     codegenGlobalConstArray(name, eltType, NULL, true);
     return;
@@ -606,24 +600,21 @@ genSubclassArray(bool isHeader) {
   computeMaxSubclass(dtObject->symbol, n2);
 
   // make sure n2 always contains at least 1 element
-  if (n2.empty())
-    n2.push_back(0);
+  if (n2.empty()) n2.push_back(0);
 
   // Construct the GenRet array of integers
   std::vector<GenRet> tmp;
-  for(size_t i = 0; i < n2.size(); i++) {
-    tmp.push_back( new_IntSymbol(n2[i], INT_SIZE_32)->codegen() );
+  for (size_t i = 0; i < n2.size(); i++) {
+    tmp.push_back(new_IntSymbol(n2[i], INT_SIZE_32)->codegen());
   }
 
   // Now emit the global array declaration
   codegenGlobalConstArray(name, eltType, &tmp, false);
 }
 
-
 // Returns the type, in .c or .type field, for the passed name.
 // The type_name typically refers to something defined in the runtime.
-GenRet codegenTypeByName(const char* type_name)
-{
+GenRet codegenTypeByName(const char* type_name) {
   GenInfo* info = gGenInfo;
 
   GenRet ret;
@@ -637,13 +628,9 @@ GenRet codegenTypeByName(const char* type_name)
   return ret;
 }
 
-
-
 // codegenTypedNull takes in the pointer type
 // (.c string or .type for LLVM) and generates NULL of that type.
-static
-GenRet codegenTypedNull(GenRet funcPtrType)
-{
+static GenRet codegenTypedNull(GenRet funcPtrType) {
   GenInfo* info = gGenInfo;
 
   GenRet nullFn;
@@ -661,9 +648,7 @@ GenRet codegenTypedNull(GenRet funcPtrType)
 }
 
 #ifdef HAVE_LLVM
-static
-llvm::Constant* codegenStringForTableLLVM(std::string s)
-{
+static llvm::Constant* codegenStringForTableLLVM(std::string s) {
   llvm::Constant* ret;
   GenRet str = new_CStringSymbol(s.c_str())->codegen();
   ret = llvm::cast<llvm::GlobalVariable>(str.val)->getInitializer();
@@ -671,10 +656,8 @@ llvm::Constant* codegenStringForTableLLVM(std::string s)
 }
 #endif
 
-static
-GenRet codegenStringForTable(std::string s)
-{
-  GenInfo *info = gGenInfo;
+static GenRet codegenStringForTable(std::string s) {
+  GenInfo* info = gGenInfo;
 
   GenRet ret;
   if (info->cfile) {
@@ -687,9 +670,7 @@ GenRet codegenStringForTable(std::string s)
   return ret;
 }
 
-
-static void
-genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
+static void genFtable(std::vector<FnSymbol*>& fSymbols, bool isHeader) {
   GenInfo* info = gGenInfo;
 
   // TODO: Change this to be 'void*' instead.
@@ -721,7 +702,7 @@ genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
     } else {
 #ifdef HAVE_LLVM
       INT_ASSERT(funcPtrType.type);
-      llvm::Function *func = getFunctionLLVM(fn->cname);
+      llvm::Function* func = getFunctionLLVM(fn->cname);
       gen.val = info->irBuilder->CreatePointerCast(func, funcPtrType.type);
       trackLLVMValue(gen.val);
 #endif
@@ -740,14 +721,13 @@ genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   codegenGlobalInt64(ftableSizeName, ftable.size(), false);
 }
 
-static void
-genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
+static void genFinfo(std::vector<FnSymbol*>& fSymbols, bool isHeader) {
   GenInfo* info = gGenInfo;
 
   const char* eltType = "chpl_fn_info";
   const char* name = "chpl_finfo";
 
-  if(isHeader) {
+  if (isHeader) {
     // Just pass NULL when generating header
     codegenGlobalConstArray(name, eltType, NULL, true);
     return;
@@ -757,12 +737,11 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   GenRet structType = codegenTypeByName(eltType);
 
 #ifdef HAVE_LLVM
-  llvm::Type *int32Ty = NULL;
+  llvm::Type* int32Ty = NULL;
   if (!info->cfile) {
     int32Ty = llvm::IntegerType::getInt32Ty(info->module->getContext());
   }
 #endif
-
 
   // Construct the table elements
   std::vector<GenRet> finfo;
@@ -776,12 +755,11 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
     // compute the maximum file name length
     forv_Vec(FnSymbol, fn, fSymbols) {
       int len = strlen(fn->cname);
-      if (len > buf_len)
-        buf_len = len;
+      if (len > buf_len) buf_len = len;
     }
     // and then add 100 for two integers and punctuation
     buf_len += 100;
-    buf = (char*) malloc(buf_len);
+    buf = (char*)malloc(buf_len);
   }
 
   forv_Vec(FnSymbol, fn, fSymbols) {
@@ -792,9 +770,9 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
     GenRet gen;
 
     if (info->cfile) {
-      int rc = snprintf(buf, buf_len,
-                        "{\"%s\", %d, %d}", fn_name, fileno, lineno);
-      INT_ASSERT( rc < buf_len ); // assert output not truncated
+      int rc =
+        snprintf(buf, buf_len, "{\"%s\", %d, %d}", fn_name, fileno, lineno);
+      INT_ASSERT(rc < buf_len); // assert output not truncated
       gen.c = buf;
     } else {
 #ifdef HAVE_LLVM
@@ -829,12 +807,12 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   codegenGlobalConstArray(name, eltType, &finfo, false);
 }
 
-static void
-genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
+static void genVirtualMethodTable(std::vector<TypeSymbol*>& types,
+                                  bool isHeader) {
   GenInfo* info = gGenInfo;
   const char* vmt = "chpl_vmtable";
   const char* eltType = "chpl_fn_p";
-  if(isHeader) {
+  if (isHeader) {
     codegenGlobalConstArray(vmt, eltType, NULL, true);
     return;
   }
@@ -851,8 +829,7 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
     if (AggregateType* ct = toAggregateType(ts->type))
       if (isObjectOrSubclass(ct))
         if (Vec<FnSymbol*>* vfns = virtualMethodTable.get(ct))
-          if (vfns->n > maxVMT)
-            maxVMT = vfns->n;
+          if (vfns->n > maxVMT) maxVMT = vfns->n;
   }
   gMaxVMT = maxVMT;
 
@@ -881,7 +858,7 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
 
               GenRet fnAddress;
 
-              if( info->cfile ) {
+              if (info->cfile) {
                 fnAddress.c = "(" + funcPtrType.c + ")";
                 fnAddress.c += vfn->cname;
                 if (fGenIDS) {
@@ -892,14 +869,14 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
               } else {
 #ifdef HAVE_LLVM
                 INT_ASSERT(funcPtrType.type);
-                llvm::Function *func = getFunctionLLVM(vfn->cname);
-                fnAddress.val = info->irBuilder->CreatePointerCast(func, funcPtrType.type);
+                llvm::Function* func = getFunctionLLVM(vfn->cname);
+                fnAddress.val =
+                  info->irBuilder->CreatePointerCast(func, funcPtrType.type);
                 trackLLVMValue(fnAddress.val);
 #endif
               }
 
-              if (vmt_elts.size() <= (size_t) index)
-                vmt_elts.resize(index+1);
+              if (vmt_elts.size() <= (size_t)index) vmt_elts.resize(index + 1);
 
               vmt_elts[index] = fnAddress;
 
@@ -918,14 +895,13 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
     }
   }
 
-
   codegenGlobalConstArray(vmt, eltType, &vmt_elts, false);
 }
 
 static void genFilenameTable() {
-  const char *name = "chpl_filenameTable";
-  const char *sizeName = "chpl_filenameTableSize";
-  const char *eltType = dtStringC->symbol->cname;
+  const char* name = "chpl_filenameTable";
+  const char* sizeName = "chpl_filenameTableSize";
+  const char* eltType = dtStringC->symbol->cname;
 
   GenRet cstringType = codegenTypeByName(eltType);
 
@@ -939,9 +915,9 @@ static void genFilenameTable() {
     auto& path = (*it);
     std::string genPath;
 
-    if(!strncmp(CHPL_HOME.c_str(), path.c_str(), CHPL_HOME.length())) {
+    if (!strncmp(CHPL_HOME.c_str(), path.c_str(), CHPL_HOME.length())) {
       genPath = "$CHPL_HOME";
-      genPath += (path.c_str()+CHPL_HOME.length());
+      genPath += (path.c_str() + CHPL_HOME.length());
     } else {
       genPath = path;
     }
@@ -986,9 +962,9 @@ class UnwindTable {
     return true;
   }
 
-public:
+ public:
   UnwindTable() = default;
- ~UnwindTable() = default;
+  ~UnwindTable() = default;
 
   static UnwindTable create(Vec<FnSymbol*>& vec) {
     UnwindTable ret;
@@ -1023,7 +999,7 @@ public:
       auto fn = lastNonExternFn ? lastNonExternFn : lastExternFn;
       bool canRename = !fn->hasFlag(FLAG_EXTERN) || numExtern == 1;
 
-      if (shouldAddToTable(fn)) ret.table_.push_back({ fn, canRename });
+      if (shouldAddToTable(fn)) ret.table_.push_back({fn, canRename});
     }
 
     return ret;
@@ -1069,11 +1045,8 @@ public:
     return ret;
   }
 
-  size_t size() const {
-    return table_.size();
-  }
+  size_t size() const { return table_.size(); }
 };
-
 
 //
 // This adds the Chapel symbol table to the config file
@@ -1083,18 +1056,18 @@ public:
 // chpl_funSymTable     = cname, Chapel name
 // chpl_filenumSymTable = Chapel file name index, Chapel line number
 //
-static void genUnwindSymbolTable(){
+static void genUnwindSymbolTable() {
   UnwindTable unwindTable;
 
   //If CHPL_UNWIND is none we don't want any symbols in our tables
-  if(strcmp(CHPL_UNWIND, "none") != 0){
+  if (strcmp(CHPL_UNWIND, "none") != 0) {
     unwindTable = UnwindTable::create(gFnSymbols);
   }
 
   // Generate the cname, Chapel name table
   {
-    const char *name = "chpl_funSymTable";
-    const char *eltType = dtStringC->symbol->cname;
+    const char* name = "chpl_funSymTable";
+    const char* eltType = dtStringC->symbol->cname;
 
     // Compute the element type
     GenRet cstringType = codegenTypeByName(eltType);
@@ -1107,8 +1080,8 @@ static void genUnwindSymbolTable(){
 
   // Generate the filename index, linenum table
   {
-    const char *name = "chpl_filenumSymTable";
-    const char *eltType = "c_int";
+    const char* name = "chpl_filenumSymTable";
+    const char* eltType = "c_int";
 
     // Compute the element type
     GenRet cintType = codegenTypeByName(eltType);
@@ -1123,12 +1096,11 @@ static void genUnwindSymbolTable(){
   genGlobalInt32("chpl_sizeSymTable", unwindTable.size() * 2);
 }
 
-static void
-genClassNames(std::vector<TypeSymbol*> & typeSymbol, bool isHeader) {
+static void genClassNames(std::vector<TypeSymbol*>& typeSymbol, bool isHeader) {
   const char* eltType = dtStringC->symbol->cname;
   const char* name = "chpl_classNames";
 
-  if(isHeader) {
+  if (isHeader) {
     // Just pass NULL when generating header
     codegenGlobalConstArray(name, eltType, NULL, true);
     return;
@@ -1141,18 +1113,16 @@ genClassNames(std::vector<TypeSymbol*> & typeSymbol, bool isHeader) {
       if (isObjectOrSubclass(ct)) {
         int id = ct->classId;
         INT_ASSERT(id > 0);
-        if (id >= (int)names.size())
-          names.resize(id+1, NULL);
+        if (id >= (int)names.size()) names.resize(id + 1, NULL);
         names[id] = ts->name;
       }
     }
   }
 
   std::vector<GenRet> tmp;
-  for(size_t i = 0; i < names.size(); i++) {
+  for (size_t i = 0; i < names.size(); i++) {
     const char* name = names[i];
-    if (name == NULL)
-      name = "";
+    if (name == NULL) name = "";
     tmp.push_back(codegenStringForTable(name));
   }
 
@@ -1160,18 +1130,14 @@ genClassNames(std::vector<TypeSymbol*> & typeSymbol, bool isHeader) {
   codegenGlobalConstArray(name, eltType, &tmp, false);
 }
 
-
-static bool
-compareSymbol(const void* v1, const void* v2) {
+static bool compareSymbol(const void* v1, const void* v2) {
   Symbol* s1 = (Symbol*)v1;
   Symbol* s2 = (Symbol*)v2;
   ModuleSymbol* m1 = s1->getModule();
   ModuleSymbol* m2 = s2->getModule();
   if (m1 != m2) {
-    if (m1->modTag < m2->modTag)
-      return 1;
-    if (m1->modTag > m2->modTag)
-      return 0;
+    if (m1->modTag < m2->modTag) return 1;
+    if (m1->modTag > m2->modTag) return 0;
     return strcmp(m1->cname, m2->cname) < 0;
   }
 
@@ -1180,32 +1146,26 @@ compareSymbol(const void* v1, const void* v2) {
   // extern and non-externs are identified does not match the old parser.
   // this keeps things consistent between the old and new parser
   if (s1->hasFlag(FLAG_EXTERN) != s2->hasFlag(FLAG_EXTERN)) {
-    if (s1->hasFlag(FLAG_EXTERN))
-      return 1;
+    if (s1->hasFlag(FLAG_EXTERN)) return 1;
     return 0;
   }
 
-  if (s1->linenum() != s2->linenum())
-    return s1->linenum() < s2->linenum();
+  if (s1->linenum() != s2->linenum()) return s1->linenum() < s2->linenum();
 
   int result = strcmp(s1->type->symbol->cname, s2->type->symbol->cname);
-  if (!result)
-    result = strcmp(s1->cname, s2->cname);
+  if (!result) result = strcmp(s1->cname, s2->cname);
 
   return result < 0;
 }
 
-static int
-compareSymbol2(const void* v1, const void* v2) {
-  Symbol* s1 = *(Symbol* const *)v1;
-  Symbol* s2 = *(Symbol* const *)v2;
+static int compareSymbol2(const void* v1, const void* v2) {
+  Symbol* s1 = *(Symbol* const*)v1;
+  Symbol* s2 = *(Symbol* const*)v2;
   ModuleSymbol* m1 = s1->getModule();
   ModuleSymbol* m2 = s2->getModule();
   if (m1 != m2) {
-    if (m1->modTag < m2->modTag)
-      return -1;
-    if (m1->modTag > m2->modTag)
-      return 1;
+    if (m1->modTag < m2->modTag) return -1;
+    if (m1->modTag > m2->modTag) return 1;
     return strcmp(m1->cname, m2->cname);
   }
 
@@ -1213,8 +1173,7 @@ compareSymbol2(const void* v1, const void* v2) {
     return (s1->linenum() < s2->linenum()) ? -1 : 1;
 
   int result = strcmp(s1->type->symbol->cname, s2->type->symbol->cname);
-  if (!result)
-    result = strcmp(s1->cname, s2->cname);
+  if (!result) result = strcmp(s1->cname, s2->cname);
   return result;
 }
 
@@ -1240,7 +1199,7 @@ static int uniquifyNameNextCount(MapElem<const char*, int>*& elem,
                                  const char* name) {
   if (!elem) {
     elem = uniquifyNameCounts.get_record(name);
-    if (!elem) {  // The first time we see 'name'.
+    if (!elem) { // The first time we see 'name'.
       uniquifyNameCounts.put(name, 2);
       return 2;
     }
@@ -1250,31 +1209,29 @@ static int uniquifyNameNextCount(MapElem<const char*, int>*& elem,
 
 static void uniquifyName(Symbol* sym,
                          std::set<const char*>* set1,
-                         std::set<const char*>* set2 = NULL)
-{
+                         std::set<const char*>* set2 = NULL) {
   const char* name = sym->cname;
   const char* newName = name;
 
-  if (sym->isRenameable())
-  {
+  if (sym->isRenameable()) {
     if (fMaxCIdentLen > 0 &&
-        (int)(strlen(newName) + maxCNameAddedChars) > fMaxCIdentLen)
-    {
+        (int)(strlen(newName) + maxCNameAddedChars) > fMaxCIdentLen) {
       // how much of the name to preserve
-      int prefixLen = fMaxCIdentLen - maxUniquifyAddedChars - maxCNameAddedChars;
+      int prefixLen =
+        fMaxCIdentLen - maxUniquifyAddedChars - maxCNameAddedChars;
       if (!longCNameReplacementBuffer) {
-        longCNameReplacementBuffer = (char*)malloc(prefixLen+1);
+        longCNameReplacementBuffer = (char*)malloc(prefixLen + 1);
         longCNameReplacementBuffer[prefixLen] = '\0';
       }
       strncpy(longCNameReplacementBuffer, newName, prefixLen);
       INT_ASSERT(longCNameReplacementBuffer[prefixLen] == '\0');
-      longCNameReplacementBuffer[prefixLen-1] = 'X'; //fyi truncation marker
+      longCNameReplacementBuffer[prefixLen - 1] = 'X'; //fyi truncation marker
       name = newName = astr(longCNameReplacementBuffer);
     }
 
     MapElem<const char*, int>* elem = NULL;
-    while ((set1->find(newName)!=set1->end()) ||
-           (set2 && (set2->find(newName)!=set2->end()))) {
+    while ((set1->find(newName) != set1->end()) ||
+           (set2 && (set2->find(newName) != set2->end()))) {
       char numberTmp[64];
       snprintf(numberTmp, 64, "%d", uniquifyNameNextCount(elem, name));
       if (fIdBasedMunging && !isVarSymbol(sym)) {
@@ -1287,9 +1244,7 @@ static void uniquifyName(Symbol* sym,
     }
 
     sym->cname = newName;
-  }
-  else
-  {
+  } else {
     // If we have already seen this name before, we need to go back
     // to that earlier-seen symbol, either renaming it or checking
     // that its type is the same. See also #9299.
@@ -1302,7 +1257,7 @@ static void uniquifyName(Symbol* sym,
     // be it a (possibly generic) function, type, variable.
     // Ex.: c_pointer_return, qbuffer_ptr_t, QBUFFER_PTR_NULL.
     //
-    if (set2 && (set1->find(name) != set1->end()) )
+    if (set2 && (set1->find(name) != set1->end()))
       INT_FATAL(sym, "name conflict with a non-renameable symbol");
   }
 
@@ -1311,29 +1266,28 @@ static void uniquifyName(Symbol* sym,
   set1->insert(newName);
 }
 
-static inline bool shouldCodegenAggregate(AggregateType* ct)
-{
+static inline bool shouldCodegenAggregate(AggregateType* ct) {
   // never codegen definitions of primitive or arithmetic types.
-  if( toPrimitiveType(ct) ) return false;
+  if (toPrimitiveType(ct)) return false;
 
   // Don't codegen types with FLAG_NO_CODEGEN.  This is used for
   // types that are defined in the runtime for example.
-  if( ct->symbol->hasFlag(FLAG_NO_CODEGEN) ) return false;
+  if (ct->symbol->hasFlag(FLAG_NO_CODEGEN)) return false;
 
   // Don't visit classes since they are prototyped individually all at once..
   // ..except for classes with FLAG_REF or FLAG_DATA_CLASS.. which
   //   we do visit.
-  if( isClass(ct) ) { // is it actually a class?
-    if( ct->symbol->hasFlag(FLAG_REF) ||
-        ct->symbol->hasFlag(FLAG_WIDE_REF) ||
-        ct->symbol->hasFlag(FLAG_DATA_CLASS)) return true;
-    else return false;
+  if (isClass(ct)) { // is it actually a class?
+    if (ct->symbol->hasFlag(FLAG_REF) || ct->symbol->hasFlag(FLAG_WIDE_REF) ||
+        ct->symbol->hasFlag(FLAG_DATA_CLASS))
+      return true;
+    else
+      return false;
   }
 
   // otherwise, visit record/union
   return true;
 }
-
 
 static void codegen_aggregate_def(AggregateType* ct) {
   //DFS, check visited
@@ -1344,11 +1298,11 @@ static void codegen_aggregate_def(AggregateType* ct) {
   // For reference or data class types, first generate
   // the referenced type
   Type* vt = NULL;
-  if(ct->symbol->hasFlag(FLAG_REF))
+  if (ct->symbol->hasFlag(FLAG_REF))
     vt = ct->symbol->getValType();
-  else if(ct->symbol->hasFlag(FLAG_DATA_CLASS))
+  else if (ct->symbol->hasFlag(FLAG_DATA_CLASS))
     vt = getDataClassType(ct->symbol)->typeInfo();
-  else if(ct->symbol->hasFlag(FLAG_C_ARRAY))
+  else if (ct->symbol->hasFlag(FLAG_C_ARRAY))
     vt = ct->cArrayElementType();
   if (vt) {
     if (AggregateType* fct = toAggregateType(vt)) {
@@ -1377,9 +1331,10 @@ static void genConfigGlobalsAndAbout() {
 
   // if we are running as compiler-driver, retrieve compile command saved to tmp
   if (!fDriverDoMonolithic) {
-    restoreDriverTmp(compileCommandFilename, [](std::string_view restoredCommand) {
-      compileCommand = astr(restoredCommand);
-    });
+    restoreDriverTmp(compileCommandFilename,
+                     [](std::string_view restoredCommand) {
+                       compileCommand = astr(restoredCommand);
+                     });
     restoreDriverTmp(compileEnvsFilename, [](std::string_view restoredEnvs) {
       compileEnvs = astr(restoredEnvs);
     });
@@ -1391,7 +1346,7 @@ static void genConfigGlobalsAndAbout() {
   genGlobalString("chpl_executionCommand", nullptr, /**isConstant*/ false);
 
   if (!saveCDir.empty()) {
-    char *actualPath = realpath(saveCDir.c_str(), NULL);
+    char* actualPath = realpath(saveCDir.c_str(), NULL);
     genGlobalString("chpl_saveCDir", actualPath);
   } else {
     genGlobalString("chpl_saveCDir", "");
@@ -1403,7 +1358,7 @@ static void genConfigGlobalsAndAbout() {
   genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote, false);
   genGlobalInt("CHPL_INTERLEAVE_MEM", fEnableMemInterleaving, false);
 
-  for (const auto& env: envMap) {
+  for (const auto& env : envMap) {
     if (env.first != "CHPL_HOME") {
       genGlobalString(env.first.c_str(), env.second);
     }
@@ -1420,17 +1375,16 @@ static void genConfigGlobalsAndAbout() {
       programAboutType = programAboutFunc->getFunctionType();
     } else {
       programAboutType = llvm::FunctionType::get(
-        llvm::Type::getVoidTy(info->module->getContext()), false
-      );
-      programAboutFunc = llvm::Function::Create(
-        programAboutType, llvm::Function::ExternalLinkage, "chpl_program_about", info->module
-      );
+        llvm::Type::getVoidTy(info->module->getContext()), false);
+      programAboutFunc = llvm::Function::Create(programAboutType,
+                                                llvm::Function::ExternalLinkage,
+                                                "chpl_program_about",
+                                                info->module);
       trackLLVMValue(programAboutFunc);
     }
 
     llvm::BasicBlock* programAboutBlock = llvm::BasicBlock::Create(
-      info->module->getContext(), "entry", programAboutFunc
-    );
+      info->module->getContext(), "entry", programAboutFunc);
     trackLLVMValue(programAboutBlock);
     info->irBuilder->SetInsertPoint(programAboutBlock);
 #endif
@@ -1444,7 +1398,7 @@ static void genConfigGlobalsAndAbout() {
   codegenCallPrintf(astr("Chapel compiler version: ", compileVersion, "\\n"));
   codegenCallPrintf("Chapel environment:\\n");
   codegenCallPrintf(astr("  CHPL_HOME: ", CHPL_HOME.c_str(), "\\n"));
-  for (const auto& env: envMap) {
+  for (const auto& env : envMap) {
     if (env.first != "CHPL_HOME") {
       codegenCallPrintf(astr("  ", env.first.c_str(), ": ", env.second, "\\n"));
     }
@@ -1484,11 +1438,11 @@ static void codegen_header_compilation_config() {
 
   GenInfo* info = gGenInfo;
   FILE* save_cfile = info->cfile;
-  fileinfo cfgfile = { NULL, NULL, NULL };
+  fileinfo cfgfile = {NULL, NULL, NULL};
 
   if (fLlvmCodegen) {
     info->cfile = NULL;
-    if ( gCodegenGPU == false ) {
+    if (gCodegenGPU == false) {
       genConfigGlobalsAndAbout();
       genFunctionTables();
     }
@@ -1510,8 +1464,7 @@ static void codegen_header_compilation_config() {
 }
 
 static void protectNameFromC(Symbol* sym) {
-  if (fIdBasedMunging)
-    return;
+  if (fIdBasedMunging) return;
 
   //
   // Symbols that start with 'chpl_' were presumably named by the
@@ -1590,8 +1543,8 @@ static bool errorIfGlobalDefinedLlvm(const char* name) {
     if (auto gVar = llvm::cast_or_null<llvm::GlobalVariable>(gGet)) {
       bool isDeclaration = gVar->isDeclaration();
       bool hasInitializer = gVar->hasInitializer();
-      bool hasExternalLinkage = gVar->getLinkage() ==
-                                llvm::GlobalValue::ExternalLinkage;
+      bool hasExternalLinkage =
+        gVar->getLinkage() == llvm::GlobalValue::ExternalLinkage;
 
       if (!isDeclaration || hasInitializer || !hasExternalLinkage) {
         // NOTE: No code should be defining this. It is possible for the
@@ -1617,10 +1570,8 @@ static bool errorIfGlobalDefinedLlvm(const char* name) {
 // uses of) the old global. In later versions of LLVM there is a method to
 // do this called 'replaceInitializer', but we don't seem to have that yet.
 // I cannot reimplement it 1-to-1 since it uses private/protected state.
-static llvm::GlobalVariable*
-replaceGlobalInitializerLlvm(llvm::GlobalVariable* global,
-                             llvm::Type* type,
-                             llvm::Constant* init) {
+static llvm::GlobalVariable* replaceGlobalInitializerLlvm(
+  llvm::GlobalVariable* global, llvm::Type* type, llvm::Constant* init) {
   // Copy the name into a 'std::string' because we will use it later.
   std::string name = global->getName().str();
 
@@ -1654,10 +1605,11 @@ replaceGlobalInitializerLlvm(llvm::GlobalVariable* global,
 }
 
 // If 'entries' is non-empty, use 'entries.size()'. Otherwise use 'size'.
-static void
-buildGlobalArrayLlvm(const char* name, llvm::Type* eltType, size_t size,
-                     const std::vector<llvm::Constant*>& entries,
-                     bool isConstant) {
+static void buildGlobalArrayLlvm(const char* name,
+                                 llvm::Type* eltType,
+                                 size_t size,
+                                 const std::vector<llvm::Constant*>& entries,
+                                 bool isConstant) {
   auto info = gGenInfo;
   auto mod = info->module;
   bool hasEntries = !entries.empty();
@@ -1697,7 +1649,8 @@ static void genGlobalSerializeTable(GenInfo* info) {
   FILE* hdrfile = info->cfile;
   std::vector<CallExpr*> serializeCalls;
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isResolved() && call->resolvedFunction()->hasFlag(FLAG_BROADCAST_FN)) {
+    if (call->isResolved() &&
+        call->resolvedFunction()->hasFlag(FLAG_BROADCAST_FN)) {
       SymExpr* se = toSymExpr(call->get(2));
       INT_ASSERT(se != NULL);
 
@@ -1705,15 +1658,15 @@ static void genGlobalSerializeTable(GenInfo* info) {
       INT_ASSERT(imm && imm->isImmediate());
       uint64_t idx = imm->immediate->int_value();
 
-      if (idx+1 > serializeCalls.size()) {
-        serializeCalls.resize(idx+1);
+      if (idx + 1 > serializeCalls.size()) {
+        serializeCalls.resize(idx + 1);
       }
 
       serializeCalls[idx] = call;
     }
   }
 
-  if( hdrfile ) {
+  if (hdrfile) {
     fprintf(hdrfile, "\nvoid* const chpl_global_serialize_table[] = {");
     if (serializeCalls.size() == 0) {
       // Quiet PGI warning about empty initializer
@@ -1743,8 +1696,7 @@ static void genGlobalSerializeTable(GenInfo* info) {
       INT_ASSERT(se);
 
       auto ptrCast = info->irBuilder->CreatePointerCast(
-                             info->lvt->getValue(se->symbol()->cname).val,
-                             eltType);
+        info->lvt->getValue(se->symbol()->cname).val, eltType);
       trackLLVMValue(ptrCast);
       entries.push_back(llvm::cast<llvm::Constant>(ptrCast));
     }
@@ -1755,8 +1707,10 @@ static void genGlobalSerializeTable(GenInfo* info) {
 }
 
 // TODO: Split this into a number of smaller routines.<hilde>
-static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*> & types,
-  std::vector<FnSymbol*> & functions, std::vector<VarSymbol*> & globals) {
+static void codegen_defn(std::set<const char*>& cnames,
+                         std::vector<TypeSymbol*>& types,
+                         std::vector<FnSymbol*>& functions,
+                         std::vector<VarSymbol*>& globals) {
   GenInfo* info = gGenInfo;
   FILE* hdrfile = info->cfile;
 
@@ -1771,7 +1725,7 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
   genComment("Virtual Method Table");
   genVirtualMethodTable(types, false);
 
-  if(fIncrementalCompilation) {
+  if (fIncrementalCompilation) {
     genComment("Global Variables");
     forv_Vec(VarSymbol, varSymbol, globals) {
       varSymbol->codegenGlobalDef(false);
@@ -1788,15 +1742,16 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
 
   genGlobalInt("chpl_numGlobalsOnHeap", numGlobalsOnHeap, false);
   int globals_registry_static_size = (numGlobalsOnHeap ? numGlobalsOnHeap : 1);
-  if( hdrfile ) {
-    fprintf(hdrfile, "\nptr_wide_ptr_t chpl_globals_registry[%d];\n",
-                      globals_registry_static_size);
+  if (hdrfile) {
+    fprintf(hdrfile,
+            "\nptr_wide_ptr_t chpl_globals_registry[%d];\n",
+            globals_registry_static_size);
   } else {
-    #ifdef HAVE_LLVM
-          return; // Nothing in remainder of function should be done twice for LLVM
-    #endif
+#ifdef HAVE_LLVM
+    return; // Nothing in remainder of function should be done twice for LLVM
+#endif
   }
-  if( hdrfile ) {
+  if (hdrfile) {
     fprintf(hdrfile, "\nconst char* const chpl_mem_descs[] = {\n");
     bool first = true;
     if (memDescsVec.n == 0) {
@@ -1804,8 +1759,7 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
       fprintf(hdrfile, "\nNULL,");
     } else {
       forv_Vec(const char*, memDesc, memDescsVec) {
-        if (!first)
-          fprintf(hdrfile, ",\n");
+        if (!first) fprintf(hdrfile, ",\n");
         fprintf(hdrfile, "\"%s\"", memDesc);
         first = false;
       }
@@ -1818,7 +1772,7 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
   //
   // add table of private-broadcast constants
   //
-  if( hdrfile ) {
+  if (hdrfile) {
     fprintf(hdrfile, "\nvoid* const chpl_private_broadcast_table[] = {\n");
     int i = 0;
     forv_Vec(CallExpr, call, gCallExprs) {
@@ -1826,8 +1780,7 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
         SymExpr* se = toSymExpr(call->get(1));
         INT_ASSERT(se);
         SET_LINENO(call);
-        fprintf(hdrfile, "%s&%s",
-                ((i == 0) ? "" : ",\n"), se->symbol()->cname);
+        fprintf(hdrfile, "%s&%s", ((i == 0) ? "" : ",\n"), se->symbol()->cname);
         // To preserve operand order, this should be insertAtTail.
         // The change must also be made below (for LLVM) and in the signature
         // of chpl_comm_broadcast_private().
@@ -1844,10 +1797,10 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
   }
 }
 
-static void uniquify_names(std::set<const char*> & cnames,
-                           std::vector<TypeSymbol*> & types,
-                           std::vector<FnSymbol*> & functions,
-                           std::vector<VarSymbol*> & globals) {
+static void uniquify_names(std::set<const char*>& cnames,
+                           std::vector<TypeSymbol*>& types,
+                           std::vector<FnSymbol*>& functions,
+                           std::vector<VarSymbol*>& globals) {
   // reserved symbol names that require renaming to compile
 #include "reservedSymbolNames.h"
 
@@ -1883,45 +1836,25 @@ static void uniquify_names(std::set<const char*> & cnames,
   }
   std::sort(functions.begin(), functions.end(), compareSymbol);
 
-
   //
   // by default, mangle all Chapel symbols to avoid clashing with C
   // identifiers.  To disable, compile with --no-munge-user-idents
   //
   if (fMungeUserIdents && !fIdBasedMunging) {
-    forv_Vec(ModuleSymbol, sym, gModuleSymbols) {
-      protectNameFromC(sym);
-    }
-    forv_Vec(VarSymbol, sym, gVarSymbols) {
-      protectNameFromC(sym);
-    }
-    forv_Vec(ShadowVarSymbol, sym, gShadowVarSymbols) {
-      protectNameFromC(sym);
-    }
-    forv_Vec(ArgSymbol, sym, gArgSymbols) {
-      protectNameFromC(sym);
-    }
-    forv_Vec(TypeSymbol, sym, gTypeSymbols) {
-      protectNameFromC(sym);
-    }
-    forv_Vec(FnSymbol, sym, gFnSymbols) {
-      protectNameFromC(sym);
-    }
-    forv_Vec(EnumSymbol, sym, gEnumSymbols) {
-      protectNameFromC(sym);
-    }
-    forv_Vec(LabelSymbol, sym, gLabelSymbols) {
-      protectNameFromC(sym);
-    }
+    forv_Vec(ModuleSymbol, sym, gModuleSymbols) { protectNameFromC(sym); }
+    forv_Vec(VarSymbol, sym, gVarSymbols) { protectNameFromC(sym); }
+    forv_Vec(ShadowVarSymbol, sym, gShadowVarSymbols) { protectNameFromC(sym); }
+    forv_Vec(ArgSymbol, sym, gArgSymbols) { protectNameFromC(sym); }
+    forv_Vec(TypeSymbol, sym, gTypeSymbols) { protectNameFromC(sym); }
+    forv_Vec(FnSymbol, sym, gFnSymbols) { protectNameFromC(sym); }
+    forv_Vec(EnumSymbol, sym, gEnumSymbols) { protectNameFromC(sym); }
+    forv_Vec(LabelSymbol, sym, gLabelSymbols) { protectNameFromC(sym); }
   }
-
 
   //
   // mangle type names if they clash with other types
   //
-  forv_Vec(TypeSymbol, ts, types) {
-    uniquifyName(ts, &cnames);
-  }
+  forv_Vec(TypeSymbol, ts, types) { uniquifyName(ts, &cnames); }
   uniquifyNameCounts.clear();
 
   //
@@ -1961,18 +1894,14 @@ static void uniquify_names(std::set<const char*> & cnames,
   // mangle global variable names if they clash with types, enum
   // constants, or other global variables
   //
-  forv_Vec(VarSymbol, var, globals) {
-    uniquifyName(var, &cnames);
-  }
+  forv_Vec(VarSymbol, var, globals) { uniquifyName(var, &cnames); }
   uniquifyNameCounts.clear();
 
   //
   // mangle function names if they clash with types, enum constants,
   // global variables, or other functions
   //
-  for_vector(FnSymbol, fn, functions) {
-    uniquifyName(fn, &cnames);
-  }
+  for_vector(FnSymbol, fn, functions) { uniquifyName(fn, &cnames); }
   uniquifyNameCounts.clear();
 
   //
@@ -1997,9 +1926,7 @@ static void uniquify_names(std::set<const char*> & cnames,
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     std::set<const char*> local;
 
-    for_formals(formal, fn) {
-      local.insert(formal->cname);
-    }
+    for_formals(formal, fn) { local.insert(formal->cname); }
 
     std::vector<DefExpr*> defs;
     collectDefExprs(fn->body, defs);
@@ -2013,8 +1940,7 @@ static void uniquify_names(std::set<const char*> & cnames,
             def->sym->cname = astr("T", def->sym->cname + 2);
         } else {
           // temp name is tmp
-          if (!strcmp(def->sym->cname, "tmp"))
-            def->sym->cname = astr("T");
+          if (!strcmp(def->sym->cname, "tmp")) def->sym->cname = astr("T");
         }
       }
       uniquifyName(def->sym, &local, &cnames);
@@ -2023,10 +1949,10 @@ static void uniquify_names(std::set<const char*> & cnames,
   }
 }
 
-static void codegen_header(std::set<const char*> & cnames,
-                           std::vector<TypeSymbol*> & types,
-                           std::vector<FnSymbol*> & functions,
-                           std::vector<VarSymbol*> & globals) {
+static void codegen_header(std::set<const char*>& cnames,
+                           std::vector<TypeSymbol*>& types,
+                           std::vector<FnSymbol*>& functions,
+                           std::vector<VarSymbol*>& globals) {
   GenInfo* info = gGenInfo;
 
   std::unordered_set<FunctionType*> fnTypesToCodegen;
@@ -2116,7 +2042,7 @@ static void codegen_header(std::set<const char*> & cnames,
   forv_Vec(VarSymbol, var, gVarSymbols) {
     if (var->defPoint->parentExpr != rootModule->block &&
         toModuleSymbol(var->defPoint->parentSymbol)) {
-      if ( var->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU ){
+      if (var->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU) {
         globals.push_back(var);
       }
     }
@@ -2133,7 +2059,7 @@ static void codegen_header(std::set<const char*> & cnames,
 
   FILE* hdrfile = info->cfile;
 
-  if( hdrfile) {
+  if (hdrfile) {
     // Insert include guard to help MLI builds avoid multiple inclusion.
     fprintf(hdrfile, "#ifndef CHPL_GEN_HEADER_INCLUDE_GUARD\n");
     fprintf(hdrfile, "#define CHPL_GEN_HEADER_INCLUDE_GUARD\n");
@@ -2151,7 +2077,8 @@ static void codegen_header(std::set<const char*> & cnames,
 #ifdef HAVE_LLVM
     //include generated extern C header file
     if (fAllowExternC && gAllExternCode.filename != NULL) {
-      fprintf(hdrfile, "%s", astr("#include \"", gAllExternCode.filename, "\"\n"));
+      fprintf(
+        hdrfile, "%s", astr("#include \"", gAllExternCode.filename, "\"\n"));
       // If we wanted to, here is where we would re-enable
       // the memory warning macros.
     }
@@ -2169,8 +2096,8 @@ static void codegen_header(std::set<const char*> & cnames,
 
   genComment("Class Prototypes");
   forv_Vec(TypeSymbol, typeSymbol, types) {
-    if (!typeSymbol->hasFlag(FLAG_REF) && !typeSymbol->hasFlag(FLAG_DATA_CLASS))
-    {
+    if (!typeSymbol->hasFlag(FLAG_REF) &&
+        !typeSymbol->hasFlag(FLAG_DATA_CLASS)) {
       if (typeSymbol->type == dtObject) continue;
       typeSymbol->codegenPrototype();
     }
@@ -2202,8 +2129,7 @@ static void codegen_header(std::set<const char*> & cnames,
   // codegen remaining types
   genComment("Classes");
   forv_Vec(TypeSymbol, typeSymbol, types) {
-    if (isClass(typeSymbol->type) &&
-        !typeSymbol->hasFlag(FLAG_REF) &&
+    if (isClass(typeSymbol->type) && !typeSymbol->hasFlag(FLAG_REF) &&
         !typeSymbol->hasFlag(FLAG_DATA_CLASS) &&
         typeSymbol->hasFlag(FLAG_NO_OBJECT) &&
         !typeSymbol->hasFlag(FLAG_OBJECT_CLASS))
@@ -2244,7 +2170,7 @@ static void codegen_header(std::set<const char*> & cnames,
     next.clear();
   }
 
-  if(!info->cfile) {
+  if (!info->cfile) {
 #ifdef HAVE_LLVM
     // Codegen any type annotations that are necessary.
     // Start with primitive types and function types in case they are used
@@ -2265,16 +2191,13 @@ static void codegen_header(std::set<const char*> & cnames,
     // Aggregate annotations for class objects must wait until all other
     // type annotations are defined, because there might be cycles.
     forv_Vec(TypeSymbol, typeSymbol, types) {
-      if (isClass(typeSymbol->type))
-        typeSymbol->codegenAggMetadata();
+      if (isClass(typeSymbol->type)) typeSymbol->codegenAggMetadata();
     }
 #endif
   }
 
   genComment("Function Prototypes");
-  for_vector(FnSymbol, fnSymbol, functions) {
-    fnSymbol->codegenPrototype();
-  }
+  for_vector(FnSymbol, fnSymbol, functions) { fnSymbol->codegenPrototype(); }
 
   genComment("Function Pointer Table");
   for_vector(FnSymbol, fn2, functions) {
@@ -2283,28 +2206,27 @@ static void codegen_header(std::set<const char*> & cnames,
         fn2->hasFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION) ||
         fn2->hasFlag(FLAG_ON_BLOCK)) {
       ftableVec.push_back(fn2);
-      ftableMap[fn2] = ftableVec.size()-1;
+      ftableMap[fn2] = ftableVec.size() - 1;
     }
   }
 
-  genFtable(ftableVec,true);
-  genFinfo(ftableVec,true);
+  genFtable(ftableVec, true);
+  genFinfo(ftableVec, true);
 
   genComment("Virtual Method Table");
-  genVirtualMethodTable(types,true);
+  genVirtualMethodTable(types, true);
 
   genComment("Global Variables");
-  forv_Vec(VarSymbol, varSymbol, globals) {
-    varSymbol->codegenGlobalDef(true);
-  }
+  forv_Vec(VarSymbol, varSymbol, globals) { varSymbol->codegenGlobalDef(true); }
   flushStatements();
 
   genGlobalInt("chpl_numGlobalsOnHeap", numGlobalsOnHeap, true);
   int globalsRegistrySize = (numGlobalsOnHeap ? numGlobalsOnHeap : 1);
 
-  if( hdrfile ) {
-    fprintf(hdrfile, "\nextern ptr_wide_ptr_t chpl_globals_registry[%d];\n",
-                     globalsRegistrySize);
+  if (hdrfile) {
+    fprintf(hdrfile,
+            "\nextern ptr_wide_ptr_t chpl_globals_registry[%d];\n",
+            globalsRegistrySize);
   } else {
 #ifdef HAVE_LLVM
     auto name = "chpl_globals_registry";
@@ -2316,15 +2238,16 @@ static void codegen_header(std::set<const char*> & cnames,
     buildGlobalArrayLlvm(name, eltType, globalsRegistrySize, {}, isConstant);
 #endif
   }
-  if( hdrfile ) {
-      fprintf(hdrfile, "\nextern const char* const chpl_mem_descs[];\n");
-    } else {
+  if (hdrfile) {
+    fprintf(hdrfile, "\nextern const char* const chpl_mem_descs[];\n");
+  } else {
 #ifdef HAVE_LLVM
     // Build up the values of the array.
     std::vector<llvm::Constant*> entries;
     forv_Vec(const char*, memDesc, memDescsVec) {
       entries.push_back(llvm::cast<llvm::GlobalVariable>(
-            new_CStringSymbol(memDesc)->codegen().val)->getInitializer());
+                          new_CStringSymbol(memDesc)->codegen().val)
+                          ->getInitializer());
     }
 
     auto name = "chpl_mem_descs";
@@ -2339,9 +2262,9 @@ static void codegen_header(std::set<const char*> & cnames,
   //
   // add table of private-broadcast constants
   //
-  if( hdrfile ) {
+  if (hdrfile) {
     fprintf(hdrfile, "\nextern void* const chpl_private_broadcast_table[];\n");
-  } else if(!gCodegenGPU) {
+  } else if (!gCodegenGPU) {
 #ifdef HAVE_LLVM
     auto eltType = getPointerType(info->module->getContext());
     auto name = "chpl_private_broadcast_table";
@@ -2356,8 +2279,7 @@ static void codegen_header(std::set<const char*> & cnames,
         INT_ASSERT(se);
 
         llvm::Value* ptrCast = info->irBuilder->CreatePointerCast(
-                                 info->lvt->getValue(se->symbol()->cname).val,
-                                 eltType);
+          info->lvt->getValue(se->symbol()->cname).val, eltType);
         trackLLVMValue(ptrCast);
         entries.push_back(llvm::cast<llvm::Constant>(ptrCast));
         // To preserve operand order, this should be insertAtTail.
@@ -2367,9 +2289,7 @@ static void codegen_header(std::set<const char*> & cnames,
 
     buildGlobalArrayLlvm(name, eltType, entries.size(), entries, isConstant);
 
-    genGlobalInt("chpl_private_broadcast_table_len",
-                 entries.size(),
-                 false);
+    genGlobalInt("chpl_private_broadcast_table_len", entries.size(), false);
 #endif
   }
 
@@ -2411,16 +2331,14 @@ static llvm::Value* genStringArg(const char* str) {
 }
 #endif
 
-
-static void
-codegen_config() {
+static void codegen_config() {
   GenInfo* info = gGenInfo;
 
   // LLVM backend need _config.c generated for the launcher,
   // so we produce the C for it either way.
   if (gCodegenGPU == false) {
     FILE* mainfile = info->cfile;
-    if( mainfile ) fprintf(mainfile, "#include \"_config.c\"\n");
+    if (mainfile) fprintf(mainfile, "#include \"_config.c\"\n");
     fileinfo configFile;
     openCFile(&configFile, "_config.c");
     FILE* outfile = configFile.fptr;
@@ -2452,15 +2370,16 @@ codegen_config() {
         } else {
           fprintf(outfile, "\", \"%s\"", var->getModule()->name);
         }
-        fprintf(outfile,", /* private = */ %d", var->hasFlag(FLAG_PRIVATE));
-        fprintf(outfile,", /* deprecated = */ %d",
-                var->hasFlag(FLAG_DEPRECATED));
-        fprintf(outfile,", \"%s\"\n", var->getSanitizedMsg(var->getDeprecationMsg()));
-        fprintf(outfile,", /* unstable = */ %d",
-                var->hasFlag(FLAG_UNSTABLE));
-        fprintf(outfile,", \"%s\"\n", var->getSanitizedMsg(var->getUnstableMsg()));
-        fprintf(outfile,");\n");
-
+        fprintf(outfile, ", /* private = */ %d", var->hasFlag(FLAG_PRIVATE));
+        fprintf(
+          outfile, ", /* deprecated = */ %d", var->hasFlag(FLAG_DEPRECATED));
+        fprintf(outfile,
+                ", \"%s\"\n",
+                var->getSanitizedMsg(var->getDeprecationMsg()));
+        fprintf(outfile, ", /* unstable = */ %d", var->hasFlag(FLAG_UNSTABLE));
+        fprintf(
+          outfile, ", \"%s\"\n", var->getSanitizedMsg(var->getUnstableMsg()));
+        fprintf(outfile, ");\n");
       }
     }
 
@@ -2470,42 +2389,39 @@ codegen_config() {
     info->cfile = mainfile;
   }
 
-
-  if( fLlvmCodegen ) {
+  if (fLlvmCodegen) {
 #ifdef HAVE_LLVM
-    llvm::FunctionType *createConfigType;
-    llvm::Function *createConfigFunc;
+    llvm::FunctionType* createConfigType;
+    llvm::Function* createConfigFunc;
     genGlobalInt("mainHasArgs", mainHasArgs, false);
     genGlobalInt("mainPreserveDelimiter", mainPreserveDelimiter, false);
     genGlobalInt("warnUnstable", fWarnUnstable, false);
-    if((createConfigFunc = getFunctionLLVM("CreateConfigVarTable"))) {
+    if ((createConfigFunc = getFunctionLLVM("CreateConfigVarTable"))) {
       createConfigType = createConfigFunc->getFunctionType();
-    }
-    else {
+    } else {
       createConfigType = llvm::FunctionType::get(
-          llvm::Type::getVoidTy(info->module->getContext()), false);
-      createConfigFunc =
-        llvm::Function::Create(createConfigType,
-                               llvm::Function::ExternalLinkage,
-                               "CreateConfigVarTable", info->module);
+        llvm::Type::getVoidTy(info->module->getContext()), false);
+      createConfigFunc = llvm::Function::Create(createConfigType,
+                                                llvm::Function::ExternalLinkage,
+                                                "CreateConfigVarTable",
+                                                info->module);
       trackLLVMValue(createConfigFunc);
     }
 
-    llvm::BasicBlock *createConfigBlock =
-      llvm::BasicBlock::Create(info->module->getContext(),
-                               "entry", createConfigFunc);
+    llvm::BasicBlock* createConfigBlock = llvm::BasicBlock::Create(
+      info->module->getContext(), "entry", createConfigFunc);
     trackLLVMValue(createConfigBlock);
     info->irBuilder->SetInsertPoint(createConfigBlock);
 
-    llvm::Function *initConfigFunc = getFunctionLLVM("initConfigVarTable");
-    llvm::CallInst* callCfg = info->irBuilder->CreateCall(initConfigFunc, {} );
+    llvm::Function* initConfigFunc = getFunctionLLVM("initConfigVarTable");
+    llvm::CallInst* callCfg = info->irBuilder->CreateCall(initConfigFunc, {});
     trackLLVMValue(callCfg);
 
-    llvm::Function *installConfigFunc = getFunctionLLVM("installConfigVar");
+    llvm::Function* installConfigFunc = getFunctionLLVM("installConfigVar");
 
     forv_expanding_Vec(VarSymbol, var, gVarSymbols) {
       if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
-        std::vector<llvm::Value *> args (8);
+        std::vector<llvm::Value*> args(8);
         {
           GenRet gen = new_CStringSymbol(var->name)->codegen();
           llvm::Type* eltType = tryComputingPointerElementType(gen.val);
@@ -2528,8 +2444,7 @@ codegen_config() {
 
         if (var->getModule()->modTag == MOD_INTERNAL) {
           args[2] = genStringArg("Built-in");
-        }
-        else {
+        } else {
           args[2] = genStringArg(var->getModule()->name);
         }
         args[3] = info->irBuilder->getInt32(var->hasFlag(FLAG_PRIVATE));
@@ -2550,7 +2465,10 @@ codegen_config() {
   }
 }
 
-static const char* generateFileName(ChainHashMap<const char*, StringHashFns, int>& filenames, const char* name, const char* currentModuleName){
+static const char*
+generateFileName(ChainHashMap<const char*, StringHashFns, int>& filenames,
+                 const char* name,
+                 const char* currentModuleName) {
   // Macs are case-insensitive when it comes to files, so
   // the following bit of code creates a unique filename
   // with case-insensitivity taken into account
@@ -2601,46 +2519,38 @@ bool argRequiresCPtr(const FunctionType::Formal* formal) {
   return argRequiresCPtr(formal->intent(), formal->type(), isReceiver);
 }
 
-static bool
-shouldChangeArgumentTypeToRef(ArgSymbol* arg) {
+static bool shouldChangeArgumentTypeToRef(ArgSymbol* arg) {
   FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
 
-  bool shouldPassRef = (arg->intent & INTENT_FLAG_REF) ||
-                       argRequiresCPtr(arg);
+  bool shouldPassRef = (arg->intent & INTENT_FLAG_REF) || argRequiresCPtr(arg);
 
   bool alreadyRef = arg->typeInfo()->symbol->hasFlag(FLAG_REF) ||
-                    arg->isRef() ||
-                    arg->isWideRef();
+                    arg->isRef() || arg->isWideRef();
 
   // Only change argument types for functions with a ref intent
   // that don't already have an argument being passed by ref
   // and that aren't extern functions.
-  return (shouldPassRef &&
-          !alreadyRef &&
-          !fn->hasFlag(FLAG_EXTERN) &&
+  return (shouldPassRef && !alreadyRef && !fn->hasFlag(FLAG_EXTERN) &&
           // TODO: Consider flag for export wrappers instead of this.
           !(fLibraryCompile && fn->hasFlag(FLAG_EXPORT)) &&
           !arg->hasFlag(FLAG_NO_CODEGEN));
 }
 
-static void
-adjustArgSymbolTypesForIntent(void)
-{
+static void adjustArgSymbolTypesForIntent(void) {
   // Adjust ArgSymbols that have ref/const ref concrete
   // intent so that their type is ref. This allows the
   // rest of this code to work as expected.
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     if (shouldChangeArgumentTypeToRef(arg)) {
-      arg->qual   = QUAL_REF;
+      arg->qual = QUAL_REF;
       arg->intent = INTENT_REF;
     }
   }
 }
 
-
 static void convertSymbolToRefType(Symbol* sym) {
   QualifiedType q = sym->qualType();
-  Type* type      = q.type();
+  Type* type = q.type();
   if (q.isRef() && !q.isRefType()) {
     type = getOrMakeRefTypeDuringCodegen(type);
   } else if (q.isWideRef() && !q.isWideRefType()) {
@@ -2671,30 +2581,24 @@ static void convertToRefTypes() {
 
 extern bool printCppLineno;
 
-
 #ifdef HAVE_LLVM
 DebugData* debugInfo = nullptr;
 #endif
-
-
 
 #if defined(HAVE_LLVM) && HAVE_LLVM_VER <= 150
 // this is not needed in newer LLVM versions
 
 // handle e.g. chpl_clang_builtin_wrapper_cabs
 
-static bool hasWrapper(const char *name)
-{
+static bool hasWrapper(const char* name) {
   auto it = chplClangBuiltinWrappedFunctions.find(name);
-  if(it != end(chplClangBuiltinWrappedFunctions))
-    return true;
+  if (it != end(chplClangBuiltinWrappedFunctions)) return true;
   return false;
 }
 
-static const char* getClangBuiltinWrappedName(const char* name)
-{
+static const char* getClangBuiltinWrappedName(const char* name) {
   auto it = chplClangBuiltinWrappedFunctions.find(name);
-  if(it != end(chplClangBuiltinWrappedFunctions))
+  if (it != end(chplClangBuiltinWrappedFunctions))
     return astr(WRAPPER_PREFIX, name);
   return name;
 }
@@ -2711,9 +2615,10 @@ static const char* getMainModuleFilename() {
   const char* filename = nullptr;
   if (fDriverMakeBinaryPhase) {
     // Retrieve saved main module filename
-    restoreDriverTmp(mainModTmpFilename, [&filename](std::string_view mainModName) {
-      filename = astr(mainModName);
-    });
+    restoreDriverTmp(mainModTmpFilename,
+                     [&filename](std::string_view mainModName) {
+                       filename = astr(mainModName);
+                     });
   } else {
     // Determine main module filename
     ModuleSymbol* mainMod = ModuleSymbol::mainModule();
@@ -2738,7 +2643,6 @@ static const char* getMainModuleFilename() {
   return filename;
 }
 
-
 // Set the executable name to the name of the file containing the
 // main module (minus its path and extension) if it isn't set
 // already. If in library mode, set the name of the header file as well.
@@ -2748,7 +2652,7 @@ void setupDefaultFilenames() {
     // retrieved in the makeBinary phase, but that's not a problem because the
     // errors would have already been hit (and are fatal) in compilation.
     ModuleSymbol* mainMod =
-        (fDriverMakeBinaryPhase ? nullptr : ModuleSymbol::mainModule());
+      (fDriverMakeBinaryPhase ? nullptr : ModuleSymbol::mainModule());
     const char* filename = getMainModuleFilename();
 
     // "Executable" name should be given a "lib" prefix in library compilation,
@@ -2761,9 +2665,10 @@ void setupDefaultFilenames() {
         // remove the filename extension from the library header name.
         size_t lastDot = libmodeHeadername.find_last_of('.');
         if (lastDot == std::string::npos) {
-          INT_ASSERT(!fDriverMakeBinaryPhase &&
-                     "encountered error in makeBinary phase that should only be "
-                     "reachable in compilation phase");
+          INT_ASSERT(
+            !fDriverMakeBinaryPhase &&
+            "encountered error in makeBinary phase that should only be "
+            "reachable in compilation phase");
           INT_FATAL(mainMod,
                     "main module filename is missing its extension: %s\n",
                     libmodeHeadername.c_str());
@@ -2776,9 +2681,10 @@ void setupDefaultFilenames() {
         pythonModulename = filename;
         size_t lastDot = pythonModulename.find_last_of('.');
         if (lastDot == std::string::npos) {
-          INT_ASSERT(!fDriverMakeBinaryPhase &&
-                     "encountered error in makeBinary phase that should only be "
-                     "reachable in compilation phase");
+          INT_ASSERT(
+            !fDriverMakeBinaryPhase &&
+            "encountered error in makeBinary phase that should only be "
+            "reachable in compilation phase");
           INT_FATAL(mainMod,
                     "main module filename is missing its extension: %s\n",
                     pythonModulename.c_str());
@@ -2797,11 +2703,11 @@ void setupDefaultFilenames() {
       INT_ASSERT(!fDriverMakeBinaryPhase &&
                  "encountered error in makeBinary phase that should only be "
                  "reachable in compilation phase");
-      INT_FATAL(mainMod, "main module filename is missing its extension: %s\n",
+      INT_FATAL(mainMod,
+                "main module filename is missing its extension: %s\n",
                 executableFilename.c_str());
     }
     executableFilename = executableFilename.substr(0, lastDot);
-
   }
 
   // If we're in library mode and the executable name was set but the header
@@ -2850,14 +2756,12 @@ void gatherTypesForCodegen(void) {
         }
       }
 
-      if (t != NULL)
-        cnameToTypeMap[var->cname] = t;
+      if (t != NULL) cnameToTypeMap[var->cname] = t;
     }
   }
 
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->type != dtUnknown)
-      cnameToTypeMap[ts->cname] = ts->type;
+    if (ts->type != dtUnknown) cnameToTypeMap[ts->cname] = ts->type;
   }
 }
 
@@ -2875,7 +2779,7 @@ Type* getNamedTypeDuringCodegen(const char* name) {
 }
 
 static std::unordered_map<FunctionType*, FunctionTypeCodegenInfo>
-chapelFunctionTypeToCodegenInfo;
+  chapelFunctionTypeToCodegenInfo;
 
 const FunctionTypeCodegenInfo& localFunctionTypeCodegenInfo(FunctionType* ft) {
   // Memoize to reduce the amount of work we do. We use 'local' procedure
@@ -2901,7 +2805,7 @@ const FunctionTypeCodegenInfo& localFunctionTypeCodegenInfo(FunctionType* ft) {
 
     // NOTE: Omit the formal names because C does not require them.
     for (int i = 0; i < ft->numFormals(); i++) {
-      const bool last = (i+1) == ft->numFormals();
+      const bool last = (i + 1) == ft->numFormals();
       auto formal = ft->formal(i);
       INT_ASSERT(formal);
 
@@ -2916,12 +2820,12 @@ const FunctionTypeCodegenInfo& localFunctionTypeCodegenInfo(FunctionType* ft) {
     str += ")";
 
   } else {
-  #ifdef HAVE_LLVM
+#ifdef HAVE_LLVM
     // Generate the LLVM function info.
     std::vector<const char*> argNames;
     info.llvmType = codegenFunctionTypeLLVM(ft, info.llvmAttrs, argNames);
     info.gen.type = info.llvmType;
-  #endif
+#endif
   }
 
   // Insert the info into the map.
@@ -2932,10 +2836,10 @@ const FunctionTypeCodegenInfo& localFunctionTypeCodegenInfo(FunctionType* ft) {
 
 // Do this once for CPU and GPU
 static void codegenPartOne() {
-  if( fLLVMWideOpt ) {
+  if (fLLVMWideOpt) {
     // --llvm-wide-opt is picky about other settings.
     // Check them here.
-    if (!fLlvmCodegen )
+    if (!fLlvmCodegen)
       USR_FATAL("--llvm-wide-opt requires CHPL_TARGET_COMPILER=llvm");
   }
 
@@ -2962,7 +2866,7 @@ static void codegenPartOne() {
   if (fLlvmCodegen) {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_EXTERN)) {
-        if(hasWrapper(fn->cname))
+        if (hasWrapper(fn->cname))
           fn->cname = getClangBuiltinWrappedName(fn->cname);
       }
     }
@@ -2978,12 +2882,11 @@ static void codegenPartOne() {
   uniquify_names(cnames, types, functions, globals);
 }
 
-static fileinfo hdrfile    = { NULL, NULL, NULL };
-static fileinfo mainfile   = { NULL, NULL, NULL };
-static fileinfo defnfile   = { NULL, NULL, NULL };
-static fileinfo strconfig  = { NULL, NULL, NULL };
-static fileinfo modulefile = { NULL, NULL, NULL };
-
+static fileinfo hdrfile = {NULL, NULL, NULL};
+static fileinfo mainfile = {NULL, NULL, NULL};
+static fileinfo defnfile = {NULL, NULL, NULL};
+static fileinfo strconfig = {NULL, NULL, NULL};
+static fileinfo modulefile = {NULL, NULL, NULL};
 
 #ifdef HAVE_LLVM
 static void embedGpuCode() {
@@ -3018,12 +2921,14 @@ static void codegenGpuGlobals() {
 // We can then do further filtering and  control how the remarks are printed
 struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
   ChapelRemarkSerializer(llvm::raw_ostream& OS)
-      : llvm::remarks::RemarkSerializer(
-            llvm::remarks::Format::Unknown, OS
+    : llvm::remarks::RemarkSerializer(llvm::remarks::Format::Unknown,
+                                      OS
 #if LLVM_VERSION_MAJOR < 22
-            , llvm::remarks::SerializerMode::Standalone
+                                      ,
+                                      llvm::remarks::SerializerMode::Standalone
 #endif
-          ) {}
+      ) {
+  }
 
   void emit(const llvm::remarks::Remark& Remark) override {
 
@@ -3041,31 +2946,33 @@ struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
     // source information for these functions
 
     // if fn is still nullptr and not developer, skip it
-    if(fn == nullptr && !developer) return;
+    if (fn == nullptr && !developer) return;
 
     // if not developer, skip all non user functions
     if (fn != nullptr && !developer) {
-        auto mod = fn->getModule();
-        if(mod == nullptr || mod->modTag != MOD_USER)
-        return;
+      auto mod = fn->getModule();
+      if (mod == nullptr || mod->modTag != MOD_USER) return;
     }
     // if we declared any filter functions, we need to filter based on them
-    if(fn != nullptr && !llvmRemarksFunctionsToShow.empty()) {
+    if (fn != nullptr && !llvmRemarksFunctionsToShow.empty()) {
       bool shouldSkip = true;
-      for (auto filterFuncName: llvmRemarksFunctionsToShow) {
-        if(filterFuncName == std::string(fn->name)) shouldSkip = false;
+      for (auto filterFuncName : llvmRemarksFunctionsToShow) {
+        if (filterFuncName == std::string(fn->name)) shouldSkip = false;
       }
-      if(shouldSkip) return;
+      if (shouldSkip) return;
     }
 
     if (auto Loc = Remark.Loc) {
-      OS << Loc->SourceFilePath << ":" << Loc->SourceLine << ":" << Loc->SourceColumn;
+      OS << Loc->SourceFilePath << ":" << Loc->SourceLine << ":"
+         << Loc->SourceColumn;
     } else {
       // no file location available, deduce a best guess from FunctionName if possible
       const char* filename = fn ? cleanFilename(fn->fname()) : nullptr;
       int linenum = fn ? fn->linenum() : 0;
-      if(filename) OS << filename << ":" << linenum << ":0";
-      else OS << Remark.FunctionName;
+      if (filename)
+        OS << filename << ":" << linenum << ":0";
+      else
+        OS << Remark.FunctionName;
     }
     OS << ": opt " << typeToString(Remark.RemarkType);
     OS << " for '" << Remark.PassName << "'";
@@ -3073,31 +2980,31 @@ struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
   }
 #if LLVM_VERSION_MAJOR >= 22
   // just use the YAML (default) meta serializer, which gets encoded in the asm
-  std::unique_ptr<llvm::remarks::MetaSerializer> metaSerializer(
-      llvm::raw_ostream& OS,
-      llvm::StringRef ExternalFilename) override {
+  std::unique_ptr<llvm::remarks::MetaSerializer>
+  metaSerializer(llvm::raw_ostream& OS,
+                 llvm::StringRef ExternalFilename) override {
     return std::make_unique<llvm::remarks::YAMLMetaSerializer>(
-        OS, ExternalFilename);
+      OS, ExternalFilename);
   }
 #else
   // just use the YAML (default) meta serializer, which gets encoded in the asm
   std::unique_ptr<llvm::remarks::MetaSerializer> metaSerializer(
-      llvm::raw_ostream& OS,
-      chpl::optional<llvm::StringRef> ExternalFilename = chpl::empty) override {
+    llvm::raw_ostream& OS,
+    chpl::optional<llvm::StringRef> ExternalFilename = chpl::empty) override {
     return std::make_unique<llvm::remarks::YAMLMetaSerializer>(
-        OS, ExternalFilename);
+      OS, ExternalFilename);
   }
 #endif
-  private:
+ private:
   std::string typeToString(llvm::remarks::Type t) {
     switch (t) {
-      case llvm::remarks::Type::Passed:           return "passed";
-      case llvm::remarks::Type::Missed:           return "missed";
+      case llvm::remarks::Type::Passed: return "passed";
+      case llvm::remarks::Type::Missed: return "missed";
       case llvm::remarks::Type::Analysis:
       case llvm::remarks::Type::AnalysisFPCommute:
       case llvm::remarks::Type::AnalysisAliasing: return "analysis";
-      case llvm::remarks::Type::Failure:          return "failure";
-      default:                                    return "unknown";
+      case llvm::remarks::Type::Failure: return "failure";
+      default: return "unknown";
     }
   }
 };
@@ -3107,18 +3014,19 @@ static llvm::Error setupRemarks(llvm::LLVMContext& Context,
                                 llvm::raw_ostream& OS,
                                 llvm::StringRef RemarksPasses) {
   std::unique_ptr<llvm::remarks::RemarkSerializer> RemarkSerializer =
-      std::make_unique<ChapelRemarkSerializer>(OS);
+    std::make_unique<ChapelRemarkSerializer>(OS);
 
   // Create the main remark streamer.
   Context.setMainRemarkStreamer(std::make_unique<llvm::remarks::RemarkStreamer>(
-      std::move(RemarkSerializer)));
+    std::move(RemarkSerializer)));
 
   // Create LLVM's optimization remarks streamer.
   Context.setLLVMRemarkStreamer(std::make_unique<llvm::LLVMRemarkStreamer>(
-      *Context.getMainRemarkStreamer()));
+    *Context.getMainRemarkStreamer()));
 
   if (!RemarksPasses.empty())
-    if (llvm::Error E = Context.getMainRemarkStreamer()->setFilter(RemarksPasses))
+    if (llvm::Error E =
+          Context.getMainRemarkStreamer()->setFilter(RemarksPasses))
       return llvm::make_error<llvm::LLVMRemarkSetupPatternError>(std::move(E));
 
   return llvm::Error::success();
@@ -3162,10 +3070,9 @@ using LibGenInfo = chpl::libraries::LibraryFileWriter::GenInfo;
 // The ideal solution is, when generating a .dyno file, for the code
 // generator to only generate code that is relevant for that file.
 // One way to do that would be to make it be more on-demand.
-static std::unique_ptr<llvm::Module>
-extractModuleCode(ModuleSymbol* modSym,
-                  std::unordered_map<chpl::ID, std::vector<LibGenInfo>> &genMap)
-{
+static std::unique_ptr<llvm::Module> extractModuleCode(
+  ModuleSymbol* modSym,
+  std::unordered_map<chpl::ID, std::vector<LibGenInfo>>& genMap) {
   llvm::Module* llvmModule = gGenInfo->module;
 
   // compute the functions/globals from the requested module
@@ -3225,21 +3132,20 @@ extractModuleCode(ModuleSymbol* modSym,
   // for symbols found in other modules.
   UniqueString mpath = modSym->astloc.id().symbolPath();
   UniqueString prefix = UniqueString::getConcat(gContext, mpath.c_str(), ".");
-  if (mpath.isEmpty())
-    prefix = UniqueString();
+  if (mpath.isEmpty()) prefix = UniqueString();
   llvm::StringRef pre = prefix.stringRef();
 
   llvm::ValueToValueMapTy VMap;
-  auto Cloned = CloneModule(*llvmModule, VMap,
-                       [&](const llvm::GlobalValue *GV) {
-                         // should we clone the definition or just declare it?
+  auto Cloned =
+    CloneModule(*llvmModule, VMap, [&](const llvm::GlobalValue* GV) {
+      // should we clone the definition or just declare it?
 
-                         // clone definition for anything in our list
-                         if (extractGvs.count(GV) > 0) return true;
+      // clone definition for anything in our list
+      if (extractGvs.count(GV) > 0) return true;
 
-                         // otherwise, make a decision based upon the name
-                         return !shouldOnlyClonePrototype(GV->getName(), pre);
-                       });
+      // otherwise, make a decision based upon the name
+      return !shouldOnlyClonePrototype(GV->getName(), pre);
+    });
 
   // Collect the symbols to move with the IRMover
   std::vector<llvm::GlobalValue*> ValuesToLink;
@@ -3260,15 +3166,16 @@ extractModuleCode(ModuleSymbol* modSym,
   llvm::LLVMContext& llvmContext = gContext->llvmContext();
   auto M = chpl::toOwned(new llvm::Module(mpath.stringRef(), llvmContext));
   llvm::IRMover irMover(*M);
-  auto err = irMover.move(std::move(Cloned), ValuesToLink,
-                          [&](llvm::GlobalValue& v,
-                              llvm::IRMover::ValueAdder add) {
-                             // this lambda is called for
-                             // symbols needed by something in ValuesToLink
-                             // that aren't present in ValuesToLink
-                             add(v);
-                          },
-                          /*IsPerformingImport*/ false);
+  auto err = irMover.move(
+    std::move(Cloned),
+    ValuesToLink,
+    [&](llvm::GlobalValue& v, llvm::IRMover::ValueAdder add) {
+      // this lambda is called for
+      // symbols needed by something in ValuesToLink
+      // that aren't present in ValuesToLink
+      add(v);
+    },
+    /*IsPerformingImport*/ false);
 
   if (err) {
     INT_FATAL("Failure in IRMover");
@@ -3310,9 +3217,8 @@ static void generateDynoLibFile() {
     }
 
     auto modName = UniqueString::get(gContext, genMod->name);
-    libWriter.setGeneratedCode(modName,
-                               std::move(generatedCodeBuffer),
-                               std::move(genMap));
+    libWriter.setGeneratedCode(
+      modName, std::move(generatedCodeBuffer), std::move(genMap));
   }
 
   // write the library file
@@ -3348,34 +3254,32 @@ void linkInDynoFiles() {
 
     std::vector<UniqueString> todo;
 
-    llvm::Error err =
-      irMover.move(std::move(takeMod), ValuesToLink,
-                   [DstMod, &todo](llvm::GlobalValue& v,
-                                   llvm::IRMover::ValueAdder add) {
-                      // this lambda is called for
-                      // symbols needed by something in ValuesToLink
-                      // that aren't present in ValuesToLink
+    llvm::Error err = irMover.move(
+      std::move(takeMod),
+      ValuesToLink,
+      [DstMod, &todo](llvm::GlobalValue& v, llvm::IRMover::ValueAdder add) {
+        // this lambda is called for
+        // symbols needed by something in ValuesToLink
+        // that aren't present in ValuesToLink
 
-                      // does the existing module already have a
-                      // definition with the same name?
-                      llvm::GlobalValue* HaveGV =
-                        DstMod->getNamedValue(v.getName());
-                      if (HaveGV && HaveGV->isDeclaration()) {
-                        // it's not a definition, ignore it & bring in v
-                        HaveGV = nullptr;
-                      }
+        // does the existing module already have a
+        // definition with the same name?
+        llvm::GlobalValue* HaveGV = DstMod->getNamedValue(v.getName());
+        if (HaveGV && HaveGV->isDeclaration()) {
+          // it's not a definition, ignore it & bring in v
+          HaveGV = nullptr;
+        }
 
-                      if (HaveGV == nullptr) {
-                        add(v);
-                        if (v.isDeclaration()) {
-                          // it's not a definition so
-                          // note it so further work can be done on it.
-                          todo.push_back(
-                            UniqueString::get(gContext, v.getName()));
-                        }
-                      }
-                   },
-                   /*IsPerformingImport*/ false);
+        if (HaveGV == nullptr) {
+          add(v);
+          if (v.isDeclaration()) {
+            // it's not a definition so
+            // note it so further work can be done on it.
+            todo.push_back(UniqueString::get(gContext, v.getName()));
+          }
+        }
+      },
+      /*IsPerformingImport*/ false);
 
     if (err) {
       INT_FATAL("Failure in IRMover");
@@ -3400,9 +3304,9 @@ static void codegenPartTwo() {
 
 #ifdef HAVE_LLVM
   if (fLlvmCodegen) {
-    if(shouldShowLLVMRemarks()) {
-      auto err = setupRemarks(gContext->llvmContext(),
-                              llvm::outs(), llvmRemarksFilters);
+    if (shouldShowLLVMRemarks()) {
+      auto err =
+        setupRemarks(gContext->llvmContext(), llvm::outs(), llvmRemarksFilters);
       if (err) {
         USR_FATAL("failed to add optimization remarks reporting");
       }
@@ -3421,7 +3325,7 @@ static void codegenPartTwo() {
 
   SET_LINENO(rootModule);
 
-  GenInfo* info     = gGenInfo;
+  GenInfo* info = gGenInfo;
 
   INT_ASSERT(info);
 
@@ -3448,18 +3352,19 @@ static void codegenPartTwo() {
     }
   }
 
-  if( fLlvmCodegen ) {
+  if (fLlvmCodegen) {
 #ifdef HAVE_LLVM
 
     if (fDebugSymbols) {
-      debugInfo = new DebugData(/*optimized*/false);
+      debugInfo = new DebugData(/*optimized*/ false);
     }
     if (debugInfo) {
       // every module gets its own compile unit
       forv_Vec(ModuleSymbol, currentModule, allModules) {
         // So, this is pretty quick. I'm assuming that the main module is in the current dir, no optimization (need to figure out how to get this)
         // and no compile flags, since I can't figure out how to get that either.
-        debugInfo->createCompileUnit(currentModule, currentModule->fname(), "./", "");
+        debugInfo->createCompileUnit(
+          currentModule, currentModule->fname(), "./", "");
       }
       debugInfo->createCompileUnit(rootModule, rootModule->fname(), "./", "");
     }
@@ -3475,10 +3380,10 @@ static void codegenPartTwo() {
     prepareCodegenLLVM();
 #endif
   } else {
-    openCFile(&hdrfile,  "chpl__header", "h");
-    openCFile(&mainfile, "_main",        "c");
-    openCFile(&defnfile, "chpl__defn",    "c");
-    openCFile(&strconfig,  "chpl_str_config", "c");
+    openCFile(&hdrfile, "chpl__header", "h");
+    openCFile(&mainfile, "_main", "c");
+    openCFile(&defnfile, "chpl__defn", "c");
+    openCFile(&strconfig, "chpl_str_config", "c");
 
     zlineToFileIfNeeded(rootModule, mainfile.fptr);
     fprintf(mainfile.fptr, "#include \"chpl_str_config.c\"\n");
@@ -3487,11 +3392,12 @@ static void codegenPartTwo() {
     fprintf(mainfile.fptr, "#include \"chpl__defn.c\"\n");
 
     std::vector<const char*> userFileName;
-    if(fIncrementalCompilation) {
+    if (fIncrementalCompilation) {
       ChainHashMap<const char*, StringHashFns, int> fileNameHashMap;
       forv_Vec(ModuleSymbol, currentModule, allModules) {
         const char* filename = NULL;
-        filename = generateFileName(fileNameHashMap, filename, currentModule->name);
+        filename =
+          generateFileName(fileNameHashMap, filename, currentModule->name);
         openCFile(&modulefile, filename, "c");
         // cut off .o extension
         std::string path(modulefile.pathname, strlen(modulefile.pathname) - 2);
@@ -3527,7 +3433,7 @@ static void codegenPartTwo() {
   info->cfile = defnfile.fptr;
   codegen_defn(cnames, types, functions, globals);
   info->cfile = mainfile.fptr;
-  if ( gCodegenGPU == false ) {
+  if (gCodegenGPU == false) {
     codegen_config();
   }
 #ifdef HAVE_LLVM
@@ -3538,7 +3444,7 @@ static void codegenPartTwo() {
 
   // Don't need to do most of the rest of the function for LLVM;
   // just codegen the modules.
-  if( fLlvmCodegen ) {
+  if (fLlvmCodegen) {
 #ifdef HAVE_LLVM
     checkAdjustedDataLayout();
     forv_Vec(ModuleSymbol, currentModule, allModules) {
@@ -3560,17 +3466,18 @@ static void codegenPartTwo() {
     ChainHashMap<const char*, StringHashFns, int> fileNameHashMap;
     forv_Vec(ModuleSymbol, currentModule, allModules) {
       const char* filename = NULL;
-      filename = generateFileName(fileNameHashMap, filename,currentModule->name);
+      filename =
+        generateFileName(fileNameHashMap, filename, currentModule->name);
 
       openCFile(&modulefile, filename, "c");
       info->cfile = modulefile.fptr;
-      if(fIncrementalCompilation)
+      if (fIncrementalCompilation)
         fprintf(modulefile.fptr, "#include \"chpl__header.h\"\n");
       currentModule->codegenDef();
 
       closeCFile(&modulefile);
 
-      if(!(fIncrementalCompilation))
+      if (!(fIncrementalCompilation))
         fprintf(mainfile.fptr, "#include \"%s%s\"\n", filename, ".c");
     }
 
@@ -3594,15 +3501,13 @@ static void codegenPartTwo() {
     closeCFile(&strconfig);
   }
 
-  if (fPrintEmittedCodeSize)
-  {
+  if (fPrintEmittedCodeSize) {
     fprintf(stderr, "Statements emitted: %d\n", gStmtCount);
   }
 }
 
 void codegen() {
-  if (no_codegen)
-    return;
+  if (no_codegen) return;
 
   codegenPartOne();
 
@@ -3650,7 +3555,7 @@ void codegen() {
 
       // If there was an error in GPU code generation then the .fatbin file (containing
       // the generated GPU code) was not created and we won't be able to continue.
-      if(status != 0) {
+      if (status != 0) {
         clean_exit(status);
       }
     }
@@ -3660,12 +3565,10 @@ void codegen() {
 }
 
 void makeBinary(void) {
-  if (no_codegen)
-    return;
+  if (no_codegen) return;
 
   // don't run makeBinary when using --dyno-gen-lib
-  if (fDynoGenLib)
-    return;
+  if (fDynoGenLib) return;
 
   // makeBinary shouldn't run in a compilation phase invocation.
   // (Unless we're doing GPU codegen, which currently happens in the compilation
@@ -3678,9 +3581,9 @@ void makeBinary(void) {
     restoreLibraryAndIncludeInfo();
   }
 
-  if(fLlvmCodegen) {
+  if (fLlvmCodegen) {
 #ifdef HAVE_LLVM
-   makeBinaryLLVM();
+    makeBinaryLLVM();
 #endif
   } else {
     const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
@@ -3689,8 +3592,10 @@ void makeBinary(void) {
       snprintf(parMakeFlags, sizeof(parMakeFlags), "-j %d ", fParMake);
     }
     const char* command = astr(astr(CHPL_MAKE, " "),
-                               parMakeFlags, makeflags,
-                               getIntermediateDirName(), "/Makefile");
+                               parMakeFlags,
+                               makeflags,
+                               getIntermediateDirName(),
+                               "/Makefile");
     mysystem(command, "compiling generated source");
   }
 
@@ -3702,21 +3607,14 @@ void makeBinary(void) {
 }
 
 GenInfo::GenInfo()
-         :   cfile(nullptr), cLocalDecls(), cStatements(),
-             lineno(-1), filename(nullptr),
-             functionCNameAstrToSymbol()
+  : cfile(nullptr), cLocalDecls(), cStatements(), lineno(-1), filename(nullptr),
+    functionCNameAstrToSymbol()
 #ifdef HAVE_LLVM
-             ,
-             lvt(nullptr), module(nullptr), irBuilder(nullptr), mdBuilder(nullptr),
-             loopStack(), currentStackVariables(),
-             currentFunctionABI(nullptr),
-             tbaaRootNode(nullptr),
-             tbaaUnionsNode(nullptr),
-             noAliasDomain(nullptr),
-             noAliasScopes(),
-             noAliasScopeLists(),
-             noAliasLists(),
-             globalToWideInfo()
+    ,
+    lvt(nullptr), module(nullptr), irBuilder(nullptr), mdBuilder(nullptr),
+    loopStack(), currentStackVariables(), currentFunctionABI(nullptr),
+    tbaaRootNode(nullptr), tbaaUnionsNode(nullptr), noAliasDomain(nullptr),
+    noAliasScopes(), noAliasScopeLists(), noAliasLists(), globalToWideInfo()
 #endif
 {
 // with LLVM 15, we have to explicitly opt in to opaque pointers
@@ -3730,62 +3628,61 @@ void initializeGenInfo(void) {
   gGenInfo = new GenInfo();
 }
 
-std::string numToString(int64_t num)
-{
-  return int64_to_string(num);
-}
-std::string int64_to_string(int64_t i)
-{
+std::string numToString(int64_t num) { return int64_to_string(num); }
+std::string int64_to_string(int64_t i) {
   char buf[32];
   snprintf(buf, sizeof(buf), "%" PRId64, i);
   std::string ret(buf);
   return ret;
 }
-std::string uint64_to_string(uint64_t i)
-{
+std::string uint64_to_string(uint64_t i) {
   char buf[32];
   snprintf(buf, sizeof(buf), "%" PRIu64, i);
   std::string ret(buf);
   return ret;
 }
-std::string real_to_string(double num)
-{
+std::string real_to_string(double num) {
   char buf[32];
 
   if (std::isfinite(num)) {
-    if (std::signbit(num)) snprintf(buf, sizeof(buf), "-%a" , -num);
-    else                   snprintf(buf, sizeof(buf), "%a" , num);
+    if (std::signbit(num))
+      snprintf(buf, sizeof(buf), "-%a", -num);
+    else
+      snprintf(buf, sizeof(buf), "%a", num);
   } else if (std::isinf(num)) {
-    if (std::signbit(num)) strncpy(buf, "-INFINITY", sizeof(buf));
-    else                   strncpy(buf, "INFINITY", sizeof(buf));
+    if (std::signbit(num))
+      strncpy(buf, "-INFINITY", sizeof(buf));
+    else
+      strncpy(buf, "INFINITY", sizeof(buf));
   } else {
-    if (std::signbit(num)) strncpy(buf, "-NAN", sizeof(buf));
-    else                   strncpy(buf, "NAN", sizeof(buf));
+    if (std::signbit(num))
+      strncpy(buf, "-NAN", sizeof(buf));
+    else
+      strncpy(buf, "NAN", sizeof(buf));
   }
   std::string ret(buf);
   return ret;
 }
 void genComment(const char* comment, bool push) {
   GenInfo* info = gGenInfo;
-  if( info->cfile ) {
+  if (info->cfile) {
     if (push) {
       std::string str = comment;
-      info->cStatements.push_back("/*** "+str+" ***/ ");
+      info->cStatements.push_back("/*** " + str + " ***/ ");
     } else {
       fprintf(info->cfile, "/*** %s ***/\n\n", comment);
     }
   }
 }
 
-void flushStatements(void)
-{
+void flushStatements(void) {
   GenInfo* info = gGenInfo;
   size_t i;
-  if( info->cfile ) {
-    for(i = 0; i < info->cLocalDecls.size(); ++i) {
+  if (info->cfile) {
+    for (i = 0; i < info->cLocalDecls.size(); ++i) {
       fprintf(info->cfile, "%s;\n", info->cLocalDecls[i].c_str());
     }
-    for(i = 0; i < info->cStatements.size(); ++i) {
+    for (i = 0; i < info->cStatements.size(); ++i) {
       fprintf(info->cfile, "%s", info->cStatements[i].c_str());
     }
     info->cLocalDecls.clear();
@@ -3800,8 +3697,7 @@ void nprint_view(GenRet& gen) {
 #endif
 
   printf("GenRet {\n");
-  if (!gen.c.empty())
-    printf("c=%s\n", gen.c.c_str());
+  if (!gen.c.empty()) printf("c=%s\n", gen.c.c_str());
 #ifdef HAVE_LLVM
   if (gen.val) {
     printf("val= ");
@@ -3822,7 +3718,7 @@ void nprint_view(GenRet& gen) {
     printf("surroundingStruct=%s (%i)\n", ts->name, ts->id);
   }
   if (gen.fieldOffset) {
-    printf("fieldOffset=%i\n", (int) gen.fieldOffset);
+    printf("fieldOffset=%i\n", (int)gen.fieldOffset);
   }
   if (gen.fieldTbaaTypeDescriptor) {
     printf("fieldTbaaTypeDescriptor= ");
@@ -3859,7 +3755,7 @@ void nprint_view(GenRet& gen) {
   if (gen.isLVPtr == GEN_WIDE_PTR) {
     printf("isLVPtr=GEN_WIDE_PTR\n");
   }
-  printf("isUnsigned %i\n", (int) gen.isUnsigned);
+  printf("isUnsigned %i\n", (int)gen.isUnsigned);
   printf("}\n");
 }
 

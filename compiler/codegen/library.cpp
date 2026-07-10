@@ -39,7 +39,7 @@ std::string libDir;
 std::string pxdName = "";
 
 // TypeSymbol -> (pxdName, pyxName)  Will be "" if the cname should be used
-std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
+std::map<TypeSymbol*, std::pair<std::string, std::string>> pythonNames;
 std::map<TypeSymbol*, std::string> fortranKindNames;
 std::map<TypeSymbol*, std::string> fortranTypeNames;
 
@@ -65,7 +65,7 @@ static bool shouldGeneratePrototype(FnSymbol* fn) {
 //
 void codegen_library_header(std::vector<FnSymbol*> functions) {
   if (fLibraryCompile) {
-    fileinfo libhdrfile = { NULL, NULL, NULL };
+    fileinfo libhdrfile = {NULL, NULL, NULL};
 
     // Name the generated header file after the executable (and assume any
     // modifications to it have already happened)
@@ -101,7 +101,8 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
       // Maybe need something here to support LLVM extern blocks?
 
       if (usingGpuLocaleModel()) {
-        fprintf(libhdrfile.fptr, "#ifdef __cplusplus\nextern \"C\" {\n#endif\n");
+        fprintf(libhdrfile.fptr,
+                "#ifdef __cplusplus\nextern \"C\" {\n#endif\n");
       }
 
       // Print out the module initialization function headers and the exported
@@ -124,9 +125,9 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
 // from compileline
 static std::string getCompilelineOption(std::string option) {
   std::string fullCommand = "";
-  for (const auto& env: envMap) {
-    fullCommand += std::string(env.first) + "=\"" + std::string(env.second) +
-      "\" ";
+  for (const auto& env : envMap) {
+    fullCommand +=
+      std::string(env.first) + "=\"" + std::string(env.second) + "\" ";
   }
   fullCommand += "$CHPL_HOME/util/config/compileline --" + option;
   fullCommand += "> cmd.out.tmp";
@@ -150,15 +151,16 @@ static std::string getCompilelineOption(std::string option) {
 
 // Save the value of the environment variable "var" into the makefile, so it
 // can be referenced in the other variables for legibility purposes.
-static void setupMakeEnvVars(std::string var, const char* value,
-                             fileinfo makefile) {
+static void
+setupMakeEnvVars(std::string var, const char* value, fileinfo makefile) {
   fprintf(makefile.fptr, "%s = %s\n\n", var.c_str(), value);
 }
 
 // Save the value of the environment variable "var" into the CMake file, so it
 // can be referenced in the other variables for legibility purposes.
-static void setupCMakeEnvVars(const std::string& var, const std::string& value,
-                             fileinfo cmakelists) {
+static void setupCMakeEnvVars(const std::string& var,
+                              const std::string& value,
+                              fileinfo cmakelists) {
   fprintf(cmakelists.fptr, "set(%s %s)\n\n", var.c_str(), value.c_str());
 }
 
@@ -245,9 +247,8 @@ static void printMakefileIncludes(fileinfo makefile) {
   std::string requireIncludes = getRequireIncludes();
 
   std::string includes = getCompilelineOption("includes-and-defines");
-  fprintf(makefile.fptr, "CHPL_CFLAGS = -I%s %s",
-          libDir.c_str(),
-          cflags.c_str());
+  fprintf(
+    makefile.fptr, "CHPL_CFLAGS = -I%s %s", libDir.c_str(), cflags.c_str());
 
   if (requireIncludes != "") {
     fprintf(makefile.fptr, "%s", requireIncludes.c_str());
@@ -271,9 +272,8 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
 
   std::string requires_ = getRequireLibraries();
 
-  fprintf(makefile.fptr, "CHPL_LDFLAGS = -L%s %s",
-          libDir.c_str(),
-          libname.c_str());
+  fprintf(
+    makefile.fptr, "CHPL_LDFLAGS = -L%s %s", libDir.c_str(), libname.c_str());
 
   //
   // Multi-locale libraries require some extra libraries to be linked in order
@@ -299,11 +299,11 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
 // by converting $(BLAH) to ${BLAH}
 static std::string makeToCMake(std::string str) {
   std::size_t pos = std::string::npos;
-  while((pos = str.find('(')) != std::string::npos) {
-    INT_ASSERT(str[pos-1] == '$');
+  while ((pos = str.find('(')) != std::string::npos) {
+    INT_ASSERT(str[pos - 1] == '$');
     str[pos] = '{';
   }
-  while((pos = str.find(')')) != std::string::npos) {
+  while ((pos = str.find(')')) != std::string::npos) {
     str[pos] = '}';
   }
   return str;
@@ -322,7 +322,7 @@ static void printCMakeListsIncludes(fileinfo cmakelists, std::string name) {
   auto toStrip = std::array{"-I", "-iquote"};
   std::size_t pos = std::string::npos;
   for (const char* s : toStrip) {
-    while((pos = includes.find(s)) != std::string::npos) {
+    while ((pos = includes.find(s)) != std::string::npos) {
       includes.erase(pos, strlen(s));
     }
   }
@@ -335,7 +335,10 @@ static void printCMakeListsIncludes(fileinfo cmakelists, std::string name) {
 
   //switch from make to cmake
   varValue = makeToCMake(varValue);
-  fprintf(cmakelists.fptr, "set(%s_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR} %s)\n\n", name.c_str(), varValue.c_str());
+  fprintf(cmakelists.fptr,
+          "set(%s_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR} %s)\n\n",
+          name.c_str(),
+          varValue.c_str());
 }
 
 // Helper to output the linker library variable into the generated CMakeLists
@@ -343,7 +346,8 @@ static void printCMakeListsIncludes(fileinfo cmakelists, std::string name) {
 static void printCMakeListsLibraries(fileinfo cmakelists, std::string name) {
   std::string varValue = "";
   std::string libraries = getCompilelineOption("libraries");
-  libraries = std::regex_replace(libraries, std::regex("(-framework \\S*)(\\s)"), "\"$1\"$2");
+  libraries = std::regex_replace(
+    libraries, std::regex("(-framework \\S*)(\\s)"), "\"$1\"$2");
   std::string libname = getLibname(name);
 
   std::string requires_ = getRequireLibraries();
@@ -381,7 +385,10 @@ static void printCMakeListsLibraries(fileinfo cmakelists, std::string name) {
   varValue += libname;
 
   varValue = makeToCMake(varValue);
-  fprintf(cmakelists.fptr, "set(%s_LINK_LIBS %s)\n\n", name.c_str(), varValue.c_str());
+  fprintf(cmakelists.fptr,
+          "set(%s_LINK_LIBS %s)\n\n",
+          name.c_str(),
+          varValue.c_str());
 }
 
 void codegen_library_cmakelists() {
@@ -419,7 +426,7 @@ void codegen_library_cmakelists() {
 
 const char* getLibraryExtension() {
   if (fLibraryCompile) {
-    if (fLinkStyle==LS_DYNAMIC)
+    if (fLinkStyle == LS_DYNAMIC)
       return !strcmp(CHPL_TARGET_PLATFORM, "darwin") ? ".dylib" : ".so";
     else
       return ".a";
@@ -440,8 +447,9 @@ void ensureLibDirExists() {
   ensureDirExists(libDir.c_str(), "ensuring --library-dir directory exists");
 }
 
-void
-openLibraryHelperFile(fileinfo* fi, const std::string& name, const char* ext) {
+void openLibraryHelperFile(fileinfo* fi,
+                           const std::string& name,
+                           const char* ext) {
   if (ext)
     fi->filename = astr(name.c_str(), ".", ext);
   else
@@ -457,8 +465,7 @@ void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt) {
   //
   // We should beautify if we were asked to
   //
-  if (beautifyIt)
-    beautify(fi);
+  if (beautifyIt) beautify(fi);
 }
 
 // Populate the pythonNames map with the translation for bools, differently
@@ -472,16 +479,18 @@ static void setupPythonTypeMap() {
   pythonNames[dtUInt[INT_SIZE_16]->symbol] = std::make_pair("", "numpy.uint16");
   pythonNames[dtUInt[INT_SIZE_32]->symbol] = std::make_pair("", "numpy.uint32");
   pythonNames[dtUInt[INT_SIZE_64]->symbol] = std::make_pair("", "numpy.uint64");
-  pythonNames[dtReal[FLOAT_SIZE_32]->symbol] = std::make_pair("", "numpy.float32");
-  pythonNames[dtReal[FLOAT_SIZE_64]->symbol] = std::make_pair("double", "float");
+  pythonNames[dtReal[FLOAT_SIZE_32]->symbol] =
+    std::make_pair("", "numpy.float32");
+  pythonNames[dtReal[FLOAT_SIZE_64]->symbol] =
+    std::make_pair("double", "float");
   pythonNames[dtBool->symbol] = std::make_pair("bint", "bint");
   pythonNames[dtStringC->symbol] = std::make_pair("const char *", "bytes");
   // TODO: what're the proper map values for c_ptrConst(c_char) to replace c_string?
   // 08/30/2023
   pythonNames[dtComplex[COMPLEX_SIZE_64]->symbol] =
-              std::make_pair("float complex", "numpy.complex64");
+    std::make_pair("float complex", "numpy.complex64");
   pythonNames[dtComplex[COMPLEX_SIZE_128]->symbol] =
-              std::make_pair("double complex", "numpy.complex128");
+    std::make_pair("double complex", "numpy.complex128");
 
   if (dtBytes != NULL) {
     pythonNames[dtBytes->symbol] = std::make_pair("", "object");
@@ -492,7 +501,6 @@ static void setupPythonTypeMap() {
   }
 
   // TODO: Handle bigint (which should naturally match to Python's int)
-
 }
 
 // If there is a known .pxd file translation for this type, use that.
@@ -608,7 +616,7 @@ void makeFortranModule(std::vector<FnSymbol*> functions) {
   const char* filename = !fortranModulename.empty() ? fortranModulename.c_str()
                                                     : libmodeHeadername.c_str();
   int indent = 0;
-  fileinfo fort = { NULL, NULL, NULL };
+  fileinfo fort = {NULL, NULL, NULL};
 
   openLibraryHelperFile(&fort, filename, "f90");
 
@@ -640,7 +648,7 @@ void makeFortranModule(std::vector<FnSymbol*> functions) {
 // Generate the .pxd file for the library.  This will be used when creating
 // the Python module
 static void makePXDFile(std::vector<FnSymbol*> functions) {
-  fileinfo pxd = { NULL, NULL, NULL };
+  fileinfo pxd = {NULL, NULL, NULL};
 
   openLibraryHelperFile(&pxd, pxdName.c_str(), "pxd");
 
@@ -653,7 +661,8 @@ static void makePXDFile(std::vector<FnSymbol*> functions) {
     // Get the permanent runtime definitions
     fprintf(pxd.fptr, "from chplrt cimport *\n\n");
 
-    fprintf(pxd.fptr, "cdef extern from \"%s.h\":\n", libmodeHeadername.c_str());
+    fprintf(
+      pxd.fptr, "cdef extern from \"%s.h\":\n", libmodeHeadername.c_str());
 
     for_vector(FnSymbol, fn, functions) {
       if (isUserRoutine(fn)) {
@@ -673,7 +682,7 @@ static void makeOpaqueArrayClass();
 // Generate the .pyx file for the library.  This will also be used when
 // creating the Python module.
 static void makePYXFile(std::vector<FnSymbol*> functions) {
-  fileinfo pyx = { NULL, NULL, NULL };
+  fileinfo pyx = {NULL, NULL, NULL};
 
   openLibraryHelperFile(&pyx, pythonModulename, "pyx");
 
@@ -738,9 +747,7 @@ static void makePYXFile(std::vector<FnSymbol*> functions) {
 
     // Add Python wrapper for the exported functions, to translate the types
     // appropriately
-    for_vector(FnSymbol, fn, exported) {
-      fn->codegenPython(PYTHON_PYX);
-    }
+    for_vector(FnSymbol, fn, exported) { fn->codegenPython(PYTHON_PYX); }
 
     gGenInfo->cfile = save_cfile;
   }
@@ -770,10 +777,9 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
     // an argument
 
     // numLocales is a C default-sized int.
-    std::string numLocalesType = getPythonTypeName(dtInt[INT_SIZE_32],
-                                                   C_PYX);
-    fprintf(outfile, "def chpl_setup(%s numLocales):\n",
-            numLocalesType.c_str());
+    std::string numLocalesType = getPythonTypeName(dtInt[INT_SIZE_32], C_PYX);
+    fprintf(
+      outfile, "def chpl_setup(%s numLocales):\n", numLocalesType.c_str());
     fprintf(outfile,
             "\tcdef char** args = ['%s', '-nl', str(numLocales).encode()]\n",
             libmodeHeadername.c_str());
@@ -783,7 +789,8 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
   } else {
     // Define `chpl_setup` for single locale Python modules.
     fprintf(outfile, "def chpl_setup():\n");
-    fprintf(outfile, "\tcdef char** args = ['%s']\n", libmodeHeadername.c_str());
+    fprintf(
+      outfile, "\tcdef char** args = ['%s']\n", libmodeHeadername.c_str());
     fprintf(outfile, "\tchpl_library_init(1, args)\n");
   }
 
@@ -825,7 +832,7 @@ static void makeOpaqueArrayClass() {
 // create the Python file which will be used to compile the .pyx, .pxd, library,
 // and header files into a Python module.
 static void makePYFile() {
-  fileinfo py = { NULL, NULL, NULL };
+  fileinfo py = {NULL, NULL, NULL};
 
   openLibraryHelperFile(&py, pythonModulename, "py");
 
@@ -891,9 +898,11 @@ static void makePYFile() {
     fprintf(py.fptr, "\t\tExtension(\"%s\",\n", pythonModulename.c_str());
     fprintf(py.fptr, "\t\t\tinclude_dirs=[numpy.get_include()],\n");
     fprintf(py.fptr, "\t\t\tsources=[\"%s.pyx\"],\n", pythonModulename.c_str());
-    fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries + "
-                     "[\"%s\"])))\n",
-                     libname.c_str(), libname.c_str());
+    fprintf(py.fptr,
+            "\t\t\tlibraries=[\"%s\"] + chpl_libraries + "
+            "[\"%s\"])))\n",
+            libname.c_str(),
+            libname.c_str());
 
     gGenInfo->cfile = save_cfile;
   }
@@ -902,13 +911,14 @@ static void makePYFile() {
 }
 
 static void makePYInitFile() {
-  fileinfo py = { NULL, NULL, NULL };
+  fileinfo py = {NULL, NULL, NULL};
 
   char* path = dirHasFile(libDir.c_str(), "__init__.py");
   if (path != NULL) {
     free(path);
     USR_WARN("Cannot generate %s/__init__.py because it would overwrite "
-             "existing file", libDir.c_str());
+             "existing file",
+             libDir.c_str());
     return;
   }
 
@@ -935,12 +945,16 @@ static void makePYInitFile() {
     fprintf(py.fptr, "\n");
     fprintf(py.fptr, "import atexit\n");
     fprintf(py.fptr, "\n");
-    fprintf(py.fptr, "from %s.%s import *\n", libDir.c_str(), pythonModulename.c_str());
-    fprintf(py.fptr, "\n");
-    fprintf(py.fptr, "# Register cleanup function to be called at "
-                     "program exit.\n");
-    fprintf(py.fptr, "atexit.register(%s.chpl_cleanup)\n",
+    fprintf(py.fptr,
+            "from %s.%s import *\n",
+            libDir.c_str(),
             pythonModulename.c_str());
+    fprintf(py.fptr, "\n");
+    fprintf(py.fptr,
+            "# Register cleanup function to be called at "
+            "program exit.\n");
+    fprintf(
+      py.fptr, "atexit.register(%s.chpl_cleanup)\n", pythonModulename.c_str());
 
     // Restore the previous file used for codegen.
     gGenInfo->cfile = save_cfile;
@@ -1029,7 +1043,7 @@ void codegen_make_python_module() {
   // Append library as last link argument to appease GNU linker.
   fullCythonCall += " " + name;
 
-  fullCythonCall +=  "\" " + cythonPortion;
+  fullCythonCall += "\" " + cythonPortion;
 
   std::string chdirIn = "cd ";
   chdirIn += libDir;

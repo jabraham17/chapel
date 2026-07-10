@@ -32,58 +32,54 @@
 #include "llvm/IR/Module.h"
 #endif
 
-
 /************************************ | *************************************
 *                                                                           *
 * Instance methods                                                          *
 *                                                                           *
 ************************************* | ************************************/
 
-GenRet WhileDoStmt::codegen()
-{
-  GenInfo* info    = gGenInfo;
-  FILE*    outfile = info->cfile;
-  GenRet   ret;
+GenRet WhileDoStmt::codegen() {
+  GenInfo* info = gGenInfo;
+  FILE* outfile = info->cfile;
+  GenRet ret;
 
   codegenStmt(this);
   reportVectorizable();
 
-  if (outfile)
-  {
+  if (outfile) {
     std::string hdr = "while (" + codegenValue(condExprGet()).c + ") ";
 
     info->cStatements.push_back(hdr);
 
-    if (this != getFunction()->body)
-      info->cStatements.push_back("{\n");
+    if (this != getFunction()->body) info->cStatements.push_back("{\n");
 
     body.codegen("");
 
-    if (this != getFunction()->body)
-    {
-      std::string end  = "}";
-      CondStmt*   cond = toCondStmt(parentExpr);
+    if (this != getFunction()->body) {
+      std::string end = "}";
+      CondStmt* cond = toCondStmt(parentExpr);
 
-      if (cond == 0 || !(cond->thenStmt == this && cond->elseStmt))
-        end += "\n";
+      if (cond == 0 || !(cond->thenStmt == this && cond->elseStmt)) end += "\n";
 
       info->cStatements.push_back(end);
     }
   }
 
-  else
-  {
+  else {
 #ifdef HAVE_LLVM
-    llvm::Function*   func          = info->irBuilder->GetInsertBlock()->getParent();
+    llvm::Function* func = info->irBuilder->GetInsertBlock()->getParent();
     llvm::BasicBlock* blockStmtBody = NULL;
-    llvm::BasicBlock* blockStmtEnd  = NULL;
+    llvm::BasicBlock* blockStmtEnd = NULL;
     llvm::BasicBlock* blockStmtCond = NULL;
 
     getFunction()->codegenUniqueNum++;
 
-    blockStmtBody = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_body"));
-    blockStmtEnd  = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_end"));
-    blockStmtCond = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_cond"));
+    blockStmtBody =
+      llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_body"));
+    blockStmtEnd =
+      llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_end"));
+    blockStmtCond =
+      llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_cond"));
     trackLLVMValue(blockStmtBody);
     trackLLVMValue(blockStmtEnd);
     trackLLVMValue(blockStmtCond);
@@ -101,19 +97,21 @@ GenRet WhileDoStmt::codegen()
     // Now switch to the condition for code generation
     info->irBuilder->SetInsertPoint(blockStmtCond);
 
-    GenRet            condValueRet     = codegenValue(condExprGet());
-    llvm::Value*      condValue        = condValueRet.val;
+    GenRet condValueRet = codegenValue(condExprGet());
+    llvm::Value* condValue = condValueRet.val;
 
-    if (condValue->getType() != llvm::Type::getInt1Ty(info->module->getContext()))
-    {
-      condValue = info->irBuilder->CreateICmpNE(condValue,
-                                                llvm::ConstantInt::get(condValue->getType(), 0),
-                                                FNAME("condition"));
+    if (condValue->getType() !=
+        llvm::Type::getInt1Ty(info->module->getContext())) {
+      condValue = info->irBuilder->CreateICmpNE(
+        condValue,
+        llvm::ConstantInt::get(condValue->getType(), 0),
+        FNAME("condition"));
       trackLLVMValue(condValue);
     }
 
     // Now we might go either to the Body or to the End.
-    llvm::BranchInst* condBr = info->irBuilder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
+    llvm::BranchInst* condBr =
+      info->irBuilder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
     trackLLVMValue(condBr);
 
     // Now add the body.
@@ -148,7 +146,7 @@ GenRet WhileDoStmt::codegen()
 
     if (blockStmtCond) INT_ASSERT(blockStmtCond->getParent() == func);
     if (blockStmtBody) INT_ASSERT(blockStmtBody->getParent() == func);
-    if (blockStmtEnd)  INT_ASSERT(blockStmtEnd->getParent()  == func);
+    if (blockStmtEnd) INT_ASSERT(blockStmtEnd->getParent() == func);
 #endif
   }
 
