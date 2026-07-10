@@ -1,0 +1,1 @@
+bug: assigning a new record to a union field results in a double assignment
