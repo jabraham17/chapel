@@ -50,23 +50,22 @@
 
 #include <inttypes.h>
 
-int  debugShortLoc  = true;
+int debugShortLoc = true;
 bool whocalls_nview = false;
 
 static void print_indent(int indent) {
   for (int i = 0; i < indent; i++) printf(" ");
 }
 
-static void print_on_its_own_line(int indent, const char* msg,
-                                  bool newline = true) {
+static void
+print_on_its_own_line(int indent, const char* msg, bool newline = true) {
   if (newline) printf("\n");
   printf("%6c", ' ');
   print_indent(indent);
   printf("%s", msg);
 }
 
-static void
-list_sym(const Symbol* sym, bool type = true, bool intents = true) {
+static void list_sym(const Symbol* sym, bool type = true, bool intents = true) {
   if (const VarSymbol* var = toConstVarSymbol(sym)) {
     if (var->immediate) {
       if (var->immediate->const_kind == NUM_KIND_INT) {
@@ -81,8 +80,7 @@ list_sym(const Symbol* sym, bool type = true, bool intents = true) {
   if (isFnSymbol(sym)) {
     printf("fn ");
   } else if (const ArgSymbol* arg = toConstArgSymbol(sym)) {
-    if (intents)
-      printf("arg intent-%s ", arg->intentDescrString());
+    if (intents) printf("arg intent-%s ", arg->intentDescrString());
   } else if (isTypeSymbol(sym)) {
     printf("type ");
   } else if (isInterfaceSymbol(sym)) {
@@ -103,29 +101,22 @@ list_sym(const Symbol* sym, bool type = true, bool intents = true) {
   }
 }
 
-
-static const char*
-block_explanation(const BaseAST* ast, const BaseAST* parentAst) {
+static const char* block_explanation(const BaseAST* ast,
+                                     const BaseAST* parentAst) {
   if (const ArgSymbol* parentArg = toConstArgSymbol(parentAst)) {
-    if (ast == parentArg->typeExpr)
-      return "  typeExpr=";
-    if (ast == parentArg->defaultExpr)
-      return "  defaultExpr=";
-    if (ast == parentArg->variableExpr)
-      return "  variableExpr=";
+    if (ast == parentArg->typeExpr) return "  typeExpr=";
+    if (ast == parentArg->defaultExpr) return "  defaultExpr=";
+    if (ast == parentArg->variableExpr) return "  variableExpr=";
   }
   return "";
 }
 
-static const char*
-forall_explanation_start(const BaseAST* ast, const BaseAST* parentAst) {
+static const char* forall_explanation_start(const BaseAST* ast,
+                                            const BaseAST* parentAst) {
   if (const LoopExpr* fe = toConstLoopExpr(parentAst)) {
-    if (ast == fe->iteratorExpr)
-      return ") in( ";
-    if (ast == fe->loopBody)
-      return ") { ";
-    if (ast == fe->cond)
-      return "} if( ";
+    if (ast == fe->iteratorExpr) return ") in( ";
+    if (ast == fe->loopBody) return ") { ";
+    if (ast == fe->cond) return "} if( ";
   }
   if (isDeferStmt(ast)) {
     return "defer\n";
@@ -133,8 +124,8 @@ forall_explanation_start(const BaseAST* ast, const BaseAST* parentAst) {
   return NULL;
 }
 
-static void forallPreamble(const Expr* expr, const BaseAST* parentAst,
-                           int indent) {
+static void
+forallPreamble(const Expr* expr, const BaseAST* parentAst, int indent) {
   if (const ForallStmt* pfs = toConstForallStmt(parentAst)) {
     if (expr == pfs->fRecIterIRdef) {
       print_on_its_own_line(indent, "fRecIterIRdef et al.\n");
@@ -145,25 +136,22 @@ static void forallPreamble(const Expr* expr, const BaseAST* parentAst,
         print_on_its_own_line(indent, "do\n", false);
     }
   } else if (const ShadowVarSymbol* svar = toConstShadowVarSymbol(parentAst)) {
-    if (expr == svar->outerVarSE                          ||
-        ( expr == svar->initBlock() && !svar->outerVarSE ) )
+    if (expr == svar->outerVarSE ||
+        (expr == svar->initBlock() && !svar->outerVarSE))
       printf("\n");
   } else if (const InterfaceSymbol* isym = toConstInterfaceSymbol(parentAst)) {
-    if (expr->list && expr->list->parent == isym)
-      printf("\n");
+    if (expr->list && expr->list->parent == isym) printf("\n");
   } else if (const ImplementsStmt* istm = toConstImplementsStmt(parentAst)) {
-    if (expr == istm->implBody)
-      printf("\n");
+    if (expr == istm->implBody) printf("\n");
   }
 }
 
-static void forallPostamble(const Expr* expr, const ForallStmt* pfs,
-                            int indent) {
+static void
+forallPostamble(const Expr* expr, const ForallStmt* pfs, int indent) {
   if (AList* list = expr->list) {
-    if (list == &pfs->constInductionVariables()  ||
-        list == &pfs->constIteratedExpressions() ) {
-      if (expr != list->tail)
-        printf("\n");
+    if (list == &pfs->constInductionVariables() ||
+        list == &pfs->constIteratedExpressions()) {
+      if (expr != list->tail) printf("\n");
       if (expr == pfs->constInductionVariables().tail) {
         print_on_its_own_line(indent, pfs->zippered() ? "in zip\n" : "in\n");
       } else if (expr == pfs->constIteratedExpressions().tail &&
@@ -172,12 +160,9 @@ static void forallPostamble(const Expr* expr, const ForallStmt* pfs,
       }
     }
   } else {
-    if (expr == pfs->fRecIterIRdef        ||
-        expr == pfs->fRecIterICdef        ||
-        expr == pfs->fRecIterGetIterator  ||
-        expr == pfs->fRecIterFreeIterator )
+    if (expr == pfs->fRecIterIRdef || expr == pfs->fRecIterICdef ||
+        expr == pfs->fRecIterGetIterator || expr == pfs->fRecIterFreeIterator)
       printf("\n");
-
   }
 }
 
@@ -186,8 +171,7 @@ static void usePostamble(const UseStmt* use, int indent) {
     printf("as %s ", use->getRename());
   }
 
-  if (use->isPlainUse())
-    return;
+  if (use->isPlainUse()) return;
 
   if (use->hasExceptList()) {
     printf("except ");
@@ -207,7 +191,9 @@ static void usePostamble(const UseStmt* use, int indent) {
   }
 
   for (std::map<const char*, const char*>::const_iterator it =
-         use->renamed.begin(); it != use->renamed.end(); ++it) {
+         use->renamed.begin();
+       it != use->renamed.end();
+       ++it) {
     if (first) {
       first = false;
     } else {
@@ -238,7 +224,9 @@ static void importPostamble(const ImportStmt* import, int indent) {
     }
 
     for (std::map<const char*, const char*>::const_iterator it =
-           import->renamed.begin(); it != import->renamed.end(); ++it) {
+           import->renamed.begin();
+         it != import->renamed.end();
+         ++it) {
       if (first) {
         first = false;
       } else {
@@ -250,19 +238,16 @@ static void importPostamble(const ImportStmt* import, int indent) {
   }
 }
 
-static bool
-list_line(const Expr* expr, const BaseAST* parentAst) {
-  if (expr->isStmt())
-    return !*block_explanation(expr, parentAst);
+static bool list_line(const Expr* expr, const BaseAST* parentAst) {
+  if (expr->isStmt()) return !*block_explanation(expr, parentAst);
   if (const CondStmt* cond = toConstCondStmt(parentAst))
     return cond->condExpr != expr;
   if (const GotoStmt* gts = toConstGotoStmt(parentAst))
     return gts->label != expr;
   if (const Expr* pExpr = toConstExpr(parentAst))
-    return pExpr->isStmt() &&
-      !isUseStmt(pExpr) && !isImportStmt(pExpr) && !isImplementsStmt(pExpr);
-  if (isSymbol(parentAst))
-    return true;
+    return pExpr->isStmt() && !isUseStmt(pExpr) && !isImportStmt(pExpr) &&
+           !isImplementsStmt(pExpr);
+  if (isSymbol(parentAst)) return true;
   return false;
 }
 
@@ -288,8 +273,7 @@ list_ast(const BaseAST* ast, const BaseAST* parentAst = NULL, int indent = 0) {
       const char* block_kind = ast->astTagAsString();
       if (!strcmp(block_kind, "BlockStmt")) block_kind = "";
       printf("%s{%s", block_explain, block_kind);
-      if (block->isRealBlockStmt() && block->length() == 0)
-        empty_block = true;
+      if (block->isRealBlockStmt() && block->length() == 0) empty_block = true;
       printf("%s", empty_block ? " " : "\n");
     } else if (isCondStmt(ast)) {
       printf("if ");
@@ -298,8 +282,7 @@ list_ast(const BaseAST* ast, const BaseAST* parentAst = NULL, int indent = 0) {
     } else if (isForallStmt(ast)) {
       printf("forall\n");
     } else if (const CallExpr* e = toConstCallExpr(expr)) {
-      if (e->isPrimitive(PRIM_BLOCK_C_FOR_LOOP))
-          is_C_loop = true;
+      if (e->isPrimitive(PRIM_BLOCK_C_FOR_LOOP)) is_C_loop = true;
       if (e->primitive)
         printf("%s( ", e->primitive->name);
       else
@@ -334,32 +317,29 @@ list_ast(const BaseAST* ast, const BaseAST* parentAst = NULL, int indent = 0) {
     }
   }
 
-  if (const Symbol* sym = toConstSymbol(ast))
-    list_sym(sym);
+  if (const Symbol* sym = toConstSymbol(ast)) list_sym(sym);
 
   bool early_newline = isFnSymbol(ast) || isModuleSymbol(ast);
-  if (early_newline || is_C_loop)
-    printf("\n");
+  if (early_newline || is_C_loop) printf("\n");
 
   int new_indent = indent;
 
   if (isExpr(ast))
-    if (do_list_line)
-      new_indent = indent+2;
+    if (do_list_line) new_indent = indent + 2;
 
   AST_CHILDREN_CALL(ast, list_ast, ast, new_indent);
 
   if (const Expr* expr = toConstExpr(ast)) {
-    bool parentIsCLoop = isCallExpr(parentAst) &&
+    bool parentIsCLoop =
+      isCallExpr(parentAst) &&
       toConstCallExpr(parentAst)->isPrimitive(PRIM_BLOCK_C_FOR_LOOP);
-    const CallExpr* parent_C_loop = parentIsCLoop ? toConstCallExpr(parentAst) :
-      NULL;
+    const CallExpr* parent_C_loop =
+      parentIsCLoop ? toConstCallExpr(parentAst) : NULL;
     if (isCallExpr(expr) || isIfcConstraint(expr)) {
       printf(") ");
     }
     if (isBlockStmt(ast)) {
-      if (*block_explain)
-        indent -= 2;
+      if (*block_explain) indent -= 2;
       if (!empty_block) {
         printf("%-7d ", expr->id);
         print_indent(indent);
@@ -375,26 +355,25 @@ list_ast(const BaseAST* ast, const BaseAST* parentAst = NULL, int indent = 0) {
         printf("      end forall %d", parentAst->id);
       }
     } else if (const LoopExpr* e = toConstLoopExpr(expr)) {
-      if (e->cond) printf(") ");
-      else         printf("} ");
+      if (e->cond)
+        printf(") ");
+      else
+        printf("} ");
     } else if (const UseStmt* use = toConstUseStmt(expr)) {
       usePostamble(use, indent);
     } else if (const ImportStmt* import = toConstImportStmt(expr)) {
       importPostamble(import, indent);
     } else if (const CondStmt* cond = toConstCondStmt(parentAst)) {
-      if (cond->condExpr == expr)
-        printf("\n");
+      if (cond->condExpr == expr) printf("\n");
     } else if (const ForallStmt* pfs = toConstForallStmt(parentAst)) {
       forallPostamble(expr, pfs, indent);
     } else if (!isCondStmt(expr) && do_list_line) {
       const DefExpr* def = toConstDefExpr(expr);
       if (!(def && early_newline))
-        if (!parent_C_loop)
-          printf("\n");
+        if (!parent_C_loop) printf("\n");
     }
   }
 }
-
 
 // If I invoke nprint_view et al. in aid(1) by accident,
 // the debugger prints the entire program, which is too much.
@@ -406,26 +385,30 @@ static const char*
 aidErrorMessage(const char* callerMsg, int id, const char* errorMsg) {
   const int tmpBuffSize = 256;
   static char tmpBuff[tmpBuffSize];
-  snprintf(tmpBuff, tmpBuffSize, "<%s%s""the ID %d %s>",
-           callerMsg ? callerMsg : "", callerMsg ? ": " : "",
-           id, errorMsg);
+  snprintf(tmpBuff,
+           tmpBuffSize,
+           "<%s%s"
+           "the ID %d %s>",
+           callerMsg ? callerMsg : "",
+           callerMsg ? ": " : "",
+           id,
+           errorMsg);
   return tmpBuff;
 }
 static const char* aidNotFoundError(const char* callerMsg, int id) {
   return aidErrorMessage(callerMsg, id, "does not correspond to an AST node");
 }
 static const char* aidIgnoreError(const char* callerMsg, int id) {
-  return aidErrorMessage(callerMsg, id,
-                         "is small, use aid09(id) to examine it");
+  return aidErrorMessage(
+    callerMsg, id, "is small, use aid09(id) to examine it");
 }
 
 // This version of aid*() does not exclude any id.
 BaseAST* aid09(int id) {
-  #define match_id(type)                        \
-    forv_Vec(type, a, g##type##s) {             \
-      if (a->id == id)                          \
-        return a;                               \
-    }
+#define match_id(type)            \
+  forv_Vec(type, a, g##type##s) { \
+    if (a->id == id) return a;    \
+  }
   foreach_ast(match_id);
   return NULL;
 }
@@ -441,13 +424,9 @@ static BaseAST* aidWithError(int id, const char* callerMsg) {
   }
 }
 
-BaseAST* aid(int id) {
-  return aidWithError(id, "aid");
-}
+BaseAST* aid(int id) { return aidWithError(id, "aid"); }
 
-BaseAST* aid(BaseAST* ast) {
-  return ast;
-}
+BaseAST* aid(BaseAST* ast) { return ast; }
 
 Expr* aidExpr(int id) {
   if (BaseAST* ast = aidWithError(id, "aidExpr"))
@@ -457,18 +436,16 @@ Expr* aidExpr(int id) {
 }
 
 Expr* aidExpr(BaseAST* ast) {
-  if (Expr* expr = toExpr(ast))
-    return expr;
+  if (Expr* expr = toExpr(ast)) return expr;
   if (ast != NULL)
     printf("<aidExpr: node %d is a %s, not an Expr>\n",
-           ast->id, ast->astTagAsString());
+           ast->id,
+           ast->astTagAsString());
   return NULL;
 }
 
 // inTree(): a workaround for an lldb bug
-bool inTree(BaseAST* ast) {
-  return ast->inTree();
-}
+bool inTree(BaseAST* ast) { return ast->inTree(); }
 bool inTree(int id) {
   if (BaseAST* ast = aid(id)) {
     return inTree(ast);
@@ -478,17 +455,13 @@ bool inTree(int id) {
   }
 }
 
-
 void viewFlags(int id) {
-  if (BaseAST* ast = aidWithError(id, "viewFlags"))
-    viewFlags(ast);
+  if (BaseAST* ast = aidWithError(id, "viewFlags")) viewFlags(ast);
 }
-
 
 static void view_sym(Symbol* sym, bool number, int mark) {
   putchar('\'');
-  if (sym->id == mark)
-    printf("***");
+  if (sym->id == mark) printf("***");
 
   if (isVarSymbol(sym) || isArgSymbol(sym)) {
     QualifiedType qual = sym->qualType();
@@ -505,58 +478,45 @@ static void view_sym(Symbol* sym, bool number, int mark) {
     printf("interface ");
   }
   printf("%s", sym->name);
-  if (number)
-    printf("[%d]", sym->id);
+  if (number) printf("[%d]", sym->id);
   if (FnSymbol* fn = toFnSymbol(sym)) {
     printf(":%s", fn->retType->symbol->name);
-    if (number)
-      printf("[%d]", fn->retType->symbol->id);
+    if (number) printf("[%d]", fn->retType->symbol->id);
   } else if (sym->type && sym->type->symbol) {
     printf(":%s", sym->type->symbol->name);
-    if (number)
-      printf("[%d]", sym->type->symbol->id);
+    if (number) printf("[%d]", sym->type->symbol->id);
   }
-  if (sym->isKnownToBeGeneric())
-    putchar('?');
+  if (sym->isKnownToBeGeneric()) putchar('?');
   putchar('\'');
 }
 
-
 static void
 view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
-  if (!ast)
-    return;
+  if (!ast) return;
   if (Expr* expr = toExpr(ast)) {
     printf("\n");
-    for (int i = 0; i < indent; i++)
-      printf(" ");
+    for (int i = 0; i < indent; i++) printf(" ");
     printf("(");
-    if (ast->id == mark)
-      printf("***");
-    if (number)
-      printf("%d ", ast->id);
+    if (ast->id == mark) printf("***");
+    if (number) printf("%d ", ast->id);
     printf("%s", expr->astTagAsString());
 
     if (isBlockStmt(expr))
       if (FnSymbol* fn = toFnSymbol(expr->parentSymbol))
-        if (expr == fn->where)
-          printf(" where");
+        if (expr == fn->where) printf(" where");
 
-    if (GotoStmt *gs= toGotoStmt(ast))
+    if (GotoStmt* gs = toGotoStmt(ast))
       printf(" %s", gotoTagToString(gs->gotoTag));
 
     if (CallExpr* call = toCallExpr(expr))
-      if (call->primitive)
-        printf(" %s", call->primitive->name);
+      if (call->primitive) printf(" %s", call->primitive->name);
 
-    if (NamedExpr* named = toNamedExpr(expr))
-      printf(" \"%s\"", named->name);
+    if (NamedExpr* named = toNamedExpr(expr)) printf(" \"%s\"", named->name);
 
-    if (toDefExpr(expr))
-      printf(" ");
+    if (toDefExpr(expr)) printf(" ");
 
     int64_t i;
-    const char *str;
+    const char* str;
     if (get_int(expr, &i)) {
       printf(" %" PRId64, i);
     } else if (get_string(expr, &str)) {
@@ -586,40 +546,35 @@ view_ast(BaseAST* ast, bool number = false, int mark = -1, int indent = 0) {
     writeFlags(stdout, def->sym);
   }
 
-  AST_CHILDREN_CALL(ast, view_ast, number, mark, indent+2);
+  AST_CHILDREN_CALL(ast, view_ast, number, mark, indent + 2);
 
-  if (toExpr(ast))
-    printf(")");
+  if (toExpr(ast)) printf(")");
 }
 
 // complement view_ast(), which does not do justice to types
 static void type_nprint_view(BaseAST* ast) {
   if (Type* type = toType(ast))
-    if (Symbol* ts = type->symbol)
-      printf(":%s[%d]\n", ts->name, type->id);
+    if (Symbol* ts = type->symbol) printf(":%s[%d]\n", ts->name, type->id);
 }
 
 static void type_print_view(BaseAST* ast) {
   if (Type* type = toType(ast))
     if (Symbol* ts = type->symbol) {
       printf(":%s", ts->name);
-      if (type->symbol->hasFlag(FLAG_GENERIC))
-        putchar('?');
+      if (type->symbol->hasFlag(FLAG_GENERIC)) putchar('?');
       putchar('\n');
     }
 }
 
 void list_view(int id) {
-  if (const BaseAST* ast = aidWithError(id, "list_view"))
-    list_view(ast);
+  if (const BaseAST* ast = aidWithError(id, "list_view")) list_view(ast);
 }
 
 void list_view(const BaseAST* ast) {
-  if (ast==NULL) {
+  if (ast == NULL) {
     printf("<NULL>");
   } else {
-    if (isSymbol(ast))
-      printf("%-7d ", ast->id);
+    if (isSymbol(ast)) printf("%-7d ", ast->id);
     list_ast(ast);
   }
   printf("\n");
@@ -627,18 +582,17 @@ void list_view(const BaseAST* ast) {
 }
 
 void list_view_noline(const BaseAST* ast) {
-  if (ast==NULL) {
+  if (ast == NULL) {
     printf("<NULL>");
   } else {
-    if (isSymbol(ast))
-      printf("%-7d ", ast->id);
+    if (isSymbol(ast)) printf("%-7d ", ast->id);
     list_ast(ast);
   }
   fflush(stdout);
 }
 
 void print_view(BaseAST* ast) {
-  if (ast==NULL) {
+  if (ast == NULL) {
     printf("<NULL>");
   } else {
     type_print_view(ast);
@@ -649,7 +603,7 @@ void print_view(BaseAST* ast) {
 }
 
 void print_view_noline(BaseAST* ast) {
-  if (ast==NULL) {
+  if (ast == NULL) {
     printf("<NULL>");
   } else {
     type_print_view(ast);
@@ -658,8 +612,7 @@ void print_view_noline(BaseAST* ast) {
   fflush(stdout);
 }
 
-template <typename T>
-void nprint_dyno_type(const T* t) {
+template <typename T> void nprint_dyno_type(const T* t) {
   if (t == nullptr) {
     printf("<NULL>");
   } else {
@@ -668,28 +621,19 @@ void nprint_dyno_type(const T* t) {
   fflush(stdout);
 }
 
-template <typename T>
-void nprint_dyno_type(const T& t) {
+template <typename T> void nprint_dyno_type(const T& t) {
   t.dump();
   fflush(stdout);
 }
 
 // TODO: A nice one-liner we can use to force instantiation for a type?
-void nprint_view(const chpl::uast::AstNode* x) {
-  nprint_dyno_type(x);
-}
+void nprint_view(const chpl::uast::AstNode* x) { nprint_dyno_type(x); }
 
-void nprint_view(const chpl::types::Type* x) {
-  nprint_dyno_type(x);
-}
+void nprint_view(const chpl::types::Type* x) { nprint_dyno_type(x); }
 
-void nprint_view(const chpl::types::QualifiedType& x) {
-  nprint_dyno_type(x);
-}
+void nprint_view(const chpl::types::QualifiedType& x) { nprint_dyno_type(x); }
 
-void nprint_view(const chpl::resolution::CallInfo& x) {
-  nprint_dyno_type(x);
-}
+void nprint_view(const chpl::resolution::CallInfo& x) { nprint_dyno_type(x); }
 
 void nprint_view(const chpl::resolution::ResolvedExpression* x) {
   nprint_dyno_type(x);
@@ -703,17 +647,12 @@ void nprint_view(const chpl::resolution::UntypedFnSignature* x) {
   nprint_dyno_type(x);
 }
 
-void nprint_view(const chpl::ID& x) {
-  nprint_dyno_type(x);
-}
+void nprint_view(const chpl::ID& x) { nprint_dyno_type(x); }
 
-void nprint_view(const chpl::UniqueString& x) {
-  nprint_dyno_type(x);
-}
+void nprint_view(const chpl::UniqueString& x) { nprint_dyno_type(x); }
 
 void nprint_view(int id) {
-  if (BaseAST* ast = aidWithError(id, "nprint_view"))
-    nprint_view(ast);
+  if (BaseAST* ast = aidWithError(id, "nprint_view")) nprint_view(ast);
 }
 
 void nprint_view(astlocT loc) {
@@ -737,7 +676,7 @@ void nprint_view(BaseAST* ast) {
 }
 
 void nprint_view_noline(BaseAST* ast) {
-  if (ast==NULL) {
+  if (ast == NULL) {
     printf("<NULL>");
   } else {
     type_nprint_view(ast);
@@ -746,12 +685,9 @@ void nprint_view_noline(BaseAST* ast) {
   fflush(stdout);
 }
 
-
 void iprint_view(int id) {
-  if (BaseAST* ast = aidWithError(id, "iprint_view"))
-    nprint_view(ast);
+  if (BaseAST* ast = aidWithError(id, "iprint_view")) nprint_view(ast);
 }
-
 
 void mark_view(BaseAST* ast, int id) {
   view_ast(ast, false, id);
@@ -759,15 +695,13 @@ void mark_view(BaseAST* ast, int id) {
   fflush(stdout);
 }
 
-
 // feel free to propose a better name
 void astDump_view(int id) {
-  if (BaseAST* ast = aidWithError(id, "astDump_view"))
-    astDump_view(ast);
+  if (BaseAST* ast = aidWithError(id, "astDump_view")) astDump_view(ast);
 }
 
 void astDump_view(BaseAST* ast) {
-  if (ast==NULL) {
+  if (ast == NULL) {
     printf("<NULL>");
   } else {
     AstDump logger(stdout);
@@ -777,20 +711,18 @@ void astDump_view(BaseAST* ast) {
   fflush(stdout);
 }
 
-
 static bool log_need_space;
 
 static void log_ast_symbol(FILE* file, Symbol* sym, bool def);
 
-static inline void log_write(FILE* file, bool space_before, const char* text, bool space_after) {
-  if (space_before && log_need_space)
-    putc(' ', file);
+static inline void
+log_write(FILE* file, bool space_before, const char* text, bool space_after) {
+  if (space_before && log_need_space) putc(' ', file);
   fputs(text, file);
   log_need_space = space_after;
 }
 
-static void
-log_ast_symbol(FILE* file, Symbol* sym, bool def) {
+static void log_ast_symbol(FILE* file, Symbol* sym, bool def) {
   if (log_need_space) putc(' ', file);
   log_need_space = false;
 
@@ -798,40 +730,34 @@ log_ast_symbol(FILE* file, Symbol* sym, bool def) {
     if (ArgSymbol* arg = toArgSymbol(sym)) {
       log_need_space = true;
       switch (arg->intent) {
-       case INTENT_IN:      fprintf(file, "in");        break;
-       case INTENT_INOUT:   fprintf(file, "inout");     break;
-       case INTENT_OUT:     fprintf(file, "out");       break;
-       case INTENT_CONST:   fprintf(file, "const");     break;
-       case INTENT_CONST_IN:  fprintf(file, "const in");  break;
-       case INTENT_CONST_REF: fprintf(file, "const ref"); break;
-       case INTENT_REF:     fprintf(file, "ref");       break;
-       case INTENT_PARAM:   fprintf(file, "param");     break;
-       case INTENT_TYPE:    fprintf(file, "type");      break;
-      default: log_need_space = false; break;
+        case INTENT_IN: fprintf(file, "in"); break;
+        case INTENT_INOUT: fprintf(file, "inout"); break;
+        case INTENT_OUT: fprintf(file, "out"); break;
+        case INTENT_CONST: fprintf(file, "const"); break;
+        case INTENT_CONST_IN: fprintf(file, "const in"); break;
+        case INTENT_CONST_REF: fprintf(file, "const ref"); break;
+        case INTENT_REF: fprintf(file, "ref"); break;
+        case INTENT_PARAM: fprintf(file, "param"); break;
+        case INTENT_TYPE: fprintf(file, "type"); break;
+        default: log_need_space = false; break;
       }
       log_write(file, true, "arg", true);
     }
 
   log_write(file, true, sym->name, true);
 
-  if (fLogIds)
-    fprintf(file, "[%d]", sym->id);
+  if (fLogIds) fprintf(file, "[%d]", sym->id);
 
-  if (def &&
-      !toTypeSymbol(sym) &&
-      sym->type &&
-      sym->type->symbol &&
+  if (def && !toTypeSymbol(sym) && sym->type && sym->type->symbol &&
       sym->type != dtUnknown) {
     log_write(file, false, ":", false);
     log_ast_symbol(file, sym->type->symbol, false);
   }
 
-  if (sym->isKnownToBeGeneric())
-    log_write(file, false, "?", false);
+  if (sym->isKnownToBeGeneric()) log_write(file, false, "?", false);
 
   log_need_space = true;
 }
-
 
 //
 // stringLoc, shortLoc, debugLoc: return "file:line", where 'file' is:
@@ -860,20 +786,18 @@ const char* debugLoc(int id) {
 }
 
 const char* stringLoc(BaseAST* ast) {
-  if (!ast)
-    return "<no node provided>";
+  if (!ast) return "<no node provided>";
 
   snprintf(locBuff, locBuffSize, "%s:%d", ast->fname(), ast->linenum());
   return locBuff;
 }
 
 const char* shortLoc(BaseAST* ast) {
-  if (!ast)
-    return "<no node provided>";
+  if (!ast) return "<no node provided>";
 
   const char* longLoc = stringLoc(ast);
-  const char* slash = (const char*) strrchr(longLoc, '/');
-  return slash ? slash+1 : longLoc;
+  const char* slash = (const char*)strrchr(longLoc, '/');
+  return slash ? slash + 1 : longLoc;
 }
 
 const char* debugLoc(BaseAST* ast) {
@@ -881,12 +805,8 @@ const char* debugLoc(BaseAST* ast) {
 }
 
 // debugID: helper for printing IDs, opposite to aid()
-int debugID(int id) {
-  return id;
-}
-int debugID(BaseAST* ast) {
-  return ast ? ast->id : -1;
-}
+int debugID(int id) { return id; }
+int debugID(BaseAST* ast) { return ast ? ast->id : -1; }
 
 // "debug summary": print key pieces of info
 void debugSummary(int id) {
@@ -908,9 +828,7 @@ void debugSummary(const char* str) {
   else
     printf("<debugSummary: NULL string>\n");
 }
-void debugSummary(bool b) {
-  printf("%s\n", b ? "true" : "false");
-}
+void debugSummary(bool b) { printf("%s\n", b ? "true" : "false"); }
 
 // find the Parent Symbol
 Symbol* debugParentSym(int id) {
@@ -979,7 +897,8 @@ void blockSummary(BaseAST* ast) {
     blockSummary(def->sym);
   else
     printf("<blockSummary: node %d"
-           " is not a BlockStmt/Fn/ModuleSymbol/DefExpr>\n", ast->id);
+           " is not a BlockStmt/Fn/ModuleSymbol/DefExpr>\n",
+           ast->id);
 }
 static const char* summarySymbolKind(Symbol* sym) {
   if (isFnSymbol(sym)) return "fn";
@@ -989,10 +908,15 @@ static const char* summarySymbolKind(Symbol* sym) {
   if (isInterfaceSymbol(sym)) return "interface";
   return sym->astTagAsString();
 }
-static void summarySymbolPrint(Symbol* sym, const char* prefix = NULL,
+static void summarySymbolPrint(Symbol* sym,
+                               const char* prefix = NULL,
                                const char* suffix = NULL) {
-  printf("%s%s %s[%d] %s", prefix ? prefix : "",
-         summarySymbolKind(sym), sym->name, sym->id, suffix ? suffix : "");
+  printf("%s%s %s[%d] %s",
+         prefix ? prefix : "",
+         summarySymbolKind(sym),
+         sym->name,
+         sym->id,
+         suffix ? suffix : "");
 }
 void blockSummary(BlockStmt* block, Symbol* sym) {
   printf("%9d { \n", block->id);
@@ -1024,17 +948,14 @@ void blockSummary(BlockStmt* block, Symbol* sym) {
     printf("\n");
   }
   printf("%9d }   %s\n", block->id, debugLoc(block));
-  if (sym != NULL)
-    summarySymbolPrint(sym, "in ", "\n");
+  if (sym != NULL) summarySymbolPrint(sym, "in ", "\n");
 }
 
 //
 // map_view: print the contents of a SymbolMap
 //
 
-void map_view(SymbolMap* map) {
-  map_view(*map);
-}
+void map_view(SymbolMap* map) { map_view(*map); }
 
 void map_view(SymbolMap& map) {
   printf("SymbolMap at %p\n", &map);
@@ -1073,13 +994,15 @@ void map_view(SymbolMap& map) {
 //
 
 static void showFnSymbol(FnSymbol* fn) {
-  printf("  %8d  %c%c  %s  %s\n", fn->id,
+  printf("  %8d  %c%c  %s  %s\n",
+         fn->id,
          // "g"eneric, "r"esolved, "G"eneric+resolved, " " neither
-         fn->isResolved() ? (fn->isKnownToBeGeneric() ? 'G' : 'r') :
-         (fn->isKnownToBeGeneric() ? 'g' : ' ') ,
+         fn->isResolved() ? (fn->isKnownToBeGeneric() ? 'G' : 'r')
+                          : (fn->isKnownToBeGeneric() ? 'g' : ' '),
          // "-" indicates not in tree
          fn->inTree() ? ' ' : '-',
-         fn->name, debugLoc(fn));
+         fn->name,
+         debugLoc(fn));
 }
 
 static void showSymExpr(SymExpr* elm) {
@@ -1090,12 +1013,9 @@ static void showSymExpr(SymExpr* elm) {
     printf("  %8d  <null symbol>\n", elm->id);
 }
 
-void vec_view(Vec<Symbol*,VEC_INTEGRAL_SIZE>* v) {
-  vec_view(*v);
-}
+void vec_view(Vec<Symbol*, VEC_INTEGRAL_SIZE>* v) { vec_view(*v); }
 
-void vec_view(Vec<Symbol*,VEC_INTEGRAL_SIZE>& v)
-{
+void vec_view(Vec<Symbol*, VEC_INTEGRAL_SIZE>& v) {
   printf("Vec<Symbol> %d elm(s)\n", v.n);
   for (int i = 0; i < v.n; i++) {
     Symbol* elm = v.v[i];
@@ -1106,12 +1026,9 @@ void vec_view(Vec<Symbol*,VEC_INTEGRAL_SIZE>& v)
   }
 }
 
-void vec_view(Vec<FnSymbol*,VEC_INTEGRAL_SIZE>* v) {
-  vec_view(*v);
-}
+void vec_view(Vec<FnSymbol*, VEC_INTEGRAL_SIZE>* v) { vec_view(*v); }
 
-void vec_view(Vec<FnSymbol*,VEC_INTEGRAL_SIZE>& v)
-{
+void vec_view(Vec<FnSymbol*, VEC_INTEGRAL_SIZE>& v) {
   printf("Vec<FnSymbol> %d elm(s)\n", v.n);
   for (int i = 0; i < v.n; i++) {
     FnSymbol* elm = v.v[i];
@@ -1122,12 +1039,9 @@ void vec_view(Vec<FnSymbol*,VEC_INTEGRAL_SIZE>& v)
   }
 }
 
-void vec_view(Vec<SymExpr*,VEC_INTEGRAL_SIZE>* v) {
-  vec_view(*v);
-}
+void vec_view(Vec<SymExpr*, VEC_INTEGRAL_SIZE>* v) { vec_view(*v); }
 
-void vec_view(Vec<SymExpr*,VEC_INTEGRAL_SIZE>& v)
-{
+void vec_view(Vec<SymExpr*, VEC_INTEGRAL_SIZE>& v) {
   printf("Vec<SymExpr> %d elm(s)\n", v.n);
   for (int i = 0; i < v.n; i++) {
     SymExpr* elm = v.v[i];
@@ -1138,9 +1052,7 @@ void vec_view(Vec<SymExpr*,VEC_INTEGRAL_SIZE>& v)
   }
 }
 
-void vec_view(std::vector<Symbol*>* syms) {
-  vec_view(*syms);
-}
+void vec_view(std::vector<Symbol*>* syms) { vec_view(*syms); }
 
 void vec_view(std::vector<Symbol*>& syms) {
   printf("vector<Symbol> %d elm(s)\n", (int)syms.size());
@@ -1153,9 +1065,7 @@ void vec_view(std::vector<Symbol*>& syms) {
   }
 }
 
-void vec_view(std::vector<FnSymbol*>* syms) {
-  vec_view(*syms);
-}
+void vec_view(std::vector<FnSymbol*>* syms) { vec_view(*syms); }
 
 void vec_view(std::vector<FnSymbol*>& syms) {
   printf("vector<FnSymbol> %d elm(s)\n", (int)syms.size());
@@ -1168,9 +1078,7 @@ void vec_view(std::vector<FnSymbol*>& syms) {
   }
 }
 
-void vec_view(std::vector<SymExpr*>* syms) {
-  vec_view(*syms);
-}
+void vec_view(std::vector<SymExpr*>* syms) { vec_view(*syms); }
 
 void vec_view(std::vector<SymExpr*>& syms) {
   printf("vector<SymExpr> %d elm(s)\n", (int)syms.size());
@@ -1187,62 +1095,67 @@ static void showBlock(BlockStmt* block) {
   printf("  %8d  %s", block->id, debugLoc(block));
   if (FnSymbol* sym = toFnSymbol(block->parentSymbol)) {
     const char* msg = NULL;
-    if      (block == sym->body)                msg = "body";
-    else if (block == sym->where)               msg = "where";
-    else if (block == sym->lifetimeConstraints) msg = "lifetimeConstraints";
-    else if (block == sym->retExprType)         msg = "retExprType";
-    if (msg != NULL)
-      printf("  fn %s[%d] %s", sym->name, sym->id, msg);
+    if (block == sym->body)
+      msg = "body";
+    else if (block == sym->where)
+      msg = "where";
+    else if (block == sym->lifetimeConstraints)
+      msg = "lifetimeConstraints";
+    else if (block == sym->retExprType)
+      msg = "retExprType";
+    if (msg != NULL) printf("  fn %s[%d] %s", sym->name, sym->id, msg);
   } else if (ModuleSymbol* sym = toModuleSymbol(block->parentSymbol)) {
     if (block == sym->block)
       printf("  module %s[%d] %s", sym->name, sym->id, "body");
   } else if (ArgSymbol* sym = toArgSymbol(block->parentSymbol)) {
     const char* msg = NULL;
-    if      (block == sym->typeExpr)     msg = "typeExpr";
-    else if (block == sym->defaultExpr)  msg = "defaultExpr";
-    else if (block == sym->variableExpr) msg = "variableExpr";
-    if (msg != NULL)
-      printf("  arg %s[%d] %s", sym->name, sym->id, msg);
+    if (block == sym->typeExpr)
+      msg = "typeExpr";
+    else if (block == sym->defaultExpr)
+      msg = "defaultExpr";
+    else if (block == sym->variableExpr)
+      msg = "variableExpr";
+    if (msg != NULL) printf("  arg %s[%d] %s", sym->name, sym->id, msg);
   } else if (ShadowVarSymbol* sym = toShadowVarSymbol(block->parentSymbol)) {
     const char* msg = NULL;
-    if      (block == sym->initBlock())   msg = "initBlock";
-    else if (block == sym->deinitBlock()) msg = "deinitBlock";
-    else if (block == sym->specBlock)     msg = "specBlock";
-    if (msg != NULL)
-      printf("  svar %s[%d] %s", sym->name, sym->id, msg);
+    if (block == sym->initBlock())
+      msg = "initBlock";
+    else if (block == sym->deinitBlock())
+      msg = "deinitBlock";
+    else if (block == sym->specBlock)
+      msg = "specBlock";
+    if (msg != NULL) printf("  svar %s[%d] %s", sym->name, sym->id, msg);
   }
   printf("\n");
 }
 
-void vec_view(Vec<BlockStmt*, VEC_INTEGRAL_SIZE>* v) {
-  vec_view(*v);
-}
+void vec_view(Vec<BlockStmt*, VEC_INTEGRAL_SIZE>* v) { vec_view(*v); }
 
 void vec_view(Vec<BlockStmt*, VEC_INTEGRAL_SIZE>& v) {
   printf("Vec<BlockStmt> %d elm(s)\n", v.n);
   for (int i = 0; i < v.n; i++) {
     BlockStmt* elm = v.v[i];
-    if (elm) printf("%3d", i), showBlock(elm);
-    else     printf("%3d  <null>\n", i);
+    if (elm)
+      printf("%3d", i), showBlock(elm);
+    else
+      printf("%3d  <null>\n", i);
   }
 }
 
-void vec_view(std::vector<BlockStmt*>* v) {
-  vec_view(*v);
-}
+void vec_view(std::vector<BlockStmt*>* v) { vec_view(*v); }
 
 void vec_view(std::vector<BlockStmt*>& v) {
   printf("vector<BlockStmt> %d elm(s)\n", (int)v.size());
   for (int i = 0; i < (int)v.size(); i++) {
     BlockStmt* elm = v[i];
-    if (elm) printf("%3d", i), showBlock(elm);
-    else     printf("%3d  <null>\n", i);
+    if (elm)
+      printf("%3d", i), showBlock(elm);
+    else
+      printf("%3d  <null>\n", i);
   }
 }
 
-void vec_view(Vec<ResolutionCandidate*, VEC_INTEGRAL_SIZE>* v) {
-  vec_view(*v);
-}
+void vec_view(Vec<ResolutionCandidate*, VEC_INTEGRAL_SIZE>* v) { vec_view(*v); }
 
 void vec_view(Vec<ResolutionCandidate*, VEC_INTEGRAL_SIZE>& v) {
   printf("Vec<ResolutionCandidate> %d elm(s)\n", v.n);
@@ -1250,10 +1163,12 @@ void vec_view(Vec<ResolutionCandidate*, VEC_INTEGRAL_SIZE>& v) {
     ResolutionCandidate* elm = v.v[i];
     if (elm) {
       printf("%3d", i);
-      if (elm->fn) showFnSymbol(elm->fn);
-      else         printf("  RC.fn=<null>\n");
-    }
-    else printf("%3d  <null>\n", i);
+      if (elm->fn)
+        showFnSymbol(elm->fn);
+      else
+        printf("  RC.fn=<null>\n");
+    } else
+      printf("%3d  <null>\n", i);
   }
 }
 
@@ -1261,35 +1176,33 @@ void vec_view(Vec<ResolutionCandidate*, VEC_INTEGRAL_SIZE>& v) {
 // set_view: print the contents of a std::set
 //
 
-void set_view(std::set<BlockStmt*>* bss) {
-  set_view(*bss);
-}
+void set_view(std::set<BlockStmt*>* bss) { set_view(*bss); }
 
 void set_view(std::set<BlockStmt*>& bss) {
   printf("set<BlockStmt> %d elm(s)\n", (int)bss.size());
-  for (BlockStmt* elm: bss)
-    if (elm) showBlock(elm);
-    else     printf("  <null>\n");
+  for (BlockStmt* elm : bss)
+    if (elm)
+      showBlock(elm);
+    else
+      printf("  <null>\n");
 }
 
-void set_view(std::set<FnSymbol*>* bss) {
-  set_view(*bss);
-}
+void set_view(std::set<FnSymbol*>* bss) { set_view(*bss); }
 
 void set_view(std::set<FnSymbol*>& bss) {
   printf("set<FnSymbol> %d elm(s)\n", (int)bss.size());
-  for (FnSymbol* elm: bss)
-    if (elm) showFnSymbol(elm);
-    else     printf("  <null>\n");
+  for (FnSymbol* elm : bss)
+    if (elm)
+      showFnSymbol(elm);
+    else
+      printf("  <null>\n");
 }
 
 //
 // typesWithName: print all TypeSymbols with the given name
 //
 
-void typesWithName(const char* name) {
-  typesWithName(name, gTypeSymbols);
-}
+void typesWithName(const char* name) { typesWithName(name, gTypeSymbols); }
 
 void typesWithName(const char* name, Vec<TypeSymbol*>& tyVec) {
   printf("typesWithName(\"%s\")\n", name);
@@ -1299,8 +1212,11 @@ void typesWithName(const char* name, Vec<TypeSymbol*>& tyVec) {
       countNonNull++;
       if (!strcmp(ty->name, name)) {
         count++;
-        printf("  sym %8d   %s %d  %s\n", ty->id, ty->type->astTagAsString(),
-               ty->type->id, debugLoc(ty));
+        printf("  sym %8d   %s %d  %s\n",
+               ty->id,
+               ty->type->astTagAsString(),
+               ty->type->id,
+               debugLoc(ty));
       }
     }
   }
@@ -1311,11 +1227,9 @@ void typesWithName(const char* name, Vec<TypeSymbol*>& tyVec) {
 // fnsWithName: print all FnSymbols with the given name
 //
 
-void fnsWithName(const char* name) {
-  fnsWithName(name, gFnSymbols);
-}
+void fnsWithName(const char* name) { fnsWithName(name, gFnSymbols); }
 
-void fnsWithName(const char* name, Vec<FnSymbol*,VEC_INTEGRAL_SIZE>& fnVec) {
+void fnsWithName(const char* name, Vec<FnSymbol*, VEC_INTEGRAL_SIZE>& fnVec) {
   printf("fnsWithName(\"%s\")\n", name);
   int count = 0, countNonNull = 0;
   forv_Vec(FnSymbol, fn, fnVec) {
@@ -1367,9 +1281,7 @@ static char* parentMsg(Expr* expr, int* cntInTreeP, int* cntNonTreeP) {
   return result;
 }
 
-void whocalls(int id) {
-  whocalls(id, NULL);
-}
+void whocalls(int id) { whocalls(id, NULL); }
 
 // 'sym' is used to print the function name
 static void whocalls(int id, Symbol* sym) {
@@ -1379,15 +1291,20 @@ static void whocalls(int id, Symbol* sym) {
     printf("whocalls %s %s[%d]\n", sym->astTagAsString(), sym->name, id);
   else
     printf("whocalls [%d]  ignoring %s %s[%d]\n",
-           id, sym->astTagAsString(), sym->name, sym->id);
+           id,
+           sym->astTagAsString(),
+           sym->name,
+           sym->id);
 
   int callAll = 0, callMatch = 0, callNonTreeMatch = 0;
   forv_Vec(CallExpr, call, gCallExprs) {
     if (SymExpr* se = toSymExpr(call->baseExpr)) {
       callAll++;
       if (se->symbol()->id == id) {
-        printf("  call %d  %s  %s\n", call->id,
-               parentMsg(call, &callMatch, &callNonTreeMatch), debugLoc(call));
+        printf("  call %d  %s  %s\n",
+               call->id,
+               parentMsg(call, &callMatch, &callNonTreeMatch),
+               debugLoc(call));
         if (whocalls_nview) nprint_view(call);
       }
     }
@@ -1408,8 +1325,9 @@ static void whocalls(int id, Symbol* sym) {
                   if (FnSymbol* iterator = fty->iteratorInfo->iterator)
                     if (iterator->id == id)
                       printf("  for-loop blockInfo %d  %s  %s\n",
-                             call->id, parentMsg(call, &forMatch,
-                               &forNonTreeMatch), debugLoc(call));
+                             call->id,
+                             parentMsg(call, &forMatch, &forNonTreeMatch),
+                             debugLoc(call));
     }
   }
 
@@ -1422,8 +1340,10 @@ static void whocalls(int id, Symbol* sym) {
           if (FnSymbol* iterator = debugGetTheIteratorFn(ic))
             if (iterator->id == id)
               printf("  ForLoop %d  iterator sym %d  %s  %s\n",
-                     loop->id, ic->id, parentMsg(loop, &fItMatch,
-                       &fItNonTreeMatch), debugLoc(loop));
+                     loop->id,
+                     ic->id,
+                     parentMsg(loop, &fItMatch, &fItNonTreeMatch),
+                     debugLoc(loop));
     }
   }
 
@@ -1450,10 +1370,10 @@ static void whocalls(int id, Symbol* sym) {
 
   printf("  = %d of %d calls", callMatch, callAll);
   if (callNonTreeMatch) printf(", also %d not in tree", callNonTreeMatch);
-  printf(".  %d of %d for-loops", forMatch+fItMatch, forAll+fItAll);
+  printf(".  %d of %d for-loops", forMatch + fItMatch, forAll + fItAll);
   int forNontree = forNonTreeMatch + fItNonTreeMatch;
   if (forNontree) printf(", also %d not in tree", forNontree);
-  printf(".  %d of %d in VMT+FT.\n", vmtMatch+ftMatch, vmtAll+ftAll);
+  printf(".  %d of %d in VMT+FT.\n", vmtMatch + ftMatch, vmtAll + ftAll);
   printf("\n");
 }
 
@@ -1468,8 +1388,7 @@ FnSymbol* debugGetTheIteratorFn(BaseAST* ast) {
   if (!ast) {
     printf("<debugGetTheIteratorFn: NULL>\n");
     return NULL;
-  }
-  else if (Symbol* sym = toSymbol(ast))
+  } else if (Symbol* sym = toSymbol(ast))
     return debugGetTheIteratorFn(sym->type);
   else if (SymExpr* se = toSymExpr(ast))
     return debugGetTheIteratorFn(se->symbol()->type);
@@ -1479,7 +1398,8 @@ FnSymbol* debugGetTheIteratorFn(BaseAST* ast) {
     return debugGetTheIteratorFn(fl);
   else {
     printf("<don't know how to get the iterator for node %s %d>\n",
-           ast->astTagAsString(), ast->id);
+           ast->astTagAsString(),
+           ast->id);
     return NULL;
   }
 }

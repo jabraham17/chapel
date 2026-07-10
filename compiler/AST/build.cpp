@@ -64,8 +64,7 @@ DefExpr* buildPragmaDefExpr(Vec<const char*>* pragmas, DefExpr* def) {
   return def;
 }
 
-BlockStmt* buildPragmaStmt(Vec<const char*>* pragmas,
-                           BlockStmt* stmt) {
+BlockStmt* buildPragmaStmt(Vec<const char*>* pragmas, BlockStmt* stmt) {
   bool error = false;
   for_alist(expr, stmt->body) {
     if (DefExpr* def = toDefExpr(expr)) {
@@ -81,7 +80,8 @@ BlockStmt* buildPragmaStmt(Vec<const char*>* pragmas,
   }
   if (error && pragmas->n > 0) {
     USR_FATAL_CONT(stmt, "cannot attach pragmas to this statement");
-    USR_PRINT(stmt, "   %s \"%s\"",
+    USR_PRINT(stmt,
+              "   %s \"%s\"",
               pragmas->n == 1 ? "pragma" : "starting with pragma",
               pragmas->v[0]);
   }
@@ -89,7 +89,6 @@ BlockStmt* buildPragmaStmt(Vec<const char*>* pragmas,
 
   return stmt;
 }
-
 
 //
 // A helper function that's useful in a few places in this file to
@@ -110,7 +109,6 @@ static const char* toImmediateString(Expr* expr) {
   return NULL;
 }
 
-
 //
 // This is a simple utility function that converts new-style
 // PRIM_ZIP() expressions to old-style _build_tuple() expressions for
@@ -123,7 +121,6 @@ static void zipToTuple(Expr* zipPrim) {
   zipExpr->baseExpr = new UnresolvedSymExpr("_build_tuple");
 }
 
-
 CallExpr* buildOneTuple(Expr* elem) {
   return new CallExpr("_build_tuple", elem);
 }
@@ -134,18 +131,15 @@ CallExpr* buildTuple(CallExpr* call) {
   return new CallExpr("_build_tuple", call);
 }
 
-
 Expr* buildSquareCallExpr(Expr* base, CallExpr* args) {
   CallExpr* call = new CallExpr(base, args);
   call->square = true;
   return call;
 }
 
-
 Expr* buildNamedActual(const char* name, Expr* expr) {
   return new NamedExpr(name, expr);
 }
-
 
 Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index) {
   if (index) {
@@ -153,28 +147,32 @@ Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index) {
     INT_ASSERT(indexCall);
     if (indexCall->numActuals() != 1)
       USR_FATAL(iterator, "invalid index expression");
-    return new CallExpr("chpl__buildArrayRuntimeType",
-             new CallExpr("chpl__ensureDomainExpr", iterator),
-             eltType, indexCall->get(1)->remove(),
-             new CallExpr("chpl__ensureDomainExpr", iterator->copy()));
+    return new CallExpr(
+      "chpl__buildArrayRuntimeType",
+      new CallExpr("chpl__ensureDomainExpr", iterator),
+      eltType,
+      indexCall->get(1)->remove(),
+      new CallExpr("chpl__ensureDomainExpr", iterator->copy()));
   } else {
     CallExpr* call = toCallExpr(iterator);
     if (call->numActuals() == 1 && isDefExpr(call->get(1))) {
-      return new CallExpr("chpl__buildArrayRuntimeType", call->get(1)->remove(), eltType);
+      return new CallExpr(
+        "chpl__buildArrayRuntimeType", call->get(1)->remove(), eltType);
     } else
       return new CallExpr("chpl__buildArrayRuntimeType",
-               new CallExpr("chpl__ensureDomainExpr", iterator), eltType);
+                          new CallExpr("chpl__ensureDomainExpr", iterator),
+                          eltType);
   }
 }
 
 SymExpr* buildIntLiteral(const char* pch, const char* file, int line) {
   uint64_t ull;
   int len = strlen(pch);
-  char* noUnderscores = (char*)malloc(len+1);
+  char* noUnderscores = (char*)malloc(len + 1);
 
   // remove all underscores from the number
   int j = 0;
-  for (int i=0; i<len; i++) {
+  for (int i = 0; i < len; i++) {
     if (pch[i] != '_') {
       noUnderscores[j++] = pch[i];
     }
@@ -201,20 +199,17 @@ SymExpr* buildIntLiteral(const char* pch, const char* file, int line) {
     return new SymExpr(new_UIntSymbol(ull, INT_SIZE_64));
 }
 
-
 SymExpr* buildRealLiteral(const char* pch) {
   return new SymExpr(new_RealSymbol(pch));
 }
 
-
 SymExpr* buildImagLiteral(const char* pch) {
   char* str = strdup(pch);
-  str[strlen(pch)-1] = '\0';
+  str[strlen(pch) - 1] = '\0';
   SymExpr* se = new SymExpr(new_ImagSymbol(str));
   free(str);
   return se;
 }
-
 
 SymExpr* buildStringLiteral(const char* pch) {
   return new SymExpr(new_StringSymbol(pch));
@@ -227,7 +222,6 @@ SymExpr* buildBytesLiteral(const char* pch) {
 SymExpr* buildCStringLiteral(const char* pch) {
   return new SymExpr(new_CStringSymbol(pch));
 }
-
 
 Expr* buildDotExpr(BaseAST* base, const char* member) {
   // The following optimization was added to avoid calling
@@ -248,9 +242,11 @@ Expr* buildDotExpr(BaseAST* base, const char* member) {
         if (CallExpr* getLocale = toCallExpr(intToLocale->get(1)))
           if (getLocale->isPrimitive(PRIM_WIDE_GET_LOCALE)) {
             if (!strcmp("id", member))
-              return new CallExpr(PRIM_WIDE_GET_NODE, getLocale->get(1)->remove());
+              return new CallExpr(PRIM_WIDE_GET_NODE,
+                                  getLocale->get(1)->remove());
             else
-              return new CallExpr(PRIM_WIDE_GET_LOCALE, getLocale->get(1)->remove());
+              return new CallExpr(PRIM_WIDE_GET_LOCALE,
+                                  getLocale->get(1)->remove());
           }
   }
 
@@ -263,11 +259,9 @@ Expr* buildDotExpr(BaseAST* base, const char* member) {
     return new CallExpr(".", base, new_CStringSymbol(member));
 }
 
-
 Expr* buildDotExpr(const char* base, const char* member) {
   return buildDotExpr(new UnresolvedSymExpr(base), member);
 }
-
 
 BlockStmt* buildChapelStmt(Expr* expr) {
   return new BlockStmt(expr, BLOCK_SCOPELESS);
@@ -277,8 +271,10 @@ BlockStmt* buildErrorStandin() {
   return new BlockStmt(new CallExpr(PRIM_ERROR), BLOCK_SCOPELESS);
 }
 
-static BlockStmt* buildUseList(BaseAST* module, const char* newName,
-                               BlockStmt* list, bool privateUse) {
+static BlockStmt* buildUseList(BaseAST* module,
+                               const char* newName,
+                               BlockStmt* list,
+                               bool privateUse) {
   UseStmt* newUse = new UseStmt(module, newName, privateUse);
   if (list == NULL) {
     return buildChapelStmt(newUse);
@@ -305,14 +301,16 @@ bool processStringInRequireStmt(Expr* expr,
                                 const char* modFilename) {
   if (strncmp(str, "-l", 2) == 0) {
     if (!parseTime) {
-      addLibFile(str+2); // skip past '-l'
+      addLibFile(str + 2); // skip past '-l'
       return true;
     }
   } else {
     if (isChplSource(str)) {
       if (parseTime) {
         if (!atModuleScope) {
-          USR_FATAL(expr, "cannot use 'require' on a Chapel source file not at module scope");
+          USR_FATAL(
+            expr,
+            "cannot use 'require' on a Chapel source file not at module scope");
         }
         // no need to add the source file since that is handled
         // within resolveVisibilityStmtsQuery.
@@ -335,7 +333,8 @@ bool processStringInRequireStmt(Expr* expr,
 // generate the appropriate error message.
 static void useListError(Expr* expr, bool except) {
   if (except) {
-    USR_FATAL(expr, "incorrect expression in 'except' list, identifier expected");
+    USR_FATAL(expr,
+              "incorrect expression in 'except' list, identifier expected");
   } else {
     USR_FATAL(expr, "incorrect expression in 'only' list, identifier expected");
   }
@@ -344,8 +343,10 @@ static void useListError(Expr* expr, bool except) {
 //
 // Build a 'use' statement with an 'except'/'only' list
 //
-BlockStmt* buildUseStmt(Expr* mod, const char * rename,
-                        std::vector<PotentialRename*>* names, bool except,
+BlockStmt* buildUseStmt(Expr* mod,
+                        const char* rename,
+                        std::vector<PotentialRename*>* names,
+                        bool except,
                         bool privateUse) {
   std::vector<const char*> namesList;
   std::map<const char*, const char*> renameMap;
@@ -374,31 +375,39 @@ BlockStmt* buildUseStmt(Expr* mod, const char * rename,
           if (renameMap.count(new_name->unresolved) == 0) {
             renameMap[new_name->unresolved] = old_name->unresolved;
           } else {
-            USR_FATAL_CONT(elem->first, "already renamed '%s' to '%s', renaming '%s' would conflict", renameMap[new_name->unresolved], new_name->unresolved, old_name->unresolved);
+            USR_FATAL_CONT(
+              elem->first,
+              "already renamed '%s' to '%s', renaming '%s' would conflict",
+              renameMap[new_name->unresolved],
+              new_name->unresolved,
+              old_name->unresolved);
           }
         } else {
           useListError(elem->first, except);
         }
         break;
     }
-
   }
 
-  UseStmt* newUse = new UseStmt(mod, rename, &namesList, except, &renameMap,
-                                privateUse);
+  UseStmt* newUse =
+    new UseStmt(mod, rename, &namesList, except, &renameMap, privateUse);
 
   delete names;
 
   return buildChapelStmt(newUse);
 }
 
-BlockStmt* buildUseStmt(Expr* mod, Expr* rename,
-                        std::vector<PotentialRename*>* names, bool except,
+BlockStmt* buildUseStmt(Expr* mod,
+                        Expr* rename,
+                        std::vector<PotentialRename*>* names,
+                        bool except,
                         bool privateUse) {
   if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(rename)) {
     return buildUseStmt(mod, usym->unresolved, names, except, privateUse);
   } else {
-    USR_FATAL(rename, "incorrect expression in use statement rename, identifier expected");
+    USR_FATAL(
+      rename,
+      "incorrect expression in use statement rename, identifier expected");
     return NULL; // should never be reached, the USR_FATAL will halt execution
   }
 }
@@ -426,7 +435,9 @@ BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse) {
         if (newName != NULL)
           list = buildUseList(useArg, newName->unresolved, list, privateUse);
         else
-          USR_FATAL(newNameExpr, "incorrect expression in use statement rename, identifier expected");
+          USR_FATAL(newNameExpr,
+                    "incorrect expression in use statement rename, identifier "
+                    "expected");
         break;
     }
   }
@@ -490,7 +501,8 @@ ImportStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names) {
         if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
           namesList.push_back(name->unresolved);
         } else {
-          USR_FATAL(listElem->elem, "incorrect expression in 'import' for "
+          USR_FATAL(listElem->elem,
+                    "incorrect expression in 'import' for "
                     "unqualified access, identifier expected");
         }
         break;
@@ -504,13 +516,16 @@ ImportStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names) {
           if (renameMap.count(new_name->unresolved) == 0) {
             renameMap[new_name->unresolved] = old_name->unresolved;
           } else {
-            USR_FATAL_CONT(elem->first, "already renamed '%s' to '%s', renaming"
+            USR_FATAL_CONT(elem->first,
+                           "already renamed '%s' to '%s', renaming"
                            "'%s' would conflict",
                            renameMap[new_name->unresolved],
-                           new_name->unresolved, old_name->unresolved);
+                           new_name->unresolved,
+                           old_name->unresolved);
           }
         } else {
-          USR_FATAL(elem->first, "incorrect expression in 'import' list rename,"
+          USR_FATAL(elem->first,
+                    "incorrect expression in 'import' list rename,"
                     " identifier expected");
         }
         break;
@@ -542,7 +557,8 @@ BlockStmt* buildRequireStmt(CallExpr* args, bool atModuleScope) {
     // if this is a string literal, process it if we should
     //
     if (const char* str = toImmediateString(useArg)) {
-      if (processStringInRequireStmt(useArg, atModuleScope, str, true, yyfilename)) {
+      if (processStringInRequireStmt(
+            useArg, atModuleScope, str, true, yyfilename)) {
         continue;
       }
     }
@@ -571,7 +587,7 @@ BlockStmt* buildRequireStmt(CallExpr* args, bool atModuleScope) {
 //
 // Build a queried expression like `?t`
 //
-DefExpr* buildQueriedExpr(const char *expr) {
+DefExpr* buildQueriedExpr(const char* expr) {
   return new DefExpr(new VarSymbol(&(expr[1])));
 }
 
@@ -589,8 +605,8 @@ buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
         def->remove();
       }
     } else if (BlockStmt* blk = toBlockStmt(expr)) {
-      buildTupleVarDeclHelp(new CallExpr(base, new_IntSymbol(count)),
-                            blk, insertPoint);
+      buildTupleVarDeclHelp(
+        new CallExpr(base, new_IntSymbol(count)), blk, insertPoint);
     } else {
       INT_FATAL(expr, "unexpected expression in buildTupleVarDeclHelp");
     }
@@ -598,7 +614,6 @@ buildTupleVarDeclHelp(Expr* base, BlockStmt* decls, Expr* insertPoint) {
   }
   decls->remove();
 }
-
 
 BlockStmt*
 buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init) {
@@ -621,14 +636,13 @@ buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init) {
   // same as the number of variables.  These checks will get inserted in
   // buildVarDecls after it asserts that only DefExprs are in this block.
   //
-  tupleBlock->blockInfoSet(new CallExpr("_check_tuple_var_decl", tmp, new_IntSymbol(count)));
+  tupleBlock->blockInfoSet(
+    new CallExpr("_check_tuple_var_decl", tmp, new_IntSymbol(count)));
   tupleBlock->insertAtHead(new DefExpr(tmp, init, type));
   return tupleBlock;
 }
 
-
-BlockStmt*
-buildLabelStmt(const char* name, Expr* stmt) {
+BlockStmt* buildLabelStmt(const char* name, Expr* stmt) {
   BlockStmt* block = toBlockStmt(stmt);
 
   if (block) {
@@ -646,8 +660,9 @@ buildLabelStmt(const char* name, Expr* stmt) {
         loop->userLabel = astr(name);
       }
     } else {
-      USR_FATAL_CONT(stmt, "can only label for-, while-do- and "
-                           "do-while-statements");
+      USR_FATAL_CONT(stmt,
+                     "can only label for-, while-do- and "
+                     "do-while-statements");
     }
 
   } else {
@@ -657,10 +672,9 @@ buildLabelStmt(const char* name, Expr* stmt) {
   return block;
 }
 
-
-BlockStmt*
-buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
-  return buildChapelStmt(new CondStmt(new CallExpr("_cond_test", condExpr), thenExpr, elseExpr));
+BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
+  return buildChapelStmt(
+    new CondStmt(new CallExpr("_cond_test", condExpr), thenExpr, elseExpr));
 }
 
 CallExpr* buildIfVar(const char* name, Expr* rhs, bool isConst) {
@@ -670,14 +684,13 @@ CallExpr* buildIfVar(const char* name, Expr* rhs, bool isConst) {
   return new CallExpr(PRIM_IF_VAR, def, rhs);
 }
 
-BlockStmt*
-buildExternBlockStmt(const char* c_code) {
+BlockStmt* buildExternBlockStmt(const char* c_code) {
   bool privateUse = true;
 
   // use CTypes to get c_ptr, c_int, c_double etc.
   // (System error codes do not need to be part of this).
-  BlockStmt* useBlock = buildUseList(new UnresolvedSymExpr("CTypes"), "",
-                                     NULL, privateUse);
+  BlockStmt* useBlock =
+    buildUseList(new UnresolvedSymExpr("CTypes"), "", NULL, privateUse);
 
   useBlock->insertAtTail(new ExternBlockStmt(c_code));
   BlockStmt* ret = buildChapelStmt(useBlock);
@@ -687,23 +700,25 @@ buildExternBlockStmt(const char* c_code) {
   // Chapel was built with LLVM
   // Just bring up an error if extern blocks are disabled
   if (fAllowExternC == false)
-    USR_FATAL(ret, "extern block syntax is turned off. Use "
-                   "--extern-c flag to turn on.");
+    USR_FATAL(ret,
+              "extern block syntax is turned off. Use "
+              "--extern-c flag to turn on.");
 #else
   // If Chapel wasn't built with LLVM, we can't handle extern blocks
-  USR_FATAL(ret, "Chapel must be built with llvm in order to "
-                  "use the extern block syntax");
+  USR_FATAL(ret,
+            "Chapel must be built with llvm in order to "
+            "use the extern block syntax");
 #endif
 
   return ret;
 }
 
 ModuleSymbol* buildModule(const char* name,
-                          ModTag      modTag,
-                          BlockStmt*  block,
+                          ModTag modTag,
+                          BlockStmt* block,
                           const char* filename,
-                          bool        priv,
-                          bool        prototype) {
+                          bool priv,
+                          bool prototype) {
   ModuleSymbol* mod = new ModuleSymbol(name, modTag, block);
 
   if (priv == true) {
@@ -721,8 +736,7 @@ ModuleSymbol* buildModule(const char* name,
 
 CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
   INT_ASSERT(exprs->isPrimitive(PRIM_ACTUALS_LIST));
-  if (exprs->argList.length == 0)
-    INT_FATAL("primitive has no name");
+  if (exprs->argList.length == 0) INT_FATAL("primitive has no name");
   Expr* expr = exprs->get(1);
   expr->remove();
   if (const char* primname = toImmediateString(expr)) {
@@ -737,7 +751,6 @@ CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
   return NULL;
 }
 
-
 CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr) {
   static int uid = 1;
   FnSymbol* fn = new FnSymbol(astr("chpl_let_fn", istr(uid++)));
@@ -746,33 +759,33 @@ CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr) {
   fn->insertAtTail(decls);
   fn->insertAtTail(new CallExpr(PRIM_RETURN, expr));
   if (fWarnUnstable) {
-    USR_WARN(decls, "Let expressions are currently unstable and are expected to change in ways that will break their current uses.");
+    USR_WARN(decls,
+             "Let expressions are currently unstable and are expected to "
+             "change in ways that will break their current uses.");
   }
   return new CallExpr(new DefExpr(fn));
 }
 
 BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body) {
   cond = new CallExpr("_cond_test", cond);
-  BlockStmt *sbody = new BlockStmt();
-  VarSymbol *serial_state = newTemp();
+  BlockStmt* sbody = new BlockStmt();
+  VarSymbol* serial_state = newTemp();
   sbody->insertAtTail(new DefExpr(serial_state, new CallExpr(PRIM_GET_SERIAL)));
   sbody->insertAtTail(new CondStmt(cond, new CallExpr(PRIM_SET_SERIAL, gTrue)));
-  sbody->insertAtTail(new DeferStmt(new CallExpr(PRIM_SET_SERIAL, serial_state)));
+  sbody->insertAtTail(
+    new DeferStmt(new CallExpr(PRIM_SET_SERIAL, serial_state)));
   sbody->insertAtTail(body);
   return sbody;
 }
 
-
 //
 // check validity of indices in loops and expressions
 //
-void
-checkIndices(BaseAST* indices) {
+void checkIndices(BaseAST* indices) {
   if (CallExpr* call = toCallExpr(indices)) {
     if (!call->isNamedAstr(astrBuildTuple) || call->numActuals() == 0)
       USR_FATAL(indices, "invalid index expression");
-    for_actuals(actual, call)
-      checkIndices(actual);
+    for_actuals(actual, call) checkIndices(actual);
   } else if (!isDefExpr(indices)) {
     if (UnresolvedSymExpr* use = toUnresolvedSymExpr(indices)) {
       if (!strcmp(use->unresolved, "chpl__tuple_blank")) {
@@ -829,8 +842,8 @@ static Expr* destructureIndicesAfter(Expr* insertAfter,
         }
 
         CallExpr* call = new CallExpr(init->copy(), new_IntSymbol(i));
-        insertAfter = destructureIndicesAfter(insertAfter, actual,
-                                              call, coforall);
+        insertAfter =
+          destructureIndicesAfter(insertAfter, actual, call, coforall);
         i++;
       }
     } else {
@@ -846,8 +859,7 @@ static Expr* destructureIndicesAfter(Expr* insertAfter,
       def->insertAfter(move);
       insertAfter = move;
       var->addFlag(FLAG_INDEX_VAR);
-      if (coforall)
-        var->addFlag(FLAG_COFORALL_INDEX_VAR);
+      if (coforall) var->addFlag(FLAG_COFORALL_INDEX_VAR);
       var->addFlag(FLAG_INSERT_AUTO_DESTROY);
     } else {
       INT_FATAL("Unexpected index variable");
@@ -858,24 +870,37 @@ static Expr* destructureIndicesAfter(Expr* insertAfter,
   return insertAfter;
 }
 
-
 // builds body of for expression iterator
-Expr*
-buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
+Expr* buildForLoopExpr(Expr* indices,
+                       Expr* iteratorExpr,
+                       Expr* expr,
+                       Expr* cond,
+                       bool maybeArrayType,
+                       bool zippered) {
   if (zippered) zipToTuple(iteratorExpr);
-  return new LoopExpr(indices, iteratorExpr, cond, expr, FOR_EXPR, zippered, maybeArrayType);
+  return new LoopExpr(
+    indices, iteratorExpr, cond, expr, FOR_EXPR, zippered, maybeArrayType);
 }
 
-
-Expr*
-buildForeachLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
+Expr* buildForeachLoopExpr(Expr* indices,
+                           Expr* iteratorExpr,
+                           Expr* expr,
+                           Expr* cond,
+                           bool maybeArrayType,
+                           bool zippered) {
   if (zippered) zipToTuple(iteratorExpr);
-  return new LoopExpr(indices, iteratorExpr, cond, expr, FOREACH_EXPR, zippered, maybeArrayType);
+  return new LoopExpr(
+    indices, iteratorExpr, cond, expr, FOREACH_EXPR, zippered, maybeArrayType);
 }
-Expr*
-buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
+Expr* buildForallLoopExpr(Expr* indices,
+                          Expr* iteratorExpr,
+                          Expr* expr,
+                          Expr* cond,
+                          bool maybeArrayType,
+                          bool zippered) {
   if (zippered) zipToTuple(iteratorExpr);
-  return new LoopExpr(indices, iteratorExpr, cond, expr, FORALL_EXPR, zippered, maybeArrayType);
+  return new LoopExpr(
+    indices, iteratorExpr, cond, expr, FORALL_EXPR, zippered, maybeArrayType);
 }
 
 //
@@ -885,8 +910,8 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
 // for (a few) more details.
 //
 Expr* buildForallLoopExprFromArrayType(CallExpr* buildArrTypeCall,
-                                           bool recursiveCall) {
-  if (buildArrTypeCall->isPrimitive(PRIM_ERROR))  // ex. 'type T = [];'
+                                       bool recursiveCall) {
+  if (buildArrTypeCall->isPrimitive(PRIM_ERROR)) // ex. 'type T = [];'
     return buildArrTypeCall;
 
   // Is this a call to chpl__buildArrayRuntimeType?
@@ -919,17 +944,20 @@ Expr* buildForallLoopExprFromArrayType(CallExpr* buildArrTypeCall,
       return buildArrTypeCall;
     } else {
       // ...or something is wrong if we're not
-      INT_FATAL("buildForallLoopExprFromArrayType() wasn't called with a call to chpl__buildArrayRuntimeType as expected");
+      INT_FATAL("buildForallLoopExprFromArrayType() wasn't called with a call "
+                "to chpl__buildArrayRuntimeType as expected");
       return NULL;
     }
   }
 }
 
 static CallExpr* makeUnmanagedNew(Expr* typeArg, Expr* arg) {
-  return new CallExpr(PRIM_NEW,
-                      new CallExpr(typeArg, arg,
-                        new NamedExpr(astr_chpl_manager,
-                                      new SymExpr(dtUnmanaged->symbol))));
+  return new CallExpr(
+    PRIM_NEW,
+    new CallExpr(
+      typeArg,
+      arg,
+      new NamedExpr(astr_chpl_manager, new SymExpr(dtUnmanaged->symbol))));
 }
 
 static void adjustMinMaxReduceOp(Expr* reduceOp) {
@@ -961,8 +989,7 @@ static CallExpr* copyByrefVars(CallExpr* byrefVarsSource) {
   return byrefVarsSource->copy();
 }
 
-static void
-addByrefVars(BlockStmt* target, CallExpr* byrefVarsSource) {
+static void addByrefVars(BlockStmt* target, CallExpr* byrefVarsSource) {
   // nothing to do if there is no 'ref' clause
   if (!byrefVarsSource) return;
 
@@ -978,7 +1005,6 @@ addByrefVars(BlockStmt* target, CallExpr* byrefVarsSource) {
   // Note: the UnresolvedSymExprs in byrefVars
   // will be automatically resolved in resolve().
 }
-
 
 // Build up a "lowered" coforall loop. We lower coforalls into for-loops with
 // explicit fork-join task creation via an EndCount.
@@ -1017,28 +1043,40 @@ static BlockStmt* buildLoweredCoforall(Expr* indices,
     addByrefVars(taskBlk, byref_vars);
   }
 
-  BlockStmt* block = ForLoop::buildCoforallLoop(indices,
-                                                new SymExpr(iterator),
-                                                taskBlk,
-                                                zippered);
+  BlockStmt* block = ForLoop::buildCoforallLoop(
+    indices, new SymExpr(iterator), taskBlk, zippered);
   if (bounded) {
-    if (!onBlock) { block->insertAtHead(new CallExpr("chpl_resetTaskSpawn", numTasks)); }
-    block->insertAtHead(new CallExpr("_upEndCount", coforallCount, countRunningTasks, numTasks));
-    block->insertAtHead(new CallExpr(PRIM_MOVE, numTasks, new CallExpr("chpl_boundedCoforallSize", iterator, zippered ? gTrue : gFalse)));
+    if (!onBlock) {
+      block->insertAtHead(new CallExpr("chpl_resetTaskSpawn", numTasks));
+    }
+    block->insertAtHead(
+      new CallExpr("_upEndCount", coforallCount, countRunningTasks, numTasks));
+    block->insertAtHead(new CallExpr(PRIM_MOVE,
+                                     numTasks,
+                                     new CallExpr("chpl_boundedCoforallSize",
+                                                  iterator,
+                                                  zippered ? gTrue : gFalse)));
     block->insertAtHead(new DefExpr(numTasks));
-    block->insertAtTail(new DeferStmt(new CallExpr("_endCountFree", coforallCount)));
-    block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, countRunningTasks, numTasks));
+    block->insertAtTail(
+      new DeferStmt(new CallExpr("_endCountFree", coforallCount)));
+    block->insertAtTail(new CallExpr(
+      "_waitEndCount", coforallCount, countRunningTasks, numTasks));
   } else {
-    taskBlk->insertBefore(new CallExpr("_upEndCount", coforallCount, countRunningTasks));
-    block->insertAtTail(new DeferStmt(new CallExpr("_endCountFree", coforallCount)));
-    block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, countRunningTasks));
+    taskBlk->insertBefore(
+      new CallExpr("_upEndCount", coforallCount, countRunningTasks));
+    block->insertAtTail(
+      new DeferStmt(new CallExpr("_endCountFree", coforallCount)));
+    block->insertAtTail(
+      new CallExpr("_waitEndCount", coforallCount, countRunningTasks));
   }
 
-  block->insertAtHead(new CallExpr(PRIM_MOVE, coforallCount, new CallExpr("_endCountAlloc", useLocalEndCount)));
+  block->insertAtHead(
+    new CallExpr(PRIM_MOVE,
+                 coforallCount,
+                 new CallExpr("_endCountAlloc", useLocalEndCount)));
   block->insertAtHead(new DefExpr(coforallCount));
   return block;
 }
-
 
 // Remove an extra level of BlockStmt to simplify pattern matching later
 // in compilation. Ex. test/parallel/taskPar/taskIntents/ri-coforall+on.chpl
@@ -1096,8 +1134,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  Expr* iterator,
                                  CallExpr* byref_vars,
                                  BlockStmt* body,
-                                 bool zippered)
-{
+                                 bool zippered) {
   removeWrappingBlock(body); // may update 'body'
 
   // insert temporary index when elided by user
@@ -1136,38 +1173,41 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
   indices->remove();
   body->remove();
 
-  BlockStmt* vectorCoforallBlk =
-    buildLoweredCoforall(indicesCopy, tmpIter, copyByrefVars(byref_vars),
-                         bodyCopy, zippered, /*bounded=*/true);
-  BlockStmt* nonVectorCoforallBlk =
-    buildLoweredCoforall(indices, tmpIter, byref_vars,
-                         body, zippered, /*bounded=*/false);
+  BlockStmt* vectorCoforallBlk = buildLoweredCoforall(indicesCopy,
+                                                      tmpIter,
+                                                      copyByrefVars(byref_vars),
+                                                      bodyCopy,
+                                                      zippered,
+                                                      /*bounded=*/true);
+  BlockStmt* nonVectorCoforallBlk = buildLoweredCoforall(
+    indices, tmpIter, byref_vars, body, zippered, /*bounded=*/false);
 
   VarSymbol* isBounded = newTemp("isBounded");
   isBounded->addFlag(FLAG_MAYBE_PARAM);
   coforallBlk->insertAtTail(new DefExpr(isBounded));
 
-  coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, isBounded, new CallExpr("chpl_supportsBoundedCoforall", tmpIter, zippered ? gTrue : gFalse)));
+  coforallBlk->insertAtTail(new CallExpr(
+    PRIM_MOVE,
+    isBounded,
+    new CallExpr(
+      "chpl_supportsBoundedCoforall", tmpIter, zippered ? gTrue : gFalse)));
 
-  coforallBlk->insertAtTail(new CondStmt(new SymExpr(isBounded),
-                                         vectorCoforallBlk,
-                                         nonVectorCoforallBlk));
+  coforallBlk->insertAtTail(new CondStmt(
+    new SymExpr(isBounded), vectorCoforallBlk, nonVectorCoforallBlk));
   return coforallBlk;
 }
 
-
-BlockStmt* buildParamForLoopStmt(VarSymbol* indexVar, Expr* range, BlockStmt* stmts) {
+BlockStmt*
+buildParamForLoopStmt(VarSymbol* indexVar, Expr* range, BlockStmt* stmts) {
   return ParamForLoop::buildParamForLoop(indexVar, range, stmts);
 }
 
-BlockStmt*
-buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
+BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, const char* op) {
   INT_ASSERT(op != NULL);
   return buildChapelStmt(new CallExpr(op, lhs, rhs));
 }
 
-BlockStmt*
-buildAssignment(Expr* lhs, Expr* rhs, PrimitiveTag op) {
+BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, PrimitiveTag op) {
   return buildChapelStmt(new CallExpr(op, lhs, rhs));
 }
 
@@ -1176,24 +1216,24 @@ BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs) {
   VarSymbol* ltmp = newTemp();
 
   stmt->insertAtTail(new DefExpr(ltmp));
-  stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_ADDR_OF, lhs)));
-  stmt->insertAtTail(new CallExpr("=",       ltmp, new CallExpr("&&", ltmp, rhs)));
+  stmt->insertAtTail(
+    new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_ADDR_OF, lhs)));
+  stmt->insertAtTail(new CallExpr("=", ltmp, new CallExpr("&&", ltmp, rhs)));
 
   return stmt;
 }
-
 
 BlockStmt* buildLOrAssignment(Expr* lhs, Expr* rhs) {
   BlockStmt* stmt = new BlockStmt();
   VarSymbol* ltmp = newTemp();
 
   stmt->insertAtTail(new DefExpr(ltmp));
-  stmt->insertAtTail(new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_ADDR_OF, lhs)));
-  stmt->insertAtTail(new CallExpr("=",       ltmp, new CallExpr("||", ltmp, rhs)));
+  stmt->insertAtTail(
+    new CallExpr(PRIM_MOVE, ltmp, new CallExpr(PRIM_ADDR_OF, lhs)));
+  stmt->insertAtTail(new CallExpr("=", ltmp, new CallExpr("||", ltmp, rhs)));
 
   return stmt;
 }
-
 
 BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
   BlockStmt* block = new BlockStmt();
@@ -1208,12 +1248,12 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
   tmp->addFlag(FLAG_EXPR_TEMP);
 
   block->insertAtTail(new DefExpr(tmp));
-  block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr("_select_test", selectCond)));
+  block->insertAtTail(
+    new CallExpr(PRIM_MOVE, tmp, new CallExpr("_select_test", selectCond)));
 
   for_alist(stmt, whenstmts->body) {
     CondStmt* when = toCondStmt(stmt);
-    if (!when)
-      INT_FATAL("error in buildSelectStmt");
+    if (!when) INT_FATAL("error in buildSelectStmt");
     CallExpr* conds = toCallExpr(when->condExpr);
     if (!conds || !conds->isPrimitive(PRIM_WHEN))
       INT_FATAL("error in buildSelectStmt");
@@ -1228,15 +1268,15 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
         if (!expr)
           expr = new CallExpr("==", tmp, whenCond);
         else
-          expr = new CallExpr("||", expr, new CallExpr("==",
-                                                   tmp,
-                                                   whenCond));
+          expr = new CallExpr("||", expr, new CallExpr("==", tmp, whenCond));
       }
       if (!condStmt) {
-        condStmt = new CondStmt(new CallExpr("_cond_test", expr), when->thenStmt);
+        condStmt =
+          new CondStmt(new CallExpr("_cond_test", expr), when->thenStmt);
         top = condStmt;
       } else {
-        CondStmt* next = new CondStmt(new CallExpr("_cond_test", expr), when->thenStmt);
+        CondStmt* next =
+          new CondStmt(new CallExpr("_cond_test", expr), when->thenStmt);
         condStmt->elseStmt = new BlockStmt(next);
         condStmt = next;
       }
@@ -1254,25 +1294,37 @@ BlockStmt* buildSelectStmt(Expr* selectCond, BlockStmt* whenstmts) {
   return block;
 }
 
-
-static void
-buildReduceScanPreface1(FnSymbol* fn, Symbol* data, Symbol* eltType,
-                       Expr* opExpr, Expr* dataExpr, bool zippered=false) {
+static void buildReduceScanPreface1(FnSymbol* fn,
+                                    Symbol* data,
+                                    Symbol* eltType,
+                                    Expr* opExpr,
+                                    Expr* dataExpr,
+                                    bool zippered = false) {
   adjustMinMaxReduceOp(opExpr);
   eltType->addFlag(FLAG_MAYBE_TYPE);
   fn->insertAtTail(new DefExpr(eltType));
 
-  if( !zippered ) {
-    fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(iteratorIndex(_getIterator(%S)), %S)))}", eltType, data, gFalse);
+  if (!zippered) {
+    fn->insertAtTail(
+      "{TYPE 'move'(%S, "
+      "'typeof'(chpl__initCopy(iteratorIndex(_getIterator(%S)), %S)))}",
+      eltType,
+      data,
+      gFalse);
   } else {
-    fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(iteratorIndex(_getIteratorZip(%S)), %S)))}", eltType, data, gFalse);
+    fn->insertAtTail(
+      "{TYPE 'move'(%S, "
+      "'typeof'(chpl__initCopy(iteratorIndex(_getIteratorZip(%S)), %S)))}",
+      eltType,
+      data,
+      gFalse);
   }
 }
 
-static void
-buildReduceScanPreface2(BlockStmt* fn, Symbol* eltType, Symbol* globalOp,
-                        Expr* opExpr)
-{
+static void buildReduceScanPreface2(BlockStmt* fn,
+                                    Symbol* eltType,
+                                    Symbol* globalOp,
+                                    Expr* opExpr) {
   fn->insertAtTail(new DefExpr(globalOp));
 
   NamedExpr* newArg = new NamedExpr("eltType", new SymExpr(eltType));
@@ -1281,23 +1333,21 @@ buildReduceScanPreface2(BlockStmt* fn, Symbol* eltType, Symbol* globalOp,
   fn->insertAtTail(move);
 }
 
-static void
-buildReduceScanPreface2(FnSymbol* fn, Symbol* eltType, Symbol* globalOp,
-                        Expr* opExpr)
-{
+static void buildReduceScanPreface2(FnSymbol* fn,
+                                    Symbol* eltType,
+                                    Symbol* globalOp,
+                                    Expr* opExpr) {
   buildReduceScanPreface2(fn->body, eltType, globalOp, opExpr);
 }
 
 CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
-// vass todo: since this holds, no need to pass zippered to PRIM_REDUCE below.
+  // vass todo: since this holds, no need to pass zippered to PRIM_REDUCE below.
   INT_ASSERT(zippered == (isCallExpr(dataExpr) &&
                           toCallExpr(dataExpr)->isPrimitive(PRIM_ZIP)));
 
   adjustMinMaxReduceOp(opExpr);
-  return new CallExpr(PRIM_REDUCE, opExpr, dataExpr,
-                      zippered ? gTrue : gFalse);
+  return new CallExpr(PRIM_REDUCE, opExpr, dataExpr, zippered ? gTrue : gFalse);
 }
-
 
 CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   static int uid = 1;
@@ -1318,7 +1368,7 @@ CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   buildReduceScanPreface1(fn, data, eltType, opExpr, dataExpr, zippered);
   buildReduceScanPreface2(fn, eltType, globalOp, opExpr);
 
-  if( !zippered ) {
+  if (!zippered) {
     fn->insertAtTail("'return'(chpl__scanIterator(%S, %S))", globalOp, data);
   } else {
     fn->insertAtTail("'return'(chpl__scanIteratorZip(%S, %S))", globalOp, data);
@@ -1327,14 +1377,12 @@ CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   return new CallExpr(new DefExpr(fn), dataExpr);
 }
 
-
-static void
-backPropagateInitsTypes(BlockStmt* stmts) {
+static void backPropagateInitsTypes(BlockStmt* stmts) {
   Expr* init = NULL;
   Expr* type = NULL;
   DefExpr* prev = NULL;
   for_alist_backward(stmt, stmts->body) {
-    if(isEndOfStatementMarker(stmt)){
+    if (isEndOfStatementMarker(stmt)) {
       continue;
     }
     if (DefExpr* def = toDefExpr(stmt)) {
@@ -1362,7 +1410,6 @@ backPropagateInitsTypes(BlockStmt* stmts) {
   }
 }
 
-
 std::set<Flag>* buildVarDeclFlags(Flag flag1, Flag flag2) {
   // this will be deleted in buildVarDecls()
   std::set<Flag>* flags = new std::set<Flag>();
@@ -1377,7 +1424,6 @@ std::set<Flag>* buildVarDeclFlags(Flag flag1, Flag flag2) {
   return flags;
 }
 
-
 // look up cfgname and mark it as used if we find it
 static Expr* lookupConfigValHelp(const char* cfgname, VarSymbol* var) {
   Expr* configInit = NULL;
@@ -1386,7 +1432,8 @@ static Expr* lookupConfigValHelp(const char* cfgname, VarSymbol* var) {
     if (VarSymbol* conflictingVar = isUsedCmdLineConfig(cfgname)) {
       USR_FATAL_CONT(var, "ambiguous config name (%s)", cfgname);
       USR_PRINT(conflictingVar, "also defined here");
-      USR_PRINT(conflictingVar, "(disambiguate using -s<modulename>.%s...)", cfgname);
+      USR_PRINT(
+        conflictingVar, "(disambiguate using -s<modulename>.%s...)", cfgname);
     } else {
       useCmdLineConfig(cfgname, var);
     }
@@ -1399,7 +1446,8 @@ static Expr* lookupConfigValHelp(const char* cfgname, VarSymbol* var) {
 Expr* lookupConfigVal(VarSymbol* var) {
   extern bool parsingPrivate;
   const char* cfgname = var->name;
-  Expr* configInit = lookupConfigValHelp(astr(currentModuleName, ".", cfgname), var);
+  Expr* configInit =
+    lookupConfigValHelp(astr(currentModuleName, ".", cfgname), var);
   // only public configs can be matched in an unqualified manner
   if (!parsingPrivate) {
     if (Expr* unqualConfigInit = lookupConfigValHelp(astr(cfgname), var)) {
@@ -1410,8 +1458,11 @@ Expr* lookupConfigVal(VarSymbol* var) {
         // storing ordering information about the order in which the flags
         // were passed, which we don't currently maintain.  A job for a rainy
         // day?
-        USR_FATAL_CONT(var, "config set ambiguously via '-s%s' and '-s%s.%s'",
-                       cfgname, currentModuleName, cfgname);
+        USR_FATAL_CONT(var,
+                       "config set ambiguously via '-s%s' and '-s%s.%s'",
+                       cfgname,
+                       currentModuleName,
+                       cfgname);
       }
     }
   }
@@ -1432,15 +1483,17 @@ static const char* cnameExprToString(Expr* cnameExpr) {
   return NULL;
 }
 
-BlockStmt* buildVarDecls(BlockStmt* stmts,
-                         std::set<Flag>* flags, Expr* cnameExpr) {
+BlockStmt*
+buildVarDecls(BlockStmt* stmts, std::set<Flag>* flags, Expr* cnameExpr) {
   bool firstvar = true;
   const char* cname = NULL;
 
   if (cnameExpr != NULL) {
     cname = cnameExprToString(cnameExpr);
     if (cname == NULL) {
-      USR_FATAL_CONT(cnameExpr, "at present, external variables can only be renamed using string literals");
+      USR_FATAL_CONT(cnameExpr,
+                     "at present, external variables can only be renamed using "
+                     "string literals");
     }
   }
 
@@ -1448,8 +1501,7 @@ BlockStmt* buildVarDecls(BlockStmt* stmts,
     if (DefExpr* defExpr = toDefExpr(stmt)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
         // Store the user-provided cname, if there was one
-        if (cname)
-          var->cname = cname;
+        if (cname) var->cname = cname;
 
         // Attach any flags provided to the variable
         if (flags) {
@@ -1457,11 +1509,14 @@ BlockStmt* buildVarDecls(BlockStmt* stmts,
             USR_FATAL(var, "external params are not supported");
 
           if (cnameExpr != NULL && !firstvar)
-            USR_FATAL_CONT(var, "external symbol renaming can only be applied to one symbol at a time");
+            USR_FATAL_CONT(var,
+                           "external symbol renaming can only be applied to "
+                           "one symbol at a time");
 
           setDefinedConstForDefExprIfApplicable(defExpr, flags);
 
-          for (std::set<Flag>::iterator it = flags->begin(); it != flags->end(); ++it) {
+          for (std::set<Flag>::iterator it = flags->begin(); it != flags->end();
+               ++it) {
             var->addFlag(*it);
           }
         }
@@ -1498,8 +1553,7 @@ BlockStmt* buildVarDecls(BlockStmt* stmts,
   stmts->insertAtTail(end);
 
   // this was allocated in buildVarDeclFlags()
-  if (flags)
-    delete flags;
+  if (flags) delete flags;
 
   return stmts;
 }
@@ -1514,7 +1568,8 @@ AggregateType* installInternalType(AggregateType* ct, AggregateType* dt) {
 
   // During typed conversion we may populate RootClass fields. Save them here.
   if (fDynoResolver && dt->symbol->defPoint) {
-    memcpy(ct->decoratedClasses, dt->decoratedClasses, NUM_PACKED_DECORATED_TYPES);
+    memcpy(
+      ct->decoratedClasses, dt->decoratedClasses, NUM_PACKED_DECORATED_TYPES);
     dt->symbol->defPoint->remove();
   }
 
@@ -1523,7 +1578,7 @@ AggregateType* installInternalType(AggregateType* ct, AggregateType* dt) {
   // These fields get overwritten with `ct` by the assignment.
   // These fields are set to `this` by the AggregateType constructor
   // so they should still be `dtString`. Fix them back up.
-  dt->fields.parent   = dt;
+  dt->fields.parent = dt;
   dt->inherits.parent = dt;
 
   gAggregateTypes.remove(gAggregateTypes.index(ct));
@@ -1533,13 +1588,13 @@ AggregateType* installInternalType(AggregateType* ct, AggregateType* dt) {
   return dt;
 }
 
-DefExpr* buildClassDefExpr(const char*               name,
-                           const char*               cname,
-                           AggregateTag              tag,
+DefExpr* buildClassDefExpr(const char* name,
+                           const char* cname,
+                           AggregateTag tag,
                            const std::vector<Expr*>& inherits,
-                           BlockStmt*                decls,
-                           Flag                      externFlag,
-                           ModTag                    modTag) {
+                           BlockStmt* decls,
+                           Flag externFlag,
+                           ModTag modTag) {
   bool isExtern = externFlag == FLAG_EXTERN;
   AggregateType* ct = nullptr;
   TypeSymbol* ts = nullptr;
@@ -1561,7 +1616,7 @@ DefExpr* buildClassDefExpr(const char*               name,
 
   INT_ASSERT(ct);
 
-  DefExpr*    def = new DefExpr(ts);
+  DefExpr* def = new DefExpr(ts);
 
   // add FLAG_EXTERN if this is extern before adding declarations to
   // the class in order to be able to flag the case of declaring an
@@ -1573,7 +1628,7 @@ DefExpr* buildClassDefExpr(const char*               name,
 
     ts->addFlag(FLAG_EXTERN);
     ts->addFlag(FLAG_NO_OBJECT);
-    ct->defaultValue=NULL;
+    ct->defaultValue = NULL;
 
     if (!inherits.empty()) {
       USR_FATAL_CONT(inherits.front(),
@@ -1581,8 +1636,8 @@ DefExpr* buildClassDefExpr(const char*               name,
     }
   }
 
-  for_alist(stmt, decls->body){
-    if(BlockStmt* block = toBlockStmt(stmt)) {
+  for_alist(stmt, decls->body) {
+    if (BlockStmt* block = toBlockStmt(stmt)) {
       backPropagateInitsTypes(block);
     }
   }
@@ -1595,7 +1650,6 @@ DefExpr* buildClassDefExpr(const char*               name,
   return def;
 }
 
-
 //
 // If an argument has intent 'INTENT_TYPE', this function sets up the
 // ArgSymbol the way downstream passes expect it to be.
@@ -1603,13 +1657,11 @@ DefExpr* buildClassDefExpr(const char*               name,
 void setupTypeIntentArg(ArgSymbol* arg) {
   arg->intent = INTENT_BLANK;
   arg->addFlag(FLAG_TYPE_VARIABLE);
-  if (arg->typeExpr == NULL)
-    arg->type = dtAny;
+  if (arg->typeExpr == NULL) arg->type = dtAny;
 }
 
-
-DefExpr*
-buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable) {
+DefExpr* buildArgDefExpr(
+  IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable) {
   ArgSymbol* arg = new ArgSymbol(tag, ident, dtUnknown, type, init, variable);
   if (arg->intent == INTENT_TYPE) {
     setupTypeIntentArg(arg);
@@ -1617,7 +1669,6 @@ buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* 
     arg->type = dtAny;
   return new DefExpr(arg);
 }
-
 
 //
 // create a single argument and store the tuple-grouped args in the
@@ -1628,16 +1679,15 @@ buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* 
 //
 DefExpr*
 buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init) {
-  ArgSymbol* arg = new ArgSymbol(tag, "chpl__tuple_arg_temp", dtUnknown,
-                                 type, init, tuple);
+  ArgSymbol* arg =
+    new ArgSymbol(tag, "chpl__tuple_arg_temp", dtUnknown, type, init, tuple);
   arg->addFlag(FLAG_TEMP);
   if (arg->intent != INTENT_BLANK)
-    USR_FATAL(tuple, "intents on tuple-grouped arguments are not yet supported");
-  if (!type)
-    arg->type = dtTuple;
+    USR_FATAL(tuple,
+              "intents on tuple-grouped arguments are not yet supported");
+  if (!type) arg->type = dtTuple;
   return new DefExpr(arg);
 }
-
 
 //
 // Destructure tuple function arguments of the form `proc foo((x,y,z), i)`.
@@ -1656,16 +1706,18 @@ destructureTupleGroupedArgs(FnSymbol* fn, BlockStmt* tuple, Expr* base) {
         fn->insertAtHead(def->remove());
       }
     } else if (BlockStmt* inner = toBlockStmt(expr)) {
-      destructureTupleGroupedArgs(fn, inner, new CallExpr(base->copy(), new_IntSymbol(i)));
+      destructureTupleGroupedArgs(
+        fn, inner, new CallExpr(base->copy(), new_IntSymbol(i)));
     }
     i++;
   }
 
-  Expr* where =
-    new CallExpr("&&",
-      new CallExpr("isTuple", base->copy()),
-      new CallExpr("==", new_IntSymbol(i),
-        new CallExpr(".", base->copy(), new_CStringSymbol("size"))));
+  Expr* where = new CallExpr(
+    "&&",
+    new CallExpr("isTuple", base->copy()),
+    new CallExpr("==",
+                 new_IntSymbol(i),
+                 new CallExpr(".", base->copy(), new_CStringSymbol("size"))));
 
   if (fn->where) {
     where = new CallExpr("&&", fn->where->body.head->remove(), where);
@@ -1675,7 +1727,8 @@ destructureTupleGroupedArgs(FnSymbol* fn, BlockStmt* tuple, Expr* base) {
   }
 }
 
-void setupExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr,
+void setupExternExportFunctionDecl(Flag externOrExport,
+                                   Expr* paramCNameExpr,
                                    FnSymbol* fn) {
   const char* cname = "";
   // Look for a string literal we can use
@@ -1691,8 +1744,7 @@ void setupExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr,
     fn->addFlag(FLAG_EXTERN);
 
     // extern functions with no declared return type will return void
-    if (fn->retExprType == NULL)
-      fn->retType = dtVoid;
+    if (fn->retExprType == NULL) fn->retType = dtVoid;
   }
   if (externOrExport == FLAG_EXPORT) {
     fn->addFlag(FLAG_LOCAL_ARGS);
@@ -1709,12 +1761,15 @@ void setupExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr,
     DefExpr* argDef = buildArgDefExpr(INTENT_BLANK,
                                       astr_chpl_cname,
                                       new SymExpr(dtString->symbol),
-                                      paramCNameExpr, NULL);
+                                      paramCNameExpr,
+                                      NULL);
     fn->insertFormalAtTail(argDef);
   }
 }
 
-BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr, BlockStmt* blockFnDef) {
+BlockStmt* buildExternExportFunctionDecl(Flag externOrExport,
+                                         Expr* paramCNameExpr,
+                                         BlockStmt* blockFnDef) {
   DefExpr* def = toDefExpr(blockFnDef->body.tail);
   INT_ASSERT(def);
   FnSymbol* fn = toFnSymbol(def->sym);
@@ -1725,31 +1780,27 @@ BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameEx
   return blockFnDef;
 }
 
-void
-setupFunctionDecl(FnSymbol*   fn,
-                  RetTag      optRetTag,
-                  Expr*       optRetType,
-                  bool        optThrowsError,
-                  Expr*       optWhere,
-                  Expr*       optLifetimeConstraints,
-                  BlockStmt*  optFnBody) {
+void setupFunctionDecl(FnSymbol* fn,
+                       RetTag optRetTag,
+                       Expr* optRetType,
+                       bool optThrowsError,
+                       Expr* optWhere,
+                       Expr* optLifetimeConstraints,
+                       BlockStmt* optFnBody) {
   fn->retTag = optRetTag;
 
-  if (optRetType)
-    fn->retExprType = new BlockStmt(optRetType, BLOCK_TYPE);
+  if (optRetType) fn->retExprType = new BlockStmt(optRetType, BLOCK_TYPE);
 
-  if (optThrowsError)
-  {
+  if (optThrowsError) {
     fn->throwsErrorInit();
   }
 
-  if (optWhere)
-  {
-    fn->where = new BlockStmt(new CallExpr("chpl_validateWhere", optWhere));;
+  if (optWhere) {
+    fn->where = new BlockStmt(new CallExpr("chpl_validateWhere", optWhere));
+    ;
   }
 
-  if (optLifetimeConstraints)
-  {
+  if (optLifetimeConstraints) {
     fn->lifetimeConstraints = new BlockStmt(optLifetimeConstraints);
   }
 
@@ -1778,16 +1829,20 @@ setupFunctionDecl(FnSymbol*   fn,
   }
 }
 
-BlockStmt*
-buildFunctionDecl(FnSymbol*   fn,
-                  RetTag      optRetTag,
-                  Expr*       optRetType,
-                  bool        optThrowsError,
-                  Expr*       optWhere,
-                  Expr*       optLifetimeConstraints,
-                  BlockStmt*  optFnBody) {
-  setupFunctionDecl(fn, optRetTag, optRetType, optThrowsError,
-                    optWhere, optLifetimeConstraints, optFnBody);
+BlockStmt* buildFunctionDecl(FnSymbol* fn,
+                             RetTag optRetTag,
+                             Expr* optRetType,
+                             bool optThrowsError,
+                             Expr* optWhere,
+                             Expr* optLifetimeConstraints,
+                             BlockStmt* optFnBody) {
+  setupFunctionDecl(fn,
+                    optRetTag,
+                    optRetType,
+                    optThrowsError,
+                    optWhere,
+                    optLifetimeConstraints,
+                    optFnBody);
   return buildChapelStmt(new DefExpr(fn));
 }
 
@@ -1843,20 +1898,14 @@ ForwardingStmt* buildForwardingStmt(DefExpr* fnDef,
     }
   }
 
-  ForwardingStmt* ret = new ForwardingStmt(fnDef,
-                                           &namesSet,
-                                           except,
-                                           &renameMap);
+  ForwardingStmt* ret =
+    new ForwardingStmt(fnDef, &namesSet, except, &renameMap);
   return ret;
 }
 
-
-FnSymbol*
-buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
-  if (!fn)
-    fn = new FnSymbol("_");
-  if (!def)
-    return fn;
+FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
+  if (!fn) fn = new FnSymbol("_");
+  if (!def) return fn;
   ArgSymbol* arg = toArgSymbol(def->sym);
   INT_ASSERT(arg);
 
@@ -1874,9 +1923,9 @@ buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
 
 // builds a local statement with a conditional, where the `then` block
 // is local and `else` block is not
-BlockStmt* buildConditionalLocalStmt(Expr* condExpr, Expr *stmt) {
-  return buildIfStmt(new CallExpr("_cond_test", condExpr),
-      buildLocalStmt(stmt->copy()), stmt);
+BlockStmt* buildConditionalLocalStmt(Expr* condExpr, Expr* stmt) {
+  return buildIfStmt(
+    new CallExpr("_cond_test", condExpr), buildLocalStmt(stmt->copy()), stmt);
 }
 
 /*
@@ -1904,7 +1953,8 @@ BlockStmt* buildConditionalLocalStmt(Expr* condExpr, Expr *stmt) {
     }
   }
 */
-BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
+BlockStmt* buildManagerBlock(Expr* managerExpr,
+                             std::set<Flag>* flags,
                              const char* resourceName,
                              Symbol*& outStoredResource) {
 
@@ -1921,8 +1971,8 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
   ret->insertAtTail(moveIntoHandle);
 
   // BUILD: chpl__verifyTypeContext(manager);
-  auto verifyCall = new CallExpr("chpl__verifyTypeContext",
-                                 new SymExpr(managerHandle));
+  auto verifyCall =
+    new CallExpr("chpl__verifyTypeContext", new SymExpr(managerHandle));
   ret->insertAtTail(verifyCall);
 
   // Build call to 'enterContext', but don't insert into the tree yet.
@@ -1938,7 +1988,7 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
     if (isResourceStorageKindInferred) {
       resource->addFlag(FLAG_MANAGER_RESOURCE_INFER_STORAGE);
     } else {
-      for (auto f: *flags) resource->addFlag(f);
+      for (auto f : *flags) resource->addFlag(f);
       delete flags;
       flags = nullptr;
     }
@@ -1954,8 +2004,9 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
 
   // BUILD: TEMP var error = nil;
   auto errorTemp = newTemp();
-  auto errorType = new CallExpr("_owned", new CallExpr(PRIM_TO_NILABLE_CLASS,
-                                new UnresolvedSymExpr("Error")));
+  auto errorType = new CallExpr(
+    "_owned",
+    new CallExpr(PRIM_TO_NILABLE_CLASS, new UnresolvedSymExpr("Error")));
   ret->insertAtTail(new DefExpr(errorTemp, gNil, errorType));
 
   // BUILD: unchecked-defer manager.exitContext(error);
@@ -2023,8 +2074,7 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
   not in a throwing function, and not in a try). (We can't really do this
   very well until we make use of the typed converter.)
 */
-Expr*
-buildManageStmt(BlockStmt* managers, BlockStmt* block, ModTag modTag) {
+Expr* buildManageStmt(BlockStmt* managers, BlockStmt* block, ModTag modTag) {
   auto markedTryBlock = new BlockStmt();
   bool isTryBang = true;
   bool isSyncTry = false;
@@ -2090,8 +2140,7 @@ BlockStmt* buildLocalStmt(Expr* stmt) {
   // i.e., we want "local on {} ", not "local { on {} }"
   //
   BlockStmt* onBlock = toBlockStmt(body->body.tail);
-  if (body->blockTag == BLOCK_SCOPELESS &&
-      onBlock != NULL &&
+  if (body->blockTag == BLOCK_SCOPELESS && onBlock != NULL &&
       onBlock->isBlockType(PRIM_BLOCK_ON)) {
     // On-statement directly inside scopeless local block
 
@@ -2120,7 +2169,6 @@ BlockStmt* buildLocalStmt(Expr* stmt) {
   }
 }
 
-
 static Expr* extractLocaleID(Expr* expr) {
   // If the on <x> expression is a primitive_on_locale_num, we just
   // return the primitive.
@@ -2143,9 +2191,7 @@ static Expr* extractLocaleID(Expr* expr) {
   return new CallExpr(PRIM_WIDE_GET_LOCALE, expr);
 }
 
-
-BlockStmt*
-buildOnStmt(Expr* expr, Expr* stmt) {
+BlockStmt* buildOnStmt(Expr* expr, Expr* stmt) {
   CallExpr* onExpr = new CallExpr(PRIM_DEREF, extractLocaleID(expr));
 
   BlockStmt* body = toBlockStmt(stmt);
@@ -2161,7 +2207,8 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   if (!requireOutlinedOn()) {
     BlockStmt* block = new BlockStmt(stmt);
     Symbol* tmp = newTempConst();
-    block->insertAtHead(new CallExpr(PRIM_MOVE, tmp, onExpr)); // evaluate the expression for side effects
+    block->insertAtHead(new CallExpr(
+      PRIM_MOVE, tmp, onExpr)); // evaluate the expression for side effects
     block->insertAtHead(new DefExpr(tmp));
     block->blockInfoSet(new CallExpr(PRIM_BLOCK_ELIDED_ON, gFalse, tmp));
     return buildChapelStmt(block);
@@ -2195,9 +2242,7 @@ buildOnStmt(Expr* expr, Expr* stmt) {
   }
 }
 
-
-BlockStmt*
-buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
+BlockStmt* buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
   BlockStmt* body = toBlockStmt(stmt);
 
   //
@@ -2217,7 +2262,8 @@ buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
     VarSymbol* endCount = newTempConst("_endCount");
     endCount->addFlag(FLAG_END_COUNT);
     block->insertAtTail(new DefExpr(endCount));
-    block->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr(PRIM_GET_DYNAMIC_END_COUNT)));
+    block->insertAtTail(new CallExpr(
+      PRIM_MOVE, endCount, new CallExpr(PRIM_GET_DYNAMIC_END_COUNT)));
     block->insertAtTail(new CallExpr("_upEndCount", endCount));
     BlockStmt* beginBlock = new BlockStmt();
     beginBlock->blockInfoSet(new CallExpr(PRIM_BLOCK_BEGIN));
@@ -2229,18 +2275,20 @@ buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
   }
 }
 
-
-BlockStmt*
-buildSyncStmt(Expr* stmt) {
+BlockStmt* buildSyncStmt(Expr* stmt) {
   BlockStmt* block = new BlockStmt();
   VarSymbol* endCountSave = newTempConst("_endCountSave");
   endCountSave->addFlag(FLAG_END_COUNT);
   block->insertAtTail(new DefExpr(endCountSave));
-  block->insertAtTail(new CallExpr(PRIM_MOVE, endCountSave, new CallExpr(PRIM_GET_DYNAMIC_END_COUNT)));
+  block->insertAtTail(new CallExpr(
+    PRIM_MOVE, endCountSave, new CallExpr(PRIM_GET_DYNAMIC_END_COUNT)));
   VarSymbol* endCount = newTempConst("_endCount");
   endCount->addFlag(FLAG_END_COUNT);
   block->insertAtTail(new DefExpr(endCount));
-  block->insertAtTail(new CallExpr(PRIM_MOVE, endCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gFalse)));
+  block->insertAtTail(new CallExpr(
+    PRIM_MOVE,
+    endCount,
+    new CallExpr("_endCountAlloc", /* forceLocalTypes= */ gFalse)));
   block->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCount));
 
   // Note that a sync statement can contain arbitrary code,
@@ -2263,9 +2311,8 @@ buildSyncStmt(Expr* stmt) {
 
   const char* ename = "chpl_sync_error";
 
-  saveError->insertAtTail(new CallExpr("chpl_save_task_error_owned",
-                                       endCount,
-                                       new UnresolvedSymExpr(ename)));
+  saveError->insertAtTail(new CallExpr(
+    "chpl_save_task_error_owned", endCount, new UnresolvedSymExpr(ename)));
 
   BlockStmt* catches = new BlockStmt();
   catches->insertAtTail(CatchStmt::build(ename, saveError));
@@ -2274,7 +2321,9 @@ buildSyncStmt(Expr* stmt) {
   body->blockTag = BLOCK_NORMAL; // or at least, not scopeless
   INT_ASSERT(body);
 
-  TryStmt* t = new TryStmt(/* try! */ false, body, catches,
+  TryStmt* t = new TryStmt(/* try! */ false,
+                           body,
+                           catches,
                            /* isSyncTry */ true);
 
   block->insertAtTail(t);
@@ -2284,7 +2333,8 @@ buildSyncStmt(Expr* stmt) {
 
   BlockStmt* cleanup = new BlockStmt();
 
-  cleanup->insertAtTail(new CallExpr("_endCountFree", new CallExpr(PRIM_GET_DYNAMIC_END_COUNT)));
+  cleanup->insertAtTail(
+    new CallExpr("_endCountFree", new CallExpr(PRIM_GET_DYNAMIC_END_COUNT)));
   cleanup->insertAtTail(new CallExpr(PRIM_SET_DYNAMIC_END_COUNT, endCountSave));
 
   block->insertAtTail(new DeferStmt(cleanup));
@@ -2292,9 +2342,7 @@ buildSyncStmt(Expr* stmt) {
   return block;
 }
 
-
-BlockStmt*
-buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
+BlockStmt* buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
   BlockStmt* outer = block;
 
   if (block->blockTag == BLOCK_SCOPELESS) {
@@ -2310,7 +2358,8 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
   }
 
   if (block->length() < 2) {
-    USR_WARN(outer, "cobegin has no effect if it contains fewer than 2 statements");
+    USR_WARN(outer,
+             "cobegin has no effect if it contains fewer than 2 statements");
     // dropping byref_vars, if any
     return buildChapelStmt(block);
   }
@@ -2330,19 +2379,23 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
     beginBlk->insertAtTail(new CallExpr("_downEndCount", cobeginCount, gNil));
   }
 
-  block->insertAtHead(new CallExpr("_upEndCount", cobeginCount, /*countRunningTasks=*/gTrue, numTasks));
-  block->insertAtHead(new CallExpr(PRIM_MOVE, cobeginCount, new CallExpr("_endCountAlloc", /* forceLocalTypes= */gTrue)));
+  block->insertAtHead(new CallExpr(
+    "_upEndCount", cobeginCount, /*countRunningTasks=*/gTrue, numTasks));
+  block->insertAtHead(
+    new CallExpr(PRIM_MOVE,
+                 cobeginCount,
+                 new CallExpr("_endCountAlloc", /* forceLocalTypes= */ gTrue)));
   block->insertAtHead(new DefExpr(cobeginCount));
-  block->insertAtTail(new DeferStmt(new CallExpr("_endCountFree", cobeginCount)));
-  block->insertAtTail(new CallExpr("_waitEndCount", cobeginCount, /*countRunningTasks=*/gTrue, numTasks));
+  block->insertAtTail(
+    new DeferStmt(new CallExpr("_endCountFree", cobeginCount)));
+  block->insertAtTail(new CallExpr(
+    "_waitEndCount", cobeginCount, /*countRunningTasks=*/gTrue, numTasks));
 
   block->astloc = cobeginCount->astloc; // grab the location of 'cobegin' kw
   return block;
 }
 
-
-BlockStmt*
-buildGotoStmt(GotoTag tag, const char* name) {
+BlockStmt* buildGotoStmt(GotoTag tag, const char* name) {
   return buildChapelStmt(new GotoStmt(tag, name));
 }
 
@@ -2350,12 +2403,10 @@ BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1, Expr* e2) {
   return buildChapelStmt(new CallExpr(tag, e1, e2));
 }
 
-
 BlockStmt* buildDeleteStmt(CallExpr* exprlist) {
   INT_ASSERT(exprlist->isPrimitive(PRIM_ACTUALS_LIST));
   return new BlockStmt(new CallExpr("chpl__delete", exprlist), BLOCK_SCOPELESS);
 }
-
 
 CallExpr* buildPreDecIncWarning(Expr* expr, char sign) {
   if (sign == '+') {
@@ -2413,7 +2464,7 @@ BlockStmt* handleConfigTypes(BlockStmt* blk) {
     if (DefExpr* defExpr = toDefExpr(node)) {
       if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
         var->addFlag(FLAG_CONFIG);
-        if (Expr *configInit = lookupConfigVal(var)) {
+        if (Expr* configInit = lookupConfigVal(var)) {
           // config var initialized on the command line
           // drop the original init expression on the floor
           if (Expr* a = toExpr(configInit))
@@ -2434,15 +2485,15 @@ BlockStmt* handleConfigTypes(BlockStmt* blk) {
   return blk;
 }
 
-CallExpr* buildBoundedRange(Expr* low, Expr* high,
-                            bool openlow, bool openhigh) {
+CallExpr*
+buildBoundedRange(Expr* low, Expr* high, bool openlow, bool openhigh) {
   if (openlow) {
     low = new CallExpr("chpl__nudgeLowBound", low);
   }
   if (openhigh) {
     high = new CallExpr("chpl__nudgeHighBound", high);
   }
-  return new CallExpr("chpl_build_bounded_range",low, high);
+  return new CallExpr("chpl_build_bounded_range", low, high);
 }
 
 CallExpr* buildLowBoundedRange(Expr* low, bool open) {
@@ -2462,7 +2513,6 @@ CallExpr* buildHighBoundedRange(Expr* high, bool open) {
 CallExpr* buildUnboundedRange() {
   return new CallExpr("chpl_build_unbounded_range");
 }
-
 
 // Attempt to find a stmt with a specific PrimitiveTag in a blockStmt
 //
@@ -2491,62 +2541,51 @@ static BlockStmt* findStmtWithTag(PrimitiveTag tag, BlockStmt* blockStmt) {
 
     // This is the stmt we're looking for
     if (tail != NULL && tail->isBlockType(tag)) {
-      retval    = tail;
+      retval = tail;
 
-    // Stop if the current blockStmt is not of length 1
+      // Stop if the current blockStmt is not of length 1
     } else if (blockStmt->length() != 1) {
       blockStmt = NULL;
 
-    // Stop if the tail is not a "real" BlockStmt (e.g. a Loop etc)
-    } else if (tail == NULL ||
-               (tail->isRealBlockStmt() == false &&
-                !tail->isBlockType(PRIM_BLOCK_ELIDED_ON))) {
+      // Stop if the tail is not a "real" BlockStmt (e.g. a Loop etc)
+    } else if (tail == NULL || (tail->isRealBlockStmt() == false &&
+                                !tail->isBlockType(PRIM_BLOCK_ELIDED_ON))) {
       blockStmt = NULL;
 
-    // Step in to the block and try again
+      // Step in to the block and try again
     } else {
       blockStmt = tail;
-
     }
   }
 
   return retval;
 }
 
-Expr* tryExpr(Expr* e)
-{
-  return new CallExpr(PRIM_TRY_EXPR, e);
-}
+Expr* tryExpr(Expr* e) { return new CallExpr(PRIM_TRY_EXPR, e); }
 
-Expr* tryBangExpr(Expr* e)
-{
-  return new CallExpr(PRIM_TRYBANG_EXPR, e);
-}
+Expr* tryBangExpr(Expr* e) { return new CallExpr(PRIM_TRYBANG_EXPR, e); }
 
-Expr* convertAssignmentAndWarn(Expr* a, const char* op, Expr* b)
-{
+Expr* convertAssignmentAndWarn(Expr* a, const char* op, Expr* b) {
   if (0 == strcmp("=", op)) {
     USR_FATAL_CONT(a, "Assignment is illegal in a conditional");
     USR_PRINT(a, "Use == to check for equality in a conditional");
   } else {
-    USR_FATAL_CONT(a, "Assignment operation %s is illegal in a conditional",
-                   op);
+    USR_FATAL_CONT(
+      a, "Assignment operation %s is illegal in a conditional", op);
   }
 
   // Either way, continue compiling with ==
   return new CallExpr("==", a, b);
 }
 
-void redefiningReservedTypeError(const char* name)
-{
-  USR_FATAL_CONT(buildErrorStandin(),
-                 "attempt to redefine reserved type '%s'", name);
+void redefiningReservedTypeError(const char* name) {
+  USR_FATAL_CONT(
+    buildErrorStandin(), "attempt to redefine reserved type '%s'", name);
 }
 
-void redefiningReservedWordError(const char* name)
-{
-  USR_FATAL_CONT(buildErrorStandin(),
-                 "attempt to redefine reserved word '%s'", name);
+void redefiningReservedWordError(const char* name) {
+  USR_FATAL_CONT(
+    buildErrorStandin(), "attempt to redefine reserved word '%s'", name);
 }
 
 void updateOpThisTagOrErr(FnSymbol* fn) {
@@ -2555,7 +2594,8 @@ void updateOpThisTagOrErr(FnSymbol* fn) {
   } else {
     USR_FATAL_CONT(buildErrorStandin(),
                    "attempt to declare unsupported this intent tag for operator"
-                   " function '%s'", fn->name);
+                   " function '%s'",
+                   fn->name);
   }
 }
 

@@ -21,10 +21,9 @@
 #include "LoopStmt.h"
 #include "ForallStmt.h"
 
-LoopStmt::LoopStmt(BlockStmt* initBody) : BlockStmt(initBody)
-{
-  mBreakLabel       = 0;
-  mContinueLabel    = 0;
+LoopStmt::LoopStmt(BlockStmt* initBody) : BlockStmt(initBody) {
+  mBreakLabel = 0;
+  mContinueLabel = 0;
   mOrderIndependent = false;
   mExemptFromImplicitIntents = false;
   mVectorizationHazard = false;
@@ -32,33 +31,17 @@ LoopStmt::LoopStmt(BlockStmt* initBody) : BlockStmt(initBody)
   mLLVMMetadataList = {};
 }
 
-LabelSymbol* LoopStmt::breakLabelGet() const
-{
-  return mBreakLabel;
-}
+LabelSymbol* LoopStmt::breakLabelGet() const { return mBreakLabel; }
 
-void LoopStmt::breakLabelSet(LabelSymbol* sym)
-{
-  mBreakLabel = sym;
-}
+void LoopStmt::breakLabelSet(LabelSymbol* sym) { mBreakLabel = sym; }
 
-LabelSymbol* LoopStmt::continueLabelGet() const
-{
-  return mContinueLabel;
-}
+LabelSymbol* LoopStmt::continueLabelGet() const { return mContinueLabel; }
 
-void LoopStmt::continueLabelSet(LabelSymbol* sym)
-{
-  mContinueLabel = sym;
-}
+void LoopStmt::continueLabelSet(LabelSymbol* sym) { mContinueLabel = sym; }
 
-bool LoopStmt::isOrderIndependent() const
-{
-  return mOrderIndependent;
-}
+bool LoopStmt::isOrderIndependent() const { return mOrderIndependent; }
 
-void LoopStmt::orderIndependentSet(bool orderIndependent)
-{
+void LoopStmt::orderIndependentSet(bool orderIndependent) {
   mOrderIndependent = orderIndependent;
 }
 
@@ -70,37 +53,24 @@ bool LoopStmt::isExemptFromImplicitIntents() const {
   return mExemptFromImplicitIntents;
 }
 
-bool LoopStmt::hasVectorizationHazard() const
-{
-  return mVectorizationHazard;
-}
+bool LoopStmt::hasVectorizationHazard() const { return mVectorizationHazard; }
 
-void LoopStmt::setHasVectorizationHazard(bool v)
-{
-  mVectorizationHazard = v;
-}
+void LoopStmt::setHasVectorizationHazard(bool v) { mVectorizationHazard = v; }
 
-bool LoopStmt::hasParallelAccessVectorizationHazard() const
-{
+bool LoopStmt::hasParallelAccessVectorizationHazard() const {
   return mParallelAccessVectorizationHazard;
 }
 
-void LoopStmt::setHasParallelAccessVectorizationHazard(bool v)
-{
+void LoopStmt::setHasParallelAccessVectorizationHazard(bool v) {
   mParallelAccessVectorizationHazard = v;
 }
 
-
-bool LoopStmt::isVectorizable() const
-{
-  return mOrderIndependent &&
-         !mVectorizationHazard;
+bool LoopStmt::isVectorizable() const {
+  return mOrderIndependent && !mVectorizationHazard;
 }
 
-bool LoopStmt::isParallelAccessVectorizable() const
-{
-  return mOrderIndependent &&
-         !mVectorizationHazard &&
+bool LoopStmt::isParallelAccessVectorizable() const {
+  return mOrderIndependent && !mVectorizationHazard &&
          !mParallelAccessVectorizationHazard;
 }
 
@@ -117,7 +87,7 @@ LLVMMetadataPtr LoopStmt::getAdditionalLLVMMetadata(const char* a) const {
   const char* aa = astr(a);
   auto it = std::find_if(mLLVMMetadataList.begin(),
                          mLLVMMetadataList.end(),
-                         [aa](auto elm) {return elm->key == aa;});
+                         [aa](auto elm) { return elm->key == aa; });
   return it != mLLVMMetadataList.end() ? *it : nullptr;
 }
 void LoopStmt::setAdditionalLLVMMetadata(const LLVMMetadataList& al) {
@@ -125,43 +95,35 @@ void LoopStmt::setAdditionalLLVMMetadata(const LLVMMetadataList& al) {
 }
 
 // what if the nearest enclosing loop is a forall?
-LoopStmt* LoopStmt::findEnclosingLoop(Expr* expr)
-{
+LoopStmt* LoopStmt::findEnclosingLoop(Expr* expr) {
   LoopStmt* retval = NULL;
 
-  if (LoopStmt* loop = toLoopStmt(expr))
-  {
+  if (LoopStmt* loop = toLoopStmt(expr)) {
     retval = loop;
   }
 
-  else if (expr->parentExpr)
-  {
+  else if (expr->parentExpr) {
     retval = findEnclosingLoop(expr->parentExpr);
   }
 
-  else
-  {
+  else {
     retval = NULL;
   }
 
   return retval;
-
 }
 
-LoopStmt* LoopStmt::findEnclosingLoop(Expr* expr, const char* name)
-{
+LoopStmt* LoopStmt::findEnclosingLoop(Expr* expr, const char* name) {
   LoopStmt* retval = LoopStmt::findEnclosingLoop(expr);
 
-  while (retval != NULL && retval->isNamed(name) == false)
-  {
+  while (retval != NULL && retval->isNamed(name) == false) {
     retval = LoopStmt::findEnclosingLoop(retval->parentExpr);
   }
 
   return retval;
 }
 
-Stmt* LoopStmt::findEnclosingLoopOrForall(Expr* expr)
-{
+Stmt* LoopStmt::findEnclosingLoopOrForall(Expr* expr) {
   for (Expr* curr = expr; curr != NULL; curr = curr->parentExpr) {
     if (LoopStmt* loop = toLoopStmt(curr)) {
       return loop;
@@ -174,12 +136,10 @@ Stmt* LoopStmt::findEnclosingLoopOrForall(Expr* expr)
   return NULL;
 }
 
-bool LoopStmt::isNamed(const char* name) const
-{
+bool LoopStmt::isNamed(const char* name) const {
   bool retval = false;
 
-  if (userLabel != NULL)
-  {
+  if (userLabel != NULL) {
     retval = (strcmp(userLabel, name) == 0) ? true : false;
   }
 

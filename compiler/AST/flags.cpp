@@ -23,7 +23,6 @@
 #include "expr.h"
 #include "stringutil.h"
 
-
 typedef Map<const char*, int> FlagMap;
 typedef MapElem<const char*, int> FlagMapElem;
 // see also flags_list.h for description
@@ -33,9 +32,7 @@ static const char* flagShortNames[NUM_FLAGS];
 static const char* flagComments[NUM_FLAGS];
 static bool flagPragma[NUM_FLAGS];
 
-
-Flag
-pragma2flag(const char* str) {
+Flag pragma2flag(const char* str) {
   Flag lookup = (Flag)flagMap.get(astr(str));
   if (lookup == FLAG_UNKNOWN || !flagPragma[lookup])
     return FLAG_UNKNOWN;
@@ -43,16 +40,14 @@ pragma2flag(const char* str) {
     return lookup;
 }
 
-
-void
-initFlags() {
+void initFlags() {
 #define STRINGIFY(x__) #x__
 #define PRAGMA(name__, canParse__, parseStr__, desc__) \
-    flagMap.put(astr(parseStr__), FLAG_ ## name__); \
-    flagNames[FLAG_ ## name__] = STRINGIFY(FLAG_ ## name__); \
-    flagShortNames[FLAG_ ## name__] = astr(parseStr__); \
-    flagComments[FLAG_ ## name__] = desc__; \
-    flagPragma[FLAG_ ## name__] = canParse__;
+  flagMap.put(astr(parseStr__), FLAG_##name__);        \
+  flagNames[FLAG_##name__] = STRINGIFY(FLAG_##name__); \
+  flagShortNames[FLAG_##name__] = astr(parseStr__);    \
+  flagComments[FLAG_##name__] = desc__;                \
+  flagPragma[FLAG_##name__] = canParse__;
 #include "chpl/uast/PragmaList.h"
 #undef STRINGIFY
 #undef PRAGMA
@@ -62,7 +57,6 @@ initFlags() {
   flagComments[FLAG_UNKNOWN] = "";
   flagPragma[FLAG_UNKNOWN] = false;
   flagNames[FLAG_UNKNOWN] = "unknown flag (0)";
-
 }
 
 void writeFlags(FILE* fp, Symbol* sym) {
@@ -74,89 +68,86 @@ void writeFlags(FILE* fp, Symbol* sym) {
 }
 
 // these affect what viewFlags() prints
-bool viewFlagsShort   = true;
-bool viewFlagsPragma  = false;
-bool viewFlagsName    = false;
+bool viewFlagsShort = true;
+bool viewFlagsPragma = false;
+bool viewFlagsName = false;
 bool viewFlagsComment = false;
-bool viewFlagsExtras  = true;
+bool viewFlagsExtras = true;
 
 static void viewSymbolFlags(Symbol* sym) {
-    for (int flagNum = FLAG_FIRST; flagNum <= FLAG_LAST; flagNum++) {
-      if (sym->flags[flagNum]) {
-        if (viewFlagsName)
-          printf("%s ", flagNames[flagNum]);
+  for (int flagNum = FLAG_FIRST; flagNum <= FLAG_LAST; flagNum++) {
+    if (sym->flags[flagNum]) {
+      if (viewFlagsName) printf("%s ", flagNames[flagNum]);
 
-        if (viewFlagsPragma)
-          printf("%s", flagPragma[flagNum] ? "ypr " : "npr ");
+      if (viewFlagsPragma) printf("%s", flagPragma[flagNum] ? "ypr " : "npr ");
 
-        if (viewFlagsShort)
-          printf("\"%s\" ", flagShortNames[flagNum]);
+      if (viewFlagsShort) printf("\"%s\" ", flagShortNames[flagNum]);
 
-        if (viewFlagsComment)
-          printf("// %s",
-                 *flagComments[flagNum] ? flagComments[flagNum] : "ncm");
+      if (viewFlagsComment)
+        printf("// %s", *flagComments[flagNum] ? flagComments[flagNum] : "ncm");
 
+      printf("\n");
+    }
+  }
+
+  if (viewFlagsExtras) {
+    if (VarSymbol* vs = toVarSymbol(sym)) {
+      if (vs->immediate) {
+        printf("immediate ");
+        fprint_imm(stdout, *toVarSymbol(sym)->immediate, true);
         printf("\n");
       }
-    }
-
-    if (viewFlagsExtras) {
-      if (VarSymbol* vs = toVarSymbol(sym)) {
-        if (vs->immediate) {
-          printf("immediate ");
-          fprint_imm(stdout, *toVarSymbol(sym)->immediate, true);
-          printf("\n");
-        }
-        if (ShadowVarSymbol* svar = toShadowVarSymbol(vs)) {
-          printf("%s shadow var  ", svar->intentDescrString());
-        }
-        printf("qual %s\n", QualifiedType::qualifierToStr(vs->qual));
-
-      } else if (ArgSymbol* as = toArgSymbol(sym)) {
-        printf("%s arg  qual %s\n",
-               as->intentDescrString(),
-               QualifiedType::qualifierToStr(as->qual));
-
-      } else if (TypeSymbol* ts = toTypeSymbol(sym)) {
-        if (Type* tp = ts->type) {
-          printf("TypeSymbol  %s", tp->astTagAsString());
-          if (AggregateType* at = toAggregateType(tp))
-            printf(" %s", at->aggregateString());
-          else if (ConstrainedType* ct = toConstrainedType(tp))
-            printf(" %s", ct->useString());
-          printf("\n");
-        } else {
-          printf("TypeSymbol  type=NULL\n");
-        }
-
-      } else if (FnSymbol* fs = toFnSymbol(sym)) {
-        printf("isGeneric %s\n", fs->isGenericIsValid() ?
-               (fs->isGeneric() ? "yes" : "no") : "unset");
-        bool isMethod = fs->_this != NULL;
-        bool isTypeMethod = isMethod && fs->_this->hasFlag(FLAG_TYPE_VARIABLE);
-        printf("fn %s%s%s(%d args) %s\n",
-               isMethod ? intentDescrString(fs->thisTag) : "",
-               isTypeMethod ? ", type method" : "",
-               isMethod ? " " : "",
-               fs->numFormals(),
-               retTagDescrString(fs->retTag));
-
-      } else if (toEnumSymbol(sym)) {
-        printf("an EnumSymbol\n");
-
-      } else if (ModuleSymbol* ms = toModuleSymbol(sym)) {
-        printf("module %s\n", ModuleSymbol::modTagToString(ms->modTag));
-
-      } else if (toLabelSymbol(sym)) {
-        printf("a LabelSymbol\n");
-
-      } else if (toInterfaceSymbol(sym)) {
-        printf("an InterfaceSymbol\n");
-
-      } else {
-        printf("unknown symbol kind\n");
+      if (ShadowVarSymbol* svar = toShadowVarSymbol(vs)) {
+        printf("%s shadow var  ", svar->intentDescrString());
       }
+      printf("qual %s\n", QualifiedType::qualifierToStr(vs->qual));
+
+    } else if (ArgSymbol* as = toArgSymbol(sym)) {
+      printf("%s arg  qual %s\n",
+             as->intentDescrString(),
+             QualifiedType::qualifierToStr(as->qual));
+
+    } else if (TypeSymbol* ts = toTypeSymbol(sym)) {
+      if (Type* tp = ts->type) {
+        printf("TypeSymbol  %s", tp->astTagAsString());
+        if (AggregateType* at = toAggregateType(tp))
+          printf(" %s", at->aggregateString());
+        else if (ConstrainedType* ct = toConstrainedType(tp))
+          printf(" %s", ct->useString());
+        printf("\n");
+      } else {
+        printf("TypeSymbol  type=NULL\n");
+      }
+
+    } else if (FnSymbol* fs = toFnSymbol(sym)) {
+      printf("isGeneric %s\n",
+             fs->isGenericIsValid() ? (fs->isGeneric() ? "yes" : "no")
+                                    : "unset");
+      bool isMethod = fs->_this != NULL;
+      bool isTypeMethod = isMethod && fs->_this->hasFlag(FLAG_TYPE_VARIABLE);
+      printf("fn %s%s%s(%d args) %s\n",
+             isMethod ? intentDescrString(fs->thisTag) : "",
+             isTypeMethod ? ", type method" : "",
+             isMethod ? " " : "",
+             fs->numFormals(),
+             retTagDescrString(fs->retTag));
+
+    } else if (toEnumSymbol(sym)) {
+      printf("an EnumSymbol\n");
+
+    } else if (ModuleSymbol* ms = toModuleSymbol(sym)) {
+      printf("module %s\n", ModuleSymbol::modTagToString(ms->modTag));
+
+    } else if (toLabelSymbol(sym)) {
+      printf("a LabelSymbol\n");
+
+    } else if (toInterfaceSymbol(sym)) {
+      printf("an InterfaceSymbol\n");
+
+    } else {
+      printf("unknown symbol kind\n");
     }
+  }
 }
 
 static void viewFlagsHelper(BaseAST* ast, Symbol* sym, const char* msg) {
@@ -165,8 +156,7 @@ static void viewFlagsHelper(BaseAST* ast, Symbol* sym, const char* msg) {
 }
 
 void viewFlags(BaseAST* ast) {
-  if (!viewFlagsShort && !viewFlagsComment)
-    viewFlagsName = true;
+  if (!viewFlagsShort && !viewFlagsComment) viewFlagsName = true;
   if (Symbol* sym = toSymbol(ast)) {
     viewSymbolFlags(sym);
   } else if (Type* type = toType(ast)) {
@@ -180,14 +170,15 @@ void viewFlags(BaseAST* ast) {
     bool handled = false;
     if (CallExpr* call = toCallExpr(ast)) {
       if (SymExpr* se = toSymExpr(call->baseExpr)) {
-        viewFlagsHelper(ast, se->symbol(),
-                        "is a CallExpr, showing its baseExpr Symbol");
+        viewFlagsHelper(
+          ast, se->symbol(), "is a CallExpr, showing its baseExpr Symbol");
         handled = true;
       }
     }
     if (!handled)
       printf("%d: is a %s (does not support Flags)\n",
-             ast->id, ast->astTagAsString());
+             ast->id,
+             ast->astTagAsString());
   }
 }
 
@@ -196,7 +187,9 @@ void viewFlags(BaseAST* ast) {
 static Symbol* symflagOK(const char* msg, BaseAST* ast, int flag) {
   Symbol* sym = toSymbol(ast);
   if (!sym) {
-    printf("%s: [%d] is a %s (does not support Flags)\n", msg, ast->id,
+    printf("%s: [%d] is a %s (does not support Flags)\n",
+           msg,
+           ast->id,
            ast->astTagAsString());
     return NULL;
   } else if (flag <= 0) {
@@ -213,7 +206,7 @@ static Symbol* symflagOK(const char* msg, BaseAST* ast, int flag) {
 
 bool hasFlag(BaseAST* ast, int flag) {
   Symbol* sym = symflagOK("hasFlag", ast, flag);
-  return sym ? sym->hasFlag((Flag)flag): false;
+  return sym ? sym->hasFlag((Flag)flag) : false;
 }
 
 void addFlag(BaseAST* ast, int flag) {
@@ -226,8 +219,8 @@ void removeFlag(BaseAST* ast, int flag) {
   if (sym) sym->removeFlag((Flag)flag);
 }
 
-bool hasFlag(BaseAST* ast, Flag flag)   { return hasFlag(ast, (int)flag); }
-void addFlag(BaseAST* ast, Flag flag)    { addFlag(ast, (int)flag); }
+bool hasFlag(BaseAST* ast, Flag flag) { return hasFlag(ast, (int)flag); }
+void addFlag(BaseAST* ast, Flag flag) { addFlag(ast, (int)flag); }
 void removeFlag(BaseAST* ast, Flag flag) { removeFlag(ast, (int)flag); }
 
 // end gdb support

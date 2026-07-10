@@ -34,10 +34,10 @@
 
 #include "llvm/ADT/SmallPtrSet.h"
 
-UseStmt::UseStmt(BaseAST* source, const char* modRename,
-                 bool isPrivate) : VisibilityStmt(E_UseStmt) {
+UseStmt::UseStmt(BaseAST* source, const char* modRename, bool isPrivate)
+  : VisibilityStmt(E_UseStmt) {
   this->isPrivate = isPrivate;
-  src    = NULL;
+  src = NULL;
   this->modRename = astr(modRename);
   except = false;
   canReexport = true;
@@ -55,13 +55,13 @@ UseStmt::UseStmt(BaseAST* source, const char* modRename,
   gUseStmts.add(this);
 }
 
-UseStmt::UseStmt(BaseAST*                            source,
-                 const char*                         modRename,
-                 std::vector<const char*>*           args,
-                 bool                                exclude,
+UseStmt::UseStmt(BaseAST* source,
+                 const char* modRename,
+                 std::vector<const char*>* args,
+                 bool exclude,
                  std::map<const char*, const char*>* renames,
-                 bool isPrivate) :
-  VisibilityStmt(E_UseStmt) {
+                 bool isPrivate)
+  : VisibilityStmt(E_UseStmt) {
 
   this->isPrivate = isPrivate;
   this->modRename = astr(modRename);
@@ -85,11 +85,11 @@ UseStmt::UseStmt(BaseAST*                            source,
 }
 
 UseStmt* UseStmt::copyInner(SymbolMap* map) {
-  UseStmt *_this = 0;
+  UseStmt* _this = 0;
 
   if (named.size() > 0) { // MPF: should this have || renamed.size() > 0?
-    _this = new UseStmt(COPY_INT(src), modRename, &named, except, &renamed,
-                        isPrivate);
+    _this = new UseStmt(
+      COPY_INT(src), modRename, &named, except, &renamed, isPrivate);
   } else {
     _this = new UseStmt(COPY_INT(src), modRename, isPrivate);
   }
@@ -97,9 +97,7 @@ UseStmt* UseStmt::copyInner(SymbolMap* map) {
   return _this;
 }
 
-Expr* UseStmt::getFirstExpr() {
-  return src;
-}
+Expr* UseStmt::getFirstExpr() { return src; }
 
 void UseStmt::replaceChild(Expr* oldAst, Expr* newAst) {
   if (oldAst == src) {
@@ -110,9 +108,7 @@ void UseStmt::replaceChild(Expr* oldAst, Expr* newAst) {
   }
 }
 
-void UseStmt::accept(AstVisitor* visitor) {
-  visitor->visitUseStmt(this);
-}
+void UseStmt::accept(AstVisitor* visitor) { visitor->visitUseStmt(this); }
 
 void UseStmt::verify() {
   Expr::verify();
@@ -140,8 +136,7 @@ bool UseStmt::hasOnlyNothing() const {
   if (hasOnlyList()) {
     if (renamed.size() == 0) {
       // check for named being empty or containing the empty string
-      if (named.size() == 0 ||
-          (named.size() == 1 && named[0][0] == '\0'))
+      if (named.size() == 0 || (named.size() == 1 && named[0][0] == '\0'))
         return true;
     }
   }
@@ -177,9 +172,8 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
 
       if (ModuleSymbol* modSym = toModuleSymbol(symAndName.first)) {
         if (symAndName.second[0] != '\0') {
-          USR_FATAL(this,
-                    "'use' of non-module/enum symbol %s",
-                    symAndName.second);
+          USR_FATAL(
+            this, "'use' of non-module/enum symbol %s", symAndName.second);
         }
         scope->enclosingModule()->moduleUseAdd(modSym);
 
@@ -193,9 +187,8 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
         validateList();
 
       } else if (symAndName.second[0] != '\0') {
-        USR_FATAL(this,
-                  "'use' of non-module/enum symbol %s",
-                  symAndName.second);
+        USR_FATAL(
+          this, "'use' of non-module/enum symbol %s", symAndName.second);
 
       } else {
         USR_FATAL(this, "'use' of non-module/enum symbol");
@@ -245,8 +238,7 @@ bool UseStmt::isValid(Expr* expr) const {
         if (SymExpr* rhs = toSymExpr(call->get(2))) {
           VarSymbol* v = toVarSymbol(rhs->symbol());
 
-          if (v                        != NULL &&
-              v->immediate             != NULL &&
+          if (v != NULL && v->immediate != NULL &&
               v->immediate->const_kind == CONST_KIND_STRING) {
             retval = true;
 
@@ -302,10 +294,10 @@ void UseStmt::validateList() {
 }
 
 void UseStmt::noRepeats() const {
-  std::vector<const char*>::const_iterator           it1;
+  std::vector<const char*>::const_iterator it1;
 
   for (it1 = named.begin(); it1 != named.end(); ++it1) {
-    std::vector<const char*>::const_iterator           next = it1;
+    std::vector<const char*>::const_iterator next = it1;
     std::map<const char*, const char*>::const_iterator rit;
 
     for (++next; next != named.end(); ++next) {
@@ -333,8 +325,8 @@ void UseStmt::noRepeats() const {
 }
 
 void UseStmt::validateNamed() {
-  BaseAST*            scopeToUse = getSearchScope();
-  const ResolveScope* scope      = ResolveScope::getScopeFor(scopeToUse);
+  BaseAST* scopeToUse = getSearchScope();
+  const ResolveScope* scope = ResolveScope::getScopeFor(scopeToUse);
 
   for_vector(const char, name, named) {
     if (name[0] != '\0') {
@@ -483,7 +475,7 @@ bool UseStmt::skipSymbolSearch(const char* name) const {
 
   } else if (except == true) {
     if (matchedNameOrRename(name) == true) {
-      retval =  true;
+      retval = true;
 
     } else {
       retval = false;
@@ -494,7 +486,7 @@ bool UseStmt::skipSymbolSearch(const char* name) const {
       retval = false;
 
     } else {
-      retval =  true;
+      retval = true;
     }
   }
 
@@ -508,9 +500,9 @@ bool UseStmt::matchedNameOrRename(const char* name) const {
     }
   }
 
-  for(std::map<const char*, const char*>::const_iterator it = renamed.begin();
-      it != renamed.end();
-      ++it) {
+  for (std::map<const char*, const char*>::const_iterator it = renamed.begin();
+       it != renamed.end();
+       ++it) {
     if (strcmp(name, it->first) == 0) {
       return true;
     }
@@ -547,9 +539,8 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
       std::vector<const char*> newOnlyList;
 
       for_vector(const char, includeMe, named) {
-        if (std::find(outer->named.begin(),
-                      outer->named.end(),
-                      includeMe) == outer->named.end()) {
+        if (std::find(outer->named.begin(), outer->named.end(), includeMe) ==
+            outer->named.end()) {
 
           // We didn't find this symbol in the list to exclude, so
           // add it.
@@ -560,7 +551,7 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
       std::map<const char*, const char*> newRenamed;
 
       for (std::map<const char*, const char*>::iterator it = renamed.begin();
-          it != renamed.end();
+           it != renamed.end();
            ++it) {
         if (std::find(outer->named.begin(), outer->named.end(), it->first) ==
             outer->named.end()) {
@@ -585,8 +576,8 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
         // The only list will be shorter, create a new UseStmt with it.
         SET_LINENO(this);
 
-        return new UseStmt(src, modRename, &newOnlyList, false, &newRenamed,
-                           isPrivate);
+        return new UseStmt(
+          src, modRename, &newOnlyList, false, &newRenamed, isPrivate);
       }
 
     } else {
@@ -625,10 +616,12 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
 
         std::map<const char*, const char*> newRenamed;
 
-        for (std::map<const char*, const char*>::const_iterator it = outer->renamed.begin();
-            it != outer->renamed.end();
+        for (std::map<const char*, const char*>::const_iterator it =
+               outer->renamed.begin();
+             it != outer->renamed.end();
              ++it) {
-          if (std::find(named.begin(), named.end(), it->second) == named.end()) {
+          if (std::find(named.begin(), named.end(), it->second) ==
+              named.end()) {
             // We didn't find the old name of the renamed symbol in our
             // 'except' list, so add it.
             newRenamed[it->first] = it->second;
@@ -643,8 +636,8 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
           // outer 'only' list)
           SET_LINENO(this);
 
-          return new UseStmt(src, modRename, &newOnlyList, false, &newRenamed,
-                             isPrivate);
+          return new UseStmt(
+            src, modRename, &newOnlyList, false, &newRenamed, isPrivate);
 
         } else {
           // all the 'only' identifiers were in the 'except'
@@ -657,7 +650,7 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
         // the names that are in both lists.
         SET_LINENO(this);
 
-        std::vector<const char*>           newOnlyList;
+        std::vector<const char*> newOnlyList;
         std::map<const char*, const char*> newRenamed;
 
         for_vector(const char, includeMe, outer->named) {
@@ -667,7 +660,8 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
             newOnlyList.push_back(includeMe);
 
           } else {
-            std::map<const char*, const char*>::iterator it = renamed.find(includeMe);
+            std::map<const char*, const char*>::iterator it =
+              renamed.find(includeMe);
 
             if (it != renamed.end()) {
               // We found this symbol in the renamed list and the outer 'only'
@@ -677,15 +671,18 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
           }
         }
 
-        for (std::map<const char*, const char*>::const_iterator it = outer->renamed.begin();
+        for (std::map<const char*, const char*>::const_iterator it =
+               outer->renamed.begin();
              it != outer->renamed.end();
              ++it) {
-          if (std::find(named.begin(), named.end(), it->second) != named.end()) {
+          if (std::find(named.begin(), named.end(), it->second) !=
+              named.end()) {
             // The old name was in our 'only' list.  We need to rename it.
             newRenamed[it->first] = it->second;
           } else {
 
-            std::map<const char*, const char*>::const_iterator innerIt = renamed.find(it->second);
+            std::map<const char*, const char*>::const_iterator innerIt =
+              renamed.find(it->second);
 
             if (innerIt != renamed.end()) {
               // We found this symbol in the renamed list and the outer
@@ -700,8 +697,8 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
           // There were symbols that were in both 'only' lists, so
           // this module use is still interesting.
           SET_LINENO(this);
-          return new UseStmt(src, modRename, &newOnlyList, false, &newRenamed,
-                             isPrivate);
+          return new UseStmt(
+            src, modRename, &newOnlyList, false, &newRenamed, isPrivate);
 
         } else {
           // all of the 'only' identifiers in the outer use
@@ -722,8 +719,9 @@ UseStmt* UseStmt::applyOuterUse(const UseStmt* outer) {
         newUse->named.push_back(toInclude);
       }
 
-      for (std::map<const char*, const char*>::const_iterator it = outer->renamed.begin();
-          it != outer->renamed.end();
+      for (std::map<const char*, const char*>::const_iterator it =
+             outer->renamed.begin();
+           it != outer->renamed.end();
            ++it) {
         newUse->renamed[it->first] = it->second;
       }
@@ -761,7 +759,9 @@ ImportStmt* UseStmt::applyOuterImport(const ImportStmt* outer) {
 
         std::map<const char*, const char*> newRenamed;
         for (std::map<const char*, const char*>::const_iterator it =
-               outer->renamed.begin(); it != outer->renamed.end(); ++it) {
+               outer->renamed.begin();
+             it != outer->renamed.end();
+             ++it) {
           if (std::find(named.begin(), named.end(), it->second) ==
               named.end()) {
             // We didn't find the old name of the renamed symbol in our
@@ -777,8 +777,8 @@ ImportStmt* UseStmt::applyOuterImport(const ImportStmt* outer) {
           // list (could be all of the outer unqualified list)
           SET_LINENO(this);
 
-          return new ImportStmt(src, &newUnqualifiedList, &newRenamed,
-                                isPrivate);
+          return new ImportStmt(
+            src, &newUnqualifiedList, &newRenamed, isPrivate);
         } else {
           // all the unqualified identifiers were in the 'except'
           // list so this module use will give us nothing.
@@ -793,14 +793,15 @@ ImportStmt* UseStmt::applyOuterImport(const ImportStmt* outer) {
         std::vector<const char*> newUnqualifiedList;
         std::map<const char*, const char*> newRenamed;
 
-        for_vector(const char, includeMe, outer->unqualified){
+        for_vector(const char, includeMe, outer->unqualified) {
           if (std::find(named.begin(), named.end(), includeMe) != named.end()) {
             // We found this symbol in both our 'only' list and the unqualified
             // list, so add it to the union of them.
             newUnqualifiedList.push_back(includeMe);
 
           } else {
-            std::map<const char*, const char*>::iterator it = renamed.find(includeMe);
+            std::map<const char*, const char*>::iterator it =
+              renamed.find(includeMe);
 
             if (it != renamed.end()) {
               // We found this symbol in the renamed list and the outer
@@ -810,15 +811,18 @@ ImportStmt* UseStmt::applyOuterImport(const ImportStmt* outer) {
           }
         }
 
-        for (std::map<const char*, const char*>::const_iterator it = outer->renamed.begin();
+        for (std::map<const char*, const char*>::const_iterator it =
+               outer->renamed.begin();
              it != outer->renamed.end();
              ++it) {
-          if (std::find(named.begin(), named.end(), it->second) != named.end()) {
+          if (std::find(named.begin(), named.end(), it->second) !=
+              named.end()) {
             // The old name was in our 'only' list.  We need to rename it.
             newRenamed[it->first] = it->second;
           } else {
 
-            std::map<const char*, const char*>::const_iterator innerIt = renamed.find(it->second);
+            std::map<const char*, const char*>::const_iterator innerIt =
+              renamed.find(it->second);
 
             if (innerIt != renamed.end()) {
               // We found this symbol in the renamed list and the outer renamed
@@ -833,8 +837,8 @@ ImportStmt* UseStmt::applyOuterImport(const ImportStmt* outer) {
           // There were symbols that were in both our 'only' list and the outer
           // unqualified list, so this module use is still interesting.
           SET_LINENO(this);
-          return new ImportStmt(src, &newUnqualifiedList, &newRenamed,
-                                isPrivate);
+          return new ImportStmt(
+            src, &newUnqualifiedList, &newRenamed, isPrivate);
 
         } else {
           // all of the unqualified and renamed identifiers in the outer import
@@ -855,7 +859,9 @@ ImportStmt* UseStmt::applyOuterImport(const ImportStmt* outer) {
       }
 
       for (std::map<const char*, const char*>::const_iterator it =
-             outer->renamed.begin(); it != outer->renamed.end(); ++it) {
+             outer->renamed.begin();
+           it != outer->renamed.end();
+           ++it) {
         newImport->renamed[it->first] = it->second;
       }
 
@@ -929,7 +935,8 @@ bool UseStmt::providesNewSymbols(const UseStmt* other) const {
       // lists then we provide new symbols
       int numSame = 0;
       for_vector(const char, include, named) {
-        if (std::find(other->named.begin(), other->named.end(), include) != other->named.end()) {
+        if (std::find(other->named.begin(), other->named.end(), include) !=
+            other->named.end()) {
           numSame++;
         }
       }
@@ -937,8 +944,8 @@ bool UseStmt::providesNewSymbols(const UseStmt* other) const {
       // other's 'except' list, which means we definitely provide new symbols
       return numSame > 0;
 
-    } else if (other->named.size() + other->renamed.size() < named.size() +
-               renamed.size()) {
+    } else if (other->named.size() + other->renamed.size() <
+               named.size() + renamed.size()) {
       // Other has a smaller 'only' list.  By definition, this means we are
       // providing symbols not available in other.
       return true;
@@ -947,23 +954,25 @@ bool UseStmt::providesNewSymbols(const UseStmt* other) const {
       unsigned int numSame = 0;
 
       for_vector(const char, include, named) {
-        if (std::find(other->named.begin(), other->named.end(), include) != other->named.end()) {
+        if (std::find(other->named.begin(), other->named.end(), include) !=
+            other->named.end()) {
           numSame++;
         }
       }
 
-      for(std::map<const char*, const char*>::const_iterator it =
-            renamed.begin();
-          it != renamed.end();
-          ++it) {
+      for (std::map<const char*, const char*>::const_iterator it =
+             renamed.begin();
+           it != renamed.end();
+           ++it) {
         // Don't check against other's only list.  A renamed version of
         // something in their only list is a new symbol
         // Do check against other's renamed list.  If both uses cause the exact
         // same rename to occur, we should count it.
         for (std::map<const char*, const char*>::const_iterator otherIt =
                other->renamed.begin();
-             otherIt != other->renamed.end(); ++otherIt) {
-          if (strcmp(it->first,  otherIt->first)  == 0 &&
+             otherIt != other->renamed.end();
+             ++otherIt) {
+          if (strcmp(it->first, otherIt->first) == 0 &&
               strcmp(it->second, otherIt->second) == 0) {
             numSame++;
           }

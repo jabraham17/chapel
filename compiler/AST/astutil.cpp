@@ -57,26 +57,21 @@ static void pruneUnusedAggregateTypes(Vec<TypeSymbol*>& types);
 static void pruneUnusedRefs(Vec<TypeSymbol*>& types);
 static void pruneStaleFunctionTypes(Vec<TypeSymbol*>& types);
 
-
 void collectFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls) {
   AST_CHILDREN_CALL(ast, collectFnCalls, calls);
   if (CallExpr* call = toCallExpr(ast))
-    if (call->isResolved())
-      calls.push_back(call);
+    if (call->isResolved()) calls.push_back(call);
 }
 
 void collectVirtualAndFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls) {
   AST_CHILDREN_CALL(ast, collectFnCalls, calls);
   if (CallExpr* call = toCallExpr(ast))
-    if (call->resolvedOrVirtualFunction() != NULL)
-      calls.push_back(call);
+    if (call->resolvedOrVirtualFunction() != NULL) calls.push_back(call);
 }
-
 
 void collectExprs(BaseAST* ast, std::vector<Expr*>& exprs) {
   AST_CHILDREN_CALL(ast, collectExprs, exprs);
-  if (Expr* expr = toExpr(ast))
-    exprs.push_back(expr);
+  if (Expr* expr = toExpr(ast)) exprs.push_back(expr);
 }
 
 void collect_stmts(BaseAST* ast, std::vector<Expr*>& stmts) {
@@ -90,35 +85,32 @@ void collect_stmts(BaseAST* ast, std::vector<Expr*>& stmts) {
 
 void collectDefExprs(BaseAST* ast, std::vector<DefExpr*>& defExprs) {
   AST_CHILDREN_CALL(ast, collectDefExprs, defExprs);
-  if (DefExpr* defExpr = toDefExpr(ast))
-    defExprs.push_back(defExpr);
+  if (DefExpr* defExpr = toDefExpr(ast)) defExprs.push_back(defExpr);
 }
 
 void collectDefExprs(BaseAST* ast, llvm::SmallVectorImpl<DefExpr*>& defExprs) {
   AST_CHILDREN_CALL(ast, collectDefExprs, defExprs);
-  if (DefExpr* defExpr = toDefExpr(ast))
-    defExprs.push_back(defExpr);
+  if (DefExpr* defExpr = toDefExpr(ast)) defExprs.push_back(defExpr);
 }
 
 void collectForallStmts(BaseAST* ast, std::vector<ForallStmt*>& forallStmts) {
   AST_CHILDREN_CALL(ast, collectForallStmts, forallStmts);
-  if (ForallStmt* forall = toForallStmt(ast))
-    forallStmts.push_back(forall);
+  if (ForallStmt* forall = toForallStmt(ast)) forallStmts.push_back(forall);
 }
 
-void collectCForLoopStmtsPreorder(BaseAST* ast, std::vector<CForLoop*>& cforloopStmts) {
-  if (CForLoop* cforloop = toCForLoop(ast))
-    cforloopStmts.push_back(cforloop);
+void collectCForLoopStmtsPreorder(BaseAST* ast,
+                                  std::vector<CForLoop*>& cforloopStmts) {
+  if (CForLoop* cforloop = toCForLoop(ast)) cforloopStmts.push_back(cforloop);
   AST_CHILDREN_CALL(ast, collectCForLoopStmtsPreorder, cforloopStmts);
 }
 
 void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
   AST_CHILDREN_CALL(ast, collectCallExprs, callExprs);
-  if (CallExpr* callExpr = toCallExpr(ast))
-    callExprs.push_back(callExpr);
+  if (CallExpr* callExpr = toCallExpr(ast)) callExprs.push_back(callExpr);
 }
 
-void collectCallExprsForGpuEligibilityAnalysis(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
+void collectCallExprsForGpuEligibilityAnalysis(
+  BaseAST* ast, std::vector<CallExpr*>& callExprs) {
   if (auto blk = toBlockStmt(ast)) {
     if (blk->isGpuPrimitivesBlock()) {
       return;
@@ -136,36 +128,31 @@ void collectCallExprsForGpuEligibilityAnalysis(BaseAST* ast, std::vector<CallExp
   }
 
   AST_CHILDREN_CALL(ast, collectCallExprsForGpuEligibilityAnalysis, callExprs);
-  if (CallExpr* callExpr = toCallExpr(ast))
-    callExprs.push_back(callExpr);
+  if (CallExpr* callExpr = toCallExpr(ast)) callExprs.push_back(callExpr);
 }
 
 void collectBlockStmts(BaseAST* ast, std::vector<BlockStmt*>& blockStmts) {
   AST_CHILDREN_CALL(ast, collectBlockStmts, blockStmts);
-  if (BlockStmt* blockStmt = toBlockStmt(ast))
-    blockStmts.push_back(blockStmt);
+  if (BlockStmt* blockStmt = toBlockStmt(ast)) blockStmts.push_back(blockStmt);
 }
 
 void collectForLoops(BaseAST* ast, std::vector<ForLoop*>& forLoops) {
   AST_CHILDREN_CALL(ast, collectForLoops, forLoops);
-  if (ForLoop* forLoop = toForLoop(ast))
-    forLoops.push_back(forLoop);
+  if (ForLoop* forLoop = toForLoop(ast)) forLoops.push_back(forLoop);
 }
 
-void collectMyCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs,
-                           FnSymbol* parent_fn) {
+void collectMyCallExprs(BaseAST* ast,
+                        std::vector<CallExpr*>& callExprs,
+                        FnSymbol* parent_fn) {
   AST_CHILDREN_CALL(ast, collectMyCallExprs, callExprs, parent_fn);
   if (CallExpr* callExpr = toCallExpr(ast))
-    if (callExpr->parentSymbol == parent_fn)
-      callExprs.push_back(callExpr);
+    if (callExpr->parentSymbol == parent_fn) callExprs.push_back(callExpr);
 }
 
 void collectGotoStmts(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts) {
   AST_CHILDREN_CALL(ast, collectGotoStmts, gotoStmts);
-  if (GotoStmt* gotoStmt = toGotoStmt(ast))
-    gotoStmts.push_back(gotoStmt);
+  if (GotoStmt* gotoStmt = toGotoStmt(ast)) gotoStmts.push_back(gotoStmt);
 }
-
 
 // This is a specialized helper for lowerIterators.
 // Collects the gotos whose target is inTree() into 'GOTOs' and
@@ -180,13 +167,12 @@ void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
     return;
   }
 
-  AST_CHILDREN_CALL(ast, collectTreeBoundGotosAndIteratorBreakBlocks, GOTOs,
-                                                                      IBBs);
+  AST_CHILDREN_CALL(
+    ast, collectTreeBoundGotosAndIteratorBreakBlocks, GOTOs, IBBs);
   // Include only the gotos whose target is inTree().
   if (GotoStmt* gt = toGotoStmt(ast))
     if (SymExpr* labelSE = toSymExpr(gt->label))
-      if (labelSE->symbol()->inTree())
-        GOTOs.push_back(gt);
+      if (labelSE->symbol()->inTree()) GOTOs.push_back(gt);
 }
 
 std::set<Symbol*> findAllDetupledComponents(Symbol* sym) {
@@ -206,8 +192,7 @@ std::set<Symbol*> findAllDetupledComponents(Symbol* sym) {
         if (seTemp && seTemp->symbol()->hasFlag(FLAG_TEMP)) {
           for_SymbolSymExprs(se2, seTemp->symbol()) {
             auto c3 = toCallExpr(se2->parentExpr);
-            if (c3 && c3->isPrimitive(PRIM_INIT_VAR) &&
-                c3 != c2 &&
+            if (c3 && c3->isPrimitive(PRIM_INIT_VAR) && c3 != c2 &&
                 c3->get(2) == se2) {
               auto seFound = toSymExpr(c3->get(1));
               INT_ASSERT(seFound);
@@ -246,30 +231,29 @@ void computeHasToplevelYields(BaseAST* ast, bool& result) {
     AST_CHILDREN_CALL(ast, computeHasToplevelYields, result);
 }
 
-
 void collectSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
   AST_CHILDREN_CALL(ast, collectSymExprs, symExprs);
-  if (SymExpr* symExpr = toSymExpr(ast))
-    symExprs.push_back(symExpr);
+  if (SymExpr* symExpr = toSymExpr(ast)) symExprs.push_back(symExpr);
 }
 
 void collectSymExprs(BaseAST* ast, llvm::SmallVectorImpl<SymExpr*>& symExprs) {
   AST_CHILDREN_CALL(ast, collectSymExprs, symExprs);
-  if (SymExpr* symExpr = toSymExpr(ast))
-    symExprs.push_back(symExpr);
+  if (SymExpr* symExpr = toSymExpr(ast)) symExprs.push_back(symExpr);
 }
 
 // Same as collectSymExprs(), including only SymExprs for 'sym'.
-void collectSymExprsFor(BaseAST* ast, Symbol* sym,
+void collectSymExprsFor(BaseAST* ast,
+                        Symbol* sym,
                         std::vector<SymExpr*>& symExprs) {
   AST_CHILDREN_CALL(ast, collectSymExprsFor, sym, symExprs);
   if (SymExpr* symExpr = toSymExpr(ast))
-    if (symExpr->symbol() == sym)
-      symExprs.push_back(symExpr);
+    if (symExpr->symbol() == sym) symExprs.push_back(symExpr);
 }
 
 // Same as collectSymExprs(), including only SymExprs for 'sym1' and 'sym2'.
-void collectSymExprsFor(BaseAST* ast, const Symbol* sym1, const Symbol* sym2,
+void collectSymExprsFor(BaseAST* ast,
+                        const Symbol* sym1,
+                        const Symbol* sym2,
                         std::vector<SymExpr*>& symExprs) {
   AST_CHILDREN_CALL(ast, collectSymExprsFor, sym1, sym2, symExprs);
   if (SymExpr* symExpr = toSymExpr(ast))
@@ -281,14 +265,12 @@ void collectSymExprsFor(BaseAST* ast, const Symbol* sym1, const Symbol* sym2,
 void collectLcnSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
   AST_CHILDREN_CALL(ast, collectLcnSymExprs, symExprs);
   if (SymExpr* symExpr = toSymExpr(ast))
-    if (isLcnSymbol(symExpr->symbol()))
-      symExprs.push_back(symExpr);
+    if (isLcnSymbol(symExpr->symbol())) symExprs.push_back(symExpr);
 }
 
 void collectSymbols(BaseAST* ast, std::vector<Symbol*>& symbols) {
   AST_CHILDREN_CALL(ast, collectSymbols, symbols);
-  if (Symbol* symbol = toSymbol(ast))
-    symbols.push_back(symbol);
+  if (Symbol* symbol = toSymbol(ast)) symbols.push_back(symbol);
 }
 
 void collect_asts_preorder(BaseAST* ast, std::vector<BaseAST*>& asts) {
@@ -309,7 +291,7 @@ void collect_asts_postorder(BaseAST* ast, std::vector<BaseAST*>& asts) {
   asts.push_back(ast);
 }
 
-static void collect_top_asts_internal(BaseAST*               ast,
+static void collect_top_asts_internal(BaseAST* ast,
                                       std::vector<BaseAST*>& asts) {
   if (!isSymbol(ast) || isArgSymbol(ast)) {
     AST_CHILDREN_CALL(ast, collect_top_asts_internal, asts);
@@ -332,8 +314,7 @@ void collect_top_asts(BaseAST* ast, std::vector<BaseAST*>& asts) {
 static void do_containsSymExprFor(BaseAST* ast, Symbol* sym, SymExpr** found) {
   AST_CHILDREN_CALL(ast, do_containsSymExprFor, sym, found);
   if (SymExpr* symExpr = toSymExpr(ast))
-    if (symExpr->symbol() == sym)
-      *found = symExpr;
+    if (symExpr->symbol() == sym) *found = symExpr;
 }
 
 // returns true if the AST contains a SymExpr pointing to sym
@@ -401,32 +382,34 @@ void computeAllCallSites(FnSymbol* fn) {
 
       } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
         FnSymbol* vFn = toFnSymbol(toSymExpr(call->get(1))->symbol());
-        if (vFn == fn)
-          calledBy->add(call);
+        if (vFn == fn) calledBy->add(call);
       }
     }
   }
 
   // Add all virtual calls on parents.
   if (Vec<FnSymbol*>* parents = virtualParentsMap.get(fn))
-    forv_Vec(FnSymbol, pfn, *parents)
-      for_SymbolSymExprs(pse, pfn)
-        if (CallExpr* pcall = toCallExpr(pse->parentExpr))
-          if (pcall->isPrimitive(PRIM_VIRTUAL_METHOD_CALL) &&
-              pfn == toFnSymbol(toSymExpr(pcall->get(1))->symbol()))
-            calledBy->add(pcall);
+    forv_Vec(FnSymbol, pfn, *parents) for_SymbolSymExprs(
+      pse, pfn) if (CallExpr* pcall =
+                      toCallExpr(
+                        pse->parentExpr)) if (pcall
+                                                ->isPrimitive(
+                                                  PRIM_VIRTUAL_METHOD_CALL) &&
+                                              pfn == toFnSymbol(
+                                                       toSymExpr(pcall->get(1))
+                                                         ->symbol()))
+      calledBy->add(pcall);
 }
 
 // computeAllCallSites() for all FnSymbols.
 void compute_call_sites() {
-  for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
-    computeAllCallSites(fn);
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) computeAllCallSites(fn);
 }
 
 // builds the def and use maps for every variable/argument
 // in the entire program.
-void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                     Map<Symbol*,Vec<SymExpr*>*>& useMap) {
+void buildDefUseMaps(Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*, Vec<SymExpr*>*>& useMap) {
   // Collect the set of symbols to track by extracting all var and arg
   // symbols from among all def expressions.
   Vec<Symbol*> symSet;
@@ -441,7 +424,6 @@ void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
   // The set of uses is the set of all SymExprs.
   buildDefUseMaps(symSet, defMap, useMap);
 }
-
 
 // Within the current AST element, recursively collect
 // the set of all symbols appearing in var or arg declarations
@@ -486,12 +468,11 @@ void collectSymbolSet(BaseAST* ast, llvm::SmallPtrSetImpl<Symbol*>& symSet) {
   AST_CHILDREN_CALL(ast, collectSymbolSet, symSet);
 }
 
-
 // builds the vectors for every variable/argument in 'fn' and looks
 // for uses and defs only in 'fn'
 void buildDefUseMaps(FnSymbol* fn,
-                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                     Map<Symbol*,Vec<SymExpr*>*>& useMap) {
+                     Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*, Vec<SymExpr*>*>& useMap) {
   Vec<Symbol*> symSet;
   // Collect symbols within the given function
   collectSymbolSet(fn, symSet);
@@ -501,15 +482,15 @@ void buildDefUseMaps(FnSymbol* fn,
 // builds the vectors for every variable declaration in the given block
 // and looks for uses and defs within the same block (scope).
 void buildDefUseMaps(BlockStmt* block,
-                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                     Map<Symbol*,Vec<SymExpr*>*>& useMap) {
+                     Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*, Vec<SymExpr*>*>& useMap) {
   Vec<Symbol*> symSet;
   // Collect symbols and sym expressions only within the given block.
   collectSymbolSet(block, symSet);
   buildDefUseMaps(symSet, defMap, useMap);
 }
 
-static void addUseOrDef(Map<Symbol*,Vec<SymExpr*>*>& ses, SymExpr* se) {
+static void addUseOrDef(Map<Symbol*, Vec<SymExpr*>*>& ses, SymExpr* se) {
   Vec<SymExpr*>* sev = ses.get(se->symbol());
   if (sev) {
     sev->add(se);
@@ -520,16 +501,13 @@ static void addUseOrDef(Map<Symbol*,Vec<SymExpr*>*>& ses, SymExpr* se) {
   }
 }
 
-
-void addDef(Map<Symbol*,Vec<SymExpr*>*>& defMap, SymExpr* def) {
+void addDef(Map<Symbol*, Vec<SymExpr*>*>& defMap, SymExpr* def) {
   addUseOrDef(defMap, def);
 }
 
-
-void addUse(Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr* use) {
+void addUse(Map<Symbol*, Vec<SymExpr*>*>& useMap, SymExpr* use) {
   addUseOrDef(useMap, use);
 }
-
 
 //
 // Checks if a callExpr is one of the op= primitives
@@ -537,19 +515,17 @@ void addUse(Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr* use) {
 // op= function call (such as before inlining)
 //
 bool isOpEqualPrim(CallExpr* call) {
-  if (call->isPrimitive(PRIM_ADD_ASSIGN)        ||
-      call->isPrimitive(PRIM_SUBTRACT_ASSIGN)   ||
-      call->isPrimitive(PRIM_MULT_ASSIGN)       ||
-      call->isPrimitive(PRIM_DIV_ASSIGN)        ||
-      call->isPrimitive(PRIM_MOD_ASSIGN)        ||
-      call->isPrimitive(PRIM_LSH_ASSIGN)        ||
-      call->isPrimitive(PRIM_RSH_ASSIGN)        ||
-      call->isPrimitive(PRIM_AND_ASSIGN)        ||
-      call->isPrimitive(PRIM_OR_ASSIGN)         ||
-      call->isPrimitive(PRIM_XOR_ASSIGN)        ||
+  if (call->isPrimitive(PRIM_ADD_ASSIGN) ||
+      call->isPrimitive(PRIM_SUBTRACT_ASSIGN) ||
+      call->isPrimitive(PRIM_MULT_ASSIGN) ||
+      call->isPrimitive(PRIM_DIV_ASSIGN) ||
+      call->isPrimitive(PRIM_MOD_ASSIGN) ||
+      call->isPrimitive(PRIM_LSH_ASSIGN) ||
+      call->isPrimitive(PRIM_RSH_ASSIGN) ||
+      call->isPrimitive(PRIM_AND_ASSIGN) || call->isPrimitive(PRIM_OR_ASSIGN) ||
+      call->isPrimitive(PRIM_XOR_ASSIGN) ||
       call->isPrimitive(PRIM_LOGICALAND_ASSIGN) ||
-      call->isPrimitive(PRIM_LOGICALOR_ASSIGN)
-      ) {
+      call->isPrimitive(PRIM_LOGICALOR_ASSIGN)) {
     return true;
   }
   //otherwise false
@@ -568,10 +544,9 @@ bool isMoveOrAssign(CallExpr* call) {
 // - the RHS is a reference
 //
 bool isDerefMove(CallExpr* call) {
-  return isMoveOrAssign(call)                    &&
-         isSymExpr(call->get(2))                 &&
+  return isMoveOrAssign(call) && isSymExpr(call->get(2)) &&
          call->get(1)->isRefOrWideRef() == false &&
-         call->get(2)->isRefOrWideRef() ==  true;
+         call->get(2)->isRefOrWideRef() == true;
 }
 
 bool isNewLike(CallExpr* call) {
@@ -579,23 +554,19 @@ bool isNewLike(CallExpr* call) {
          call->isPrimitive(PRIM_NEW_WITH_ALLOCATOR);
 }
 
-
 //
 // Check if a callExpr is a relational operator primitive
 // (==, !=, <=, >=, <, >)
 //
 bool isRelationalOperator(CallExpr* call) {
-  if (call->isPrimitive(PRIM_EQUAL)          ||
-      call->isPrimitive(PRIM_NOTEQUAL)       ||
-      call->isPrimitive(PRIM_LESSOREQUAL)    ||
-      call->isPrimitive(PRIM_GREATEROREQUAL) ||
-      call->isPrimitive(PRIM_LESS)           ||
+  if (call->isPrimitive(PRIM_EQUAL) || call->isPrimitive(PRIM_NOTEQUAL) ||
+      call->isPrimitive(PRIM_LESSOREQUAL) ||
+      call->isPrimitive(PRIM_GREATEROREQUAL) || call->isPrimitive(PRIM_LESS) ||
       call->isPrimitive(PRIM_GREATER)) {
     return true;
   }
   //otherwise false
   return false;
-
 }
 
 static constexpr int DEF = 1;
@@ -606,10 +577,8 @@ static int computeDefAndOrUseDirectCall(FnSymbol* fn, SymExpr* se) {
   auto ret = USE;
 
   if (auto arg = actual_to_formal(se)) {
-    if (arg->intent == INTENT_REF   ||
-        arg->intent == INTENT_INOUT ||
-        (fn->name == astrSassign &&
-         fn->getFormal(1) == arg &&
+    if (arg->intent == INTENT_REF || arg->intent == INTENT_INOUT ||
+        (fn->name == astrSassign && fn->getFormal(1) == arg &&
          isRecord(arg->type))) {
       // BHARSH TODO: get rid of this 'isRecord' special case
       ret = DEF_USE;
@@ -716,8 +685,7 @@ int isDefAndOrUse(SymExpr* se) {
 
       // same as for resolvedFunction()
       ArgSymbol* arg = actual_to_formal(se);
-      if (arg->intent == INTENT_REF ||
-          arg->intent == INTENT_INOUT)
+      if (arg->intent == INTENT_REF || arg->intent == INTENT_INOUT)
         return DEF_USE;
       else if (arg->intent == INTENT_OUT)
         return DEF;
@@ -742,10 +710,9 @@ int isDefAndOrUse(SymExpr* se) {
   return USE;
 }
 
-
 void buildDefUseMaps(Vec<Symbol*>& symSet,
-                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                     Map<Symbol*,Vec<SymExpr*>*>& useMap) {
+                     Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*, Vec<SymExpr*>*>& useMap) {
   forv_Vec(Symbol, sym, symSet) {
     if (sym == NULL) continue;
 
@@ -753,69 +720,53 @@ void buildDefUseMaps(Vec<Symbol*>& symSet,
       if (se->inTree() && sym == se->symbol()) {
         int result = isDefAndOrUse(se);
 
-        if (result & 1)
-          addDef(defMap, se);
+        if (result & 1) addDef(defMap, se);
 
-        if (result & 2)
-          addUse(useMap, se);
+        if (result & 2) addUse(useMap, se);
       }
     }
   }
 }
 
-typedef Map<Symbol*,Vec<SymExpr*>*> SymbolToVecSymExprMap;
-typedef MapElem<Symbol*,Vec<SymExpr*>*> SymbolToVecSymExprMapElem;
+typedef Map<Symbol*, Vec<SymExpr*>*> SymbolToVecSymExprMap;
+typedef MapElem<Symbol*, Vec<SymExpr*>*> SymbolToVecSymExprMapElem;
 
-void freeDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                    Map<Symbol*,Vec<SymExpr*>*>& useMap) {
-  form_Map(SymbolToVecSymExprMapElem, e, defMap) {
-    delete e->value;
-  }
+void freeDefUseMaps(Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                    Map<Symbol*, Vec<SymExpr*>*>& useMap) {
+  form_Map(SymbolToVecSymExprMapElem, e, defMap) { delete e->value; }
   defMap.clear();
-  form_Map(SymbolToVecSymExprMapElem, e, useMap) {
-    delete e->value;
-  }
+  form_Map(SymbolToVecSymExprMapElem, e, useMap) { delete e->value; }
   useMap.clear();
 }
 
-
-static void
-buildDefUseSetsInternal(BaseAST* ast,
-                        Vec<Symbol*>& symSet,
-                        Vec<SymExpr*>& defSet,
-                        Vec<SymExpr*>& useSet) {
+static void buildDefUseSetsInternal(BaseAST* ast,
+                                    Vec<Symbol*>& symSet,
+                                    Vec<SymExpr*>& defSet,
+                                    Vec<SymExpr*>& useSet) {
   if (SymExpr* se = toSymExpr(ast)) {
     if (se->inTree() && se->symbol() && symSet.set_in(se->symbol())) {
       int result = isDefAndOrUse(se);
-      if (result & 1)
-        defSet.set_add(se);
-      if (result & 2)
-        useSet.set_add(se);
+      if (result & 1) defSet.set_add(se);
+      if (result & 2) useSet.set_add(se);
     }
   }
   AST_CHILDREN_CALL(ast, buildDefUseSetsInternal, symSet, defSet, useSet);
 }
-
 
 void buildDefUseSets(Vec<Symbol*>& syms,
                      FnSymbol* fn,
                      Vec<SymExpr*>& defSet,
                      Vec<SymExpr*>& useSet) {
   Vec<Symbol*> symSet;
-  forv_Vec(Symbol, sym, syms) {
-    symSet.set_add(sym);
-  }
+  forv_Vec(Symbol, sym, syms) { symSet.set_add(sym); }
   buildDefUseSetsInternal(fn, symSet, defSet, useSet);
 }
 
-
 void subSymbol(BaseAST* ast, Symbol* oldSym, Symbol* newSym) {
   if (SymExpr* se = toSymExpr(ast))
-    if (se->symbol() == oldSym)
-      se->setSymbol(newSym);
+    if (se->symbol() == oldSym) se->setSymbol(newSym);
   AST_CHILDREN_CALL(ast, subSymbol, oldSym, newSym);
 }
-
 
 void sibling_insert_help(BaseAST* sibling, BaseAST* ast) {
   Expr* parentExpr = NULL;
@@ -825,14 +776,11 @@ void sibling_insert_help(BaseAST* sibling, BaseAST* ast) {
     parentSymbol = expr->parentSymbol;
   } else if (sibling)
     INT_FATAL(ast, "major error in sibling_insert_help");
-  if (parentSymbol)
-    insert_help(ast, parentExpr, parentSymbol);
+  if (parentSymbol) insert_help(ast, parentExpr, parentSymbol);
 }
 
-
 void parent_insert_help(BaseAST* parent, Expr* ast) {
-  if (!parent || !parent->inTree())
-    return;
+  if (!parent || !parent->inTree()) return;
   Expr* parentExpr = NULL;
   Symbol* parentSymbol = NULL;
   if (Expr* expr = toExpr(parent)) {
@@ -847,10 +795,7 @@ void parent_insert_help(BaseAST* parent, Expr* ast) {
   insert_help(ast, parentExpr, parentSymbol);
 }
 
-
-void insert_help(BaseAST* ast,
-                 Expr* parentExpr,
-                 Symbol* parentSymbol) {
+void insert_help(BaseAST* ast, Expr* parentExpr, Symbol* parentSymbol) {
   if (Symbol* sym = toSymbol(ast)) {
     parentSymbol = sym;
     parentExpr = NULL;
@@ -870,7 +815,6 @@ void insert_help(BaseAST* ast,
   AST_CHILDREN_CALL(ast, insert_help, parentExpr, parentSymbol);
 }
 
-
 void remove_help(BaseAST* ast, int trace_flag) {
   trace_remove(ast, trace_flag);
   AST_CHILDREN_CALL(ast, remove_help, trace_flag);
@@ -886,28 +830,23 @@ void remove_help(BaseAST* ast, int trace_flag) {
     expr->parentSymbol = NULL;
     expr->parentExpr = NULL;
   } else if (LabelSymbol* labsym = toLabelSymbol(ast)) {
-    if (labsym->iterResumeGoto)
-      removedIterResumeLabels.add(labsym);
+    if (labsym->iterResumeGoto) removedIterResumeLabels.add(labsym);
   }
 }
 
-
 // Return the corresponding Symbol in the formal list of the actual a
-ArgSymbol*
-actual_to_formal(Expr *a) {
-  if (CallExpr *call = toCallExpr(a->parentExpr)) {
+ArgSymbol* actual_to_formal(Expr* a) {
+  if (CallExpr* call = toCallExpr(a->parentExpr)) {
     if (call->isResolved()) {
       for_formals_actuals(formal, actual, call) {
-        if (a == actual)
-          return formal;
+        if (a == actual) return formal;
       }
     } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
       FnSymbol* fn = toFnSymbol(toSymExpr(call->get(1))->symbol());
       int i = 0;
       for_actuals(actual, call) {
         i++;
-        if (a == actual)
-          return fn->getFormal(i-2);
+        if (a == actual) return fn->getFormal(i - 2);
       }
     }
   }
@@ -915,12 +854,10 @@ actual_to_formal(Expr *a) {
   return nullptr;
 }
 
-
 Expr* formal_to_actual(CallExpr* call, Symbol* arg) {
   if (call->isResolved()) {
     for_formals_actuals(formal, actual, call) {
-      if (arg == formal)
-        return actual;
+      if (arg == formal) return actual;
     }
     INT_FATAL(call, "couldn't find arg");
   } else {
@@ -951,10 +888,7 @@ static bool isNumericTypeSymExpr(Expr* expr) {
     Type* t = sym->type;
     // if it's the actual type symbol for that type
     if (t->symbol == sym && sym->hasFlag(FLAG_TYPE_VARIABLE))
-      return isIntType(t) ||
-             isUIntType(t) ||
-             isRealType(t) ||
-             isImagType(t) ||
+      return isIntType(t) || isUIntType(t) || isRealType(t) || isImagType(t) ||
              isComplexType(t);
   }
 
@@ -963,8 +897,7 @@ static bool isNumericTypeSymExpr(Expr* expr) {
 
 bool isExternType(Type* t) {
   // narrow references are OK but not wide references
-  if (t->isWideRef())
-    return false;
+  if (t->isWideRef()) return false;
 
   if (isFunctionType(t) && fcfs::usePointerImplementation()) {
     return false;
@@ -979,15 +912,11 @@ bool isExternType(Type* t) {
 
   EnumType* et = toEnumType(t);
 
-  return t->isRef() ||
-         d == ClassTypeDecorator::BORROWED ||
-         d == ClassTypeDecorator::UNMANAGED ||
-         (et && et->isConcrete()) ||
+  return t->isRef() || d == ClassTypeDecorator::BORROWED ||
+         d == ClassTypeDecorator::UNMANAGED || (et && et->isConcrete()) ||
          (ts->hasFlag(FLAG_TUPLE) && ts->hasFlag(FLAG_STAR_TUPLE)) ||
-         ts->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL) ||
-         ts->hasFlag(FLAG_DATA_CLASS) ||
-         ts->hasFlag(FLAG_C_PTR_CLASS) ||
-         ts->hasFlag(FLAG_C_ARRAY) ||
+         ts->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL) || ts->hasFlag(FLAG_DATA_CLASS) ||
+         ts->hasFlag(FLAG_C_PTR_CLASS) || ts->hasFlag(FLAG_C_ARRAY) ||
          ts->hasFlag(FLAG_EXTERN) ||
          ts->hasFlag(FLAG_EXPORT); // these don't exist yet
 }
@@ -1017,27 +946,27 @@ bool isTypeExpr(Expr* expr) {
       retval = true;
 
     } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) == true ||
-               call->isPrimitive(PRIM_GET_MEMBER)       == true) {
-      SymExpr*       left = toSymExpr(call->get(1));
-      Type*          t    = canonicalDecoratedClassType(left->getValType());
-      AggregateType* ct   = toAggregateType(t);
+               call->isPrimitive(PRIM_GET_MEMBER) == true) {
+      SymExpr* left = toSymExpr(call->get(1));
+      Type* t = canonicalDecoratedClassType(left->getValType());
+      AggregateType* ct = toAggregateType(t);
 
       INT_ASSERT(ct != NULL);
 
       if (left->symbol()->type->symbol->hasFlag(FLAG_TUPLE) == true &&
-          left->symbol()->hasFlag(FLAG_TYPE_VARIABLE)       == true) {
+          left->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
         retval = true;
 
       } else {
-        SymExpr*   right = toSymExpr(call->get(2));
-        VarSymbol* var   = toVarSymbol(right->symbol());
+        SymExpr* right = toSymExpr(call->get(2));
+        VarSymbol* var = toVarSymbol(right->symbol());
 
         if (var->isType() == true) {
           retval = true;
 
         } else if (var->immediate != NULL) {
           const char* name = var->immediate->v_string.c_str();
-          Symbol*     field = ct->getField(name);
+          Symbol* field = ct->getField(name);
 
           retval = field->hasFlag(FLAG_TYPE_VARIABLE);
         }
@@ -1051,8 +980,7 @@ bool isTypeExpr(Expr* expr) {
     } else if (call->isPrimitive(PRIM_COERCE)) {
       retval = isTypeExpr(call->get(1));
 
-    } else if (call->numActuals() == 1 &&
-               call->baseExpr &&
+    } else if (call->numActuals() == 1 && call->baseExpr &&
                isNumericTypeSymExpr(call->baseExpr)) {
       // e.g. call 'int' 64 is a type expression (resulting in int(64))
       retval = true;
@@ -1060,7 +988,7 @@ bool isTypeExpr(Expr* expr) {
     } else if (FnSymbol* fn = call->resolvedFunction()) {
       retval = fn->retTag == RET_TYPE;
 
-    // TODO: Is it safe to just check if the base expression is a type?
+      // TODO: Is it safe to just check if the base expression is a type?
     } else if (isTypeConstructorWithRuntimeTypeActual(call)) {
       retval = true;
     }
@@ -1075,21 +1003,19 @@ bool isTypeConstructorWithRuntimeTypeActual(CallExpr* call) {
   auto se = toSymExpr(call->baseExpr);
   if (!se || !se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) return false;
 
-  for_actuals(actual, call)
-    if (auto se = toSymExpr(actual))
-      if (auto sym = se->symbol()->type->symbol)
-        if (sym->hasFlag(FLAG_HAS_RUNTIME_TYPE)) return true;
+  for_actuals(actual, call) if (auto se = toSymExpr(actual)) if (
+    auto sym =
+      se->symbol()
+        ->type->symbol) if (sym->hasFlag(FLAG_HAS_RUNTIME_TYPE)) return true;
 
   return false;
 }
 
-static void pruneVisit(TypeSymbol*       ts,
-                       Vec<FnSymbol*>&   fns,
-                       Vec<TypeSymbol*>& types);
+static void
+pruneVisit(TypeSymbol* ts, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types);
 
-static void pruneVisitFn(FnSymbol*         fn,
-                         Vec<FnSymbol*>&   fns,
-                         Vec<TypeSymbol*>& types);
+static void
+pruneVisitFn(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types);
 
 static void
 pruneVisit(Symbol* sym, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
@@ -1103,7 +1029,6 @@ pruneVisit(Symbol* sym, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   }
 }
 
-
 static void
 pruneVisit(TypeSymbol* ts, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   if (types.set_in(ts)) return;
@@ -1111,13 +1036,11 @@ pruneVisit(TypeSymbol* ts, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   llvm::SmallVector<DefExpr*, 32> defExprs;
   collectDefExprs(ts, defExprs);
   for (DefExpr* def : defExprs) {
-    if (def->sym->type)
-      pruneVisit(def->sym, fns, types);
+    if (def->sym->type) pruneVisit(def->sym, fns, types);
   }
   if (ts->hasFlag(FLAG_DATA_CLASS))
     pruneVisit(getDataClassType(ts), fns, types);
 }
-
 
 static void
 pruneVisitFn(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
@@ -1128,18 +1051,14 @@ pruneVisitFn(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
 
   llvm::SmallVector<SymExpr*, 16> symExprs;
   collectSymExprs(fn, symExprs);
-  for(SymExpr* se : symExprs) {
+  for (SymExpr* se : symExprs) {
     if (FnSymbol* next = toFnSymbol(se->symbol()))
-      if (!fns.set_in(next))
-        pruneVisit(next, fns, types);
+      if (!fns.set_in(next)) pruneVisit(next, fns, types);
     if (se->symbol() && se->symbol()->type)
       pruneVisit(se->symbol(), fns, types);
   }
-  for_formals(formal, fn) {
-    pruneVisit(formal, fns, types);
-  }
+  for_formals(formal, fn) { pruneVisit(formal, fns, types); }
 }
-
 
 static ModuleSymbol* getToplevelModule(FnSymbol* fn) {
   if (fn->defPoint == nullptr) {
@@ -1148,8 +1067,7 @@ static ModuleSymbol* getToplevelModule(FnSymbol* fn) {
 
   // find the top-level module
   ModuleSymbol* topLevelModule = nullptr;
-  for (ModuleSymbol* cur = fn->defPoint->getModule();
-       cur && cur->defPoint;
+  for (ModuleSymbol* cur = fn->defPoint->getModule(); cur && cur->defPoint;
        cur = cur->defPoint->getModule()) {
     if (isModuleSymbol(cur) && cur != theProgram && cur != rootModule) {
       topLevelModule = cur;
@@ -1186,12 +1104,10 @@ static bool keepFnForSeparateCompilation(FnSymbol* fn) {
 
 // Visit and mark functions (and types) which are reachable from
 // externally visible symbols.
-static void
-visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
-{
+static void visitVisibleFunctions(Vec<FnSymbol*>& fns,
+                                  Vec<TypeSymbol*>& types) {
   // chpl_gen_main is always visible (if it exists).
-  if (chpl_gen_main)
-    pruneVisit(chpl_gen_main, fns, types);
+  if (chpl_gen_main) pruneVisit(chpl_gen_main, fns, types);
 
   // printModuleInitOrder function is always visible
   INT_ASSERT(gPrintModuleInitFn);
@@ -1200,8 +1116,7 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
   // Functions appearing the function pointer table are visible.
   // These are blocks that can be started through a forall, coforall,
   // or on statement.
-  for (FnSymbol* fn : ftableVec)
-    pruneVisit(fn, fns, types);
+  for (FnSymbol* fn : ftableVec) pruneVisit(fn, fns, types);
 
   // Mark VFT entries as visible.
   for (int i = 0; i < virtualMethodTable.n; i++)
@@ -1214,8 +1129,7 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
   //  * always-resolve functions
   //  * functions in modules being separately compiled
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_EXPORT) ||
-        fn->hasFlag(FLAG_ALWAYS_RESOLVE) ||
+    if (fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_ALWAYS_RESOLVE) ||
         keepFnForSeparateCompilation(fn)) {
       pruneVisit(fn, fns, types);
     }
@@ -1223,23 +1137,16 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
 
   // Mark well-known functions as visible
   std::vector<FnSymbol*> wellKnownFns = getWellKnownFunctions();
-  for_vector(FnSymbol, fn, wellKnownFns) {
-    pruneVisit(fn, fns, types);
-  }
+  for_vector(FnSymbol, fn, wellKnownFns) { pruneVisit(fn, fns, types); }
 
   pruneVisitFn(gAddModuleFn, fns, types);
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
-    if (mod->initFn)
-      pruneVisitFn(mod->initFn, fns, types);
-    if (mod->deinitFn)
-      pruneVisitFn(mod->deinitFn, fns, types);
+    if (mod->initFn) pruneVisitFn(mod->initFn, fns, types);
+    if (mod->deinitFn) pruneVisitFn(mod->deinitFn, fns, types);
   }
 }
 
-
-static void
-pruneUnusedTypes(Vec<TypeSymbol*>& types)
-{
+static void pruneUnusedTypes(Vec<TypeSymbol*>& types) {
   pruneStaleFunctionTypes(types);
   pruneUnusedAggregateTypes(types);
   pruneUnusedRefs(types);
@@ -1337,9 +1244,8 @@ static void pruneStaleFunctionTypes(Vec<TypeSymbol*>& types) {
     // a 'FnSymbol*'. Instead, it should be pruned if it is _stale_: that is,
     // if its return type or any formal type is unused.
     auto shouldPrune = [&](Type* t) {
-      return !t->inTree() ||
-        shouldPruneRefType(t->symbol, types) ||
-        shouldPruneAggregateType(t->symbol, types);
+      return !t->inTree() || shouldPruneRefType(t->symbol, types) ||
+             shouldPruneAggregateType(t->symbol, types);
     };
 
     bool prune = shouldPrune(ft->returnType());
@@ -1371,8 +1277,7 @@ static bool shouldRemoveSymBeforeCodeGeneration(Symbol* sym) {
   // Do not remove fields.
   if (isTypeSymbol(sym->defPoint->parentSymbol)) return false;
 
-  if (sym->type == dtUninstantiated &&
-      sym != dtUninstantiated->symbol) {
+  if (sym->type == dtUninstantiated && sym != dtUninstantiated->symbol) {
     return true;
   }
   return false;
@@ -1386,10 +1291,10 @@ void cleanupAfterTypeRemoval() {
     auto sym = def->sym;
     if (!def->inTree() || !sym || !sym->type) continue;
 
-    bool canChange = !sym->type->symbol->inTree() &&
-                     (isAggregateType(sym->type) ||
-                      isFunctionType(sym->type)) &&
-                     !isTypeSymbol(sym);
+    bool canChange =
+      !sym->type->symbol->inTree() &&
+      (isAggregateType(sym->type) || isFunctionType(sym->type)) &&
+      !isTypeSymbol(sym);
     if (canChange) sym->type = dtNothing;
 
     // Some types must never reach code generation, as they have no runtime
@@ -1422,16 +1327,12 @@ void cleanupAfterTypeRemoval() {
   }
 }
 
-static void removeVoidMoves()
-{
-  forv_Vec(CallExpr, call, gCallExprs)
-  {
-    if (! call->isPrimitive(PRIM_MOVE))
-      continue;
+static void removeVoidMoves() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (!call->isPrimitive(PRIM_MOVE)) continue;
 
     SymExpr* se = toSymExpr(call->get(1));
-    if (se->symbol()->type != dtNothing)
-      continue;
+    if (se->symbol()->type != dtNothing) continue;
 
     // the RHS of the move could be a function with side effects.
     // So, if it is a call, just remove the move, but leave the call.
@@ -1452,8 +1353,7 @@ static void removeStatementLevelUsesOfNone() {
 
 // Determine sets of used functions and types, and then delete
 // functions which are not visible and classes which are not used.
-void
-prune() {
+void prune() {
   Vec<FnSymbol*> fns;     // This receives the set of used functions.
   Vec<TypeSymbol*> types; // This receives the set of used types.
 
@@ -1463,8 +1363,7 @@ prune() {
   // delete unused functions
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fns.set_in(fn))
-      fn->defPoint->remove();
+    if (!fns.set_in(fn)) fn->defPoint->remove();
   }
 
   pruneUnusedTypes(types);
@@ -1473,7 +1372,6 @@ prune() {
 
   removeStatementLevelUsesOfNone();
 }
-
 
 // Done this way to make the pass name for each pass unique.
 void prune2() { prune(); } // Synonym for prune.
@@ -1485,7 +1383,7 @@ void prune2() { prune(); } // Synonym for prune.
  * instead of just the number 0.
  */
 Symbol* getSvecSymbol(CallExpr* call) {
-  INT_ASSERT(call->isPrimitive(PRIM_GET_SVEC_MEMBER)       ||
+  INT_ASSERT(call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
              call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
              call->isPrimitive(PRIM_SET_SVEC_MEMBER));
   Type* type = call->get(1)->getValType();
@@ -1496,17 +1394,16 @@ Symbol* getSvecSymbol(CallExpr* call) {
     int immediateVal = fieldSym->immediate->int_value();
 
     INT_ASSERT(immediateVal >= 0 && immediateVal < tuple->fields.length);
-    return tuple->getField(immediateVal+1);
+    return tuple->getField(immediateVal + 1);
   } else {
     // GET_SVEC_MEMBER(p, i), where p is a star tuple
     return NULL;
   }
 }
 
-
 static void addToUsedFnSymbols(std::set<FnSymbol*>& fnSymbols,
-                               FnSymbol*            newFn) {
-  if(fnSymbols.count(newFn) == 0) {
+                               FnSymbol* newFn) {
+  if (fnSymbols.count(newFn) == 0) {
     fnSymbols.insert(newFn);
     AST_CHILDREN_CALL(newFn->body, collectUsedFnSymbols, fnSymbols);
   }
@@ -1563,7 +1460,7 @@ static QualifiedType computeFlattenedRefType(QualifiedType qt) {
     retType = retType->getValType();
   }
 
-  QualifiedType ret = { retQual, retType };
+  QualifiedType ret = {retQual, retType};
 
   return ret;
 }
@@ -1606,16 +1503,20 @@ static FunctionType* flattenRefsForFunctionTypes(FunctionType* ft) {
     auto qt1 = formal.qualType();
     auto qt2 = computeFlattenedRefType(qt1);
 
-    newFormals.push_back({ qt2.getQual(), qt2.type(),
-                           formal.intent(),
-                           formal.name(), formal.flags() });
+    newFormals.push_back({qt2.getQual(),
+                          qt2.type(),
+                          formal.intent(),
+                          formal.name(),
+                          formal.flags()});
     changed = changed || qt1 != qt2;
   }
 
   if (changed) {
     // If any formal type changed, then recompute the function type.
     SET_LINENO(ft->symbol);
-    auto newFt = FunctionType::get(ft->kind(), ft->width(), ft->linkage(),
+    auto newFt = FunctionType::get(ft->kind(),
+                                   ft->width(),
+                                   ft->linkage(),
                                    std::move(newFormals),
                                    ft->returnIntent(),
                                    ft->returnType(),
@@ -1639,10 +1540,8 @@ class FlattenRefsInProcPtrTypes : public AdjustSymbolTypes {
 };
 
 void convertToQualifiedRefs() {
-#define fixRefSymbols(SymType) \
-  forv_Vec(SymType, sym, g##SymType##s) { \
-    setQualRef(sym); \
-  }
+#define fixRefSymbols(SymType)                               \
+  forv_Vec(SymType, sym, g##SymType##s) { setQualRef(sym); }
 
   fixRefSymbols(VarSymbol);
   fixRefSymbols(ArgSymbol);
@@ -1662,36 +1561,35 @@ void convertToQualifiedRefs() {
 
 bool shouldWarnUnstableFor(BaseAST* ast) {
   if (auto mod = ast->getModule()) {
-    if (mod->modTag == MOD_INTERNAL) return fWarnUnstableInternal;
-    else if (mod->modTag == MOD_STANDARD) return fWarnUnstableStandard;
+    if (mod->modTag == MOD_INTERNAL)
+      return fWarnUnstableInternal;
+    else if (mod->modTag == MOD_STANDARD)
+      return fWarnUnstableStandard;
   }
   return fWarnUnstable;
 }
 
 // this is `symExprIsUsedAsConstRef` when `constRef=true`
-bool symExprIsUsedAsRef(
-  SymExpr* use,
-  bool constRef,
-  std::function<bool(SymExpr*, CallExpr*)> checkForMove) {
-   if (CallExpr* call = toCallExpr(use->parentExpr)) {
+bool symExprIsUsedAsRef(SymExpr* use,
+                        bool constRef,
+                        std::function<bool(SymExpr*, CallExpr*)> checkForMove) {
+  if (CallExpr* call = toCallExpr(use->parentExpr)) {
     if (FnSymbol* calledFn = call->resolvedFunction()) {
       ArgSymbol* formal = actual_to_formal(use);
 
-      if(constRef) {
+      if (constRef) {
         // generally, use const-ref-return if passing to const ref formal
         if (formal->intent == INTENT_CONST_REF) {
           // but make an exception for initCopy calls
-          if (calledFn->hasFlag(FLAG_INIT_COPY_FN))
-            return false;
+          if (calledFn->hasFlag(FLAG_INIT_COPY_FN)) return false;
 
           // TODO: tuples of types with blank intent
           // being 'in' should perhaps use the value version.
           return true;
         }
       } else {
-        if (formal->intent == INTENT_REF ||
-          formal->intent == INTENT_OUT ||
-          formal->intent == INTENT_INOUT) {
+        if (formal->intent == INTENT_REF || formal->intent == INTENT_OUT ||
+            formal->intent == INTENT_INOUT) {
           return true;
         }
       }
@@ -1703,8 +1601,7 @@ bool symExprIsUsedAsRef(
       auto retTag = constRef ? RET_CONST_REF : RET_REF;
 
       // use const-ref-return if returning by const ref intent
-      if (inFn->retTag == retTag)
-        return true;
+      if (inFn->retTag == retTag) return true;
 
     } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
                call->isPrimitive(PRIM_WIDE_GET_NODE)) {
@@ -1749,8 +1646,8 @@ computeNewSymbolType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
   if (preserveRefLevels && t != t->getValType()) {
     // For reference types, unpack and adjust the value type instead.
     auto vt1 = t->getValType();
-    auto vt2 = computeNewSymbolType(alreadyAdjusted, adjustTypeFn,
-                                    preserveRefLevels, vt1);
+    auto vt2 = computeNewSymbolType(
+      alreadyAdjusted, adjustTypeFn, preserveRefLevels, vt1);
     INT_ASSERT(vt2);
 
     // TODO: Do wide classes need any sort of special treatment?
@@ -1772,26 +1669,27 @@ computeNewSymbolType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
 
     for (int i = 0; i < ft->numFormals(); i++) {
       auto f = ft->formal(i);
-      auto newT = computeNewSymbolType(alreadyAdjusted, adjustTypeFn,
-                                       preserveRefLevels,
-                                       f->type());
+      auto newT = computeNewSymbolType(
+        alreadyAdjusted, adjustTypeFn, preserveRefLevels, f->type());
       if (newT != f->type()) {
-        newFormals.push_back({ f->qual(), newT, f->intent(), f->name(), f->flags() });
+        newFormals.push_back(
+          {f->qual(), newT, f->intent(), f->name(), f->flags()});
         anyChanged = true;
       } else {
         newFormals.push_back(*f);
       }
     }
 
-    auto newRetType = computeNewSymbolType(alreadyAdjusted, adjustTypeFn,
-                                           preserveRefLevels,
-                                           ft->returnType());
+    auto newRetType = computeNewSymbolType(
+      alreadyAdjusted, adjustTypeFn, preserveRefLevels, ft->returnType());
     anyChanged = anyChanged || newRetType != ft->returnType();
 
     if (anyChanged) {
       // If any types changed, then recompute the function type.
       SET_LINENO(ft->symbol);
-      auto newFt = FunctionType::get(ft->kind(), ft->width(), ft->linkage(),
+      auto newFt = FunctionType::get(ft->kind(),
+                                     ft->width(),
+                                     ft->linkage(),
                                      std::move(newFormals),
                                      ft->returnIntent(),
                                      newRetType,
@@ -1816,15 +1714,15 @@ static SymbolNameVec* ptrToSubsOrNull(Symbol* sym) {
   return nullptr;
 }
 
-static
-Type* doAdjustSymbolType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
-                         Symbol* sym,
-                         AdjustTypeFn adjustTypeFn,
-                         bool preserveRefLevels) {
+static Type*
+doAdjustSymbolType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
+                   Symbol* sym,
+                   AdjustTypeFn adjustTypeFn,
+                   bool preserveRefLevels) {
   // Wrapper that computes what the new type of the symbol should be.
   auto doComputeType = [&](Type* t) {
-    return computeNewSymbolType(alreadyAdjusted, adjustTypeFn,
-                                preserveRefLevels, t);
+    return computeNewSymbolType(
+      alreadyAdjusted, adjustTypeFn, preserveRefLevels, t);
   };
 
   Type* oldType = sym->type;
@@ -1837,8 +1735,7 @@ Type* doAdjustSymbolType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
     setType = false;
   }
 
-  if (ret->symbol->hasFlag(FLAG_WIDE_REF) ||
-      ret->symbol->hasFlag(FLAG_REF)) {
+  if (ret->symbol->hasFlag(FLAG_WIDE_REF) || ret->symbol->hasFlag(FLAG_REF)) {
     // Do not modify substitutions in reference types. Compute a new type.
     canModifySubstitutions = false;
   }
@@ -1912,7 +1809,8 @@ Type* doAdjustSymbolType(std::unordered_map<Type*, Type*>& alreadyAdjusted,
   return ret;
 }
 
-Type* maybeAdjustSymbolType(Symbol* sym, AdjustTypeFn adjustTypeFn,
+Type* maybeAdjustSymbolType(Symbol* sym,
+                            AdjustTypeFn adjustTypeFn,
                             bool preserveRefLevels) {
   std::unordered_map<Type*, Type*> empty;
   auto ret = doAdjustSymbolType(empty, sym, adjustTypeFn, preserveRefLevels);
@@ -1923,25 +1821,17 @@ void adjustAllSymbolTypes(AdjustTypeFn adjustTypeFn, bool preserveRefLevels) {
   std::unordered_map<Type*, Type*> alreadyAdjusted;
 
   auto adjust = [&](Symbol* sym) {
-    return doAdjustSymbolType(alreadyAdjusted, sym, adjustTypeFn,
-                              preserveRefLevels);
+    return doAdjustSymbolType(
+      alreadyAdjusted, sym, adjustTypeFn, preserveRefLevels);
   };
 
-  forv_Vec(VarSymbol, var, gVarSymbols) {
-    adjust(var);
-  }
+  forv_Vec(VarSymbol, var, gVarSymbols) { adjust(var); }
 
-  forv_Vec(ArgSymbol, arg, gArgSymbols) {
-    adjust(arg);
-  }
+  forv_Vec(ArgSymbol, arg, gArgSymbols) { adjust(arg); }
 
-  forv_Vec(ShadowVarSymbol, sv, gShadowVarSymbols) {
-    adjust(sv);
-  }
+  forv_Vec(ShadowVarSymbol, sv, gShadowVarSymbols) { adjust(sv); }
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    adjust(fn);
-  }
+  forv_Vec(FnSymbol, fn, gFnSymbols) { adjust(fn); }
 
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     Type* newType = adjust(ts);
@@ -1979,8 +1869,8 @@ bool isUseOfProcedureAsValue(SymExpr* se) {
 
     if (call->baseExpr != se) {
       auto formal = call->resolvedFunction() ? actual_to_formal(se) : nullptr;
-      bool isMoveOrAssign = call->isPrimitive(PRIM_ASSIGN) ||
-                            call->isPrimitive(PRIM_MOVE);
+      bool isMoveOrAssign =
+        call->isPrimitive(PRIM_ASSIGN) || call->isPrimitive(PRIM_MOVE);
 
       if (isMoveOrAssign && call->get(2) == se) {
         // Ok, being moved or assigned into a variable.

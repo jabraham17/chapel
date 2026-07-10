@@ -31,19 +31,12 @@
 
 using namespace chpl;
 
-const std::string& AstToText::text() const
-{
-  return mText;
-}
+const std::string& AstToText::text() const { return mText; }
 
-void AstToText::appendNameAndFormals(FnSymbol* fn)
-{
-  if (fn->instantiatedFrom != NULL && developer == false)
-  {
+void AstToText::appendNameAndFormals(FnSymbol* fn) {
+  if (fn->instantiatedFrom != NULL && developer == false) {
     appendNameAndFormals(fn->instantiatedFrom);
-  }
-  else
-  {
+  } else {
     appendName(fn);
     appendFormals(fn);
   }
@@ -55,16 +48,21 @@ static bool wantSpaces(const char* op, bool printingType) {
 }
 
 // wrapper to allow call sites that relied on char* to remain unchanged
-static bool needParens(const char* outer, const char* inner,
-                  bool outerUnary, bool outerPostfix,
-                  bool innerUnary, bool innerPostfix,
-                  bool innerIsRHS) {
+static bool needParens(const char* outer,
+                       const char* inner,
+                       bool outerUnary,
+                       bool outerPostfix,
+                       bool innerUnary,
+                       bool innerPostfix,
+                       bool innerIsRHS) {
   return needParens(UniqueString::get(gContext, outer),
                     UniqueString::get(gContext, inner),
-                    outerUnary, outerPostfix,
-                    innerUnary, innerPostfix,
+                    outerUnary,
+                    outerPostfix,
+                    innerUnary,
+                    innerPostfix,
                     innerIsRHS);
-                  }
+}
 
 /************************************ | *************************************
 *                                                                           *
@@ -72,18 +70,15 @@ static bool needParens(const char* outer, const char* inner,
 *                                                                           *
 ************************************* | ************************************/
 
-void AstToText::appendName(FnSymbol* fn)
-{
-  if (fn->hasFlag(FLAG_MODULE_INIT))
-  {
-    INT_ASSERT(strncmp(fn->name, "chpl__init_",      11) == 0);
+void AstToText::appendName(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_MODULE_INIT)) {
+    INT_ASSERT(strncmp(fn->name, "chpl__init_", 11) == 0);
 
     mText += "top-level module statements for ";
     mText += (fn->name + 11);
   }
 
-  else if (fn->isMethod() == true)
-  {
+  else if (fn->isMethod() == true) {
     appendThisIntent(fn);
 
     if (!fn->isPrimaryMethod()) {
@@ -93,20 +88,17 @@ void AstToText::appendName(FnSymbol* fn)
 
     const char* fnName = fn->name;
 
-    if (fn->hasFlag(FLAG_DESTRUCTOR))
-      fnName = "deinit";
+    if (fn->hasFlag(FLAG_DESTRUCTOR)) fnName = "deinit";
 
     mText += fnName;
   }
 
-  else
-  {
+  else {
     mText += fn->name;
   }
 }
 
-void AstToText::appendThisIntent(FnSymbol* fn)
-{
+void AstToText::appendThisIntent(FnSymbol* fn) {
   if (fn->thisTag == INTENT_REF)
     mText += "ref ";
 
@@ -117,48 +109,37 @@ void AstToText::appendThisIntent(FnSymbol* fn)
     mText += "type ";
 }
 
-void AstToText::appendClassName(FnSymbol* fn)
-{
+void AstToText::appendClassName(FnSymbol* fn) {
   int index = indexForThis(fn);
 
-  if (index > 0)
-  {
-    DefExpr*   formal = toDefExpr(fn->formals.get(index));
+  if (index > 0) {
+    DefExpr* formal = toDefExpr(fn->formals.get(index));
     ArgSymbol* argSym = toArgSymbol(formal->sym);
 
-    if (argSym->typeExpr)
-    {
+    if (argSym->typeExpr) {
       BlockStmt* bs = argSym->typeExpr;
 
-      if (bs->body.length == 1)
-      {
+      if (bs->body.length == 1) {
         Expr* expr = bs->body.only();
 
-        if (UnresolvedSymExpr* sel = toUnresolvedSymExpr(expr))
-        {
+        if (UnresolvedSymExpr* sel = toUnresolvedSymExpr(expr)) {
           mText += sel->unresolved;
         }
 
-        else if (SymExpr* sel = toSymExpr(expr))
-        {
-          if (TypeSymbol* typeSym = toTypeSymbol(sel->symbol()))
-          {
+        else if (SymExpr* sel = toSymExpr(expr)) {
+          if (TypeSymbol* typeSym = toTypeSymbol(sel->symbol())) {
             appendExpr(typeSym->name);
-          }
-          else
-          {
+          } else {
             INT_ASSERT(false);
           }
         }
 
-        else
-        {
+        else {
           INT_ASSERT(false);
         }
       }
 
-      else
-      {
+      else {
         INT_ASSERT(false);
       }
     }
@@ -171,9 +152,7 @@ void AstToText::appendClassName(FnSymbol* fn)
 
     else
       INT_ASSERT(false);
-  }
-  else
-  {
+  } else {
     INT_ASSERT(false);
   }
 }
@@ -184,42 +163,34 @@ void AstToText::appendClassName(FnSymbol* fn)
 *                                                                           *
 ************************************* | ************************************/
 
-void AstToText::appendFormals(FnSymbol* fn)
-{
-  int  count = numFormals(fn);
-  bool skip  = skipParens(fn);
+void AstToText::appendFormals(FnSymbol* fn) {
+  int count = numFormals(fn);
+  bool skip = skipParens(fn);
   bool first = true;
 
-  if (skip == false)
-    mText += '(';
+  if (skip == false) mText += '(';
 
-  for (int index = 1; index <= count; index++)
-  {
-    if (first == true)
-    {
-      if (skip == true)
-        mText += " ";
+  for (int index = 1; index <= count; index++) {
+    if (first == true) {
+      if (skip == true) mText += " ";
 
       first = false;
-    }
-    else
+    } else
       mText += ", ";
 
     appendFormal(fn, index);
   }
 
-  if (skip == false)
-    mText += ')';
+  if (skip == false) mText += ')';
 }
 
-bool AstToText::skipParens(FnSymbol* fn) const
-{
+bool AstToText::skipParens(FnSymbol* fn) const {
   bool retval = false;
 
   if (fn->hasFlag(FLAG_NO_PARENS))
     retval = true;
 
-  else if (fn->hasFlag(FLAG_MODULE_INIT)      && developer        == false)
+  else if (fn->hasFlag(FLAG_MODULE_INIT) && developer == false)
     retval = true;
 
   else
@@ -235,18 +206,15 @@ bool AstToText::skipParens(FnSymbol* fn) const
 ************************************* | ************************************/
 
 // Excludes "_mt" (method token) and "this" when they are present
-int AstToText::numFormals(FnSymbol* fn) const
-{
+int AstToText::numFormals(FnSymbol* fn) const {
   int retval = fn->formals.length;
 
-  if (fn->isMethod() == true)
-    retval = retval - indexForThis(fn);
+  if (fn->isMethod() == true) retval = retval - indexForThis(fn);
 
   return retval;
 }
 
-void AstToText::appendFormal(FnSymbol* fn, int oneBasedIndex)
-{
+void AstToText::appendFormal(FnSymbol* fn, int oneBasedIndex) {
   ArgSymbol* arg = formalGet(fn, oneBasedIndex);
 
   appendFormalIntent(arg);
@@ -260,82 +228,50 @@ void AstToText::appendFormal(FnSymbol* fn, int oneBasedIndex)
   appendFormalDefault(arg);
 }
 
-void AstToText::appendFormalIntent(ArgSymbol* arg)
-{
-  switch (arg->intent)
-  {
-    case INTENT_IN:
-      mText += "in ";
-      break;
+void AstToText::appendFormalIntent(ArgSymbol* arg) {
+  switch (arg->intent) {
+    case INTENT_IN: mText += "in "; break;
 
-    case INTENT_OUT:
-      mText += "out ";
-      break;
+    case INTENT_OUT: mText += "out "; break;
 
-    case INTENT_INOUT:
-      mText += "inout ";
-      break;
+    case INTENT_INOUT: mText += "inout "; break;
 
-    case INTENT_CONST:
-      mText += "const ";
-      break;
+    case INTENT_CONST: mText += "const "; break;
 
-    case INTENT_CONST_IN:
-      mText += "const in ";
-      break;
+    case INTENT_CONST_IN: mText += "const in "; break;
 
-    case INTENT_REF:
-      mText += "ref ";
-      break;
+    case INTENT_REF: mText += "ref "; break;
 
-    case INTENT_CONST_REF:
-      mText += "const ref ";
-      break;
+    case INTENT_CONST_REF: mText += "const ref "; break;
 
-    case INTENT_REF_MAYBE_CONST:
-      mText += "const? ref ";
-      break;
+    case INTENT_REF_MAYBE_CONST: mText += "const? ref "; break;
 
-    case INTENT_PARAM:
-      mText += "param ";
-      break;
+    case INTENT_PARAM: mText += "param "; break;
 
-    case INTENT_TYPE:
-      break;
+    case INTENT_TYPE: break;
 
-    case INTENT_BLANK:
-      break;
+    case INTENT_BLANK: break;
   }
 
-  if (arg->hasFlag(FLAG_TYPE_VARIABLE))
-    mText += "type ";
+  if (arg->hasFlag(FLAG_TYPE_VARIABLE)) mText += "type ";
 }
 
-void AstToText::appendFormalName(ArgSymbol* arg)
-{
-  mText += arg->name;
-}
+void AstToText::appendFormalName(ArgSymbol* arg) { mText += arg->name; }
 
-void AstToText::appendFormalType(ArgSymbol* arg)
-{
-  if (arg->typeExpr != 0)
-  {
+void AstToText::appendFormalType(ArgSymbol* arg) {
+  if (arg->typeExpr != 0) {
     BlockStmt* blockStmt = arg->typeExpr;
 
-    if (blockStmt->length() == 1)
-    {
+    if (blockStmt->length() == 1) {
       // Do not print a synthesized typeExpr
-      if (! arg->typeExprFromDefaultExpr)
-      {
+      if (!arg->typeExprFromDefaultExpr) {
         mText += ": ";
         appendExpr(arg->typeExpr->body.get(1), true);
       }
     }
 
-    else
-    {
-      if (handleNormalizedTypeOf(blockStmt) == false)
-      {
+    else {
+      if (handleNormalizedTypeOf(blockStmt) == false) {
         // NOAKES 2015/02/05  Debugging support.
         // Might become ASSERT in the future or perhaps AST will be
         // altered so that typeExpr is actually an expression
@@ -344,36 +280,30 @@ void AstToText::appendFormalType(ArgSymbol* arg)
     }
   }
 
-  else if (arg->type == dtUnknown)
-  {
+  else if (arg->type == dtUnknown) {
 
   }
 
-  else if (arg->type == dtAny)
-  {
+  else if (arg->type == dtAny) {
 
   }
 
-  else if (PrimitiveType* type = toPrimitiveType(arg->type))
-  {
+  else if (PrimitiveType* type = toPrimitiveType(arg->type)) {
     mText += ": ";
     appendExpr(type->symbol->name);
   }
 
-  else if (AggregateType* type = toAggregateType(arg->type))
-  {
+  else if (AggregateType* type = toAggregateType(arg->type)) {
     mText += ": ";
     appendExpr(type->symbol->name);
   }
 
-  else if (EnumType*      type = toEnumType(arg->type))
-  {
+  else if (EnumType* type = toEnumType(arg->type)) {
     mText += ": ";
     appendExpr(type->symbol->name);
   }
 
-  else
-  {
+  else {
     // NOAKES 2015/02/05  Debugging support.
     // Might become ASSERT in the future
     mText += " AppendType.02";
@@ -398,30 +328,24 @@ void AstToText::appendFormalType(ArgSymbol* arg)
 // Attempt to detect this pattern and then generate the desired output.
 //
 
-bool AstToText::handleNormalizedTypeOf(BlockStmt* bs)
-{
+bool AstToText::handleNormalizedTypeOf(BlockStmt* bs) {
   bool retval = false;
 
-  if (bs->body.length == 3)
-  {
-    DefExpr*  callTmp = toDefExpr (bs->body.get(1));
+  if (bs->body.length == 3) {
+    DefExpr* callTmp = toDefExpr(bs->body.get(1));
     CallExpr* moveExp = toCallExpr(bs->body.get(2));
     CallExpr* typeExp = toCallExpr(bs->body.get(3));
 
-    if (callTmp != NULL && moveExp != NULL && typeExp != NULL)
-    {
-      if (moveExp->isPrimitive(PRIM_MOVE)   == true &&
-          typeExp->isPrimitive(PRIM_TYPEOF) == true)
-      {
-        if (CallExpr* moveSrc = toCallExpr(moveExp->get(2)))
-        {
-          if (moveSrc->numActuals() == 1)
-          {
-            mText  += ": ";
+    if (callTmp != NULL && moveExp != NULL && typeExp != NULL) {
+      if (moveExp->isPrimitive(PRIM_MOVE) == true &&
+          typeExp->isPrimitive(PRIM_TYPEOF) == true) {
+        if (CallExpr* moveSrc = toCallExpr(moveExp->get(2))) {
+          if (moveSrc->numActuals() == 1) {
+            mText += ": ";
             appendExpr(moveSrc, true);
-            mText  += ".type";
+            mText += ".type";
 
-            retval =  true;
+            retval = true;
           }
         }
       }
@@ -431,35 +355,26 @@ bool AstToText::handleNormalizedTypeOf(BlockStmt* bs)
   return retval;
 }
 
-void AstToText::appendFormalVariableExpr(ArgSymbol* arg)
-{
-  if (arg->variableExpr != 0)
-  {
+void AstToText::appendFormalVariableExpr(ArgSymbol* arg) {
+  if (arg->variableExpr != 0) {
     mText += " ...";
 
-    if (BlockStmt* blockStmt = toBlockStmt(arg->variableExpr))
-    {
+    if (BlockStmt* blockStmt = toBlockStmt(arg->variableExpr)) {
       Expr* expr = blockStmt->body.get(1);
 
-      if (blockStmt->length() == 1)
-      {
-        if (DefExpr* sel = toDefExpr(expr))
-        {
-          if (VarSymbol* sym = toVarSymbol(sel->sym))
-          {
+      if (blockStmt->length() == 1) {
+        if (DefExpr* sel = toDefExpr(expr)) {
+          if (VarSymbol* sym = toVarSymbol(sel->sym)) {
             mText += "?";
             mText += sym->name;
-          }
-          else
-          {
+          } else {
             // NOAKES 2015/02/05  Debugging support.
             // Might become ASSERT in the future
             mText += " appendFormalVariableExpr.00";
           }
         }
 
-        else
-        {
+        else {
           SymExpr* se = toSymExpr(expr);
           bool unnamed = se && se->symbol() == gUninstantiated;
 
@@ -467,16 +382,12 @@ void AstToText::appendFormalVariableExpr(ArgSymbol* arg)
             appendExpr(expr, false);
           }
         }
-      }
-      else
-      {
+      } else {
         // NOAKES 2015/02/05  Debugging support. Might become ASSERT in
         // the future or variableExpr might be converted to an expression
         mText += " appendFormalVariableExpr.01";
       }
-    }
-    else
-    {
+    } else {
       // NOAKES 2015/02/05  Debugging support.
       // Might become ASSERT in the future
       mText += " appendFormalVariableExpr.02";
@@ -484,18 +395,14 @@ void AstToText::appendFormalVariableExpr(ArgSymbol* arg)
   }
 }
 
-void AstToText::appendFormalDefault(ArgSymbol* arg)
-{
-  if (arg->defaultExpr  != NULL)
-  {
+void AstToText::appendFormalDefault(ArgSymbol* arg) {
+  if (arg->defaultExpr != NULL) {
     BlockStmt* bs = arg->defaultExpr;
 
-    if (bs->body.length == 1)
-    {
+    if (bs->body.length == 1) {
       Expr* expr = bs->body.get(1);
 
-      if (isTypeDefault(expr) == false)
-      {
+      if (isTypeDefault(expr) == false) {
         mText += " = ";
 
         if (SymExpr* sym = toSymExpr(expr))
@@ -505,8 +412,7 @@ void AstToText::appendFormalDefault(ArgSymbol* arg)
       }
     }
 
-    else
-    {
+    else {
       // NOAKES 2015/02/05  Debugging support. Might become ASSERT in the future
       // or AST might be updated so that defaultExpr is simply an expression.
       mText += " = AppendFormalDefault.00";
@@ -514,12 +420,10 @@ void AstToText::appendFormalDefault(ArgSymbol* arg)
   }
 }
 
-bool AstToText::isTypeDefault(Expr* expr) const
-{
+bool AstToText::isTypeDefault(Expr* expr) const {
   bool retval = false;
 
-  if (SymExpr* symExpr = toSymExpr(expr))
-  {
+  if (SymExpr* symExpr = toSymExpr(expr)) {
     if (VarSymbol* var = toVarSymbol(symExpr->symbol()))
       retval = (strcmp(var->name, "_typeDefaultT") == 0) ? true : false;
   }
@@ -530,37 +434,29 @@ bool AstToText::isTypeDefault(Expr* expr) const
 //
 //  Helper function for appending domain calls with multiple arguments
 //
-void AstToText::appendDomain(CallExpr* expr, bool printingType)
-{
+void AstToText::appendDomain(CallExpr* expr, bool printingType) {
   mText += "domain(";
 
-  for(int i=2; i<=expr->numActuals(); i++)
-  {
-    if (i != 2)
-      mText += ", ";
+  for (int i = 2; i <= expr->numActuals(); i++) {
+    if (i != 2) mText += ", ";
 
-    if (UnresolvedSymExpr* symi = toUnresolvedSymExpr(expr->get(i)))
-    {
+    if (UnresolvedSymExpr* symi = toUnresolvedSymExpr(expr->get(i))) {
       appendExpr(symi, printingType);
     }
 
-    else if (SymExpr* symi = toSymExpr(expr->get(i)))
-    {
+    else if (SymExpr* symi = toSymExpr(expr->get(i))) {
       appendExpr(symi, printingType);
     }
 
-    else if (CallExpr* symi = toCallExpr(expr->get(i)))
-    {
+    else if (CallExpr* symi = toCallExpr(expr->get(i))) {
       appendExpr(symi, printingType);
     }
 
-    else if (NamedExpr* symi = toNamedExpr(expr->get(i)))
-    {
+    else if (NamedExpr* symi = toNamedExpr(expr->get(i))) {
       appendExpr(symi, printingType);
     }
 
-    else
-    {
+    else {
       mText += "AppendExpr.Call10";
     }
   }
@@ -584,25 +480,22 @@ void AstToText::appendDomain(CallExpr* expr, bool printingType)
 ************************************* | ************************************/
 
 // The index for "this" -> [0 .. 2]
-int AstToText::indexForThis(FnSymbol* fn) const
-{
-  int        numFormals = fn->formals.length;
-  ArgSymbol* arg1       = NULL;
-  ArgSymbol* arg2       = NULL;
-  int        retval     = 0;
+int AstToText::indexForThis(FnSymbol* fn) const {
+  int numFormals = fn->formals.length;
+  ArgSymbol* arg1 = NULL;
+  ArgSymbol* arg2 = NULL;
+  int retval = 0;
 
   //
   // Attempt to get the ArgSymbol for the first two formals (if present)
   //
-  if (numFormals >= 1)
-  {
+  if (numFormals >= 1) {
     DefExpr* formal = toDefExpr(fn->formals.get(1));
 
     arg1 = toArgSymbol(formal->sym);
   }
 
-  if (numFormals >= 2)
-  {
+  if (numFormals >= 2) {
     DefExpr* formal = toDefExpr(fn->formals.get(2));
 
     arg2 = toArgSymbol(formal->sym);
@@ -611,8 +504,8 @@ int AstToText::indexForThis(FnSymbol* fn) const
   //
   // Determine if either of the first two formals is "this"
   //
-  if      (arg1 != NULL && strcmp(arg1->name, "_mt")    == 0 &&
-           arg2 != NULL && arg2->hasFlag(FLAG_ARG_THIS) == true)
+  if (arg1 != NULL && strcmp(arg1->name, "_mt") == 0 && arg2 != NULL &&
+      arg2->hasFlag(FLAG_ARG_THIS) == true)
     retval = 2;
 
   else if (arg1 != NULL && arg1->hasFlag(FLAG_ARG_THIS) == true)
@@ -625,15 +518,13 @@ int AstToText::indexForThis(FnSymbol* fn) const
 }
 
 // The one-based index of the first user-facing formal -> [1 .. 3]
-int AstToText::indexOfFirstFormal(FnSymbol* fn) const
-{
+int AstToText::indexOfFirstFormal(FnSymbol* fn) const {
   return indexForThis(fn) + 1;
 }
 
-ArgSymbol* AstToText::formalGet(FnSymbol* fn, int oneBasedIndex) const
-{
-  int      effIndex = indexForThis(fn) + oneBasedIndex;
-  DefExpr* expr     = toDefExpr(fn->formals.get(effIndex));
+ArgSymbol* AstToText::formalGet(FnSymbol* fn, int oneBasedIndex) const {
+  int effIndex = indexForThis(fn) + oneBasedIndex;
+  DefExpr* expr = toDefExpr(fn->formals.get(effIndex));
 
   return toArgSymbol(expr->sym);
 }
@@ -644,40 +535,41 @@ ArgSymbol* AstToText::formalGet(FnSymbol* fn, int oneBasedIndex) const
 *                                                                           *
 ************************************* | ************************************/
 
-void AstToText::appendExpr(Expr* expr, bool printingType, const char *outer,
-                           bool unary, bool postfix, bool isRHS)
-{
-  if      (UnresolvedSymExpr* sel = toUnresolvedSymExpr(expr))
+void AstToText::appendExpr(Expr* expr,
+                           bool printingType,
+                           const char* outer,
+                           bool unary,
+                           bool postfix,
+                           bool isRHS) {
+  if (UnresolvedSymExpr* sel = toUnresolvedSymExpr(expr))
     appendExpr(sel);
 
-  else if (SymExpr*           sel = toSymExpr(expr))
+  else if (SymExpr* sel = toSymExpr(expr))
     appendExpr(sel, printingType, false);
 
-  else if (CallExpr*          sel = toCallExpr(expr))
+  else if (CallExpr* sel = toCallExpr(expr))
     appendExpr(sel, printingType, outer, unary, postfix, isRHS);
 
-  else if (DefExpr*           sel = toDefExpr(expr))
+  else if (DefExpr* sel = toDefExpr(expr))
     appendExpr(sel, printingType);
 
-  else if (NamedExpr*         sel = toNamedExpr(expr))
+  else if (NamedExpr* sel = toNamedExpr(expr))
     appendExpr(sel, printingType);
 
-  else if (IfExpr*         sel = toIfExpr(expr))
+  else if (IfExpr* sel = toIfExpr(expr))
     appendExpr(sel, printingType);
 
-  else if (LoopExpr*         sel = toLoopExpr(expr))
+  else if (LoopExpr* sel = toLoopExpr(expr))
     appendExpr(sel, printingType);
 
-  else
-  {
+  else {
     // NOAKES 2015/02/05  Debugging support.
     // Might become ASSERT in the future
     mText += "AppendExpr.01";
   }
 }
 
-void AstToText::appendExpr(UnresolvedSymExpr* expr)
-{
+void AstToText::appendExpr(UnresolvedSymExpr* expr) {
   if (strcmp(expr->unresolved, "_shared") == 0) {
     mText += "shared";
   } else if (strcmp(expr->unresolved, "_owned") == 0) {
@@ -691,30 +583,26 @@ void AstToText::appendExpr(UnresolvedSymExpr* expr)
   }
 }
 
-void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
-{
-  if (VarSymbol* var = toVarSymbol(expr->symbol()))
-  {
-    if (var->immediate != 0)
-    {
+void AstToText::appendExpr(SymExpr* expr,
+                           bool printingType,
+                           bool quoteStrings) {
+  if (VarSymbol* var = toVarSymbol(expr->symbol())) {
+    if (var->immediate != 0) {
       const size_t bufSize = 128;
-      char         imm[bufSize];
+      char imm[bufSize];
 
-      if (var->type == dtBool)
-      {
+      if (var->type == dtBool) {
         if (var->immediate->v_bool == 0)
           snprintf(imm, bufSize, "false");
         else
           snprintf(imm, bufSize, "true");
       }
 
-      else if (var->immediate->const_kind == CONST_KIND_STRING)
-      {
+      else if (var->immediate->const_kind == CONST_KIND_STRING) {
         if (strcmp(var->immediate->v_string.c_str(), "_dom") == 0)
           strcpy(imm, "domain");
 
-        else if (quoteStrings == true)
-        {
+        else if (quoteStrings == true) {
           char* ptr = imm;
 
           if (var->immediate->string_kind == STRING_KIND_C_STRING)
@@ -732,23 +620,19 @@ void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
           strcpy(imm, var->immediate->v_string.c_str());
       }
 
-      else
-      {
+      else {
         snprint_imm(imm, bufSize, *var->immediate);
 
-        if (var->type != 0 && isImagType(var->type) == true)
-        {
+        if (var->type != 0 && isImagType(var->type) == true) {
           char* tail = strchr(imm, '\0');
 
           *tail++ = 'i';
-          *tail   = '\0';
+          *tail = '\0';
         }
       }
 
       mText += imm;
-    }
-    else
-    {
+    } else {
       /*
        * For an expression like
        *   var o: object? = nil;
@@ -759,45 +643,36 @@ void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
        * we arrive here inside the [] with printingType == true.  When
        * var->name is "nil" we want to produce "x: [] int".
        */
-      if (!printingType || strcmp(var->name, "nil") != 0)
-        mText += var->name;
+      if (!printingType || strcmp(var->name, "nil") != 0) mText += var->name;
     }
   }
 
-  else if (ArgSymbol*  sym = toArgSymbol(expr->symbol()))
-  {
+  else if (ArgSymbol* sym = toArgSymbol(expr->symbol())) {
     appendExpr(sym->name);
   }
 
-  else if (TypeSymbol* sym = toTypeSymbol(expr->symbol()))
-  {
+  else if (TypeSymbol* sym = toTypeSymbol(expr->symbol())) {
     appendExpr(sym->name);
   }
 
-  else if (EnumSymbol* sym = toEnumSymbol(expr->symbol()))
-  {
-    if (EnumType* type = toEnumType(sym->type))
-    {
+  else if (EnumSymbol* sym = toEnumSymbol(expr->symbol())) {
+    if (EnumType* type = toEnumType(sym->type)) {
       mText += type->symbol->name;
       mText += '.';
       mText += sym->name;
-    }
-    else
-    {
+    } else {
       mText += " appendExpr.SymExpr.00";
     }
   }
 
-  else
-  {
+  else {
     // NOAKES 2015/02/05  Debugging support.
     // Might become ASSERT in the future
     mText += " appendExpr.SymExpr.01";
   }
 }
 
-static bool looksLikeInfixOperator(const char *fnName)
-{
+static bool looksLikeInfixOperator(const char* fnName) {
   // It looks like an operator if it doesn't look like an identifier.
   bool looksLikeIdentifier = isalpha(fnName[0]) || fnName[0] == '_';
 
@@ -814,194 +689,156 @@ static bool looksLikeInfixOperator(const char *fnName)
  * postfix: The parent node is a postfix unary operator.
  * isRHS: This node is the right-hand-side of the parent binary operator.
  */
-void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
-                           bool unary, bool postfix, bool isRHS)
-{
-  if (expr->primitive == 0)
-  {
-    if (UnresolvedSymExpr* sel = toUnresolvedSymExpr(expr->baseExpr))
-    {
+void AstToText::appendExpr(CallExpr* expr,
+                           bool printingType,
+                           const char* outer,
+                           bool unary,
+                           bool postfix,
+                           bool isRHS) {
+  if (expr->primitive == 0) {
+    if (UnresolvedSymExpr* sel = toUnresolvedSymExpr(expr->baseExpr)) {
       const char* fnName = sel->unresolved;
 
       // UnaryOp not
-      if     (strcmp(fnName, "!")                            == 0)
-      {
-        bool needsParens = needParens(outer, fnName, unary, postfix,
-                                      true, false, isRHS);
+      if (strcmp(fnName, "!") == 0) {
+        bool needsParens =
+          needParens(outer, fnName, unary, postfix, true, false, isRHS);
 
-        if (needsParens)
-          mText += "(";
+        if (needsParens) mText += "(";
         mText += "!";
         appendExpr(expr->get(1), printingType, fnName, true, false, false);
-        if (needsParens)
-          mText += ")";
+        if (needsParens) mText += ")";
       }
 
       // postfix!
-      else if (fnName == astrPostfixBang                     &&
-               expr->numActuals()                            == 1)
-      {
-        bool needsParens = needParens(outer, fnName, unary, postfix,
-                                      true, true, isRHS);
+      else if (fnName == astrPostfixBang && expr->numActuals() == 1) {
+        bool needsParens =
+          needParens(outer, fnName, unary, postfix, true, true, isRHS);
 
-        if (needsParens)
-          mText += "(";
+        if (needsParens) mText += "(";
         appendExpr(expr->get(1), printingType, fnName, true, true, false);
         mText += "!";
-        if (needsParens)
-          mText += ")";
+        if (needsParens) mText += ")";
       }
 
       // UnaryOp bitwise negate
-      else if (strcmp(fnName, "~")                           == 0 &&
-               expr->numActuals()                            == 1)
-      {
-        bool needsParens = needParens(outer, fnName, unary, postfix,
-                                      true, false, isRHS);
+      else if (strcmp(fnName, "~") == 0 && expr->numActuals() == 1) {
+        bool needsParens =
+          needParens(outer, fnName, unary, postfix, true, false, isRHS);
 
-        if (needsParens)
-          mText += "(";
+        if (needsParens) mText += "(";
         mText += "~";
         appendExpr(expr->get(1), printingType, fnName, true, false, false);
-        if (needsParens)
-          mText += ")";
+        if (needsParens) mText += ")";
       }
 
       // UnaryOp negate
-      else if (strcmp(fnName, "-")                           == 0 &&
-               expr->numActuals()                            == 1)
-      {
-        bool needsParens = needParens(outer, fnName, unary, postfix,
-                                      true, false, isRHS);
-        if (needsParens)
-          mText += "(";
+      else if (strcmp(fnName, "-") == 0 && expr->numActuals() == 1) {
+        bool needsParens =
+          needParens(outer, fnName, unary, postfix, true, false, isRHS);
+        if (needsParens) mText += "(";
         mText += "-";
         appendExpr(expr->get(1), printingType, fnName, true, false, false);
-        if (needsParens)
-          mText += ")";
+        if (needsParens) mText += ")";
       }
 
       // UnaryOp plus
-      else if (strcmp(fnName, "+")                           == 0 &&
-               expr->numActuals()                            == 1)
-      {
-        bool needsParens = needParens(outer, fnName, unary, postfix,
-                                      true, false, isRHS);
-        if (needsParens)
-          mText += "(";
+      else if (strcmp(fnName, "+") == 0 && expr->numActuals() == 1) {
+        bool needsParens =
+          needParens(outer, fnName, unary, postfix, true, false, isRHS);
+        if (needsParens) mText += "(";
         mText += "+";
         appendExpr(expr->get(1), printingType, fnName, true, false, false);
-        if (needsParens)
-          mText += ")";
+        if (needsParens) mText += ")";
       }
 
-      else if (expr->isCast())
-      {
-        bool needsParens = needParens(outer, fnName, unary, postfix,
-                                      false, false, isRHS);
-        if (needsParens)
-          mText += "(";
+      else if (expr->isCast()) {
+        bool needsParens =
+          needParens(outer, fnName, unary, postfix, false, false, isRHS);
+        if (needsParens) mText += "(";
         appendExpr(expr->castFrom(), printingType, ":", false, false, false);
-        if (needsParens)
-          mText += ")";
+        if (needsParens) mText += ")";
         mText += ": ";
         appendExpr(expr->castTo(), printingType);
       }
 
-      else if (strcmp(fnName, "chpl_by")                      == 0)
-      {
+      else if (strcmp(fnName, "chpl_by") == 0) {
         appendExpr(expr->get(1), printingType);
         mText += " by ";
         appendExpr(expr->get(2), printingType);
       }
 
-      else if (strcmp(fnName, "chpl_align")                   == 0)
-      {
+      else if (strcmp(fnName, "chpl_align") == 0) {
         appendExpr(expr->get(1), printingType);
         mText += " align ";
         appendExpr(expr->get(2), printingType);
       }
 
-      else if (strcmp(fnName, "chpl__atomicType")             == 0)
-      {
+      else if (strcmp(fnName, "chpl__atomicType") == 0) {
         mText += "atomic ";
         appendExpr(expr->get(1), printingType);
       }
 
-      else if (strcmp(fnName, "chpl__distributed")             == 0)
-      {
+      else if (strcmp(fnName, "chpl__distributed") == 0) {
         appendExpr(expr->get(2), printingType);
         mText += " dmapped ";
         appendExpr(expr->get(1), printingType);
       }
 
-      else if (strcmp(fnName, "chpl__buildDomainExpr")        == 0)
-      {
+      else if (strcmp(fnName, "chpl__buildDomainExpr") == 0) {
         mText += "{";
         appendExpr(expr->get(1), printingType);
 
         // last argument to chpl__buildDomainExpr is definedConst
-        for (int index = 2; index <= expr->numActuals()-1; index++)
-        {
+        for (int index = 2; index <= expr->numActuals() - 1; index++) {
           mText += ", ";
           appendExpr(expr->get(index), printingType);
         }
         mText += "}";
       }
 
-      else if (strcmp(fnName, "chpl__ensureDomainExpr")       == 0)
-      {
+      else if (strcmp(fnName, "chpl__ensureDomainExpr") == 0) {
         appendExpr(expr->get(1), printingType);
-        for (int index = 2; index <= expr->numActuals(); index++)
-        {
+        for (int index = 2; index <= expr->numActuals(); index++) {
           mText += ", ";
           appendExpr(expr->get(index), printingType);
         }
       }
 
-      else if (strcmp(fnName, "chpl__buildDomainRuntimeType") == 0)
-      {
-        if (expr->numActuals() > 1)
-        {
+      else if (strcmp(fnName, "chpl__buildDomainRuntimeType") == 0) {
+        if (expr->numActuals() > 1) {
 
-          if (isUnresolvedSymExpr(expr->get(1)))
-          {
+          if (isUnresolvedSymExpr(expr->get(1))) {
             UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr->get(1));
 
-            if (strcmp(sym->unresolved, "defaultDist") == 0)
-            {
+            if (strcmp(sym->unresolved, "defaultDist") == 0) {
               appendDomain(expr, printingType);
             }
 
-            else
-            {
+            else {
               // NOAKES 2015/02/05  Debugging support.
               // Might become ASSERT in the future
               mText += "AppendExpr.Call00";
             }
           }
 
-          else if (isSymExpr(expr->get(1)))
-          {
-            SymExpr*   sym1 = toSymExpr(expr->get(1));
+          else if (isSymExpr(expr->get(1))) {
+            SymExpr* sym1 = toSymExpr(expr->get(1));
 
             VarSymbol* arg1 = toVarSymbol(sym1->symbol());
 
-            if (arg1 != 0 && strcmp(arg1->name, "defaultDist") == 0)
-            {
+            if (arg1 != 0 && strcmp(arg1->name, "defaultDist") == 0) {
               appendDomain(expr, printingType);
             }
 
-            else
-            {
+            else {
               // NOAKES 2015/02/05  Debugging support.
               // Might become ASSERT in the future
               mText += "AppendExpr.Call01";
             }
           }
 
-          else
-          {
+          else {
             // NOAKES 2015/02/05  Debugging support.
             // Might become ASSERT in the future
             mText += "AppendExpr.Call02";
@@ -1009,121 +846,101 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
 
         }
 
-        else
-        {
+        else {
           // NOAKES 2015/02/05  Debugging support.
           // Might become ASSERT in the future
           mText += "AppendExpr.Call03";
         }
       }
 
-      else if (strcmp(fnName, "chpl__buildArrayRuntimeType") == 0)
-      {
+      else if (strcmp(fnName, "chpl__buildArrayRuntimeType") == 0) {
         mText += "[";
         appendExpr(expr->get(1), printingType);
         mText += "]";
 
-        if (expr->numActuals() == 2)
-        {
+        if (expr->numActuals() == 2) {
           mText += " ";
           appendExpr(expr->get(2), printingType);
         }
       }
 
-      else if (strcmp(fnName, "_build_tuple")                == 0)
+      else if (strcmp(fnName, "_build_tuple") == 0)
         appendExpr(expr, "", printingType);
 
-      else if (strcmp(fnName, "chpl__buildIndexType")        == 0)
+      else if (strcmp(fnName, "chpl__buildIndexType") == 0)
         appendExpr(expr, "index", printingType);
 
-      else if (strcmp(fnName, "range")                       == 0)
+      else if (strcmp(fnName, "range") == 0)
         appendExpr(expr, "range", printingType);
 
-      else if (strcmp(fnName, "chpl_build_bounded_range") == 0)
-      {
+      else if (strcmp(fnName, "chpl_build_bounded_range") == 0) {
         appendExpr(expr->get(1), printingType);
         mText += "..";
         appendExpr(expr->get(2), printingType);
       }
 
-      else if (strcmp(fnName, "chpl_build_low_bounded_range") == 0)
-      {
+      else if (strcmp(fnName, "chpl_build_low_bounded_range") == 0) {
         appendExpr(expr->get(1), printingType);
         mText += "..";
       }
 
-      else if (strcmp(fnName, "chpl_build_high_bounded_range") == 0)
-      {
+      else if (strcmp(fnName, "chpl_build_high_bounded_range") == 0) {
         mText += "..";
         appendExpr(expr->get(1), printingType);
       }
 
-      else if (strcmp(fnName, "chpl_build_unbounded_range") == 0)
-      {
+      else if (strcmp(fnName, "chpl_build_unbounded_range") == 0) {
         mText += "..";
       }
 
-      else if (strcmp(fnName, "_owned") == 0)
-      {
+      else if (strcmp(fnName, "_owned") == 0) {
         mText += "owned ";
         appendExpr(expr->get(1), printingType);
       }
 
-      else if (strcmp(fnName, "_shared") == 0)
-      {
+      else if (strcmp(fnName, "_shared") == 0) {
         mText += "shared ";
         appendExpr(expr->get(1), printingType);
       }
 
-      else if ((fnName != astrSdot)                          == 0)
-      {
+      else if ((fnName != astrSdot) == 0) {
         SymExpr* symExpr1 = toSymExpr(expr->get(1));
         SymExpr* symExpr2 = toSymExpr(expr->get(2));
 
-        if (symExpr1 != 0 && symExpr2 != 0)
-        {
-          if (isArgSymbol(symExpr1->symbol()) && isVarSymbol(symExpr2->symbol()))
-          {
+        if (symExpr1 != 0 && symExpr2 != 0) {
+          if (isArgSymbol(symExpr1->symbol()) &&
+              isVarSymbol(symExpr2->symbol())) {
             ArgSymbol* sym1 = toArgSymbol(symExpr1->symbol());
 
-            if (sym1->name == astrThis)
-            {
+            if (sym1->name == astrThis) {
               appendExpr(symExpr2, printingType);
-            }
-            else
-            {
+            } else {
               appendExpr(symExpr1, printingType);
               mText += '.';
               appendExpr(symExpr2, printingType);
             }
           }
 
-          else if (isVarSymbol(symExpr1->symbol()) && isVarSymbol(symExpr2->symbol()))
-          {
+          else if (isVarSymbol(symExpr1->symbol()) &&
+                   isVarSymbol(symExpr2->symbol())) {
             VarSymbol* sym1 = toVarSymbol(symExpr1->symbol());
 
-            if (sym1->name == astrThis)
-            {
+            if (sym1->name == astrThis) {
               appendExpr(symExpr2, printingType);
-            }
-            else
-            {
+            } else {
               appendExpr(symExpr1, printingType);
               mText += '.';
               appendExpr(symExpr2, printingType);
             }
           }
 
-          else
-          {
+          else {
             // NOAKES 2015/02/05  Debugging support.
             // Might become ASSERT in the future
             mText += "AppendExpr.Call04";
           }
 
-        }
-        else
-        {
+        } else {
           appendExpr(expr->get(1), printingType);
           mText += '.';
           appendExpr(expr->get(2), printingType);
@@ -1131,18 +948,16 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
       }
 
       // Convert <name>(_mt, this) to <name>
-      else if (isMtThis(expr) == true)
-      {
+      else if (isMtThis(expr) == true) {
         UnresolvedSymExpr* name = toUnresolvedSymExpr(expr->baseExpr);
 
         mText += name->unresolved;
       }
 
       // Convert <name>(_mt, <class>) to <class>.<name>
-      else if (isMtOther(expr) == true)
-      {
-        UnresolvedSymExpr* name     = toUnresolvedSymExpr(expr->baseExpr);
-        SymExpr*           symClass = toSymExpr(expr->get(2));
+      else if (isMtOther(expr) == true) {
+        UnresolvedSymExpr* name = toUnresolvedSymExpr(expr->baseExpr);
+        SymExpr* symClass = toSymExpr(expr->get(2));
 
         mText += symClass->symbol()->name;
         mText += '.';
@@ -1150,11 +965,9 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
       }
 
       // Format binary operators in infix notation
-      else if (expr->numActuals() == 2 && looksLikeInfixOperator(fnName))
-      {
+      else if (expr->numActuals() == 2 && looksLikeInfixOperator(fnName)) {
         // ... except homogeneous tuple inner workings.
-        if (printingType && strcmp(fnName, "*") == 0)
-        {
+        if (printingType && strcmp(fnName, "*") == 0) {
           // This is not a multiply, it's the symbol for a homogeneous tuple.
 
           // I found that some multiplies would match this (even though they
@@ -1169,26 +982,21 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
           mText += ")";
         }
 
-        else
-        {
+        else {
           // Binary operator, infix notation
-          bool needsParens = needParens(outer, fnName, unary, postfix,
-                                        false, false, isRHS);
+          bool needsParens =
+            needParens(outer, fnName, unary, postfix, false, false, isRHS);
           bool wantsSpaces = wantSpaces(fnName, printingType);
 
-          if (needsParens)
-            mText += "(";
+          if (needsParens) mText += "(";
           appendExpr(expr->get(1), printingType, fnName, false, false, false);
 
-          if (wantsSpaces)
-            mText += " ";
+          if (wantsSpaces) mText += " ";
           appendExpr(expr->baseExpr, printingType);
-          if (wantsSpaces)
-            mText += " ";
+          if (wantsSpaces) mText += " ";
 
           appendExpr(expr->get(2), printingType, fnName, false, false, true);
-          if (needsParens)
-            mText += ")";
+          if (needsParens) mText += ")";
         }
 
       }
@@ -1197,24 +1005,19 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
         appendExpr(expr, fnName, printingType);
     }
 
-    else if (isSymExpr(expr->baseExpr))
-    {
-      if (expr->numActuals() == 0)
-      {
+    else if (isSymExpr(expr->baseExpr)) {
+      if (expr->numActuals() == 0) {
         // NOAKES 2015/02/05  Debugging support.
         // Might become ASSERT in the future
         mText += "AppendExpr.Call06";
       }
 
-      else
-      {
+      else {
         appendExpr(expr->baseExpr, printingType);
         mText += '(';
 
-        for (int i = 1; i <= expr->numActuals(); i++)
-        {
-          if (i > 1)
-            mText += ", ";
+        for (int i = 1; i <= expr->numActuals(); i++) {
+          if (i > 1) mText += ", ";
 
           appendExpr(expr->get(i), printingType);
         }
@@ -1223,62 +1026,49 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
       }
     }
 
-    else if (isCallExpr(expr->baseExpr))
-    {
+    else if (isCallExpr(expr->baseExpr)) {
       CallExpr* subCall = toCallExpr(expr->baseExpr);
       appendExpr(subCall->get(1), printingType);
       mText += '.';
       appendExpr(subCall->get(2), printingType);
       mText += '(';
 
-      for (int i = 1; i <= expr->numActuals(); i++)
-      {
-        if (i > 1)
-          mText += ", ";
+      for (int i = 1; i <= expr->numActuals(); i++) {
+        if (i > 1) mText += ", ";
 
-        if (isSymExpr(expr->get(i))
-          && isVarSymbol(toSymExpr(expr->get(i))->symbol())
-          && toVarSymbol(toSymExpr(expr->get(i))->symbol())->isImmediate()
-          && toVarSymbol(toSymExpr(expr->get(i))->symbol())->immediate->const_kind == CONST_KIND_STRING)
-        {
+        if (isSymExpr(expr->get(i)) &&
+            isVarSymbol(toSymExpr(expr->get(i))->symbol()) &&
+            toVarSymbol(toSymExpr(expr->get(i))->symbol())->isImmediate() &&
+            toVarSymbol(toSymExpr(expr->get(i))->symbol())
+                ->immediate->const_kind == CONST_KIND_STRING) {
           mText += "\"";
           appendExpr(expr->get(i), printingType);
           mText += "\"";
-        }
-        else
+        } else
           appendExpr(expr->get(i), printingType);
       }
 
       mText += ')';
     }
 
-    else
-    {
+    else {
       // NOAKES 2015/02/05  Debugging support.
       // Might become ASSERT in the future
       mText += "AppendExpr.Call08";
     }
   }
 
-  else
-  {
-    if (expr->isPrimitive(PRIM_TYPEOF))
-    {
+  else {
+    if (expr->isPrimitive(PRIM_TYPEOF)) {
       appendExpr(expr->get(1), printingType);
       mText += ".type";
-    }
-    else if (expr->isPrimitive(PRIM_TRY_EXPR))
-    {
+    } else if (expr->isPrimitive(PRIM_TRY_EXPR)) {
       mText += "try ";
       appendExpr(expr->get(1), printingType);
-    }
-    else if (expr->isPrimitive(PRIM_TRYBANG_EXPR))
-    {
+    } else if (expr->isPrimitive(PRIM_TRYBANG_EXPR)) {
       mText += "try! ";
       appendExpr(expr->get(1), printingType);
-    }
-    else if (expr->isPrimitive(PRIM_NEW))
-    {
+    } else if (expr->isPrimitive(PRIM_NEW)) {
       mText += "new ";
 
       bool addQ = false;
@@ -1289,16 +1079,11 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
           inner = expr->get(2);
           Type* t = ne->actual->typeInfo();
           const char* n = "";
-          if (t == dtBorrowed)
-            n = "borrowed ";
-          if (t == dtUnmanaged)
-            n = "unmanaged ";
-          if (t == dtShared)
-            n = "shared ";
-          if (t == dtOwned)
-            n = "owned ";
-          if (isNilableClassType(t))
-            addQ = true;
+          if (t == dtBorrowed) n = "borrowed ";
+          if (t == dtUnmanaged) n = "unmanaged ";
+          if (t == dtShared) n = "shared ";
+          if (t == dtOwned) n = "owned ";
+          if (isNilableClassType(t)) addQ = true;
 
           mText += n;
         }
@@ -1306,8 +1091,7 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
       // skip to-nilable if present
       while (inner) {
         CallExpr* call = toCallExpr(inner);
-        if (call == NULL)
-          break;
+        if (call == NULL) break;
         if (call->isPrimitive(PRIM_TO_NILABLE_CLASS) == false &&
             call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED) == false)
           break;
@@ -1318,55 +1102,38 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
 
       appendExpr(inner, printingType);
 
-      if (addQ)
-        mText += "?";
-    }
-    else if (expr->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
-             expr->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED))
-    {
+      if (addQ) mText += "?";
+    } else if (expr->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+               expr->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
       mText += "unmanaged ";
       appendExpr(expr->get(1), printingType);
-    }
-    else if (expr->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
-             expr->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED))
-    {
+    } else if (expr->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+               expr->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED)) {
       mText += "borrowed ";
       appendExpr(expr->get(1), printingType);
-    }
-    else if (expr->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
-             expr->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED))
-    {
+    } else if (expr->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+               expr->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
       mText += "nilable ";
       appendExpr(expr->get(1), printingType);
-    }
-    else if (expr->isPrimitive(PRIM_TO_NON_NILABLE_CLASS))
-    {
+    } else if (expr->isPrimitive(PRIM_TO_NON_NILABLE_CLASS)) {
       mText += "nonnilable ";
       appendExpr(expr->get(1), printingType);
-    }
-    else if (!expr->isPrimitive(PRIM_UNKNOWN))
-    {
+    } else if (!expr->isPrimitive(PRIM_UNKNOWN)) {
       mText += "__primitive(\"";
       mText += expr->primitive->name;
       mText += "\"";
-      for (int index = 1; index <= expr->numActuals(); index++)
-        {
-          mText += ", ";
-          if (!isSymExpr(expr->get(index)))
-          {
-            appendExpr(expr->get(index), printingType);
-          }
-          else
-          {
-            mText += "\"";
-            appendExpr(expr->get(index), printingType);
-            mText += "\"";
-          }
+      for (int index = 1; index <= expr->numActuals(); index++) {
+        mText += ", ";
+        if (!isSymExpr(expr->get(index))) {
+          appendExpr(expr->get(index), printingType);
+        } else {
+          mText += "\"";
+          appendExpr(expr->get(index), printingType);
+          mText += "\"";
         }
+      }
       mText += ")";
-    }
-    else
-    {
+    } else {
       // NOAKES 2015/02/05  Debugging support.
       // Might become ASSERT in the future
       mText += "AppendExpr.Call09";
@@ -1374,8 +1141,7 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType, const char *outer,
   }
 }
 
-void AstToText::appendExprTypeVar(DefExpr* expr)
-{
+void AstToText::appendExprTypeVar(DefExpr* expr) {
   mText += expr->sym->name;
   if (expr->init) {
     mText += " = ";
@@ -1383,190 +1149,159 @@ void AstToText::appendExprTypeVar(DefExpr* expr)
   }
 }
 
-void AstToText::appendExpr(DefExpr* expr, bool printingType)
-{
-  if (printingType)
-    {
+void AstToText::appendExpr(DefExpr* expr, bool printingType) {
+  if (printingType) {
 
-      mText += '?';
+    mText += '?';
 
-      // This section initially was ensuring the sym field referred to
-      // a VarSymbol in this case.  However, since we were only accessing the
-      // name field - which is present for all Symbols - this check was not
-      // necessary.  Should something go wrong with this section, perhaps
-      // first check if expr->sym is a VarSymbol as was initially expected?
-      const char* name = expr->sym->name;
-      if (strncmp(name, "chpl__query", 11) != 0)
-        mText += name;
+    // This section initially was ensuring the sym field referred to
+    // a VarSymbol in this case.  However, since we were only accessing the
+    // name field - which is present for all Symbols - this check was not
+    // necessary.  Should something go wrong with this section, perhaps
+    // first check if expr->sym is a VarSymbol as was initially expected?
+    const char* name = expr->sym->name;
+    if (strncmp(name, "chpl__query", 11) != 0) mText += name;
 
+  } else {
+    mText += expr->sym->name;
+    if (expr->exprType) {
+      mText += ": ";
+      appendExpr(expr->exprType, true);
     }
-  else
-    {
-      mText += expr->sym->name;
-      if (expr->exprType) {
-        mText += ": ";
-        appendExpr(expr->exprType, true);
-      }
-      if (expr->init) {
-        mText += " = ";
-        if (SymExpr* sym = toSymExpr(expr->init))
-          appendExpr(sym, false, true);
-        else
-          appendExpr(expr->init, false);
-      }
+    if (expr->init) {
+      mText += " = ";
+      if (SymExpr* sym = toSymExpr(expr->init))
+        appendExpr(sym, false, true);
+      else
+        appendExpr(expr->init, false);
     }
+  }
 }
 
-void AstToText::appendExpr(NamedExpr* expr, bool printingType)
-{
+void AstToText::appendExpr(NamedExpr* expr, bool printingType) {
   mText += expr->name;
   mText += " = ";
   appendExpr(expr->actual, printingType);
 }
 
-void AstToText::appendExpr(IfExpr* expr, bool printingType)
-{
+void AstToText::appendExpr(IfExpr* expr, bool printingType) {
   mText += "if ";
-  if (Expr* sel = toExpr(expr->getCondition()))
-  {
+  if (Expr* sel = toExpr(expr->getCondition())) {
     appendExpr(sel, printingType);
 
-    if (BlockStmt* thenBlockStmt = toBlockStmt(expr->getThenStmt()))
-    {
+    if (BlockStmt* thenBlockStmt = toBlockStmt(expr->getThenStmt())) {
       mText += " then ";
-      if (thenBlockStmt->body.length == 1)
-      {
+      if (thenBlockStmt->body.length == 1) {
         Expr* exp = thenBlockStmt->body.get(1);
         appendExpr(exp, printingType);
 
-        if (BlockStmt* elseBlockStmt = toBlockStmt(expr->getElseStmt()))
-        {
+        if (BlockStmt* elseBlockStmt = toBlockStmt(expr->getElseStmt())) {
           mText += " else ";
-          if (elseBlockStmt->body.length == 1)
-          {
+          if (elseBlockStmt->body.length == 1) {
             Expr* exp = elseBlockStmt->body.get(1);
             appendExpr(exp, printingType);
           }
 
-          else
-          {
+          else {
             mText += "AppendExpr.If00";
           }
         }
 
-        else
-        {
+        else {
           mText += "AppendExpr.If01";
         }
       }
 
-      else
-      {
+      else {
         mText += "AppendExpr.If02";
       }
     }
 
-    else
-    {
+    else {
       mText += "AppendExpr.If03";
     }
   }
 
-  else
-  {
+  else {
     mText += "AppendExpr.If04";
   }
 }
 
-void AstToText::appendExpr(LoopExpr* expr, bool printingType)
-{
-  std::string start,end;
-  if (expr->type == FORALL_EXPR)
-  {
-    if (expr->maybeArrayType)
-    {
+void AstToText::appendExpr(LoopExpr* expr, bool printingType) {
+  std::string start, end;
+  if (expr->type == FORALL_EXPR) {
+    if (expr->maybeArrayType) {
       start = "[";
       end = "]";
     }
 
-    else
-    {
+    else {
       start = "forall ";
       end = " do";
     }
   }
 
-  else
-  {
+  else {
     start = "for ";
     end = " do";
   }
   mText += start;
 
-  if (expr->indices)
-  {
+  if (expr->indices) {
     appendExpr(expr->indices, printingType);
     mText += " in ";
   }
 
-  if (expr->iteratorExpr)
-  {
+  if (expr->iteratorExpr) {
     appendExpr(expr->iteratorExpr, printingType);
     mText += end;
 
-    if (BlockStmt* bs = toBlockStmt(expr->loopBody))
-    {
+    if (BlockStmt* bs = toBlockStmt(expr->loopBody)) {
       mText += ' ';
       appendExpr(bs->body.get(1), printingType);
     }
 
-    else
-    {
+    else {
       mText += " AppendExpr.Loop01";
     }
 
   }
 
-  else
-  {
+  else {
     mText += " AppendExpr.Loop02";
   }
 }
 
-void AstToText::appendExpr(CallExpr* expr, const char* fnName, bool printingType)
-{
+void AstToText::appendExpr(CallExpr* expr,
+                           const char* fnName,
+                           bool printingType) {
   appendExpr(fnName);
   mText += '(';
 
-  for (int i = 1; i <= expr->numActuals(); i++)
-  {
-    if (i > 1)
-      mText += ", ";
+  for (int i = 1; i <= expr->numActuals(); i++) {
+    if (i > 1) mText += ", ";
 
-    if (isSymExpr(expr->get(i))
-      && isVarSymbol(toSymExpr(expr->get(i))->symbol())
-      && toVarSymbol(toSymExpr(expr->get(i))->symbol())->isImmediate()
-      && toVarSymbol(toSymExpr(expr->get(i))->symbol())->immediate->const_kind == CONST_KIND_STRING)
-    {
+    if (isSymExpr(expr->get(i)) &&
+        isVarSymbol(toSymExpr(expr->get(i))->symbol()) &&
+        toVarSymbol(toSymExpr(expr->get(i))->symbol())->isImmediate() &&
+        toVarSymbol(toSymExpr(expr->get(i))->symbol())->immediate->const_kind ==
+          CONST_KIND_STRING) {
       mText += "\"";
       appendExpr(expr->get(i), printingType);
       mText += "\"";
-    }
-    else
+    } else
       appendExpr(expr->get(i), printingType);
   }
 
   // 1-tuples get a trailing "," inside the parens.
   // Only tuples reach here with fnName == "".
-  if (strlen(fnName) == 0 && expr->numActuals() == 1)
-    mText += ",";
+  if (strlen(fnName) == 0 && expr->numActuals() == 1) mText += ",";
 
   mText += ')';
 }
 
 // Normalize names
-void AstToText::appendExpr(const char* name)
-{
+void AstToText::appendExpr(const char* name) {
   //
   // NOAKES 2015/02/05
   //
@@ -1576,38 +1311,37 @@ void AstToText::appendExpr(const char* name)
   // There are a few uses of these names in internal modules and those
   // will be altered but this is acceptable for this incremental upgrade.
 
-  if      (strncmp(name, "_syncvar",          8) == 0)
+  if (strncmp(name, "_syncvar", 8) == 0)
     appendSpecialExpr(name, "_syncvar", "sync");
 
-  else if (strncmp(name, "_domain",           8) == 0)
-    appendSpecialExpr(name, "_domain",  "domain");
+  else if (strncmp(name, "_domain", 8) == 0)
+    appendSpecialExpr(name, "_domain", "domain");
 
   // Unwrap _ref(foo())
-  else if (strncmp(name, "_ref(",             5) == 0)
-  {
+  else if (strncmp(name, "_ref(", 5) == 0) {
     std::string buffer = removeOuterParens(name + 4);
 
     appendExpr(buffer.c_str());
   }
 
   // Convert to array syntax
-  else if (strcmp(name, "_array")                == 0)
+  else if (strcmp(name, "_array") == 0)
     mText += "[] ";
 
   // Normalize type names for 64-bit default
-  else if (strcmp(name, "int(64)")               == 0)
+  else if (strcmp(name, "int(64)") == 0)
     mText += "int";
 
-  else if (strcmp(name, "uint(64)")              == 0)
+  else if (strcmp(name, "uint(64)") == 0)
     mText += "uint";
 
-  else if (strcmp(name, "real(64)")              == 0)
+  else if (strcmp(name, "real(64)") == 0)
     mText += "real";
 
-  else if (strcmp(name, "imag(64)")              == 0)
+  else if (strcmp(name, "imag(64)") == 0)
     mText += "imag";
 
-  else if (strcmp(name, "complex(128)")          == 0)
+  else if (strcmp(name, "complex(128)") == 0)
     mText += "complex";
 
   else
@@ -1623,16 +1357,14 @@ void AstToText::appendExpr(const char* name)
 //
 void AstToText::appendSpecialExpr(const char* name,
                                   const char* root,
-                                  const char* repl)
-{
+                                  const char* repl) {
   int len = strlen(root);
 
   // Write out the replacement string
   mText += repl;
 
   // Now check for a parenthesized string
-  if (name[len] == '(')
-  {
+  if (name[len] == '(') {
     std::string buffer = removeOuterParens(name);
 
     mText += ' ';
@@ -1641,16 +1373,14 @@ void AstToText::appendSpecialExpr(const char* name,
 }
 
 // Remove outer parens i.e. "(foo(a))" -> "foo(a)"
-std::string AstToText::removeOuterParens(const char* parenExpr) const
-{
+std::string AstToText::removeOuterParens(const char* parenExpr) const {
   // Step over the initial open paren
-  const char* fptr       = parenExpr + 1;
-  int         parenCount = 1;
+  const char* fptr = parenExpr + 1;
+  int parenCount = 1;
 
-  std::string retval     = "";
+  std::string retval = "";
 
-  while ((*fptr != '\0' && *fptr != ')') || parenCount > 1)
-  {
+  while ((*fptr != '\0' && *fptr != ')') || parenCount > 1) {
     if (*fptr == '(')
       parenCount += 1;
     else if (*fptr == ')')
@@ -1683,39 +1413,26 @@ std::string AstToText::removeOuterParens(const char* parenExpr) const
 // These predicates check for this pattern.
 //
 
-bool AstToText::isMtThis(CallExpr* expr) const
-{
-  return isMtArg(expr, true);
-}
+bool AstToText::isMtThis(CallExpr* expr) const { return isMtArg(expr, true); }
 
-bool AstToText::isMtOther(CallExpr* expr) const
-{
-  return isMtArg(expr, false);
-}
+bool AstToText::isMtOther(CallExpr* expr) const { return isMtArg(expr, false); }
 
-bool AstToText::isMtArg(CallExpr* expr, bool expectThis) const
-{
+bool AstToText::isMtArg(CallExpr* expr, bool expectThis) const {
   bool retval = false;
 
-  if (isUnresolvedSymExpr(expr->baseExpr))
-  {
-    if (CallExpr* call = toCallExpr(expr))
-    {
-      if (call->numActuals() == 2)
-      {
-        SymExpr* symMt     = toSymExpr(call->get(1));
+  if (isUnresolvedSymExpr(expr->baseExpr)) {
+    if (CallExpr* call = toCallExpr(expr)) {
+      if (call->numActuals() == 2) {
+        SymExpr* symMt = toSymExpr(call->get(1));
         SymExpr* symTarget = toSymExpr(call->get(2));
 
-        if (symMt != NULL && symTarget != 0)
-        {
-          VarSymbol* varMt     = toVarSymbol(symMt->symbol());
+        if (symMt != NULL && symTarget != 0) {
+          VarSymbol* varMt = toVarSymbol(symMt->symbol());
           ArgSymbol* argTarget = toArgSymbol(symTarget->symbol());
 
-          if (varMt                             != NULL          &&
-              argTarget                         != NULL          &&
-              varMt->type                       == dtMethodToken &&
-              argTarget->hasFlag(FLAG_ARG_THIS) == expectThis)
-          {
+          if (varMt != NULL && argTarget != NULL &&
+              varMt->type == dtMethodToken &&
+              argTarget->hasFlag(FLAG_ARG_THIS) == expectThis) {
             retval = true;
           }
         }

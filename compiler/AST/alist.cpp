@@ -25,22 +25,21 @@
 #include "stmt.h"
 #include "stringutil.h"
 
-#define VALIDATE_AST_INSERTABLE_HEAD(NEW_AST, LOC_STR) \
-  do { \
-    if (NEW_AST->parentSymbol || NEW_AST->parentExpr) \
+#define VALIDATE_AST_INSERTABLE_HEAD(NEW_AST, LOC_STR)              \
+  do {                                                              \
+    if (NEW_AST->parentSymbol || NEW_AST->parentExpr)               \
       INT_FATAL(NEW_AST, "Argument is already in AST in " LOC_STR); \
-    if (NEW_AST->list) \
-      INT_FATAL(NEW_AST, "Argument is in a list in " LOC_STR); \
-  } while(false)
+    if (NEW_AST->list)                                              \
+      INT_FATAL(NEW_AST, "Argument is in a list in " LOC_STR);      \
+  } while (false)
 
-#define VALIDATE_AST_INSERTABLE_TAIL(NEW_AST, LOC_STR) \
-  do { \
-    if (NEW_AST->parentSymbol || NEW_AST->parentExpr) \
+#define VALIDATE_AST_INSERTABLE_TAIL(NEW_AST, LOC_STR)              \
+  do {                                                              \
+    if (NEW_AST->parentSymbol || NEW_AST->parentExpr)               \
       INT_FATAL(NEW_AST, "Argument is already in AST in " LOC_STR); \
-    if (NEW_AST->next || NEW_AST->prev) \
-      INT_FATAL(NEW_AST, "Argument is in a list in " LOC_STR); \
-  } while(false)
-
+    if (NEW_AST->next || NEW_AST->prev)                             \
+      INT_FATAL(NEW_AST, "Argument is in a list in " LOC_STR);      \
+  } while (false)
 
 void AList::insertAtHead(Expr* new_ast) {
   VALIDATE_AST_INSERTABLE_HEAD(new_ast, "AList::insertAtHead");
@@ -63,7 +62,6 @@ void AList::insertAtHeadWithoutFlattening(Expr* new_ast) {
   VALIDATE_AST_INSERTABLE_HEAD(new_ast, "AList::insertAtHeadWithoutFlattening");
   performInsertAtHead(new_ast);
 }
-
 
 void AList::insertAtTail(Expr* new_ast) {
   VALIDATE_AST_INSERTABLE_TAIL(new_ast, "AList::insertAtTail");

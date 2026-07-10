@@ -37,13 +37,12 @@
 *                                                                             *
 ************************************** | *************************************/
 
-class LowerThunkPrimsVisitor final : public AstVisitorTraverse
-{
-  public:
-    LowerThunkPrimsVisitor()          = default;
-   ~LowerThunkPrimsVisitor() override = default;
+class LowerThunkPrimsVisitor final : public AstVisitorTraverse {
+ public:
+  LowerThunkPrimsVisitor() = default;
+  ~LowerThunkPrimsVisitor() override = default;
 
-    bool enterCallExpr(CallExpr* node) override;
+  bool enterCallExpr(CallExpr* node) override;
 };
 
 static void collectThunkOuterVars(Expr* expr, std::set<Symbol*>& outerVars) {
@@ -77,7 +76,8 @@ static CallExpr* buildThunkPrimFunctions(CallExpr* node) {
   thunkResultTmp->addFlag(FLAG_NO_AUTO_DESTROY);
   auto thunkBlock = new BlockStmt();
   thunkBlock->insertAtTail(new DefExpr(thunkResultTmp));
-  thunkBlock->insertAtTail(new CallExpr(PRIM_INIT_VAR, thunkResultTmp, delayedExpr->remove()));
+  thunkBlock->insertAtTail(
+    new CallExpr(PRIM_INIT_VAR, thunkResultTmp, delayedExpr->remove()));
   thunkBlock->insertAtTail(new CallExpr(PRIM_THUNK_RESULT, thunkResultTmp));
   thunkFn->body->insertAtTail(thunkBlock);
 
@@ -117,7 +117,6 @@ void lowerThunkPrims(BaseAST* ast) {
   LowerThunkPrimsVisitor vis;
   ast->accept(&vis);
 }
-
 
 /************************************* | **************************************
 *                               Pass 12: Resolve                              *
@@ -161,12 +160,13 @@ static FnSymbol* buildThunkInvokeMethod(FnSymbol* fn,
   invokeFn->addFlag(FLAG_INLINE);
   invokeFn->setMethod(true);
 
-  invokeFn->_this   = new ArgSymbol(INTENT_REF, "this", newRecord);
+  invokeFn->_this = new ArgSymbol(INTENT_REF, "this", newRecord);
   invokeFn->_this->addFlag(FLAG_ARG_THIS);
 
   invokeFn->retType = thunkResultType;
 
-  invokeFn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+  invokeFn->insertFormalAtTail(
+    new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   invokeFn->insertFormalAtTail(invokeFn->_this);
   return invokeFn;
 }
@@ -203,7 +203,6 @@ void protoThunkRecord(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-
 static AggregateType* getThunkBuilderReturnType(FnSymbol* fn) {
   Type* returnType = nullptr;
   if (!fn->hasFlag(FLAG_FN_RETARG)) {
@@ -229,7 +228,8 @@ static void addLocalsToThunkRecord(FnSymbol* fn,
                                    AggregateType* thunkRecord) {
   int counter = 0;
   for (auto local : locals) {
-    Symbol* field = createICField(counter, local, NULL, /* isValueField */ false, fn);
+    Symbol* field =
+      createICField(counter, local, NULL, /* isValueField */ false, fn);
     local2field.put(local, field);
     thunkRecord->fields.insertAtTail(new DefExpr(field));
   }
@@ -274,8 +274,7 @@ static void rebuildThunkBuilder(FnSymbol* fn,
                                 SymbolMap& local2field,
                                 AggregateType* thunkRecord) {
   fn->retSymbol = NULL;
-  for_alist(expr, fn->body->body)
-    expr->remove();
+  for_alist(expr, fn->body->body) expr->remove();
 
   Symbol* thunk = newTemp("_tr", thunkRecord);
   fn->insertAtTail(new DefExpr(thunk));

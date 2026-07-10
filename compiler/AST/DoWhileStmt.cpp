@@ -29,19 +29,18 @@
 *                                                                           *
 ************************************* | ************************************/
 
-BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body, LLVMMetadataList attrs)
-{
-  VarSymbol*   condVar       = newTemp();
-  CallExpr*    condTest      = new CallExpr("_cond_test", cond);
+BlockStmt*
+DoWhileStmt::build(Expr* cond, BlockStmt* body, LLVMMetadataList attrs) {
+  VarSymbol* condVar = newTemp();
+  CallExpr* condTest = new CallExpr("_cond_test", cond);
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
-  LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
-  DoWhileStmt* loop          = 0;
-  BlockStmt*   retval        = new BlockStmt();
+  LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
+  DoWhileStmt* loop = 0;
+  BlockStmt* retval = new BlockStmt();
 
   // make variables declared in the scope of the body visible to
   // expressions in the condition of a do..while block
-  if (body->length() == 1 && toBlockStmt(body->body.only()))
-  {
+  if (body->length() == 1 && toBlockStmt(body->body.only())) {
     body = toBlockStmt(body->body.only());
     body->remove();
   }
@@ -52,7 +51,7 @@ BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body, LLVMMetadataList attr
   loop = new DoWhileStmt(condVar, body);
 
   loop->mContinueLabel = continueLabel;
-  loop->mBreakLabel    = breakLabel;
+  loop->mBreakLabel = breakLabel;
 
   loop->mLLVMMetadataList = attrs;
 
@@ -70,22 +69,14 @@ BlockStmt* DoWhileStmt::build(Expr* cond, BlockStmt* body, LLVMMetadataList attr
 *                                                                           *
 ************************************* | ************************************/
 
-DoWhileStmt::DoWhileStmt(Expr* expr, BlockStmt* body) :
-  WhileStmt(expr, body)
-{
+DoWhileStmt::DoWhileStmt(Expr* expr, BlockStmt* body) : WhileStmt(expr, body) {}
 
-}
+DoWhileStmt::DoWhileStmt(VarSymbol* var, BlockStmt* body)
+  : WhileStmt(var, body) {}
 
-DoWhileStmt::DoWhileStmt(VarSymbol* var, BlockStmt* body) :
-  WhileStmt(var, body)
-{
-
-}
-
-DoWhileStmt* DoWhileStmt::copyInner(SymbolMap* map)
-{
-  Expr*        cond   = NULL;
-  BlockStmt*   body   = NULL;
+DoWhileStmt* DoWhileStmt::copyInner(SymbolMap* map) {
+  Expr* cond = NULL;
+  BlockStmt* body = NULL;
   DoWhileStmt* retval = new DoWhileStmt(cond, body);
 
   retval->copyInnerShare(*this, map);
@@ -95,34 +86,27 @@ DoWhileStmt* DoWhileStmt::copyInner(SymbolMap* map)
   return retval;
 }
 
-void DoWhileStmt::accept(AstVisitor* visitor)
-{
-  if (visitor->enterDoWhileStmt(this) == true)
-  {
-    for_alist(next_ast, body)
-      next_ast->accept(visitor);
+void DoWhileStmt::accept(AstVisitor* visitor) {
+  if (visitor->enterDoWhileStmt(this) == true) {
+    for_alist(next_ast, body) next_ast->accept(visitor);
 
-    if (condExprGet() != 0)
-      condExprGet()->accept(visitor);
+    if (condExprGet() != 0) condExprGet()->accept(visitor);
 
-    if (useList)
-      useList->accept(visitor);
+    if (useList) useList->accept(visitor);
 
-    if (byrefVars)
-      byrefVars->accept(visitor);
+    if (byrefVars) byrefVars->accept(visitor);
 
     visitor->exitDoWhileStmt(this);
   }
 }
 
-Expr* DoWhileStmt::getFirstExpr()
-{
+Expr* DoWhileStmt::getFirstExpr() {
   Expr* retval = 0;
 
   if (condExprGet() != 0)
     retval = condExprGet()->getFirstExpr();
 
-  else if (body.head      != 0)
+  else if (body.head != 0)
     retval = body.head->getFirstExpr();
 
   else
@@ -131,8 +115,7 @@ Expr* DoWhileStmt::getFirstExpr()
   return retval;
 }
 
-Expr* DoWhileStmt::getNextExpr(Expr* expr)
-{
+Expr* DoWhileStmt::getNextExpr(Expr* expr) {
   Expr* retval = this;
 
   if (expr == condExprGet() && body.head != NULL)

@@ -55,24 +55,19 @@
 static bool isDerivedType(Type* type, Flag flag);
 
 Type::Type(AstTag astTag, Symbol* iDefaultVal) : BaseAST(astTag) {
-  symbol              = NULL;
-  refType             = NULL;
-  defaultValue        = iDefaultVal;
-  destructor          = NULL;
-  isInternalType      = false;
+  symbol = NULL;
+  refType = NULL;
+  defaultValue = iDefaultVal;
+  destructor = NULL;
+  isInternalType = false;
   scalarPromotionType = NULL;
 }
 
-const char* Type::name() const {
-  return symbol->name;
-}
+const char* Type::name() const { return symbol->name; }
 
-void Type::verify() {
-}
+void Type::verify() {}
 
-void Type::addSymbol(TypeSymbol* newSymbol) {
-  symbol = newSymbol;
-}
+void Type::addSymbol(TypeSymbol* newSymbol) { symbol = newSymbol; }
 
 bool Type::inTree() {
   if (symbol && symbol->defPoint)
@@ -81,9 +76,7 @@ bool Type::inTree() {
     return false;
 }
 
-QualifiedType Type::qualType() {
-  return QualifiedType(this);
-}
+QualifiedType Type::qualType() { return QualifiedType(this); }
 
 // Are actuals of this type passed with const intent by default?
 bool Type::isDefaultIntentConst() const {
@@ -95,8 +88,7 @@ bool Type::isDefaultIntentConst() const {
   // currently rely on that behavior.
 
   if (symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF) == true ||
-      isReferenceType(this)                       == true ||
-      isRecordWrappedType(this)                   == true)
+      isReferenceType(this) == true || isRecordWrappedType(this) == true)
     retval = false;
 
   return retval;
@@ -118,17 +110,11 @@ Symbol* Type::getField(const char* name, bool fatal) const {
   return NULL;
 }
 
-bool Type::hasDestructor() const {
-  return destructor != NULL;
-}
+bool Type::hasDestructor() const { return destructor != NULL; }
 
-FnSymbol* Type::getDestructor() const {
-  return destructor;
-}
+FnSymbol* Type::getDestructor() const { return destructor; }
 
-void Type::setDestructor(FnSymbol* fn) {
-  destructor = fn;
-}
+void Type::setDestructor(FnSymbol* fn) { destructor = fn; }
 
 bool Type::isSerializable() {
   if (isAggregateType(this)) {
@@ -147,8 +133,7 @@ Symbol* Type::getSubstitutionWithName(const char* name) const {
   if (this->substitutions.n > 0) {
     // should only exist during resolution
     form_Map(SymbolMapElem, e, this->substitutions) {
-      if (e->key && e->key->name == name)
-        return e->value;
+      if (e->key && e->key->name == name) return e->value;
     }
   }
 
@@ -156,8 +141,7 @@ Symbol* Type::getSubstitutionWithName(const char* name) const {
   size_t n = this->substitutionsPostResolve.size();
   for (size_t i = 0; i < n; i++) {
     const NameAndSymbol& ns = this->substitutionsPostResolve[i];
-    if (ns.name == name)
-      return ns.value;
+    if (ns.name == name) return ns.value;
   }
 
   return NULL;
@@ -185,9 +169,11 @@ void Type::setSubstitutionWithName(const char* name, Symbol* value) {
 
 // "iterator|promoted expression yielding ..."
 // result may be non-astr()
-static const char* toIteratorString(AggregateType* at, bool decorateAllClasses) {
+static const char* toIteratorString(AggregateType* at,
+                                    bool decorateAllClasses) {
   const char* kind = at->symbol->hasFlag(FLAG_PROMOTION_ITERATOR_RECORD)
-    ? "promoted expression" : "iterator";
+                       ? "promoted expression"
+                       : "iterator";
   if (IteratorInfo* ii = at->iteratorInfo)
     if (Type* yt = ii->yieldedType)
       return astr(kind, " yielding ", toString(yt, decorateAllClasses));
@@ -197,8 +183,7 @@ static const char* toIteratorString(AggregateType* at, bool decorateAllClasses) 
 const char* toString(Type* type, bool decorateAllClasses) {
   const char* retval = NULL;
 
-  if (type == NULL ||
-      type == dtUnknown ||
+  if (type == NULL || type == dtUnknown ||
       type->getValType() == dtSplitInitType) {
     retval = "<type unknown>";
   } else if (type == dtAny) {
@@ -212,7 +197,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
 
     if (AggregateType* at = toAggregateType(vt)) {
       const char* drDomName = "DefaultRectangularDom";
-      const int   drDomNameLen = strlen(drDomName);
+      const int drDomNameLen = strlen(drDomName);
 
       if (isArrayClass(at) && !at->symbol->hasFlag(FLAG_BASE_ARRAY)) {
         Symbol* domField = at->getField("dom", false);
@@ -220,11 +205,11 @@ const char* toString(Type* type, bool decorateAllClasses) {
 
         if (domField && eltTypeField) {
           Type* domainType = canonicalDecoratedClassType(domField->type);
-          Type* eltType    = eltTypeField->type;
+          Type* eltType = eltTypeField->type;
 
           if (domainType != dtUnknown && eltType != dtUnknown)
-            retval = astr("[", toString(domainType,false), "] ",
-                          toString(eltType));
+            retval =
+              astr("[", toString(domainType, false), "] ", toString(eltType));
         }
 
       } else if (strncmp(at->symbol->name, drDomName, drDomNameLen) == 0) {
@@ -267,8 +252,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
           } else {
             retval = astr("owned ", borrowName);
           }
-        }
-        else if (startsWith(vt->symbol->name, "_shared")) {
+        } else if (startsWith(vt->symbol->name, "_shared")) {
           if (borrowType == dtUnknown) {
             retval = "shared";
           } else {
@@ -284,8 +268,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
           if (startsWith(useName, borrowed))
             useName = useName + strlen(borrowed);
 
-          if (decorateAllClasses)
-            useName = astr("borrowed ", useName);
+          if (decorateAllClasses) useName = astr("borrowed ", useName);
 
           retval = useName;
         }
@@ -302,18 +285,15 @@ const char* toString(Type* type, bool decorateAllClasses) {
       retval = "c_string";
     }
 
-    if (retval == NULL)
-      retval = vt->symbol->name;
+    if (retval == NULL) retval = vt->symbol->name;
 
     // If the type is generic with defaults, insert a question mark to
     // differentiate it from the concrete instance.
     if (auto at = toAggregateType(vt)) {
-      if (at == at->getRootInstantiation() &&
-          at->isGenericWithDefaults()) {
+      if (at == at->getRootInstantiation() && at->isGenericWithDefaults()) {
         retval = astr(retval, "(?)");
       }
     }
-
   }
 
   return astr(retval);
@@ -326,51 +306,42 @@ const char* toString(Type* type, bool decorateAllClasses) {
 ************************************** | *************************************/
 
 const char* QualifiedType::qualifierToStr(Qualifier q) {
-    switch (q) {
-      case QUAL_UNKNOWN:
-        return "unknown";
+  switch (q) {
+    case QUAL_UNKNOWN: return "unknown";
 
-      case QUAL_CONST:
-        return "const";
-      case QUAL_REF:
-        return "ref";
-      case QUAL_CONST_REF:
-        return "const-ref";
+    case QUAL_CONST: return "const";
+    case QUAL_REF: return "ref";
+    case QUAL_CONST_REF: return "const-ref";
 
-      case QUAL_PARAM:
-        return "param";
+    case QUAL_PARAM: return "param";
 
-      case QUAL_VAL:
-        return "val";
-      case QUAL_WIDE_REF:
-        return "wide-ref";
+    case QUAL_VAL: return "val";
+    case QUAL_WIDE_REF: return "wide-ref";
 
-      case QUAL_CONST_VAL:
-        return "const-val";
-      case QUAL_CONST_WIDE_REF:
-        return "const-wide-ref";
-    }
+    case QUAL_CONST_VAL: return "const-val";
+    case QUAL_CONST_WIDE_REF: return "const-wide-ref";
+  }
 
-    INT_FATAL("Unhandled Qualifier");
-    return "UNKNOWN-QUAL";
+  INT_FATAL("Unhandled Qualifier");
+  return "UNKNOWN-QUAL";
 }
 
 Qualifier QualifiedType::qualifierForArgIntent(IntentTag intent) {
   switch (intent) {
-    case INTENT_IN:        return QUAL_VAL;
-    case INTENT_OUT:       return QUAL_REF;
-    case INTENT_INOUT:     return QUAL_REF;
-    case INTENT_CONST:     return QUAL_CONST;
-    case INTENT_CONST_IN:  return QUAL_CONST_VAL;
-    case INTENT_REF:       return QUAL_REF;
+    case INTENT_IN: return QUAL_VAL;
+    case INTENT_OUT: return QUAL_REF;
+    case INTENT_INOUT: return QUAL_REF;
+    case INTENT_CONST: return QUAL_CONST;
+    case INTENT_CONST_IN: return QUAL_CONST_VAL;
+    case INTENT_REF: return QUAL_REF;
     case INTENT_CONST_REF: return QUAL_CONST_REF;
-    case INTENT_PARAM:     return QUAL_PARAM;   // TODO
-    case INTENT_TYPE:      return QUAL_UNKNOWN; // TODO
-    case INTENT_BLANK:     return QUAL_UNKNOWN;
+    case INTENT_PARAM: return QUAL_PARAM;  // TODO
+    case INTENT_TYPE: return QUAL_UNKNOWN; // TODO
+    case INTENT_BLANK: return QUAL_UNKNOWN;
     case INTENT_REF_MAYBE_CONST:
-           return QUAL_REF; // a white lie until cullOverReferences
+      return QUAL_REF; // a white lie until cullOverReferences
 
-    // no default to get compiler warning if other intents are added
+      // no default to get compiler warning if other intents are added
   }
   INT_FATAL("unknown intent");
   return QUAL_UNKNOWN;
@@ -378,12 +349,13 @@ Qualifier QualifiedType::qualifierForArgIntent(IntentTag intent) {
 
 Qualifier QualifiedType::qualifierForRetTag(RetTag retTag) {
   switch (retTag) {
-    case RET_VALUE:       return QUAL_VAL;
-    case RET_REF:         return QUAL_REF;
-    case RET_CONST_REF:   return QUAL_CONST_REF;
-    case RET_PARAM:       return QUAL_PARAM;    // TODO
-    case RET_TYPE:        return QUAL_UNKNOWN;  // TODO
-    // no default to get compiler warning if other intents are added
+    case RET_VALUE: return QUAL_VAL;
+    case RET_REF: return QUAL_REF;
+    case RET_CONST_REF: return QUAL_CONST_REF;
+    case RET_PARAM: return QUAL_PARAM; // TODO
+    case RET_TYPE:
+      return QUAL_UNKNOWN; // TODO
+      // no default to get compiler warning if other intents are added
   }
 
   INT_FATAL("unknown return tag");
@@ -400,16 +372,14 @@ bool QualifiedType::isWideRefType() const {
 
 const char* QualifiedType::qualStr() const {
   if (isRefType()) {
-    if (_qual == QUAL_CONST_REF ||
-        _qual == QUAL_CONST) {
+    if (_qual == QUAL_CONST_REF || _qual == QUAL_CONST) {
       return qualifierToStr(QUAL_CONST_REF);
     } else {
       return qualifierToStr(QUAL_REF);
     }
   }
 
-  if (isWideRefType())
-    return qualifierToStr(QUAL_WIDE_REF);
+  if (isWideRefType()) return qualifierToStr(QUAL_WIDE_REF);
 
   // otherwise
   return qualifierToStr(_qual);
@@ -434,16 +404,13 @@ QualifiedType QualifiedType::refToRefType() const {
 *                                                                             *
 ************************************** | *************************************/
 
-PrimitiveType::PrimitiveType(Symbol *init, bool internalType) :
-  Type(E_PrimitiveType, init)
-{
+PrimitiveType::PrimitiveType(Symbol* init, bool internalType)
+  : Type(E_PrimitiveType, init) {
   isInternalType = internalType;
   gPrimitiveTypes.add(this);
 }
 
-
-PrimitiveType*
-PrimitiveType::copyInner(SymbolMap* map) {
+PrimitiveType* PrimitiveType::copyInner(SymbolMap* map) {
   //
   // If we're trying to make a copy of an internal Chapel primitive
   // type (say 'int'), that's a sign that something is wrong.  For
@@ -462,11 +429,9 @@ PrimitiveType::copyInner(SymbolMap* map) {
   return new PrimitiveType(NULL);
 }
 
-
 void PrimitiveType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   INT_FATAL(this, "Unexpected case in PrimitiveType::replaceChild");
 }
-
 
 void PrimitiveType::verify() {
   Type::verify();
@@ -475,15 +440,12 @@ void PrimitiveType::verify() {
   }
 }
 
-
 void PrimitiveType::accept(AstVisitor* visitor) {
   visitor->visitPrimType(this);
 }
 
-
-ConstrainedType::ConstrainedType(ConstrainedTypeUse use) :
-  Type(E_ConstrainedType, NULL), ctUse(use)
-{
+ConstrainedType::ConstrainedType(ConstrainedTypeUse use)
+  : Type(E_ConstrainedType, NULL), ctUse(use) {
   gConstrainedTypes.add(this);
 }
 
@@ -499,36 +461,37 @@ void ConstrainedType::verify() {
   Type::verify();
   INT_ASSERT(astTag == E_ConstrainedType);
 
-  DefExpr* def = symbol->defPoint;  // assumes this->inTree()
+  DefExpr* def = symbol->defPoint; // assumes this->inTree()
   switch (ctUse) {
-  case CT_IFC_FORMAL: {
-    InterfaceSymbol* isym = toInterfaceSymbol(def->parentSymbol);
-    INT_ASSERT(def->list == &(isym->ifcFormals));
-    break;
+    case CT_IFC_FORMAL: {
+      InterfaceSymbol* isym = toInterfaceSymbol(def->parentSymbol);
+      INT_ASSERT(def->list == &(isym->ifcFormals));
+      break;
+    }
+    case CT_IFC_ASSOC_TYPE: {
+      InterfaceSymbol* isym = toInterfaceSymbol(def->parentSymbol);
+      INT_ASSERT(def->parentExpr == isym->ifcBody);
+      break;
+    }
+    case CT_CGFUN_FORMAL: {
+      FnSymbol* fn = toFnSymbol(def->parentSymbol);
+      INT_ASSERT(def->list == &(fn->interfaceInfo->constrainedTypes));
+      break;
+    }
+    case CT_CGFUN_ASSOC_TYPE: {
+      // These arise during resolution and are pruned at resolution end.
+      INT_FATAL(this, "unexpected");
+      break;
+    }
   }
-  case CT_IFC_ASSOC_TYPE: {
-    InterfaceSymbol* isym = toInterfaceSymbol(def->parentSymbol);
-    INT_ASSERT(def->parentExpr == isym->ifcBody);
-    break;
-  }
-  case CT_CGFUN_FORMAL: {
-    FnSymbol* fn = toFnSymbol(def->parentSymbol);
-    INT_ASSERT(def->list == &(fn->interfaceInfo->constrainedTypes));
-    break;
-  }
-  case CT_CGFUN_ASSOC_TYPE: {
-    // These arise during resolution and are pruned at resolution end.
-    INT_FATAL(this, "unexpected");
-    break;
-  }}
 }
 
 const char* ConstrainedType::useString() const {
   switch (ctUse) {
-  case CT_IFC_FORMAL:       return "CT_IFC_FORMAL";
-  case CT_IFC_ASSOC_TYPE:   return "CT_IFC_ASSOC_TYPE";
-  case CT_CGFUN_FORMAL:     return "CT_CGFUN_FORMAL";
-  case CT_CGFUN_ASSOC_TYPE: return "CT_CGFUN_ASSOC_TYPE";
+    case CT_IFC_FORMAL: return "CT_IFC_FORMAL";
+    case CT_IFC_ASSOC_TYPE: return "CT_IFC_ASSOC_TYPE";
+    case CT_CGFUN_FORMAL: return "CT_CGFUN_FORMAL";
+    case CT_CGFUN_ASSOC_TYPE: return "CT_CGFUN_ASSOC_TYPE";
   }
   INT_FATAL(this, "unknown ConstrainedType use");
   return NULL;
@@ -545,7 +508,7 @@ TypeSymbol* ConstrainedType::buildSym(const char* name,
 }
 
 ConstrainedType* ConstrainedType::buildType(const char* name,
-                                         ConstrainedTypeUse use) {
+                                            ConstrainedTypeUse use) {
   ConstrainedType* ct = new ConstrainedType(use);
   new TypeSymbol(name, ct); // attaches to 'ct'
   return ct;
@@ -553,22 +516,17 @@ ConstrainedType* ConstrainedType::buildType(const char* name,
 
 bool isConstrainedType(Type* t, ConstrainedTypeUse use) {
   if (ConstrainedType* ct = toConstrainedType(t))
-    if (ct->ctUse == use)
-      return true;
+    if (ct->ctUse == use) return true;
   return false;
 }
 
 bool isConstrainedTypeSymbol(Symbol* s, ConstrainedTypeUse use) {
   if (TypeSymbol* ts = toTypeSymbol(s))
-    if (isConstrainedType(ts->type, use))
-      return true;
+    if (isConstrainedType(ts->type, use)) return true;
   return false;
 }
 
-EnumType::EnumType() :
-  Type(E_EnumType, NULL),
-  constants(), integerType(NULL)
-{
+EnumType::EnumType() : Type(E_EnumType, NULL), constants(), integerType(NULL) {
   gEnumTypes.add(this);
   constants.parent = this;
 }
@@ -588,9 +546,7 @@ void EnumType::verify() {
   }
 }
 
-
-EnumType*
-EnumType::copyInner(SymbolMap* map) {
+EnumType* EnumType::copyInner(SymbolMap* map) {
   EnumType* copy = new EnumType();
 
   for_enums(def, this) {
@@ -602,11 +558,9 @@ EnumType::copyInner(SymbolMap* map) {
   return copy;
 }
 
-
 void EnumType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   INT_FATAL(this, "Unexpected case in EnumType::replaceChild");
 }
-
 
 bool EnumType::isAbstract() {
   for_enums(constant, this) {
@@ -630,7 +584,6 @@ bool EnumType::isConcrete() {
   }
   return true;
 }
-
 
 PrimitiveType* EnumType::getIntegerType() {
   INT_ASSERT(integerType);
@@ -662,18 +615,14 @@ llvm::SmallDenseMap<Symbol*, VarSymbol*> EnumType::getConstantMap() {
   return _constantMap;
 }
 
-
 void EnumType::accept(AstVisitor* visitor) {
   if (visitor->enterEnumType(this) == true) {
 
-    for_alist(next_ast, constants) {
-      next_ast->accept(visitor);
-    }
+    for_alist(next_ast, constants) { next_ast->accept(visitor); }
 
     visitor->exitEnumType(this);
   }
 }
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -682,48 +631,39 @@ void EnumType::accept(AstVisitor* visitor) {
 ************************************** | *************************************/
 
 namespace {
-  using FormalVec = std::vector<FunctionType::Formal>;
+using FormalVec = std::vector<FunctionType::Formal>;
 }
 
-FunctionType::FunctionType(Kind kind, Width width, Linkage linkage,
+FunctionType::FunctionType(Kind kind,
+                           Width width,
+                           Linkage linkage,
                            FormalVec formals,
                            RetTag returnIntent,
                            Type* returnType,
                            bool throws,
                            bool isAnyFormalNamed,
                            const char* userTypeString)
-    : Type(E_FunctionType, nullptr),
-      kind_(kind),
-      width_(width),
-      linkage_(linkage),
-      formals_(std::move(formals)),
-      returnIntent_(returnIntent),
-      returnType_(returnType),
-      throws_(throws),
-      isAnyFormalNamed_(isAnyFormalNamed),
-      userTypeString_(userTypeString) {
-}
+  : Type(E_FunctionType, nullptr), kind_(kind), width_(width),
+    linkage_(linkage), formals_(std::move(formals)),
+    returnIntent_(returnIntent), returnType_(returnType), throws_(throws),
+    isAnyFormalNamed_(isAnyFormalNamed), userTypeString_(userTypeString) {}
 
 namespace {
 
-  // Used to hash by value instead of hashing the pointer.
-  struct FunctionTypePtrHash {
-    size_t operator()(const FunctionType* x) const {
-      return x->hash();
-    }
-  };
+// Used to hash by value instead of hashing the pointer.
+struct FunctionTypePtrHash {
+  size_t operator()(const FunctionType* x) const { return x->hash(); }
+};
 
-  // Used to compare by value instead of doing pointer comparison.
-  struct FunctionTypePtrEq {
-    bool operator()(const FunctionType* lhs,
-                    const FunctionType* rhs) const {
-      return lhs->equals(rhs);
-    }
-  };
+// Used to compare by value instead of doing pointer comparison.
+struct FunctionTypePtrEq {
+  bool operator()(const FunctionType* lhs, const FunctionType* rhs) const {
+    return lhs->equals(rhs);
+  }
+};
 
-  using FunctionTypeCache =
-    std::unordered_set<FunctionType*, FunctionTypePtrHash,
-                       FunctionTypePtrEq>;
+using FunctionTypeCache =
+  std::unordered_set<FunctionType*, FunctionTypePtrHash, FunctionTypePtrEq>;
 }
 
 // Cache to make sure that we don't produce duplicate function types.
@@ -742,10 +682,11 @@ void FunctionType::verify() {
   bool isUsed = symbol->isUsed();
 
   if (isUsed && !returnType()->symbol->inTree()) {
-    INT_FATAL(this->symbol, "The function type %s is used but has a return "
-                            "type %s that is no longer in the tree",
-                            typeToString(this),
-                            typeToString(returnType()));
+    INT_FATAL(this->symbol,
+              "The function type %s is used but has a return "
+              "type %s that is no longer in the tree",
+              typeToString(this),
+              typeToString(returnType()));
   }
 
   if (numFormals() > 0) {
@@ -753,11 +694,13 @@ void FunctionType::verify() {
       auto name = formal(i)->name();
       auto type = formal(i)->type();
       if (isUsed && !type->inTree()) {
-        INT_FATAL(this->symbol, "The function type %s is used but has a "
-                                "formal %s with a type %s that is no "
-                                "longer in the tree",
-                                typeToString(this), name,
-                                typeToString(type));
+        INT_FATAL(this->symbol,
+                  "The function type %s is used but has a "
+                  "formal %s with a type %s that is no "
+                  "longer in the tree",
+                  typeToString(this),
+                  name,
+                  typeToString(type));
       }
 
       INT_ASSERT(name != nullptr);
@@ -774,19 +717,17 @@ FunctionType* FunctionType::copyInner(SymbolMap* map) {
   return nullptr;
 }
 
-void
-FunctionType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+void FunctionType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   INT_FATAL(this, "unexpected case in 'FunctionType::%s'", __FUNCTION__);
 }
 
-const char*
-FunctionType::buildUserTypeString(FunctionType::Kind kind,
-                                  FunctionType::Width width,
-                                  FunctionType::Linkage linkage,
-                                  const FormalVec& formals,
-                                  RetTag returnIntent,
-                                  Type* returnType,
-                                  bool throws) {
+const char* FunctionType::buildUserTypeString(FunctionType::Kind kind,
+                                              FunctionType::Width width,
+                                              FunctionType::Linkage linkage,
+                                              const FormalVec& formals,
+                                              RetTag returnIntent,
+                                              Type* returnType,
+                                              bool throws) {
   std::ostringstream oss;
 
   if (developer) {
@@ -808,7 +749,7 @@ FunctionType::buildUserTypeString(FunctionType::Kind kind,
 
     oss << info.name();
     if (info.type() != dtAny) oss << ": " << typeToString(info.type());
-    if ((i+1) != formals.size()) oss << ", ";
+    if ((i + 1) != formals.size()) oss << ", ";
   }
 
   oss << ")";
@@ -929,13 +870,12 @@ FunctionType* FunctionType::create(FunctionType::Kind kind,
   }
 
   // TODO: We could delay computing this until it's actually needed.
-  auto cstr = FunctionType::buildUserTypeString(kind, width,
-                                                linkage,
-                                                formals,
-                                                returnIntent,
-                                                returnType,
-                                                throws);
-  auto ret = new FunctionType(kind, width, linkage, std::move(formals),
+  auto cstr = FunctionType::buildUserTypeString(
+    kind, width, linkage, formals, returnIntent, returnType, throws);
+  auto ret = new FunctionType(kind,
+                              width,
+                              linkage,
+                              std::move(formals),
                               returnIntent,
                               returnType,
                               throws,
@@ -966,11 +906,8 @@ FunctionType* FunctionType::get(FunctionType::Kind kind,
                                 RetTag returnIntent,
                                 Type* returnType,
                                 bool throws) {
-  auto ft = FunctionType::create(kind, width, linkage,
-                                 std::move(formals),
-                                 returnIntent,
-                                 returnType,
-                                 throws);
+  auto ft = FunctionType::create(
+    kind, width, linkage, std::move(formals), returnIntent, returnType, throws);
   auto ret = cacheFunctionTypeOrReuse(ft);
   return ret;
 }
@@ -990,14 +927,15 @@ FunctionType::Linkage FunctionType::determineLinkage(FnSymbol* fn) {
 static FormalVec collectFormals(FnSymbol* fn) {
   FormalVec ret;
   for_formals(f, fn) {
-    FunctionType::Formal info = { f->qual, f->type, f->intent, f->name, f->flags };
+    FunctionType::Formal info = {
+      f->qual, f->type, f->intent, f->name, f->flags};
     ret.push_back(std::move(info));
   }
   return ret;
 }
 
-static FunctionType*
-getFunctionTypeFromFunction(FnSymbol* fn, FunctionType::Width width) {
+static FunctionType* getFunctionTypeFromFunction(FnSymbol* fn,
+                                                 FunctionType::Width width) {
   FunctionType::Kind kind = FunctionType::determineKind(fn);
   FunctionType::Linkage linkage = FunctionType::determineLinkage(fn);
   auto formals = collectFormals(fn);
@@ -1008,11 +946,8 @@ getFunctionTypeFromFunction(FnSymbol* fn, FunctionType::Width width) {
   bool throws = fn->throwsError() && !fn->isErrorHandlingLowered();
 
   SET_LINENO(fn);
-  auto ret = FunctionType::get(kind, width, linkage,
-                               std::move(formals),
-                               returnIntent,
-                               returnType,
-                               throws);
+  auto ret = FunctionType::get(
+    kind, width, linkage, std::move(formals), returnIntent, returnType, throws);
   return ret;
 }
 
@@ -1021,16 +956,14 @@ FunctionType* FunctionType::get(FnSymbol* fn) {
 }
 
 FunctionType* FunctionType::getWithWidth(FunctionType::Width width) const {
-  return get(kind_, width, linkage_, formals_, returnIntent_,
-             returnType_,
-             throws_);
+  return get(
+    kind_, width, linkage_, formals_, returnIntent_, returnType_, throws_);
 }
 
 FunctionType*
 FunctionType::getWithLinkage(FunctionType::Linkage linkage) const {
-  return get(kind_, width_, linkage, formals_, returnIntent_,
-             returnType_,
-             throws_);
+  return get(
+    kind_, width_, linkage, formals_, returnIntent_, returnType_, throws_);
 }
 
 FunctionType* FunctionType::getAsLocal() const {
@@ -1047,7 +980,7 @@ FunctionType* FunctionType::getAsExtern() const {
 
 FunctionType::Formal FunctionType::constructErrorHandlingFormal() {
   auto t = getDecoratedClass(dtError, ClassTypeDecorator::UNMANAGED_NILABLE);
-  return { QUAL_REF, t, INTENT_REF, "error_out", 0 };
+  return {QUAL_REF, t, INTENT_REF, "error_out", 0};
 }
 
 std::array<FunctionType::Formal, 2>
@@ -1069,7 +1002,10 @@ FunctionType* FunctionType::getWithLoweredErrorHandling() const {
 
   SET_LINENO(this->symbol);
 
-  return get(kind_, width_, linkage_, std::move(newFormals),
+  return get(kind_,
+             width_,
+             linkage_,
+             std::move(newFormals),
              returnIntent_,
              returnType_,
              newThrowsFlag);
@@ -1084,7 +1020,10 @@ FunctionType* FunctionType::getWithLineFileInfo() const {
 
   SET_LINENO(this->symbol);
 
-  return get(kind_, width_, linkage_, std::move(newFormals),
+  return get(kind_,
+             width_,
+             linkage_,
+             std::move(newFormals),
              returnIntent_,
              returnType_,
              throws_);
@@ -1153,7 +1092,7 @@ static Type* functionTypeStreamlineType(Qualifier qual, Type* t) {
 
   if (auto ft = toFunctionType(t->getValType())) {
     ret = ft->getWithStreamlinedComponents();
-    qt = { qt.getQual(), ret };
+    qt = {qt.getQual(), ret};
   }
 
   auto q = qt.getQual();
@@ -1193,11 +1132,11 @@ functionTypeStreamlineFormal(const FunctionType::Formal& f) {
   auto type = functionTypeStreamlineType(qual, f.type());
   const char* name = "";
 
-  return { qual, type, intent, name, f.flags() };
+  return {qual, type, intent, name, f.flags()};
 }
 
-static void
-functionTypeVerifyReturnIntent(RetTag returnIntent, Type* returnType) {
+static void functionTypeVerifyReturnIntent(RetTag returnIntent,
+                                           Type* returnType) {
   if (!fVerify) return;
 
   if (returnType->isRefOrWideRef()) {
@@ -1231,7 +1170,10 @@ FunctionType* FunctionType::getWithStreamlinedComponents() const {
 
   functionTypeVerifyReturnIntent(returnIntent_, newReturnType);
 
-  auto ret = get(kind_, width_, linkage_, std::move(newFormals),
+  auto ret = get(kind_,
+                 width_,
+                 linkage_,
+                 std::move(newFormals),
                  returnIntent_,
                  newReturnType,
                  throws_);
@@ -1239,9 +1181,9 @@ FunctionType* FunctionType::getWithStreamlinedComponents() const {
   return ret;
 }
 
-FunctionType*
-FunctionType::getWithMask(int64_t mask, bool& outMaskConflicts) const {
-  FunctionType* ret = (FunctionType*) this;
+FunctionType* FunctionType::getWithMask(int64_t mask,
+                                        bool& outMaskConflicts) const {
+  FunctionType* ret = (FunctionType*)this;
   bool maskConflicts = false;
 
   if (mask & FunctionType::MASK_WIDTH_LOCAL) {
@@ -1286,7 +1228,7 @@ static QualifiedType widenType(QualifiedType qt) {
 }
 
 FunctionType* FunctionType::getWithWidenedComponents() const {
-  FunctionType* ret = (FunctionType*) this;
+  FunctionType* ret = (FunctionType*)this;
 
   std::vector<Formal> newFormals;
   Type* newReturnType = returnType_;
@@ -1300,13 +1242,14 @@ FunctionType* FunctionType::getWithWidenedComponents() const {
     auto qt1 = f->qualType();
     auto qt2 = widenType(qt1);
 
-    Formal newFormal = { qt2.getQual(), qt2.type(), f->intent(), f->name(), f->flags() };
+    Formal newFormal = {
+      qt2.getQual(), qt2.type(), f->intent(), f->name(), f->flags()};
     newFormals.push_back(std::move(newFormal));
     change = change || qt1 != qt2;
   }
 
   Qualifier retTagQual = QualifiedType::qualifierForRetTag(returnIntent_);
-  QualifiedType qtReturnType1 = { retTagQual, returnType() };
+  QualifiedType qtReturnType1 = {retTagQual, returnType()};
   QualifiedType qtReturnType2 = widenType(qtReturnType1);
 
   change = change || qtReturnType1 != qtReturnType2;
@@ -1315,7 +1258,10 @@ FunctionType* FunctionType::getWithWidenedComponents() const {
   newReturnType = qtReturnType2.type();
 
   if (change) {
-    return get(kind_, width_, linkage_, std::move(newFormals),
+    return get(kind_,
+               width_,
+               linkage_,
+               std::move(newFormals),
                returnIntent_,
                newReturnType,
                throws_);
@@ -1324,20 +1270,14 @@ FunctionType* FunctionType::getWithWidenedComponents() const {
   return ret;
 }
 
-FunctionType::Kind FunctionType::kind() const {
-  return this->kind_;
-}
+FunctionType::Kind FunctionType::kind() const { return this->kind_; }
 
-FunctionType::Width FunctionType::width() const {
-  return this->width_;
-}
+FunctionType::Width FunctionType::width() const { return this->width_; }
 
-FunctionType::Linkage FunctionType::linkage() const {
-  return this->linkage_;
-}
+FunctionType::Linkage FunctionType::linkage() const { return this->linkage_; }
 
 int FunctionType::numFormals() const {
-  auto ret = (int) this->formals_.size();
+  auto ret = (int)this->formals_.size();
   return ret;
 }
 
@@ -1347,8 +1287,8 @@ const FunctionType::Formal* FunctionType::formal(int idx) const {
   return ret;
 }
 
-const FunctionType::Formal*
-FunctionType::formalByOrdinal(Expr* actual, int* outIdx) const {
+const FunctionType::Formal* FunctionType::formalByOrdinal(Expr* actual,
+                                                          int* outIdx) const {
   if (auto call = actual ? toCallExpr(actual->parentExpr) : nullptr) {
 
     // This will compute the called function's type if necessary.
@@ -1372,29 +1312,17 @@ FunctionType::formalByOrdinal(Expr* actual, int* outIdx) const {
   return nullptr;
 }
 
-const FunctionType::Formals& FunctionType::formals() const {
-  return formals_;
-}
+const FunctionType::Formals& FunctionType::formals() const { return formals_; }
 
-RetTag FunctionType::returnIntent() const {
-  return this->returnIntent_;
-}
+RetTag FunctionType::returnIntent() const { return this->returnIntent_; }
 
-Type* FunctionType::returnType() const {
-  return this->returnType_;
-}
+Type* FunctionType::returnType() const { return this->returnType_; }
 
-bool FunctionType::throws() const {
-  return this->throws_;
-}
+bool FunctionType::throws() const { return this->throws_; }
 
-bool FunctionType::isAnyFormalNamed() const {
-  return this->isAnyFormalNamed_;
-}
+bool FunctionType::isAnyFormalNamed() const { return this->isAnyFormalNamed_; }
 
-const char* FunctionType::toString() const {
-  return this->userTypeString_;
-}
+const char* FunctionType::toString() const { return this->userTypeString_; }
 
 const char* FunctionType::intentTagMnemonicMangled(IntentTag tag) {
   switch (tag) {
@@ -1554,9 +1482,9 @@ size_t FunctionType::hash() const {
 
   size_t ret = 0;
 
-  ret = chpl::hash_combine(ret, ((size_t) kind_));
-  ret = chpl::hash_combine(ret, ((size_t) width_));
-  ret = chpl::hash_combine(ret, ((size_t) linkage_));
+  ret = chpl::hash_combine(ret, ((size_t)kind_));
+  ret = chpl::hash_combine(ret, ((size_t)width_));
+  ret = chpl::hash_combine(ret, ((size_t)linkage_));
 
   // I think it's fine to hash the pointers here because types don't really
   // have a meaningful way to distinguish on contents, and should be unique,
@@ -1565,7 +1493,7 @@ size_t FunctionType::hash() const {
     ret = chpl::hash_combine(ret, formal.hash());
   }
 
-  ret = chpl::hash_combine(ret, ((size_t) returnIntent_));
+  ret = chpl::hash_combine(ret, ((size_t)returnIntent_));
   ret = chpl::hash_combine(ret, hasherPtr(returnType_));
   ret = chpl::hash_combine(ret, hasherBool(throws_));
   ret = chpl::hash_combine(ret, hasherBool(isAnyFormalNamed_));
@@ -1573,18 +1501,15 @@ size_t FunctionType::hash() const {
   return ret;
 }
 
-FunctionType::Formal::Formal(Qualifier qual, Type* type, IntentTag intent,
-                             const char* name, FlagSet flags)
-    : qual_(qual), type_(type), intent_(intent), name_(nullptr), flags_(flags) {
+FunctionType::Formal::Formal(
+  Qualifier qual, Type* type, IntentTag intent, const char* name, FlagSet flags)
+  : qual_(qual), type_(type), intent_(intent), name_(nullptr), flags_(flags) {
   name_ = (name && 0 != strcmp(name, "")) ? astr(name) : astr("_");
 }
 
-bool
-FunctionType::Formal::operator==(const FunctionType::Formal& rhs) const {
-  return this->qual_ == rhs.qual_ &&
-         this->type_ == rhs.type_ &&
-         this->intent_ == rhs.intent_ &&
-         this->name_ == rhs.name_;
+bool FunctionType::Formal::operator==(const FunctionType::Formal& rhs) const {
+  return this->qual_ == rhs.qual_ && this->type_ == rhs.type_ &&
+         this->intent_ == rhs.intent_ && this->name_ == rhs.name_;
 }
 
 size_t FunctionType::Formal::hash() const {
@@ -1592,44 +1517,29 @@ size_t FunctionType::Formal::hash() const {
   std::hash<const char*> hasherConstCharPtr;
 
   size_t ret = 0;
-  ret = chpl::hash_combine(ret, ((size_t) qual_));
+  ret = chpl::hash_combine(ret, ((size_t)qual_));
   ret = chpl::hash_combine(ret, hasherPtr(type_));
-  ret = chpl::hash_combine(ret, ((size_t) intent_));
+  ret = chpl::hash_combine(ret, ((size_t)intent_));
   ret = chpl::hash_combine(ret, hasherConstCharPtr(name_));
   return ret;
 }
 
+Qualifier FunctionType::Formal::qual() const { return qual_; }
 
-Qualifier FunctionType::Formal::qual() const {
-  return qual_;
-}
+Type* FunctionType::Formal::type() const { return type_; }
 
-Type* FunctionType::Formal::type() const {
-  return type_;
-}
+IntentTag FunctionType::Formal::intent() const { return intent_; }
 
-IntentTag FunctionType::Formal::intent() const {
-  return intent_;
-}
-
-const char* FunctionType::Formal::name() const {
-  return name_;
-}
+const char* FunctionType::Formal::name() const { return name_; }
 
 QualifiedType FunctionType::Formal::qualType() const {
   return QualifiedType(qual_, type_);
 }
 
-bool FunctionType::Formal::isRef() const {
-  return qualType().isRef();
-}
+bool FunctionType::Formal::isRef() const { return qualType().isRef(); }
 
-bool FunctionType::Formal::isRetArg() const {
-  return flags_[FLAG_RETARG];
-}
-FlagSet FunctionType::Formal::flags() const {
-  return flags_;
-}
+bool FunctionType::Formal::isRetArg() const { return flags_[FLAG_RETARG]; }
+FlagSet FunctionType::Formal::flags() const { return flags_; }
 
 bool FunctionType::Formal::isNamed() const {
   return name_ && 0 != strcmp(name_, "") && 0 != strcmp(name_, "_");
@@ -1641,10 +1551,8 @@ bool FunctionType::Formal::isGeneric() const {
 }
 
 bool FunctionType::equals(const FunctionType* rhs) const {
-  return this->kind_ == rhs->kind_ &&
-         this->width_ == rhs->width_ &&
-         this->linkage_ == rhs->linkage_ &&
-         this->formals_ == rhs->formals_ &&
+  return this->kind_ == rhs->kind_ && this->width_ == rhs->width_ &&
+         this->linkage_ == rhs->linkage_ && this->formals_ == rhs->formals_ &&
          this->returnIntent_ == rhs->returnIntent_ &&
          this->returnType_ == rhs->returnType_ &&
          this->throws_ == rhs->throws_ &&
@@ -1677,21 +1585,13 @@ bool FunctionType::isGeneric() const {
   return false;
 }
 
-bool FunctionType::isLocal() const {
-  return width_ == FunctionType::LOCAL;
-}
+bool FunctionType::isLocal() const { return width_ == FunctionType::LOCAL; }
 
-bool FunctionType::isWide() const {
-  return width_ == FunctionType::WIDE;
-}
+bool FunctionType::isWide() const { return width_ == FunctionType::WIDE; }
 
-bool FunctionType::isExtern() const {
-  return linkage_ == FunctionType::EXTERN;
-}
+bool FunctionType::isExtern() const { return linkage_ == FunctionType::EXTERN; }
 
-bool FunctionType::isExport() const {
-  return linkage_ == FunctionType::EXPORT;
-}
+bool FunctionType::isExport() const { return linkage_ == FunctionType::EXPORT; }
 
 bool FunctionType::hasForeignLinkage() const {
   return linkage_ != FunctionType::DEFAULT;
@@ -1704,23 +1604,19 @@ bool FunctionType::hasForeignLinkage() const {
 ************************************** | *************************************/
 
 TemporaryConversionType::TemporaryConversionType(chpl::types::QualifiedType qt)
-  : Type(E_TemporaryConversionType, nullptr), qt(qt)
-{
+  : Type(E_TemporaryConversionType, nullptr), qt(qt) {
   this->symbol = dtUnknown->symbol;
   gTemporaryConversionTypes.add(this);
 }
 
 TemporaryConversionType::TemporaryConversionType(const chpl::types::Type* t)
   : Type(E_TemporaryConversionType, nullptr),
-    qt(chpl::types::QualifiedType(chpl::types::QualifiedType::TYPE, t))
-{
+    qt(chpl::types::QualifiedType(chpl::types::QualifiedType::TYPE, t)) {
   this->symbol = dtUnknown->symbol;
   gTemporaryConversionTypes.add(this);
 }
 
-
-TemporaryConversionType*
-TemporaryConversionType::copyInner(SymbolMap* map) {
+TemporaryConversionType* TemporaryConversionType::copyInner(SymbolMap* map) {
   INT_FATAL(this, "unexpected call to TemporaryConversionType::copyInner");
   return nullptr;
 }
@@ -1740,7 +1636,6 @@ void TemporaryConversionType::accept(AstVisitor* visitor) {
   INT_FATAL(this, "Unexpected case in TemporaryConversionType::accept");
 }
 
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -1748,112 +1643,113 @@ void TemporaryConversionType::accept(AstVisitor* visitor) {
 ************************************** | *************************************/
 
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname);
-static PrimitiveType* createInternalType (const char* name, const char* cname);
+static PrimitiveType* createInternalType(const char* name, const char* cname);
 
-static PrimitiveType* createType(const char* name,
-                                 const char* cname,
-                                 bool        internalType);
+static PrimitiveType*
+createType(const char* name, const char* cname, bool internalType);
 
-static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
+static VarSymbol* createSymbol(PrimitiveType* primType, const char* name);
 
 // Create new primitive type for integers.
 // Specify name for now.
 // Though it will probably be something like int1, int8, etc. in the end.
 // In that case we can just specify the width (i.e., size).
 
-#define INIT_PRIM_INT( name, width)                                             \
-  dtInt[INT_SIZE_ ## width] = createPrimitiveType (name, "int" #width "_t");    \
-  dtInt[INT_SIZE_ ## width]->defaultValue = new_IntSymbol( 0, INT_SIZE_ ## width)
+#define INIT_PRIM_INT(name, width)                                           \
+  dtInt[INT_SIZE_##width] = createPrimitiveType(name, "int" #width "_t");    \
+  dtInt[INT_SIZE_##width]->defaultValue = new_IntSymbol(0, INT_SIZE_##width)
 
-#define INIT_PRIM_UINT( name, width)                                            \
-  dtUInt[INT_SIZE_ ## width] = createPrimitiveType (name, "uint" #width "_t");  \
-  dtUInt[INT_SIZE_ ## width]->defaultValue = new_UIntSymbol( 0, INT_SIZE_ ## width)
+#define INIT_PRIM_UINT(name, width)                                            \
+  dtUInt[INT_SIZE_##width] = createPrimitiveType(name, "uint" #width "_t");    \
+  dtUInt[INT_SIZE_##width]->defaultValue = new_UIntSymbol(0, INT_SIZE_##width)
 
-#define INIT_PRIM_REAL( name, width)                                            \
-  dtReal[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_real" #width);    \
-  dtReal[FLOAT_SIZE_ ## width]->defaultValue = new_RealSymbol( "0.0", FLOAT_SIZE_ ## width)
+#define INIT_PRIM_REAL(name, width)                                       \
+  dtReal[FLOAT_SIZE_##width] = createPrimitiveType(name, "_real" #width); \
+  dtReal[FLOAT_SIZE_##width]->defaultValue =                              \
+    new_RealSymbol("0.0", FLOAT_SIZE_##width)
 
-#define INIT_PRIM_IMAG( name, width)                                            \
-  dtImag[FLOAT_SIZE_ ## width] = createPrimitiveType (name, "_imag" #width);    \
-  dtImag[FLOAT_SIZE_ ## width]->defaultValue = new_ImagSymbol( "0.0", FLOAT_SIZE_ ## width)
+#define INIT_PRIM_IMAG(name, width)                                       \
+  dtImag[FLOAT_SIZE_##width] = createPrimitiveType(name, "_imag" #width); \
+  dtImag[FLOAT_SIZE_##width]->defaultValue =                              \
+    new_ImagSymbol("0.0", FLOAT_SIZE_##width)
 
-#define INIT_PRIM_COMPLEX( name, width)                                                   \
-  dtComplex[COMPLEX_SIZE_ ## width]= createPrimitiveType (name, "_complex" #width);       \
-  dtComplex[COMPLEX_SIZE_ ## width]->defaultValue = new_ComplexSymbol(                    \
-                                  "_chpl_complex" #width "(0.0, 0.0)",                    \
-                                   0.0, 0.0, COMPLEX_SIZE_ ## width);                     \
-  dtComplex[COMPLEX_SIZE_ ## width]->GEPMap.insert(std::make_pair(astr("re"), 0)); \
-  dtComplex[COMPLEX_SIZE_ ## width]->GEPMap.insert(std::make_pair(astr("im"), 1));
+#define INIT_PRIM_COMPLEX(name, width)                                    \
+  dtComplex[COMPLEX_SIZE_##width] =                                       \
+    createPrimitiveType(name, "_complex" #width);                         \
+  dtComplex[COMPLEX_SIZE_##width]->defaultValue = new_ComplexSymbol(      \
+    "_chpl_complex" #width "(0.0, 0.0)", 0.0, 0.0, COMPLEX_SIZE_##width); \
+  dtComplex[COMPLEX_SIZE_##width]->GEPMap.insert(                         \
+    std::make_pair(astr("re"), 0));                                       \
+  dtComplex[COMPLEX_SIZE_##width]->GEPMap.insert(std::make_pair(astr("im"), 1));
 
-#define CREATE_DEFAULT_SYMBOL(primType, gSym, name)     \
-  gSym = new VarSymbol (name, primType);                \
-  gSym->addFlag(FLAG_CONST);                            \
-  gSym->addFlag(FLAG_GLOBAL_VAR_BUILTIN);               \
-  rootModule->block->insertAtTail(new DefExpr(gSym));   \
+#define CREATE_DEFAULT_SYMBOL(primType, gSym, name)   \
+  gSym = new VarSymbol(name, primType);               \
+  gSym->addFlag(FLAG_CONST);                          \
+  gSym->addFlag(FLAG_GLOBAL_VAR_BUILTIN);             \
+  rootModule->block->insertAtTail(new DefExpr(gSym)); \
   primType->defaultValue = gSym
-
 
 // This should probably be renamed since it creates primitive types, as
 //  well as internal types and other types used in the generated code
 void initPrimitiveTypes() {
-  dtVoid                               = createInternalType("void", "void");
+  dtVoid = createInternalType("void", "void");
   dtVoid->symbol->addFlag(FLAG_NO_RENAME);
   dtVoid->symbol->addFlag(FLAG_NO_CODEGEN);
-  dtNothing                            = createInternalType ("nothing",  "nothing");
+  dtNothing = createInternalType("nothing", "nothing");
   dtNothing->symbol->addFlag(FLAG_NO_CODEGEN);
 
-  dtInt[INT_SIZE_64]                   = createPrimitiveType("int",      "int64_t");
-  dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real",     "_real64");
+  dtInt[INT_SIZE_64] = createPrimitiveType("int", "int64_t");
+  dtReal[FLOAT_SIZE_64] = createPrimitiveType("real", "_real64");
 
   // The Chapel name is prefixed with 'chpl_' to make it internal, but the
   // C type is 'c_string' which is defined in the runtime as an alias for
   // 'const char*'. The user-facing alias is defined in 'ChapelBase' so that
   // it can easily be deprecated.
-  dtStringC                            = createPrimitiveType("chpl_c_string", "c_string");
+  dtStringC = createPrimitiveType("chpl_c_string", "c_string");
   dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
-  dtBool                               = createPrimitiveType("bool", "chpl_bool");
+  dtBool = createPrimitiveType("bool", "chpl_bool");
 
-  gFalse                               = createSymbol(dtBool, "false");
-  gTrue                                = createSymbol(dtBool, "true");
+  gFalse = createSymbol(dtBool, "false");
+  gTrue = createSymbol(dtBool, "true");
 
-  gFalse->immediate                    = new Immediate;
-  gFalse->immediate->v_bool            = false;
-  gFalse->immediate->const_kind        = NUM_KIND_BOOL;
-  gFalse->immediate->num_index         = BOOL_SIZE_SYS;
+  gFalse->immediate = new Immediate;
+  gFalse->immediate->v_bool = false;
+  gFalse->immediate->const_kind = NUM_KIND_BOOL;
+  gFalse->immediate->num_index = BOOL_SIZE_SYS;
 
-  gTrue->immediate                     = new Immediate;
-  gTrue->immediate->v_bool             = true;
-  gTrue->immediate->const_kind         = NUM_KIND_BOOL;
-  gTrue->immediate->num_index          = BOOL_SIZE_SYS;
+  gTrue->immediate = new Immediate;
+  gTrue->immediate->v_bool = true;
+  gTrue->immediate->const_kind = NUM_KIND_BOOL;
+  gTrue->immediate->num_index = BOOL_SIZE_SYS;
 
   dtBool->defaultValue = gFalse;
-  dtInt[INT_SIZE_64]->defaultValue     = new_IntSymbol(0, INT_SIZE_64);
-  dtReal[FLOAT_SIZE_64]->defaultValue  = new_RealSymbol("0.0", FLOAT_SIZE_64);
+  dtInt[INT_SIZE_64]->defaultValue = new_IntSymbol(0, INT_SIZE_64);
+  dtReal[FLOAT_SIZE_64]->defaultValue = new_RealSymbol("0.0", FLOAT_SIZE_64);
 
   uniqueConstantsHash.put(gFalse->immediate, gFalse);
-  uniqueConstantsHash.put(gTrue->immediate,  gTrue);
+  uniqueConstantsHash.put(gTrue->immediate, gTrue);
 
-  dtNil = createInternalType ("_nilType", "_nilType");
+  dtNil = createInternalType("_nilType", "_nilType");
   dtNil->symbol->addFlag(FLAG_NO_RENAME);
-  CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
+  CREATE_DEFAULT_SYMBOL(dtNil, gNil, "nil");
   gNil->addFlag(FLAG_NO_RENAME);
 
   // dtStringC defaults to nil
   dtStringC->defaultValue = gNil;
 
   // This type should not be visible past normalize.
-  CREATE_DEFAULT_SYMBOL (dtVoid, gNoInit, "_gnoinit");
+  CREATE_DEFAULT_SYMBOL(dtVoid, gNoInit, "_gnoinit");
 
   dtSplitInitType = createInternalType("_splitInitType", "_splitInitType");
-  CREATE_DEFAULT_SYMBOL (dtSplitInitType, gSplitInit, "_gsplitinit");
+  CREATE_DEFAULT_SYMBOL(dtSplitInitType, gSplitInit, "_gsplitinit");
 
-  dtUnknown = createInternalType ("_unknown", "_unknown");
-  CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_gunknown");
+  dtUnknown = createInternalType("_unknown", "_unknown");
+  CREATE_DEFAULT_SYMBOL(dtUnknown, gUnknown, "_gunknown");
   gUnknown->addFlag(FLAG_TYPE_VARIABLE);
 
-  CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
-  CREATE_DEFAULT_SYMBOL (dtNothing, gNone, "none");
+  CREATE_DEFAULT_SYMBOL(dtVoid, gVoid, "_void");
+  CREATE_DEFAULT_SYMBOL(dtNothing, gNone, "none");
 
   // parses from record
   dtAnyRecord = createInternalType("record", "_anyRecord");
@@ -1865,22 +1761,22 @@ void initPrimitiveTypes() {
   gIteratorBreakToken = createSymbol(dtBool, "_iteratorBreakToken");
   gIteratorBreakToken->addFlag(FLAG_NO_CODEGEN);
 
-  INIT_PRIM_INT( "int(8)", 8);
-  INIT_PRIM_INT( "int(16)", 16);
-  INIT_PRIM_INT( "int(32)", 32);
+  INIT_PRIM_INT("int(8)", 8);
+  INIT_PRIM_INT("int(16)", 16);
+  INIT_PRIM_INT("int(32)", 32);
 
-  INIT_PRIM_UINT( "uint(8)", 8);
-  INIT_PRIM_UINT( "uint(16)", 16);
-  INIT_PRIM_UINT( "uint(32)", 32);
-  INIT_PRIM_UINT( "uint", 64);          // default size
+  INIT_PRIM_UINT("uint(8)", 8);
+  INIT_PRIM_UINT("uint(16)", 16);
+  INIT_PRIM_UINT("uint(32)", 32);
+  INIT_PRIM_UINT("uint", 64); // default size
 
-  INIT_PRIM_REAL( "real(32)", 32);
+  INIT_PRIM_REAL("real(32)", 32);
 
-  INIT_PRIM_IMAG( "imag(32)", 32);
-  INIT_PRIM_IMAG( "imag", 64);            // default size
+  INIT_PRIM_IMAG("imag(32)", 32);
+  INIT_PRIM_IMAG("imag", 64); // default size
 
-  INIT_PRIM_COMPLEX( "complex(64)", 64);
-  INIT_PRIM_COMPLEX( "complex", 128);       // default size
+  INIT_PRIM_COMPLEX("complex(64)", 64);
+  INIT_PRIM_COMPLEX("complex", 128); // default size
 
   // Set up INFINITY and NAN params
   gInfinity = createSymbol(dtReal[FLOAT_SIZE_DEFAULT], "chpl_INFINITY");
@@ -1897,7 +1793,7 @@ void initPrimitiveTypes() {
 
   // Could be == c_ptr(int(8)) e.g.
   // used in some runtime interfaces
-  dtCVoidPtr   = createPrimitiveType("chpl__c_void_ptr", "raw_c_void_ptr" );
+  dtCVoidPtr = createPrimitiveType("chpl__c_void_ptr", "raw_c_void_ptr");
   dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCVoidPtr->defaultValue = gNil;
 
@@ -1919,22 +1815,23 @@ void initPrimitiveTypes() {
 
   CREATE_DEFAULT_SYMBOL(dtTaskID, gTaskID, "chpl_nullTaskID");
 
-  dtSyncVarAuxFields = createPrimitiveType( "_sync_aux_t", "chpl_sync_aux_t");
+  dtSyncVarAuxFields = createPrimitiveType("_sync_aux_t", "chpl_sync_aux_t");
 
-  CREATE_DEFAULT_SYMBOL (dtSyncVarAuxFields, gSyncVarAuxFields, "_nullSyncVarAuxFields");
+  CREATE_DEFAULT_SYMBOL(
+    dtSyncVarAuxFields, gSyncVarAuxFields, "_nullSyncVarAuxFields");
   gSyncVarAuxFields->cname = astr("NULL");
 
-  dtAny = createInternalType ("_any", "_any");
+  dtAny = createInternalType("_any", "_any");
   dtAny->symbol->addFlag(FLAG_GENERIC);
 
   dtAnyComplex = createInternalType("chpl_anycomplex", "complex");
   dtAnyComplex->symbol->addFlag(FLAG_GENERIC);
 
   // parses from enum
-  dtAnyEnumerated = createInternalType ("enum", "enum");
+  dtAnyEnumerated = createInternalType("enum", "enum");
   dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
 
-  dtAnyUnion = createInternalType ("union", "union");
+  dtAnyUnion = createInternalType("union", "union");
   dtAnyUnion->symbol->addFlag(FLAG_GENERIC);
 
   dtAnyImag = createInternalType("chpl_anyimag", "imag");
@@ -1943,17 +1840,17 @@ void initPrimitiveTypes() {
   dtAnyReal = createInternalType("chpl_anyreal", "real");
   dtAnyReal->symbol->addFlag(FLAG_GENERIC);
 
-  dtAnyPOD = createInternalType ("chpl_anyPOD", "POD");
+  dtAnyPOD = createInternalType("chpl_anyPOD", "POD");
   dtAnyPOD->symbol->addFlag(FLAG_GENERIC);
 
   dtAnyProc = createInternalType("chpl_anyProc", "_proc");
   dtAnyProc->symbol->addFlag(FLAG_GENERIC);
 
   // could also be called dtAnyIntegral
-  dtIntegral = createInternalType ("integral", "integral");
+  dtIntegral = createInternalType("integral", "integral");
   dtIntegral->symbol->addFlag(FLAG_GENERIC);
 
-  dtNumeric = createInternalType ("numeric", "numeric");
+  dtNumeric = createInternalType("numeric", "numeric");
   dtNumeric->symbol->addFlag(FLAG_GENERIC);
 
   dtIteratorRecord = createInternalType("_iteratorRecord", "_iteratorRecord");
@@ -1968,36 +1865,42 @@ void initPrimitiveTypes() {
   dtBorrowed = createInternalType("borrowed", "borrowed");
   dtBorrowed->symbol->addFlag(FLAG_GENERIC);
 
-  dtBorrowedNonNilable = createInternalType("_borrowedNonNilable", "_borrowedNonNilable");
+  dtBorrowedNonNilable =
+    createInternalType("_borrowedNonNilable", "_borrowedNonNilable");
   dtBorrowedNonNilable->symbol->addFlag(FLAG_GENERIC);
 
-  dtBorrowedNilable = createInternalType("_borrowedNilable", "_borrowedNilable");
+  dtBorrowedNilable =
+    createInternalType("_borrowedNilable", "_borrowedNilable");
   dtBorrowedNilable->symbol->addFlag(FLAG_GENERIC);
 
   dtUnmanaged = createInternalType("unmanaged", "unmanaged");
   dtUnmanaged->symbol->addFlag(FLAG_GENERIC);
 
-  dtUnmanagedNonNilable = createInternalType("_unmanagedNonNilable", "_unmanagedNonNilable");
+  dtUnmanagedNonNilable =
+    createInternalType("_unmanagedNonNilable", "_unmanagedNonNilable");
   dtUnmanagedNonNilable->symbol->addFlag(FLAG_GENERIC);
 
-  dtUnmanagedNilable = createInternalType("_unmanagedNilable", "_unmanagedNilable");
+  dtUnmanagedNilable =
+    createInternalType("_unmanagedNilable", "_unmanagedNilable");
   dtUnmanagedNilable->symbol->addFlag(FLAG_GENERIC);
 
-  dtAnyManagementAnyNilable = createInternalType("_anyManagementAnyNilable", "_anyManagementAnyNilable");
+  dtAnyManagementAnyNilable =
+    createInternalType("_anyManagementAnyNilable", "_anyManagementAnyNilable");
   dtAnyManagementAnyNilable->symbol->addFlag(FLAG_GENERIC);
 
   // parses from class
-  dtAnyManagementNonNilable = createInternalType("class", "_anyManagementNonNilable");
+  dtAnyManagementNonNilable =
+    createInternalType("class", "_anyManagementNonNilable");
   dtAnyManagementNonNilable->symbol->addFlag(FLAG_GENERIC);
 
-  dtAnyManagementNilable = createInternalType("_anyManagementNilable", "_anyManagementNilable");
+  dtAnyManagementNilable =
+    createInternalType("_anyManagementNilable", "_anyManagementNilable");
   dtAnyManagementNilable->symbol->addFlag(FLAG_GENERIC);
 
-
-  dtMethodToken = createInternalType ("_MT", "_MT");
+  dtMethodToken = createInternalType("_MT", "_MT");
   CREATE_DEFAULT_SYMBOL(dtMethodToken, gMethodToken, "_mt");
 
-  dtDummyRef = createInternalType ("_DummyRef", "_DummyRef");
+  dtDummyRef = createInternalType("_DummyRef", "_DummyRef");
   CREATE_DEFAULT_SYMBOL(dtDummyRef, gDummyRef, "_dummyRef");
   CREATE_DEFAULT_SYMBOL(dtVoid, gDummyWitness, "_dummyWitness");
   CREATE_DEFAULT_SYMBOL(dtVoid, gFixupRequiredToken, "_fixupRequired");
@@ -2013,7 +1916,8 @@ void initPrimitiveTypes() {
   CREATE_DEFAULT_SYMBOL(dtUninstantiated, gUninstantiated, "?");
   gUninstantiated->addFlag(FLAG_PARAM);
 
-  CREATE_DEFAULT_SYMBOL(dtVoid, gIgnoredPromotionToken, "_ignoredPromotionToken");
+  CREATE_DEFAULT_SYMBOL(
+    dtVoid, gIgnoredPromotionToken, "_ignoredPromotionToken");
 
   // set up the well-known types, including setting up dummy types
   // for dtString / _string and a few others
@@ -2027,13 +1931,13 @@ static PrimitiveType* createPrimitiveType(const char* name, const char* cname) {
 }
 
 static PrimitiveType* createInternalType(const char* name, const char* cname) {
-  return createType(name, cname,  true);
+  return createType(name, cname, true);
 }
 
 static PrimitiveType*
 createType(const char* name, const char* cname, bool internalType) {
   PrimitiveType* pt = new PrimitiveType(NULL, internalType);
-  TypeSymbol*    ts = new TypeSymbol(name, pt);
+  TypeSymbol* ts = new TypeSymbol(name, pt);
 
   ts->cname = astr(cname);
 
@@ -2063,9 +1967,7 @@ static VarSymbol* createSymbol(PrimitiveType* primType, const char* name) {
 ************************************** | *************************************/
 
 void initChplProgram() {
-  theProgram           = new ModuleSymbol("chpl__Program",
-                                          MOD_INTERNAL,
-                                          new BlockStmt());
+  theProgram = new ModuleSymbol("chpl__Program", MOD_INTERNAL, new BlockStmt());
 
   theProgram->filename = astr("<internal>");
 
@@ -2085,62 +1987,52 @@ VarSymbol* createCompilerGlobalParam<bool>(const char* name, bool value) {
   auto globalVar = new VarSymbol(name, dtBool);
   rootModule->block->insertAtTail(new DefExpr(globalVar));
   globalVar->immediate = new Immediate;
- *globalVar->immediate = *(value ? gTrue : gFalse)->immediate;
+  *globalVar->immediate = *(value ? gTrue : gFalse)->immediate;
 
   return globalVar;
 }
 
 void initCompilerGlobals() {
   auto& compilerGlobals = chpl::compilerGlobals(gContext);
-  #define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) \
-    gCompilerGlobalParams.push_back(createCompilerGlobalParam<TYPE__>(NAME__, compilerGlobals.FIELD__));
-  #include "chpl/uast/compiler-globals-list.h"
-  #undef COMPILER_GLOBAL
+#define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__)                         \
+  gCompilerGlobalParams.push_back(                                       \
+    createCompilerGlobalParam<TYPE__>(NAME__, compilerGlobals.FIELD__));
+#include "chpl/uast/compiler-globals-list.h"
+#undef COMPILER_GLOBAL
 
   // defined and maintained by the runtime
   gNodeID = new VarSymbol("chpl_nodeID", dtInt[INT_SIZE_32]);
   gNodeID->addFlag(FLAG_EXTERN);
   rootModule->block->insertAtTail(new DefExpr(gNodeID));
 
-  if (! usingGpuLocaleModel()) {
+  if (!usingGpuLocaleModel()) {
     // gCpuVsGpuToken is param true for non-gpu compiles
     gCpuVsGpuToken->immediate = new Immediate;
-   *gCpuVsGpuToken->immediate = *gTrue->immediate;
+    *gCpuVsGpuToken->immediate = *gTrue->immediate;
   }
 
   initForTaskIntents();
 }
 
-bool isBoolType(Type* t) {
-  return t == dtBool;
+bool isBoolType(Type* t) { return t == dtBool; }
+
+bool isIntType(Type* t) {
+  return t == dtInt[INT_SIZE_8] || t == dtInt[INT_SIZE_16] ||
+         t == dtInt[INT_SIZE_32] || t == dtInt[INT_SIZE_64];
 }
 
-bool isIntType(Type *t) {
-  return
-    t == dtInt[INT_SIZE_8] ||
-    t == dtInt[INT_SIZE_16] ||
-    t == dtInt[INT_SIZE_32] ||
-    t == dtInt[INT_SIZE_64];
-}
-
-bool isUIntType(Type *t) {
-  return
-    t == dtUInt[INT_SIZE_8] ||
-    t == dtUInt[INT_SIZE_16] ||
-    t == dtUInt[INT_SIZE_32] ||
-    t == dtUInt[INT_SIZE_64];
+bool isUIntType(Type* t) {
+  return t == dtUInt[INT_SIZE_8] || t == dtUInt[INT_SIZE_16] ||
+         t == dtUInt[INT_SIZE_32] || t == dtUInt[INT_SIZE_64];
 }
 
 bool isIntegralByteType(Type* t) {
-  return t == dtInt[INT_SIZE_8] ||
-         t == dtUInt[INT_SIZE_8];
+  return t == dtInt[INT_SIZE_8] || t == dtUInt[INT_SIZE_8];
 }
 
-bool isSignedType(Type *t) {
-  if (isIntType(t) ||
-      isRealType(t) ||
-      isImagType(t) ||
-      isComplexType(t)) return true;
+bool isSignedType(Type* t) {
+  if (isIntType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
+    return true;
   if (isUIntType(t)) return false;
   if (isEnumType(t)) {
     return isSignedType(toEnumType(t)->getIntegerType());
@@ -2148,67 +2040,42 @@ bool isSignedType(Type *t) {
   return false;
 }
 
-bool isRealType(Type *t) {
-  return
-    t == dtReal[FLOAT_SIZE_64] ||
-    t == dtReal[FLOAT_SIZE_32];
+bool isRealType(Type* t) {
+  return t == dtReal[FLOAT_SIZE_64] || t == dtReal[FLOAT_SIZE_32];
 }
 
-bool isImagType(Type *t) {
-  return
-    t == dtImag[FLOAT_SIZE_64] ||
-    t == dtImag[FLOAT_SIZE_32];
+bool isImagType(Type* t) {
+  return t == dtImag[FLOAT_SIZE_64] || t == dtImag[FLOAT_SIZE_32];
 }
 
-bool isComplexType(Type *t) {
-  return
-    t == dtComplex[COMPLEX_SIZE_128] ||
-    t == dtComplex[COMPLEX_SIZE_64];
+bool isComplexType(Type* t) {
+  return t == dtComplex[COMPLEX_SIZE_128] || t == dtComplex[COMPLEX_SIZE_64];
 }
 
-bool isEnumType(Type *t) {
-  return toEnumType(t);
-}
+bool isEnumType(Type* t) { return toEnumType(t); }
 
 bool isLegalParamType(Type* t) {
-  return (isBoolType(t) ||
-          isIntType(t) ||
-          isUIntType(t) ||
-          isRealType(t) ||
-          isImagType(t) ||
-          isComplexType(t) ||
-          isEnumType(t) ||
-          isString(t) ||
-          isBytes(t) ||
-          t == dtStringC ||
-          t == dtUnknown);
+  return (isBoolType(t) || isIntType(t) || isUIntType(t) || isRealType(t) ||
+          isImagType(t) || isComplexType(t) || isEnumType(t) || isString(t) ||
+          isBytes(t) || t == dtStringC || t == dtUnknown);
 }
 
-int getWidthOfType(Type *t) {
-  if (t == dtInt[INT_SIZE_8] ||
-      t == dtUInt[INT_SIZE_8])
-    return 8;
-  if (t == dtInt[INT_SIZE_16] ||
-      t == dtUInt[INT_SIZE_16])
-    return 16;
-  if (t == dtInt[INT_SIZE_32] ||
-      t == dtUInt[INT_SIZE_32] ||
-      t == dtReal[FLOAT_SIZE_32] ||
-      t == dtImag[FLOAT_SIZE_32])
+int getWidthOfType(Type* t) {
+  if (t == dtInt[INT_SIZE_8] || t == dtUInt[INT_SIZE_8]) return 8;
+  if (t == dtInt[INT_SIZE_16] || t == dtUInt[INT_SIZE_16]) return 16;
+  if (t == dtInt[INT_SIZE_32] || t == dtUInt[INT_SIZE_32] ||
+      t == dtReal[FLOAT_SIZE_32] || t == dtImag[FLOAT_SIZE_32])
     return 32;
-  if (t == dtInt[INT_SIZE_64] ||
-      t == dtUInt[INT_SIZE_64] ||
-      t == dtReal[FLOAT_SIZE_64] ||
-      t == dtImag[FLOAT_SIZE_64] ||
+  if (t == dtInt[INT_SIZE_64] || t == dtUInt[INT_SIZE_64] ||
+      t == dtReal[FLOAT_SIZE_64] || t == dtImag[FLOAT_SIZE_64] ||
       t == dtComplex[COMPLEX_SIZE_64])
     return 64;
-  if (t == dtComplex[COMPLEX_SIZE_128])
-    return 128;
+  if (t == dtComplex[COMPLEX_SIZE_128]) return 128;
   INT_FATAL(t, "Unknown bit width");
   return 0;
 }
 
-int getComponentWidthOfType(Type *t) {
+int getComponentWidthOfType(Type* t) {
   if (isComplexType(t)) {
     return getWidthOfType(t) / 2;
   }
@@ -2217,15 +2084,13 @@ int getComponentWidthOfType(Type *t) {
 
 // numbers between -2**width .. 2**width
 // will fit exactly in a floating-point representation.
-int get_mantissa_width(Type *t) {
+int get_mantissa_width(Type* t) {
   // FLOAT_SIZE_16 would have 11 bits of precision
-  if (t == dtReal[FLOAT_SIZE_32] ||
-      t == dtImag[FLOAT_SIZE_32] ||
+  if (t == dtReal[FLOAT_SIZE_32] || t == dtImag[FLOAT_SIZE_32] ||
       t == dtComplex[COMPLEX_SIZE_64])
     // mantissa for 32-bit float
     return 24;
-  if (t == dtReal[FLOAT_SIZE_64] ||
-      t == dtImag[FLOAT_SIZE_64] ||
+  if (t == dtReal[FLOAT_SIZE_64] || t == dtImag[FLOAT_SIZE_64] ||
       t == dtComplex[COMPLEX_SIZE_128])
     // mantissa for 64-bit float
     return 53;
@@ -2233,15 +2098,13 @@ int get_mantissa_width(Type *t) {
   return 0;
 }
 
-int get_exponent_width(Type *t) {
+int get_exponent_width(Type* t) {
   // FLOAT_SIZE_16 would have 5 bits of exponent
-  if (t == dtReal[FLOAT_SIZE_32] ||
-      t == dtImag[FLOAT_SIZE_32] ||
+  if (t == dtReal[FLOAT_SIZE_32] || t == dtImag[FLOAT_SIZE_32] ||
       t == dtComplex[COMPLEX_SIZE_64])
     // exponent bits for 32-bit float
     return 8;
-  if (t == dtReal[FLOAT_SIZE_64] ||
-      t == dtImag[FLOAT_SIZE_64] ||
+  if (t == dtReal[FLOAT_SIZE_64] || t == dtImag[FLOAT_SIZE_64] ||
       t == dtComplex[COMPLEX_SIZE_128])
     // exponent bits for 64-bit float
     return 15;
@@ -2250,21 +2113,17 @@ int get_exponent_width(Type *t) {
 }
 
 bool isClass(Type* t) {
-  if (AggregateType* ct = toAggregateType(t))
-    return ct->isClass();
+  if (AggregateType* ct = toAggregateType(t)) return ct->isClass();
   return false;
 }
 
 bool isHeapAllocatedType(Type* t) {
   if (AggregateType* ct = toAggregateType(t)) {
     TypeSymbol* ts = ct->symbol;
-    if (ts->hasEitherFlag(FLAG_REF,FLAG_WIDE_REF))
-      return false;
-    if (ts->hasFlag(FLAG_C_ARRAY))
-      return false;
+    if (ts->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF)) return false;
+    if (ts->hasFlag(FLAG_C_ARRAY)) return false;
 
-    return (ts->hasFlag(FLAG_DATA_CLASS) ||
-            ts->hasFlag(FLAG_WIDE_CLASS) ||
+    return (ts->hasFlag(FLAG_DATA_CLASS) || ts->hasFlag(FLAG_WIDE_CLASS) ||
             ct->isClass());
   }
   return false;
@@ -2277,17 +2136,14 @@ bool isClassOrNil(Type* t) {
 
 bool isUnmanagedClass(Type* t) {
   if (DecoratedClassType* dt = toDecoratedClassType(t))
-    if (dt->isUnmanaged())
-      return true;
+    if (dt->isUnmanaged()) return true;
   return false;
 }
 
 bool isBorrowedClass(Type* t) {
-  if (isClass(t))
-    return true; // borrowed, non-nilable
+  if (isClass(t)) return true; // borrowed, non-nilable
 
-  if (DecoratedClassType* dt = toDecoratedClassType(t))
-    return dt->isBorrowed();
+  if (DecoratedClassType* dt = toDecoratedClassType(t)) return dt->isBorrowed();
 
   return false;
 }
@@ -2295,54 +2151,39 @@ bool isBorrowedClass(Type* t) {
 // Todo: ideally this would be simply something like:
 //   isChapelManagedType(t) || isChapelBorrowedType(t)
 bool isOwnedOrSharedOrBorrowed(Type* t) {
-  if (isClass(t))
-    return true; // borrowed, non-nilable
+  if (isClass(t)) return true; // borrowed, non-nilable
 
   if (DecoratedClassType* dt = toDecoratedClassType(t))
-    if (! dt->isUnmanaged())
-      return true; // anything not unmanaged
+    if (!dt->isUnmanaged()) return true; // anything not unmanaged
 
-  if (isManagedPtrType(t))
-    return true; // owned or shared
+  if (isManagedPtrType(t)) return true; // owned or shared
 
   return false;
 }
 
 bool isBuiltinGenericClassType(Type* t) {
-  return t == dtBorrowed ||
-         t == dtBorrowedNonNilable ||
-         t == dtBorrowedNilable ||
-         t == dtUnmanaged ||
-         t == dtUnmanagedNilable ||
-         t == dtUnmanagedNonNilable ||
-         t == dtAnyManagementAnyNilable ||
-         t == dtAnyManagementNonNilable ||
+  return t == dtBorrowed || t == dtBorrowedNonNilable ||
+         t == dtBorrowedNilable || t == dtUnmanaged ||
+         t == dtUnmanagedNilable || t == dtUnmanagedNonNilable ||
+         t == dtAnyManagementAnyNilable || t == dtAnyManagementNonNilable ||
          t == dtAnyManagementNilable;
 }
 
 bool isBuiltinGenericType(Type* t) {
   // ignore any decorator; irrelevant for knowing if it's builtin+generic
   if (DecoratedClassType* dct = toDecoratedClassType(t))
-    if (AggregateType* at = dct->getCanonicalClass())
-      t = at;
+    if (AggregateType* at = dct->getCanonicalClass()) t = at;
 
-  return isBuiltinGenericClassType(t) ||
-         t == dtAnyComplex || t == dtAnyImag || t == dtAnyReal ||
-         t == dtAnyEnumerated ||
-         t == dtAnyUnion ||
-         t == dtNumeric || t == dtIntegral ||
-         t == dtIteratorRecord || t == dtIteratorClass ||
-         t == dtThunkRecord ||
-         t == dtAnyPOD ||
-         t == dtAnyProc ||
-         t == dtOwned || t == dtShared ||
-         t == dtAnyRecord || t == dtTuple ||
-         t->symbol->hasFlag(FLAG_SYNC);  // _syncvar
+  return isBuiltinGenericClassType(t) || t == dtAnyComplex || t == dtAnyImag ||
+         t == dtAnyReal || t == dtAnyEnumerated || t == dtAnyUnion ||
+         t == dtNumeric || t == dtIntegral || t == dtIteratorRecord ||
+         t == dtIteratorClass || t == dtThunkRecord || t == dtAnyPOD ||
+         t == dtAnyProc || t == dtOwned || t == dtShared || t == dtAnyRecord ||
+         t == dtTuple || t->symbol->hasFlag(FLAG_SYNC); // _syncvar
 }
 
 bool isClassLike(Type* t) {
-  return isDecoratedClassType(t) ||
-         isBuiltinGenericClassType(t) ||
+  return isDecoratedClassType(t) || isBuiltinGenericClassType(t) ||
          (isClass(t) && !(t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
                           t->symbol->hasFlag(FLAG_DATA_CLASS) ||
                           t->symbol->hasFlag(FLAG_REF)));
@@ -2353,11 +2194,10 @@ bool isClassLikeOrManaged(Type* t) {
 }
 
 bool isClassLikeOrPtr(Type* t) {
-  return isClassLike(t) || (t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
-                            t->symbol->hasFlag(FLAG_DATA_CLASS) ||
-                            t == dtCVoidPtr ||
-                            t == dtStringC ||
-                            t == dtCFnPtr) ||
+  return isClassLike(t) ||
+         (t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
+          t->symbol->hasFlag(FLAG_DATA_CLASS) || t == dtCVoidPtr ||
+          t == dtStringC || t == dtCFnPtr) ||
          (isFunctionType(t) && fcfs::usePointerImplementation());
 }
 
@@ -2386,8 +2226,7 @@ bool isClassLikeOrNil(Type* t) {
 }
 
 bool isRecord(Type* t) {
-  if (AggregateType* ct = toAggregateType(t))
-    return ct->isRecord();
+  if (AggregateType* ct = toAggregateType(t)) return ct->isRecord();
   return false;
 }
 
@@ -2397,21 +2236,16 @@ bool isCPtrToRecord(Type* t) {
 }
 
 bool isUserRecord(Type* t) {
-  if (!isRecord(t))
-    return false;
+  if (!isRecord(t)) return false;
 
   // Check for lots of exceptions - types that are implemented
   // as records but that isn't the user view.
-  if (t == dtString ||
-      t == dtBytes ||
+  if (t == dtString || t == dtBytes ||
       t->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) ||
       t->symbol->hasFlag(FLAG_DISTRIBUTION) ||
-      t->symbol->hasFlag(FLAG_DOMAIN) ||
-      t->symbol->hasFlag(FLAG_ARRAY) ||
-      t->symbol->hasFlag(FLAG_RANGE) ||
-      t->symbol->hasFlag(FLAG_TUPLE) ||
-      t->symbol->hasFlag(FLAG_SYNC) ||
-      t->symbol->hasFlag(FLAG_ATOMIC_TYPE) ||
+      t->symbol->hasFlag(FLAG_DOMAIN) || t->symbol->hasFlag(FLAG_ARRAY) ||
+      t->symbol->hasFlag(FLAG_RANGE) || t->symbol->hasFlag(FLAG_TUPLE) ||
+      t->symbol->hasFlag(FLAG_SYNC) || t->symbol->hasFlag(FLAG_ATOMIC_TYPE) ||
       t->symbol->hasFlag(FLAG_MANAGED_POINTER))
     return false;
 
@@ -2419,14 +2253,11 @@ bool isUserRecord(Type* t) {
 }
 
 bool isUnion(Type* t) {
-  if (AggregateType* ct = toAggregateType(t))
-    return ct->isUnion();
+  if (AggregateType* ct = toAggregateType(t)) return ct->isUnion();
   return false;
 }
 
-bool isReferenceType(const Type* t) {
-  return t->symbol->hasFlag(FLAG_REF);
-}
+bool isReferenceType(const Type* t) { return t->symbol->hasFlag(FLAG_REF); }
 
 bool isRefCountedType(Type* t) {
   // We may eventually want to add a separate flag and provide users
@@ -2446,25 +2277,18 @@ bool isRecordWrappedType(const Type* t) {
 // dsiNew*Dom() functions; false otherwise.
 // This check is performed by looking to see if the given type derives from the
 // BaseDom class.
-bool isDomImplType(Type* type)
-{
-  return isDerivedType(type, FLAG_BASE_DOMAIN);
-}
+bool isDomImplType(Type* type) { return isDerivedType(type, FLAG_BASE_DOMAIN); }
 
 // Returns true if the given type is one which can be returned by
 // dsiBuildArray() or similar function returning a "nude" array implementation;
 // false otherwise.
 // The test is actually performed by looking to see if the given type derives
 // from the BaseArr class.
-bool isArrayImplType(Type* type)
-{
+bool isArrayImplType(Type* type) {
   return isDerivedType(type, FLAG_BASE_ARRAY);
 }
 
-bool isDistImplType(Type* type)
-{
-  return isDerivedType(type, FLAG_BASE_DIST);
-}
+bool isDistImplType(Type* type) { return isDerivedType(type, FLAG_BASE_DIST); }
 
 bool isAliasingArrayImplType(Type* t) {
   return t->symbol->hasFlag(FLAG_ALIASING_ARRAY);
@@ -2484,17 +2308,15 @@ bool isAliasingArrayType(Type* t) {
   return false;
 }
 
-static bool isDerivedType(Type* type, Flag flag)
-{
-  AggregateType* at     =  NULL;
-  bool           retval = false;
+static bool isDerivedType(Type* type, Flag flag) {
+  AggregateType* at = NULL;
+  bool retval = false;
 
-  while ((at = toAggregateType(type)) != NULL && retval == false)
-  {
+  while ((at = toAggregateType(type)) != NULL && retval == false) {
     if (at->symbol->hasFlag(flag) == true)
       retval = true;
     else
-      type   = at->dispatchParents.only();
+      type = at->dispatchParents.only();
   }
 
   return retval;
@@ -2526,8 +2348,7 @@ Type* getManagedPtrBorrowType(const Type* managedPtrType) {
     Symbol* sub = at->getSubstitution(fieldName);
     borrowType = sub->type;
   }
-  if (borrowType == NULL)
-    INT_FATAL("Could not determine borrow type");
+  if (borrowType == NULL) INT_FATAL("Could not determine borrow type");
 
   ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED_NONNIL;
 
@@ -2537,8 +2358,7 @@ Type* getManagedPtrBorrowType(const Type* managedPtrType) {
   borrowType = canonicalDecoratedClassType(borrowType);
 
   if (AggregateType* at = toAggregateType(borrowType))
-    if (isClass(at))
-      borrowType = at->getDecoratedClass(decorator);
+    if (isClass(at)) borrowType = at->getDecoratedClass(decorator);
 
   return borrowType;
 }
@@ -2555,15 +2375,13 @@ AggregateType* getManagedPtrManagerType(Type* managedPtrType) {
   return at;
 }
 
-bool isSyncType(const Type* t) {
-  return t->symbol->hasFlag(FLAG_SYNC);
-}
+bool isSyncType(const Type* t) { return t->symbol->hasFlag(FLAG_SYNC); }
 
 bool isAtomicType(const Type* t) {
   return t->symbol->hasFlag(FLAG_ATOMIC_TYPE);
 }
 
-static bool isOrContains(Type *type, Flag flag, bool checkRefs = true) {
+static bool isOrContains(Type* type, Flag flag, bool checkRefs = true) {
   if (type == nullptr) {
     return false;
   } else if (!checkRefs && type->isRef()) {
@@ -2582,7 +2400,7 @@ static bool isOrContains(Type *type, Flag flag, bool checkRefs = true) {
         if (isOrContains(eltType, flag, checkRefs)) return true;
       } else if (at->symbol->hasFlag(FLAG_TUPLE)) {
         // if its a tuple, search the tuple type substitutions
-        for (const auto& ns: at->substitutionsPostResolve) {
+        for (const auto& ns : at->substitutionsPostResolve) {
           Type* eltType = ns.value->type;
           if (isOrContains(eltType, flag, checkRefs)) return true;
         }
@@ -2598,7 +2416,6 @@ bool isOrContainsAtomicType(Type* t, bool checkRefs) {
   return isOrContains(t, FLAG_ATOMIC_TYPE, checkRefs);
 }
 
-
 bool isRefIterType(Type* t) {
   Symbol* iteratorRecord = NULL;
 
@@ -2609,8 +2426,7 @@ bool isRefIterType(Type* t) {
   } else if (t->symbol->hasFlag(FLAG_ITERATOR_RECORD))
     iteratorRecord = t->symbol;
 
-  if (iteratorRecord)
-    return iteratorRecord->hasFlag(FLAG_REF_ITERATOR_CLASS);
+  if (iteratorRecord) return iteratorRecord->hasFlag(FLAG_REF_ITERATOR_CLASS);
   return false;
 }
 
@@ -2686,27 +2502,23 @@ bool isArrayClass(Type* type) {
   return retval;
 }
 
-bool isString(Type* type) {
-  return type == dtString;
-}
+bool isString(Type* type) { return type == dtString; }
 
-bool isBytes(Type* type) {
-  return type == dtBytes;
-}
+bool isBytes(Type* type) { return type == dtBytes; }
 
 // Indicates record-like memory management
 bool typeNeedsCopyInitDeinit(Type* type) {
   bool retval = false;
 
   if (AggregateType* aggr = toAggregateType(type)) {
-    Symbol*     sym  = aggr->symbol;
+    Symbol* sym = aggr->symbol;
 
     // Must be a record or union type
     if (aggr->aggregateTag != AGGREGATE_RECORD &&
         aggr->aggregateTag != AGGREGATE_UNION) {
       retval = false;
 
-    // Not a RUNTIME_type or an extern type
+      // Not a RUNTIME_type or an extern type
     } else if (sym->hasFlag(FLAG_RUNTIME_TYPE_VALUE) ||
                sym->hasFlag(FLAG_EXTERN)) {
       retval = false;
@@ -2725,47 +2537,33 @@ bool typeNeedsCopyInitDeinit(Type* type) {
 bool needsCapture(Type* t) {
   INT_ASSERT(!isReferenceType(t)); // responsibility of the caller
 
-  if (isBoolType(t) ||
-      isIntType(t) ||
-      isUIntType(t) ||
-      isRealType(t) ||
-      isImagType(t) ||
-      isComplexType(t) ||
-      isEnumType(t) ||
-      t == dtStringC ||
-      isClassLikeOrPtr(t) ||
-      isRecord(t) ||
-      isUnion(t) ||
+  if (isBoolType(t) || isIntType(t) || isUIntType(t) || isRealType(t) ||
+      isImagType(t) || isComplexType(t) || isEnumType(t) || t == dtStringC ||
+      isClassLikeOrPtr(t) || isRecord(t) || isUnion(t) ||
       t == dtTaskID || // false?
       // TODO: Move these down to the "no" section.
-      t == dtNil ||
-      t == dtOpaque ||
-      t->symbol->hasFlag(FLAG_EXTERN)) {
+      t == dtNil || t == dtOpaque || t->symbol->hasFlag(FLAG_EXTERN)) {
     return true;
   } else {
     // Ensure we have covered all types.
-    INT_ASSERT(isRecordWrappedType(t) ||
-               isSyncType(t)          ||
-               isAtomicType(t));
+    INT_ASSERT(isRecordWrappedType(t) || isSyncType(t) || isAtomicType(t));
     return false;
   }
 }
 
-VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t)
-{
-  for( int i = 0; i < INT_SIZE_NUM; i++ ) {
-    if( t == dtInt[i] ) {
-      return new_IntSymbol(s->immediate->to_int(), (IF1_int_type) i);
+VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t) {
+  for (int i = 0; i < INT_SIZE_NUM; i++) {
+    if (t == dtInt[i]) {
+      return new_IntSymbol(s->immediate->to_int(), (IF1_int_type)i);
     }
   }
-  for( int i = 0; i < INT_SIZE_NUM; i++ ) {
-    if( t == dtUInt[i] ) {
-      return new_UIntSymbol(s->immediate->to_uint(), (IF1_int_type) i);
+  for (int i = 0; i < INT_SIZE_NUM; i++) {
+    if (t == dtUInt[i]) {
+      return new_UIntSymbol(s->immediate->to_uint(), (IF1_int_type)i);
     }
   }
   return NULL;
 }
-
 
 /* After resolution, other passes can call isPOD
    in order to find out if a record type is POD.
@@ -2774,22 +2572,18 @@ VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t)
    instead, so that the relevant calls can be resolved
    and POD fields can be properly handled.
  */
-bool isPOD(Type* t)
-{
+bool isPOD(Type* t) {
   // things that aren't aggregate types are POD
   //   e.g. int, boolean, complex, etc
-  if (!isAggregateType(t))
-    return true;
+  if (!isAggregateType(t)) return true;
 
   // sync/single and atomic types are not POD
   // but they should be marked with FLAG_NOT_POD
   // by propagateNotPOD in function resolution.
 
   // handle anything already marked
-  if (t->symbol->hasFlag(FLAG_POD))
-    return true;
-  if (t->symbol->hasFlag(FLAG_NOT_POD))
-    return false;
+  if (t->symbol->hasFlag(FLAG_POD)) return true;
+  if (t->symbol->hasFlag(FLAG_NOT_POD)) return false;
 
   // if we have not calculated POD-ness,
   // we should not be calling this function
@@ -2806,25 +2600,19 @@ bool isPOD(Type* t)
 bool isPrimitiveScalar(Type* type) {
   bool retval = false;
 
-  if (type == dtBool                       ||
+  if (type == dtBool ||
 
-      type == dtInt[INT_SIZE_8]            ||
-      type == dtInt[INT_SIZE_16]           ||
-      type == dtInt[INT_SIZE_32]           ||
-      type == dtInt[INT_SIZE_64]           ||
+      type == dtInt[INT_SIZE_8] || type == dtInt[INT_SIZE_16] ||
+      type == dtInt[INT_SIZE_32] || type == dtInt[INT_SIZE_64] ||
 
-      type == dtUInt[INT_SIZE_8]           ||
-      type == dtUInt[INT_SIZE_16]          ||
-      type == dtUInt[INT_SIZE_32]          ||
-      type == dtUInt[INT_SIZE_64]          ||
+      type == dtUInt[INT_SIZE_8] || type == dtUInt[INT_SIZE_16] ||
+      type == dtUInt[INT_SIZE_32] || type == dtUInt[INT_SIZE_64] ||
 
-      type == dtReal[FLOAT_SIZE_32]        ||
-      type == dtReal[FLOAT_SIZE_64]        ||
+      type == dtReal[FLOAT_SIZE_32] || type == dtReal[FLOAT_SIZE_64] ||
 
-      type == dtImag[FLOAT_SIZE_32]        ||
-      type == dtImag[FLOAT_SIZE_64]        ||
+      type == dtImag[FLOAT_SIZE_32] || type == dtImag[FLOAT_SIZE_64] ||
 
-      type == dtComplex[COMPLEX_SIZE_64]   ||
+      type == dtComplex[COMPLEX_SIZE_64] ||
       type == dtComplex[COMPLEX_SIZE_128]) {
 
     retval = true;
@@ -2840,8 +2628,7 @@ bool isNonGenericClass(Type* type) {
   bool retval = false;
 
   if (AggregateType* at = toAggregateType(type)) {
-    if (at->isClass()                    ==  true &&
-        at->isGeneric()                  == false &&
+    if (at->isClass() == true && at->isGeneric() == false &&
         at->symbol->hasFlag(FLAG_EXTERN) == false) {
       retval = true;
     }
@@ -2870,8 +2657,7 @@ bool isGenericClass(Type* type) {
   bool retval = false;
 
   if (AggregateType* at = toAggregateType(type)) {
-    if (at->isClass()                    == true  &&
-        at->isGeneric()                  == true  &&
+    if (at->isClass() == true && at->isGeneric() == true &&
         at->symbol->hasFlag(FLAG_EXTERN) == false) {
       retval = true;
     }
@@ -2900,10 +2686,8 @@ bool isClassWithInitializers(Type* type) {
   bool retval = false;
 
   if (AggregateType* at = toAggregateType(type)) {
-    if (at->isClass()                    == true  &&
-        at->symbol->hasFlag(FLAG_EXTERN) == false &&
-        (at->hasUserDefinedInit == true ||
-         at->wantsDefaultInitializer())) {
+    if (at->isClass() == true && at->symbol->hasFlag(FLAG_EXTERN) == false &&
+        (at->hasUserDefinedInit == true || at->wantsDefaultInitializer())) {
       retval = true;
     }
   }
@@ -2915,8 +2699,7 @@ bool isNonGenericRecord(Type* type) {
   bool retval = false;
 
   if (AggregateType* at = toAggregateType(type)) {
-    if (at->isRecord()                   == true  &&
-        at->isGeneric()                  == false) {
+    if (at->isRecord() == true && at->isGeneric() == false) {
       retval = true;
     }
   }
@@ -2946,8 +2729,7 @@ bool isGenericRecord(Type* type) {
   bool retval = false;
 
   if (AggregateType* at = toAggregateType(type)) {
-    if (at->isRecord()                   == true  &&
-        at->isGeneric()                  == true  &&
+    if (at->isRecord() == true && at->isGeneric() == true &&
         at->symbol->hasFlag(FLAG_EXTERN) == false) {
       retval = true;
     }
@@ -2977,8 +2759,7 @@ bool isRecordOrUnionWithInitializers(Type* type) {
 
   if (AggregateType* at = toAggregateType(type)) {
     if ((at->isRecord() || at->isUnion()) &&
-        (at->hasUserDefinedInit == true ||
-         at->wantsDefaultInitializer())) {
+        (at->hasUserDefinedInit == true || at->wantsDefaultInitializer())) {
       retval = true;
     }
   }
@@ -3025,7 +2806,8 @@ const Immediate& getDefaultImmediate(Type* t) {
 llvm::SmallVector<std::string, 2> explainGeneric(Type* t) {
   if (auto clsType = toDecoratedClassType(t)) {
     if (isDecoratorUnknownManagement(clsType->getDecorator())) {
-      return {"'" + std::string(t->name()) + "' is a class with unknown management"};
+      return {"'" + std::string(t->name()) +
+              "' is a class with unknown management"};
     }
   }
   if (t->symbol->hasFlag(FLAG_ARRAY)) {
@@ -3033,7 +2815,7 @@ llvm::SmallVector<std::string, 2> explainGeneric(Type* t) {
   }
   if (auto at = toAggregateType(t)) {
     if (at->isGeneric()) {
-    llvm::SmallVector<std::string, 2> reasons;
+      llvm::SmallVector<std::string, 2> reasons;
       for (auto i = 1; i <= at->numFields(); i++) {
         auto fieldType = at->getField(i)->type;
         if (fieldType->symbol && fieldType->symbol->hasFlag(FLAG_GENERIC)) {
@@ -3052,26 +2834,21 @@ llvm::SmallVector<std::string, 2> explainGeneric(Type* t) {
 // Returns 'true' for types that are the type of numeric literals.
 // e.g. 1 is an 'int', so this function returns 'true' for 'int'.
 // e.g. 0.0 is a 'real', so this function returns 'true' for 'real'.
-bool isNumericParamDefaultType(Type* t)
-{
-  if (t == dtInt[INT_SIZE_DEFAULT] ||
-      t == dtReal[FLOAT_SIZE_DEFAULT] ||
-      t == dtImag[FLOAT_SIZE_DEFAULT] ||
-      t == dtComplex[COMPLEX_SIZE_DEFAULT] ||
+bool isNumericParamDefaultType(Type* t) {
+  if (t == dtInt[INT_SIZE_DEFAULT] || t == dtReal[FLOAT_SIZE_DEFAULT] ||
+      t == dtImag[FLOAT_SIZE_DEFAULT] || t == dtComplex[COMPLEX_SIZE_DEFAULT] ||
       t == dtBool)
     return true;
 
   return false;
 }
 
-TypeSymbol*
-getDataClassType(TypeSymbol* ts) {
+TypeSymbol* getDataClassType(TypeSymbol* ts) {
   Symbol* value = ts->type->getSubstitutionWithName(astr("eltType"));
 
   return toTypeSymbol(value);
 }
 
-void
-setDataClassType(TypeSymbol* ts, TypeSymbol* ets) {
+void setDataClassType(TypeSymbol* ts, TypeSymbol* ets) {
   ts->type->setSubstitutionWithName(astr("eltType"), ets);
 }

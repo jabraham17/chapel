@@ -84,21 +84,18 @@
 #include "ImportStmt.h"
 #include "stmt.h"
 
-bool CollapseBlocks::enterBlockStmt(BlockStmt* node)
-{
+bool CollapseBlocks::enterBlockStmt(BlockStmt* node) {
   AList shuffle;
 
   // Transfer all of the expressions in to a temporary Alist
-  for_alist(expr, node->body)
-  {
+  for_alist(expr, node->body) {
     expr->remove();
 
     shuffle.insertAtTail(expr);
   }
 
   // Copy them back in to the body with recursive collapsing
-  for_alist(expr, shuffle)
-  {
+  for_alist(expr, shuffle) {
     BlockStmt* stmt = toBlockStmt(expr);
 
     // Apply collapse recursively to the expression
@@ -111,19 +108,13 @@ bool CollapseBlocks::enterBlockStmt(BlockStmt* node)
     // Do not collapse special 'GPU primitives' blocks, because they
     // are meant to hold together the necessary expressions for certain
     // GPU properties (e.g. block size).
-    if (stmt != 0 &&
-        stmt->isLoopStmt() == false &&
-        stmt->blockInfoGet() == 0 &&
-        !stmt->isGpuPrimitivesBlock())
-    {
-      for_alist(subItem, stmt->body)
-      {
+    if (stmt != 0 && stmt->isLoopStmt() == false && stmt->blockInfoGet() == 0 &&
+        !stmt->isGpuPrimitivesBlock()) {
+      for_alist(subItem, stmt->body) {
         subItem->remove();
         node->body.insertAtTail(subItem);
       }
-    }
-    else
-    {
+    } else {
       node->body.insertAtTail(expr);
     }
   }
@@ -138,7 +129,6 @@ bool CollapseBlocks::enterForallStmt(ForallStmt* node) {
   return enterBlockStmt(node->loopBody());
 }
 
-
 // The c for loop primitive is of the form:
 //   __primitive("C for loop", {inits}, {test}, {incrs})
 //
@@ -146,50 +136,39 @@ bool CollapseBlocks::enterForallStmt(ForallStmt* node) {
 // (essentially scopeless) block statements next to each other. We want to
 // collapse those into a single block (otherwise codegen would be a nightmare.)
 //
-bool CollapseBlocks::enterCForLoop(CForLoop* node)
-{
+bool CollapseBlocks::enterCForLoop(CForLoop* node) {
   // Handle the init/test/incr fields specially
-  if (BlockStmt* init = node->initBlockGet())
-    enterBlockStmt(init);
+  if (BlockStmt* init = node->initBlockGet()) enterBlockStmt(init);
 
-  if (BlockStmt* test = node->testBlockGet())
-    enterBlockStmt(test);
+  if (BlockStmt* test = node->testBlockGet()) enterBlockStmt(test);
 
-  if (BlockStmt* incr = node->incrBlockGet())
-    enterBlockStmt(incr);
+  if (BlockStmt* incr = node->incrBlockGet()) enterBlockStmt(incr);
 
   // Now simply forward to handle the body
   return enterBlockStmt(node);
 }
 
-bool CollapseBlocks::enterForLoop(ForLoop* node)
-{
+bool CollapseBlocks::enterForLoop(ForLoop* node) {
   return enterBlockStmt(node);
 }
 
-bool CollapseBlocks::enterParamForLoop(ParamForLoop* node)
-{
-  return enterBlockStmt(node);
-}
-
-// 2014/11/12 Noakes: For now simply act like a BlockStmt
-bool CollapseBlocks::enterWhileDoStmt(WhileDoStmt* node)
-{
+bool CollapseBlocks::enterParamForLoop(ParamForLoop* node) {
   return enterBlockStmt(node);
 }
 
 // 2014/11/12 Noakes: For now simply act like a BlockStmt
-bool CollapseBlocks::enterDoWhileStmt(DoWhileStmt* node)
-{
+bool CollapseBlocks::enterWhileDoStmt(WhileDoStmt* node) {
+  return enterBlockStmt(node);
+}
+
+// 2014/11/12 Noakes: For now simply act like a BlockStmt
+bool CollapseBlocks::enterDoWhileStmt(DoWhileStmt* node) {
   return enterBlockStmt(node);
 }
 
 // Recurse into the consequent and alternative
 // These are generally BlockStmts
-bool CollapseBlocks::enterCondStmt(CondStmt* node)
-{
-  return true;
-}
+bool CollapseBlocks::enterCondStmt(CondStmt* node) { return true; }
 
 /************************************ | *************************************
 *                                                                           *
@@ -197,288 +176,126 @@ bool CollapseBlocks::enterCondStmt(CondStmt* node)
 *                                                                           *
 ************************************* | ************************************/
 
-bool CollapseBlocks::enterThunk(TemporaryConversionThunk* node)
-{
+bool CollapseBlocks::enterThunk(TemporaryConversionThunk* node) {
   return false;
 }
 
-void CollapseBlocks::exitThunk(TemporaryConversionThunk* node)
-{
+void CollapseBlocks::exitThunk(TemporaryConversionThunk* node) {}
 
-}
+bool CollapseBlocks::enterAggrType(AggregateType* node) { return false; }
 
-bool CollapseBlocks::enterAggrType(AggregateType* node)
-{
+void CollapseBlocks::exitAggrType(AggregateType* node) {}
+
+bool CollapseBlocks::enterDecoratedClassType(DecoratedClassType* node) {
   return false;
 }
 
-void CollapseBlocks::exitAggrType(AggregateType* node)
-{
+void CollapseBlocks::exitDecoratedClassType(DecoratedClassType* node) {}
 
-}
+bool CollapseBlocks::enterEnumType(EnumType* node) { return false; }
 
-bool CollapseBlocks::enterDecoratedClassType(DecoratedClassType* node)
-{
+void CollapseBlocks::exitEnumType(EnumType* node) {}
+
+void CollapseBlocks::visitPrimType(PrimitiveType* node) {}
+
+void CollapseBlocks::visitFunctionType(FunctionType* node) {}
+
+void CollapseBlocks::visitConstrainedType(ConstrainedType* node) {}
+
+bool CollapseBlocks::enterArgSym(ArgSymbol* node) { return false; }
+
+void CollapseBlocks::exitArgSym(ArgSymbol* node) {}
+
+void CollapseBlocks::visitEnumSym(EnumSymbol* node) {}
+
+bool CollapseBlocks::enterFnSym(FnSymbol* node) { return false; }
+
+void CollapseBlocks::exitFnSym(FnSymbol* node) {}
+
+bool CollapseBlocks::enterInterfaceSym(InterfaceSymbol* node) { return false; }
+
+void CollapseBlocks::exitInterfaceSym(InterfaceSymbol* node) {}
+
+void CollapseBlocks::visitLabelSym(LabelSymbol* node) {}
+
+void CollapseBlocks::visitTemporaryConversionSymbol(
+  TemporaryConversionSymbol* node) {}
+
+bool CollapseBlocks::enterModSym(ModuleSymbol* node) { return false; }
+
+void CollapseBlocks::exitModSym(ModuleSymbol* node) {}
+
+bool CollapseBlocks::enterTypeSym(TypeSymbol* node) { return false; }
+
+void CollapseBlocks::exitTypeSym(TypeSymbol* node) {}
+
+void CollapseBlocks::visitVarSym(VarSymbol* node) {}
+
+bool CollapseBlocks::enterCallExpr(CallExpr* node) { return false; }
+
+void CollapseBlocks::exitCallExpr(CallExpr* node) {}
+
+bool CollapseBlocks::enterContextCallExpr(ContextCallExpr* node) {
   return false;
 }
 
-void CollapseBlocks::exitDecoratedClassType(DecoratedClassType* node)
-{
+void CollapseBlocks::exitContextCallExpr(ContextCallExpr* node) {}
 
-}
+bool CollapseBlocks::enterDefExpr(DefExpr* node) { return false; }
 
-bool CollapseBlocks::enterEnumType(EnumType* node)
-{
-  return false;
-}
+void CollapseBlocks::exitDefExpr(DefExpr* node) {}
 
-void CollapseBlocks::exitEnumType(EnumType* node)
-{
+bool CollapseBlocks::enterNamedExpr(NamedExpr* node) { return false; }
 
-}
+void CollapseBlocks::exitNamedExpr(NamedExpr* node) {}
 
-void CollapseBlocks::visitPrimType(PrimitiveType* node)
-{
+bool CollapseBlocks::enterIfcConstraint(IfcConstraint* node) { return false; }
 
-}
+void CollapseBlocks::exitIfcConstraint(IfcConstraint* node) {}
 
-void CollapseBlocks::visitFunctionType(FunctionType* node)
-{
+bool CollapseBlocks::enterIfExpr(IfExpr* node) { return true; }
 
-}
+void CollapseBlocks::exitIfExpr(IfExpr* node) {}
 
-void CollapseBlocks::visitConstrainedType(ConstrainedType* node)
-{
+void CollapseBlocks::visitSymExpr(SymExpr* node) {}
 
-}
+void CollapseBlocks::visitUsymExpr(UnresolvedSymExpr* node) {}
 
-bool CollapseBlocks::enterArgSym(ArgSymbol* node)
-{
-  return false;
-}
+bool CollapseBlocks::enterLoopExpr(LoopExpr* node) { return true; }
 
-void CollapseBlocks::exitArgSym(ArgSymbol* node)
-{
+void CollapseBlocks::exitLoopExpr(LoopExpr* node) {}
 
-}
+void CollapseBlocks::visitUseStmt(UseStmt* node) {}
 
-void CollapseBlocks::visitEnumSym(EnumSymbol* node)
-{
+void CollapseBlocks::visitImportStmt(ImportStmt* node) {}
 
-}
+void CollapseBlocks::exitBlockStmt(BlockStmt* node) {}
 
-bool CollapseBlocks::enterFnSym(FnSymbol* node)
-{
-  return false;
-}
+void CollapseBlocks::exitForallStmt(ForallStmt* node) {}
 
-void CollapseBlocks::exitFnSym(FnSymbol* node)
-{
+void CollapseBlocks::exitWhileDoStmt(WhileDoStmt* node) {}
 
-}
+void CollapseBlocks::exitDoWhileStmt(DoWhileStmt* node) {}
 
-bool CollapseBlocks::enterInterfaceSym(InterfaceSymbol* node)
-{
-  return false;
-}
+void CollapseBlocks::exitCForLoop(CForLoop* node) {}
 
-void CollapseBlocks::exitInterfaceSym(InterfaceSymbol* node)
-{
+void CollapseBlocks::exitForLoop(ForLoop* node) {}
 
-}
+void CollapseBlocks::exitParamForLoop(ParamForLoop* node) {}
 
-void CollapseBlocks::visitLabelSym(LabelSymbol* node)
-{
+void CollapseBlocks::exitCondStmt(CondStmt* node) {}
 
-}
+void CollapseBlocks::visitEblockStmt(ExternBlockStmt* node) {}
 
-void
-CollapseBlocks::visitTemporaryConversionSymbol(TemporaryConversionSymbol* node)
-{
+bool CollapseBlocks::enterGotoStmt(GotoStmt* node) { return false; }
 
-}
+void CollapseBlocks::exitGotoStmt(GotoStmt* node) {}
 
+bool CollapseBlocks::enterForwardingStmt(ForwardingStmt* node) { return true; }
 
-bool CollapseBlocks::enterModSym(ModuleSymbol* node)
-{
-  return false;
-}
+void CollapseBlocks::exitForwardingStmt(ForwardingStmt* node) {}
 
-void CollapseBlocks::exitModSym(ModuleSymbol* node)
-{
-
-}
-
-bool CollapseBlocks::enterTypeSym(TypeSymbol* node)
-{
-  return false;
-}
-
-void CollapseBlocks::exitTypeSym(TypeSymbol* node)
-{
-
-}
-
-void CollapseBlocks::visitVarSym(VarSymbol* node)
-{
-
-}
-
-bool CollapseBlocks::enterCallExpr(CallExpr* node)
-{
-  return false;
-}
-
-void CollapseBlocks::exitCallExpr(CallExpr* node)
-{
-}
-
-bool CollapseBlocks::enterContextCallExpr(ContextCallExpr* node)
-{
-  return false;
-}
-
-void CollapseBlocks::exitContextCallExpr(ContextCallExpr* node)
-{
-}
-
-bool CollapseBlocks::enterDefExpr(DefExpr* node)
-{
-  return false;
-}
-
-void CollapseBlocks::exitDefExpr(DefExpr* node)
-{
-
-}
-
-bool CollapseBlocks::enterNamedExpr(NamedExpr* node)
-{
-  return false;
-}
-
-void CollapseBlocks::exitNamedExpr(NamedExpr* node)
-{
-
-}
-
-bool CollapseBlocks::enterIfcConstraint(IfcConstraint* node)
-{
-  return false;
-}
-
-void CollapseBlocks::exitIfcConstraint(IfcConstraint* node)
-{
-
-}
-
-bool CollapseBlocks::enterIfExpr(IfExpr* node)
-{
-  return true;
-}
-
-void CollapseBlocks::exitIfExpr(IfExpr* node)
-{
-
-}
-
-void CollapseBlocks::visitSymExpr(SymExpr* node)
-{
-
-}
-
-void CollapseBlocks::visitUsymExpr(UnresolvedSymExpr* node)
-{
-
-}
-
-bool CollapseBlocks::enterLoopExpr(LoopExpr* node)
-{
-  return true;
-}
-
-void CollapseBlocks::exitLoopExpr(LoopExpr* node)
-{
-
-}
-
-void CollapseBlocks::visitUseStmt(UseStmt* node)
-{
-
-}
-
-void CollapseBlocks::visitImportStmt(ImportStmt* node)
-{
-
-}
-
-void CollapseBlocks::exitBlockStmt(BlockStmt* node)
-{
-
-}
-
-void CollapseBlocks::exitForallStmt(ForallStmt* node)
-{
-
-}
-
-void CollapseBlocks::exitWhileDoStmt(WhileDoStmt* node)
-{
-
-}
-
-void CollapseBlocks::exitDoWhileStmt(DoWhileStmt* node)
-{
-
-}
-
-void CollapseBlocks::exitCForLoop(CForLoop* node)
-{
-
-}
-
-void CollapseBlocks::exitForLoop(ForLoop* node)
-{
-
-}
-
-void CollapseBlocks::exitParamForLoop(ParamForLoop* node)
-{
-
-}
-
-void CollapseBlocks::exitCondStmt(CondStmt* node)
-{
-
-}
-
-void CollapseBlocks::visitEblockStmt(ExternBlockStmt* node)
-{
-
-}
-
-bool CollapseBlocks::enterGotoStmt(GotoStmt* node)
-{
-  return false;
-}
-
-void CollapseBlocks::exitGotoStmt(GotoStmt* node)
-{
-
-}
-
-bool CollapseBlocks::enterForwardingStmt(ForwardingStmt* node)
-{
-  return true;
-}
-
-void CollapseBlocks::exitForwardingStmt(ForwardingStmt* node)
-{
-
-}
-
-bool CollapseBlocks::enterDeferStmt(DeferStmt* node)
-{
+bool CollapseBlocks::enterDeferStmt(DeferStmt* node) {
   // Defer statements really need to be lowered *before*
   // running CollapseBlocks. Otherwise, how can we know
   // what variables or defer blocks are "in scope"?
@@ -486,37 +303,16 @@ bool CollapseBlocks::enterDeferStmt(DeferStmt* node)
   return true;
 }
 
-void CollapseBlocks::exitDeferStmt(DeferStmt* node)
-{
+void CollapseBlocks::exitDeferStmt(DeferStmt* node) {}
 
-}
+bool CollapseBlocks::enterTryStmt(TryStmt* node) { return true; }
 
-bool CollapseBlocks::enterTryStmt(TryStmt* node)
-{
-  return true;
-}
+void CollapseBlocks::exitTryStmt(TryStmt* node) {}
 
-void CollapseBlocks::exitTryStmt(TryStmt* node)
-{
+bool CollapseBlocks::enterCatchStmt(CatchStmt* node) { return true; }
 
-}
+void CollapseBlocks::exitCatchStmt(CatchStmt* node) {}
 
-bool CollapseBlocks::enterCatchStmt(CatchStmt* node)
-{
-  return true;
-}
+bool CollapseBlocks::enterImplementsStmt(ImplementsStmt* node) { return false; }
 
-void CollapseBlocks::exitCatchStmt(CatchStmt* node)
-{
-
-}
-
-bool CollapseBlocks::enterImplementsStmt(ImplementsStmt* node)
-{
-  return false;
-}
-
-void CollapseBlocks::exitImplementsStmt(ImplementsStmt* node)
-{
-
-}
+void CollapseBlocks::exitImplementsStmt(ImplementsStmt* node) {}

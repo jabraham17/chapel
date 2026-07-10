@@ -40,49 +40,48 @@ InterfaceSymbol* gInitDeserializable = nullptr;
 InterfaceSymbol* gSerializable = nullptr;
 
 static Symbol* isInterfaceFormalSymbol(Symbol* sym) {
-  if (TypeSymbol* var = toTypeSymbol(sym))
-    return var;
+  if (TypeSymbol* var = toTypeSymbol(sym)) return var;
   // we could also allow param formals
   return NULL;
 }
 
 static Symbol* isInterfaceFormalDecl(Expr* expr) {
   if (DefExpr* def = toDefExpr(expr))
-    if (Symbol* ifor = isInterfaceFormalSymbol(def->sym))
-      return ifor;
+    if (Symbol* ifor = isInterfaceFormalSymbol(def->sym)) return ifor;
   return NULL;
 }
 
 static FnSymbol* toInterfaceFunDecl(Expr* expr) {
   if (DefExpr* def = toDefExpr(expr))
-    if (FnSymbol* fn = toFnSymbol(def->sym))
-      return fn;
+    if (FnSymbol* fn = toFnSymbol(def->sym)) return fn;
   return NULL;
 }
 
 static VarSymbol* toAssociatedTypeDecl(Expr* expr) {
   if (DefExpr* def = toDefExpr(expr))
     if (VarSymbol* AT = toVarSymbol(def->sym))
-      if (AT->hasFlag(FLAG_TYPE_VARIABLE))
-        return AT;
+      if (AT->hasFlag(FLAG_TYPE_VARIABLE)) return AT;
   return NULL;
 }
 
 DefExpr* InterfaceSymbol::buildDef(const char* name,
-                                   CallExpr*   formals,
-                                   BlockStmt*  body)
-{
+                                   CallExpr* formals,
+                                   BlockStmt* body) {
   InterfaceSymbol* isym = new InterfaceSymbol(name, body);
 
   if (gHashable == nullptr && strcmp("hashable", name) == 0) {
     gHashable = isym;
-  } else if (gContextManager == nullptr && strcmp("contextManager", name) == 0) {
+  } else if (gContextManager == nullptr &&
+             strcmp("contextManager", name) == 0) {
     gContextManager = isym;
-  } else if (gWriteSerializable == nullptr && strcmp("writeSerializable", name) == 0) {
+  } else if (gWriteSerializable == nullptr &&
+             strcmp("writeSerializable", name) == 0) {
     gWriteSerializable = isym;
-  } else if (gReadDeserializable == nullptr && strcmp("readDeserializable", name) == 0) {
+  } else if (gReadDeserializable == nullptr &&
+             strcmp("readDeserializable", name) == 0) {
     gReadDeserializable = isym;
-  } else if (gInitDeserializable == nullptr && strcmp("initDeserializable", name) == 0) {
+  } else if (gInitDeserializable == nullptr &&
+             strcmp("initDeserializable", name) == 0) {
     gInitDeserializable = isym;
   } else if (gSerializable == nullptr && strcmp("serializable", name) == 0) {
     gSerializable = isym;
@@ -95,8 +94,10 @@ DefExpr* InterfaceSymbol::buildDef(const char* name,
 
   // at least 1 formal is required
   if (isym->ifcFormals.empty())
-    USR_FATAL_CONT(isym, "interface %s has no formal arguments\n"
-                   "  at least one formal argument is required", isym->name);
+    USR_FATAL_CONT(isym,
+                   "interface %s has no formal arguments\n"
+                   "  at least one formal argument is required",
+                   isym->name);
 
   // ifcBody can be empty; check that the content is appropriate
   for_alist(expr, isym->ifcBody->body) {
@@ -106,17 +107,20 @@ DefExpr* InterfaceSymbol::buildDef(const char* name,
       if (ifun->isIterator())
         // Iterators bring along a lot of complications,
         // which we do not handle at the moment.
-        USR_FATAL_CONT(ifun, "iterators at present are not allowed"
-                             " in an interface");
+        USR_FATAL_CONT(ifun,
+                       "iterators at present are not allowed"
+                       " in an interface");
 
     } else if (VarSymbol* AT = toAssociatedTypeDecl(expr)) {
       // not allowing defaults for now
       if (AT->defPoint->init != NULL || AT->defPoint->exprType != NULL)
-        USR_FATAL_CONT(expr, "an associated type at present cannot have"
-                             " a default value");
+        USR_FATAL_CONT(expr,
+                       "an associated type at present cannot have"
+                       " a default value");
       // support for multi-argument interfaces is pending #17008
       if (isym->ifcFormals.length > 1)
-        USR_FATAL_CONT(expr, "associated types at present are not allowed"
+        USR_FATAL_CONT(expr,
+                       "associated types at present are not allowed"
                        " for multi-argument interfaces");
       // replace with a fresh ConstrainedType
       TypeSymbol* ACT = ConstrainedType::buildSym(AT->name, CT_IFC_ASSOC_TYPE);
@@ -126,25 +130,24 @@ DefExpr* InterfaceSymbol::buildDef(const char* name,
 
     } else if (ImplementsStmt* istm = toImplementsStmt(expr)) {
       if (istm->implBody->body.length != 0)
-        USR_FATAL_CONT(istm, "an associated constraint is not allowed"
+        USR_FATAL_CONT(istm,
+                       "an associated constraint is not allowed"
                        " to have a block statement");
       isym->associatedConstraints.push_back(istm->iConstraint);
 
     } else {
       USR_FATAL_CONT(expr,
-        "this statement is illegal in an interface declaration");
+                     "this statement is illegal in an interface declaration");
       USR_PRINT(expr,
-        "only functions, associated types, and associated constraints"
-        " are allowed at this point");
+                "only functions, associated types, and associated constraints"
+                " are allowed at this point");
     }
   }
 
   return new DefExpr(isym);
 }
 
-DefExpr* InterfaceSymbol::buildFormal(const char* name,
-                                      IntentTag intent)
-{
+DefExpr* InterfaceSymbol::buildFormal(const char* name, IntentTag intent) {
   Symbol* formal = NULL;
   if (intent == INTENT_TYPE) {
     formal = ConstrainedType::buildSym(name, CT_IFC_FORMAL);
@@ -154,16 +157,14 @@ DefExpr* InterfaceSymbol::buildFormal(const char* name,
   return new DefExpr(formal);
 }
 
-InterfaceSymbol::InterfaceSymbol(const char* name, BlockStmt* body) :
-  Symbol(E_InterfaceSymbol, name, NULL), ifcFormals(), ifcBody(body)
-{
+InterfaceSymbol::InterfaceSymbol(const char* name, BlockStmt* body)
+  : Symbol(E_InterfaceSymbol, name, NULL), ifcFormals(), ifcBody(body) {
   ifcFormals.parent = this;
   gInterfaceSymbols.add(this);
 }
 
 InterfaceSymbol::~InterfaceSymbol() {
-  for (InterfaceReps* repData: ifcReps)
-    delete repData;
+  for (InterfaceReps* repData : ifcReps) delete repData;
 }
 
 void InterfaceSymbol::verify() {
@@ -178,8 +179,7 @@ void InterfaceSymbol::verify() {
 
 void InterfaceSymbol::accept(AstVisitor* visitor) {
   if (visitor->enterInterfaceSym(this)) {
-    for_alist(formal, ifcFormals)
-      formal->accept(visitor);
+    for_alist(formal, ifcFormals) formal->accept(visitor);
     ifcBody->accept(visitor);
     visitor->exitInterfaceSym(this);
   }
@@ -187,11 +187,10 @@ void InterfaceSymbol::accept(AstVisitor* visitor) {
 
 InterfaceSymbol* InterfaceSymbol::copyInner(SymbolMap* map) {
   if (this->defPoint && !isGlobal(this))
-    USR_FATAL(this,
-      "only module-level interfaces are currently supported");
+    USR_FATAL(this, "only module-level interfaces are currently supported");
   else
-    USR_FATAL(this,
-      "interface declarations in this context are currently unsupported");
+    USR_FATAL(
+      this, "interface declarations in this context are currently unsupported");
 
   return this; //dummy
 }
@@ -207,24 +206,22 @@ void InterfaceSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 // IfcConstraint
 //
 
-IfcConstraint* IfcConstraint::build(InterfaceSymbol* isym,
-                                    CallExpr* actuals) {
+IfcConstraint* IfcConstraint::build(InterfaceSymbol* isym, CallExpr* actuals) {
   IfcConstraint* icon = new IfcConstraint(new SymExpr(isym));
   for_alist(actual, actuals->argList)
     icon->consActuals.insertAtTail(actual->remove());
   return icon;
 }
 
-IfcConstraint* IfcConstraint::build(const char* name,
-                                    CallExpr* actuals) {
+IfcConstraint* IfcConstraint::build(const char* name, CallExpr* actuals) {
   IfcConstraint* icon = new IfcConstraint(new UnresolvedSymExpr(name));
   for_alist(actual, actuals->argList)
     icon->consActuals.insertAtTail(actual->remove());
   return icon;
 }
 
-IfcConstraint::IfcConstraint(Expr* iifc) :
-  Expr(E_IfcConstraint), interfaceExpr(iifc), consActuals() {
+IfcConstraint::IfcConstraint(Expr* iifc)
+  : Expr(E_IfcConstraint), interfaceExpr(iifc), consActuals() {
   consActuals.parent = this;
   gIfcConstraints.add(this);
 }
@@ -240,8 +237,7 @@ void IfcConstraint::verify() {
   Expr::verify(E_IfcConstraint);
   verifyParent(interfaceExpr);
   verifyNotOnList(interfaceExpr);
-  if (normalized)
-    INT_ASSERT(isSymExpr(interfaceExpr));
+  if (normalized) INT_ASSERT(isSymExpr(interfaceExpr));
   INT_ASSERT(consActuals.parent == this);
   INT_ASSERT(!resolved);
 }
@@ -249,8 +245,7 @@ void IfcConstraint::verify() {
 void IfcConstraint::accept(AstVisitor* visitor) {
   if (visitor->enterIfcConstraint(this)) {
     interfaceExpr->accept(visitor);
-    for_alist(actual, consActuals)
-      actual->accept(visitor);
+    for_alist(actual, consActuals) actual->accept(visitor);
     visitor->exitIfcConstraint(this);
   }
 }
@@ -266,9 +261,7 @@ void IfcConstraint::replaceChild(Expr* oldAst, Expr* newAst) {
     INT_FATAL(this, "Unexpected case in IfcConstraint::replaceChild");
 }
 
-Expr* IfcConstraint::getFirstExpr() {
-  return interfaceExpr->getFirstExpr();
-}
+Expr* IfcConstraint::getFirstExpr() { return interfaceExpr->getFirstExpr(); }
 
 Expr* IfcConstraint::getNextExpr(Expr* expr) {
   if (expr == interfaceExpr && !consActuals.empty())
@@ -283,25 +276,25 @@ void IfcConstraint::prettyPrint(std::ostream* o) {
   *o << "(...)";
 }
 
-
 /////////////////////////////////////////////////////////////////////////////
 // ImplementsStmt
 //
 
 Symbol* gDummyWitness = NULL;
 
-ImplementsStmt* ImplementsStmt::build(InterfaceSymbol* isym, CallExpr* actuals,
+ImplementsStmt* ImplementsStmt::build(InterfaceSymbol* isym,
+                                      CallExpr* actuals,
                                       BlockStmt* body) {
- if (body == NULL) body = new BlockStmt();
- IfcConstraint* icon = IfcConstraint::build(isym, actuals);
- return new ImplementsStmt(icon, body);
+  if (body == NULL) body = new BlockStmt();
+  IfcConstraint* icon = IfcConstraint::build(isym, actuals);
+  return new ImplementsStmt(icon, body);
 }
 
-ImplementsStmt* ImplementsStmt::build(const char* name, CallExpr* actuals,
-                                      BlockStmt* body) {
- if (body == NULL) body = new BlockStmt();
- IfcConstraint* icon = IfcConstraint::build(name, actuals);
- return new ImplementsStmt(icon, body);
+ImplementsStmt*
+ImplementsStmt::build(const char* name, CallExpr* actuals, BlockStmt* body) {
+  if (body == NULL) body = new BlockStmt();
+  IfcConstraint* icon = IfcConstraint::build(name, actuals);
+  return new ImplementsStmt(icon, body);
 }
 
 ImplementsStmt::ImplementsStmt(IfcConstraint* con, BlockStmt* body)
@@ -310,12 +303,11 @@ ImplementsStmt::ImplementsStmt(IfcConstraint* con, BlockStmt* body)
 }
 
 ImplementsStmt* ImplementsStmt::copyInner(SymbolMap* map) {
-  if (! witnesses.empty())
-    USR_FATAL(this,
-      "implements statements in this context are currently unsupported");
+  if (!witnesses.empty())
+    USR_FATAL(
+      this, "implements statements in this context are currently unsupported");
 
-  return new ImplementsStmt(COPY_INT(iConstraint),
-                            COPY_INT(implBody));
+  return new ImplementsStmt(COPY_INT(iConstraint), COPY_INT(implBody));
 }
 
 static void verifyWitnesses(ImplementsStmt* istm) {
@@ -348,7 +340,7 @@ void ImplementsStmt::accept(AstVisitor* visitor) {
 
 void ImplementsStmt::replaceChild(Expr* oldAst, Expr* newAst) {
   // CG TODO: update 'witnesses' appropriately if there are any?
-  if (! witnesses.empty())
+  if (!witnesses.empty())
     USR_FATAL(this, "unsupported copying of this implements statement");
 
   if (oldAst == iConstraint)
@@ -359,24 +351,18 @@ void ImplementsStmt::replaceChild(Expr* oldAst, Expr* newAst) {
     INT_FATAL(this, "Unexpected case in ImplementsStmt::replaceChild");
 }
 
-Expr* ImplementsStmt::getFirstExpr() {
-  return iConstraint->getFirstExpr();
-}
+Expr* ImplementsStmt::getFirstExpr() { return iConstraint->getFirstExpr(); }
 
 Expr* ImplementsStmt::getNextExpr(Expr* expr) {
-  if (expr == iConstraint)
-    return implBody;
-  if (expr == implBody)
-    return this;
+  if (expr == iConstraint) return implBody;
+  if (expr == implBody) return this;
 
   INT_FATAL(this, "Unexpected case in ImplementsStmt::getNextExpr");
   return NULL;
 }
 
-
 /////////////////////////////////////////////////////////////////////////////
 // Support for normalize() and scopeResolve()
-
 
 //
 // Change proc cgFun(cgFormal: ?T)
@@ -385,45 +371,48 @@ Expr* ImplementsStmt::getNextExpr(Expr* expr) {
 // where we expect 'T' to be bound by interface constraint(s).
 //
 void introduceConstrainedTypes(FnSymbol* fn) {
-  for_formals(formal, fn)
-{
-   if (BlockStmt* typeExpr = formal->typeExpr) {
-    if (DefExpr* def = toDefExpr(typeExpr->body.tail)) {
-      INT_ASSERT(formal->type == dtUnknown); //fyi
-      SET_LINENO(def);
-      Symbol* queryT = def->sym;
-      // introduce a ConstrainedType
-      TypeSymbol* CT = ConstrainedType::buildSym(queryT->name, CT_CGFUN_FORMAL);
-      fn->interfaceInfo->addConstrainedType(new DefExpr(CT));
+  for_formals(formal, fn) {
+    if (BlockStmt* typeExpr = formal->typeExpr) {
+      if (DefExpr* def = toDefExpr(typeExpr->body.tail)) {
+        INT_ASSERT(formal->type == dtUnknown); //fyi
+        SET_LINENO(def);
+        Symbol* queryT = def->sym;
+        // introduce a ConstrainedType
+        TypeSymbol* CT =
+          ConstrainedType::buildSym(queryT->name, CT_CGFUN_FORMAL);
+        fn->interfaceInfo->addConstrainedType(new DefExpr(CT));
 
-      // replace queryT with CT throughout
-      formal->type = CT->type;
-      for_SymbolSymExprs(se, queryT)
-        se->setSymbol(CT);
+        // replace queryT with CT throughout
+        formal->type = CT->type;
+        for_SymbolSymExprs(se, queryT) se->setSymbol(CT);
 
-      // cleanup
-      def->remove();
-      if (! typeExpr->body.empty())
-        USR_FATAL(typeExpr, "this formal's type query expression"
-          " is currently not supported for constrained generic functions");
-      typeExpr->remove();
+        // cleanup
+        def->remove();
+        if (!typeExpr->body.empty())
+          USR_FATAL(
+            typeExpr,
+            "this formal's type query expression"
+            " is currently not supported for constrained generic functions");
+        typeExpr->remove();
+      } else {
+        std::vector<DefExpr*> defExprs;
+        collectDefExprs(typeExpr, defExprs);
+        if (!defExprs.empty())
+          USR_FATAL(
+            defExprs[0],
+            "this formal's type query expression"
+            " is currently not supported for constrained generic functions");
+      }
     } else {
-      std::vector<DefExpr*> defExprs;
-      collectDefExprs(typeExpr, defExprs);
-      if (! defExprs.empty())
-        USR_FATAL(defExprs[0], "this formal's type query expression"
-          " is currently not supported for constrained generic functions");
+      // No declared type. Make it a ConstrainedType.
+      if (formal->type == dtUnknown || formal->type == dtAny) {
+        const char* ctName = astr(formal->name, "_t");
+        TypeSymbol* CT = ConstrainedType::buildSym(ctName, CT_CGFUN_FORMAL);
+        fn->interfaceInfo->addConstrainedType(new DefExpr(CT));
+        formal->type = CT->type;
+      }
     }
-   } else {
-     // No declared type. Make it a ConstrainedType.
-     if (formal->type == dtUnknown || formal->type == dtAny) {
-       const char* ctName = astr(formal->name, "_t");
-       TypeSymbol* CT = ConstrainedType::buildSym(ctName, CT_CGFUN_FORMAL);
-       fn->interfaceInfo->addConstrainedType(new DefExpr(CT));
-       formal->type = CT->type;
-     }
-   }
-}
+  }
 }
 
 void insertResolutionPoint(Expr* ref, Symbol* sym) {
@@ -437,11 +426,15 @@ void insertResolutionPoint(Expr* ref, Symbol* sym) {
 // to     proc cgFun(cgFormal: t_IFC) where t_IFC implements IFC
 // plus add (DefExpr type t_IFC) to cgFun.constrainedTypes
 //
-TypeSymbol* desugarInterfaceAsType(FnSymbol* parentFn, ArgSymbol* arg,
-                                   Expr* ref, InterfaceSymbol* isym) {
+TypeSymbol* desugarInterfaceAsType(FnSymbol* parentFn,
+                                   ArgSymbol* arg,
+                                   Expr* ref,
+                                   InterfaceSymbol* isym) {
   if (isym->numFormals() != 1) {
-    USR_FATAL_CONT(ref, "cannot use the interface %s"
-                   " as a type because it has multiple formals", isym->name);
+    USR_FATAL_CONT(ref,
+                   "cannot use the interface %s"
+                   " as a type because it has multiple formals",
+                   isym->name);
     USR_PRINT(isym, "the interface %s is declared here", isym->name);
   }
 
@@ -451,8 +444,8 @@ TypeSymbol* desugarInterfaceAsType(FnSymbol* parentFn, ArgSymbol* arg,
   SET_LINENO(ref);
 
   // introduce a ConstrainedType
-  TypeSymbol* CT = ConstrainedType::buildSym(astr("t_", isym->name),
-                                             CT_CGFUN_FORMAL);
+  TypeSymbol* CT =
+    ConstrainedType::buildSym(astr("t_", isym->name), CT_CGFUN_FORMAL);
   ifcInfo->addConstrainedType(new DefExpr(CT));
 
   // add an interface constraint
@@ -463,7 +456,8 @@ TypeSymbol* desugarInterfaceAsType(FnSymbol* parentFn, ArgSymbol* arg,
   return CT;
 }
 
-Type* desugarInterfaceAsType(ArgSymbol* arg, SymExpr* se,
+Type* desugarInterfaceAsType(ArgSymbol* arg,
+                             SymExpr* se,
                              InterfaceSymbol* isym) {
   FnSymbol* parentFn = toFnSymbol(arg->defPoint->parentSymbol);
   bool wasConstrainedGeneric = parentFn->isConstrainedGeneric();
@@ -483,7 +477,6 @@ Type* desugarInterfaceAsType(ArgSymbol* arg, SymExpr* se,
 
   return CT->type;
 }
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Wrapper Function for ImplementsStmt
@@ -512,8 +505,7 @@ IstmAndSuccess implementsStmtForWrapperFn(FnSymbol* wrapFn) {
   // wrapFn body can contain computations of the actuals of its implements
   // stmt, due to normalization and resolution. Skip those.
   for_alist(expr, wrapFn->body->body) {
-    if ((result.istm = toImplementsStmt(expr)))
-      return result; // found it
+    if ((result.istm = toImplementsStmt(expr))) return result; // found it
 
     if (CallExpr* call = toCallExpr(expr)) {
       if (call->isPrimitive(PRIM_ERROR)) {
@@ -533,7 +525,8 @@ FnSymbol* wrapperFnForImplementsStmt(ImplementsStmt* istm) {
 }
 
 // Verify that the above functions work correctly.
-static void verifyWrapImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
+static void verifyWrapImplementsStmt(FnSymbol* wrapFn,
+                                     ImplementsStmt* istm,
                                      bool isSuccess) {
   InterfaceSymbol* isym = istm->ifcSymbol();
 
@@ -556,7 +549,7 @@ void markImplStmtWrapFnAsFailure(FnSymbol* wrapFn) {
 FnSymbol* wrapOneImplementsStatement(ImplementsStmt* istm) {
   SET_LINENO(istm);
   if (isUnresolvedSymExpr(istm->iConstraint->interfaceExpr)) {
-    INT_ASSERT(! normalized); // will report "undeclared" error later
+    INT_ASSERT(!normalized); // will report "undeclared" error later
     return NULL;
   }
   InterfaceSymbol* isym = istm->ifcSymbol();

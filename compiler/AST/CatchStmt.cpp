@@ -46,7 +46,10 @@ CatchStmt* CatchStmt::build(BlockStmt* body) {
   return new CatchStmt(NULL, NULL, body);
 }
 
-CatchStmt::CatchStmt(const char* name, Expr* type, BlockStmt* body, bool createdErr,
+CatchStmt::CatchStmt(const char* name,
+                     Expr* type,
+                     BlockStmt* body,
+                     bool createdErr,
                      CatchallState wasCatchall)
   : Stmt(E_CatchStmt) {
 
@@ -59,16 +62,10 @@ CatchStmt::CatchStmt(const char* name, Expr* type, BlockStmt* body, bool created
   gCatchStmts.add(this);
 }
 
-const char* CatchStmt::name() const {
-  return _name;
-}
-Expr* CatchStmt::type() const {
-  return _type;
-}
+const char* CatchStmt::name() const { return _name; }
+Expr* CatchStmt::type() const { return _type; }
 
-BlockStmt* CatchStmt::body() const {
-  return _body;
-}
+BlockStmt* CatchStmt::body() const { return _body; }
 
 BlockStmt* CatchStmt::bodyWithoutTest() {
   if (this->isCatchall()) {
@@ -105,43 +102,41 @@ BlockStmt* CatchStmt::bodyWithoutTest() {
 
 bool CatchStmt::computeIsCatchall() {
   auto markCatchall = [this](bool isCatchall) {
-    this->_wasCatchall = isCatchall ? CatchallState::CATCHALL : CatchallState::NOT_CATCHALL;
+    this->_wasCatchall =
+      isCatchall ? CatchallState::CATCHALL : CatchallState::NOT_CATCHALL;
     return isCatchall;
   };
 
-  if (_name == NULL)
-    return markCatchall(true);
+  if (_name == NULL) return markCatchall(true);
 
-  if (_type == NULL)
-    return markCatchall(true);
+  if (_type == NULL) return markCatchall(true);
 
   if (SymExpr* typeSe = toSymExpr(type()))
     if (canonicalClassType(typeSe->symbol()->type) == dtError)
       return markCatchall(true);
 
   if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(type()))
-    if (urse->unresolved == dtError->symbol->name)
-      return markCatchall(true);
+    if (urse->unresolved == dtError->symbol->name) return markCatchall(true);
 
   return markCatchall(false);
 }
 
 bool CatchStmt::isCatchall() {
-  if (_wasCatchall == CatchallState::NOT_YET_COMPUTED) return computeIsCatchall();
+  if (_wasCatchall == CatchallState::NOT_YET_COMPUTED)
+    return computeIsCatchall();
   return _wasCatchall == CatchallState::CATCHALL;
 }
 
 void CatchStmt::accept(AstVisitor* visitor) {
   if (visitor->enterCatchStmt(this)) {
-    for_alist(node, _body->body) {
-      node->accept(visitor);
-    }
+    for_alist(node, _body->body) { node->accept(visitor); }
     visitor->exitCatchStmt(this);
   }
 }
 
 CatchStmt* CatchStmt::copyInner(SymbolMap* map) {
-  return new CatchStmt(_name, COPY_INT(_type), COPY_INT(_body), _createdErr, _wasCatchall);
+  return new CatchStmt(
+    _name, COPY_INT(_type), COPY_INT(_body), _createdErr, _wasCatchall);
 }
 
 void CatchStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
@@ -178,8 +173,7 @@ void CatchStmt::verify() {
   }
 
   if (_type) {
-    if (_type->parentExpr != this ||
-        _type->parentSymbol != this->parentSymbol)
+    if (_type->parentExpr != this || _type->parentSymbol != this->parentSymbol)
       INT_FATAL(this, "CatchStmt::verify. _type has bad parent");
   }
 
@@ -201,8 +195,7 @@ void CatchStmt::createErrSym() {
   }
 }
 
-void CatchStmt::cleanup()
-{
+void CatchStmt::cleanup() {
   /*
    Introduce the variable representing the catch variable and define it
    in a way that will:
@@ -244,21 +237,18 @@ void CatchStmt::cleanup()
   INT_ASSERT(typeExpr);
 
   const char* name = _name;
-  if (name == NULL)
-    name = astr("chpl_anon_error");
+  if (name == NULL) name = astr("chpl_anon_error");
 
   VarSymbol* casted = newTemp();
 
-  Expr* unmNilType = new CallExpr(PRIM_TO_NILABLE_CLASS,
-                                  new CallExpr(PRIM_TO_UNMANAGED_CLASS,
-                                               typeExpr));
+  Expr* unmNilType = new CallExpr(
+    PRIM_TO_NILABLE_CLASS, new CallExpr(PRIM_TO_UNMANAGED_CLASS, typeExpr));
   Expr* castedCurrent = NULL;
   if (catchall) {
     castedCurrent = new CallExpr(PRIM_CURRENT_ERROR);
   } else {
-    castedCurrent = new CallExpr(PRIM_DYNAMIC_CAST,
-                                 unmNilType,
-                                 new CallExpr(PRIM_CURRENT_ERROR));
+    castedCurrent = new CallExpr(
+      PRIM_DYNAMIC_CAST, unmNilType, new CallExpr(PRIM_CURRENT_ERROR));
   }
 
   DefExpr* castedDef = new DefExpr(casted, castedCurrent);
@@ -285,7 +275,8 @@ void CatchStmt::cleanup()
 
   if (catchall) {
     Expr* nonNilC = new CallExpr(PRIM_TO_NON_NILABLE_CLASS, casted);
-    Expr* toOwned = new CallExpr(PRIM_NEW, new CallExpr(new SymExpr(dtOwned->symbol), nonNilC));
+    Expr* toOwned = new CallExpr(
+      PRIM_NEW, new CallExpr(new SymExpr(dtOwned->symbol), nonNilC));
 
     errorDef->init = toOwned;
 
@@ -293,7 +284,7 @@ void CatchStmt::cleanup()
     newBody->insertAtTail(oldBody);
 
   } else {
-    CallExpr*  errorExists = new CallExpr(PRIM_NOTEQUAL, casted, gNil);
+    CallExpr* errorExists = new CallExpr(PRIM_NOTEQUAL, casted, gNil);
 
     BlockStmt* ifBody = new BlockStmt();
     BlockStmt* elseBody = new BlockStmt();
@@ -301,7 +292,8 @@ void CatchStmt::cleanup()
     castedDef->insertAfter(cond);
 
     Expr* nonNilC = new CallExpr(PRIM_TO_NON_NILABLE_CLASS, casted);
-    Expr* toOwned = new CallExpr(PRIM_NEW, new CallExpr(new SymExpr(dtOwned->symbol), nonNilC));
+    Expr* toOwned = new CallExpr(
+      PRIM_NEW, new CallExpr(new SymExpr(dtOwned->symbol), nonNilC));
 
     errorDef->init = toOwned;
 
@@ -313,19 +305,16 @@ void CatchStmt::cleanup()
 
     TryStmt* inTry = NULL;
     for (Expr* cur = this->parentExpr; cur != NULL; cur = cur->parentExpr) {
-      if (TryStmt* t = toTryStmt(cur))
-        inTry = t;
+      if (TryStmt* t = toTryStmt(cur)) inTry = t;
     }
 
     INT_ASSERT(inTry);
-    if (inTry->tryBang())
-      elseBody->insertAtTail(new CallExpr(PRIM_RT_ERROR));
+    if (inTry->tryBang()) elseBody->insertAtTail(new CallExpr(PRIM_RT_ERROR));
   }
 
   // If we in the future support `throw;` to throw the currently caught
   // error, we'd update such a throw here to throw 'error'.
 }
-
 
 GenRet CatchStmt::codegen() {
   INT_FATAL("CatchStmt should be removed before codegen");

@@ -21,249 +21,150 @@
 #include "AstLogger.h"
 #include "stlUtil.h"
 
-bool AstLogger::enterThunk(TemporaryConversionThunk* node) {
-  return true;
-}
+bool AstLogger::enterThunk(TemporaryConversionThunk* node) { return true; }
 
-void AstLogger::exitThunk(TemporaryConversionThunk* node) {
-}
+void AstLogger::exitThunk(TemporaryConversionThunk* node) {}
 
-bool AstLogger::enterAggrType(AggregateType* node) {
-  return true;
-}
+bool AstLogger::enterAggrType(AggregateType* node) { return true; }
 
-void AstLogger::exitAggrType(AggregateType* node) {
-}
+void AstLogger::exitAggrType(AggregateType* node) {}
 
 bool AstLogger::enterDecoratedClassType(DecoratedClassType* node) {
   return true;
 }
 
-void AstLogger::exitDecoratedClassType(DecoratedClassType* node) {
-}
+void AstLogger::exitDecoratedClassType(DecoratedClassType* node) {}
 
+bool AstLogger::enterEnumType(EnumType* node) { return true; }
 
-bool AstLogger::enterEnumType(EnumType* node) {
-  return true;
-}
+void AstLogger::exitEnumType(EnumType* node) {}
 
-void AstLogger::exitEnumType(EnumType* node) {
-}
+void AstLogger::visitPrimType(PrimitiveType* node) {}
 
-void AstLogger::visitPrimType(PrimitiveType* node) {
-}
+void AstLogger::visitFunctionType(FunctionType* node) {}
 
-void AstLogger::visitFunctionType(FunctionType* node) {
-}
+void AstLogger::visitConstrainedType(ConstrainedType* node) {}
 
-void AstLogger::visitConstrainedType(ConstrainedType* node) {
-}
+bool AstLogger::enterArgSym(ArgSymbol* node) { return true; }
 
-bool AstLogger::enterArgSym(ArgSymbol* node) {
-  return true;
-}
+void AstLogger::exitArgSym(ArgSymbol* node) {}
 
-void AstLogger::exitArgSym(ArgSymbol* node) {
-}
+void AstLogger::visitEnumSym(EnumSymbol* node) {}
 
-void AstLogger::visitEnumSym(EnumSymbol* node) {
-}
+bool AstLogger::enterFnSym(FnSymbol* node) { return true; }
 
-bool AstLogger::enterFnSym(FnSymbol* node) {
-  return true;
-}
+void AstLogger::exitFnSym(FnSymbol* node) {}
 
-void AstLogger::exitFnSym(FnSymbol* node) {
-}
+bool AstLogger::enterInterfaceSym(InterfaceSymbol* node) { return true; }
 
-bool AstLogger::enterInterfaceSym(InterfaceSymbol* node) {
-  return true;
-}
+void AstLogger::exitInterfaceSym(InterfaceSymbol* node) {}
 
-void AstLogger::exitInterfaceSym(InterfaceSymbol* node) {
-}
+void AstLogger::visitLabelSym(LabelSymbol* node) {}
 
-void AstLogger::visitLabelSym(LabelSymbol* node) {
-}
+void AstLogger::visitTemporaryConversionSymbol(
+  TemporaryConversionSymbol* node) {}
 
-void
-AstLogger::visitTemporaryConversionSymbol(TemporaryConversionSymbol* node) {
-}
+bool AstLogger::enterModSym(ModuleSymbol* node) { return true; }
 
-bool AstLogger::enterModSym(ModuleSymbol* node) {
-  return true;
-}
+void AstLogger::exitModSym(ModuleSymbol* node) {}
 
-void AstLogger::exitModSym(ModuleSymbol* node) {
-}
+bool AstLogger::enterTypeSym(TypeSymbol* node) { return true; }
 
-bool AstLogger::enterTypeSym(TypeSymbol* node) {
-  return true;
-}
+void AstLogger::exitTypeSym(TypeSymbol* node) {}
 
-void AstLogger::exitTypeSym(TypeSymbol* node) {
-}
+void AstLogger::visitVarSym(VarSymbol* node) {}
 
-void AstLogger::visitVarSym(VarSymbol* node) {
-}
+bool AstLogger::enterCallExpr(CallExpr* node) { return true; }
 
-bool AstLogger::enterCallExpr(CallExpr* node) {
-  return true;
-}
+void AstLogger::exitCallExpr(CallExpr* node) {}
 
-void AstLogger::exitCallExpr(CallExpr* node) {
-}
+bool AstLogger::enterContextCallExpr(ContextCallExpr* node) { return true; }
 
-bool AstLogger::enterContextCallExpr(ContextCallExpr* node) {
-  return true;
-}
+void AstLogger::exitContextCallExpr(ContextCallExpr* node) {}
 
-void AstLogger::exitContextCallExpr(ContextCallExpr* node) {
-}
+bool AstLogger::enterDefExpr(DefExpr* node) { return true; }
 
-bool AstLogger::enterDefExpr(DefExpr* node) {
-  return true;
-}
+void AstLogger::exitDefExpr(DefExpr* node) {}
 
-void AstLogger::exitDefExpr(DefExpr* node) {
-}
+bool AstLogger::enterNamedExpr(NamedExpr* node) { return true; }
 
-bool AstLogger::enterNamedExpr(NamedExpr* node) {
-  return true;
-}
+void AstLogger::exitNamedExpr(NamedExpr* node) {}
 
-void AstLogger::exitNamedExpr(NamedExpr* node) {
-}
+bool AstLogger::enterIfcConstraint(IfcConstraint* node) { return true; }
 
-bool AstLogger::enterIfcConstraint(IfcConstraint* node) {
-  return true;
-}
+void AstLogger::exitIfcConstraint(IfcConstraint* node) {}
 
-void AstLogger::exitIfcConstraint(IfcConstraint* node) {
-}
+bool AstLogger::enterIfExpr(IfExpr* node) { return true; }
 
-bool AstLogger::enterIfExpr(IfExpr* node) {
-  return true;
-}
+void AstLogger::exitIfExpr(IfExpr* node) {}
 
-void AstLogger::exitIfExpr(IfExpr* node) {
-}
+void AstLogger::visitSymExpr(SymExpr* node) {}
 
-void AstLogger::visitSymExpr(SymExpr* node) {
-}
+void AstLogger::visitUsymExpr(UnresolvedSymExpr* node) {}
 
-void AstLogger::visitUsymExpr(UnresolvedSymExpr* node) {
-}
+void AstLogger::visitUseStmt(UseStmt* node) {}
 
-void AstLogger::visitUseStmt(UseStmt* node) {
-}
+void AstLogger::visitImportStmt(ImportStmt* node) {}
 
-void AstLogger::visitImportStmt(ImportStmt* node) {
-}
+bool AstLogger::enterBlockStmt(BlockStmt* node) { return true; }
 
-bool AstLogger::enterBlockStmt(BlockStmt* node) {
-  return true;
-}
+void AstLogger::exitBlockStmt(BlockStmt* node) {}
 
-void AstLogger::exitBlockStmt(BlockStmt* node) {
-}
+bool AstLogger::enterForallStmt(ForallStmt* node) { return true; }
 
-bool AstLogger::enterForallStmt(ForallStmt* node) {
-  return true;
-}
+void AstLogger::exitForallStmt(ForallStmt* node) {}
 
-void AstLogger::exitForallStmt(ForallStmt* node) {
-}
+bool AstLogger::enterWhileDoStmt(WhileDoStmt* node) { return true; }
 
-bool AstLogger::enterWhileDoStmt(WhileDoStmt* node) {
-  return true;
-}
+void AstLogger::exitWhileDoStmt(WhileDoStmt* node) {}
 
-void AstLogger::exitWhileDoStmt(WhileDoStmt* node) {
-}
+bool AstLogger::enterDoWhileStmt(DoWhileStmt* node) { return true; }
 
-bool AstLogger::enterDoWhileStmt(DoWhileStmt* node) {
-  return true;
-}
+void AstLogger::exitDoWhileStmt(DoWhileStmt* node) {}
 
-void AstLogger::exitDoWhileStmt(DoWhileStmt* node) {
-}
+bool AstLogger::enterCForLoop(CForLoop* node) { return true; }
 
-bool AstLogger::enterCForLoop(CForLoop* node) {
-  return true;
-}
+void AstLogger::exitCForLoop(CForLoop* node) {}
 
-void AstLogger::exitCForLoop(CForLoop* node) {
-}
+bool AstLogger::enterForLoop(ForLoop* node) { return true; }
 
-bool AstLogger::enterForLoop(ForLoop* node) {
-  return true;
-}
+void AstLogger::exitForLoop(ForLoop* node) {}
 
-void AstLogger::exitForLoop(ForLoop* node) {
-}
+bool AstLogger::enterParamForLoop(ParamForLoop* node) { return true; }
 
-bool AstLogger::enterParamForLoop(ParamForLoop* node) {
-  return true;
-}
+void AstLogger::exitParamForLoop(ParamForLoop* node) {}
 
-void AstLogger::exitParamForLoop(ParamForLoop* node) {
-}
+bool AstLogger::enterCondStmt(CondStmt* node) { return true; }
 
-bool AstLogger::enterCondStmt(CondStmt* node) {
-  return true;
-}
+void AstLogger::exitCondStmt(CondStmt* node) {}
 
-void AstLogger::exitCondStmt(CondStmt* node) {
-}
+void AstLogger::visitEblockStmt(ExternBlockStmt* node) {}
 
-void AstLogger::visitEblockStmt(ExternBlockStmt* node) {
-}
+bool AstLogger::enterGotoStmt(GotoStmt* node) { return true; }
 
-bool AstLogger::enterGotoStmt(GotoStmt* node) {
-  return true;
-}
+void AstLogger::exitGotoStmt(GotoStmt* node) {}
 
-void AstLogger::exitGotoStmt(GotoStmt* node) {
-}
+bool AstLogger::enterForwardingStmt(ForwardingStmt* node) { return true; }
 
-bool AstLogger::enterForwardingStmt(ForwardingStmt* node) {
-  return true;
-}
+void AstLogger::exitForwardingStmt(ForwardingStmt* node) {}
 
-void AstLogger::exitForwardingStmt(ForwardingStmt* node) {
-}
+bool AstLogger::enterDeferStmt(DeferStmt* node) { return true; }
 
-bool AstLogger::enterDeferStmt(DeferStmt* node) {
-  return true;
-}
+void AstLogger::exitDeferStmt(DeferStmt* node) {}
 
-void AstLogger::exitDeferStmt(DeferStmt* node) {
-}
+bool AstLogger::enterTryStmt(TryStmt* node) { return true; }
 
-bool AstLogger::enterTryStmt(TryStmt* node) {
-  return true;
-}
+void AstLogger::exitTryStmt(TryStmt* node) {}
 
-void AstLogger::exitTryStmt(TryStmt* node) {
-}
+bool AstLogger::enterCatchStmt(CatchStmt* node) { return true; }
 
-bool AstLogger::enterCatchStmt(CatchStmt* node) {
-  return true;
-}
+void AstLogger::exitCatchStmt(CatchStmt* node) {}
 
-void AstLogger::exitCatchStmt(CatchStmt* node) {
-}
+bool AstLogger::enterImplementsStmt(ImplementsStmt* node) { return true; }
 
-bool AstLogger::enterImplementsStmt(ImplementsStmt* node) {
-  return true;
-}
+void AstLogger::exitImplementsStmt(ImplementsStmt* node) {}
 
-void AstLogger::exitImplementsStmt(ImplementsStmt* node) {
-}
-
-
-bool AstLogger::outputVector(FILE* mFP, std::vector<const char *> vec) {
+bool AstLogger::outputVector(FILE* mFP, std::vector<const char*> vec) {
   bool first = true;
   for_vector(const char, str, vec) {
     if (first) {
@@ -280,7 +181,8 @@ void AstLogger::outputRenames(FILE* mFP,
                               std::map<const char*, const char*> renames,
                               bool first) {
   for (std::map<const char*, const char*>::iterator it = renames.begin();
-       it != renames.end(); ++it) {
+       it != renames.end();
+       ++it) {
     if (first) {
       first = false;
     } else {

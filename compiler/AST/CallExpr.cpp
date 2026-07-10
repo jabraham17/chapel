@@ -36,13 +36,14 @@ CallExpr::CallExpr(BaseAST* base,
                    BaseAST* arg2,
                    BaseAST* arg3,
                    BaseAST* arg4,
-                   BaseAST* arg5) : Expr(E_CallExpr) {
-  primitive  = NULL;
-  baseExpr   = NULL;
+                   BaseAST* arg5)
+  : Expr(E_CallExpr) {
+  primitive = NULL;
+  baseExpr = NULL;
   partialTag = false;
-  methodTag  = false;
-  square     = false;
-  tryTag     = TRY_TAG_NONE;
+  methodTag = false;
+  square = false;
+  tryTag = TRY_TAG_NONE;
 
   if (Symbol* b = toSymbol(base)) {
     baseExpr = new SymExpr(b);
@@ -63,19 +64,19 @@ CallExpr::CallExpr(BaseAST* base,
   gCallExprs.add(this);
 }
 
-
 CallExpr::CallExpr(PrimitiveOp* prim,
-                   BaseAST*     arg1,
-                   BaseAST*     arg2,
-                   BaseAST*     arg3,
-                   BaseAST*     arg4,
-                   BaseAST*     arg5) : Expr(E_CallExpr) {
-  primitive  = prim;
-  baseExpr   = NULL;
+                   BaseAST* arg1,
+                   BaseAST* arg2,
+                   BaseAST* arg3,
+                   BaseAST* arg4,
+                   BaseAST* arg5)
+  : Expr(E_CallExpr) {
+  primitive = prim;
+  baseExpr = NULL;
   partialTag = false;
-  methodTag  = false;
-  square     = false;
-  tryTag     = TRY_TAG_NONE;
+  methodTag = false;
+  square = false;
+  tryTag = TRY_TAG_NONE;
 
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
@@ -89,17 +90,18 @@ CallExpr::CallExpr(PrimitiveOp* prim,
 }
 
 CallExpr::CallExpr(PrimitiveTag prim,
-                   BaseAST*     arg1,
-                   BaseAST*     arg2,
-                   BaseAST*     arg3,
-                   BaseAST*     arg4,
-                   BaseAST*     arg5) : Expr(E_CallExpr) {
-  primitive  = primitives[prim];
-  baseExpr   = NULL;
+                   BaseAST* arg1,
+                   BaseAST* arg2,
+                   BaseAST* arg3,
+                   BaseAST* arg4,
+                   BaseAST* arg5)
+  : Expr(E_CallExpr) {
+  primitive = primitives[prim];
+  baseExpr = NULL;
   partialTag = false;
-  methodTag  = false;
-  square     = false;
-  tryTag     = TRY_TAG_NONE;
+  methodTag = false;
+  square = false;
+  tryTag = TRY_TAG_NONE;
 
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
@@ -113,17 +115,18 @@ CallExpr::CallExpr(PrimitiveTag prim,
 }
 
 CallExpr::CallExpr(const char* name,
-                   BaseAST*    arg1,
-                   BaseAST*    arg2,
-                   BaseAST*    arg3,
-                   BaseAST*    arg4,
-                   BaseAST*    arg5) : Expr(E_CallExpr) {
-  primitive  = NULL;
-  baseExpr   = new UnresolvedSymExpr(name);
+                   BaseAST* arg1,
+                   BaseAST* arg2,
+                   BaseAST* arg3,
+                   BaseAST* arg4,
+                   BaseAST* arg5)
+  : Expr(E_CallExpr) {
+  primitive = NULL;
+  baseExpr = new UnresolvedSymExpr(name);
   partialTag = false;
-  methodTag  = false;
-  square     = false;
-  tryTag     = TRY_TAG_NONE;
+  methodTag = false;
+  square = false;
+  tryTag = TRY_TAG_NONE;
 
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
@@ -173,7 +176,7 @@ Expr* CallExpr::getNextExpr(Expr* expr) {
 }
 
 void CallExpr::verify() {
-  int fieldIndex       = 1;
+  int fieldIndex = 1;
 
   // If the methodToken is present, it is usually in slot 1
   int methodTokenIndex = 1;
@@ -220,30 +223,29 @@ void CallExpr::verify() {
     INT_ASSERT(baseExpr == NULL);
 
     switch (primitive->tag) {
-    case PRIM_BLOCK_PARAM_LOOP:
-    case PRIM_BLOCK_WHILEDO_LOOP:
-    case PRIM_BLOCK_DOWHILE_LOOP:
-    case PRIM_BLOCK_FOR_LOOP:
-    case PRIM_BLOCK_BEGIN:
-    case PRIM_BLOCK_COBEGIN:
-    case PRIM_BLOCK_COFORALL:
-    case PRIM_BLOCK_ON:
-    case PRIM_BLOCK_ELIDED_ON:
-    case PRIM_BLOCK_BEGIN_ON:
-    case PRIM_BLOCK_COBEGIN_ON:
-    case PRIM_BLOCK_COFORALL_ON:
-    case PRIM_BLOCK_LOCAL:
-      if (isBlockStmt(parentExpr) == false) {
-        INT_FATAL(this, "blockInfo-type CallExpr not in a BlockStmt");
-      }
-      break;
+      case PRIM_BLOCK_PARAM_LOOP:
+      case PRIM_BLOCK_WHILEDO_LOOP:
+      case PRIM_BLOCK_DOWHILE_LOOP:
+      case PRIM_BLOCK_FOR_LOOP:
+      case PRIM_BLOCK_BEGIN:
+      case PRIM_BLOCK_COBEGIN:
+      case PRIM_BLOCK_COFORALL:
+      case PRIM_BLOCK_ON:
+      case PRIM_BLOCK_ELIDED_ON:
+      case PRIM_BLOCK_BEGIN_ON:
+      case PRIM_BLOCK_COBEGIN_ON:
+      case PRIM_BLOCK_COFORALL_ON:
+      case PRIM_BLOCK_LOCAL:
+        if (isBlockStmt(parentExpr) == false) {
+          INT_FATAL(this, "blockInfo-type CallExpr not in a BlockStmt");
+        }
+        break;
 
-    case PRIM_BLOCK_UNLOCAL:
-      INT_FATAL("PRIM_BLOCK_UNLOCAL between passes");
-      break;
+      case PRIM_BLOCK_UNLOCAL:
+        INT_FATAL("PRIM_BLOCK_UNLOCAL between passes");
+        break;
 
-    default:
-      break; // do nothing
+      default: break; // do nothing
     }
   } else if (CallExpr* subCall = toCallExpr(baseExpr)) {
     // Confirm that this is a partial call, but only if the call is not
@@ -267,19 +269,16 @@ CallExpr* CallExpr::copyInner(SymbolMap* map) {
     _this = new CallExpr(COPY_INT(baseExpr));
   }
 
-  for_actuals(expr, this) {
-    _this->insertAtTail(COPY_INT(expr));
-  }
+  for_actuals(expr, this) { _this->insertAtTail(COPY_INT(expr)); }
 
-  _this->primitive  = primitive;
+  _this->primitive = primitive;
   _this->partialTag = partialTag;
-  _this->methodTag  = methodTag;
-  _this->square     = square;
-  _this->tryTag     = tryTag;
+  _this->methodTag = methodTag;
+  _this->square = square;
+  _this->tryTag = tryTag;
 
   return _this;
 }
-
 
 void CallExpr::replaceChild(Expr* oldAst, Expr* newAst) {
   if (oldAst == baseExpr) {
@@ -289,7 +288,6 @@ void CallExpr::replaceChild(Expr* oldAst, Expr* newAst) {
     INT_FATAL(this, "Unexpected case in CallExpr::replaceChild");
   }
 }
-
 
 void CallExpr::insertAtHead(BaseAST* ast) {
   Expr* toInsert = NULL;
@@ -305,7 +303,6 @@ void CallExpr::insertAtHead(BaseAST* ast) {
 
   parent_insert_help(this, toInsert);
 }
-
 
 void CallExpr::insertAtTail(BaseAST* ast) {
   Expr* toInsert = NULL;
@@ -326,14 +323,14 @@ void CallExpr::setUnresolvedFunction(const char* name) {
   // Currently a PRIM_OP
   if (primitive != NULL) {
     primitive = NULL;
-    baseExpr  = new UnresolvedSymExpr(astr(name));
+    baseExpr = new UnresolvedSymExpr(astr(name));
 
     parent_insert_help(this, baseExpr);
 
   } else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(baseExpr)) {
     use->unresolved = astr(name);
 
-  } else if (SymExpr*           se  = toSymExpr(baseExpr)) {
+  } else if (SymExpr* se = toSymExpr(baseExpr)) {
     se->replace(new UnresolvedSymExpr(name));
 
   } else {
@@ -345,7 +342,7 @@ void CallExpr::setResolvedFunction(FnSymbol* fn) {
   // Currently a PRIM_OP
   if (primitive != NULL) {
     primitive = NULL;
-    baseExpr  = new SymExpr(fn);
+    baseExpr = new SymExpr(fn);
 
     parent_insert_help(this, baseExpr);
 
@@ -375,7 +372,7 @@ FnSymbol* CallExpr::resolvedOrVirtualFunction() const {
     if (isPrimitive(PRIM_VIRTUAL_METHOD_CALL) == true) {
       SymExpr* arg1 = toSymExpr(get(1));
 
-     retval = toFnSymbol(arg1->symbol());
+      retval = toFnSymbol(arg1->symbol());
     }
   }
 
@@ -389,7 +386,7 @@ bool CallExpr::isNamed(const char* name) const {
     retval = (strcmp(base->symbol()->name, name) == 0) ? true : false;
 
   } else if (UnresolvedSymExpr* base = toUnresolvedSymExpr(baseExpr)) {
-    retval = (strcmp(base->unresolved,     name) == 0) ? true : false;
+    retval = (strcmp(base->unresolved, name) == 0) ? true : false;
 
   } else {
     retval = false;
@@ -406,7 +403,7 @@ bool CallExpr::isNamedAstr(const char* name) const {
     retval = (base->symbol()->name == name) ? true : false;
 
   } else if (UnresolvedSymExpr* base = toUnresolvedSymExpr(baseExpr)) {
-    retval = (base->unresolved     == name) ? true : false;
+    retval = (base->unresolved == name) ? true : false;
 
   } else {
     retval = false;
@@ -414,7 +411,6 @@ bool CallExpr::isNamedAstr(const char* name) const {
 
   return retval;
 }
-
 
 FnSymbol* CallExpr::findFnSymbol() {
   FnSymbol* retval = NULL;
@@ -430,9 +426,7 @@ FnSymbol* CallExpr::findFnSymbol() {
   return retval;
 }
 
-bool CallExpr::isCast(void) {
-  return isNamedAstr(astrScolon);
-}
+bool CallExpr::isCast(void) { return isNamedAstr(astrScolon); }
 
 Expr* CallExpr::castFrom(void) {
   INT_ASSERT(isCast());
@@ -458,12 +452,13 @@ QualifiedType CallExpr::qualType(void) {
     retval = primitive->returnInfo(this);
 
   } else if (isResolved() ||
-             (se && isFunctionType(se->symbol()->getValType()) && !se->symbol()->hasFlag(FLAG_TYPE_VARIABLE))) {
+             (se && isFunctionType(se->symbol()->getValType()) &&
+              !se->symbol()->hasFlag(FLAG_TYPE_VARIABLE))) {
     auto ft = toFunctionType(se->symbol()->getValType());
     auto fn = resolvedFunction();
     INT_ASSERT(fn || ft);
 
-    auto q  = QUAL_UNKNOWN;
+    auto q = QUAL_UNKNOWN;
     auto retType = fn ? fn->retType : ft->returnType();
     auto retTag = fn ? fn->retTag : ft->returnIntent();
 
@@ -507,22 +502,22 @@ QualifiedType CallExpr::qualType(void) {
 }
 
 void CallExpr::prettyPrint(std::ostream* o) {
-  bool array   = false;
+  bool array = false;
   bool unusual = false;
 
   if (FnSymbol* fn = theFnSymbol()) {
-    if      (fn->hasFlag(FLAG_BEGIN_BLOCK) == true) {
+    if (fn->hasFlag(FLAG_BEGIN_BLOCK) == true) {
       *o << "begin";
     }
 
-    else if (fn->hasFlag(FLAG_ON_BLOCK)    == true) {
+    else if (fn->hasFlag(FLAG_ON_BLOCK) == true) {
       *o << "on";
     }
   }
 
   if (baseExpr != NULL) {
-    if (UnresolvedSymExpr *expr = toUnresolvedSymExpr(baseExpr)) {
-      if (strcmp(expr->unresolved, "*") == 0){
+    if (UnresolvedSymExpr* expr = toUnresolvedSymExpr(baseExpr)) {
+      if (strcmp(expr->unresolved, "*") == 0) {
         unusual = true;
         argList.first()->prettyPrint(o);
         *o << "*(";
@@ -549,27 +544,24 @@ void CallExpr::prettyPrint(std::ostream* o) {
           expr->prettyPrint(o);
         }
 
-      } else if (strcmp(expr->unresolved,
-                        "chpl__buildArrayRuntimeType") == 0) {
+      } else if (strcmp(expr->unresolved, "chpl__buildArrayRuntimeType") == 0) {
         *o << "[";
         array = true;
 
-      } else if (strcmp(expr->unresolved,
-                        "chpl__buildDomainRuntimeType") == 0) {
+      } else if (strcmp(expr->unresolved, "chpl__buildDomainRuntimeType") ==
+                 0) {
         *o << "domain(";
         argList.last()->prettyPrint(o);
         *o << ")";
         unusual = true;
 
-      } else if (strcmp(expr->unresolved,
-                        "_build_tuple") != 0) {
+      } else if (strcmp(expr->unresolved, "_build_tuple") != 0) {
         baseExpr->prettyPrint(o);
       }
 
     } else {
       baseExpr->prettyPrint(o);
     }
-
   }
 
   if (!array && !unusual) {
@@ -604,23 +596,20 @@ void CallExpr::accept(AstVisitor* visitor) {
       baseExpr->accept(visitor);
     }
 
-    for_alist(next_ast, argList) {
-      next_ast->accept(visitor);
-    }
+    for_alist(next_ast, argList) { next_ast->accept(visitor); }
 
     visitor->exitCallExpr(this);
   }
 }
 
 bool CallExpr::isRefExternStarTuple(Symbol* formal, Expr* actual) const {
-  Symbol* formalSym  = formal->type->symbol;
-  Symbol* formalVal  = formalSym->getValType()->symbol;
+  Symbol* formalSym = formal->type->symbol;
+  Symbol* formalVal = formalSym->getValType()->symbol;
 
-  bool  retval       = false;
+  bool retval = false;
 
-  if (formal->isRef()                     == true &&
-      formalVal->hasFlag(FLAG_STAR_TUPLE) == true &&
-      actual->isRef()                     == true) {
+  if (formal->isRef() == true && formalVal->hasFlag(FLAG_STAR_TUPLE) == true &&
+      actual->isRef() == true) {
     retval = true;
   }
 
@@ -667,24 +656,26 @@ CallExpr* callChplHereAlloc(Type* type, VarSymbol* md) {
 
   // Since the type is not necessarily known, resolution will fix up
   // this sizeof() call to take the resolved type of s as an argument
-  CallExpr*  sizeExpr  = new CallExpr(PRIM_SIZEOF_BUNDLE,
-                                      new SymExpr(type->symbol));
-  VarSymbol* mdExpr    = (md != NULL) ? md : newMemDesc(type);
-  CallExpr*  allocExpr = new CallExpr("chpl_here_alloc", sizeExpr, mdExpr);
+  CallExpr* sizeExpr =
+    new CallExpr(PRIM_SIZEOF_BUNDLE, new SymExpr(type->symbol));
+  VarSymbol* mdExpr = (md != NULL) ? md : newMemDesc(type);
+  CallExpr* allocExpr = new CallExpr("chpl_here_alloc", sizeExpr, mdExpr);
 
   // Again, as we don't know the type yet, we leave it to resolution
   // to put in the cast to the proper type
   return allocExpr;
 }
-CallExpr* callChplHereAllocWithAllocator(Type* type, Expr* allocator, VarSymbol* md) {
+CallExpr*
+callChplHereAllocWithAllocator(Type* type, Expr* allocator, VarSymbol* md) {
   INT_ASSERT(resolved == false);
 
   // Since the type is not necessarily known, resolution will fix up
   // this sizeof() call to take the resolved type of s as an argument
-  CallExpr*  sizeExpr  = new CallExpr(PRIM_SIZEOF_BUNDLE,
-                                      new SymExpr(type->symbol));
-  VarSymbol* mdExpr    = (md != NULL) ? md : newMemDesc(type);
-  CallExpr*  allocExpr = new CallExpr("chpl_here_alloc_with_allocator", sizeExpr, mdExpr, allocator);
+  CallExpr* sizeExpr =
+    new CallExpr(PRIM_SIZEOF_BUNDLE, new SymExpr(type->symbol));
+  VarSymbol* mdExpr = (md != NULL) ? md : newMemDesc(type);
+  CallExpr* allocExpr =
+    new CallExpr("chpl_here_alloc_with_allocator", sizeExpr, mdExpr, allocator);
 
   // Again, as we don't know the type yet, we leave it to resolution
   // to put in the cast to the proper type
@@ -695,33 +686,22 @@ CallExpr* callChplHereAllocWithAllocator(Type* type, Expr* allocator, VarSymbol*
 // space to hold a variable of the given type.
 //
 // This function should be used *after* resolution
-void insertChplHereAlloc(Expr*      call,
-                         bool       insertAfter,
-                         Symbol*    sym,
-                         Type*      t,
-                         VarSymbol* md) {
+void insertChplHereAlloc(
+  Expr* call, bool insertAfter, Symbol* sym, Type* t, VarSymbol* md) {
   INT_ASSERT(resolved);
 
-  AggregateType* ct        = toAggregateType(toTypeSymbol(t->symbol)->type);
-  Symbol*        sizeTmp   = newTemp("chpl_here_alloc_size", SIZE_TYPE);
-  CallExpr*      sizeExpr  = new CallExpr(PRIM_MOVE,
-                                          sizeTmp,
-                                          new CallExpr(PRIM_SIZEOF_BUNDLE,
-                                                       (ct != NULL) ?
-                                                       ct->symbol   :
-                                                       t->symbol));
-  VarSymbol*     mdExpr    = (md != NULL) ? md : newMemDesc(t);
-  Symbol*        allocTmp  = newTemp("chpl_here_alloc_tmp", dtCVoidPtr);
-  CallExpr*      allocExpr = new CallExpr(PRIM_MOVE,
-                                          allocTmp,
-                                          new CallExpr(gChplHereAlloc,
-                                                       sizeTmp,
-                                                       mdExpr));
-  CallExpr*      castExpr  = new CallExpr(PRIM_MOVE,
-                                          sym,
-                                          new CallExpr(PRIM_CAST,
-                                                       t->symbol,
-                                                       allocTmp));
+  AggregateType* ct = toAggregateType(toTypeSymbol(t->symbol)->type);
+  Symbol* sizeTmp = newTemp("chpl_here_alloc_size", SIZE_TYPE);
+  CallExpr* sizeExpr = new CallExpr(
+    PRIM_MOVE,
+    sizeTmp,
+    new CallExpr(PRIM_SIZEOF_BUNDLE, (ct != NULL) ? ct->symbol : t->symbol));
+  VarSymbol* mdExpr = (md != NULL) ? md : newMemDesc(t);
+  Symbol* allocTmp = newTemp("chpl_here_alloc_tmp", dtCVoidPtr);
+  CallExpr* allocExpr = new CallExpr(
+    PRIM_MOVE, allocTmp, new CallExpr(gChplHereAlloc, sizeTmp, mdExpr));
+  CallExpr* castExpr =
+    new CallExpr(PRIM_MOVE, sym, new CallExpr(PRIM_CAST, t->symbol, allocTmp));
   if (insertAfter == true) {
     call->insertAfter(castExpr);
     call->insertAfter(allocExpr);
@@ -748,7 +728,7 @@ CallExpr* callChplHereFree(BaseAST* p) {
       retval = new CallExpr("chpl_here_free", castExpr);
 
     } else {
-      retval = new CallExpr(gChplHereFree,    castExpr);
+      retval = new CallExpr(gChplHereFree, castExpr);
     }
 
   } else {
@@ -770,11 +750,9 @@ FnSymbol* resolvedToTaskFun(CallExpr* call) {
   return retval;
 }
 
-bool isInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor)
-{
+bool isInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor) {
 
-  if (call->isPrimitive(PRIM_MOVE) ||
-      call->isPrimitive(PRIM_ASSIGN) ||
+  if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN) ||
       call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY)) {
     // case 1: PRIM_MOVE/PRIM_ASSIGN into a variable
     SymExpr* retSe = toSymExpr(call->get(1));
@@ -848,7 +826,9 @@ bool isInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor)
 // Handles both 'move lhs, someCall()' and 'someCall(retarg=lhs)' forms.
 // lhsSe is the SymExpr indicating what is being set.
 // initOrCtor is the user call (e.g. someCall in the examples above).
-bool isRecordInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor) {
+bool isRecordInitOrReturn(CallExpr* call,
+                          SymExpr*& lhsSe,
+                          CallExpr*& initOrCtor) {
   SymExpr* gotSe = NULL;
   CallExpr* gotCall = NULL;
   if (isInitOrReturn(call, gotSe, gotCall)) {

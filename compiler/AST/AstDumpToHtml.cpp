@@ -42,19 +42,15 @@
 #include <cstdio>
 #include <inttypes.h>
 
-int   AstDumpToHtml::sPassIndex = 1;
-FILE* AstDumpToHtml::sIndexFP   = 0;
+int AstDumpToHtml::sPassIndex = 1;
+FILE* AstDumpToHtml::sIndexFP = 0;
 
 const char* HTML_DL_open_tag = "<DL><DD>";
 const char* HTML_DL_close_tag = "</DD></DL>";
 
-AstDumpToHtml::AstDumpToHtml() {
-  mFP = 0;
-}
+AstDumpToHtml::AstDumpToHtml() { mFP = 0; }
 
-AstDumpToHtml::~AstDumpToHtml() {
-  close();
-}
+AstDumpToHtml::~AstDumpToHtml() { close(); }
 
 void AstDumpToHtml::init() {
   if (!(sIndexFP = fopen(astr(log_dir.c_str(), "index.html"), "w"))) {
@@ -65,14 +61,20 @@ void AstDumpToHtml::init() {
   fprintf(sIndexFP, "<HTML>\n");
   fprintf(sIndexFP, "<HEAD>\n");
   fprintf(sIndexFP, "<TITLE> Compilation Dump </TITLE>\n");
-  fprintf(sIndexFP, "<SCRIPT SRC=\"https://chapel-lang.org/developer/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>");
-  fprintf(sIndexFP, "<LINK REL=\"stylesheet\" HREF=\"https://chapel-lang.org/developer/mktree.css\">\n");
+  fprintf(sIndexFP,
+          "<SCRIPT SRC=\"https://chapel-lang.org/developer/mktree.js\" "
+          "LANGUAGE=\"JavaScript\"></SCRIPT>");
+  fprintf(sIndexFP,
+          "<LINK REL=\"stylesheet\" "
+          "HREF=\"https://chapel-lang.org/developer/mktree.css\">\n");
   fprintf(sIndexFP, "<STYLE>\n");
   fprintf(sIndexFP, "a.userMod:link {color:#00A0FF;}\n");
   fprintf(sIndexFP, "a.userMod:visited {color:#A000F0;}\n");
   fprintf(sIndexFP, "</STYLE>\n");
   fprintf(sIndexFP, "</HEAD>\n");
-  fprintf(sIndexFP, "<div style=\"text-align: center;\"><big><big><span style=\"font-weight: bold;\">");
+  fprintf(sIndexFP,
+          "<div style=\"text-align: center;\"><big><big><span "
+          "style=\"font-weight: bold;\">");
   fprintf(sIndexFP, "Compilation Dump<br><br></span></big></big>\n");
   fprintf(sIndexFP, "<div style=\"text-align: left;\">\n\n");
 
@@ -92,17 +94,17 @@ void AstDumpToHtml::view(const char* passName) {
   fprintf(sIndexFP,
           "%s%s[%d]",
           passName,
-          fdump_html_include_system_modules ? "<br>" : " ", lastNodeIDUsed());
+          fdump_html_include_system_modules ? "<br>" : " ",
+          lastNodeIDUsed());
   fprintf(sIndexFP, "</TD><TD>");
 
   forv_Vec(ModuleSymbol, module, allModules) {
-    if (fdump_html_include_system_modules == true      ||
-        module->modTag                    == MOD_USER) {
+    if (fdump_html_include_system_modules == true ||
+        module->modTag == MOD_USER) {
       AstDumpToHtml logger;
 
       if (logger.open(module, passName) == true) {
-        for_alist(stmt, module->block->body)
-          stmt->accept(&logger);
+        for_alist(stmt, module->block->body) stmt->accept(&logger);
 
         logger.close();
       }
@@ -126,28 +128,47 @@ bool AstDumpToHtml::open(ModuleSymbol* module, const char* passName) {
   if (mFP != 0) {
     const char* modClass = "";
 
-    if (module->modTag == MOD_USER)
-      modClass = "class=\"userMod\"";
+    if (module->modTag == MOD_USER) modClass = "class=\"userMod\"";
 
-    fprintf(sIndexFP, "&nbsp;&nbsp;<a %s href=\"%s\">%s</a>\n",
-            modClass, name, module->name);
+    fprintf(sIndexFP,
+            "&nbsp;&nbsp;<a %s href=\"%s\">%s</a>\n",
+            modClass,
+            name,
+            module->name);
     fprintf(mFP, "<CHPLTAG=\"%s\">\n", passName);
     fprintf(mFP, "<HTML>\n");
     fprintf(mFP, "<HEAD>\n");
-    fprintf(mFP, "<TITLE> AST for Module %s after Pass %s </TITLE>\n", module->name, passName);
-    fprintf(mFP, "<SCRIPT SRC=\"https://chapel-lang.org/developer/mktree.js\" LANGUAGE=\"JavaScript\"></SCRIPT>\n");
-    fprintf(mFP, "<LINK REL=\"stylesheet\" HREF=\"https://chapel-lang.org/developer/mktree.css\">\n");
-    fprintf(mFP, "</HEAD><BODY%s>\n",
-           fdump_html_wrap_lines ? "" : " style=\"white-space: nowrap;\"");
+    fprintf(mFP,
+            "<TITLE> AST for Module %s after Pass %s </TITLE>\n",
+            module->name,
+            passName);
+    fprintf(mFP,
+            "<SCRIPT SRC=\"https://chapel-lang.org/developer/mktree.js\" "
+            "LANGUAGE=\"JavaScript\"></SCRIPT>\n");
+    fprintf(mFP,
+            "<LINK REL=\"stylesheet\" "
+            "HREF=\"https://chapel-lang.org/developer/mktree.css\">\n");
+    fprintf(mFP,
+            "</HEAD><BODY%s>\n",
+            fdump_html_wrap_lines ? "" : " style=\"white-space: nowrap;\"");
 
     if (currentPassNo > 1)
-      fprintf(mFP, "<A HREF=%s>previous pass</A> &nbsp;\n", html_file_name(currentPassNo - 1, module->name));
+      fprintf(mFP,
+              "<A HREF=%s>previous pass</A> &nbsp;\n",
+              html_file_name(currentPassNo - 1, module->name));
 
     if (true)
-      fprintf(mFP, "<A HREF=%s>next pass</A>\n",            html_file_name(currentPassNo + 1, module->name));
+      fprintf(mFP,
+              "<A HREF=%s>next pass</A>\n",
+              html_file_name(currentPassNo + 1, module->name));
 
-    fprintf(mFP, "<div style=\"text-align: center;\"><big><big><span style=\"font-weight: bold;\">");
-    fprintf(mFP, "AST for Module %s after Pass %s <br><br></span></big></big>\n", module->name, passName);
+    fprintf(mFP,
+            "<div style=\"text-align: center;\"><big><big><span "
+            "style=\"font-weight: bold;\">");
+    fprintf(mFP,
+            "AST for Module %s after Pass %s <br><br></span></big></big>\n",
+            module->name,
+            passName);
     fprintf(mFP, "<div style=\"text-align: left;\">\n\n");
     fprintf(mFP, "<B>module \n");
 
@@ -166,7 +187,7 @@ bool AstDumpToHtml::close() {
     fprintf(mFP, "</BODY></HTML>\n");
 
     retval = (fclose(mFP) == 0) ? true : false;
-    mFP    = 0;
+    mFP = 0;
   }
 
   return retval;
@@ -202,11 +223,9 @@ bool AstDumpToHtml::enterCallExpr(CallExpr* node) {
 
   } else {
     fprintf(mFP, "'%s' ", node->primitive->name);
-
   }
 
-  if (node->partialTag)
-    fprintf(mFP, "(partial) ");
+  if (node->partialTag) fprintf(mFP, "(partial) ");
 
   return true;
 }
@@ -218,7 +237,6 @@ void AstDumpToHtml::exitCallExpr(CallExpr* node) {
     fprintf(mFP, "%s\n", HTML_DL_close_tag);
   }
 }
-
 
 //
 // DefExpr
@@ -249,8 +267,7 @@ bool AstDumpToHtml::enterDefExpr(DefExpr* node) {
       fprintf(mFP, "<UL CLASS =\"mktree\">\n");
       fprintf(mFP, "<LI>");
 
-      if (node->sym->hasFlag(FLAG_SYNC))
-        fprintf(mFP, "<B>sync</B> ");
+      if (node->sym->hasFlag(FLAG_SYNC)) fprintf(mFP, "<B>sync</B> ");
 
       fprintf(mFP, "<B>type ");
       writeSymbol(node->sym, true);
@@ -264,7 +281,6 @@ bool AstDumpToHtml::enterDefExpr(DefExpr* node) {
   } else if (VarSymbol* vs = toVarSymbol(node->sym)) {
     if (isSyncType(vs->type)) {
       fprintf(mFP, "<B>sync </B>");
-
     }
 
     fprintf(mFP, "<B>var </B> ");
@@ -272,17 +288,17 @@ bool AstDumpToHtml::enterDefExpr(DefExpr* node) {
 
   } else if (ArgSymbol* s = toArgSymbol(node->sym)) {
     switch (s->intent) {
-      case INTENT_IN:        fprintf(mFP, "<B>in</B> ");        break;
-      case INTENT_INOUT:     fprintf(mFP, "<B>inout</B> ");     break;
-      case INTENT_OUT:       fprintf(mFP, "<B>out</B> ");       break;
-      case INTENT_CONST:     fprintf(mFP, "<B>const</B> ");     break;
-      case INTENT_CONST_IN:  fprintf(mFP, "<B>const in</B> ");  break;
+      case INTENT_IN: fprintf(mFP, "<B>in</B> "); break;
+      case INTENT_INOUT: fprintf(mFP, "<B>inout</B> "); break;
+      case INTENT_OUT: fprintf(mFP, "<B>out</B> "); break;
+      case INTENT_CONST: fprintf(mFP, "<B>const</B> "); break;
+      case INTENT_CONST_IN: fprintf(mFP, "<B>const in</B> "); break;
       case INTENT_CONST_REF: fprintf(mFP, "<B>const ref</B> "); break;
       case INTENT_REF_MAYBE_CONST: fprintf(mFP, "<B>const? ref</B> "); break;
-      case INTENT_REF:       fprintf(mFP, "<B>ref</B> ");       break;
-      case INTENT_PARAM:     fprintf(mFP, "<B>param</B> ");     break;
-      case INTENT_TYPE:      fprintf(mFP, "<B>type</B> ");      break;
-      case INTENT_BLANK:                                        break;
+      case INTENT_REF: fprintf(mFP, "<B>ref</B> "); break;
+      case INTENT_PARAM: fprintf(mFP, "<B>param</B> "); break;
+      case INTENT_TYPE: fprintf(mFP, "<B>type</B> "); break;
+      case INTENT_BLANK: break;
     }
 
     fprintf(mFP, "<B>arg</B> ");
@@ -308,8 +324,7 @@ bool AstDumpToHtml::enterDefExpr(DefExpr* node) {
 
 void AstDumpToHtml::exitDefExpr(DefExpr* node) {
   if (isFnSymbol(node->sym) ||
-      (isTypeSymbol(node->sym) &&
-       isAggregateType(node->sym->type))) {
+      (isTypeSymbol(node->sym) && isAggregateType(node->sym->type))) {
 
     fprintf(mFP, "</UL>\n");
 
@@ -324,7 +339,6 @@ void AstDumpToHtml::exitDefExpr(DefExpr* node) {
     fprintf(mFP, "%s\n", HTML_DL_close_tag);
   }
 }
-
 
 //
 // NamedExpr
@@ -347,23 +361,18 @@ void AstDumpToHtml::exitNamedExpr(NamedExpr* node) {
   }
 }
 
-
 //
 // IfExpr
 //
-bool AstDumpToHtml::enterIfExpr(IfExpr* node) {
-  return false;
-}
+bool AstDumpToHtml::enterIfExpr(IfExpr* node) { return false; }
 
-void AstDumpToHtml::exitIfExpr(IfExpr* node) {
-}
-
+void AstDumpToHtml::exitIfExpr(IfExpr* node) {}
 
 //
 // SymExpr
 //
 void AstDumpToHtml::visitSymExpr(SymExpr* node) {
-  Symbol*    sym = node->symbol();
+  Symbol* sym = node->symbol();
   VarSymbol* var = toVarSymbol(sym);
 
   if (isBlockStmt(node->parentExpr) == true) {
@@ -374,11 +383,14 @@ void AstDumpToHtml::visitSymExpr(SymExpr* node) {
 
   if (var != 0 && var->immediate != 0) {
     const size_t bufSize = 128;
-    char         imm[bufSize];
+    char imm[bufSize];
 
     snprint_imm(imm, bufSize, *var->immediate);
 
-    fprintf(mFP, "<i><FONT COLOR=\"blue\">%s%s</FONT></i>", imm, isImagType(var->type) ? "i" : "");
+    fprintf(mFP,
+            "<i><FONT COLOR=\"blue\">%s%s</FONT></i>",
+            imm,
+            isImagType(var->type) ? "i" : "");
 
   } else {
     writeSymbol(sym, false);
@@ -388,7 +400,6 @@ void AstDumpToHtml::visitSymExpr(SymExpr* node) {
     fprintf(mFP, "%s\n", HTML_DL_close_tag);
   }
 }
-
 
 //
 // UnresolvedSymExpr
@@ -416,8 +427,10 @@ bool AstDumpToHtml::enterLoopExpr(LoopExpr* node) {
   fprintf(mFP, "(%d ", node->id);
 
   if (node->type == FORALL_EXPR) {
-    if (node->maybeArrayType) fprintf(mFP, "[ ");
-    else fprintf(mFP, "<B>forall</B> ");
+    if (node->maybeArrayType)
+      fprintf(mFP, "[ ");
+    else
+      fprintf(mFP, "<B>forall</B> ");
   } else {
     fprintf(mFP, "<B>for</B> ");
   }
@@ -430,8 +443,10 @@ bool AstDumpToHtml::enterLoopExpr(LoopExpr* node) {
   if (node->zippered) fprintf(mFP, "<B>zip</B>");
   node->iteratorExpr->accept(this);
 
-  if (node->maybeArrayType) fprintf(mFP, " <B>]</B>");
-  else fprintf(mFP, " <B>do</B>");
+  if (node->maybeArrayType)
+    fprintf(mFP, " <B>]</B>");
+  else
+    fprintf(mFP, " <B>do</B>");
 
   if (node->cond) {
     fprintf(mFP, " <B>if</B> ");
@@ -446,9 +461,7 @@ bool AstDumpToHtml::enterLoopExpr(LoopExpr* node) {
   return false;
 }
 
-void AstDumpToHtml::exitLoopExpr(LoopExpr* node) {
-}
-
+void AstDumpToHtml::exitLoopExpr(LoopExpr* node) {}
 
 //
 // UseStmt
@@ -509,7 +522,6 @@ void AstDumpToHtml::visitImportStmt(ImportStmt* node) {
   }
 }
 
-
 //
 // BlockStmt
 //
@@ -517,8 +529,7 @@ bool AstDumpToHtml::enterBlockStmt(BlockStmt* node) {
   fprintf(mFP, "%s\n", HTML_DL_open_tag);
 
   if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
-    if (node == fn->where)
-      fprintf(mFP, "<B>where</B>\n");
+    if (node == fn->where) fprintf(mFP, "<B>where</B>\n");
 
   fprintf(mFP, "{");
 
@@ -533,7 +544,6 @@ void AstDumpToHtml::exitBlockStmt(BlockStmt* node) {
   fprintf(mFP, "%s\n", HTML_DL_close_tag);
 }
 
-
 //
 // WhileDoStmt
 //
@@ -541,8 +551,7 @@ bool AstDumpToHtml::enterWhileDoStmt(WhileDoStmt* node) {
   fprintf(mFP, "%s\n", HTML_DL_open_tag);
 
   if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
-    if (node == fn->where)
-      fprintf(mFP, "<B>where</B>\n");
+    if (node == fn->where) fprintf(mFP, "<B>where</B>\n");
 
   fprintf(mFP, "<B>WhileDo<B> {");
 
@@ -557,7 +566,6 @@ void AstDumpToHtml::exitWhileDoStmt(WhileDoStmt* node) {
   fprintf(mFP, "%s\n", HTML_DL_close_tag);
 }
 
-
 //
 // DoWhileStmt
 //
@@ -565,8 +573,7 @@ bool AstDumpToHtml::enterDoWhileStmt(DoWhileStmt* node) {
   fprintf(mFP, "%s\n", HTML_DL_open_tag);
 
   if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
-    if (node == fn->where)
-      fprintf(mFP, "<B>where</B>\n");
+    if (node == fn->where) fprintf(mFP, "<B>where</B>\n");
 
   fprintf(mFP, "<B>DoWhile<B> {");
 
@@ -581,7 +588,6 @@ void AstDumpToHtml::exitDoWhileStmt(DoWhileStmt* node) {
   fprintf(mFP, "%s\n", HTML_DL_close_tag);
 }
 
-
 //
 // ForLoop
 //
@@ -589,8 +595,7 @@ bool AstDumpToHtml::enterForLoop(ForLoop* node) {
   fprintf(mFP, "%s\n", HTML_DL_open_tag);
 
   if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
-    if (node == fn->where)
-      fprintf(mFP, "<B>where</B>\n");
+    if (node == fn->where) fprintf(mFP, "<B>where</B>\n");
 
   fprintf(mFP, "<B>ForLoop<B> {");
 
@@ -605,7 +610,6 @@ void AstDumpToHtml::exitForLoop(ForLoop* node) {
   fprintf(mFP, "%s\n", HTML_DL_close_tag);
 }
 
-
 //
 // CForLoop
 //
@@ -613,8 +617,7 @@ bool AstDumpToHtml::enterCForLoop(CForLoop* node) {
   fprintf(mFP, "%s\n", HTML_DL_open_tag);
 
   if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
-    if (node == fn->where)
-      fprintf(mFP, "<B>where</B>\n");
+    if (node == fn->where) fprintf(mFP, "<B>where</B>\n");
 
   fprintf(mFP, "<B>CForLoop<B> {");
 
@@ -629,7 +632,6 @@ void AstDumpToHtml::exitCForLoop(CForLoop* node) {
   fprintf(mFP, "%s\n", HTML_DL_close_tag);
 }
 
-
 //
 // ParamForLoop
 //
@@ -637,8 +639,7 @@ bool AstDumpToHtml::enterParamForLoop(ParamForLoop* node) {
   fprintf(mFP, "%s\n", HTML_DL_open_tag);
 
   if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
-    if (node == fn->where)
-      fprintf(mFP, "<B>where</B>\n");
+    if (node == fn->where) fprintf(mFP, "<B>where</B>\n");
 
   fprintf(mFP, "<B>ParamForLoop<B> {");
 
@@ -652,7 +653,6 @@ void AstDumpToHtml::exitParamForLoop(ParamForLoop* node) {
   printBlockID(node);
   fprintf(mFP, "%s\n", HTML_DL_close_tag);
 }
-
 
 //
 // CondStmt
@@ -679,7 +679,6 @@ void AstDumpToHtml::visitEblockStmt(ExternBlockStmt* node) {
   }
 }
 
-
 //
 // GotoStmt
 //
@@ -687,30 +686,14 @@ bool AstDumpToHtml::enterGotoStmt(GotoStmt* node) {
   fprintf(mFP, "%s\n", HTML_DL_open_tag);
 
   switch (node->gotoTag) {
-    case GOTO_NORMAL:
-      fprintf(mFP, "<B>goto</B> ");
-      break;
-    case GOTO_BREAK:
-      fprintf(mFP, "<B>break</B> ");
-      break;
-    case GOTO_CONTINUE:
-      fprintf(mFP, "<B>continue</B> ");
-      break;
-    case GOTO_RETURN:
-      fprintf(mFP, "<B>gotoReturn</B> ");
-      break;
-    case GOTO_GETITER_END:
-      fprintf(mFP, "<B>gotoGetiterEnd</B> ");
-      break;
-    case GOTO_ITER_RESUME:
-      fprintf(mFP, "<B>gotoIterResume</B> ");
-      break;
-    case GOTO_ITER_END:
-      fprintf(mFP, "<B>gotoIterEnd</B> ");
-      break;
-    case GOTO_ERROR_HANDLING:
-      fprintf(mFP, "<B>gotoErrorHandling</B> ");
-      break;
+    case GOTO_NORMAL: fprintf(mFP, "<B>goto</B> "); break;
+    case GOTO_BREAK: fprintf(mFP, "<B>break</B> "); break;
+    case GOTO_CONTINUE: fprintf(mFP, "<B>continue</B> "); break;
+    case GOTO_RETURN: fprintf(mFP, "<B>gotoReturn</B> "); break;
+    case GOTO_GETITER_END: fprintf(mFP, "<B>gotoGetiterEnd</B> "); break;
+    case GOTO_ITER_RESUME: fprintf(mFP, "<B>gotoIterResume</B> "); break;
+    case GOTO_ITER_END: fprintf(mFP, "<B>gotoIterEnd</B> "); break;
+    case GOTO_ERROR_HANDLING: fprintf(mFP, "<B>gotoErrorHandling</B> "); break;
     case GOTO_BREAK_ERROR_HANDLING:
       fprintf(mFP, "<B>gotoBreakErrorHandling</B> ");
       break;
@@ -720,8 +703,7 @@ bool AstDumpToHtml::enterGotoStmt(GotoStmt* node) {
   }
 
   if (SymExpr* label = toSymExpr(node->label))
-    if (label->symbol() != gNil)
-      writeSymbol(label->symbol(), true);
+    if (label->symbol() != gNil) writeSymbol(label->symbol(), true);
 
   return true;
 }
@@ -759,11 +741,11 @@ void AstDumpToHtml::writeFnSymbol(FnSymbol* fn) {
   fprintf(mFP, " ) ");
 
   switch (fn->retTag) {
-    case RET_VALUE:                                break;
-    case RET_REF:   fprintf(mFP, "<b>ref</b> ");   break;
-    case RET_CONST_REF:   fprintf(mFP, "<b>const ref</b> ");   break;
+    case RET_VALUE: break;
+    case RET_REF: fprintf(mFP, "<b>ref</b> "); break;
+    case RET_CONST_REF: fprintf(mFP, "<b>const ref</b> "); break;
     case RET_PARAM: fprintf(mFP, "<b>param</b> "); break;
-    case RET_TYPE:  fprintf(mFP, "<b>type</b> ");  break;
+    case RET_TYPE: fprintf(mFP, "<b>type</b> "); break;
   }
 
   if (fn->retType && fn->retType->symbol) {
@@ -776,10 +758,12 @@ void AstDumpToHtml::writeSymbol(Symbol* sym, bool def) {
   if (def) {
     fprintf(mFP, "<A NAME=\"SYM%d\">", sym->id);
 
-  } else if (sym->defPoint && sym->defPoint->parentSymbol && sym->defPoint->getModule()) {
+  } else if (sym->defPoint && sym->defPoint->parentSymbol &&
+             sym->defPoint->getModule()) {
     INT_ASSERT(hasHref(sym));
 
-    fprintf(mFP, "<A HREF=\"%s#SYM%d\">",
+    fprintf(mFP,
+            "<A HREF=\"%s#SYM%d\">",
             html_file_name(sPassIndex, sym->defPoint->getModule()->name),
             sym->id);
   } else {
@@ -803,10 +787,7 @@ void AstDumpToHtml::writeSymbol(Symbol* sym, bool def) {
   fprintf(mFP, "<FONT COLOR=\"grey\">[%d]</FONT>", sym->id);
   fprintf(mFP, "</A>");
 
-  if (def &&
-      !toTypeSymbol(sym) &&
-      sym->type &&
-      sym->type->symbol &&
+  if (def && !toTypeSymbol(sym) && sym->type && sym->type->symbol &&
       sym->type != dtUnknown) {
     fprintf(mFP, ":");
     writeSymbol(sym->type->symbol, false);
@@ -816,16 +797,21 @@ void AstDumpToHtml::writeSymbol(Symbol* sym, bool def) {
 void AstDumpToHtml::adjacent_passes(Symbol* sym) {
   if (hasHref(sym)) {
     if (sPassIndex > 1)
-      fprintf(mFP, "<A HREF=\"%s#SYM%d\">&laquo</A>",   html_file_name(sPassIndex - 1, sym), sym->id);
+      fprintf(mFP,
+              "<A HREF=\"%s#SYM%d\">&laquo</A>",
+              html_file_name(sPassIndex - 1, sym),
+              sym->id);
 
     if (true)
-      fprintf(mFP, "<A HREF=\"%s#SYM%d\">&raquo</A>\n", html_file_name(sPassIndex + 1, sym), sym->id);
+      fprintf(mFP,
+              "<A HREF=\"%s#SYM%d\">&raquo</A>\n",
+              html_file_name(sPassIndex + 1, sym),
+              sym->id);
   }
 }
 
 void AstDumpToHtml::printBlockID(Expr* expr) {
-  if (fdump_html_print_block_IDs)
-    fprintf(mFP, " %d", expr->id);
+  if (fdump_html_print_block_IDs) fprintf(mFP, " %d", expr->id);
 }
 
 const char* AstDumpToHtml::html_file_name(int passNum, Symbol* sym) {
@@ -837,7 +823,6 @@ const char* AstDumpToHtml::html_file_name(int passNum, const char* module) {
 }
 
 bool AstDumpToHtml::hasHref(Symbol* sym) {
-  return sym->defPoint               &&
-         sym->defPoint->parentSymbol &&
+  return sym->defPoint && sym->defPoint->parentSymbol &&
          sym->defPoint->getModule();
 }

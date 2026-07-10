@@ -29,7 +29,6 @@
  *         block rather than the ins.
  */
 
-
 /*
  * This function exists so that dead or unreachable basic blocks do not screw
  * up the dominator computation. Currently in the basic block creation gotos
@@ -78,7 +77,7 @@
  * basic block creation doesn't create any artificial dead blocks.
  */
 static void unsetDeadBlocks(std::vector<BitVec*>& dominators,
-    std::vector<BasicBlock*>& basicBlocks) {
+                            std::vector<BasicBlock*>& basicBlocks) {
 
   unsigned nBlocks = basicBlocks.size();
   unsigned oldNumBlocks = ~0;
@@ -86,19 +85,18 @@ static void unsetDeadBlocks(std::vector<BitVec*>& dominators,
 
   //Find any dead basic blocks: blocks that have no ins, or blocks that have
   //predecessors that have no ins.
-  while(deadBlocks.size() != oldNumBlocks) {
+  while (deadBlocks.size() != oldNumBlocks) {
     oldNumBlocks = deadBlocks.size();
-    for(unsigned i = 1; i < nBlocks; i++) {
-      if(basicBlocks[i]->ins.size() == 0)
-        deadBlocks.insert(i);
+    for (unsigned i = 1; i < nBlocks; i++) {
+      if (basicBlocks[i]->ins.size() == 0) deadBlocks.insert(i);
 
       bool allInsAreDead = true;
       for_vector(BasicBlock, in, basicBlocks[i]->ins) {
-        if(deadBlocks.count(in->id) == 0) {
+        if (deadBlocks.count(in->id) == 0) {
           allInsAreDead = false;
         }
       }
-      if(allInsAreDead) {
+      if (allInsAreDead) {
         deadBlocks.insert(i);
       }
     }
@@ -106,17 +104,15 @@ static void unsetDeadBlocks(std::vector<BitVec*>& dominators,
 
   //Set it so that any dead blocks are not dominated by any other blocks and
   //that they do not dominate any blocks.
-  for(unsigned i2 = 1; i2 < nBlocks; i2++) {
-    if(deadBlocks.count(i2) == 1) {
-      for(unsigned j2 = 1; j2 < nBlocks; j2++) {
+  for (unsigned i2 = 1; i2 < nBlocks; i2++) {
+    if (deadBlocks.count(i2) == 1) {
+      for (unsigned j2 = 1; j2 < nBlocks; j2++) {
         dominators[j2]->reset(i2);
       }
       dominators[i2]->reset();
     }
   }
-
 }
-
 
 /*
  * Computes the dominators for the set of basic blocks.
@@ -133,14 +129,15 @@ static void unsetDeadBlocks(std::vector<BitVec*>& dominators,
  *
  * This algorithm will be most efficient if the basic blocks are in a depth-first order.
  */
-void computeDominators(std::vector<BitVec*>& dominators, std::vector<BasicBlock*>& basicBlocks) {
+void computeDominators(std::vector<BitVec*>& dominators,
+                       std::vector<BasicBlock*>& basicBlocks) {
   unsigned nBlocks = basicBlocks.size();
 
   //The root node cannot be dominated
   dominators[0]->set(0);
 
   //Initially set all other nodes as dominated by every other node
-  for(unsigned i = 1; i < nBlocks; i++) {
+  for (unsigned i = 1; i < nBlocks; i++) {
     dominators[i]->set();
   }
 
@@ -149,22 +146,22 @@ void computeDominators(std::vector<BitVec*>& dominators, std::vector<BasicBlock*
   //b has multiple predecessors but a dominates
   //all of them.
   bool changed = true;
-  while(changed) {
+  while (changed) {
     changed = false;
 
-    for(unsigned i = 1; i < nBlocks; i++) {
+    for (unsigned i = 1; i < nBlocks; i++) {
       BitVec temp = BitVec(nBlocks);
       temp.set();
 
       BasicBlock* curBB = basicBlocks[i];
-      for(unsigned j = 0; j < curBB->ins.size(); j++) {
+      for (unsigned j = 0; j < curBB->ins.size(); j++) {
         //TODO I would ideally like this to be &=
         temp.intersection(*dominators[curBB->ins[j]->id]);
       }
       temp.set(i);
 
       //TODO would like to implement == and !=
-      if(temp.equals(*dominators[i]) == false) {
+      if (temp.equals(*dominators[i]) == false) {
         changed = true;
         dominators[i]->reset();
         dominators[i]->disjunction(temp);
@@ -175,33 +172,32 @@ void computeDominators(std::vector<BitVec*>& dominators, std::vector<BasicBlock*
   unsetDeadBlocks(dominators, basicBlocks);
 }
 
-
 /*
  * Checks if a node a dominates node b in the set of dominators
  *
  * A node a dominates node b if every path path from the entry node
  * to node b must go through a.
  */
-bool dominates(unsigned a, unsigned b, std::vector<BitVec*> & dominators) {
-  if(dominators[b]->test(a)) {
-   return true;
+bool dominates(unsigned a, unsigned b, std::vector<BitVec*>& dominators) {
+  if (dominators[b]->test(a)) {
+    return true;
   }
   return false;
 }
-
 
 /*
  * Checks if a node a strictly dominates node b in the set of dominators
  *
  * A node a strictly dominates node b if a dominates b and a!= b
  */
-bool strictlyDominates(unsigned a, unsigned b, std::vector<BitVec*> & dominators) {
- if(a == b) {
-   return false;
- }
- return dominates(a, b, dominators);
+bool strictlyDominates(unsigned a,
+                       unsigned b,
+                       std::vector<BitVec*>& dominators) {
+  if (a == b) {
+    return false;
+  }
+  return dominates(a, b, dominators);
 }
-
 
 /*
  * Computes the immediate dominators from the dominators
@@ -215,19 +211,20 @@ bool strictlyDominates(unsigned a, unsigned b, std::vector<BitVec*> & dominators
  * and there does not exist a node c such that a strictly dominates c and c
  * strictly dominates b
  */
-void computeImmediateDominators(std::vector<unsigned>& immediateDominators, std::vector<BitVec*>& dominators) {
+void computeImmediateDominators(std::vector<unsigned>& immediateDominators,
+                                std::vector<BitVec*>& dominators) {
   unsigned nBlocks = dominators.size();
 
   //Create a temporary dominator set
   std::vector<BitVec*> temp;
-  for(unsigned i = 0; i < nBlocks; i++) {
+  for (unsigned i = 0; i < nBlocks; i++) {
     temp.push_back(new BitVec(nBlocks));
   }
 
   //Set temp[i] to the dominators[i] - {i} (the strict dominators)
-  for(unsigned i = 0; i < nBlocks; i++) {
-    for(unsigned j = 0; j < nBlocks; j++) {
-      if(strictlyDominates(i, j, dominators)) {
+  for (unsigned i = 0; i < nBlocks; i++) {
+    for (unsigned j = 0; j < nBlocks; j++) {
+      if (strictlyDominates(i, j, dominators)) {
         temp[j]->set(i);
       }
     }
@@ -236,11 +233,11 @@ void computeImmediateDominators(std::vector<unsigned>& immediateDominators, std:
   //For each node i check whether each node that dominates i
   //has dominators other than itself and if so remove them.
   //This leaves each non-root node having a single dominator
-  for(unsigned i = 1; i < nBlocks; i++) {
-    for(unsigned j = 0; j < nBlocks; j++){
-      for(unsigned k = 0; k < nBlocks; k++) {
-        if(strictlyDominates(k, i, temp) && strictlyDominates(j, i, temp)) {
-          if(strictlyDominates(k, j, temp)) {
+  for (unsigned i = 1; i < nBlocks; i++) {
+    for (unsigned j = 0; j < nBlocks; j++) {
+      for (unsigned k = 0; k < nBlocks; k++) {
+        if (strictlyDominates(k, i, temp) && strictlyDominates(j, i, temp)) {
+          if (strictlyDominates(k, j, temp)) {
             temp[i]->reset(k);
           }
         }
@@ -250,12 +247,11 @@ void computeImmediateDominators(std::vector<unsigned>& immediateDominators, std:
 
   //Extract the node that is the immediate dominator
   //and store it in immediateDominators
-  for(unsigned i = 1; i < nBlocks; i++) {
-    for(unsigned j = 0; j < nBlocks; j++) {
-      if(strictlyDominates(j, i, temp)) {
+  for (unsigned i = 1; i < nBlocks; i++) {
+    for (unsigned j = 0; j < nBlocks; j++) {
+      if (strictlyDominates(j, i, temp)) {
         immediateDominators[i] = j;
       }
     }
   }
 }
-

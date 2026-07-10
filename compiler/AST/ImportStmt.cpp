@@ -33,8 +33,8 @@
 *                                                                             *
 ************************************** | *************************************/
 
-ImportStmt::ImportStmt(BaseAST* source,
-                       bool isPrivate) : VisibilityStmt(E_ImportStmt) {
+ImportStmt::ImportStmt(BaseAST* source, bool isPrivate)
+  : VisibilityStmt(E_ImportStmt) {
   this->isPrivate = isPrivate;
   this->modRename = astr("");
   if (Symbol* b = toSymbol(source)) {
@@ -50,8 +50,8 @@ ImportStmt::ImportStmt(BaseAST* source,
   gImportStmts.add(this);
 }
 
-ImportStmt::ImportStmt(BaseAST* source, const char* rename,
-                       bool isPrivate) : VisibilityStmt(E_ImportStmt) {
+ImportStmt::ImportStmt(BaseAST* source, const char* rename, bool isPrivate)
+  : VisibilityStmt(E_ImportStmt) {
 
   this->isPrivate = isPrivate;
   this->modRename = astr(rename);
@@ -69,10 +69,11 @@ ImportStmt::ImportStmt(BaseAST* source, const char* rename,
   gImportStmts.add(this);
 }
 
-ImportStmt::ImportStmt(BaseAST* source, std::vector<const char*>* namesList,
+ImportStmt::ImportStmt(BaseAST* source,
+                       std::vector<const char*>* namesList,
                        std::map<const char*, const char*>* renamesMap,
-                       bool isPrivate):
-  VisibilityStmt(E_ImportStmt) {
+                       bool isPrivate)
+  : VisibilityStmt(E_ImportStmt) {
 
   this->isPrivate = isPrivate;
   this->modRename = astr("");
@@ -88,16 +89,15 @@ ImportStmt::ImportStmt(BaseAST* source, std::vector<const char*>* namesList,
 
   if (namesList->size() > 0) {
     // Symbols to enable unqualified access to
-    for_vector(const char, str, *namesList) {
-      unqualified.push_back(str);
-    }
+    for_vector(const char, str, *namesList) { unqualified.push_back(str); }
   }
 
   if (renamesMap->size() > 0) {
     // Symbols to enable unqualified access to with a different name than the
     // name with which they were originally declared
     for (std::map<const char*, const char*>::iterator it = renamesMap->begin();
-         it != renamesMap->end(); ++it) {
+         it != renamesMap->end();
+         ++it) {
       renamed[it->first] = it->second;
     }
   }
@@ -116,9 +116,7 @@ ImportStmt* ImportStmt::copyInner(SymbolMap* map) {
   return _this;
 }
 
-Expr* ImportStmt::getFirstExpr() {
-  return src;
-}
+Expr* ImportStmt::getFirstExpr() { return src; }
 
 void ImportStmt::replaceChild(Expr* oldAst, Expr* newAst) {
   if (oldAst == src) {
@@ -129,9 +127,7 @@ void ImportStmt::replaceChild(Expr* oldAst, Expr* newAst) {
   }
 }
 
-void ImportStmt::accept(AstVisitor* visitor) {
-  visitor->visitImportStmt(this);
-}
+void ImportStmt::accept(AstVisitor* visitor) { visitor->visitImportStmt(this); }
 
 void ImportStmt::verify() {
   Expr::verify();
@@ -144,9 +140,7 @@ void ImportStmt::verify() {
     INT_FATAL(this, "Bad ImportStmt::src");
   }
 
-  for_vector(const char, name, unqualified) {
-    INT_ASSERT(name == astr(name));
-  }
+  for_vector(const char, name, unqualified) { INT_ASSERT(name == astr(name)); }
 
   for (std::map<const char*, const char*>::const_iterator it = renamed.begin();
        it != renamed.end();
@@ -181,8 +175,10 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
             // means this is the last symbol prior to the curly braces (e.g.
             // this is `B` of `import A.B.{C, D};`).  This symbol is required
             // to be a module
-            USR_FATAL(this, "Last symbol prior to `{` in import must be a "
-                      "module, symbol '%s' is not", symAndName.second);
+            USR_FATAL(this,
+                      "Last symbol prior to `{` in import must be a "
+                      "module, symbol '%s' is not",
+                      symAndName.second);
           }
 
           // The last name resolved wasn't to a module, so point the import to
@@ -277,8 +273,7 @@ bool ImportStmt::checkValid(Expr* expr) const {
         if (SymExpr* rhs = toSymExpr(call->get(2))) {
           VarSymbol* v = toVarSymbol(rhs->symbol());
 
-          if (v                        != NULL &&
-              v->immediate             != NULL &&
+          if (v != NULL && v->immediate != NULL &&
               v->immediate->const_kind == CONST_KIND_STRING) {
             retval = true;
 
@@ -334,7 +329,7 @@ void ImportStmt::validateList() {
 }
 
 void ImportStmt::noRepeats() const {
-  std::vector<const char*>::const_iterator           it1;
+  std::vector<const char*>::const_iterator it1;
 
   for (it1 = unqualified.begin(); it1 != unqualified.end(); ++it1) {
     std::vector<const char*>::const_iterator next = it1;
@@ -366,8 +361,8 @@ void ImportStmt::noRepeats() const {
 }
 
 void ImportStmt::validateUnqualified() {
-  BaseAST*            scopeToUse = getSearchScope();
-  const ResolveScope* scope      = ResolveScope::getScopeFor(scopeToUse);
+  BaseAST* scopeToUse = getSearchScope();
+  const ResolveScope* scope = ResolveScope::getScopeFor(scopeToUse);
 
   for_vector(const char, name, unqualified) {
     if (name[0] != '\0') {
@@ -389,9 +384,7 @@ void ImportStmt::validateUnqualified() {
       } else {
         for_vector(Symbol, sym, symbols) {
           if (sym->hasFlag(FLAG_PRIVATE) == true && !sym->isVisible(this)) {
-            USR_FATAL_CONT(this,
-                           "Bad identifier, '%s' is private",
-                           name);
+            USR_FATAL_CONT(this, "Bad identifier, '%s' is private", name);
           }
 
           if (!fDynoScopeResolve) {
@@ -418,8 +411,7 @@ ImportStmt::PtrSet<const char*> ImportStmt::typeWasNamed(Type* t) const {
   return namedTypes;
 }
 
-void ImportStmt::typeWasNamed(Type* t,
-                              PtrSet<const char*>* namedTypes) const {
+void ImportStmt::typeWasNamed(Type* t, PtrSet<const char*>* namedTypes) const {
   // We don't define any symbols for unqualified access, so the type was not
   // listed
   if (!providesUnqualifiedAccess()) {
@@ -440,14 +432,14 @@ void ImportStmt::typeWasNamed(Type* t,
     // Otherwise, look through the list of unqualified symbol names to see if
     // this one was listed
     for_vector(const char, toCheck, unqualified) {
-      if (toCheck == name)
-        namedTypes->insert(toCheck);
+      if (toCheck == name) namedTypes->insert(toCheck);
     }
 
     // Including if it was renamed
-    for(std::map<const char*, const char*>::const_iterator it = renamed.begin();
-        it != renamed.end();
-        ++it) {
+    for (std::map<const char*, const char*>::const_iterator it =
+           renamed.begin();
+         it != renamed.end();
+         ++it) {
       if (name == it->first) {
         // Save the original name because we'll be looking in its scope
         namedTypes->insert(it->second);
@@ -481,13 +473,13 @@ bool ImportStmt::skipSymbolSearch(const char* name) const {
     // Otherwise, look through the list of unqualified symbol names to see if
     // this one was listed
     for_vector(const char, toCheck, unqualified) {
-      if (toCheck == name)
-        return false;
+      if (toCheck == name) return false;
     }
 
-    for(std::map<const char*, const char*>::const_iterator it = renamed.begin();
-        it != renamed.end();
-        ++it) {
+    for (std::map<const char*, const char*>::const_iterator it =
+           renamed.begin();
+         it != renamed.end();
+         ++it) {
       if (astr(name) == astr(it->first)) {
         return false;
       }
@@ -557,15 +549,15 @@ bool ImportStmt::providesNewSymbols(const UseStmt* other) const {
     // and the other's except list, then we provide new symbols
     unsigned int numSame = 0;
     for_vector(const char, name, unqualified) {
-      if (std::find(other->named.begin(), other->named.end(),
-                    name) != other->named.end()) {
+      if (std::find(other->named.begin(), other->named.end(), name) !=
+          other->named.end()) {
         numSame++;
       }
     }
     return numSame > 0;
 
-  } else if (other->named.size() + other->renamed.size() < unqualified.size() +
-             renamed.size()) {
+  } else if (other->named.size() + other->renamed.size() <
+             unqualified.size() + renamed.size()) {
     // Other has an 'only' list and it has less symbols in it than our list of
     // unqualified or renamed symbols.  By definition, this means we are
     // providing symbols not available in other.
@@ -575,22 +567,25 @@ bool ImportStmt::providesNewSymbols(const UseStmt* other) const {
     unsigned int numSame = 0;
 
     for_vector(const char, name, unqualified) {
-      if (std::find(other->named.begin(), other->named.end(),
-                    name) != other->named.end()) {
+      if (std::find(other->named.begin(), other->named.end(), name) !=
+          other->named.end()) {
         numSame++;
       }
     }
 
-    for(std::map<const char*, const char*>::const_iterator it = renamed.begin();
-        it != renamed.end(); ++it) {
+    for (std::map<const char*, const char*>::const_iterator it =
+           renamed.begin();
+         it != renamed.end();
+         ++it) {
       // Don't check against other's only list.  A renamed version of
       // something in their only list is a new symbol
       // Do check against other's renamed list.  If both uses cause the exact
       // same rename to occur, we should count it.
       for (std::map<const char*, const char*>::const_iterator otherIt =
              other->renamed.begin();
-           otherIt != other->renamed.end(); ++otherIt) {
-        if (astr(it->first) ==  astr(otherIt->first) &&
+           otherIt != other->renamed.end();
+           ++otherIt) {
+        if (astr(it->first) == astr(otherIt->first) &&
             astr(it->second) == astr(otherIt->second)) {
           numSame++;
         }
@@ -619,8 +614,8 @@ bool ImportStmt::providesNewSymbols(const ImportStmt* other) const {
     // We both provide unqualified access to at least some of the symbols in the
     // module.  It's possible that we overlap somewhat, so check to be sure
 
-    if (other->unqualified.size() + other->renamed.size() < unqualified.size() +
-        renamed.size()) {
+    if (other->unqualified.size() + other->renamed.size() <
+        unqualified.size() + renamed.size()) {
       // We defined more unqualified symbols than the other import, so we
       // definitely provide more
       return true;
@@ -628,22 +623,26 @@ bool ImportStmt::providesNewSymbols(const ImportStmt* other) const {
       unsigned int numSame = 0;
 
       for_vector(const char, name, unqualified) {
-        if (std::find(other->unqualified.begin(), other->unqualified.end(),
+        if (std::find(other->unqualified.begin(),
+                      other->unqualified.end(),
                       name) != other->unqualified.end()) {
           numSame++;
         }
       }
 
-      for(std::map<const char*, const char*>::const_iterator it =
-            renamed.begin(); it != renamed.end(); ++it) {
+      for (std::map<const char*, const char*>::const_iterator it =
+             renamed.begin();
+           it != renamed.end();
+           ++it) {
         // Don't check against other's unqualified list.  A renamed version of
         // something in their unqualified list is a new symbol
         // Do check against other's renamed list.  If both uses cause the exact
         // same rename to occur, we should count it.
         for (std::map<const char*, const char*>::const_iterator otherIt =
                other->renamed.begin();
-             otherIt != other->renamed.end(); ++otherIt) {
-          if (strcmp(it->first,  otherIt->first)  == 0 &&
+             otherIt != other->renamed.end();
+             ++otherIt) {
+          if (strcmp(it->first, otherIt->first) == 0 &&
               strcmp(it->second, otherIt->second) == 0) {
             numSame++;
           }
@@ -681,8 +680,8 @@ ImportStmt* ImportStmt::applyOuterUse(const UseStmt* outer) {
     std::vector<const char*> newUnqualifiedList;
 
     for_vector(const char, includeMe, unqualified) {
-      if (std::find(outer->named.begin(), outer->named.end(),
-                    includeMe) == outer->named.end()) {
+      if (std::find(outer->named.begin(), outer->named.end(), includeMe) ==
+          outer->named.end()) {
 
         // We didn't find this symbol in the list to exclude, so
         // add it.
@@ -693,7 +692,8 @@ ImportStmt* ImportStmt::applyOuterUse(const UseStmt* outer) {
     std::map<const char*, const char*> newRenamed;
 
     for (std::map<const char*, const char*>::iterator it = renamed.begin();
-         it != renamed.end(); ++it) {
+         it != renamed.end();
+         ++it) {
       if (std::find(outer->named.begin(), outer->named.end(), it->first) ==
           outer->named.end()) {
         // We didn't find the new name in the list to exclude, so the rename
@@ -731,8 +731,8 @@ ImportStmt* ImportStmt::applyOuterUse(const UseStmt* outer) {
     std::map<const char*, const char*> newRenamed;
 
     for_vector(const char, includeMe, outer->named) {
-      if (std::find(unqualified.begin(), unqualified.end(),
-                    includeMe) != unqualified.end()) {
+      if (std::find(unqualified.begin(), unqualified.end(), includeMe) !=
+          unqualified.end()) {
         // We found this symbol in both lists, so add it
         // to the union of them.
         newUnqualifiedList.push_back(includeMe);
@@ -750,9 +750,11 @@ ImportStmt* ImportStmt::applyOuterUse(const UseStmt* outer) {
     }
 
     for (std::map<const char*, const char*>::const_iterator it =
-           outer->renamed.begin(); it != outer->renamed.end(); ++it) {
-      if (std::find(unqualified.begin(), unqualified.end(),
-                    it->second) != unqualified.end()) {
+           outer->renamed.begin();
+         it != outer->renamed.end();
+         ++it) {
+      if (std::find(unqualified.begin(), unqualified.end(), it->second) !=
+          unqualified.end()) {
         // The old name was in our list.  We need to rename it.
         newRenamed[it->first] = it->second;
       } else {
@@ -818,8 +820,8 @@ ImportStmt* ImportStmt::applyOuterImport(const ImportStmt* outer) {
       std::map<const char*, const char*> newRenamed;
 
       for_vector(const char, includeMe, outer->unqualified) {
-        if (std::find(unqualified.begin(), unqualified.end(),
-                      includeMe) != unqualified.end()) {
+        if (std::find(unqualified.begin(), unqualified.end(), includeMe) !=
+            unqualified.end()) {
           // We found this symbol in both lists, so add it
           // to the union of them.
           newUnqualifiedList.push_back(includeMe);
@@ -837,9 +839,11 @@ ImportStmt* ImportStmt::applyOuterImport(const ImportStmt* outer) {
       }
 
       for (std::map<const char*, const char*>::const_iterator it =
-             outer->renamed.begin(); it != outer->renamed.end(); ++it) {
-        if (std::find(unqualified.begin(), unqualified.end(),
-                      it->second) != unqualified.end()) {
+             outer->renamed.begin();
+           it != outer->renamed.end();
+           ++it) {
+        if (std::find(unqualified.begin(), unqualified.end(), it->second) !=
+            unqualified.end()) {
           // The old name was in our list.  We need to rename it.
           newRenamed[it->first] = it->second;
         } else {

@@ -60,20 +60,19 @@ foreach_ast(decl_gvecs);
 
 static int uid = 1;
 
-#define decl_counters(type)                                             \
-  int n##type = g##type##s.n, k##type = n##type*sizeof(type)/1024
+#define decl_counters(type)                                           \
+  int n##type = g##type##s.n, k##type = n##type * sizeof(type) / 1024
 
 #define sum_gvecs(type) g##type##s.n
 
-#define def_vec_hash(SomeType) \
-    template<> \
-    uintptr_t _vec_hasher(SomeType* obj) { \
-      if (obj == NULL) { \
-        return 0; \
-      } else { \
-        return (uintptr_t)((BaseAST*)obj)->id; \
-      } \
-    }
+#define def_vec_hash(SomeType)                       \
+  template <> uintptr_t _vec_hasher(SomeType* obj) { \
+    if (obj == NULL) {                               \
+      return 0;                                      \
+    } else {                                         \
+      return (uintptr_t)((BaseAST*)obj)->id;         \
+    }                                                \
+  }
 
 foreach_ast(def_vec_hash);
 def_vec_hash(Symbol);
@@ -107,69 +106,163 @@ void printStatistics(const char* pass) {
   foreach_ast(decl_counters);
 
   int nStmt = nBlockStmt + nCondStmt + nDeferStmt + nGotoStmt + nUseStmt +
-    nImportStmt + nExternBlockStmt + nForallStmt + nTryStmt + nForwardingStmt +
-    nCatchStmt + nImplementsStmt;
+              nImportStmt + nExternBlockStmt + nForallStmt + nTryStmt +
+              nForwardingStmt + nCatchStmt + nImplementsStmt;
   int kStmt = kBlockStmt + kCondStmt + kDeferStmt + kGotoStmt + kUseStmt +
-    kImportStmt + kExternBlockStmt + kForallStmt + kTryStmt + kForwardingStmt +
-    kCatchStmt + kImplementsStmt;
+              kImportStmt + kExternBlockStmt + kForallStmt + kTryStmt +
+              kForwardingStmt + kCatchStmt + kImplementsStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr +
-    nContextCallExpr + nLoopExpr + nNamedExpr + nIfcConstraint + nIfExpr +
-    nTemporaryConversionThunk;
+              nContextCallExpr + nLoopExpr + nNamedExpr + nIfcConstraint +
+              nIfExpr + nTemporaryConversionThunk;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr +
-    kContextCallExpr + kLoopExpr + kNamedExpr + kIfcConstraint + kIfExpr +
-    kTemporaryConversionThunk;
-  int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nShadowVarSymbol+nTypeSymbol+nFnSymbol+nInterfaceSymbol+nEnumSymbol+nLabelSymbol+nTemporaryConversionSymbol;
-  int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kShadowVarSymbol+kTypeSymbol+kFnSymbol+kInterfaceSymbol+kEnumSymbol+kLabelSymbol+kTemporaryConversionSymbol;
-  int nType = nPrimitiveType+nConstrainedType+nEnumType+nAggregateType+nFunctionType+nTemporaryConversionType+nDecoratedClassType;
-  int kType = kPrimitiveType+kConstrainedType+kEnumType+kAggregateType+kFunctionType+kTemporaryConversionType+kDecoratedClassType;
+              kContextCallExpr + kLoopExpr + kNamedExpr + kIfcConstraint +
+              kIfExpr + kTemporaryConversionThunk;
+  int nSymbol = nModuleSymbol + nVarSymbol + nArgSymbol + nShadowVarSymbol +
+                nTypeSymbol + nFnSymbol + nInterfaceSymbol + nEnumSymbol +
+                nLabelSymbol + nTemporaryConversionSymbol;
+  int kSymbol = kModuleSymbol + kVarSymbol + kArgSymbol + kShadowVarSymbol +
+                kTypeSymbol + kFnSymbol + kInterfaceSymbol + kEnumSymbol +
+                kLabelSymbol + kTemporaryConversionSymbol;
+  int nType = nPrimitiveType + nConstrainedType + nEnumType + nAggregateType +
+              nFunctionType + nTemporaryConversionType + nDecoratedClassType;
+  int kType = kPrimitiveType + kConstrainedType + kEnumType + kAggregateType +
+              kFunctionType + kTemporaryConversionType + kDecoratedClassType;
 
-  fprintf(stderr, "%7d asts (%6dK) %s\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType, pass);
+  fprintf(stderr,
+          "%7d asts (%6dK) %s\n",
+          nStmt + nExpr + nSymbol + nType,
+          kStmt + kExpr + kSymbol + kType,
+          pass);
 
-  if (nStmt+nExpr+nSymbol+nType > maxN)
-    maxN = nStmt+nExpr+nSymbol+nType;
+  if (nStmt + nExpr + nSymbol + nType > maxN)
+    maxN = nStmt + nExpr + nSymbol + nType;
 
-  if (kStmt+kExpr+kSymbol+kType > maxK)
-    maxK = kStmt+kExpr+kSymbol+kType;
-
-  if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Stmt %9d  Cond %9d  Block %9d  Goto  %9d\n",
-            nStmt, nCondStmt, nBlockStmt, nGotoStmt);
-  if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Stmt %9dK Cond %9dK Block %9dK Goto  %9dK\n",
-            kStmt, kCondStmt, kBlockStmt, kGotoStmt);
-  if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Stmt %6dK Cond %6dK Block %6dK Goto  %6dK\n",
-            kStmt, kCondStmt, kBlockStmt, kGotoStmt);
-
-  if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %9d  Unre %9d  Sym   %9d  Def   %9d  Call  %9d  Forall %9d  Named %9d  If   %9d  Thunk %9d\n",
-            nExpr, nUnresolvedSymExpr, nSymExpr, nDefExpr, nCallExpr, nLoopExpr, nNamedExpr, nIfExpr, nTemporaryConversionThunk);
-  if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %9dK Unre %9dK Sym   %9dK Def   %9dK Call  %9dK Forall %9dk Named %9dK If   %9d  Thunk %9dK\n",
-            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kLoopExpr, kNamedExpr, kIfExpr, kTemporaryConversionThunk);
-  if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %6dK Unre %6dK Sym   %6dK Def   %6dK Call  %6dK Forall %6dk Named %6dK If   %6d  Thunk %9dK\n",
-            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kLoopExpr, kNamedExpr, kIfExpr, kTemporaryConversionThunk);
+  if (kStmt + kExpr + kSymbol + kType > maxK)
+    maxK = kStmt + kExpr + kSymbol + kType;
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Sym  %9d  Mod  %9d  Var   %9d  Arg   %9d  Shd   %9d  Type   %9d  Fn    %9d  Enum %9d  Label %9d\n",
-            nSymbol, nModuleSymbol, nVarSymbol, nArgSymbol, nShadowVarSymbol, nTypeSymbol, nFnSymbol, nEnumSymbol, nLabelSymbol);
+    fprintf(stderr,
+            "    Stmt %9d  Cond %9d  Block %9d  Goto  %9d\n",
+            nStmt,
+            nCondStmt,
+            nBlockStmt,
+            nGotoStmt);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Sym  %9dK Mod  %9dK Var   %9dK Arg   %9dK Shd   %9dK Type   %9dK Fn    %9dK Enum %9dK Label %9dK\n",
-            kSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kShadowVarSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
+    fprintf(stderr,
+            "    Stmt %9dK Cond %9dK Block %9dK Goto  %9dK\n",
+            kStmt,
+            kCondStmt,
+            kBlockStmt,
+            kGotoStmt);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Sym  %6dK Mod  %6dK Var   %6dK Arg   %6dK Shd   %6dK Type   %6dK Fn    %6dK Enum %6dK Label %6dK\n",
-            kSymbol, kModuleSymbol, kVarSymbol, kArgSymbol, kShadowVarSymbol, kTypeSymbol, kFnSymbol, kEnumSymbol, kLabelSymbol);
+    fprintf(stderr,
+            "    Stmt %6dK Cond %6dK Block %6dK Goto  %6dK\n",
+            kStmt,
+            kCondStmt,
+            kBlockStmt,
+            kGotoStmt);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Type %9d  Prim %9d  Enum  %9d  Class %9d \n",
-            nType, nPrimitiveType, nEnumType, nAggregateType);
+    fprintf(stderr,
+            "    Expr %9d  Unre %9d  Sym   %9d  Def   %9d  Call  %9d  Forall "
+            "%9d  Named %9d  If   %9d  Thunk %9d\n",
+            nExpr,
+            nUnresolvedSymExpr,
+            nSymExpr,
+            nDefExpr,
+            nCallExpr,
+            nLoopExpr,
+            nNamedExpr,
+            nIfExpr,
+            nTemporaryConversionThunk);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Type %9dK Prim %9dK Enum  %9dK Class %9dK\n",
-            kType, kPrimitiveType, kEnumType, kAggregateType);
+    fprintf(stderr,
+            "    Expr %9dK Unre %9dK Sym   %9dK Def   %9dK Call  %9dK Forall "
+            "%9dk Named %9dK If   %9d  Thunk %9dK\n",
+            kExpr,
+            kUnresolvedSymExpr,
+            kSymExpr,
+            kDefExpr,
+            kCallExpr,
+            kLoopExpr,
+            kNamedExpr,
+            kIfExpr,
+            kTemporaryConversionThunk);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Type %6dK Prim %6dK Enum  %6dK Class %6dK\n",
-            kType, kPrimitiveType, kEnumType, kAggregateType);
+    fprintf(stderr,
+            "    Expr %6dK Unre %6dK Sym   %6dK Def   %6dK Call  %6dK Forall "
+            "%6dk Named %6dK If   %6d  Thunk %9dK\n",
+            kExpr,
+            kUnresolvedSymExpr,
+            kSymExpr,
+            kDefExpr,
+            kCallExpr,
+            kLoopExpr,
+            kNamedExpr,
+            kIfExpr,
+            kTemporaryConversionThunk);
+
+  if (strstr(fPrintStatistics, "n"))
+    fprintf(stderr,
+            "    Sym  %9d  Mod  %9d  Var   %9d  Arg   %9d  Shd   %9d  Type   "
+            "%9d  Fn    %9d  Enum %9d  Label %9d\n",
+            nSymbol,
+            nModuleSymbol,
+            nVarSymbol,
+            nArgSymbol,
+            nShadowVarSymbol,
+            nTypeSymbol,
+            nFnSymbol,
+            nEnumSymbol,
+            nLabelSymbol);
+  if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
+    fprintf(stderr,
+            "    Sym  %9dK Mod  %9dK Var   %9dK Arg   %9dK Shd   %9dK Type   "
+            "%9dK Fn    %9dK Enum %9dK Label %9dK\n",
+            kSymbol,
+            kModuleSymbol,
+            kVarSymbol,
+            kArgSymbol,
+            kShadowVarSymbol,
+            kTypeSymbol,
+            kFnSymbol,
+            kEnumSymbol,
+            kLabelSymbol);
+  if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
+    fprintf(stderr,
+            "    Sym  %6dK Mod  %6dK Var   %6dK Arg   %6dK Shd   %6dK Type   "
+            "%6dK Fn    %6dK Enum %6dK Label %6dK\n",
+            kSymbol,
+            kModuleSymbol,
+            kVarSymbol,
+            kArgSymbol,
+            kShadowVarSymbol,
+            kTypeSymbol,
+            kFnSymbol,
+            kEnumSymbol,
+            kLabelSymbol);
+
+  if (strstr(fPrintStatistics, "n"))
+    fprintf(stderr,
+            "    Type %9d  Prim %9d  Enum  %9d  Class %9d \n",
+            nType,
+            nPrimitiveType,
+            nEnumType,
+            nAggregateType);
+  if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
+    fprintf(stderr,
+            "    Type %9dK Prim %9dK Enum  %9dK Class %9dK\n",
+            kType,
+            kPrimitiveType,
+            kEnumType,
+            kAggregateType);
+  if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
+    fprintf(stderr,
+            "    Type %6dK Prim %6dK Enum  %6dK Class %6dK\n",
+            kType,
+            kPrimitiveType,
+            kEnumType,
+            kAggregateType);
   last_nasts = nasts;
 }
 
@@ -180,8 +273,7 @@ static void remove_weak_links(VarSymbol* var) {
     for_SymbolSymExprs(se, var) {
       if (isAlive(se))
         if (CallExpr* call = toCallExpr(se->parentExpr))
-          if (call->isPrimitive(PRIM_END_OF_STATEMENT))
-            se->remove();
+          if (call->isPrimitive(PRIM_END_OF_STATEMENT)) se->remove();
     }
   }
 }
@@ -190,8 +282,8 @@ static void remove_weak_links(VarSymbol* var) {
 void trace_remove(BaseAST* ast, char flag) {
   // crash if deletedIdHandle is not initialized but deletedIdFilename is
   if (deletedIdON() == true) {
-    fprintf(deletedIdHandle, "%d %c %p %d\n",
-            currentPassNo, flag, ast, ast->id);
+    fprintf(
+      deletedIdHandle, "%d %c %p %d\n", currentPassNo, flag, ast, ast->id);
   }
   if (ast->id == breakOnRemoveID) {
     if (deletedIdON() == true) fflush(deletedIdHandle);
@@ -204,20 +296,19 @@ void trace_remove(BaseAST* ast, char flag) {
     INT_FATAL(ast, "Unexpected attempt to eviscerate a global type symbol.");
 }
 
-#define clean_gvec(type)                        \
-  int i##type = 0;                              \
-  forv_Vec(type, ast, g##type##s) {             \
-    if (isAlive(ast) || isRootModuleWithType(ast, type)) { \
-      g##type##s.v[i##type++] = ast;            \
-    } else {                                    \
-      if (E_##type == E_VarSymbol)              \
-        remove_weak_links(toVarSymbol(ast));    \
-      trace_remove(ast, 'x');                   \
-      delete ast; ast = 0;                      \
-    }                                           \
-  }                                             \
+#define clean_gvec(type)                                                \
+  int i##type = 0;                                                      \
+  forv_Vec(type, ast, g##type##s) {                                     \
+    if (isAlive(ast) || isRootModuleWithType(ast, type)) {              \
+      g##type##s.v[i##type++] = ast;                                    \
+    } else {                                                            \
+      if (E_##type == E_VarSymbol) remove_weak_links(toVarSymbol(ast)); \
+      trace_remove(ast, 'x');                                           \
+      delete ast;                                                       \
+      ast = 0;                                                          \
+    }                                                                   \
+  }                                                                     \
   g##type##s.n = i##type
-
 
 static void clean_modvec(Vec<ModuleSymbol*>& modvec) {
   int aliveMods = 0;
@@ -234,15 +325,13 @@ static void clean_modvec(Vec<ModuleSymbol*>& modvec) {
 void cleanAst() {
   std::vector<Type*> keysToRm;
 
-  for (auto it = serializeMap.begin() ; it != serializeMap.end() ; it++) {
+  for (auto it = serializeMap.begin(); it != serializeMap.end(); it++) {
     if (!isAlive(it->first)) {
       keysToRm.push_back(it->first);
     }
   }
 
-  for_vector (Type, key, keysToRm) {
-    serializeMap.erase(key);
-  }
+  for_vector(Type, key, keysToRm) { serializeMap.erase(key); }
 
   //
   // clear back pointers to dead ast instances
@@ -270,8 +359,8 @@ void cleanAst() {
 
       if (AggregateType* ct = toAggregateType(ts->type)) {
 
-        if (ct->hasDestructor()                  == true &&
-            isAliveQuick(ct->getDestructor())    == false) {
+        if (ct->hasDestructor() == true &&
+            isAliveQuick(ct->getDestructor()) == false) {
           ct->setDestructor(NULL);
         }
       }
@@ -315,42 +404,35 @@ void cleanAst() {
   foreach_ast(clean_gvec);
 }
 
-
 void destroyAst() {
-  #define destroy_gvec(type)                    \
-    forv_Vec(type, ast, g##type##s) {           \
-      trace_remove(ast, 'z');                   \
-      delete ast;                               \
-    }
+#define destroy_gvec(type)          \
+  forv_Vec(type, ast, g##type##s) { \
+    trace_remove(ast, 'z');         \
+    delete ast;                     \
+  }
   foreach_ast(destroy_gvec);
 }
 
-
-void
-verify() {
+void verify() {
   verifyRemovedIterResumeGotos();
   verifyCopiedIterResumeGotos();
 
-  #define verify_gvec(type)                       \
-    forv_Vec(type, ast, g##type##s) {             \
-     if (isAlive(ast)) {                          \
-      ast->verify();                              \
-     }                                            \
-    }
+#define verify_gvec(type)           \
+  forv_Vec(type, ast, g##type##s) { \
+    if (isAlive(ast)) {             \
+      ast->verify();                \
+    }                               \
+  }
   foreach_ast(verify_gvec);
 
   // rootModule does not pass isAlive(), yet is "alive" - needs to be  verified
   rootModule->verify();
 }
 
-
 int breakOnID = -1;
 int breakOnRemoveID = -1;
 
-int lastNodeIDUsed() {
-  return uid - 1;
-}
-
+int lastNodeIDUsed() { return uid - 1; }
 
 // This is here so that we can break on the creation of a particular
 // BaseAST instance in gdb.
@@ -360,12 +442,8 @@ static void checkid(int id) {
   }
 }
 
-
-BaseAST::BaseAST(AstTag type) :
-  astTag(type),
-  id(uid++),
-  astloc(yystartlineno, yyfilename)
-{
+BaseAST::BaseAST(AstTag type)
+  : astTag(type), id(uid++), astloc(yystartlineno, yyfilename) {
   checkid(id);
   if (!astloc.isEmpty()) {
     // OK, set from yyfilename
@@ -385,18 +463,11 @@ BaseAST::BaseAST(AstTag type) :
 
 const std::string BaseAST::tabText = "   ";
 
-int BaseAST::linenum() const {
-  return astloc.lineno();
-}
+int BaseAST::linenum() const { return astloc.lineno(); }
 
-const char* BaseAST::fname() const {
-  return astloc.filename();
-}
+const char* BaseAST::fname() const { return astloc.filename(); }
 
-const char* BaseAST::stringLoc(void) const {
-  return astloc.stringLoc();
-}
-
+const char* BaseAST::stringLoc(void) const { return astloc.stringLoc(); }
 
 ModuleSymbol* BaseAST::getModule() {
   ModuleSymbol* retval = NULL;
@@ -405,16 +476,13 @@ ModuleSymbol* BaseAST::getModule() {
     retval = x;
 
   } else if (Type* x = toType(this)) {
-    if (x->symbol != NULL)
-      retval = x->symbol->getModule();
+    if (x->symbol != NULL) retval = x->symbol->getModule();
 
   } else if (Symbol* x = toSymbol(this)) {
-    if (x->defPoint != NULL)
-      retval = x->defPoint->getModule();
+    if (x->defPoint != NULL) retval = x->defPoint->getModule();
 
   } else if (Expr* x = toExpr(this)) {
-    if (x->parentSymbol != NULL)
-      retval = x->parentSymbol->getModule();
+    if (x->parentSymbol != NULL) retval = x->parentSymbol->getModule();
 
   } else {
     INT_FATAL(this, "Unexpected case in BaseAST::getModule()");
@@ -442,17 +510,11 @@ bool BaseAST::wasResolvedEarly() {
   return false;
 }
 
-bool BaseAST::isRef() {
-  return this->qualType().isRef();
-}
+bool BaseAST::isRef() { return this->qualType().isRef(); }
 
-bool BaseAST::isWideRef() {
-  return this->qualType().isWideRef();
-}
+bool BaseAST::isWideRef() { return this->qualType().isWideRef(); }
 
-bool BaseAST::isRefOrWideRef() {
-  return this->qualType().isRefOrWideRef();
-}
+bool BaseAST::isRefOrWideRef() { return this->qualType().isRefOrWideRef(); }
 
 FnSymbol* BaseAST::getFunction() {
   BaseAST* cur = this;
@@ -474,7 +536,6 @@ FnSymbol* BaseAST::getFunction() {
   }
   return NULL;
 }
-
 
 Type* BaseAST::getValType() {
   Type* type = typeInfo();
@@ -512,70 +573,73 @@ Type* BaseAST::getWideRefType() {
 const char* BaseAST::astTagAsString() const {
   switch (astTag) {
     case E_TemporaryConversionThunk: return "TemporaryConversionThunk";
-    case E_TemporaryConversionType:  return "TemporaryConversionType";
-    case E_PrimitiveType:      return "PrimitiveType";
-    case E_ConstrainedType:    return "ConstrainedType";
-    case E_EnumType:           return "EnumType";
-    case E_AggregateType:      return "AggregateType";
-    case E_FunctionType:       return "FunctionType";
+    case E_TemporaryConversionType: return "TemporaryConversionType";
+    case E_PrimitiveType: return "PrimitiveType";
+    case E_ConstrainedType: return "ConstrainedType";
+    case E_EnumType: return "EnumType";
+    case E_AggregateType: return "AggregateType";
+    case E_FunctionType: return "FunctionType";
     case E_DecoratedClassType: return "DecoratedClassType";
-    case E_ModuleSymbol:       return "ModuleSymbol";
-    case E_VarSymbol:          return "VarSymbol";
-    case E_ArgSymbol:          return "ArgSymbol";
-    case E_ShadowVarSymbol:    return "ShadowVarSymbol";
-    case E_TypeSymbol:         return "TypeSymbol";
-    case E_FnSymbol:           return "FnSymbol";
-    case E_InterfaceSymbol:    return "InterfaceSymbol";
-    case E_EnumSymbol:         return "EnumSymbol";
-    case E_LabelSymbol:        return "LabelSymbol";
+    case E_ModuleSymbol: return "ModuleSymbol";
+    case E_VarSymbol: return "VarSymbol";
+    case E_ArgSymbol: return "ArgSymbol";
+    case E_ShadowVarSymbol: return "ShadowVarSymbol";
+    case E_TypeSymbol: return "TypeSymbol";
+    case E_FnSymbol: return "FnSymbol";
+    case E_InterfaceSymbol: return "InterfaceSymbol";
+    case E_EnumSymbol: return "EnumSymbol";
+    case E_LabelSymbol: return "LabelSymbol";
     case E_TemporaryConversionSymbol: return "TemporaryConversionSymbol";
-    case E_SymExpr:            return "SymExpr";
-    case E_UnresolvedSymExpr:  return "UnresolvedSymExpr";
-    case E_DefExpr:            return "DefExpr";
-    case E_CallExpr:           return "CallExpr";
-    case E_ContextCallExpr:    return "ContextCallExpr";
-    case E_LoopExpr:           return "LoopExpr";
-    case E_NamedExpr:          return "NamedExpr";
-    case E_IfcConstraint:      return "IfcConstraint";
-    case E_IfExpr:             return "IfExpr";
-    case E_UseStmt:            return "UseStmt";
-    case E_ImportStmt:         return "ImportStmt";
-    case E_CondStmt:           return "CondStmt";
-    case E_GotoStmt:           return "GotoStmt";
-    case E_DeferStmt:          return "DeferStmt";
-    case E_ForallStmt:         return "ForallStmt";
-    case E_TryStmt:            return "TryStmt";
-    case E_ForwardingStmt:     return "ForwardingStmt";
-    case E_CatchStmt:          return "CatchStmt";
-    case E_ImplementsStmt:     return "ImplementsStmt";
-    case E_ExternBlockStmt:    return "ExternBlockStmt";
+    case E_SymExpr: return "SymExpr";
+    case E_UnresolvedSymExpr: return "UnresolvedSymExpr";
+    case E_DefExpr: return "DefExpr";
+    case E_CallExpr: return "CallExpr";
+    case E_ContextCallExpr: return "ContextCallExpr";
+    case E_LoopExpr: return "LoopExpr";
+    case E_NamedExpr: return "NamedExpr";
+    case E_IfcConstraint: return "IfcConstraint";
+    case E_IfExpr: return "IfExpr";
+    case E_UseStmt: return "UseStmt";
+    case E_ImportStmt: return "ImportStmt";
+    case E_CondStmt: return "CondStmt";
+    case E_GotoStmt: return "GotoStmt";
+    case E_DeferStmt: return "DeferStmt";
+    case E_ForallStmt: return "ForallStmt";
+    case E_TryStmt: return "TryStmt";
+    case E_ForwardingStmt: return "ForwardingStmt";
+    case E_CatchStmt: return "CatchStmt";
+    case E_ImplementsStmt: return "ImplementsStmt";
+    case E_ExternBlockStmt: return "ExternBlockStmt";
     case E_BlockStmt: {
-        // see AST_CHILDREN_CALL
-        const BlockStmt* stmt = toConstBlockStmt(this);
-        if (false) return "";
-        else if (stmt->isCForLoop())     return "CForLoop";
-        else if (stmt->isForLoop())      return "ForLoop";
-        else if (stmt->isParamForLoop()) return "ParamForLoop";
-        else if (stmt->isWhileDoStmt())  return "WhileDoStmt";
-        else if (stmt->isDoWhileStmt())  return "DoWhileStmt";
-        else                             return "BlockStmt";
-      }
+      // see AST_CHILDREN_CALL
+      const BlockStmt* stmt = toConstBlockStmt(this);
+      if (false)
+        return "";
+      else if (stmt->isCForLoop())
+        return "CForLoop";
+      else if (stmt->isForLoop())
+        return "ForLoop";
+      else if (stmt->isParamForLoop())
+        return "ParamForLoop";
+      else if (stmt->isWhileDoStmt())
+        return "WhileDoStmt";
+      else if (stmt->isDoWhileStmt())
+        return "DoWhileStmt";
+      else
+        return "BlockStmt";
+    }
   }
   return "BaseAST??";
 }
 
-
 void registerModule(ModuleSymbol* mod) {
   switch (mod->modTag) {
-  case MOD_USER:
-    userModules.add(mod);
-  case MOD_STANDARD:
-  case MOD_INTERNAL:
-    if (strcmp(mod->name, "_root"))
-      allModules.add(mod);
-    break;
-  default:
-    INT_FATAL(mod, "Unable to register module");
+    case MOD_USER: userModules.add(mod);
+    case MOD_STANDARD:
+    case MOD_INTERNAL:
+      if (strcmp(mod->name, "_root")) allModules.add(mod);
+      break;
+    default: INT_FATAL(mod, "Unable to register module");
   }
 }
 
@@ -596,18 +660,16 @@ static Symbol* lookupTransitively(SymbolMap* map, Symbol* sym) {
   return x;
 }
 
-#define SUB_SYMBOL(x)                                   \
-  do {                                                  \
-    if (x)                                              \
-      if (Symbol* y = lookupTransitively(map, x))       \
-        x = y;                                          \
+#define SUB_SYMBOL(x)                                    \
+  do {                                                   \
+    if (x)                                               \
+      if (Symbol* y = lookupTransitively(map, x)) x = y; \
   } while (0)
 
-#define SUB_TYPE(x)                                       \
-  do {                                                    \
-    if (x)                                                \
-      if (Symbol* y = lookupTransitively(map, x->symbol)) \
-        x = y->type;                                      \
+#define SUB_TYPE(x)                                                    \
+  do {                                                                 \
+    if (x)                                                             \
+      if (Symbol* y = lookupTransitively(map, x->symbol)) x = y->type; \
   } while (0)
 
 void update_symbols(BaseAST* ast, SymbolMap* map) {
@@ -638,12 +700,11 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
       }
     }
 
-
   } else if (DefExpr* defExpr = toDefExpr(ast)) {
     SUB_TYPE(defExpr->sym->type);
 
   } else if (LoopStmt* ls = toLoopStmt(ast)) {
-    LabelSymbol* breakLabel    = ls->breakLabelGet();
+    LabelSymbol* breakLabel = ls->breakLabelGet();
     LabelSymbol* continueLabel = ls->continueLabelGet();
 
     if (breakLabel != 0) {
@@ -660,11 +721,13 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
 
   } else if (ForallStmt* forall = toForallStmt(ast)) {
     if (forall->fContinueLabel) {
-      if (LabelSymbol* y = toLabelSymbol(lookupTransitively(map, forall->fContinueLabel)))
-          forall->fContinueLabel = y;
+      if (LabelSymbol* y =
+            toLabelSymbol(lookupTransitively(map, forall->fContinueLabel)))
+        forall->fContinueLabel = y;
     } else if (forall->fErrorHandlerLabel) {
-      if (LabelSymbol* y = toLabelSymbol(lookupTransitively(map, forall->fErrorHandlerLabel)))
-          forall->fErrorHandlerLabel = y;
+      if (LabelSymbol* y =
+            toLabelSymbol(lookupTransitively(map, forall->fErrorHandlerLabel)))
+        forall->fErrorHandlerLabel = y;
     }
   } else if (VarSymbol* ps = toVarSymbol(ast)) {
     SUB_TYPE(ps->type);
@@ -684,22 +747,18 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
   AST_CHILDREN_CALL(ast, update_symbols, map);
 }
 
-GenRet baseASTCodegen(BaseAST* ast)
-{
+GenRet baseASTCodegen(BaseAST* ast) {
   GenRet ret = ast->codegen();
-  if (!ret.chplType)
-    ret.chplType = ast->typeInfo();
-  ret.isUnsigned = ! isSignedType(ret.chplType);
+  if (!ret.chplType) ret.chplType = ast->typeInfo();
+  ret.isUnsigned = !isSignedType(ret.chplType);
   return ret;
 }
 
-GenRet baseASTCodegenInt(int x)
-{
+GenRet baseASTCodegenInt(int x) {
   return baseASTCodegen(new_IntSymbol(x, INT_SIZE_64));
 }
 
-GenRet baseASTCodegenString(const char* str)
-{
+GenRet baseASTCodegenString(const char* str) {
   return baseASTCodegen(new_CStringSymbol(str));
 }
 
@@ -708,57 +767,49 @@ GenRet baseASTCodegenString(const char* str)
 *                                                                             *
 ************************************** | *************************************/
 
-bool isLoopStmt(const BaseAST* a)
-{
+bool isLoopStmt(const BaseAST* a) {
   const BlockStmt* stmt = toConstBlockStmt(a);
 
   return (stmt != 0 && stmt->isLoopStmt()) ? true : false;
 }
 
-bool isWhileStmt(const BaseAST* a)
-{
+bool isWhileStmt(const BaseAST* a) {
   const BlockStmt* stmt = toConstBlockStmt(a);
 
   return (stmt != 0 && stmt->isWhileStmt()) ? true : false;
 }
 
-bool isWhileDoStmt(const BaseAST* a)
-{
+bool isWhileDoStmt(const BaseAST* a) {
   const BlockStmt* stmt = toConstBlockStmt(a);
 
   return (stmt != 0 && stmt->isWhileDoStmt()) ? true : false;
 }
 
-bool isDoWhileStmt(const BaseAST* a)
-{
+bool isDoWhileStmt(const BaseAST* a) {
   const BlockStmt* stmt = toConstBlockStmt(a);
 
   return (stmt != 0 && stmt->isDoWhileStmt()) ? true : false;
 }
 
-bool isParamForLoop(const BaseAST* a)
-{
+bool isParamForLoop(const BaseAST* a) {
   const BlockStmt* stmt = toConstBlockStmt(a);
 
   return (stmt != 0 && stmt->isParamForLoop()) ? true : false;
 }
 
-bool isForLoop(const BaseAST* a)
-{
+bool isForLoop(const BaseAST* a) {
   const BlockStmt* stmt = toConstBlockStmt(a);
 
   return (stmt != 0 && stmt->isForLoop()) ? true : false;
 }
 
-bool isCoforallLoop(const BaseAST* a)
-{
+bool isCoforallLoop(const BaseAST* a) {
   const BlockStmt* stmt = toConstBlockStmt(a);
 
   return (stmt != 0 && stmt->isCoforallLoop()) ? true : false;
 }
 
-bool isCForLoop(const BaseAST* a)
-{
+bool isCForLoop(const BaseAST* a) {
   const BlockStmt* stmt = toConstBlockStmt(a);
 
   return (stmt != 0 && stmt->isCForLoop()) ? true : false;

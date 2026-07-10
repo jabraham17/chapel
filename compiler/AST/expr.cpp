@@ -56,26 +56,17 @@ class FnSymbol;
 *                                                                           *
 ************************************* | ************************************/
 
-Expr::Expr(AstTag astTag) :
-  BaseAST(astTag),
-  parentSymbol(NULL),
-  parentExpr(NULL),
-  list(NULL),
-  prev(NULL),
-  next(NULL)
-{ }
+Expr::Expr(AstTag astTag)
+  : BaseAST(astTag), parentSymbol(NULL), parentExpr(NULL), list(NULL),
+    prev(NULL), next(NULL) {}
 
-bool Expr::isStmt() const {
-  return false;
-}
+bool Expr::isStmt() const { return false; }
 
 const char* DefExpr::name() const {
   const char* retval = 0;
 
-  if (isLcnSymbol(sym)    == true ||
-      isTypeSymbol(sym)   == true ||
-      isFnSymbol(sym)     == true ||
-      isModuleSymbol(sym) == true) {
+  if (isLcnSymbol(sym) == true || isTypeSymbol(sym) == true ||
+      isFnSymbol(sym) == true || isModuleSymbol(sym) == true) {
     retval = sym->name;
   }
 
@@ -99,42 +90,33 @@ const char* DefExpr::name() const {
 // Note that this case is actually just a copy of a pointer's address, and
 // will not generate an addrof in the generated code.
 //
-static
-bool isAddrOfWideRefVar(Expr* e)
-{
+static bool isAddrOfWideRefVar(Expr* e) {
   // ADDR_OF of a wide ref variable is a wide ref (not a ref).
   if (CallExpr* call = toCallExpr(e))
     if (call->isPrimitive(PRIM_ADDR_OF))
       if (SymExpr* se = toSymExpr(call->get(1)))
-        if (se->symbol()->qualType().isWideRef())
-          return true;
+        if (se->symbol()->qualType().isWideRef()) return true;
 
   return false;
 }
 
 bool Expr::isRef() {
-  if (SymExpr* se = toSymExpr(this))
-    return se->symbol()->isRef();
+  if (SymExpr* se = toSymExpr(this)) return se->symbol()->isRef();
 
-  if (isAddrOfWideRefVar(this))
-    return false; // wide ref, not ref
+  if (isAddrOfWideRefVar(this)) return false; // wide ref, not ref
 
   return this->qualType().isRef();
 }
 
 bool Expr::isWideRef() {
-  if(SymExpr* se = toSymExpr(this))
-    return se->symbol()->isWideRef();
+  if (SymExpr* se = toSymExpr(this)) return se->symbol()->isWideRef();
 
-  if (isAddrOfWideRefVar(this))
-    return true;
+  if (isAddrOfWideRefVar(this)) return true;
 
   return this->qualType().isWideRef();
 }
 
-bool Expr::isRefOrWideRef() {
-  return isRef() || isWideRef();
-}
+bool Expr::isRefOrWideRef() { return isRef() || isWideRef(); }
 
 // Returns true if 'this' properly contains the given expr, false otherwise.
 bool Expr::contains(const Expr* expr) const {
@@ -160,13 +142,11 @@ bool Expr::isModuleDefinition() {
   if (BlockStmt* block = toBlockStmt(this))
     if (block->length() == 1)
       if (DefExpr* def = toDefExpr(block->body.only()))
-        if (isModuleSymbol(def->sym))
-          retval = true;
+        if (isModuleSymbol(def->sym)) retval = true;
 #endif
 
   if (DefExpr* def = toDefExpr(this))
-    if (isModuleSymbol(def->sym))
-      retval = true;
+    if (isModuleSymbol(def->sym)) retval = true;
 
   return retval;
 }
@@ -177,15 +157,17 @@ bool Expr::isStmtExpr() const {
   if (isStmt() == true) {
     retval = true;
 
-  // NOAKES 2014/11/28 A WhileStmt is currently a BlockStmt
-  // but needs special handling
+    // NOAKES 2014/11/28 A WhileStmt is currently a BlockStmt
+    // but needs special handling
   } else if (WhileStmt* parent = toWhileStmt(parentExpr)) {
     retval = (parent->condExprGet() != this) ? true : false;
 
-  // NOAKES 2014/11/30 A ForLoop is currently a BlockStmt
-  // but needs special handling
+    // NOAKES 2014/11/30 A ForLoop is currently a BlockStmt
+    // but needs special handling
   } else if (ForLoop* parent = toForLoop(parentExpr)) {
-    retval = (parent->indexGet() != this && parent->iteratorGet() != this) ? true : false;
+    retval = (parent->indexGet() != this && parent->iteratorGet() != this)
+               ? true
+               : false;
 
   } else {
     retval = isBlockStmt(parentExpr);
@@ -196,15 +178,12 @@ bool Expr::isStmtExpr() const {
 
 Expr* Expr::getStmtExpr() {
   for (Expr* expr = this; expr; expr = expr->parentExpr)
-    if (expr->isStmtExpr())
-      return expr;
+    if (expr->isStmtExpr()) return expr;
 
   return nullptr;
 }
 
-Expr* Expr::getNextExpr(Expr* expr) {
-  return this;
-}
+Expr* Expr::getNextExpr(Expr* expr) { return this; }
 
 // Returns the nearest enclosing *scoped* block statement (excluding 'this')
 // that contains 'this'
@@ -212,7 +191,7 @@ Expr* Expr::getNextExpr(Expr* expr) {
 // It is probably an error if there is no such BlockStmt.
 // Currently return NULL.  Consider throwing an internal error in the future.
 BlockStmt* Expr::getScopeBlock() {
-  Expr*      expr   = this->parentExpr;
+  Expr* expr = this->parentExpr;
   BlockStmt* retval = NULL;
 
   while (expr != NULL && retval == NULL) {
@@ -221,7 +200,7 @@ BlockStmt* Expr::getScopeBlock() {
     if (block != NULL && (block->blockTag & BLOCK_SCOPELESS) == 0)
       retval = block;
     else
-      expr   = expr->parentExpr;
+      expr = expr->parentExpr;
   }
 
   return retval;
@@ -229,17 +208,13 @@ BlockStmt* Expr::getScopeBlock() {
 
 void Expr::verify() {
   if (prev || next)
-    if (!list)
-      INT_FATAL(this, "Expr is in list but does not point at it");
+    if (!list) INT_FATAL(this, "Expr is in list but does not point at it");
 
-  if (prev && prev->next != this)
-    INT_FATAL(this, "Bad Expr->prev->next");
+  if (prev && prev->next != this) INT_FATAL(this, "Bad Expr->prev->next");
 
-  if (next && next->prev != this)
-    INT_FATAL(this, "Bad Expr->next->prev");
+  if (next && next->prev != this) INT_FATAL(this, "Bad Expr->next->prev");
 
-  if (!parentSymbol)
-    INT_FATAL(this, "Expr::parentSymbol is NULL");
+  if (!parentSymbol) INT_FATAL(this, "Expr::parentSymbol is NULL");
 
   if (parentExpr && parentExpr->parentSymbol != parentSymbol)
     INT_FATAL(this, "Bad Expr::parentSymbol");
@@ -249,8 +224,7 @@ void Expr::verify() {
 
   if (list && !parentExpr) {
     if (Symbol* lps = toSymbol(list->parent))
-      if (lps != parentSymbol)
-        INT_FATAL(this, "Bad symbol Expr::list::parent");
+      if (lps != parentSymbol) INT_FATAL(this, "Bad symbol Expr::list::parent");
     if (Type* lpt = toType(list->parent))
       if (lpt->symbol != parentSymbol)
         INT_FATAL(this, "Bad type Expr::list::parent");
@@ -260,8 +234,7 @@ void Expr::verify() {
 }
 
 void Expr::verify(AstTag expectedTag) {
-  if (astTag != expectedTag)
-    INT_FATAL(this, "bad astTag");
+  if (astTag != expectedTag) INT_FATAL(this, "bad astTag");
   Expr::verify();
 }
 
@@ -275,34 +248,29 @@ QualifiedType Expr::qualType() {
   return QualifiedType(NULL);
 }
 
-bool Expr::isNoInitExpr() const {
-  return false;
-}
+bool Expr::isNoInitExpr() const { return false; }
 
-static void
-callReplaceChild(Expr* expr, Expr* newAst) {
+static void callReplaceChild(Expr* expr, Expr* newAst) {
 
   if (expr->parentExpr) {
     expr->parentExpr->replaceChild(expr, newAst);
 
-
   } else if (expr->parentSymbol) {
     expr->parentSymbol->replaceChild(expr, newAst);
-
 
   } else {
     INT_FATAL(expr, "Expr %12d does not have a parent", expr->id);
   }
 }
 
-void Expr::prettyPrint(std::ostream *o) {
-  if (BlockStmt *stmt = toBlockStmt(this))
+void Expr::prettyPrint(std::ostream* o) {
+  if (BlockStmt* stmt = toBlockStmt(this))
     printf("blockstmt %s", stmt->userLabel);
 
-  else if (CondStmt *stmt = toCondStmt(this))
+  else if (CondStmt* stmt = toCondStmt(this))
     printf("condstmt %s", stmt->condExpr->parentSymbol->name);
 
-  else if (GotoStmt *stmt = toGotoStmt(this))
+  else if (GotoStmt* stmt = toGotoStmt(this))
     printf("gotostmt %s", stmt->label->parentSymbol->name);
 
   printf("Oh no! This method hasn't been defined for this class!\n");
@@ -338,7 +306,6 @@ Expr* Expr::remove() {
   return this;
 }
 
-
 void Expr::replace(Expr* new_ast) {
   if (new_ast->parentSymbol || new_ast->parentExpr)
     INT_FATAL(new_ast, "Argument is already in AST in Expr::replace");
@@ -372,16 +339,13 @@ void Expr::replace(Expr* new_ast) {
   if (DefExpr* def = toDefExpr(this))
     if (ArgSymbol* arg = toArgSymbol(def->sym))
       if (FnSymbol* fn = toFnSymbol(myParentSymbol))
-        if (fn->_this == arg)
-          fn->_this = toDefExpr(new_ast)->sym;
+        if (fn->_this == arg) fn->_this = toDefExpr(new_ast)->sym;
 }
-
 
 void Expr::insertBefore(Expr* new_ast) {
   if (new_ast->parentSymbol || new_ast->parentExpr)
     INT_FATAL(new_ast, "Argument is already in AST in Expr::insertBefore");
-  if (!list)
-    INT_FATAL(this, "Cannot call insertBefore on Expr not in a list");
+  if (!list) INT_FATAL(this, "Cannot call insertBefore on Expr not in a list");
   if (new_ast->list)
     INT_FATAL(new_ast, "Argument is in a list in Expr::insertBefore");
   new_ast->prev = prev;
@@ -392,16 +356,14 @@ void Expr::insertBefore(Expr* new_ast) {
   else
     list->head = new_ast;
   prev = new_ast;
-  if (parentSymbol)
-    sibling_insert_help(this, new_ast);
+  if (parentSymbol) sibling_insert_help(this, new_ast);
   list->length++;
 }
 
 void Expr::insertAfter(Expr* new_ast) {
   if (new_ast->parentSymbol || new_ast->parentExpr)
     INT_FATAL(new_ast, "Argument is already in AST in Expr::insertAfter");
-  if (!list)
-    INT_FATAL(this, "Cannot call insertAfter on Expr not in a list");
+  if (!list) INT_FATAL(this, "Cannot call insertAfter on Expr not in a list");
   if (new_ast->list)
     INT_FATAL(new_ast, "Argument is in a list in Expr::insertAfter");
   new_ast->prev = this;
@@ -412,8 +374,7 @@ void Expr::insertAfter(Expr* new_ast) {
   else
     list->tail = new_ast;
   next = new_ast;
-  if (parentSymbol)
-    sibling_insert_help(this, new_ast);
+  if (parentSymbol) sibling_insert_help(this, new_ast);
   list->length++;
 }
 
@@ -439,8 +400,8 @@ void Expr::insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4, Expr* e5) {
   insertAfter(e2);
   insertAfter(e1);
 }
-void Expr::insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4,
-                       Expr* e5, Expr* e6) {
+void Expr::insertAfter(
+  Expr* e1, Expr* e2, Expr* e3, Expr* e4, Expr* e5, Expr* e6) {
   insertAfter(e6);
   insertAfter(e5);
   insertAfter(e4);
@@ -448,7 +409,6 @@ void Expr::insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4,
   insertAfter(e2);
   insertAfter(e1);
 }
-
 
 void Expr::insertBefore(AList exprs) {
   Expr* curr = this;
@@ -459,7 +419,6 @@ void Expr::insertBefore(AList exprs) {
   }
 }
 
-
 void Expr::insertAfter(AList exprs) {
   Expr* prev = this;
   for_alist(curr, exprs) {
@@ -469,9 +428,7 @@ void Expr::insertAfter(AList exprs) {
   }
 }
 
-
-void
-Expr::replace(const char* format, ...) {
+void Expr::replace(const char* format, ...) {
   va_list args;
 
   va_start(args, format);
@@ -479,9 +436,7 @@ Expr::replace(const char* format, ...) {
   va_end(args);
 }
 
-
-void
-Expr::insertBefore(const char* format, ...) {
+void Expr::insertBefore(const char* format, ...) {
   va_list args;
 
   va_start(args, format);
@@ -489,9 +444,7 @@ Expr::insertBefore(const char* format, ...) {
   va_end(args);
 }
 
-
-void
-Expr::insertAfter(const char* format, ...) {
+void Expr::insertAfter(const char* format, ...) {
   va_list args;
 
   va_start(args, format);
@@ -499,49 +452,38 @@ Expr::insertAfter(const char* format, ...) {
   va_end(args);
 }
 
-
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *
 ************************************* | ************************************/
 
-SymExpr::SymExpr(Symbol* init_var) :
-  Expr(E_SymExpr),
-  var(init_var),
-  symbolSymExprsPrev(NULL),
-  symbolSymExprsNext(NULL)
-{
-  if (!init_var)
-    INT_FATAL(this, "Bad call to SymExpr");
+SymExpr::SymExpr(Symbol* init_var)
+  : Expr(E_SymExpr), var(init_var), symbolSymExprsPrev(NULL),
+    symbolSymExprsNext(NULL) {
+  if (!init_var) INT_FATAL(this, "Bad call to SymExpr");
   gSymExprs.add(this);
 
   // No need to call var->addSymExpr here since it will be called
   // when the SymExpr is added to the tree.
 }
 
-bool SymExpr::isNoInitExpr() const {
-  return var == gNoInit;
-}
+bool SymExpr::isNoInitExpr() const { return var == gNoInit; }
 
 void SymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   INT_FATAL(this, "Unexpected case in SymExpr::replaceChild");
 }
 
-Expr* SymExpr::getFirstExpr() {
-  return this;
-}
+Expr* SymExpr::getFirstExpr() { return this; }
 
 void SymExpr::verify() {
   Expr::verify(E_SymExpr);
 
-  if (var == NULL)
-    INT_FATAL(this, "SymExpr::verify %12d: var is NULL", id);
+  if (var == NULL) INT_FATAL(this, "SymExpr::verify %12d: var is NULL", id);
 
   if (var->defPoint) {
     bool isEndOfStatement = false;
     if (CallExpr* call = toCallExpr(parentExpr))
-      if (call->isPrimitive(PRIM_END_OF_STATEMENT))
-        isEndOfStatement = true;
+      if (call->isPrimitive(PRIM_END_OF_STATEMENT)) isEndOfStatement = true;
 
     if (!var->defPoint->inTree() && !isEndOfStatement)
       INT_FATAL(this, "SymExpr::verify %12d:  var->defPoint is not in AST", id);
@@ -578,9 +520,7 @@ void SymExpr::verify() {
   }
 }
 
-SymExpr* SymExpr::copyInner(SymbolMap* map) {
-  return new SymExpr(var);
-}
+SymExpr* SymExpr::copyInner(SymbolMap* map) { return new SymExpr(var); }
 
 QualifiedType SymExpr::qualType(void) {
   if (auto fn = toFnSymbol(var)) {
@@ -591,16 +531,15 @@ QualifiedType SymExpr::qualType(void) {
   }
 }
 
-void SymExpr::prettyPrint(std::ostream *o) {
+void SymExpr::prettyPrint(std::ostream* o) {
   if (strcmp(var->name, "nil") != 0) {
     if (var->isImmediate()) {
-      if (VarSymbol *sym = toVarSymbol(var)) {
+      if (VarSymbol* sym = toVarSymbol(var)) {
         if (sym->immediate->const_kind == CONST_KIND_STRING) {
           *o << "\"";
           *o << sym->immediate->v_string.str();
           *o << "\"";
-        }
-        else if (sym->immediate->const_kind == NUM_KIND_BOOL)
+        } else if (sym->immediate->const_kind == NUM_KIND_BOOL)
           *o << sym->immediate->bool_value();
         else if (sym->immediate->const_kind == NUM_KIND_INT)
           *o << sym->immediate->int_value();
@@ -613,12 +552,9 @@ void SymExpr::prettyPrint(std::ostream *o) {
   }
 }
 
-void SymExpr::accept(AstVisitor* visitor) {
-  visitor->visitSymExpr(this);
-}
+void SymExpr::accept(AstVisitor* visitor) { visitor->visitSymExpr(this); }
 
-void SymExpr::setSymbol(Symbol* s)
-{
+void SymExpr::setSymbol(Symbol* s) {
   // If the old symbol is not NULL and the SymExpr
   // is in the tree, remove the SymExpr from the old Symbol's list.
   if (var != NULL && parentSymbol != NULL) {
@@ -638,49 +574,33 @@ void SymExpr::setSymbol(Symbol* s)
 *                                                                           *
 ************************************* | ************************************/
 
-UnresolvedSymExpr::UnresolvedSymExpr(const char* i_unresolved) :
-  Expr(E_UnresolvedSymExpr),
-  unresolved(astr(i_unresolved))
-{
-  if (!i_unresolved)
-    INT_FATAL(this, "bad call to UnresolvedSymExpr");
+UnresolvedSymExpr::UnresolvedSymExpr(const char* i_unresolved)
+  : Expr(E_UnresolvedSymExpr), unresolved(astr(i_unresolved)) {
+  if (!i_unresolved) INT_FATAL(this, "bad call to UnresolvedSymExpr");
   gUnresolvedSymExprs.add(this);
 }
 
-void
-UnresolvedSymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
+void UnresolvedSymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   INT_FATAL(this, "unexpected case in UnresolvedSymExpr::replaceChild");
 }
 
+Expr* UnresolvedSymExpr::getFirstExpr() { return this; }
 
-Expr* UnresolvedSymExpr::getFirstExpr() {
-  return this;
-}
-
-void
-UnresolvedSymExpr::verify() {
+void UnresolvedSymExpr::verify() {
   Expr::verify(E_UnresolvedSymExpr);
-  if (!unresolved)
-    INT_FATAL(this, "UnresolvedSymExpr::unresolved is NULL");
-  if (unresolved != astr(unresolved))
-    INT_FATAL("unresolved is not an astr");
+  if (!unresolved) INT_FATAL(this, "UnresolvedSymExpr::unresolved is NULL");
+  if (unresolved != astr(unresolved)) INT_FATAL("unresolved is not an astr");
 }
 
-
-UnresolvedSymExpr*
-UnresolvedSymExpr::copyInner(SymbolMap* map) {
+UnresolvedSymExpr* UnresolvedSymExpr::copyInner(SymbolMap* map) {
   return new UnresolvedSymExpr(unresolved);
 }
-
 
 QualifiedType UnresolvedSymExpr::qualType(void) {
   return QualifiedType(dtUnknown);
 }
 
-
-void UnresolvedSymExpr::prettyPrint(std::ostream *o) {
-  *o << unresolved;
-}
+void UnresolvedSymExpr::prettyPrint(std::ostream* o) { *o << unresolved; }
 
 void UnresolvedSymExpr::accept(AstVisitor* visitor) {
   visitor->visitUsymExpr(this);
@@ -691,14 +611,9 @@ void UnresolvedSymExpr::accept(AstVisitor* visitor) {
 *                                                                           *
 ************************************* | ************************************/
 
-DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
-  Expr(E_DefExpr),
-  sym(initSym),
-  init(NULL),
-  exprType(NULL)
-{
-  if (sym)
-    sym->defPoint = this;
+DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType)
+  : Expr(E_DefExpr), sym(initSym), init(NULL), exprType(NULL) {
+  if (sym) sym->defPoint = this;
 
   if (Expr* a = toExpr(initInit)) {
     init = a;
@@ -726,9 +641,7 @@ DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
   gDefExprs.add(this);
 }
 
-Expr* DefExpr::getFirstExpr() {
-  return this;
-}
+Expr* DefExpr::getFirstExpr() { return this; }
 
 void DefExpr::verify() {
   Expr::verify(E_DefExpr);
@@ -739,20 +652,16 @@ void DefExpr::verify() {
     INT_FATAL(this, "Bad FnSymbol::defPoint");
   if (toArgSymbol(sym) && (exprType || init))
     INT_FATAL(this, "Bad ArgSymbol::defPoint");
-  if (sym->defPoint != this)
-    INT_FATAL(this, "Bad DefExpr::sym->defPoint");
+  if (sym->defPoint != this) INT_FATAL(this, "Bad DefExpr::sym->defPoint");
   verifyParent(init);
   verifyParent(exprType);
   verifyNotOnList(init);
   verifyNotOnList(exprType);
 }
 
-
-DefExpr*
-DefExpr::copyInner(SymbolMap* map) {
+DefExpr* DefExpr::copyInner(SymbolMap* map) {
   return new DefExpr(COPY_INT(sym), COPY_INT(init), COPY_INT(exprType));
 }
-
 
 void DefExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == init) {
@@ -764,31 +673,24 @@ void DefExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   }
 }
 
-
 QualifiedType DefExpr::qualType(void) {
   INT_FATAL(this, "Illegal call to DefExpr::qualType()");
   return QualifiedType(NULL);
 }
 
-
 void DefExpr::accept(AstVisitor* visitor) {
   if (visitor->enterDefExpr(this) == true) {
-    if (init)
-      init->accept(visitor);
+    if (init) init->accept(visitor);
 
-    if (exprType)
-      exprType->accept(visitor);
+    if (exprType) exprType->accept(visitor);
 
-    if (sym)
-      sym->accept(visitor);
+    if (sym) sym->accept(visitor);
 
     visitor->exitDefExpr(this);
   }
 }
 
-void DefExpr::prettyPrint(std::ostream *o) {
-  *o << "<DefExprType>";
-}
+void DefExpr::prettyPrint(std::ostream* o) { *o << "<DefExprType>"; }
 
 /************************************* | **************************************
 *                                                                             *
@@ -799,9 +701,9 @@ void DefExpr::prettyPrint(std::ostream *o) {
 ContextCallExpr::ContextCallExpr() : Expr(E_ContextCallExpr) {
   options.parent = this;
 
-  hasValue       = false;
-  hasConstRef    = false;
-  hasRef         = false;
+  hasValue = false;
+  hasConstRef = false;
+  hasRef = false;
 
   gContextCallExprs.add(this);
 }
@@ -809,15 +711,13 @@ ContextCallExpr::ContextCallExpr() : Expr(E_ContextCallExpr) {
 ContextCallExpr* ContextCallExpr::copyInner(SymbolMap* map) {
   ContextCallExpr* _this = 0;
 
-  _this              = new ContextCallExpr();
+  _this = new ContextCallExpr();
 
-  _this->hasValue    = hasValue;
+  _this->hasValue = hasValue;
   _this->hasConstRef = hasConstRef;
-  _this->hasRef      = hasRef;
+  _this->hasRef = hasRef;
 
-  for_alist(expr, options) {
-    _this->options.insertAtTail(COPY_INT(expr));
-  }
+  for_alist(expr, options) { _this->options.insertAtTail(COPY_INT(expr)); }
 
   return _this;
 }
@@ -854,17 +754,15 @@ void ContextCallExpr::verify() {
 void ContextCallExpr::accept(AstVisitor* visitor) {
   if (visitor->enterContextCallExpr(this) == true) {
 
-    for_alist(expr, options) {
-      expr->accept(visitor);
-    }
+    for_alist(expr, options) { expr->accept(visitor); }
 
     visitor->exitContextCallExpr(this);
   }
 }
 
 QualifiedType ContextCallExpr::qualType() {
-  CallExpr*     mainCall = getDesignatedCall(this);
-  QualifiedType retval   = QualifiedType(dtUnknown);
+  CallExpr* mainCall = getDesignatedCall(this);
+  QualifiedType retval = QualifiedType(dtUnknown);
 
   if (mainCall) {
     retval = mainCall->qualType();
@@ -884,10 +782,7 @@ void ContextCallExpr::prettyPrint(std::ostream* o) {
   *o << " )";
 }
 
-Expr* ContextCallExpr::getFirstExpr() {
-  return options.head->getFirstExpr();
-}
-
+Expr* ContextCallExpr::getFirstExpr() { return options.head->getFirstExpr(); }
 
 void ContextCallExpr::setRefValueConstRefOptions(CallExpr* refCall,
                                                  CallExpr* valueCall,
@@ -990,14 +885,10 @@ CallExpr* ContextCallExpr::getRefCall() const {
 *                                                                           *
 ************************************* | ************************************/
 
-NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
-  Expr(E_NamedExpr),
-  name(astr(init_name)),
-  actual(init_actual)
-{
+NamedExpr::NamedExpr(const char* init_name, Expr* init_actual)
+  : Expr(E_NamedExpr), name(astr(init_name)), actual(init_actual) {
   gNamedExprs.add(this);
 }
-
 
 Expr* NamedExpr::getFirstExpr() {
   return (actual != NULL) ? actual->getFirstExpr() : this;
@@ -1009,12 +900,9 @@ void NamedExpr::verify() {
   verifyNotOnList(actual);
 }
 
-
-NamedExpr*
-NamedExpr::copyInner(SymbolMap* map) {
+NamedExpr* NamedExpr::copyInner(SymbolMap* map) {
   return new NamedExpr(astr(name), COPY_INT(actual));
 }
-
 
 void NamedExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   if (old_ast == actual) {
@@ -1024,35 +912,25 @@ void NamedExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   }
 }
 
+QualifiedType NamedExpr::qualType(void) { return actual->qualType(); }
 
-QualifiedType NamedExpr::qualType(void) {
-  return actual->qualType();
-}
-
-
-void NamedExpr::prettyPrint(std::ostream *o) {
-  *o << "<NamedExprType>";
-}
-
+void NamedExpr::prettyPrint(std::ostream* o) { *o << "<NamedExprType>"; }
 
 void NamedExpr::accept(AstVisitor* visitor) {
   if (visitor->enterNamedExpr(this) == true) {
 
-    if (actual)
-      actual->accept(visitor);
+    if (actual) actual->accept(visitor);
 
     visitor->exitNamedExpr(this);
   }
 }
-
 
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *
 ************************************* | ************************************/
 
-bool
-get_bool(Expr* e, uint64_t* i) {
+bool get_bool(Expr* e, uint64_t* i) {
   Immediate* imm = NULL;
   if (e) {
     if (SymExpr* l = toSymExpr(e)) {
@@ -1068,11 +946,10 @@ get_bool(Expr* e, uint64_t* i) {
   return false;
 }
 
-bool
-get_int(Expr *e, int64_t *i) {
+bool get_int(Expr* e, int64_t* i) {
   Immediate* imm = NULL;
   if (e) {
-    if (SymExpr *l = toSymExpr(e)) {
+    if (SymExpr* l = toSymExpr(e)) {
       imm = getSymbolImmediate(l->symbol());
     }
   }
@@ -1085,11 +962,10 @@ get_int(Expr *e, int64_t *i) {
   return false;
 }
 
-bool
-get_uint(Expr *e, uint64_t *i) {
+bool get_uint(Expr* e, uint64_t* i) {
   Immediate* imm = NULL;
   if (e) {
-    if (SymExpr *l = toSymExpr(e)) {
+    if (SymExpr* l = toSymExpr(e)) {
       imm = getSymbolImmediate(l->symbol());
     }
   }
@@ -1102,11 +978,10 @@ get_uint(Expr *e, uint64_t *i) {
   return false;
 }
 
-bool
-get_string(Expr *e, const char **s) {
+bool get_string(Expr* e, const char** s) {
   Immediate* imm = NULL;
   if (e) {
-    if (SymExpr *l = toSymExpr(e)) {
+    if (SymExpr* l = toSymExpr(e)) {
       imm = getSymbolImmediate(l->symbol());
     }
   }
@@ -1119,11 +994,9 @@ get_string(Expr *e, const char **s) {
   return false;
 }
 
-const char*
-get_string(Expr* e) {
+const char* get_string(Expr* e) {
   const char* s = NULL;
-  if (!get_string(e, &s))
-    INT_FATAL(e, "string literal expression expected");
+  if (!get_string(e, &s)) INT_FATAL(e, "string literal expression expected");
   return s;
 }
 
@@ -1135,20 +1008,15 @@ Expr* getNextExpr(Expr* expr) {
 
   } else if (Expr* parent = expr->parentExpr) {
     retval = parent->getNextExpr(expr);
-
   }
 
   return retval;
 }
 
-static bool
-isIdentifierChar(const char c) {
-  return ((c >= 'a' && c <= 'z') ||
-          (c >= 'A' && c <= 'Z') ||
-          (c >= '0' && c <= '9') ||
-          (c == '_') || (c == '.'));
+static bool isIdentifierChar(const char c) {
+  return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+          (c >= '0' && c <= '9') || (c == '_') || (c == '.'));
 }
-
 
 /*********** new_Expr() ***********/
 /*
@@ -1270,8 +1138,7 @@ can be written as
 
 */
 
-Expr*
-new_Expr(const char* format, ...) {
+Expr* new_Expr(const char* format, ...) {
   va_list vl;
   va_start(vl, format);
   Expr* result = new_Expr(format, vl);
@@ -1279,20 +1146,19 @@ new_Expr(const char* format, ...) {
   return result;
 }
 
-Expr*
-new_Expr(const char* format, va_list vl) {
+Expr* new_Expr(const char* format, va_list vl) {
   std::stack<Expr*> stack;
 
   for (int i = 0; format[i] != '\0'; i++) {
     if (isIdentifierChar(format[i])) {
       int n = 1;
-      while (isIdentifierChar(format[i+n]))
-        n++;
-      const char* str = asubstr(&format[i], &format[i+n]);
-      i += n-1;
+      while (isIdentifierChar(format[i + n])) n++;
+      const char* str = asubstr(&format[i], &format[i + n]);
+      i += n - 1;
       if (!strcmp(str, "TYPE")) {
         if (stack.size() == 0) {
-          INT_FATAL("You neglected to provide a \"{ TYPE ...\" for a block type statement.");
+          INT_FATAL("You neglected to provide a \"{ TYPE ...\" for a block "
+                    "type statement.");
         } // Accessing the stack would result in unspecified behavior
         BlockStmt* block = toBlockStmt(stack.top());
         INT_ASSERT(block);
@@ -1302,11 +1168,10 @@ new_Expr(const char* format, va_list vl) {
       }
     } else if (format[i] == '\'') {
       int n = 1;
-      while (format[i+n] != '\'')
-        n++;
-      const char* str = asubstr(&format[i+1], &format[i+n]);
+      while (format[i + n] != '\'') n++;
+      const char* str = asubstr(&format[i + 1], &format[i + n]);
       i += n;
-      if (format[i+1] == '(') {
+      if (format[i + 1] == '(') {
         PrimitiveOp* prim = primitives_map.get(str);
         INT_ASSERT(prim);
         stack.push(new CallExpr(prim));
@@ -1327,7 +1192,7 @@ new_Expr(const char* format, va_list vl) {
       stack.pop();
       INT_ASSERT(expr);
       stack.push(new CallExpr(expr));
-      if (format[i+1] == ')') // handle empty calls
+      if (format[i + 1] == ')') // handle empty calls
         i++;
     } else if (format[i] == ',') {
       Expr* expr = stack.top();
@@ -1378,24 +1243,19 @@ new_Expr(const char* format, va_list vl) {
   return stack.top();
 }
 
-
 static CallExpr* findOptimizationInfo(Expr* anchor) {
   if (anchor && anchor->prev)
     if (CallExpr* call = toCallExpr(anchor->prev))
-      if (call->isPrimitive(PRIM_OPTIMIZATION_INFO))
-        return call;
+      if (call->isPrimitive(PRIM_OPTIMIZATION_INFO)) return call;
   if (anchor)
     if (CallExpr* call = toCallExpr(anchor))
-      if (call->isPrimitive(PRIM_OPTIMIZATION_INFO))
-        return call;
+      if (call->isPrimitive(PRIM_OPTIMIZATION_INFO)) return call;
   if (anchor && anchor->next)
     if (CallExpr* call = toCallExpr(anchor->next))
-      if (call->isPrimitive(PRIM_OPTIMIZATION_INFO))
-        return call;
+      if (call->isPrimitive(PRIM_OPTIMIZATION_INFO)) return call;
   if (anchor && anchor->next && anchor->next->next)
     if (CallExpr* call = toCallExpr(anchor->next->next))
-      if (call->isPrimitive(PRIM_OPTIMIZATION_INFO))
-        return call;
+      if (call->isPrimitive(PRIM_OPTIMIZATION_INFO)) return call;
 
   return NULL;
 }

@@ -36,7 +36,9 @@ BlockStmt* TryStmt::build(bool tryBang, Expr* expr) {
   return buildChplStmt(new TryStmt(tryBang, body, NULL));
 }
 
-BlockStmt* TryStmt::build(bool tryBang, BlockStmt* body, BlockStmt* catches,
+BlockStmt* TryStmt::build(bool tryBang,
+                          BlockStmt* body,
+                          BlockStmt* catches,
                           bool isSyncTry) {
   return buildChplStmt(new TryStmt(tryBang, body, catches, isSyncTry));
 }
@@ -46,10 +48,13 @@ BlockStmt* TryStmt::buildChplStmt(Expr* expr) {
 }
 
 // catches are stored in a BlockStmt for convenient parsing
-TryStmt::TryStmt(bool tryBang, BlockStmt* body, BlockStmt* catches,
-                 bool isSyncTry) : Stmt(E_TryStmt) {
+TryStmt::TryStmt(bool tryBang,
+                 BlockStmt* body,
+                 BlockStmt* catches,
+                 bool isSyncTry)
+  : Stmt(E_TryStmt) {
   _tryBang = tryBang;
-  _body    = body;
+  _body = body;
   _isSyncTry = isSyncTry;
 
   _catches.parent = this;
@@ -63,19 +68,13 @@ TryStmt::TryStmt(bool tryBang, BlockStmt* body, BlockStmt* catches,
   gTryStmts.add(this);
 }
 
-BlockStmt* TryStmt::body() const {
-  return _body;
-}
+BlockStmt* TryStmt::body() const { return _body; }
 
-bool TryStmt::tryBang() const {
-  return _tryBang;
-}
+bool TryStmt::tryBang() const { return _tryBang; }
 
 // Indicates if the try/catch statement was inserted due to the presence of a
 // sync block instead of explicit user code.
-bool TryStmt::isSyncTry() const {
-  return _isSyncTry;
-}
+bool TryStmt::isSyncTry() const { return _isSyncTry; }
 
 bool TryStmt::isForManageStmt() const {
   if (auto block = _body) {
@@ -105,9 +104,7 @@ void TryStmt::accept(AstVisitor* visitor) {
 
 TryStmt* TryStmt::copyInner(SymbolMap* map) {
   TryStmt* copy = new TryStmt(_tryBang, COPY_INT(_body), NULL);
-  for_alist(c, _catches) {
-    copy->_catches.insertAtTail(COPY_INT(c));
-  }
+  for_alist(c, _catches) { copy->_catches.insertAtTail(COPY_INT(c)); }
   return copy;
 }
 

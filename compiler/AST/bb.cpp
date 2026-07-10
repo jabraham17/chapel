@@ -33,16 +33,13 @@
 
 #include <queue>
 
-
-int                                          BasicBlock::nextID     = 0;
-BasicBlock*                                  BasicBlock::basicBlock = NULL;
+int BasicBlock::nextID = 0;
+BasicBlock* BasicBlock::basicBlock = NULL;
 Map<LabelSymbol*, std::vector<BasicBlock*>*> BasicBlock::gotoMaps;
-Map<LabelSymbol*, BasicBlock*>               BasicBlock::labelMaps;
-std::vector<BaseAST *>                       BasicBlock::asts;
+Map<LabelSymbol*, BasicBlock*> BasicBlock::labelMaps;
+std::vector<BaseAST*> BasicBlock::asts;
 
-BasicBlock::BasicBlock() {
-  id = nextID++;
-}
+BasicBlock::BasicBlock() { id = nextID++; }
 
 // Reset the shared statics.
 void BasicBlock::reset(FnSymbol* fn) {
@@ -61,8 +58,7 @@ void BasicBlock::reset(FnSymbol* fn) {
 
 void BasicBlock::clear(FnSymbol* fn) {
   if (fn->basicBlocks != NULL) {
-    for_vector(BasicBlock, bb, *fn->basicBlocks)
-      delete bb;
+    for_vector(BasicBlock, bb, *fn->basicBlocks) delete bb;
 
     delete fn->basicBlocks;
 
@@ -82,8 +78,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn) {
 
   removeEmptyBlocks(fn);
 
-  if (fVerify)
-    INT_ASSERT(verifyBasicBlocks(fn));
+  if (fVerify) INT_ASSERT(verifyBasicBlocks(fn));
 }
 
 BasicBlock* BasicBlock::steal() {
@@ -118,20 +113,20 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
           buildBasicBlocks(fn, stmt, true);
         }
 
-      // add the condition expr at the loop top
+        // add the condition expr at the loop top
       } else if (WhileDoStmt* whileDoStmt = toWhileDoStmt(stmt)) {
         SymExpr* condExpr = whileDoStmt->condExprForTmpVariableGet();
 
         append(condExpr, true);
 
-      // wait to add the conditionExpr at the end of the block
+        // wait to add the conditionExpr at the end of the block
       } else if (isDoWhileStmt(stmt) == true) {
 
       } else if (ForLoop* forLoop = toForLoop(stmt)) {
-        append(forLoop->indexGet(),    true);
+        append(forLoop->indexGet(), true);
         append(forLoop->iteratorGet(), true);
 
-      // PARAM_LOOP
+        // PARAM_LOOP
       } else {
         CallExpr* info = s->blockInfoGet();
 
@@ -140,9 +135,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
 
       BasicBlock* loopTop = basicBlock;
 
-      for_alist(bodyStmt, s->body) {
-        buildBasicBlocks(fn, bodyStmt, mark);
-      }
+      for_alist(bodyStmt, s->body) { buildBasicBlocks(fn, bodyStmt, mark); }
 
       // for c for loops, add the incr expr after the loop body
       if (CForLoop* cforLoop = toCForLoop(s)) {
@@ -163,14 +156,13 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
       BasicBlock* bottom = basicBlock;
 
       // thread the basic blocks of the pre-loop, loop, and post-loop together
-      thread(top,        loopTop);
+      thread(top, loopTop);
       thread(loopBottom, bottom);
       thread(loopBottom, loopTop);
-      thread(top,        bottom);
+      thread(top, bottom);
 
     } else {
-      for_alist(stmt, s->body)
-        buildBasicBlocks(fn, stmt, mark);
+      for_alist(stmt, s->body) buildBasicBlocks(fn, stmt, mark);
     }
 
   } else if (CondStmt* s = toCondStmt(stmt)) {
@@ -234,7 +226,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
     restart(fn);
 
   } else {
-    DefExpr*              def = toDefExpr(stmt);
+    DefExpr* def = toDefExpr(stmt);
 
     asts.clear();
     collect_asts(stmt, asts);
@@ -245,13 +237,13 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
         if (call->resolvedFunction() != NULL) {
           mark = true;
 
-        // mark essential primitives as essential
+          // mark essential primitives as essential
         } else if (call->primitive && call->primitive->isEssential) {
           mark = true;
 
-        // mark assignments to global variables as essential
+          // mark assignments to global variables as essential
         } else if (call->isPrimitive(PRIM_MOVE) ||
-                 call->isPrimitive(PRIM_ASSIGN)) {
+                   call->isPrimitive(PRIM_ASSIGN)) {
           if (SymExpr* se = toSymExpr(call->get(1))) {
             if (se->symbol()->type->refType == NULL) {
               mark = true;
@@ -280,9 +272,7 @@ void BasicBlock::buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark) {
       // See if we have any unresolved references to this label,
       // and resolve them.
       if (std::vector<BasicBlock*>* vbb = gotoMaps.get(label)) {
-        for_vector(BasicBlock, bb, *vbb) {
-          thread(bb, basicBlock);
-        }
+        for_vector(BasicBlock, bb, *vbb) { thread(bb, basicBlock); }
       }
 
       labelMaps.put(label, basicBlock);
@@ -336,8 +326,7 @@ void BasicBlock::remove() {
     BasicBlockVector::iterator i;
 
     for (i = pred_outs.begin(); i != pred_outs.end(); ++i) {
-      if (*i == this)
-        break;
+      if (*i == this) break;
     }
 
     // This block is in the list, right?
@@ -347,13 +336,12 @@ void BasicBlock::remove() {
   }
 
   for_vector(BasicBlock, succ, this->outs) {
-    BasicBlockVector&          succ_ins = succ->ins;
+    BasicBlockVector& succ_ins = succ->ins;
     BasicBlockVector::iterator i;
 
     // Look for this block in the list of predecessors of this successor.
     for (i = succ_ins.begin(); i != succ_ins.end(); ++i)
-      if (*i == this)
-        break;
+      if (*i == this) break;
 
     INT_ASSERT(i != succ_ins.end());
 
@@ -369,7 +357,7 @@ void BasicBlock::remove() {
 // sometimes delayed.
 void BasicBlock::removeEmptyBlocks(FnSymbol* fn) {
   // Create a new vector that contains just the items we want to preserve.
-  int               newId     = 0;
+  int newId = 0;
   BasicBlockVector* newBlocks = new BasicBlockVector();
 
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
@@ -395,8 +383,7 @@ void BasicBlock::removeEmptyBlocks(FnSymbol* fn) {
 // Returns true if the basic block structure is OK, false otherwise.
 bool BasicBlock::verifyBasicBlocks(FnSymbol* fn) {
   for_vector(BasicBlock, bb, *fn->basicBlocks) {
-    if (bb->isOK() == false)
-      return false;
+    if (bb->isOK() == false) return false;
   }
 
   return true;
@@ -405,22 +392,17 @@ bool BasicBlock::verifyBasicBlocks(FnSymbol* fn) {
 // Returns true if the class invariants have been preserved.
 bool BasicBlock::isOK() {
   // Ensure exprs[] and marks[] are same length
-  if (exprs.size() != marks.size())
-    return false;
+  if (exprs.size() != marks.size()) return false;
 
   // Every empty interior block must have a predecessor.
   // Non-empty blocks with no predecessors are dead code, which may be
   // removed by a client of BB analysis.  These dead blocks cannot be
   // identified without BB analysis, so non-empty blocks with no
   // predecessors are valid.
-  if (ins.size() == 0 &&
-      exprs.size() == 0)
-    return false;
+  if (ins.size() == 0 && exprs.size() == 0) return false;
 
   // Expressions must be live (non-NULL);
-  for_vector(Expr, expr, exprs)
-    if (expr == 0)
-      return false;
+  for_vector(Expr, expr, exprs) if (expr == 0) return false;
 
   // Every in edge must have a corresponding out edge in the source block.
   for_vector(BasicBlock, source, ins) {
@@ -433,8 +415,7 @@ bool BasicBlock::isOK() {
       }
     }
 
-    if (found == false)
-      return false;
+    if (found == false) return false;
   }
 
   // Every out edge must have a corresponding in edge in the target block.
@@ -448,21 +429,19 @@ bool BasicBlock::isOK() {
       }
     }
 
-    if (found == false)
-      return false;
+    if (found == false) return false;
   }
 
   return true;
 }
-
 
 // This routine removes unreachable (interior) blocks from the flow graph
 // without modifying the underlying AST.  It is a workaround for the fact that
 // dead block removal does not succeed in removing all unreachable blocks from
 // the tree.
 void BasicBlock::ignoreUnreachableBlocks(FnSymbol* fn) {
-  BasicBlockSet     reachable;
-  int               newId     = 0;
+  BasicBlockSet reachable;
+  int newId = 0;
   BasicBlockVector* newBlocks = new BasicBlockVector();
 
   BasicBlock::getReachableBlocks(fn, reachable);
@@ -484,7 +463,6 @@ void BasicBlock::ignoreUnreachableBlocks(FnSymbol* fn) {
 
   fn->basicBlocks = newBlocks;
 }
-
 
 // Populates the passed-in basic block set with blocks that are reachable from
 // the root (block 0).  The blocks which are not in this set are unreachable
@@ -509,14 +487,13 @@ void BasicBlock::getReachableBlocks(FnSymbol* fn, BasicBlockSet& reachable) {
       // and append all of its successors to the work queue.
       reachable.insert(bb);
 
-      for_vector(BasicBlock, out, bb->outs)
-        workQueue.push(out);
+      for_vector(BasicBlock, out, bb->outs) workQueue.push(out);
     }
   }
 }
 
-void BasicBlock::buildLocalsVectorMap(FnSymbol*          fn,
-                                      Vec<Symbol*>&      locals,
+void BasicBlock::buildLocalsVectorMap(FnSymbol* fn,
+                                      Vec<Symbol*>& locals,
                                       Map<Symbol*, int>& localMap) {
   int i = 0;
 
@@ -532,16 +509,15 @@ void BasicBlock::buildLocalsVectorMap(FnSymbol*          fn,
   }
 }
 
-static
-void computeOrders(FnSymbol* fn,
-                   std::set<int>& visited,
-                   BasicBlock* bb,
-                   // mapping bb->id -> order in pre-order
-                   std::vector<int>& Pre,
-                   // mapping bb->id -> order in post-order
-                   std::vector<int>& Post,
-                   int & preJ,
-                   int & postI) {
+static void computeOrders(FnSymbol* fn,
+                          std::set<int>& visited,
+                          BasicBlock* bb,
+                          // mapping bb->id -> order in pre-order
+                          std::vector<int>& Pre,
+                          // mapping bb->id -> order in post-order
+                          std::vector<int>& Post,
+                          int& preJ,
+                          int& postI) {
 
   // Following Muchnick p 180 Depth_First_search_PP
 
@@ -561,8 +537,7 @@ void computeOrders(FnSymbol* fn,
   postI += 1;
 }
 
-void BasicBlock::computeForwardOrder(FnSymbol* fn,
-                                     std::vector<int> & order) {
+void BasicBlock::computeForwardOrder(FnSymbol* fn, std::vector<int>& order) {
 
   size_t nbbs = fn->basicBlocks->size();
   std::set<int> visited;
@@ -585,13 +560,12 @@ void BasicBlock::computeForwardOrder(FnSymbol* fn,
   // postorder...
   for (size_t ii = 0; ii < nbbs; ii++) {
     int index = Post[ii];
-    int reverseIndex = nbbs-index-1;
+    int reverseIndex = nbbs - index - 1;
     order[reverseIndex] = ii;
   }
 }
 
-void BasicBlock::computeBackwardOrder(FnSymbol* fn,
-                                      std::vector<int> & order) {
+void BasicBlock::computeBackwardOrder(FnSymbol* fn, std::vector<int>& order) {
 
   size_t nbbs = fn->basicBlocks->size();
   std::set<int> visited;
@@ -614,13 +588,13 @@ void BasicBlock::computeBackwardOrder(FnSymbol* fn,
   // preorder...
   for (size_t ii = 0; ii < nbbs; ii++) {
     int index = Pre[ii];
-    int reverseIndex = nbbs-index-1;
+    int reverseIndex = nbbs - index - 1;
     order[reverseIndex] = ii;
   }
 }
 
 //#define DEBUG_FLOW
-void BasicBlock::backwardFlowAnalysis(FnSymbol*             fn,
+void BasicBlock::backwardFlowAnalysis(FnSymbol* fn,
                                       std::vector<BitVec*>& GEN,
                                       std::vector<BitVec*>& KILL,
                                       std::vector<BitVec*>& IN,
@@ -634,7 +608,8 @@ void BasicBlock::backwardFlowAnalysis(FnSymbol*             fn,
 
     for_vector(BasicBlock, bb, *fn->basicBlocks) {
       for (size_t j = 0; j < IN[i]->ndata; j++) {
-        unsigned int new_in  = (OUT[i]->data[j] & ~KILL[i]->data[j]) | GEN[i]->data[j];
+        unsigned int new_in =
+          (OUT[i]->data[j] & ~KILL[i]->data[j]) | GEN[i]->data[j];
         unsigned int new_out = 0;
 
         if (new_in != IN[i]->data[j]) {
@@ -655,24 +630,25 @@ void BasicBlock::backwardFlowAnalysis(FnSymbol*             fn,
       i++;
     }
 #ifdef DEBUG_FLOW
-    printf("IN\n");  printBitVectorSets(IN);
-    printf("OUT\n"); printBitVectorSets(OUT);
+    printf("IN\n");
+    printBitVectorSets(IN);
+    printf("OUT\n");
+    printBitVectorSets(OUT);
 #endif
   }
 }
 
-
-void BasicBlock::forwardFlowAnalysis(FnSymbol*             fn,
+void BasicBlock::forwardFlowAnalysis(FnSymbol* fn,
                                      std::vector<BitVec*>& GEN,
                                      std::vector<BitVec*>& KILL,
                                      std::vector<BitVec*>& IN,
                                      std::vector<BitVec*>& OUT,
-                                     bool                  intersect) {
-  size_t           nbbq = fn->basicBlocks->size(); // size of bb queue
+                                     bool intersect) {
+  size_t nbbq = fn->basicBlocks->size(); // size of bb queue
   std::vector<int> bbq;
-  BitVec           bbs(nbbq);
-  int              iq = -1;
-  int              nq = nbbq - 1;
+  BitVec bbs(nbbq);
+  int iq = -1;
+  int nq = nbbq - 1;
 
   for (size_t i = 0; i < nbbq; i++) {
     bbq.push_back(i);
@@ -688,17 +664,19 @@ void BasicBlock::forwardFlowAnalysis(FnSymbol*             fn,
 
 #ifdef DEBUG_FLOW
     if (iq == 0) {
-      printf("IN\n");  printBitVectorSets(IN);
-      printf("OUT\n"); printBitVectorSets(OUT);
+      printf("IN\n");
+      printBitVectorSets(IN);
+      printf("OUT\n");
+      printBitVectorSets(OUT);
     }
 #endif
 
-    BasicBlock* bb     = (*fn->basicBlocks)[i];
-    bool        change = false;
+    BasicBlock* bb = (*fn->basicBlocks)[i];
+    bool change = false;
 
     for (size_t j = 0; j < IN[i]->ndata; j++) {
       if (bb->ins.size() > 0) {
-        unsigned int new_in = (intersect) ? (unsigned int) (-1) : 0;
+        unsigned int new_in = (intersect) ? (unsigned int)(-1) : 0;
 
         for_vector(BasicBlock, bbin, bb->ins) {
           if (intersect)
@@ -709,22 +687,23 @@ void BasicBlock::forwardFlowAnalysis(FnSymbol*             fn,
 
         if (new_in != IN[i]->data[j]) {
           IN[i]->data[j] = new_in;
-          change         = true;
+          change = true;
         }
       }
 
-      unsigned int new_out = (IN[i]->data[j] & ~KILL[i]->data[j]) | GEN[i]->data[j];
+      unsigned int new_out =
+        (IN[i]->data[j] & ~KILL[i]->data[j]) | GEN[i]->data[j];
 
       if (new_out != OUT[i]->data[j]) {
         OUT[i]->data[j] = new_out;
-        change          = true;
+        change = true;
       }
     }
 
     if (change) {
       for_vector(BasicBlock, bbout, bb->outs) {
         if (!bbs.get(bbout->id)) {
-          nq      = (nq + 1) % nbbq;
+          nq = (nq + 1) % nbbq;
 
           bbs.set(bbout->id);
 
@@ -740,28 +719,24 @@ void BasicBlock::printBasicBlocks(FnSymbol* fn) {
 
     printf("%2d:  ", b->id);
 
-    for_vector(BasicBlock, bb, b->ins) {
-      printf("%d ", bb->id);
-    }
+    for_vector(BasicBlock, bb, b->ins) { printf("%d ", bb->id); }
 
     printf(" >  ");
 
-    for_vector(BasicBlock, bc, b->outs) {
-      printf("%d ", bc->id);
-    }
+    for_vector(BasicBlock, bc, b->outs) { printf("%d ", bc->id); }
 
     printf("\n");
 
     for_vector(Expr, expr, b->exprs) {
-      if (expr)
-        list_view_noline(expr);
+      if (expr) list_view_noline(expr);
     }
 
     printf("\n");
   }
 }
 
-void BasicBlock::printLocalsVector(Vec<Symbol*> locals, Map<Symbol*,int>& localMap) {
+void BasicBlock::printLocalsVector(Vec<Symbol*> locals,
+                                   Map<Symbol*, int>& localMap) {
   printf("Local Variables\n");
 
   forv_Vec(Symbol, local, locals) {
@@ -771,7 +746,8 @@ void BasicBlock::printLocalsVector(Vec<Symbol*> locals, Map<Symbol*,int>& localM
   printf("\n");
 }
 
-void BasicBlock::printDefsVector(std::vector<SymExpr*> defs, Map<SymExpr*,int>& defMap) {
+void BasicBlock::printDefsVector(std::vector<SymExpr*> defs,
+                                 Map<SymExpr*, int>& defMap) {
   printf("Variable Definitions\n");
 
   for_vector(SymExpr, def, defs) {
@@ -785,15 +761,15 @@ void BasicBlock::printDefsVector(std::vector<SymExpr*> defs, Map<SymExpr*,int>& 
   printf("\n");
 }
 
-void BasicBlock::printLocalsVectorSets(std::vector<BitVec*>& sets, Vec<Symbol*> locals) {
+void BasicBlock::printLocalsVectorSets(std::vector<BitVec*>& sets,
+                                       Vec<Symbol*> locals) {
   int i = 0;
 
   for_vector(BitVec, set, sets) {
     printf("%2d: ", i);
 
     for (size_t j = 0; j < set->size(); j++) {
-      if (set->get(j))
-        printf("%s[%d] ", locals.v[j]->name, locals.v[j]->id);
+      if (set->get(j)) printf("%s[%d] ", locals.v[j]->name, locals.v[j]->id);
     }
 
     printf("\n");
@@ -812,7 +788,7 @@ void BasicBlock::printBitVectorSets(std::vector<BitVec*>& sets) {
 
     for (size_t j = 0; j < set->size(); j++) {
       printf("%d", (set->get(j)) ? 1 : 0);
-      if ((j+1) % 10 == 0) printf(" ");
+      if ((j + 1) % 10 == 0) printf(" ");
     }
 
     printf("\n");

@@ -18,7 +18,6 @@
  * limitations under the License.
  */
 
-
 #include "ModuleSymbol.h"
 
 #include "AstVisitor.h"
@@ -30,23 +29,23 @@
 
 #include "global-ast-vecs.h"
 
-BlockStmt*                         rootBlock             = NULL;
-ModuleSymbol*                      rootModule            = NULL;
-ModuleSymbol*                      theProgram            = NULL;
-ModuleSymbol*                      baseModule            = NULL;
+BlockStmt* rootBlock = NULL;
+ModuleSymbol* rootModule = NULL;
+ModuleSymbol* theProgram = NULL;
+ModuleSymbol* baseModule = NULL;
 
-ModuleSymbol*                      stringLiteralModule   = NULL;
-ModuleSymbol*                      standardModule        = NULL;
-ModuleSymbol*                      printModuleInitModule = NULL;
-ModuleSymbol*                      ioModule              = NULL;
+ModuleSymbol* stringLiteralModule = NULL;
+ModuleSymbol* standardModule = NULL;
+ModuleSymbol* printModuleInitModule = NULL;
+ModuleSymbol* ioModule = NULL;
 
-Vec<ModuleSymbol*>                 userModules; // Contains user + main modules
-Vec<ModuleSymbol*>                 allModules;  // Contains all modules except rootModule
+Vec<ModuleSymbol*> userModules; // Contains user + main modules
+Vec<ModuleSymbol*> allModules;  // Contains all modules except rootModule
 
-static ModuleSymbol*               sMainModule           = NULL;
-static std::string                 sMainModuleName;
+static ModuleSymbol* sMainModule = NULL;
+static std::string sMainModuleName;
 
-static std::vector<ModuleSymbol*>  sTopLevelModules;
+static std::vector<ModuleSymbol*> sTopLevelModules;
 
 /************************************* | **************************************
 *                                                                             *
@@ -73,17 +72,11 @@ const char* ModuleSymbol::modTagToString(ModTag modTag) {
   const char* retval = NULL;
 
   switch (modTag) {
-    case MOD_INTERNAL:
-      retval = "internal";
-      break;
+    case MOD_INTERNAL: retval = "internal"; break;
 
-    case MOD_STANDARD:
-      retval = "standard";
-      break;
+    case MOD_STANDARD: retval = "standard"; break;
 
-    case MOD_USER:
-      retval = "user";
-      break;
+    case MOD_USER: retval = "user"; break;
   }
 
   return retval;
@@ -100,7 +93,7 @@ void ModuleSymbol::setMainModule(ModuleSymbol* mainModule) {
 }
 
 void ModuleSymbol::setMainModuleName(const ArgumentDescription* desc,
-                                     const char*                arg) {
+                                     const char* arg) {
   sMainModuleName = arg;
 }
 
@@ -152,20 +145,18 @@ ModuleSymbol* ModuleSymbol::findMainModuleByName() {
 
 // is it a module or submodule from a file named on the command line?
 static bool isModOrSubmodFromCommandLine(ModuleSymbol* mod) {
-  for (ModuleSymbol* cur = mod;
-       cur != nullptr && cur->defPoint != nullptr;
+  for (ModuleSymbol* cur = mod; cur != nullptr && cur->defPoint != nullptr;
        cur = cur->defPoint->getModule()) {
-    if (cur->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE))
-      return true;
+    if (cur->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE)) return true;
   }
 
   return false;
 }
 
 ModuleSymbol* ModuleSymbol::findMainModuleFromMainFunction() {
-  bool          errorP  = false;
-  FnSymbol*     matchFn = NULL;
-  ModuleSymbol* retval  = NULL;
+  bool errorP = false;
+  FnSymbol* matchFn = NULL;
+  ModuleSymbol* retval = NULL;
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (strcmp("main", fn->name) == 0) {
@@ -174,7 +165,7 @@ ModuleSymbol* ModuleSymbol::findMainModuleFromMainFunction() {
       if (isModOrSubmodFromCommandLine(fnMod)) {
         if (retval == NULL) {
           matchFn = fn;
-          retval  = fnMod;
+          retval = fnMod;
 
         } else {
           if (errorP == false) {
@@ -246,20 +237,18 @@ ModuleSymbol* ModuleSymbol::findMainModuleFromCommandLine() {
 *                                                                             *
 ************************************** | *************************************/
 
-ModuleSymbol::ModuleSymbol(const char* iName,
-                           ModTag      iModTag,
-                           BlockStmt*  iBlock)
+ModuleSymbol::ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock)
   : Symbol(E_ModuleSymbol, iName) {
 
-  modTag              = iModTag;
-  block               = iBlock;
-  initFn              = NULL;
-  deinitFn            = NULL;
-  filename            = NULL;
-  extern_info         = NULL;
-  llvmDIBuilder       = NULL;
-  llvmDICompileUnit   = NULL;
-  llvmDINameSpace     = NULL;
+  modTag = iModTag;
+  block = iBlock;
+  initFn = NULL;
+  deinitFn = NULL;
+  filename = NULL;
+  extern_info = NULL;
+  llvmDIBuilder = NULL;
+  llvmDICompileUnit = NULL;
+  llvmDINameSpace = NULL;
 
   registerModule(this);
 
@@ -295,7 +284,6 @@ void ModuleSymbol::verify() {
   }
 }
 
-
 ModuleSymbol* ModuleSymbol::copyInner(SymbolMap* map) {
   INT_FATAL(this, "Illegal call to ModuleSymbol::copy");
 
@@ -327,7 +315,6 @@ std::string ModuleSymbol::path() const {
   return retval;
 }
 
-
 // This is intended to be called by getTopLevelConfigsVars and
 // getTopLevelVariables, since the code for them would otherwise be roughly
 // the same.
@@ -336,10 +323,8 @@ std::string ModuleSymbol::path() const {
 //
 // See the comment on getTopLevelFunctions() for the rationale behind the AST
 // traversal
-void
-ModuleSymbol::getTopLevelConfigOrVariables(std::vector<VarSymbol*>* contain,
-                                           Expr* expr,
-                                           bool  config) {
+void ModuleSymbol::getTopLevelConfigOrVariables(
+  std::vector<VarSymbol*>* contain, Expr* expr, bool config) {
   if (DefExpr* def = toDefExpr(expr)) {
 
     if (VarSymbol* var = toVarSymbol(def->sym)) {
@@ -401,8 +386,7 @@ std::vector<FnSymbol*> ModuleSymbol::getTopLevelFunctions(bool includeExterns) {
     if (DefExpr* def = toDefExpr(expr)) {
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         // Ignore external and prototype functions.
-        if (includeExterns == false &&
-            fn->hasFlag(FLAG_EXTERN)) {
+        if (includeExterns == false && fn->hasFlag(FLAG_EXTERN)) {
           continue;
         }
 
@@ -418,8 +402,7 @@ std::vector<FnSymbol*> ModuleSymbol::getTopLevelFunctions(bool includeExterns) {
           for_alist(expr2, fn->body->body) {
             if (DefExpr* def2 = toDefExpr(expr2)) {
               if (FnSymbol* fn2 = toFnSymbol(def2->sym)) {
-                if (includeExterns == false &&
-                    fn2->hasFlag(FLAG_EXTERN)) {
+                if (includeExterns == false && fn2->hasFlag(FLAG_EXTERN)) {
                   continue;
                 }
 
@@ -487,8 +470,8 @@ void ModuleSymbol::addDefaultUses() {
       block->insertAtHead(new UseStmt(modRef, "", /* isPrivate */ true));
     }
 
-  // We don't currently have a good way to fetch the root module by name.
-  // Insert it directly rather than by name
+    // We don't currently have a good way to fetch the root module by name.
+    // Insert it directly rather than by name
   } else if (this == baseModule) {
     SET_LINENO(this);
 
@@ -508,14 +491,13 @@ void ModuleSymbol::addDefaultUses() {
 // Helper function for computing the index in the module use list
 // within mod for a use of usedModule
 static int moduleUseIndex(ModuleSymbol* mod, ModuleSymbol* usedModule) {
-  for (size_t i=0; i < mod->modUseList.size(); i++) {
+  for (size_t i = 0; i < mod->modUseList.size(); i++) {
     if (mod->modUseList[i] == usedModule) {
       return (int)i;
     }
   }
   return -1;
 }
-
 
 //
 // NOAKES 2014/07/22
@@ -578,7 +560,7 @@ void ModuleSymbol::deadCodeModuleUseRemove(ModuleSymbol* mod) {
 }
 
 void initRootModule() {
-  rootBlock  = new BlockStmt();
+  rootBlock = new BlockStmt();
   rootModule = new ModuleSymbol("_root", MOD_INTERNAL, rootBlock);
 
   rootModule->filename = astr("<internal>");
@@ -586,11 +568,11 @@ void initRootModule() {
 }
 
 void initStringLiteralModule() {
-  stringLiteralModule           = new ModuleSymbol("ChapelStringLiterals",
-                                                   MOD_INTERNAL,
-                                                   new BlockStmt());
+  stringLiteralModule =
+    new ModuleSymbol("ChapelStringLiterals", MOD_INTERNAL, new BlockStmt());
 
-  stringLiteralModule->block->useListAdd(new UseStmt(new UnresolvedSymExpr("ChapelStandard"), "", false));
+  stringLiteralModule->block->useListAdd(
+    new UseStmt(new UnresolvedSymExpr("ChapelStandard"), "", false));
 
   stringLiteralModule->filename = astr("<internal>");
 

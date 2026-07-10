@@ -33,25 +33,21 @@
 
 static CallExpr* isPrimIfVar(Expr* cond) {
   if (CallExpr* call = toCallExpr(cond))
-    if (call->isPrimitive(PRIM_IF_VAR))
-      return call;
+    if (call->isPrimitive(PRIM_IF_VAR)) return call;
   return nullptr;
 }
 
-BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body, LLVMMetadataList attrs)
-{
+BlockStmt*
+WhileDoStmt::build(Expr* cond, BlockStmt* body, LLVMMetadataList attrs) {
   BlockStmt* retval = NULL;
 
-  if (isPrimitiveCForLoop(cond) == true)
-  {
+  if (isPrimitiveCForLoop(cond) == true) {
     retval = CForLoop::buildCForLoop(toCallExpr(cond), body, attrs);
-  }
-  else if (CallExpr* condIV = isPrimIfVar(cond))
-  {
+  } else if (CallExpr* condIV = isPrimIfVar(cond)) {
     // while var X = condExpr do ...
     DefExpr* varDef = toDefExpr(condIV->get(1)->remove());
-    Expr*  condExpr = condIV->get(1)->remove();
-    INT_ASSERT(! varDef->init && ! varDef->exprType); // from parser
+    Expr* condExpr = condIV->get(1)->remove();
+    INT_ASSERT(!varDef->init && !varDef->exprType); // from parser
 
     // The construction follows the non-IfVar case below, adding the following:
     //
@@ -69,19 +65,19 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body, LLVMMetadataList attr
 
     // todo: share code with the non-IfVar case (below)  -vass 2021-03
 
-    VarSymbol*   borrow        = newTemp("while_borrow");
-    CallExpr*    initBorrow    = new CallExpr("chpl_checkBorrowIfVar",
-                                              condExpr, gTrue);
-    VarSymbol*   condVar       = newTemp();
-    CallExpr*    condTest      = new CallExpr("_cond_test", borrow);
+    VarSymbol* borrow = newTemp("while_borrow");
+    CallExpr* initBorrow =
+      new CallExpr("chpl_checkBorrowIfVar", condExpr, gTrue);
+    VarSymbol* condVar = newTemp();
+    CallExpr* condTest = new CallExpr("_cond_test", borrow);
 
     LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
-    LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
+    LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
 
-    WhileDoStmt* loop          = new WhileDoStmt(condVar, body);
+    WhileDoStmt* loop = new WhileDoStmt(condVar, body);
 
     loop->mContinueLabel = continueLabel;
-    loop->mBreakLabel    = breakLabel;
+    loop->mBreakLabel = breakLabel;
     loop->mLLVMMetadataList = attrs;
 
     loop->insertAtHead(varDef);
@@ -99,19 +95,17 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body, LLVMMetadataList attr
     retval->insertAtTail(new CallExpr(PRIM_MOVE, condVar, condTest->copy()));
     retval->insertAtTail(loop);
     retval->insertAtTail(new DefExpr(breakLabel));
-  }
-  else
-  {
-    VarSymbol*   condVar       = newTemp();
-    CallExpr*    condTest      = new CallExpr("_cond_test", cond);
+  } else {
+    VarSymbol* condVar = newTemp();
+    CallExpr* condTest = new CallExpr("_cond_test", cond);
 
     LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
-    LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
+    LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
 
-    WhileDoStmt* loop          = new WhileDoStmt(condVar, body);
+    WhileDoStmt* loop = new WhileDoStmt(condVar, body);
 
     loop->mContinueLabel = continueLabel;
-    loop->mBreakLabel    = breakLabel;
+    loop->mBreakLabel = breakLabel;
     loop->mLLVMMetadataList = attrs;
 
     loop->insertAtTail(new DefExpr(continueLabel));
@@ -131,8 +125,7 @@ BlockStmt* WhileDoStmt::build(Expr* cond, BlockStmt* body, LLVMMetadataList attr
 // C for loops are invoked with 'while __primitive("C for loop" ...)'
 // This checks if we had such a case and if we did builds the c for loop
 // instead of the while loop and returns it.
-bool WhileDoStmt::isPrimitiveCForLoop(Expr* cond)
-{
+bool WhileDoStmt::isPrimitiveCForLoop(Expr* cond) {
   bool retval = false;
 
   if (CallExpr* call = toCallExpr(cond))
@@ -147,11 +140,10 @@ bool WhileDoStmt::isPrimitiveCForLoop(Expr* cond)
 *                                                                           *
 ************************************* | ************************************/
 
-WhileDoStmt* WhileDoStmt::copyInner(SymbolMap* map)
-{
-  Expr*        condExpr = 0;
-  BlockStmt*   body     = 0;
-  WhileDoStmt* retval   = new WhileDoStmt(condExpr, body);
+WhileDoStmt* WhileDoStmt::copyInner(SymbolMap* map) {
+  Expr* condExpr = 0;
+  BlockStmt* body = 0;
+  WhileDoStmt* retval = new WhileDoStmt(condExpr, body);
 
   retval->copyInnerShare(*this, map);
   retval->userLabel = this->userLabel;
@@ -160,34 +152,27 @@ WhileDoStmt* WhileDoStmt::copyInner(SymbolMap* map)
   return retval;
 }
 
-void WhileDoStmt::accept(AstVisitor* visitor)
-{
-  if (visitor->enterWhileDoStmt(this) == true)
-  {
-    for_alist(next_ast, body)
-      next_ast->accept(visitor);
+void WhileDoStmt::accept(AstVisitor* visitor) {
+  if (visitor->enterWhileDoStmt(this) == true) {
+    for_alist(next_ast, body) next_ast->accept(visitor);
 
-    if (condExprGet() != 0)
-      condExprGet()->accept(visitor);
+    if (condExprGet() != 0) condExprGet()->accept(visitor);
 
-    if (useList)
-      useList->accept(visitor);
+    if (useList) useList->accept(visitor);
 
-    if (byrefVars)
-      byrefVars->accept(visitor);
+    if (byrefVars) byrefVars->accept(visitor);
 
     visitor->exitWhileDoStmt(this);
   }
 }
 
-Expr* WhileDoStmt::getFirstExpr()
-{
+Expr* WhileDoStmt::getFirstExpr() {
   Expr* retval = 0;
 
   if (condExprGet() != 0)
     retval = condExprGet()->getFirstExpr();
 
-  else if (body.head      != 0)
+  else if (body.head != 0)
     retval = body.head->getFirstExpr();
 
   else
@@ -196,8 +181,7 @@ Expr* WhileDoStmt::getFirstExpr()
   return retval;
 }
 
-Expr* WhileDoStmt::getNextExpr(Expr* expr)
-{
+Expr* WhileDoStmt::getNextExpr(Expr* expr) {
   Expr* retval = this;
 
   if (expr == condExprGet() && body.head != NULL)

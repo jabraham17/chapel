@@ -20,7 +20,6 @@
 
 #include "AstCount.h"
 
-
 AstCount::AstCount() {
 
 // Initialize member variables for each AST node type
@@ -43,7 +42,7 @@ int AstCount::total() {
 
   // Add those covered by the baseAST macro
 #define count_members(type) sum += num##type
-foreach_ast(count_members);
+  foreach_ast(count_members);
 #undef count_members
 
   // and then add those not covered by the baseAST macro
@@ -61,40 +60,29 @@ bool AstCount::enterDecoratedClassType(DecoratedClassType* node) {
   return true;
 }
 
-void AstCount::exitDecoratedClassType(DecoratedClassType* node) {
-}
+void AstCount::exitDecoratedClassType(DecoratedClassType* node) {}
 
-bool AstCount::enterThunk(TemporaryConversionThunk* node) {
-  return true;
-}
+bool AstCount::enterThunk(TemporaryConversionThunk* node) { return true; }
 
-void AstCount::exitThunk(TemporaryConversionThunk* node) {
-}
-
+void AstCount::exitThunk(TemporaryConversionThunk* node) {}
 
 bool AstCount::enterAggrType(AggregateType* node) {
   numAggregateType++;
   return true;
 }
 
-void AstCount::exitAggrType(AggregateType* node) {
-}
+void AstCount::exitAggrType(AggregateType* node) {}
 
 bool AstCount::enterEnumType(EnumType* node) {
   numEnumType++;
   return true;
 }
 
-void AstCount::exitEnumType(EnumType* node) {
-}
+void AstCount::exitEnumType(EnumType* node) {}
 
-void AstCount::visitPrimType(PrimitiveType* node) {
-  numPrimitiveType++;
-}
+void AstCount::visitPrimType(PrimitiveType* node) { numPrimitiveType++; }
 
-void AstCount::visitFunctionType(FunctionType* node) {
-  numFunctionType++;
-}
+void AstCount::visitFunctionType(FunctionType* node) { numFunctionType++; }
 
 void AstCount::visitConstrainedType(ConstrainedType* node) {
   numConstrainedType++;
@@ -105,32 +93,25 @@ bool AstCount::enterArgSym(ArgSymbol* node) {
   return true;
 }
 
-void AstCount::exitArgSym(ArgSymbol* node) {
-}
+void AstCount::exitArgSym(ArgSymbol* node) {}
 
-void AstCount::visitEnumSym(EnumSymbol* node) {
-  numEnumSymbol++;
-}
+void AstCount::visitEnumSym(EnumSymbol* node) { numEnumSymbol++; }
 
 bool AstCount::enterFnSym(FnSymbol* node) {
   numFnSymbol++;
   return true;
 }
 
-void AstCount::exitFnSym(FnSymbol* node) {
-}
+void AstCount::exitFnSym(FnSymbol* node) {}
 
 bool AstCount::enterInterfaceSym(InterfaceSymbol* node) {
   numInterfaceSymbol++;
   return true;
 }
 
-void AstCount::exitInterfaceSym(InterfaceSymbol* node) {
-}
+void AstCount::exitInterfaceSym(InterfaceSymbol* node) {}
 
-void AstCount::visitLabelSym(LabelSymbol* node) {
-  numLabelSymbol++;
-}
+void AstCount::visitLabelSym(LabelSymbol* node) { numLabelSymbol++; }
 
 void AstCount::visitTemporaryConversionSymbol(TemporaryConversionSymbol* node) {
   numTemporaryConversionSymbol++;
@@ -141,72 +122,60 @@ bool AstCount::enterModSym(ModuleSymbol* node) {
   return true;
 }
 
-void AstCount::exitModSym(ModuleSymbol* node) {
-}
+void AstCount::exitModSym(ModuleSymbol* node) {}
 
 bool AstCount::enterTypeSym(TypeSymbol* node) {
   numTypeSymbol++;
   return true;
 }
 
-void AstCount::exitTypeSym(TypeSymbol* node) {
-}
+void AstCount::exitTypeSym(TypeSymbol* node) {}
 
-void AstCount::visitVarSym(VarSymbol* node) {
-  numVarSymbol++;
-}
+void AstCount::visitVarSym(VarSymbol* node) { numVarSymbol++; }
 
 bool AstCount::enterCallExpr(CallExpr* node) {
   numCallExpr++;
   return true;
 }
 
-void AstCount::exitCallExpr(CallExpr* node) {
-}
+void AstCount::exitCallExpr(CallExpr* node) {}
 
 bool AstCount::enterContextCallExpr(ContextCallExpr* node) {
   numContextCallExpr++;
   return true;
 }
 
-void AstCount::exitContextCallExpr(ContextCallExpr* node) {
-}
+void AstCount::exitContextCallExpr(ContextCallExpr* node) {}
 
 bool AstCount::enterDefExpr(DefExpr* node) {
   numDefExpr++;
   return true;
 }
 
-void AstCount::exitDefExpr(DefExpr* node) {
-}
+void AstCount::exitDefExpr(DefExpr* node) {}
 
 bool AstCount::enterNamedExpr(NamedExpr* node) {
   numNamedExpr++;
   return true;
 }
 
-void AstCount::exitNamedExpr(NamedExpr* node) {
-}
+void AstCount::exitNamedExpr(NamedExpr* node) {}
 
 bool AstCount::enterIfcConstraint(IfcConstraint* node) {
   numIfcConstraint++;
   return true;
 }
 
-void AstCount::exitIfcConstraint(IfcConstraint* node) {
-}
+void AstCount::exitIfcConstraint(IfcConstraint* node) {}
 
 bool AstCount::enterIfExpr(IfExpr* node) {
   numIfExpr++;
   return true;
 }
 
-void AstCount::exitIfExpr(IfExpr* node) {
-}
+void AstCount::exitIfExpr(IfExpr* node) {}
 
-void AstCount::visitSymExpr(SymExpr* node) {
-  numSymExpr++;
-}
+void AstCount::visitSymExpr(SymExpr* node) { numSymExpr++; }
 
 void AstCount::visitUsymExpr(UnresolvedSymExpr* node) {
   numUnresolvedSymExpr++;
@@ -217,130 +186,108 @@ bool AstCount::enterLoopExpr(LoopExpr* node) {
   return true;
 }
 
-void AstCount::exitLoopExpr(LoopExpr* node) {
-}
+void AstCount::exitLoopExpr(LoopExpr* node) {}
 
-void AstCount::visitUseStmt(UseStmt* node) {
-  numUseStmt++;
-}
+void AstCount::visitUseStmt(UseStmt* node) { numUseStmt++; }
 
-void AstCount::visitImportStmt(ImportStmt* node) {
-  numImportStmt++;
-}
+void AstCount::visitImportStmt(ImportStmt* node) { numImportStmt++; }
 
 bool AstCount::enterBlockStmt(BlockStmt* node) {
   numBlockStmt++;
   return true;
 }
 
-void AstCount::exitBlockStmt(BlockStmt* node) {
-}
+void AstCount::exitBlockStmt(BlockStmt* node) {}
 
-bool AstCount::enterForallStmt(ForallStmt* node)
-{
+bool AstCount::enterForallStmt(ForallStmt* node) {
   numForallStmt++;
   return true;
 }
 
-void AstCount::exitForallStmt(ForallStmt* node) {
-}
+void AstCount::exitForallStmt(ForallStmt* node) {}
 
 bool AstCount::enterWhileDoStmt(WhileDoStmt* node) {
   numWhileDoStmt++;
   return true;
 }
 
-void AstCount::exitWhileDoStmt(WhileDoStmt* node) {
-}
+void AstCount::exitWhileDoStmt(WhileDoStmt* node) {}
 
 bool AstCount::enterDoWhileStmt(DoWhileStmt* node) {
   numDoWhileStmt++;
   return true;
 }
 
-void AstCount::exitDoWhileStmt(DoWhileStmt* node) {
-}
+void AstCount::exitDoWhileStmt(DoWhileStmt* node) {}
 
 bool AstCount::enterCForLoop(CForLoop* node) {
   numCForLoop++;
   return true;
 }
 
-void AstCount::exitCForLoop(CForLoop* node) {
-}
+void AstCount::exitCForLoop(CForLoop* node) {}
 
 bool AstCount::enterForLoop(ForLoop* node) {
   numForLoop++;
   return true;
 }
 
-void AstCount::exitForLoop(ForLoop* node) {
-}
+void AstCount::exitForLoop(ForLoop* node) {}
 
 bool AstCount::enterParamForLoop(ParamForLoop* node) {
   numParamForLoop++;
   return true;
 }
 
-void AstCount::exitParamForLoop(ParamForLoop* node) {
-}
+void AstCount::exitParamForLoop(ParamForLoop* node) {}
 
 bool AstCount::enterCondStmt(CondStmt* node) {
   numCondStmt++;
   return true;
 }
 
-void AstCount::exitCondStmt(CondStmt* node) {
-}
+void AstCount::exitCondStmt(CondStmt* node) {}
 
-void AstCount::visitEblockStmt(ExternBlockStmt* node) {
-  numExternBlockStmt++;
-}
+void AstCount::visitEblockStmt(ExternBlockStmt* node) { numExternBlockStmt++; }
 
 bool AstCount::enterForwardingStmt(ForwardingStmt* node) {
   numForwardingStmt++;
   return true;
 }
 
-void AstCount::exitForwardingStmt(ForwardingStmt* node) {
-}
+void AstCount::exitForwardingStmt(ForwardingStmt* node) {}
 
 bool AstCount::enterGotoStmt(GotoStmt* node) {
   numGotoStmt++;
   return true;
 }
 
-void AstCount::exitGotoStmt(GotoStmt* node) {
-}
+void AstCount::exitGotoStmt(GotoStmt* node) {}
 
 bool AstCount::enterDeferStmt(DeferStmt* node) {
   numDeferStmt++;
   return true;
 }
 
-void AstCount::exitDeferStmt(DeferStmt* node) {
-}
+void AstCount::exitDeferStmt(DeferStmt* node) {}
 
 bool AstCount::enterTryStmt(TryStmt* node) {
   numTryStmt++;
   return true;
 }
 
-void AstCount::exitTryStmt(TryStmt* node) {
-}
+void AstCount::exitTryStmt(TryStmt* node) {}
 
 bool AstCount::enterCatchStmt(CatchStmt* node) {
   numCatchStmt++;
   return true;
 }
 
-void AstCount::exitCatchStmt(CatchStmt* node) {
-}
+void AstCount::exitCatchStmt(CatchStmt* node) {}
 
 bool AstCount::enterImplementsStmt(ImplementsStmt* node) {
   numImplementsStmt++;
   return true;
 }
 
-void AstCount::exitImplementsStmt(ImplementsStmt* node) {
-}
+void AstCount::exitImplementsStmt(ImplementsStmt* node) {}

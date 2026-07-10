@@ -35,12 +35,8 @@
 // Currently intended to be lowered during normalize()
 //
 
-IfExpr::IfExpr(Expr* condition, Expr* thenExpr, Expr* elseExpr) :
-  Expr(E_IfExpr),
-  condition(NULL),
-  thenStmt(NULL),
-  elseStmt(NULL)
-{
+IfExpr::IfExpr(Expr* condition, Expr* thenExpr, Expr* elseExpr)
+  : Expr(E_IfExpr), condition(NULL), thenStmt(NULL), elseStmt(NULL) {
   this->condition = condition;
 
   if (BlockStmt* block = toBlockStmt(thenExpr)) {
@@ -58,17 +54,11 @@ IfExpr::IfExpr(Expr* condition, Expr* thenExpr, Expr* elseExpr) :
   gIfExprs.add(this);
 }
 
-Expr* IfExpr::getCondition() {
-  return condition;
-}
+Expr* IfExpr::getCondition() { return condition; }
 
-BlockStmt* IfExpr::getThenStmt() {
-  return thenStmt;
-}
+BlockStmt* IfExpr::getThenStmt() { return thenStmt; }
 
-BlockStmt* IfExpr::getElseStmt() {
-  return elseStmt;
-}
+BlockStmt* IfExpr::getElseStmt() { return elseStmt; }
 
 void IfExpr::verify() {
   Expr::verify(E_IfExpr);
@@ -81,9 +71,9 @@ void IfExpr::verify() {
   verifyNotOnList(elseStmt);
 }
 
-IfExpr*
-IfExpr::copyInner(SymbolMap* map) {
-  return new IfExpr(COPY_INT(condition), COPY_INT(thenStmt), COPY_INT(elseStmt));
+IfExpr* IfExpr::copyInner(SymbolMap* map) {
+  return new IfExpr(
+    COPY_INT(condition), COPY_INT(thenStmt), COPY_INT(elseStmt));
 }
 
 void IfExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
@@ -109,13 +99,9 @@ void IfExpr::accept(AstVisitor* visitor) {
   }
 }
 
-QualifiedType IfExpr::qualType() {
-  return QualifiedType(QUAL_VAL, dtUnknown);
-}
+QualifiedType IfExpr::qualType() { return QualifiedType(QUAL_VAL, dtUnknown); }
 
-void IfExpr::prettyPrint(std::ostream* o) {
-  *o << "<IfExprType>";
-}
+void IfExpr::prettyPrint(std::ostream* o) { *o << "<IfExprType>"; }
 
 Expr* IfExpr::getFirstExpr() {
   return (condition != NULL) ? condition->getFirstExpr() : this;
@@ -131,8 +117,7 @@ bool isLoweredIfExprBlock(BlockStmt* block) {
   if (CallExpr* call = toCallExpr(block->body.last()))
     if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
       if (SymExpr* lhs = toSymExpr(call->get(1)))
-        if (lhs->symbol()->hasFlag(FLAG_IF_EXPR_RESULT))
-          return true;
+        if (lhs->symbol()->hasFlag(FLAG_IF_EXPR_RESULT)) return true;
 
   return false;
 }

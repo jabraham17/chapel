@@ -42,7 +42,7 @@
 #include "chpl/util/filtering.h"
 
 #ifdef HAVE_LLVM
-  #include "clangUtil.h"
+#include "clangUtil.h"
 #endif
 
 #include "global-ast-vecs.h"
@@ -55,36 +55,36 @@
 //
 // The function that represents the compiler-generated entry point
 //
-Symbol *gNil = NULL;
-Symbol *gUnknown = NULL;
-Symbol *gMethodToken = NULL;
-Symbol *gDummyRef = NULL;
-Symbol *gFixupRequiredToken = NULL;
-Symbol *gTypeDefaultToken = NULL;
+Symbol* gNil = NULL;
+Symbol* gUnknown = NULL;
+Symbol* gMethodToken = NULL;
+Symbol* gDummyRef = NULL;
+Symbol* gFixupRequiredToken = NULL;
+Symbol* gTypeDefaultToken = NULL;
 Symbol *gLeaderTag = NULL, *gFollowerTag = NULL, *gStandaloneTag = NULL;
-Symbol *gModuleToken = NULL;
-Symbol *gNoInit = NULL;
-Symbol *gSplitInit = NULL;
-Symbol *gVoid = NULL;
-Symbol *gNone = NULL;
-Symbol *gFile = NULL;
-Symbol *gStringC = NULL;
-Symbol *gStringCopy = NULL;
-Symbol *gOpaque = NULL;
-Symbol *gTimer = NULL;
-Symbol *gTaskID = NULL;
-Symbol *gSyncVarAuxFields = NULL;
-Symbol *gIgnoredPromotionToken = NULL;
+Symbol* gModuleToken = NULL;
+Symbol* gNoInit = NULL;
+Symbol* gSplitInit = NULL;
+Symbol* gVoid = NULL;
+Symbol* gNone = NULL;
+Symbol* gFile = NULL;
+Symbol* gStringC = NULL;
+Symbol* gStringCopy = NULL;
+Symbol* gOpaque = NULL;
+Symbol* gTimer = NULL;
+Symbol* gTaskID = NULL;
+Symbol* gSyncVarAuxFields = NULL;
+Symbol* gIgnoredPromotionToken = NULL;
 
-VarSymbol *gTrue = NULL;
-VarSymbol *gFalse = NULL;
+VarSymbol* gTrue = NULL;
+VarSymbol* gFalse = NULL;
 VarSymbol* gNodeID = NULL;
-VarSymbol *gModuleInitIndentLevel = NULL;
-VarSymbol *gInfinity = NULL;
-VarSymbol *gNan = NULL;
-VarSymbol *gUninstantiated = NULL;
-VarSymbol *gCpuVsGpuToken = NULL;
-VarSymbol *gIteratorBreakToken = NULL;
+VarSymbol* gModuleInitIndentLevel = NULL;
+VarSymbol* gInfinity = NULL;
+VarSymbol* gNan = NULL;
+VarSymbol* gUninstantiated = NULL;
+VarSymbol* gCpuVsGpuToken = NULL;
+VarSymbol* gIteratorBreakToken = NULL;
 
 llvm::SmallVector<VarSymbol*, 10> gCompilerGlobalParams;
 
@@ -99,18 +99,10 @@ void verifyInTree(BaseAST* ast, const char* msg) {
 *                                                                   *
 ********************************* | ********************************/
 
-Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
-  BaseAST(astTag),
-  qual(QUAL_UNKNOWN),
-  type(init_type),
-  flags(),
-  fieldQualifiers(NULL),
-  defPoint(NULL),
-  deprecationMsg(""),
-  unstableMsg(""),
-  symExprsHead(NULL),
-  symExprsTail(NULL)
-{
+Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type)
+  : BaseAST(astTag), qual(QUAL_UNKNOWN), type(init_type), flags(),
+    fieldQualifiers(NULL), defPoint(NULL), deprecationMsg(""), unstableMsg(""),
+    symExprsHead(NULL), symExprsTail(NULL) {
   if (init_name) {
     name = astr(init_name);
   } else {
@@ -119,10 +111,8 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   cname = name;
 }
 
-
 Symbol::~Symbol() {
-  if (fieldQualifiers)
-    delete [] fieldQualifiers;
+  if (fieldQualifiers) delete[] fieldQualifiers;
 }
 
 void Symbol::verify() {
@@ -132,16 +122,13 @@ void Symbol::verify() {
     if (this != defPoint->sym)
       INT_FATAL(this, "Symbol::defPoint != Sym::defPoint->sym");
   } else {
-    if (this != rootModule)
-      INT_FATAL(this, "Symbol without a defPoint");
+    if (this != rootModule) INT_FATAL(this, "Symbol without a defPoint");
   }
   verifyInTree(type, "Symbol::type");
 
-  if (name && name != astr(name))
-    INT_FATAL("name is not an astr");
+  if (name && name != astr(name)) INT_FATAL("name is not an astr");
 
-  if (cname && cname != astr(cname))
-    INT_FATAL("cname is not an astr");
+  if (cname && cname != astr(cname)) INT_FATAL("cname is not an astr");
 
   if (symExprsHead) {
     if (symExprsHead->symbolSymExprsPrev != NULL)
@@ -162,10 +149,8 @@ void Symbol::verify() {
   }
 }
 
-
 bool Symbol::inTree() {
-  if (defPoint)
-    return defPoint->inTree();
+  if (defPoint) return defPoint->inTree();
   // rootModule->defPoint is always NULL
   if (this == rootModule)
     return true;
@@ -173,10 +158,8 @@ bool Symbol::inTree() {
     return false;
 }
 
-QualifiedType
-Symbol::computeQualifiedType(bool isFormal, IntentTag intent, Type* type,
-                             Qualifier qual,
-                             bool isConst) {
+QualifiedType Symbol::computeQualifiedType(
+  bool isFormal, IntentTag intent, Type* type, Qualifier qual, bool isConst) {
   QualifiedType ret(dtUnknown, QUAL_UNKNOWN);
 
   if (isFormal) {
@@ -208,26 +191,17 @@ QualifiedType Symbol::qualType() {
   return computeQualifiedType(isFormal, intent, type, qual, isConst);
 }
 
+bool Symbol::isConstant() const { return false; }
 
-bool Symbol::isConstant() const {
-  return false;
-}
+bool Symbol::isConstValWillNotChange() { return false; }
 
-bool Symbol::isConstValWillNotChange() {
-  return false;
-}
-
-bool Symbol::isParameter() const {
-  return false;
-}
+bool Symbol::isParameter() const { return false; }
 
 bool Symbol::isRenameable() const {
   // we can't rename symbols that we're exporting or that are extern
   // because the other language will require the name to be as specified.
   // and we can't rename symbols that say not to.
-  if (hasFlag(FLAG_EXPORT) ||
-      hasFlag(FLAG_EXTERN) ||
-      hasFlag(FLAG_NO_RENAME)) {
+  if (hasFlag(FLAG_EXPORT) || hasFlag(FLAG_EXTERN) || hasFlag(FLAG_NO_RENAME)) {
     return false;
   }
   return true;
@@ -237,7 +211,6 @@ bool Symbol::isRenameable() const {
 BlockStmt* Symbol::getDeclarationScope() const {
   return (defPoint != NULL) ? defPoint->getScopeBlock() : NULL;
 }
-
 
 bool Symbol::isKnownToBeGeneric() {
   if (FnSymbol* fn = toFnSymbol(this))
@@ -286,14 +259,9 @@ void Symbol::removeSymExpr(SymExpr* se) {
   prev = NULL;
 }
 
+SymExpr* Symbol::firstSymExpr() const { return symExprsHead; }
 
-SymExpr* Symbol::firstSymExpr() const {
-  return symExprsHead;
-}
-
-SymExpr* Symbol::lastSymExpr() const {
-  return symExprsTail;
-}
+SymExpr* Symbol::lastSymExpr() const { return symExprsTail; }
 
 int Symbol::countDefs(int max) const {
   int ret = 0;
@@ -313,13 +281,9 @@ int Symbol::countUses(int max) const {
   return ret;
 }
 
-bool Symbol::isUsed() const {
-  return (this->countUses(1) >= 1);
-}
+bool Symbol::isUsed() const { return (this->countUses(1) >= 1); }
 
-bool Symbol::isDefined() const {
-  return (this->countDefs(1) >= 1);
-}
+bool Symbol::isDefined() const { return (this->countDefs(1) >= 1); }
 
 SymExpr* Symbol::getSingleUse() const {
   SymExpr* ret = NULL;
@@ -349,7 +313,6 @@ SymExpr* Symbol::getSingleDefUnder(Symbol* parent) const {
   return ret;
 }
 
-
 Expr* Symbol::getInitialization() const {
   // In theory, this should be the first "def" for the symbol,
   // but that might be obfuscated by PRIM_ADDR_OF.
@@ -358,7 +321,7 @@ Expr* Symbol::getInitialization() const {
 
   FnSymbol* fn = toFnSymbol(defPoint->parentSymbol);
   ModuleSymbol* mod = toModuleSymbol(defPoint->parentSymbol);
-  if (fn == NULL && mod != NULL ) {
+  if (fn == NULL && mod != NULL) {
     // Global variables are initialized in their module init function, unless
     // it's used in a loopexpr wrapper function for an array type.
     //
@@ -382,8 +345,8 @@ Expr* Symbol::getInitialization() const {
     stmt = defPoint->getStmtExpr()->next;
   }
 
-  const Symbol *curSym = this;
-  const Symbol *refSym = NULL;
+  const Symbol* curSym = this;
+  const Symbol* refSym = NULL;
 
   while (stmt != NULL) {
     std::vector<SymExpr*> symExprs;
@@ -393,9 +356,9 @@ Expr* Symbol::getInitialization() const {
     bool isUse = false;
 
     for_vector(SymExpr, se, symExprs) {
-        int result = isDefAndOrUse(se);
-        isDef |= (result & 1);
-        isUse |= (result & 2);
+      int result = isDefAndOrUse(se);
+      isDef |= (result & 1);
+      isUse |= (result & 2);
     }
 
     if (isDef) {
@@ -427,8 +390,7 @@ Expr* Symbol::getInitialization() const {
         }
       }
 
-      if (handled == false)
-        break;
+      if (handled == false) break;
     }
     stmt = stmt->next;
   }
@@ -440,8 +402,7 @@ const char* Symbol::getDeprecationMsg() const {
   if (deprecationMsg[0] == '\0') {
     const char* msg = astr(name, " is deprecated");
     return msg;
-  }
-  else {
+  } else {
     return deprecationMsg.c_str();
   }
 }
@@ -450,8 +411,7 @@ const char* Symbol::getUnstableMsg() const {
   if (unstableMsg[0] == '\0') {
     const char* msg = astr(name, " is unstable");
     return msg;
-  }
-  else {
+  } else {
     return unstableMsg.c_str();
   }
 }
@@ -465,15 +425,18 @@ const char* Symbol::getSanitizedMsg(std::string msg) const {
   return astr(chpl::removeSphinxMarkup(msg));
 }
 
-std::unordered_set<std::pair<Symbol*,Expr*>, chpl::detail::hasher<std::pair<Symbol*, Expr*>>> dedupDeprecationWarnings;
+std::unordered_set<std::pair<Symbol*, Expr*>,
+                   chpl::detail::hasher<std::pair<Symbol*, Expr*>>>
+  dedupDeprecationWarnings;
 
 void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
   if (!this->hasFlag(FLAG_DEPRECATED)) return;
 
   Symbol* contextParent = context->parentSymbol;
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
-  bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED) &&
-                          !contextParent->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
+  bool compilerGenerated =
+    contextParent->hasFlag(FLAG_COMPILER_GENERATED) &&
+    !contextParent->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
   bool ignoreUsage = contextParent->hasFlag(FLAG_IGNORE_DEPRECATED_USE);
 
   // Ignore initialization of deprecated fields in initializers.
@@ -495,7 +458,7 @@ void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
     contextParent = contextParent->defPoint->parentSymbol;
     parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
     compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED) &&
-                       !contextParent->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
+                        !contextParent->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
     ignoreUsage = contextParent->hasFlag(FLAG_IGNORE_DEPRECATED_USE);
   }
 
@@ -550,7 +513,9 @@ static bool isUnstableShouldWarn(Symbol* sym, Expr* initialContext) {
   return fWarnUnstable;
 }
 
-std::unordered_set<std::pair<Symbol*,Expr*>, chpl::detail::hasher<std::pair<Symbol*, Expr*>>> dedupUnstableWarnings;
+std::unordered_set<std::pair<Symbol*, Expr*>,
+                   chpl::detail::hasher<std::pair<Symbol*, Expr*>>>
+  dedupUnstableWarnings;
 
 //based on maybeGenerateDeprecationWarning
 void Symbol::maybeGenerateUnstableWarning(Expr* context) {
@@ -559,22 +524,22 @@ void Symbol::maybeGenerateUnstableWarning(Expr* context) {
   Symbol* contextParent = context->parentSymbol;
   bool parentUnstable = isUnstableContext(contextParent);
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
-  bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED) &&
-                          !contextParent->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
+  bool compilerGenerated =
+    contextParent->hasFlag(FLAG_COMPILER_GENERATED) &&
+    !contextParent->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
 
   // Traverse until we find an unstable parent symbol, a deprecated parent
   // symbol, a compiler generated parent symbol, or until we reach the highest
   // outer scope.
   while (contextParent != NULL && contextParent->defPoint != NULL &&
          contextParent->defPoint->parentSymbol != NULL &&
-         !isInvisibleModule(contextParent) &&
-         parentUnstable != true && compilerGenerated != true &&
-         parentDeprecated != true) {
+         !isInvisibleModule(contextParent) && parentUnstable != true &&
+         compilerGenerated != true && parentDeprecated != true) {
     contextParent = contextParent->defPoint->parentSymbol;
     parentUnstable = isUnstableContext(contextParent);
     parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
     compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED) &&
-                       !contextParent->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
+                        !contextParent->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
   }
 
   // Only generate the warning if the location with the reference is not
@@ -588,17 +553,11 @@ void Symbol::maybeGenerateUnstableWarning(Expr* context) {
   }
 }
 
-bool Symbol::isImmediate() const {
-  return false;
-}
+bool Symbol::isImmediate() const { return false; }
 
-bool isString(Symbol* symbol) {
-  return isString(symbol->type);
-}
+bool isString(Symbol* symbol) { return isString(symbol->type); }
 
-bool isBytes(Symbol* symbol) {
-  return isBytes(symbol->type);
-}
+bool isBytes(Symbol* symbol) { return isBytes(symbol->type); }
 
 /******************************** | *********************************
 *                                                                   *
@@ -606,44 +565,29 @@ bool isBytes(Symbol* symbol) {
 *                                                                   *
 ********************************* | ********************************/
 
-LcnSymbol::LcnSymbol(AstTag      astTag,
-                     const char* initName,
-                     Type*       initType) :
-  Symbol(astTag, initName, initType)
-{
-  mDepth  = -1;
+LcnSymbol::LcnSymbol(AstTag astTag, const char* initName, Type* initType)
+  : Symbol(astTag, initName, initType) {
+  mDepth = -1;
   mOffset = -1;
 }
 
-void LcnSymbol::locationSet(int depth, int offset)
-{
-  mDepth  = depth;
+void LcnSymbol::locationSet(int depth, int offset) {
+  mDepth = depth;
   mOffset = offset;
 }
 
-int LcnSymbol::depth() const
-{
-  return mDepth;
-}
+int LcnSymbol::depth() const { return mDepth; }
 
-int LcnSymbol::offset() const
-{
-  return mOffset;
-}
+int LcnSymbol::offset() const { return mOffset; }
 
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
 ********************************* | ********************************/
 
-VarSymbol::VarSymbol(const char *init_name,
-                     Type    *init_type) :
-  LcnSymbol(E_VarSymbol, init_name, init_type),
-  immediate(NULL),
-  isField(false),
-  llvmDIGlobalVariable(NULL),
-  llvmDIVariable(NULL)
-{
+VarSymbol::VarSymbol(const char* init_name, Type* init_type)
+  : LcnSymbol(E_VarSymbol, init_name, init_type), immediate(NULL),
+    isField(false), llvmDIGlobalVariable(NULL), llvmDIVariable(NULL) {
   gVarSymbols.add(this);
   if (type == dtUnknown || type->symbol == NULL) {
     this->qual = QUAL_UNKNOWN;
@@ -656,46 +600,31 @@ VarSymbol::VarSymbol(const char *init_name,
   }
 }
 
-VarSymbol::VarSymbol(const char* init_name, QualifiedType qType) :
-  LcnSymbol(E_VarSymbol, init_name, qType.type()),
-  immediate(NULL),
-  isField(false),
-  llvmDIGlobalVariable(NULL),
-  llvmDIVariable(NULL)
-{
+VarSymbol::VarSymbol(const char* init_name, QualifiedType qType)
+  : LcnSymbol(E_VarSymbol, init_name, qType.type()), immediate(NULL),
+    isField(false), llvmDIGlobalVariable(NULL), llvmDIVariable(NULL) {
   gVarSymbols.add(this);
 
   this->qual = qType.getQual();
 }
 
-VarSymbol::VarSymbol(AstTag astTag, const char* initName, Type* initType) :
-  LcnSymbol(astTag, initName, initType),
-  immediate(NULL),
-  isField(false),
-  llvmDIGlobalVariable(NULL),
-  llvmDIVariable(NULL)
-{
+VarSymbol::VarSymbol(AstTag astTag, const char* initName, Type* initType)
+  : LcnSymbol(astTag, initName, initType), immediate(NULL), isField(false),
+    llvmDIGlobalVariable(NULL), llvmDIVariable(NULL) {
   // The subclass is to take care of the rest.
 }
 
-
 VarSymbol::~VarSymbol() {
-  if (immediate)
-    delete immediate;
+  if (immediate) delete immediate;
 }
-
 
 void VarSymbol::verify() {
   Symbol::verify();
-  if (astTag != E_VarSymbol)
-    INT_FATAL(this, "Bad VarSymbol::astTag");
-  if (!type)
-    INT_FATAL(this, "VarSymbol::type is NULL");
+  if (astTag != E_VarSymbol) INT_FATAL(this, "Bad VarSymbol::astTag");
+  if (!type) INT_FATAL(this, "VarSymbol::type is NULL");
 }
 
-
-VarSymbol*
-VarSymbol::copyInner(SymbolMap* map) {
+VarSymbol* VarSymbol::copyInner(SymbolMap* map) {
   VarSymbol* newVarSymbol = new VarSymbol(name, type);
   newVarSymbol->copyFlags(this);
   newVarSymbol->qual = qual;
@@ -704,72 +633,52 @@ VarSymbol::copyInner(SymbolMap* map) {
   return newVarSymbol;
 }
 
-
 void VarSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   INT_FATAL(this, "Unexpected case in VarSymbol::replaceChild");
 }
 
-
-bool VarSymbol::isConstant() const {
-  return hasFlag(FLAG_CONST);
-}
-
+bool VarSymbol::isConstant() const { return hasFlag(FLAG_CONST); }
 
 bool VarSymbol::isConstValWillNotChange() {
   // todo: how about QUAL_CONST ?
-  return qual == QUAL_CONST_VAL         ||
-         hasFlag(FLAG_REF_TO_IMMUTABLE) ||
-         (hasFlag(FLAG_CONST) &&
-          !(hasFlag(FLAG_REF_VAR) || isRef()));
+  return qual == QUAL_CONST_VAL || hasFlag(FLAG_REF_TO_IMMUTABLE) ||
+         (hasFlag(FLAG_CONST) && !(hasFlag(FLAG_REF_VAR) || isRef()));
 }
 
+bool VarSymbol::isParameter() const { return hasFlag(FLAG_PARAM) || immediate; }
 
-bool VarSymbol::isParameter() const {
-  return hasFlag(FLAG_PARAM) || immediate;
-}
-
-
-bool VarSymbol::isType() const {
-  return hasFlag(FLAG_TYPE_VARIABLE);
-}
+bool VarSymbol::isType() const { return hasFlag(FLAG_TYPE_VARIABLE); }
 
 /*
  * For docs, when VarSymbol is used for class fields, identify them as such by
  * calling this function.
  */
-void VarSymbol::makeField() {
-  this->isField = true;
-}
+void VarSymbol::makeField() { this->isField = true; }
 
-bool VarSymbol::isImmediate() const {
-  return immediate != NULL;
-}
+bool VarSymbol::isImmediate() const { return immediate != NULL; }
 
-void VarSymbol::accept(AstVisitor* visitor) {
-  visitor->visitVarSym(this);
-}
+void VarSymbol::accept(AstVisitor* visitor) { visitor->visitVarSym(this); }
 
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
 ********************************* | ********************************/
 
-ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
-                     Type* iType, Expr* iTypeExpr,
-                     Expr* iDefaultExpr, Expr* iVariableExpr) :
-  LcnSymbol(E_ArgSymbol, iName, iType),
-  intent(iIntent),
-  originalIntent(iIntent),
-  typeExprFromDefaultExpr(false),
-  typeExpr(NULL),
-  defaultExpr(NULL),
-  variableExpr(NULL),
-  instantiatedFrom(NULL),
-  llvmDIFormal(NULL)
-{
+ArgSymbol::ArgSymbol(IntentTag iIntent,
+                     const char* iName,
+                     Type* iType,
+                     Expr* iTypeExpr,
+                     Expr* iDefaultExpr,
+                     Expr* iVariableExpr)
+  : LcnSymbol(E_ArgSymbol, iName, iType), intent(iIntent),
+    originalIntent(iIntent), typeExprFromDefaultExpr(false), typeExpr(NULL),
+    defaultExpr(NULL), variableExpr(NULL), instantiatedFrom(NULL),
+    llvmDIFormal(NULL) {
   if (intentsResolved) {
     if (iIntent == INTENT_BLANK || iIntent == INTENT_CONST) {
-      INT_FATAL(this, "You can't create an argument with blank/const intent once intents have been resolved; please be more specific");
+      INT_FATAL(this,
+                "You can't create an argument with blank/const intent once "
+                "intents have been resolved; please be more specific");
       // NOTE: One way to be more specific is to use the blankIntentForType()/
       // constIntentForType() routines to map a (possibly unknown) type to
       // the intent that blank/const would use for that type.
@@ -796,7 +705,6 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
   gArgSymbols.add(this);
 }
 
-
 void ArgSymbol::verify() {
   Symbol::verify();
   if (astTag != E_ArgSymbol) {
@@ -818,22 +726,26 @@ void ArgSymbol::verify() {
   }
   if (intentsResolved) {
     if (intent == INTENT_BLANK || intent == INTENT_CONST) {
-      INT_FATAL(this, "Arg '%s' (%d) has blank/const intent post-resolve", this->name, this->id);
+      INT_FATAL(this,
+                "Arg '%s' (%d) has blank/const intent post-resolve",
+                this->name,
+                this->id);
     }
   }
-  if (hasFlag(FLAG_REF_TO_IMMUTABLE))
-    INT_ASSERT(intent == INTENT_CONST_REF);
+  if (hasFlag(FLAG_REF_TO_IMMUTABLE)) INT_ASSERT(intent == INTENT_CONST_REF);
   verifyNotOnList(typeExpr);
   verifyNotOnList(defaultExpr);
   verifyNotOnList(variableExpr);
   verifyInTree(instantiatedFrom, "ArgSymbol::instantiatedFrom");
 }
 
-
-ArgSymbol*
-ArgSymbol::copyInner(SymbolMap* map) {
-  ArgSymbol *ps = new ArgSymbol(intent, name, type, COPY_INT(typeExpr),
-                                COPY_INT(defaultExpr), COPY_INT(variableExpr));
+ArgSymbol* ArgSymbol::copyInner(SymbolMap* map) {
+  ArgSymbol* ps = new ArgSymbol(intent,
+                                name,
+                                type,
+                                COPY_INT(typeExpr),
+                                COPY_INT(defaultExpr),
+                                COPY_INT(variableExpr));
   ps->copyFlags(this);
   ps->typeExprFromDefaultExpr = typeExprFromDefaultExpr;
   ps->cname = cname;
@@ -841,7 +753,6 @@ ArgSymbol::copyInner(SymbolMap* map) {
   ps->originalIntent = this->originalIntent;
   return ps;
 }
-
 
 void ArgSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   if (old_ast == typeExpr)
@@ -858,19 +769,13 @@ bool ArgSymbol::isConstant() const {
   bool retval = false;
 
   switch (intent) {
-  case INTENT_BLANK:
-    retval = type->isDefaultIntentConst();
-    break;
+    case INTENT_BLANK: retval = type->isDefaultIntentConst(); break;
 
-  case INTENT_CONST:
-  case INTENT_CONST_IN:
-  case INTENT_CONST_REF:
-    retval = true;
-    break;
+    case INTENT_CONST:
+    case INTENT_CONST_IN:
+    case INTENT_CONST_REF: retval = true; break;
 
-  default:
-    retval = false;
-    break;
+    default: retval = false; break;
   }
 
   return retval;
@@ -879,13 +784,14 @@ bool ArgSymbol::isConstant() const {
 // For an abstract 'intent', set absIntent=true.
 // For a concrete 'intent', set absIntent=false and result=
 // whether the formal with that intent does not change.
-static void isConstValWillNotChangeHelp(IntentTag intent,
-                                        bool& result, bool& absIntent) {
-  switch (intent)
-  {
+static void
+isConstValWillNotChangeHelp(IntentTag intent, bool& result, bool& absIntent) {
+  switch (intent) {
     case INTENT_CONST_IN:
     case INTENT_PARAM:
-      result = true; absIntent = false; return;
+      result = true;
+      absIntent = false;
+      return;
 
     case INTENT_IN:
     case INTENT_OUT:
@@ -893,58 +799,57 @@ static void isConstValWillNotChangeHelp(IntentTag intent,
     case INTENT_REF:
     case INTENT_CONST_REF:
     case INTENT_REF_MAYBE_CONST:
-      result = false; absIntent = false; return;
+      result = false;
+      absIntent = false;
+      return;
 
     case INTENT_CONST:
     case INTENT_BLANK:
-      result = false; absIntent = true; return;
+      result = false;
+      absIntent = true;
+      return;
 
     case INTENT_TYPE:
       INT_ASSERT(false); // caller responsibility to avoid this
-      result = false; absIntent = true; return; // dummy
+      result = false;
+      absIntent = true;
+      return; // dummy
   }
 
   return; // dummy
 }
 
 bool ArgSymbol::isConstValWillNotChange() {
-  if (hasFlag(FLAG_REF_TO_IMMUTABLE))
-    return true;
+  if (hasFlag(FLAG_REF_TO_IMMUTABLE)) return true;
 
   bool absIntent = false;
-  bool result    = false;
+  bool result = false;
   isConstValWillNotChangeHelp(intent, result, absIntent);
 
   if (absIntent) {
     // Try again with the corresponding concrete intent.
     // Caller is responsible that concreteIntent() succeeds.
-    isConstValWillNotChangeHelp(concreteIntent(intent, type->getValType()),
-                                result, absIntent);
+    isConstValWillNotChangeHelp(
+      concreteIntent(intent, type->getValType()), result, absIntent);
     INT_ASSERT(!absIntent);
   }
   return result;
 }
 
-bool ArgSymbol::isParameter() const {
-  return (intent == INTENT_PARAM);
-}
+bool ArgSymbol::isParameter() const { return (intent == INTENT_PARAM); }
 
-bool ArgSymbol::isVisible(BaseAST* scope) const {
-  return true;
-}
-
+bool ArgSymbol::isVisible(BaseAST* scope) const { return true; }
 
 const char* retTagDescrString(RetTag retTag) {
   switch (retTag) {
-    case RET_VALUE:     return "value";
-    case RET_REF:       return "ref";
+    case RET_VALUE: return "value";
+    case RET_REF: return "ref";
     case RET_CONST_REF: return "const ref";
-    case RET_PARAM:     return "param";
-    case RET_TYPE:      return "type";
-    default:            return "<unknown RetTag>";
+    case RET_PARAM: return "param";
+    case RET_TYPE: return "type";
+    default: return "<unknown RetTag>";
   }
 }
-
 
 // describes this argument's intent (for use in an English sentence)
 const char* ArgSymbol::intentDescrString() const {
@@ -968,17 +873,17 @@ const char* ArgSymbol::intentDescrString() const {
 // describes the given intent (for use in an English sentence)
 const char* intentDescrString(IntentTag intent) {
   switch (intent) {
-    case INTENT_BLANK:     return "default intent";
-    case INTENT_IN:        return "'in' intent";
-    case INTENT_INOUT:     return "'inout' intent";
-    case INTENT_OUT:       return "'out' intent";
-    case INTENT_CONST:     return "'const' intent";
-    case INTENT_CONST_IN:  return "'const in' intent";
+    case INTENT_BLANK: return "default intent";
+    case INTENT_IN: return "'in' intent";
+    case INTENT_INOUT: return "'inout' intent";
+    case INTENT_OUT: return "'out' intent";
+    case INTENT_CONST: return "'const' intent";
+    case INTENT_CONST_IN: return "'const in' intent";
     case INTENT_CONST_REF: return "'const ref' intent";
     case INTENT_REF_MAYBE_CONST: return "'const? ref' intent";
-    case INTENT_REF:       return "'ref' intent";
-    case INTENT_PARAM:     return "'param' intent";
-    case INTENT_TYPE:      return "'type' intent";
+    case INTENT_REF: return "'ref' intent";
+    case INTENT_PARAM: return "'param' intent";
+    case INTENT_TYPE: return "'type' intent";
   }
   INT_FATAL("unknown intent");
   return "<unknown intent>";
@@ -987,14 +892,11 @@ const char* intentDescrString(IntentTag intent) {
 void ArgSymbol::accept(AstVisitor* visitor) {
   if (visitor->enterArgSym(this) == true) {
 
-    if (typeExpr)
-      typeExpr->accept(visitor);
+    if (typeExpr) typeExpr->accept(visitor);
 
-    if (defaultExpr)
-      defaultExpr->accept(visitor);
+    if (defaultExpr) defaultExpr->accept(visitor);
 
-    if (variableExpr)
-      variableExpr->accept(visitor);
+    if (variableExpr) variableExpr->accept(visitor);
 
     visitor->exitArgSym(this);
   }
@@ -1006,10 +908,10 @@ std::string ArgSymbol::demungeVarArgName(std::string* num) {
     INT_FATAL(this, "demungeVarArgName() called on non-vararg ArgSymbol");
   }
   std::string mynum = name;
-  mynum.erase(0, 2); // remove _e
-  std::string n = mynum; // ##_name
+  mynum.erase(0, 2);             // remove _e
+  std::string n = mynum;         // ##_name
   mynum.resize(mynum.find('_')); // ##
-  n.erase(0, n.find('_')+1); // name
+  n.erase(0, n.find('_') + 1);   // name
   if (num != NULL) {
     *num = mynum;
   }
@@ -1026,22 +928,16 @@ std::string ArgSymbol::demungeVarArgName(std::string* num) {
 ShadowVarSymbol::ShadowVarSymbol(ForallIntentTag iIntent,
                                  const char* name,
                                  SymExpr* outerVar,
-                                 Expr* spec):
-  VarSymbol(E_ShadowVarSymbol, name, dtUnknown),
-  intent(iIntent),
-  outerVarSE(outerVar),
-  specBlock(NULL),
-  svInitBlock(new BlockStmt()),
-  svDeinitBlock(new BlockStmt()),
-  svExplicit(false)
-{
+                                 Expr* spec)
+  : VarSymbol(E_ShadowVarSymbol, name, dtUnknown), intent(iIntent),
+    outerVarSE(outerVar), specBlock(NULL), svInitBlock(new BlockStmt()),
+    svDeinitBlock(new BlockStmt()), svExplicit(false) {
   if (intentsResolved)
     if (intent == TFI_DEFAULT || intent == TFI_CONST)
       INT_FATAL(this, "must be a concrete intent");
 
   // According to CallExpr::verify(), each CallExpr shall have a parentExpr.
-  if (spec)
-    specBlock = new BlockStmt(spec);
+  if (spec) specBlock = new BlockStmt(spec);
 
   gShadowVarSymbols.add(this);
 }
@@ -1057,14 +953,13 @@ void ShadowVarSymbol::verify() {
     INT_FATAL(this, "Bad ShadowVarSymbol::specBlock::parentSymbol");
   verifyNotOnList(outerVarSE);
   // for VarSymbol
-  if (!type)
-    INT_FATAL(this, "ShadowVarSymbol::type is NULL");
+  if (!type) INT_FATAL(this, "ShadowVarSymbol::type is NULL");
   verifyNotOnList(specBlock);
   if (!resolved) {
     // Verify that this symbol is on a ForallStmt::shadowVariables() list.
-    if(ForallStmt* pfs = toForallStmt(defPoint->parentExpr)) {
+    if (ForallStmt* pfs = toForallStmt(defPoint->parentExpr)) {
       INT_ASSERT(defPoint->list == &(pfs->shadowVariables()));
-    } else if(ForLoop *pfl = toForLoop(defPoint->parentExpr)) {
+    } else if (ForLoop* pfl = toForLoop(defPoint->parentExpr)) {
       INT_ASSERT(pfl);
       INT_ASSERT(pfl->isOrderIndependent());
       INT_ASSERT(defPoint->list == &(pfl->shadowVariables()));
@@ -1079,22 +974,20 @@ void ShadowVarSymbol::verify() {
 
 void ShadowVarSymbol::accept(AstVisitor* visitor) {
   visitor->visitVarSym(this);
-  if (outerVarSE)
-    outerVarSE->accept(visitor);
-  if (specBlock)
-    specBlock->accept(visitor);
+  if (outerVarSE) outerVarSE->accept(visitor);
+  if (specBlock) specBlock->accept(visitor);
 
   svInitBlock->accept(visitor);
   svDeinitBlock->accept(visitor);
 }
 
 ShadowVarSymbol* ShadowVarSymbol::copyInner(SymbolMap* map) {
-  ShadowVarSymbol* ss = new ShadowVarSymbol(intent, name,
-                                            COPY_INT(outerVarSE), NULL);
+  ShadowVarSymbol* ss =
+    new ShadowVarSymbol(intent, name, COPY_INT(outerVarSE), NULL);
   ss->type = type;
   ss->qual = qual;
-  ss->specBlock     = COPY_INT(specBlock);
-  ss->svInitBlock   = COPY_INT(svInitBlock);
+  ss->specBlock = COPY_INT(specBlock);
+  ss->svInitBlock = COPY_INT(svInitBlock);
   ss->svDeinitBlock = COPY_INT(svDeinitBlock);
 
   ss->copyFlags(this);
@@ -1117,27 +1010,22 @@ void ShadowVarSymbol::replaceChild(BaseAST* oldAst, BaseAST* newAst) {
 }
 
 bool ShadowVarSymbol::isConstant() const {
-  switch (intent)
-  {
-    case TFI_DEFAULT:
-      return type->isDefaultIntentConst();
+  switch (intent) {
+    case TFI_DEFAULT: return type->isDefaultIntentConst();
 
     case TFI_CONST:
     case TFI_CONST_IN:
     case TFI_CONST_REF:
-    case TFI_IN_PARENT:
-      return true;
+    case TFI_IN_PARENT: return true;
 
     case TFI_IN:
     case TFI_REF:
     case TFI_REDUCE:
     case TFI_REDUCE_OP:
     case TFI_REDUCE_PARENT_AS:
-    case TFI_REDUCE_PARENT_OP:
-      return false;
+    case TFI_REDUCE_PARENT_OP: return false;
 
-    case TFI_TASK_PRIVATE:
-      return VarSymbol::isConstant();
+    case TFI_TASK_PRIVATE: return VarSymbol::isConstant();
   }
   return false; // dummy
 }
@@ -1160,11 +1048,9 @@ bool ShadowVarSymbol::isConstValWillNotChange() {
     case TFI_REDUCE:
     case TFI_REDUCE_OP:
     case TFI_REDUCE_PARENT_AS:
-    case TFI_REDUCE_PARENT_OP:
-      return false;
+    case TFI_REDUCE_PARENT_OP: return false;
 
-    case TFI_TASK_PRIVATE:
-      return VarSymbol::isConstValWillNotChange();
+    case TFI_TASK_PRIVATE: return VarSymbol::isConstValWillNotChange();
   }
   return false; // dummy
 }
@@ -1172,18 +1058,18 @@ bool ShadowVarSymbol::isConstValWillNotChange() {
 // describes the intent (for use in an English sentence)
 const char* ShadowVarSymbol::intentDescrString() const {
   switch (intent) {
-    case TFI_DEFAULT:       return "default intent";
-    case TFI_CONST:         return "'const' intent";
-    case TFI_IN_PARENT:     return "parent-in intent";
-    case TFI_IN:            return "'in' intent";
-    case TFI_CONST_IN:      return "'const in' intent";
-    case TFI_REF:           return "'ref' intent";
-    case TFI_CONST_REF:     return "'const ref' intent";
-    case TFI_REDUCE:        return "'reduce' intent";
-    case TFI_REDUCE_OP:        return "reduce-Op intent";
+    case TFI_DEFAULT: return "default intent";
+    case TFI_CONST: return "'const' intent";
+    case TFI_IN_PARENT: return "parent-in intent";
+    case TFI_IN: return "'in' intent";
+    case TFI_CONST_IN: return "'const in' intent";
+    case TFI_REF: return "'ref' intent";
+    case TFI_CONST_REF: return "'const ref' intent";
+    case TFI_REDUCE: return "'reduce' intent";
+    case TFI_REDUCE_OP: return "reduce-Op intent";
     case TFI_REDUCE_PARENT_AS: return "parent-reduce-AS intent";
     case TFI_REDUCE_PARENT_OP: return "parent-reduce-Op intent";
-    case TFI_TASK_PRIVATE:  return "task-private intent";
+    case TFI_TASK_PRIVATE: return "task-private intent";
   }
   INT_FATAL(this, "unknown intent");
   return "unknown intent"; //dummy
@@ -1193,8 +1079,7 @@ const char* ShadowVarSymbol::intentDescrString() const {
 // in expr.h: outerVarSym()
 
 Expr* ShadowVarSymbol::reduceOpExpr() const {
-  if (!specBlock)
-    return NULL;
+  if (!specBlock) return NULL;
   INT_ASSERT(specBlock->body.length == 1);
   INT_ASSERT(isReduce());
   return specBlock->body.head;
@@ -1249,16 +1134,15 @@ ShadowVarSymbol* ShadowVarSymbol::AccumStateForParentAS() const {
 }
 
 void ShadowVarSymbol::removeSupportingReferences() {
-  if (outerVarSE)    outerVarSE->remove();
-  if (specBlock)     specBlock->remove();
-  if (svInitBlock)   svInitBlock->remove();
+  if (outerVarSE) outerVarSE->remove();
+  if (specBlock) specBlock->remove();
+  if (svInitBlock) svInitBlock->remove();
   if (svDeinitBlock) svDeinitBlock->remove();
 }
 
 bool isOuterVarOfShadowVar(Expr* expr) {
   if (ShadowVarSymbol* ss = toShadowVarSymbol(expr->parentSymbol))
-    if (expr == ss->outerVarSE)
-      return true;
+    if (expr == ss->outerVarSE) return true;
   return false;
 }
 
@@ -1267,25 +1151,19 @@ bool isOuterVarOfShadowVar(Expr* expr) {
 *                                                                   *
 ********************************* | ********************************/
 
-TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
-  Symbol(E_TypeSymbol, init_name, init_type),
-    llvmImplType(nullptr), llvmAlignment(ALIGNMENT_UNINIT),
-    llvmTbaaTypeDescriptor(nullptr),
+TypeSymbol::TypeSymbol(const char* init_name, Type* init_type)
+  : Symbol(E_TypeSymbol, init_name, init_type), llvmImplType(nullptr),
+    llvmAlignment(ALIGNMENT_UNINIT), llvmTbaaTypeDescriptor(nullptr),
     llvmTbaaAccessTag(nullptr), llvmConstTbaaAccessTag(nullptr),
-    llvmTbaaAggTypeDescriptor(nullptr),
-    llvmTbaaStructCopyNode(nullptr), llvmConstTbaaStructCopyNode(nullptr),
-    llvmDIType(nullptr),
-    llvmDIForwardType(nullptr),
-    instantiationPoint(nullptr),
-    userInstantiationPointLoc(0, nullptr)
-{
+    llvmTbaaAggTypeDescriptor(nullptr), llvmTbaaStructCopyNode(nullptr),
+    llvmConstTbaaStructCopyNode(nullptr), llvmDIType(nullptr),
+    llvmDIForwardType(nullptr), instantiationPoint(nullptr),
+    userInstantiationPointLoc(0, nullptr) {
   addFlag(FLAG_TYPE_VARIABLE);
-  if (!type)
-    INT_FATAL(this, "TypeSymbol constructor called without type");
+  if (!type) INT_FATAL(this, "TypeSymbol constructor called without type");
   type->addSymbol(this);
   gTypeSymbols.add(this);
 }
-
 
 void TypeSymbol::verify() {
   Symbol::verify();
@@ -1299,9 +1177,7 @@ void TypeSymbol::verify() {
   if (auto ft = toFunctionType(type)) ft->verify();
 }
 
-
-TypeSymbol*
-TypeSymbol::copyInner(SymbolMap* map) {
+TypeSymbol* TypeSymbol::copyInner(SymbolMap* map) {
   Type* new_type = COPY_INT(type);
   TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
   new_type->addSymbol(new_type_symbol);
@@ -1316,7 +1192,6 @@ TypeSymbol::copyInner(SymbolMap* map) {
   return new_type_symbol;
 }
 
-
 void TypeSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   INT_FATAL(this, "Unexpected case in TypeSymbol::replaceChild");
 }
@@ -1324,8 +1199,7 @@ void TypeSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
 void TypeSymbol::accept(AstVisitor* visitor) {
   if (visitor->enterTypeSym(this) == true) {
 
-    if (type)
-      type->accept(visitor);
+    if (type) type->accept(visitor);
 
     visitor->exitTypeSym(this);
   }
@@ -1337,8 +1211,8 @@ void TypeSymbol::accept(AstVisitor* visitor) {
 *                                                                             *
 ************************************** | *************************************/
 
-EnumSymbol::EnumSymbol(const char* init_name) :
-  Symbol(E_EnumSymbol, init_name) {
+EnumSymbol::EnumSymbol(const char* init_name)
+  : Symbol(E_EnumSymbol, init_name) {
   gEnumSymbols.add(this);
 }
 
@@ -1360,9 +1234,7 @@ void EnumSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   INT_FATAL(this, "Unexpected case in EnumSymbol::replaceChild");
 }
 
-bool EnumSymbol::isParameter() const {
-  return true;
-}
+bool EnumSymbol::isParameter() const { return true; }
 
 Immediate* EnumSymbol::getImmediate() {
   if (SymExpr* init = toSymExpr(defPoint->init)) {
@@ -1373,9 +1245,7 @@ Immediate* EnumSymbol::getImmediate() {
   return NULL;
 }
 
-void EnumSymbol::accept(AstVisitor* visitor) {
-  visitor->visitEnumSym(this);
-}
+void EnumSymbol::accept(AstVisitor* visitor) { visitor->visitEnumSym(this); }
 
 /************************************* | **************************************
 *                                                                             *
@@ -1383,13 +1253,10 @@ void EnumSymbol::accept(AstVisitor* visitor) {
 *                                                                             *
 ************************************** | *************************************/
 
-LabelSymbol::LabelSymbol(const char* init_name) :
-  Symbol(E_LabelSymbol, init_name, NULL),
-  iterResumeGoto(NULL)
-{
+LabelSymbol::LabelSymbol(const char* init_name)
+  : Symbol(E_LabelSymbol, init_name, NULL), iterResumeGoto(NULL) {
   gLabelSymbols.add(this);
 }
-
 
 void LabelSymbol::verify() {
   Symbol::verify();
@@ -1397,24 +1264,23 @@ void LabelSymbol::verify() {
     INT_FATAL(this, "Bad LabelSymbol::astTag");
   }
   if (GotoStmt* igs = iterResumeGoto) {
-    if (!isAlive(igs))
-      INT_FATAL(this, "label's iterResumeGoto is not in AST");
+    if (!isAlive(igs)) INT_FATAL(this, "label's iterResumeGoto is not in AST");
     if (igs->gotoTag != GOTO_ITER_RESUME)
       INT_FATAL(this, "label's iterResumeGoto has unexpected gotoTag");
     if (getGotoLabelSymbol(igs) != this)
-      INT_FATAL(this,"label's iterResumeGoto does not point back to the label");
+      INT_FATAL(this,
+                "label's iterResumeGoto does not point back to the label");
   }
   // iterResumeGoto references a statement that is located somewhere in the AST
   // and so can be on a list.
 }
 
-LabelSymbol*
-LabelSymbol::copyInner(SymbolMap* map) {
+LabelSymbol* LabelSymbol::copyInner(SymbolMap* map) {
   LabelSymbol* copy = new LabelSymbol(name);
   copy->copyFlags(this);
   copy->cname = cname;
   if (iterResumeGoto) {
-    MapElem<GotoStmt*,GotoStmt*>* rec =
+    MapElem<GotoStmt*, GotoStmt*>* rec =
       copiedIterResumeGotos.get_record(iterResumeGoto);
     if (rec) {
       // we gotta have the mapping because we handle each goto exactly once
@@ -1438,9 +1304,7 @@ void LabelSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   INT_FATAL(this, "Unexpected case in LabelSymbol::replaceChild");
 }
 
-void LabelSymbol::accept(AstVisitor* visitor) {
-  visitor->visitLabelSym(this);
-}
+void LabelSymbol::accept(AstVisitor* visitor) { visitor->visitLabelSym(this); }
 
 /************************************* | **************************************
 *                                                                             *
@@ -1449,22 +1313,18 @@ void LabelSymbol::accept(AstVisitor* visitor) {
 ************************************** | *************************************/
 
 TemporaryConversionSymbol::TemporaryConversionSymbol(chpl::ID symId)
-  : Symbol(E_TemporaryConversionSymbol, "<conv>", nullptr),
-    symId(symId), rfn(nullptr)
-{
+  : Symbol(E_TemporaryConversionSymbol, "<conv>", nullptr), symId(symId),
+    rfn(nullptr) {
   gTemporaryConversionSymbols.add(this);
 }
 
 TemporaryConversionSymbol::TemporaryConversionSymbol(
-    const chpl::resolution::ResolvedFunction* rfn)
-  : Symbol(E_TemporaryConversionSymbol, "<conv>", nullptr),
-    symId(), rfn(rfn)
-{
+  const chpl::resolution::ResolvedFunction* rfn)
+  : Symbol(E_TemporaryConversionSymbol, "<conv>", nullptr), symId(), rfn(rfn) {
   gTemporaryConversionSymbols.add(this);
 }
 
-void TemporaryConversionSymbol::verify() {
-}
+void TemporaryConversionSymbol::verify() {}
 
 TemporaryConversionSymbol*
 TemporaryConversionSymbol::copyInner(SymbolMap* map) {
@@ -1478,14 +1338,14 @@ TemporaryConversionSymbol::copyInner(SymbolMap* map) {
   return copy;
 }
 
-void TemporaryConversionSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+void TemporaryConversionSymbol::replaceChild(BaseAST* old_ast,
+                                             BaseAST* new_ast) {
   INT_FATAL(this, "Unexpected case in TemporaryConversionSymbol::replaceChild");
 }
 
 void TemporaryConversionSymbol::accept(AstVisitor* visitor) {
   visitor->visitTemporaryConversionSymbol(this);
 }
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -1494,11 +1354,11 @@ void TemporaryConversionSymbol::accept(AstVisitor* visitor) {
 ************************************** | *************************************/
 
 static int literal_id = 1;
-HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
+HashMap<Immediate*, ImmHashFns, VarSymbol*> uniqueConstantsHash;
 
 // stringLiteralsHash should never contain any invalid string
-HashMap<Immediate *, ImmHashFns, VarSymbol *> stringLiteralsHash;
-HashMap<Immediate *, ImmHashFns, VarSymbol *> bytesLiteralsHash;
+HashMap<Immediate*, ImmHashFns, VarSymbol*> stringLiteralsHash;
+HashMap<Immediate*, ImmHashFns, VarSymbol*> bytesLiteralsHash;
 typedef MapElem<Immediate*, VarSymbol*> StringLiteralHashElem;
 
 LabelSymbol* initStringLiteralsEpilogue = NULL;
@@ -1575,10 +1435,10 @@ void createInitStringLiterals() {
 
     VarSymbol* strLenVar = new_IntSymbol(strLength);
     VarSymbol* cstrTemp = newTemp("call_tmp", dtStringC);
-    CallExpr *cstrMove = new CallExpr(PRIM_MOVE, cstrTemp,
-                                      new_CStringSymbol(cstr));
+    CallExpr* cstrMove =
+      new CallExpr(PRIM_MOVE, cstrTemp, new_CStringSymbol(cstr));
 
-    CallExpr *initCall = nullptr;
+    CallExpr* initCall = nullptr;
 
     // call a function to initialize it appropriately
     if (s->hasFlag(FLAG_CHAPEL_STRING_LITERAL)) {
@@ -1590,16 +1450,13 @@ void createInitStringLiterals() {
                               new_IntSymbol(numCodepoints));
     } else {
       INT_ASSERT(s->hasFlag(FLAG_CHAPEL_BYTES_LITERAL));
-      initCall = new CallExpr(gChplCreateBytesWithLiteral,
-                              buffer,
-                              offset,
-                              cstrTemp,
-                              strLenVar);
+      initCall = new CallExpr(
+        gChplCreateBytesWithLiteral, buffer, offset, cstrTemp, strLenVar);
     }
 
     CallExpr* moveCall = new CallExpr(PRIM_MOVE, s, initCall);
-    CallExpr* addCall = new CallExpr(PRIM_ADD_ASSIGN, offset, strLenVar);//data
-    CallExpr* incCall = new CallExpr(PRIM_ADD_ASSIGN, offset, one); //null
+    CallExpr* addCall = new CallExpr(PRIM_ADD_ASSIGN, offset, strLenVar); //data
+    CallExpr* incCall = new CallExpr(PRIM_ADD_ASSIGN, offset, one);       //null
 
     insertPt->insertBefore(new DefExpr(cstrTemp));
     insertPt->insertBefore(cstrMove);
@@ -1607,14 +1464,14 @@ void createInitStringLiterals() {
     insertPt->insertBefore(addCall);
     insertPt->insertBefore(incCall);
 
-    bufferSize += strLength+1; // string data and null
+    bufferSize += strLength + 1; // string data and null
   }
 
   // emit the call to allocate_string_literals_buf and put it
   // just after the buffer is defined
-  CallExpr *allocCall = new CallExpr(gAllocateStringLiteralsBuf,
-                                     new_IntSymbol(bufferSize));
-  CallExpr *moveBuf = new CallExpr(PRIM_MOVE, buffer, allocCall);
+  CallExpr* allocCall =
+    new CallExpr(gAllocateStringLiteralsBuf, new_IntSymbol(bufferSize));
+  CallExpr* moveBuf = new CallExpr(PRIM_MOVE, buffer, allocCall);
   bufferDef->insertAfter(moveBuf);
 }
 
@@ -1629,13 +1486,13 @@ static std::string hashUnescapedString(std::string s) {
 // Note that string immediate values are stored
 // with C escapes - that is newline is 2 chars \ n
 // so this function expects a string that could be in "" in C
-VarSymbol *new_StringSymbol(const char *str) {
+VarSymbol* new_StringSymbol(const char* str) {
 
   // Hash the string and return an existing symbol if found.
   // Aka. uniquify all string literals
   size_t len = strlen(str);
   Immediate imm(gContext, str, len, STRING_KIND_STRING);
-  VarSymbol *s = stringLiteralsHash.get(&imm);
+  VarSymbol* s = stringLiteralsHash.get(&imm);
   if (s) {
     return s;
   }
@@ -1696,11 +1553,10 @@ VarSymbol *new_StringSymbol(const char *str) {
   return s;
 }
 
-
-VarSymbol *new_BytesSymbol(const char *str) {
+VarSymbol* new_BytesSymbol(const char* str) {
   size_t len = strlen(str);
   Immediate imm(gContext, str, len, STRING_KIND_BYTES);
-  VarSymbol *s = bytesLiteralsHash.get(&imm);
+  VarSymbol* s = bytesLiteralsHash.get(&imm);
   if (s) {
     return s;
   }
@@ -1743,23 +1599,21 @@ VarSymbol *new_BytesSymbol(const char *str) {
 }
 
 // Just a convenience function
-VarSymbol *new_StringOrBytesSymbol(const char *str, AggregateType *t) {
+VarSymbol* new_StringOrBytesSymbol(const char* str, AggregateType* t) {
   if (t == dtString) {
     return new_StringSymbol(str);
-  }
-  else if (t == dtBytes) {
+  } else if (t == dtBytes) {
     return new_BytesSymbol(str);
-  }
-  else {
+  } else {
     INT_FATAL("new_StringOrBytesSymbol accepts dtString and dtBytes only");
     return NULL;
   }
 }
 
-VarSymbol *new_CStringSymbol(const char *str) {
+VarSymbol* new_CStringSymbol(const char* str) {
   size_t len = strlen(str);
   Immediate imm(gContext, str, len, STRING_KIND_C_STRING);
-  VarSymbol *s = uniqueConstantsHash.get(&imm);
+  VarSymbol* s = uniqueConstantsHash.get(&imm);
   PrimitiveType* dtRetType = dtStringC;
   if (s) {
     return s;
@@ -1780,26 +1634,26 @@ VarSymbol *new_CStringSymbol(const char *str) {
   return s;
 }
 
-
 VarSymbol* new_BoolSymbol(bool b) {
   // gTrue and gFalse are set up directly in initPrimitiveTypes.
   return b ? gTrue : gFalse;
 }
 
-VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size) {
+VarSymbol* new_IntSymbol(int64_t b, IF1_int_type size) {
   Immediate imm;
   switch (size) {
-  case INT_SIZE_8  : imm.v_int8   = b; break;
-  case INT_SIZE_16 : imm.v_int16  = b; break;
-  case INT_SIZE_32 : imm.v_int32  = b; break;
-  case INT_SIZE_64 : imm.v_int64  = b; break;
-    // case INT_SIZE_128: imm.v_int128 = b; break;
-  default:
-    INT_FATAL( "unknown INT_SIZE");
+    case INT_SIZE_8: imm.v_int8 = b; break;
+    case INT_SIZE_16: imm.v_int16 = b; break;
+    case INT_SIZE_32: imm.v_int32 = b; break;
+    case INT_SIZE_64:
+      imm.v_int64 = b;
+      break;
+      // case INT_SIZE_128: imm.v_int128 = b; break;
+    default: INT_FATAL("unknown INT_SIZE");
   }
   imm.const_kind = NUM_KIND_INT;
   imm.num_index = size;
-  VarSymbol *s = uniqueConstantsHash.get(&imm);
+  VarSymbol* s = uniqueConstantsHash.get(&imm);
   PrimitiveType* dtRetType = dtInt[size];
   if (s) {
     return s;
@@ -1812,20 +1666,21 @@ VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size) {
   return s;
 }
 
-VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size) {
+VarSymbol* new_UIntSymbol(uint64_t b, IF1_int_type size) {
   Immediate imm;
   switch (size) {
-  case INT_SIZE_8  : imm.v_uint8   = b; break;
-  case INT_SIZE_16 : imm.v_uint16  = b; break;
-  case INT_SIZE_32 : imm.v_uint32  = b; break;
-  case INT_SIZE_64 : imm.v_uint64  = b; break;
-    // case INT_SIZE_128: imm.v_uint128 = b; break;
-  default:
-    INT_FATAL( "unknown INT_SIZE");
+    case INT_SIZE_8: imm.v_uint8 = b; break;
+    case INT_SIZE_16: imm.v_uint16 = b; break;
+    case INT_SIZE_32: imm.v_uint32 = b; break;
+    case INT_SIZE_64:
+      imm.v_uint64 = b;
+      break;
+      // case INT_SIZE_128: imm.v_uint128 = b; break;
+    default: INT_FATAL("unknown INT_SIZE");
   }
   imm.const_kind = NUM_KIND_UINT;
   imm.num_index = size;
-  VarSymbol *s = uniqueConstantsHash.get(&imm);
+  VarSymbol* s = uniqueConstantsHash.get(&imm);
   PrimitiveType* dtRetType = dtUInt[size];
   if (s) {
     return s;
@@ -1839,16 +1694,17 @@ VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size) {
 }
 
 static VarSymbol* new_FloatSymbol(const char* num,
-                                  IF1_float_type size, IF1_num_kind kind,
+                                  IF1_float_type size,
+                                  IF1_num_kind kind,
                                   Type* type) {
   Immediate imm;
   int len = strlen(num);
   const char* normalized = NULL;
-  char* n = (char*)malloc(len+1);
+  char* n = (char*)malloc(len + 1);
 
   /* Remove '_' separators from the number */
   int j = 0;
-  for (int i=0; i<len; i++) {
+  for (int i = 0; i < len; i++) {
     if (num[i] != '_') {
       n[j] = num[i];
       j++;
@@ -1857,19 +1713,14 @@ static VarSymbol* new_FloatSymbol(const char* num,
   n[j] = '\0';
 
   switch (size) {
-    case FLOAT_SIZE_32:
-      imm.v_float32  = strtof(n, NULL);
-      break;
-    case FLOAT_SIZE_64:
-      imm.v_float64  = strtod(n, NULL);
-      break;
-    default:
-      INT_FATAL( "unknown FLOAT_SIZE");
+    case FLOAT_SIZE_32: imm.v_float32 = strtof(n, NULL); break;
+    case FLOAT_SIZE_64: imm.v_float64 = strtod(n, NULL); break;
+    default: INT_FATAL("unknown FLOAT_SIZE");
   }
   imm.const_kind = kind;
   imm.num_index = size;
 
-  VarSymbol *s = uniqueConstantsHash.get(&imm);
+  VarSymbol* s = uniqueConstantsHash.get(&imm);
   if (s) {
     return s;
   }
@@ -1878,12 +1729,12 @@ static VarSymbol* new_FloatSymbol(const char* num,
 
   // Normalize the number for C99
   if (!strchr(n, '.') && !strchr(n, 'e') && !strchr(n, 'E') &&
-      !strchr(n, 'p') && !strchr(n, 'P') ) {
+      !strchr(n, 'p') && !strchr(n, 'P')) {
     // Add .0 for floating point literals without a decimal point
     // or exponent.
     normalized = astr(n, ".0");
-  } else if( n[0] == '0' && (n[1] == 'x' || n[1] == 'X') &&
-             !strchr(n, 'p') && !strchr(n, 'P') ) {
+  } else if (n[0] == '0' && (n[1] == 'x' || n[1] == 'X') && !strchr(n, 'p') &&
+             !strchr(n, 'P')) {
     // Add p0 for hex floating point literals without an exponent
     // since C99 requires it (because f needs to be a suffix for
     // floating point numbers)
@@ -1902,11 +1753,11 @@ static VarSymbol* new_FloatSymbol(const char* num,
   return s;
 }
 
-VarSymbol *new_RealSymbol(const char *n, IF1_float_type size) {
+VarSymbol* new_RealSymbol(const char* n, IF1_float_type size) {
   return new_FloatSymbol(n, size, NUM_KIND_REAL, dtReal[size]);
 }
 
-VarSymbol *new_RealSymbol(float val) {
+VarSymbol* new_RealSymbol(float val) {
   Immediate imm;
   imm.v_float32 = val;
   imm.const_kind = NUM_KIND_REAL;
@@ -1914,7 +1765,7 @@ VarSymbol *new_RealSymbol(float val) {
   return new_ImmediateSymbol(&imm);
 }
 
-VarSymbol *new_RealSymbol(double val) {
+VarSymbol* new_RealSymbol(double val) {
   Immediate imm;
   imm.v_float64 = val;
   imm.const_kind = NUM_KIND_REAL;
@@ -1922,28 +1773,29 @@ VarSymbol *new_RealSymbol(double val) {
   return new_ImmediateSymbol(&imm);
 }
 
-VarSymbol *new_ImagSymbol(const char *n, IF1_float_type size) {
+VarSymbol* new_ImagSymbol(const char* n, IF1_float_type size) {
   return new_FloatSymbol(n, size, NUM_KIND_IMAG, dtImag[size]);
 }
 
-VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,
+VarSymbol* new_ComplexSymbol(const char* n,
+                             long double r,
+                             long double i,
                              IF1_complex_type size) {
   Immediate imm;
   switch (size) {
-  case COMPLEX_SIZE_64:
-    imm.v_complex64.r  = r;
-    imm.v_complex64.i  = i;
-    break;
-  case COMPLEX_SIZE_128:
-    imm.v_complex128.r = r;
-    imm.v_complex128.i = i;
-    break;
-  default:
-    INT_FATAL( "unknown COMPLEX_SIZE for complex");
+    case COMPLEX_SIZE_64:
+      imm.v_complex64.r = r;
+      imm.v_complex64.i = i;
+      break;
+    case COMPLEX_SIZE_128:
+      imm.v_complex128.r = r;
+      imm.v_complex128.i = i;
+      break;
+    default: INT_FATAL("unknown COMPLEX_SIZE for complex");
   }
   imm.const_kind = NUM_KIND_COMPLEX;
   imm.num_index = size;
-  VarSymbol *s = uniqueConstantsHash.get(&imm);
+  VarSymbol* s = uniqueConstantsHash.get(&imm);
   if (s) {
     return s;
   }
@@ -1964,7 +1816,7 @@ VarSymbol* new_CommIDSymbol(int64_t b) {
 
   imm.const_kind = NUM_KIND_COMMID;
   imm.num_index = size;
-  VarSymbol *s = uniqueConstantsHash.get(&imm);
+  VarSymbol* s = uniqueConstantsHash.get(&imm);
   PrimitiveType* dtRetType = dtInt[size];
   if (s) {
     return s;
@@ -1977,8 +1829,7 @@ VarSymbol* new_CommIDSymbol(int64_t b) {
   return s;
 }
 
-static Type*
-immediate_type(Immediate *imm) {
+static Type* immediate_type(Immediate* imm) {
   switch (imm->const_kind) {
     case CONST_KIND_STRING: {
       if (imm->string_kind == STRING_KIND_STRING) {
@@ -1992,30 +1843,21 @@ immediate_type(Immediate *imm) {
         break;
       }
     }
-    case NUM_KIND_BOOL:
-      return dtBool;
-    case NUM_KIND_UINT:
-      return dtUInt[imm->num_index];
-    case NUM_KIND_INT:
-      return dtInt[imm->num_index];
-    case NUM_KIND_REAL:
-      return dtReal[imm->num_index];
-    case NUM_KIND_IMAG:
-      return dtImag[imm->num_index];
-    case NUM_KIND_COMPLEX:
-      return dtComplex[imm->num_index];
-    default:
-      USR_FATAL("bad immediate type");
-      break;
+    case NUM_KIND_BOOL: return dtBool;
+    case NUM_KIND_UINT: return dtUInt[imm->num_index];
+    case NUM_KIND_INT: return dtInt[imm->num_index];
+    case NUM_KIND_REAL: return dtReal[imm->num_index];
+    case NUM_KIND_IMAG: return dtImag[imm->num_index];
+    case NUM_KIND_COMPLEX: return dtComplex[imm->num_index];
+    default: USR_FATAL("bad immediate type"); break;
   }
   return NULL;
 }
 
-VarSymbol* new_ImmediateSymbol(Immediate *imm) {
+VarSymbol* new_ImmediateSymbol(Immediate* imm) {
   VarSymbol* s = uniqueConstantsHash.get(imm);
 
-  if (s)
-    return s;
+  if (s) return s;
 
   Type* t = immediate_type(imm);
 
@@ -2051,16 +1893,13 @@ Immediate* getSymbolImmediate(Symbol* sym) {
   return imm;
 }
 
-
 // Return the expression PRIM_MOVE-ed into origSE->symbol().
 // Return NULL if the def is not found or is uncertain.
-Expr* getDefOfTemp(SymExpr* origSE)
-{
+Expr* getDefOfTemp(SymExpr* origSE) {
   Symbol* origSym = origSE->symbol();
-  if (!origSym->hasFlag(FLAG_TEMP)) return NULL;  // only temps
+  if (!origSym->hasFlag(FLAG_TEMP)) return NULL; // only temps
 
   SymExpr* otherSE = origSym->getSingleDef();
-
 
   if (otherSE == NULL) {
     // Sometimes the DefExpr for 'origSym' is hoisted to the module level -
@@ -2075,13 +1914,11 @@ Expr* getDefOfTemp(SymExpr* origSE)
 
   if (CallExpr* def = toCallExpr(otherSE->parentExpr))
     if (def->isPrimitive(PRIM_MOVE))
-      if (otherSE == def->get(1))
-        return def->get(2);
+      if (otherSE == def->get(1)) return def->get(2);
 
   // uncertain situation
   return NULL;
 }
-
 
 // enable locally-unique temp names?
 bool localTempNames = false;
@@ -2090,9 +1927,7 @@ bool localTempNames = false;
 // (give them smaller numbers, for readability of AST printouts)
 static int tempID = 1;
 
-void resetTempID() {
-  tempID = 1;
-}
+void resetTempID() { tempID = 1; }
 
 FlagSet getRecordWrappedFlags(Symbol* s) {
   static FlagSet mask;
@@ -2105,7 +1940,6 @@ FlagSet getRecordWrappedFlags(Symbol* s) {
 
   return s->flags & mask;
 }
-
 
 // cache some popular strings
 
@@ -2154,7 +1988,7 @@ const char* astr__fn = NULL;
 
 void initAstrConsts() {
   astrSassign = astr("=");
-  astrSdot    = astr(".");
+  astrSdot = astr(".");
   astrSeq = astr("==");
   astrSne = astr("!=");
   astrSgt = astr(">");
@@ -2167,24 +2001,24 @@ void initAstrConsts() {
   astrSstar = astr("*");
   astrSstarstar = astr("**");
   astr_defaultOf = astr("_defaultOf");
-  astrInit    = astr("init");
+  astrInit = astr("init");
   astrInitEquals = astr("init=");
-  astrNew     = astr("_new");
-  astrDeinit  = astr("deinit");
-  astrPostinit  = astr("postinit");
+  astrNew = astr("_new");
+  astrDeinit = astr("deinit");
+  astrPostinit = astr("postinit");
   astrBuildTuple = astr("_build_tuple");
-  astrTag     = astr("tag");
-  astrThis    = astr("this");
-  astrThese   = astr("these");
-  astrSuper   = astr("super");
+  astrTag = astr("tag");
+  astrThis = astr("this");
+  astrThese = astr("these");
+  astrSuper = astr("super");
   astr_chpl_cname = astr("_chpl_cname");
   astr_chpl_forward_tgt = astr("_chpl_forward_tgt");
   astr_chpl_manager = astr("_chpl_manager");
   astr_chpl_statementLevelSymbol = astr("chpl_statementLevelSymbol");
   astr_chpl_waitDynamicEndCount = astr("chpl_waitDynamicEndCount");
 
-  astr_forallexpr    = astr("chpl__forallexpr");
-  astr_forexpr       = astr("chpl__forexpr");
+  astr_forallexpr = astr("chpl__forallexpr");
+  astr_forexpr = astr("chpl__forexpr");
   astr_loopexpr_iter = astr("chpl__loopexpr_iter");
 
   astrPostfixBang = astr("postfix!");
@@ -2219,9 +2053,7 @@ VarSymbol* newTemp(const char* name, QualifiedType qt) {
   return vs;
 }
 
-VarSymbol* newTemp(QualifiedType qt) {
-  return newTemp((const char*)NULL, qt);
-}
+VarSymbol* newTemp(QualifiedType qt) { return newTemp((const char*)NULL, qt); }
 
 VarSymbol* newTemp(const char* name, Type* type) {
   if (!name) {
@@ -2235,9 +2067,7 @@ VarSymbol* newTemp(const char* name, Type* type) {
   return vs;
 }
 
-VarSymbol* newTemp(Type* type) {
-  return newTemp((const char*)NULL, type);
-}
+VarSymbol* newTemp(Type* type) { return newTemp((const char*)NULL, type); }
 
 VarSymbol* newTempConst(const char* name, Type* type) {
   VarSymbol* result = newTemp(name, type);
@@ -2267,29 +2097,28 @@ const char* toString(ArgSymbol* arg, bool withTypeAndIntent) {
   const char* intent = "";
   if (withTypeAndIntent) {
     switch (arg->intent) {
-      case INTENT_BLANK:           intent = "";           break;
-      case INTENT_IN:              intent = "in ";        break;
-      case INTENT_INOUT:           intent = "inout ";     break;
-      case INTENT_OUT:             intent = "out ";       break;
-      case INTENT_CONST:           intent = "const ";     break;
-      case INTENT_CONST_IN:        intent = "const in ";  break;
-      case INTENT_CONST_REF:       intent = "const ref "; break;
-      case INTENT_REF_MAYBE_CONST: intent = "";           break;
-      case INTENT_REF:             intent = "ref ";       break;
-      case INTENT_PARAM:           intent = "param ";     break;
-      case INTENT_TYPE:            intent = "type ";      break;
+      case INTENT_BLANK: intent = ""; break;
+      case INTENT_IN: intent = "in "; break;
+      case INTENT_INOUT: intent = "inout "; break;
+      case INTENT_OUT: intent = "out "; break;
+      case INTENT_CONST: intent = "const "; break;
+      case INTENT_CONST_IN: intent = "const in "; break;
+      case INTENT_CONST_REF: intent = "const ref "; break;
+      case INTENT_REF_MAYBE_CONST: intent = ""; break;
+      case INTENT_REF: intent = "ref "; break;
+      case INTENT_PARAM: intent = "param "; break;
+      case INTENT_TYPE: intent = "type "; break;
     }
   }
 
   const char* retval = "";
-  if (arg->getValType() == dtAny ||
-      arg->getValType() == dtUnknown ||
+  if (arg->getValType() == dtAny || arg->getValType() == dtUnknown ||
       withTypeAndIntent == false)
     retval = astr(intent, arg->name);
   else
     retval = astr(intent, arg->name, ": ", toString(arg->getValType()));
 
-  if (developer  == true) {
+  if (developer == true) {
     retval = astr(retval, " [", istr(arg->id), "]");
   }
 
@@ -2306,8 +2135,7 @@ const char* toString(VarSymbol* var, bool withType) {
     } else if (imm->const_kind == CONST_KIND_STRING) {
       std::string value;
       value = "";
-      if (t == dtBytes)
-        value += "b";
+      if (t == dtBytes) value += "b";
       value += '"';
       value += imm->string_value();
       value += '"';
@@ -2346,8 +2174,7 @@ const char* toString(VarSymbol* var, bool withType) {
     SymExpr* singleDef = sym->getSingleDef();
     if (singleDef != NULL) {
       if (CallExpr* c = toCallExpr(singleDef->parentExpr)) {
-        if (c->isPrimitive(PRIM_MOVE) ||
-            c->isPrimitive(PRIM_ASSIGN)) {
+        if (c->isPrimitive(PRIM_MOVE) || c->isPrimitive(PRIM_ASSIGN)) {
           SymExpr* dstSe = toSymExpr(c->get(1));
           SymExpr* srcSe = toSymExpr(c->get(2));
           if (dstSe && srcSe && dstSe->symbol() == sym) {
@@ -2376,8 +2203,7 @@ const char* toString(VarSymbol* var, bool withType) {
       name = NULL;
       for (cur = sym->defPoint; cur; cur = cur->next) {
         if (CallExpr* c = toCallExpr(cur)) {
-          if (c->isPrimitive(PRIM_MOVE) ||
-              c->isPrimitive(PRIM_ASSIGN)) {
+          if (c->isPrimitive(PRIM_MOVE) || c->isPrimitive(PRIM_ASSIGN)) {
             SymExpr* dstSe = toSymExpr(c->get(1));
             SymExpr* srcSe = toSymExpr(c->get(2));
             if (dstSe && srcSe && srcSe->symbol() == sym) {
@@ -2399,8 +2225,7 @@ const char* toString(VarSymbol* var, bool withType) {
                   if (v->immediate->const_kind == CONST_KIND_STRING)
                     name = astr("field ", v->immediate->v_string.c_str());
 
-              if (name == NULL)
-                name = astr("field ", sym->name);
+              if (name == NULL) name = astr("field ", sym->name);
 
               break;
             }
@@ -2408,8 +2233,7 @@ const char* toString(VarSymbol* var, bool withType) {
         }
       }
       // Stop looking if the above code didn't find anything
-      if (name == NULL)
-        break;
+      if (name == NULL) break;
     }
   }
 
@@ -2427,10 +2251,8 @@ const char* toString(VarSymbol* var, bool withType) {
 const char* toString(Symbol* sym, bool withType) {
   VarSymbol* var = toVarSymbol(sym);
   ArgSymbol* arg = toArgSymbol(sym);
-  if (var != NULL)
-    return toString(var, withType);
-  if (arg != NULL)
-    return toString(arg, withType);
+  if (var != NULL) return toString(var, withType);
+  if (arg != NULL) return toString(arg, withType);
 
   return sym->name;
 }

@@ -76,30 +76,24 @@
  * functions/iterators but there's not really a way around it this early in
  * compilation. If the iterator can't be replaced, it is left unchanged.
  */
-static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
-{
-  if (fNoOptimizeRangeIteration)
-    return;
-  if (CallExpr* call = toCallExpr(iteratorExpr))
-  {
+static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr) {
+  if (fNoOptimizeRangeIteration) return;
+  if (CallExpr* call = toCallExpr(iteratorExpr)) {
     CallExpr* range = NULL;
     Expr* stride = NULL;
     Expr* count = NULL;
     // grab the stride if we have a strided range
-    if (call->isNamed("chpl_by"))
-    {
+    if (call->isNamed("chpl_by")) {
       range = toCallExpr(call->get(1)->copy());
       stride = toExpr(call->get(2)->copy());
     }
     // or grab the count if we have a counted range
-    else if (call->isNamed("#"))
-    {
+    else if (call->isNamed("#")) {
       range = toCallExpr(call->get(1)->copy());
       count = toExpr(call->get(2)->copy());
     }
     // or assume the call is the range (checked below) and leave stride null
-    else
-    {
+    else {
       range = call;
       // stride remains NULL
     }
@@ -144,8 +138,8 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
       // `chpl_direct_strided_range_iter(low, high, stride)`
       Expr* low = range->get(1)->copy();
       Expr* high = range->get(2)->copy();
-      iteratorExpr->replace(new CallExpr("chpl_direct_strided_range_iter",
-                                         low, high, stride));
+      iteratorExpr->replace(
+        new CallExpr("chpl_direct_strided_range_iter", low, high, stride));
 
     } else if (!stride && count && lowBounded) {
       // replace counted, low bounded range with unit stride with an equivalent
@@ -157,9 +151,8 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
       //
       //   `chpl_direct_counted_range_iter(low, count)`
       Expr* low = range->get(1)->copy();
-      iteratorExpr->replace(new CallExpr("chpl_direct_counted_range_iter",
-                            low, count));
-
+      iteratorExpr->replace(
+        new CallExpr("chpl_direct_counted_range_iter", low, count));
     }
   }
 }
@@ -170,27 +163,25 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
 *                                                                           *
 ************************************* | ************************************/
 
-BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
-                          Expr*      iteratorExpr,
-                          CallExpr*  intents,
-                          BlockStmt* body,
-                          LLVMMetadataList attrs,
-                          bool       coforall,
-                          bool       zippered,
-                          bool       isLoweredForall,
-                          bool       isForExpr,
-                          bool       isForeach)
-{
-  VarSymbol*   index         = newTemp("_indexOfInterest");
-  VarSymbol*   iterator      = newTemp("_iterator");
-  CallExpr*    iterInit      = 0;
-  CallExpr*    iterMove      = 0;
-  ForLoop*     loop          = new ForLoop(index, iterator, body,
-                                           zippered, isLoweredForall,
-                                           isForExpr);
+BlockStmt* ForLoop::doBuildForLoop(Expr* indices,
+                                   Expr* iteratorExpr,
+                                   CallExpr* intents,
+                                   BlockStmt* body,
+                                   LLVMMetadataList attrs,
+                                   bool coforall,
+                                   bool zippered,
+                                   bool isLoweredForall,
+                                   bool isForExpr,
+                                   bool isForeach) {
+  VarSymbol* index = newTemp("_indexOfInterest");
+  VarSymbol* iterator = newTemp("_iterator");
+  CallExpr* iterInit = 0;
+  CallExpr* iterMove = 0;
+  ForLoop* loop =
+    new ForLoop(index, iterator, body, zippered, isLoweredForall, isForExpr);
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
-  LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
-  BlockStmt*   retval        = new BlockStmt();
+  LabelSymbol* breakLabel = new LabelSymbol("_breakLabel");
+  BlockStmt* retval = new BlockStmt();
 
   iterator->addFlag(FLAG_EXPR_TEMP);
 
@@ -208,7 +199,8 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
 
   // Unzippered loop, treat all objects (including tuples) the same
   if (zippered == false) {
-    iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIterator",    iteratorExpr));
+    iterInit = new CallExpr(
+      PRIM_MOVE, iterator, new CallExpr("_getIterator", iteratorExpr));
     // try to optimize anonymous range iteration
     tryToReplaceWithDirectRangeIterator(iteratorExpr);
   }
@@ -228,7 +220,7 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
       // rewrite into a utility function for the other get*Zip
       // functions as we convert parallel loops over to use PRIM_ZIP).
       //
-      zipExpr->primitive = NULL;   // remove the primitive
+      zipExpr->primitive = NULL; // remove the primitive
 
       // If there's just one argument...
       if (zipExpr->argList.length == 1) {
@@ -274,20 +266,20 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
       //
       // This is an old-style zippered loop so handle it in the old style
       //
-      iterInit = new CallExpr(PRIM_MOVE, iterator,
-                              new CallExpr("_getIteratorZip", iteratorExpr));
+      iterInit = new CallExpr(
+        PRIM_MOVE, iterator, new CallExpr("_getIteratorZip", iteratorExpr));
 
       // try to optimize anonymous range iteration
       if (CallExpr* call = toCallExpr(iteratorExpr))
         if (call->isNamedAstr(astrBuildTuple))
-          for_actuals(actual, call)
-            tryToReplaceWithDirectRangeIterator(actual);
+          for_actuals(actual, call) tryToReplaceWithDirectRangeIterator(actual);
     }
   }
 
   index->addFlag(FLAG_INDEX_OF_INTEREST);
 
-  iterMove = new CallExpr(PRIM_MOVE, index, new CallExpr("iteratorIndex", iterator));
+  iterMove =
+    new CallExpr(PRIM_MOVE, index, new CallExpr("iteratorIndex", iterator));
 
   if (indices == 0) {
     VarSymbol* var = new VarSymbol("chpl__elidedIdx");
@@ -298,11 +290,10 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
 
   destructureIndices(loop, indices, new SymExpr(index), coforall);
 
-  if (coforall)
-    index->addFlag(FLAG_COFORALL_INDEX_VAR);
+  if (coforall) index->addFlag(FLAG_COFORALL_INDEX_VAR);
 
   loop->mContinueLabel = continueLabel;
-  loop->mBreakLabel    = breakLabel;
+  loop->mBreakLabel = breakLabel;
 
   // Transfer the DefExprs of the intent variables (ShadowVarSymbols).
   if (intents) {
@@ -326,14 +317,14 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
   return retval;
 }
 
-BlockStmt* ForLoop::buildForLoop(Expr*      indices,
-                                 Expr*      iteratorExpr,
+BlockStmt* ForLoop::buildForLoop(Expr* indices,
+                                 Expr* iteratorExpr,
                                  BlockStmt* body,
-                                 bool       zippered,
-                                 bool       isForExpr,
-                                 LLVMMetadataList attrs)
-{
-  return doBuildForLoop(indices, iteratorExpr,
+                                 bool zippered,
+                                 bool isForExpr,
+                                 LLVMMetadataList attrs) {
+  return doBuildForLoop(indices,
+                        iteratorExpr,
                         /* intents */ nullptr,
                         body,
                         attrs,
@@ -344,16 +335,19 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
                         /* isForeach */ false);
 }
 
-BlockStmt* ForLoop::buildForeachLoop(Expr*      indices,
-                                     Expr*      iteratorExpr,
-                                     CallExpr*  intents,
+BlockStmt* ForLoop::buildForeachLoop(Expr* indices,
+                                     Expr* iteratorExpr,
+                                     CallExpr* intents,
                                      BlockStmt* body,
-                                     bool       zippered,
-                                     bool       isForExpr,
+                                     bool zippered,
+                                     bool isForExpr,
                                      LLVMMetadataList attrs)
 
 {
-  return doBuildForLoop(indices, iteratorExpr, intents, body,
+  return doBuildForLoop(indices,
+                        iteratorExpr,
+                        intents,
+                        body,
                         attrs,
                         /* coforall */ false,
                         zippered,
@@ -362,13 +356,13 @@ BlockStmt* ForLoop::buildForeachLoop(Expr*      indices,
                         /* isForeach */ true);
 }
 
-BlockStmt* ForLoop::buildCoforallLoop(Expr*      indices,
-                                      Expr*      iteratorExpr,
+BlockStmt* ForLoop::buildCoforallLoop(Expr* indices,
+                                      Expr* iteratorExpr,
                                       BlockStmt* body,
-                                      bool       zippered,
-                                      LLVMMetadataList attrs)
-{
-  return doBuildForLoop(indices, iteratorExpr,
+                                      bool zippered,
+                                      LLVMMetadataList attrs) {
+  return doBuildForLoop(indices,
+                        iteratorExpr,
                         /* intents */ nullptr,
                         body,
                         attrs,
@@ -379,15 +373,14 @@ BlockStmt* ForLoop::buildCoforallLoop(Expr*      indices,
                         /* isForeach */ false);
 }
 
-
-BlockStmt* ForLoop::buildLoweredForallLoop(Expr*      indices,
-                                           Expr*      iteratorExpr,
+BlockStmt* ForLoop::buildLoweredForallLoop(Expr* indices,
+                                           Expr* iteratorExpr,
                                            BlockStmt* body,
-                                           bool       zippered,
-                                           bool       isForExpr,
-                                           LLVMMetadataList attrs)
-{
-  return doBuildForLoop(indices, iteratorExpr,
+                                           bool zippered,
+                                           bool isForExpr,
+                                           LLVMMetadataList attrs) {
+  return doBuildForLoop(indices,
+                        iteratorExpr,
                         /* intents */ nullptr,
                         body,
                         attrs,
@@ -398,16 +391,14 @@ BlockStmt* ForLoop::buildLoweredForallLoop(Expr*      indices,
                         /* isForeach */ true);
 }
 
-
 /************************************ | *************************************
 *                                                                           *
 * Instance methods                                                          *
 *                                                                           *
 ************************************* | ************************************/
 
-ForLoop::ForLoop() : LoopStmt(0)
-{
-  mIndex    = 0;
+ForLoop::ForLoop() : LoopStmt(0) {
+  mIndex = 0;
   mIterator = 0;
   mZippered = false;
   mLoweredForall = false;
@@ -418,11 +409,11 @@ ForLoop::ForLoop() : LoopStmt(0)
 ForLoop::ForLoop(VarSymbol* index,
                  VarSymbol* iterator,
                  BlockStmt* initBody,
-                 bool       zippered,
-                 bool       isLoweredForall,
-                 bool       isForExpr) : LoopStmt(initBody)
-{
-  mIndex    = new SymExpr(index);
+                 bool zippered,
+                 bool isLoweredForall,
+                 bool isForExpr)
+  : LoopStmt(initBody) {
+  mIndex = new SymExpr(index);
   mIterator = new SymExpr(iterator);
   mZippered = zippered;
   mLoweredForall = isLoweredForall;
@@ -430,68 +421,61 @@ ForLoop::ForLoop(VarSymbol* index,
   fShadowVars.parent = this;
 }
 
-ForLoop* ForLoop::copyInner(SymbolMap* map)
-{
-  ForLoop*   retval         = new ForLoop();
+ForLoop* ForLoop::copyInner(SymbolMap* map) {
+  ForLoop* retval = new ForLoop();
 
-  for_alist(expr, fShadowVars)
-    retval->fShadowVars.insertAtTail(COPY_INT(expr));
+  for_alist(expr, fShadowVars) retval->fShadowVars.insertAtTail(COPY_INT(expr));
 
-  retval->astloc            = astloc;
-  retval->blockTag          = blockTag;
+  retval->astloc = astloc;
+  retval->blockTag = blockTag;
 
-  retval->mBreakLabel       = mBreakLabel;
-  retval->mContinueLabel    = mContinueLabel;
+  retval->mBreakLabel = mBreakLabel;
+  retval->mContinueLabel = mContinueLabel;
   retval->mOrderIndependent = mOrderIndependent;
   retval->mExemptFromImplicitIntents = mExemptFromImplicitIntents;
   retval->mLLVMMetadataList = mLLVMMetadataList;
 
-  retval->mIndex            = mIndex->copy(map, true),
-  retval->mIterator         = mIterator->copy(map, true);
-  retval->mZippered         = mZippered;
+  retval->mIndex = mIndex->copy(map, true),
+  retval->mIterator = mIterator->copy(map, true);
+  retval->mZippered = mZippered;
 
   // MPF 2020-01-21: It seems it should also copy mLoweredForall,
   // but doing so causes problems in lowerIterators.
-  retval->mIsForExpr        = mIsForExpr;
+  retval->mIsForExpr = mIsForExpr;
 
-  retval->userLabel         = userLabel;
+  retval->userLabel = userLabel;
 
-  for_alist(expr, body)
-    retval->insertAtTail(expr->copy(map, true));
+  for_alist(expr, body) retval->insertAtTail(expr->copy(map, true));
 
   return retval;
 }
 
-BlockStmt* ForLoop::copyBody()
-{
+BlockStmt* ForLoop::copyBody() {
   SymbolMap map;
 
   return copyBody(&map);
 }
 
-BlockStmt* ForLoop::copyBody(SymbolMap* map)
-{
+BlockStmt* ForLoop::copyBody(SymbolMap* map) {
   BlockStmt* retval = new BlockStmt();
 
-  retval->astloc   = astloc;
+  retval->astloc = astloc;
   retval->blockTag = blockTag;
 
-  for_alist(expr, body)
-    retval->insertAtTail(expr->copy(map, true));
+  for_alist(expr, body) retval->insertAtTail(expr->copy(map, true));
 
   update_symbols(retval, map);
 
   return retval;
 }
 
-
-void ForLoop::copyBodyHelper(Expr* beforeHere, int64_t i, SymbolMap* map,
-                             Symbol* continueSym)
-{
+void ForLoop::copyBodyHelper(Expr* beforeHere,
+                             int64_t i,
+                             SymbolMap* map,
+                             Symbol* continueSym) {
   // Replace the continue label with a per-iteration label
   // that is at the end of that iteration.
-  LabelSymbol* continueLabel = new
-    LabelSymbol(astr("_continueLabel", istr(i)));
+  LabelSymbol* continueLabel = new LabelSymbol(astr("_continueLabel", istr(i)));
   Expr* defContinueLabel = new DefExpr(continueLabel);
 
   beforeHere->insertBefore(defContinueLabel);
@@ -506,52 +490,33 @@ void ForLoop::copyBodyHelper(Expr* beforeHere, int64_t i, SymbolMap* map,
 // them. Note that for coforall loops, this method and isForLoop
 // with both return true. Eventually CoforallLoop should become it's
 // own class that shares a common parent with ForLoop.
-bool ForLoop::isCoforallLoop() const
-{
+bool ForLoop::isCoforallLoop() const {
   return mIndex->symbol()->hasFlag(FLAG_COFORALL_INDEX_VAR);
 }
 
-bool ForLoop::isLoweredForallLoop() const
-{
-  return mLoweredForall;
-}
+bool ForLoop::isLoweredForallLoop() const { return mLoweredForall; }
 
-bool ForLoop::isForExpr() const
-{
-  return mIsForExpr;
-}
+bool ForLoop::isForExpr() const { return mIsForExpr; }
 
-SymExpr* ForLoop::indexGet() const
-{
-  return mIndex;
-}
+SymExpr* ForLoop::indexGet() const { return mIndex; }
 
-SymExpr* ForLoop::iteratorGet() const
-{
-  return mIterator;
-}
+SymExpr* ForLoop::iteratorGet() const { return mIterator; }
 
-bool ForLoop::zipperedGet() const
-{
-  return mZippered;
-}
+bool ForLoop::zipperedGet() const { return mZippered; }
 
-CallExpr* ForLoop::blockInfoGet() const
-{
+CallExpr* ForLoop::blockInfoGet() const {
   printf("Migration: ForLoop   %12d Unexpected call to blockInfoGet()\n", id);
 
   return 0;
 }
 
-CallExpr* ForLoop::blockInfoSet(CallExpr* expr)
-{
+CallExpr* ForLoop::blockInfoSet(CallExpr* expr) {
   printf("Migration: ForLoop   %12d Unexpected call to blockInfoSet()\n", id);
 
   return 0;
 }
 
-bool ForLoop::deadBlockCleanup()
-{
+bool ForLoop::deadBlockCleanup() {
   bool retval = false;
 
   INT_ASSERT(false);
@@ -559,28 +524,22 @@ bool ForLoop::deadBlockCleanup()
   return retval;
 }
 
-void ForLoop::verify()
-{
+void ForLoop::verify() {
   BlockStmt::verify();
 
   if (BlockStmt::blockInfoGet() != 0)
     INT_FATAL(this, "ForLoop::verify. blockInfo is not NULL");
 
-  if (mIndex    == 0)
-    INT_FATAL(this, "ForLoop::verify. index     is NULL");
+  if (mIndex == 0) INT_FATAL(this, "ForLoop::verify. index     is NULL");
 
-  if (mIterator == 0)
-    INT_FATAL(this, "ForLoop::verify. iterator  is NULL");
+  if (mIterator == 0) INT_FATAL(this, "ForLoop::verify. iterator  is NULL");
 
-  if (useList   != 0)
-    INT_FATAL(this, "ForLoop::verify. useList   is not NULL");
+  if (useList != 0) INT_FATAL(this, "ForLoop::verify. useList   is not NULL");
 
-  if (byrefVars != 0)
-    INT_FATAL(this, "ForLoop::verify. byrefVars is not NULL");
+  if (byrefVars != 0) INT_FATAL(this, "ForLoop::verify. byrefVars is not NULL");
 }
 
-GenRet ForLoop::codegen()
-{
+GenRet ForLoop::codegen() {
   GenRet ret;
 
   INT_FATAL(this, "ForLoop::codegen This should be unreachable");
@@ -588,54 +547,41 @@ GenRet ForLoop::codegen()
   return ret;
 }
 
-void ForLoop::accept(AstVisitor* visitor)
-{
-  if (visitor->enterForLoop(this) == true)
-  {
-    for_alist(next_ast, body)
-      next_ast->accept(visitor);
+void ForLoop::accept(AstVisitor* visitor) {
+  if (visitor->enterForLoop(this) == true) {
+    for_alist(next_ast, body) next_ast->accept(visitor);
 
-    if (indexGet()    != 0)
-      indexGet()->accept(visitor);
+    if (indexGet() != 0) indexGet()->accept(visitor);
 
-    if (iteratorGet() != 0)
-      iteratorGet()->accept(visitor);
+    if (iteratorGet() != 0) iteratorGet()->accept(visitor);
 
-    if (useList)
-      useList->accept(visitor);
+    if (useList) useList->accept(visitor);
 
-    if (byrefVars)
-      byrefVars->accept(visitor);
+    if (byrefVars) byrefVars->accept(visitor);
 
     visitor->exitForLoop(this);
   }
 }
 
-void ForLoop::replaceChild(Expr* oldAst, Expr* newAst)
-{
-  if (oldAst == mIndex)
-  {
+void ForLoop::replaceChild(Expr* oldAst, Expr* newAst) {
+  if (oldAst == mIndex) {
     SymExpr* se = toSymExpr(newAst);
     // Complain if the newAst is not NULL and cannot be converted to a SymExpr.
     INT_ASSERT(!newAst || se);
     mIndex = se;
-  }
-  else if (oldAst == mIterator)
-  {
+  } else if (oldAst == mIterator) {
     SymExpr* se = toSymExpr(newAst);
     // Complain if the newAst is not NULL and cannot be converted to a SymExpr.
     INT_ASSERT(!newAst || se);
     mIterator = se;
-  }
-  else
+  } else
     LoopStmt::replaceChild(oldAst, newAst);
 }
 
-Expr* ForLoop::getFirstExpr()
-{
+Expr* ForLoop::getFirstExpr() {
   Expr* retval = 0;
 
-  if (mIndex         != 0)
+  if (mIndex != 0)
     retval = mIndex;
 
   else if (mIterator != 0)
@@ -650,14 +596,13 @@ Expr* ForLoop::getFirstExpr()
   return retval;
 }
 
-Expr* ForLoop::getNextExpr(Expr* expr)
-{
+Expr* ForLoop::getNextExpr(Expr* expr) {
   Expr* retval = this;
 
   if (expr == mIndex && mIterator != NULL)
     retval = mIterator;
 
-  else if (expr == mIndex    && body.head != NULL)
+  else if (expr == mIndex && body.head != NULL)
     retval = body.head->getFirstExpr();
 
   else if (expr == mIterator && body.head != NULL)
@@ -666,6 +611,4 @@ Expr* ForLoop::getNextExpr(Expr* expr)
   return retval;
 }
 
-bool ForLoop::isInductionVar(Symbol* sym) {
-  return sym == mIndex->symbol();
-}
+bool ForLoop::isInductionVar(Symbol* sym) { return sym == mIndex->symbol(); }

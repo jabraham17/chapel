@@ -23,10 +23,10 @@
 
 // default initialize by calling shared_ptr constructor
 LLVMMetadata::LLVMMetadata(const char* key, LLVMMetadataType kind)
-    : key(astr(key)), kind(kind), attribute_val(nullptr) {}
+  : key(astr(key)), kind(kind), attribute_val(nullptr) {}
 
 LLVMMetadata::~LLVMMetadata() {
-  if(kind == LAT_ATTRIBUTE) {
+  if (kind == LAT_ATTRIBUTE) {
     attribute_val.reset();
   }
 }
@@ -44,12 +44,14 @@ LLVMMetadataPtr LLVMMetadata::constructBool(const char* key, bool val) {
   la->bool_val = val;
   return la;
 }
-LLVMMetadataPtr LLVMMetadata::constructString(const char* key, const char* val) {
+LLVMMetadataPtr LLVMMetadata::constructString(const char* key,
+                                              const char* val) {
   auto la = std::make_shared<LLVMMetadata>(key, LAT_STRING);
   la->string_val = astr(val);
   return la;
 }
-LLVMMetadataPtr LLVMMetadata::constructMetadata(const char* key, LLVMMetadataPtr val) {
+LLVMMetadataPtr LLVMMetadata::constructMetadata(const char* key,
+                                                LLVMMetadataPtr val) {
   auto la = std::make_shared<LLVMMetadata>(key, LAT_ATTRIBUTE);
   la->attribute_val = val;
   return la;

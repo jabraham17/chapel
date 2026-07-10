@@ -35,38 +35,27 @@ BlockStmt* DeferStmt::buildChplStmt(Expr* expr) {
 }
 
 DeferStmt::DeferStmt(Kind kind, BlockStmt* body)
-  : Stmt(E_DeferStmt),
-   body_(body),
-   kind_(kind) {
+  : Stmt(E_DeferStmt), body_(body), kind_(kind) {
 
   gDeferStmts.add(this);
 }
 
-DeferStmt::DeferStmt(BlockStmt* body)
-  : Stmt(E_DeferStmt),
-   body_(body) {
+DeferStmt::DeferStmt(BlockStmt* body) : Stmt(E_DeferStmt), body_(body) {
 
   gDeferStmts.add(this);
 }
 
 DeferStmt::DeferStmt(CallExpr* call)
-  : Stmt(E_DeferStmt),
-   body_(new BlockStmt(call)) {
+  : Stmt(E_DeferStmt), body_(new BlockStmt(call)) {
 
   gDeferStmts.add(this);
 }
 
-BlockStmt* DeferStmt::body() const {
-  return body_;
-}
+BlockStmt* DeferStmt::body() const { return body_; }
 
-DeferStmt::Kind DeferStmt::kind() const {
-  return kind_;
-}
+DeferStmt::Kind DeferStmt::kind() const { return kind_; }
 
-bool DeferStmt::isUncheckedDefer() const {
-  return kind_ == UNCHECKED;
-}
+bool DeferStmt::isUncheckedDefer() const { return kind_ == UNCHECKED; }
 
 void DeferStmt::accept(AstVisitor* visitor) {
   if (visitor->enterDeferStmt(this)) {
@@ -97,9 +86,7 @@ Expr* DeferStmt::getFirstExpr() {
   return NULL;
 }
 
-Expr* DeferStmt::getNextExpr(Expr* expr) {
-  return this;
-}
+Expr* DeferStmt::getNextExpr(Expr* expr) { return this; }
 
 void DeferStmt::verify() {
   Stmt::verify(E_DeferStmt);
@@ -120,104 +107,85 @@ GenRet DeferStmt::codegen() {
 // local to this file.
 
 namespace {
-  class CheckDeferVisitor final : public AstVisitorTraverse {
+class CheckDeferVisitor final : public AstVisitorTraverse {
 
-  public:
-    CheckDeferVisitor();
+ public:
+  CheckDeferVisitor();
 
-    // We are checking for 'break' or 'return'
-    bool   enterCallExpr       (CallExpr*          node) override;
-    bool   enterGotoStmt       (GotoStmt*          node) override;
+  // We are checking for 'break' or 'return'
+  bool enterCallExpr(CallExpr* node) override;
+  bool enterGotoStmt(GotoStmt* node) override;
 
-    // We don't want to enter inner functions
-    bool   enterFnSym          (FnSymbol*          node) override;
+  // We don't want to enter inner functions
+  bool enterFnSym(FnSymbol* node) override;
 
-    // Track loops, so we can know if a 'break' is inside a loop or not
-    bool   enterWhileDoStmt    (WhileDoStmt*       node) override;
-    void   exitWhileDoStmt     (WhileDoStmt*       node) override;
+  // Track loops, so we can know if a 'break' is inside a loop or not
+  bool enterWhileDoStmt(WhileDoStmt* node) override;
+  void exitWhileDoStmt(WhileDoStmt* node) override;
 
-    bool   enterDoWhileStmt    (DoWhileStmt*       node) override;
-    void   exitDoWhileStmt     (DoWhileStmt*       node) override;
+  bool enterDoWhileStmt(DoWhileStmt* node) override;
+  void exitDoWhileStmt(DoWhileStmt* node) override;
 
-    bool   enterCForLoop       (CForLoop*          node) override;
-    void   exitCForLoop        (CForLoop*          node) override;
+  bool enterCForLoop(CForLoop* node) override;
+  void exitCForLoop(CForLoop* node) override;
 
-    bool   enterForLoop        (ForLoop*           node) override;
-    void   exitForLoop         (ForLoop*           node) override;
+  bool enterForLoop(ForLoop* node) override;
+  void exitForLoop(ForLoop* node) override;
 
-    bool   enterParamForLoop   (ParamForLoop*      node) override;
-    void   exitParamForLoop    (ParamForLoop*      node) override;
+  bool enterParamForLoop(ParamForLoop* node) override;
+  void exitParamForLoop(ParamForLoop* node) override;
 
-  private:
-    int loopDepth;
+ private:
+  int loopDepth;
 
-    void enterLoop() {
-      loopDepth++;
-    }
-    void exitLoop() {
-      loopDepth--;
-    }
-  };
+  void enterLoop() { loopDepth++; }
+  void exitLoop() { loopDepth--; }
+};
 
-  CheckDeferVisitor::CheckDeferVisitor() {
-    loopDepth = 0;
-  }
+CheckDeferVisitor::CheckDeferVisitor() { loopDepth = 0; }
 
-  bool CheckDeferVisitor::enterCallExpr(CallExpr* node) {
-    if (node->isPrimitive(PRIM_RETURN))
-      USR_FATAL_CONT(node, "return cannot be used within a defer statement");
-    return true;
-  }
-  bool CheckDeferVisitor::enterGotoStmt(GotoStmt* node) {
-    if (loopDepth == 0)
-      USR_FATAL_CONT(node, "break cannot be used within a defer statement");
-    return true;
-  }
+bool CheckDeferVisitor::enterCallExpr(CallExpr* node) {
+  if (node->isPrimitive(PRIM_RETURN))
+    USR_FATAL_CONT(node, "return cannot be used within a defer statement");
+  return true;
+}
+bool CheckDeferVisitor::enterGotoStmt(GotoStmt* node) {
+  if (loopDepth == 0)
+    USR_FATAL_CONT(node, "break cannot be used within a defer statement");
+  return true;
+}
 
-  bool CheckDeferVisitor::enterFnSym(FnSymbol* node) {
-    return false;
-  }
+bool CheckDeferVisitor::enterFnSym(FnSymbol* node) { return false; }
 
-  bool CheckDeferVisitor::enterWhileDoStmt(WhileDoStmt* node) {
-    enterLoop();
-    return true;
-  }
-  void CheckDeferVisitor::exitWhileDoStmt(WhileDoStmt* node) {
-    exitLoop();
-  }
-  bool CheckDeferVisitor::enterDoWhileStmt(DoWhileStmt* node) {
-    enterLoop();
-    return true;
-  }
-  void CheckDeferVisitor::exitDoWhileStmt(DoWhileStmt* node) {
-    exitLoop();
-  }
-  bool CheckDeferVisitor::enterCForLoop(CForLoop* node) {
-    enterLoop();
-    return true;
-  }
-  void CheckDeferVisitor::exitCForLoop(CForLoop* node) {
-    exitLoop();
-  }
-  bool CheckDeferVisitor::enterForLoop(ForLoop* node) {
-    enterLoop();
-    return true;
-  }
-  void CheckDeferVisitor::exitForLoop(ForLoop* node) {
-    exitLoop();
-  }
-  bool CheckDeferVisitor::enterParamForLoop(ParamForLoop* node) {
-    enterLoop();
-    return true;
-  }
-  void CheckDeferVisitor::exitParamForLoop(ParamForLoop* node) {
-    exitLoop();
-  }
+bool CheckDeferVisitor::enterWhileDoStmt(WhileDoStmt* node) {
+  enterLoop();
+  return true;
+}
+void CheckDeferVisitor::exitWhileDoStmt(WhileDoStmt* node) { exitLoop(); }
+bool CheckDeferVisitor::enterDoWhileStmt(DoWhileStmt* node) {
+  enterLoop();
+  return true;
+}
+void CheckDeferVisitor::exitDoWhileStmt(DoWhileStmt* node) { exitLoop(); }
+bool CheckDeferVisitor::enterCForLoop(CForLoop* node) {
+  enterLoop();
+  return true;
+}
+void CheckDeferVisitor::exitCForLoop(CForLoop* node) { exitLoop(); }
+bool CheckDeferVisitor::enterForLoop(ForLoop* node) {
+  enterLoop();
+  return true;
+}
+void CheckDeferVisitor::exitForLoop(ForLoop* node) { exitLoop(); }
+bool CheckDeferVisitor::enterParamForLoop(ParamForLoop* node) {
+  enterLoop();
+  return true;
+}
+void CheckDeferVisitor::exitParamForLoop(ParamForLoop* node) { exitLoop(); }
 
 } // end anonymous namespace
 
-void checkDefersAfterParsing()
-{
+void checkDefersAfterParsing() {
   forv_Vec(DeferStmt, defer, gDeferStmts) {
 
     // Check that there are no top-level defers;

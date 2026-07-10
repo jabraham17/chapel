@@ -33,8 +33,7 @@
 
 static size_t opLen = strlen("&&");
 
-bool TransformLogicalShortCircuit::enterCallExpr(CallExpr* call)
-{
+bool TransformLogicalShortCircuit::enterCallExpr(CallExpr* call) {
   if (shouldTransformCall(call)) {
     UnresolvedSymExpr* expr = toUnresolvedSymExpr(call->baseExpr);
 
@@ -60,10 +59,12 @@ bool TransformLogicalShortCircuit::enterCallExpr(CallExpr* call)
     if (isLogicalAnd) {
       eMsg = new_StringSymbol("cannot promote short-circuiting && operator");
       ife = new IfExpr(new CallExpr("isTrue", lvar),
-                       new CallExpr("isTrue", right), new SymExpr(gFalse));
+                       new CallExpr("isTrue", right),
+                       new SymExpr(gFalse));
     } else {
       eMsg = new_StringSymbol("cannot promote short-circuiting || operator");
-      ife = new IfExpr(new CallExpr("isTrue", lvar), new SymExpr(gTrue),
+      ife = new IfExpr(new CallExpr("isTrue", lvar),
+                       new SymExpr(gTrue),
                        new CallExpr("isTrue", right));
     }
 
@@ -78,7 +79,7 @@ bool TransformLogicalShortCircuit::enterCallExpr(CallExpr* call)
     stmt->insertBefore(new DefExpr(lvar));
     if (isCompoundAssign) {
       stmt->insertBefore(
-          new CallExpr(PRIM_MOVE, lvar, new CallExpr(PRIM_ADDR_OF, left)));
+        new CallExpr(PRIM_MOVE, lvar, new CallExpr(PRIM_ADDR_OF, left)));
     } else {
       stmt->insertBefore(new CallExpr(PRIM_MOVE, lvar, left));
     }
@@ -97,15 +98,12 @@ bool TransformLogicalShortCircuit::enterCallExpr(CallExpr* call)
   return true;
 }
 
-bool TransformLogicalShortCircuit::shouldTransformCall(CallExpr* call)
-{
+bool TransformLogicalShortCircuit::shouldTransformCall(CallExpr* call) {
   // Lowering of LoopExprs will handle short-circuits itself
-  if (call->primitive == 0 && isLoopExpr(call->parentExpr) == false)
-  {
-    if (UnresolvedSymExpr* expr = toUnresolvedSymExpr(call->baseExpr))
-    {
+  if (call->primitive == 0 && isLoopExpr(call->parentExpr) == false) {
+    if (UnresolvedSymExpr* expr = toUnresolvedSymExpr(call->baseExpr)) {
       bool isLogicalAnd = strncmp(expr->unresolved, "&&", opLen) == 0;
-      bool isLogicalOr  = strncmp(expr->unresolved, "||", opLen) == 0;
+      bool isLogicalOr = strncmp(expr->unresolved, "||", opLen) == 0;
 
       return isLogicalAnd || isLogicalOr;
     }

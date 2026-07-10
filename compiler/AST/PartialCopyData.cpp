@@ -28,7 +28,7 @@ static std::map<int, PartialCopyData> sFnMap;
 
 PartialCopyData::PartialCopyData() {
   partialCopySource = NULL;
-  varargOldFormal   = NULL;
+  varargOldFormal = NULL;
 }
 
 PartialCopyData::~PartialCopyData() {
@@ -38,8 +38,8 @@ PartialCopyData::~PartialCopyData() {
 
 // Return true if there is an entry for 'fn' in the partialCopyFnMap
 bool hasPartialCopyData(const FnSymbol* fn) {
-  std::map<int, PartialCopyData>::iterator it     = sFnMap.find(fn->id);
-  bool                                     retval = false;
+  std::map<int, PartialCopyData>::iterator it = sFnMap.find(fn->id);
+  bool retval = false;
 
   if (it != sFnMap.end()) {
     retval = true;
@@ -50,8 +50,8 @@ bool hasPartialCopyData(const FnSymbol* fn) {
 
 // Return the entry for 'fn' in partialCopyFnMap or NULL if it does not exist.
 PartialCopyData* getPartialCopyData(FnSymbol* fn) {
-  std::map<int, PartialCopyData>::iterator it     = sFnMap.find(fn->id);
-  PartialCopyData*                         retval = NULL;
+  std::map<int, PartialCopyData>::iterator it = sFnMap.find(fn->id);
+  PartialCopyData* retval = NULL;
 
   if (it != sFnMap.end()) {
     retval = &(it->second);
@@ -74,9 +74,7 @@ void clearPartialCopyData(FnSymbol* fn) {
   INT_ASSERT(cnt == 1); // Convention: clear only what was added before.
 }
 
-void clearPartialCopyDataFnMap() {
-  sFnMap.clear();
-}
+void clearPartialCopyDataFnMap() { sFnMap.clear(); }
 
 // Since FnSymbols can get removed at pass boundaries, leaving them
 // in here may result in useless entries.

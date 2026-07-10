@@ -48,26 +48,24 @@
 #include "view.h"
 
 AstDump::AstDump() {
-  mName      =     0;
-  mPath      =     0;
-  mFP        =     0;
-  mIndent    =     0;
-  mNeedSpace   = false;
+  mName = 0;
+  mPath = 0;
+  mFP = 0;
+  mIndent = 0;
+  mNeedSpace = false;
   mDontCloseFP = false;
 }
 
 AstDump::AstDump(FILE* fp) {
-  mName      =     0;
-  mPath      =     0;
-  mFP        =     fp;
-  mIndent    =     0;
-  mNeedSpace   = false;
+  mName = 0;
+  mPath = 0;
+  mFP = fp;
+  mIndent = 0;
+  mNeedSpace = false;
   mDontCloseFP = true;
 }
 
-AstDump::~AstDump() {
-  close();
-}
+AstDump::~AstDump() { close(); }
 
 void AstDump::view(const char* passName, int passNum) {
   forv_Vec(ModuleSymbol, module, allModules) {
@@ -84,7 +82,7 @@ void AstDump::view(const char* passName, int passNum) {
       AstDump logger;
 
       if (logger.open(module, passName, passNum) == true) {
-        if(fLogFormat == LogFormat::NPRINT) {
+        if (fLogFormat == LogFormat::NPRINT) {
           // This is an absolute hack. nprint_view prints directly to stdout, we should
           // update it to take a file pointer use it and pass it along as needed. But rather
           // than update all the code I instead redirect stdout to the file (and then restore it
@@ -108,15 +106,17 @@ void AstDump::view(const char* passName, int passNum) {
   }
 }
 
-bool AstDump::open(const ModuleSymbol* module, const char* passName, int passNum) {
+bool AstDump::open(const ModuleSymbol* module,
+                   const char* passName,
+                   int passNum) {
   char numBuf[4];
 
   snprintf(numBuf, 4, "%02d", passNum);
 
-  mName      = astr(module->name, "_", numBuf, passName, ".ast");
-  mPath      = astr(log_dir.c_str(), mName);
-  mFP        = fopen(mPath, "w");
-  mIndent    = 0;
+  mName = astr(module->name, "_", numBuf, passName, ".ast");
+  mPath = astr(log_dir.c_str(), mName);
+  mFP = fopen(mPath, "w");
+  mIndent = 0;
   mNeedSpace = false;
 
   if (mFP != 0) {
@@ -134,11 +134,10 @@ bool AstDump::open(const ModuleSymbol* module, const char* passName, int passNum
 bool AstDump::close() {
   bool retval = false;
 
-  if (mDontCloseFP)
-    mFP = 0;
+  if (mDontCloseFP) mFP = 0;
 
   if (mFP != 0 && fclose(mFP) == 0) {
-    mFP    =    0;
+    mFP = 0;
     retval = true;
   }
 
@@ -148,9 +147,7 @@ bool AstDump::close() {
 //
 // ArgSymbol
 //
-bool AstDump::enterArgSym(ArgSymbol* node) {
-  return false;
-}
+bool AstDump::enterArgSym(ArgSymbol* node) { return false; }
 
 //
 // CallExpr
@@ -184,8 +181,7 @@ bool AstDump::enterCallExpr(CallExpr* node) {
       write("yield");
 
     else {
-      if (mNeedSpace)
-        fputc(' ', mFP);
+      if (mNeedSpace) fputc(' ', mFP);
 
       fprintf(mFP, "'%s'", node->primitive->name);
 
@@ -193,37 +189,31 @@ bool AstDump::enterCallExpr(CallExpr* node) {
     }
   }
 
-  if (node->partialTag)
-    write("(partial)");
+  if (node->partialTag) write("(partial)");
 
   return true;
 }
 
-void AstDump::exitCallExpr(CallExpr* node) {
-  write(false, ")", true);
-}
-
+void AstDump::exitCallExpr(CallExpr* node) { write(false, ")", true); }
 
 //
 // DefExpr
 //
 bool AstDump::enterDefExpr(DefExpr* node) {
-  Symbol* sym    = node->sym;
-  bool    retval = true;
+  Symbol* sym = node->sym;
+  bool retval = true;
 
   if (isModuleSymbol(sym)) {
     newline();
     write("def");
     write("module");
     write(sym->name);
-    if (fLogIds)
-      fprintf(mFP, "[%d]", sym->id);
+    if (fLogIds) fprintf(mFP, "[%d]", sym->id);
     write(" ");
     retval = false;
 
   } else {
-    if (isBlockStmt(node->parentExpr) ||
-        isForallStmt(node->parentExpr)) {
+    if (isBlockStmt(node->parentExpr) || isForallStmt(node->parentExpr)) {
       newline();
     }
 
@@ -232,8 +222,7 @@ bool AstDump::enterDefExpr(DefExpr* node) {
 
     } else if (isTypeSymbol(sym)) {
       if (isAggregateType(sym->type)) {
-        if (sym->hasFlag(FLAG_SYNC))
-          write("sync");
+        if (sym->hasFlag(FLAG_SYNC)) write("sync");
       }
 
       writeSymbol("type", sym, true);
@@ -241,7 +230,6 @@ bool AstDump::enterDefExpr(DefExpr* node) {
     } else if (VarSymbol* vs = toVarSymbol(sym)) {
       if (isSyncType(vs->type)) {
         write("sync");
-
       }
 
       write(true, sym->qualType().qualStr(), false);
@@ -253,7 +241,6 @@ bool AstDump::enterDefExpr(DefExpr* node) {
 
     } else if (isEnumSymbol(sym)) {
       writeSymbol("def", sym, true);
-
     }
   }
 
@@ -274,10 +261,7 @@ bool AstDump::enterNamedExpr(NamedExpr* node) {
   return true;
 }
 
-void AstDump::exitNamedExpr(NamedExpr* node) {
-  write(false, ")", true);
-}
-
+void AstDump::exitNamedExpr(NamedExpr* node) { write(false, ")", true); }
 
 //
 // IfExpr
@@ -300,15 +284,13 @@ bool AstDump::enterIfExpr(IfExpr* node) {
   return false;
 }
 
-void AstDump::exitIfExpr(IfExpr* node) {
-}
-
+void AstDump::exitIfExpr(IfExpr* node) {}
 
 //
 // SymExpr
 //
 void AstDump::visitSymExpr(SymExpr* node) {
-  Symbol*    sym = node->symbol();
+  Symbol* sym = node->symbol();
   VarSymbol* var = toVarSymbol(sym);
 
   if (isBlockStmt(node->parentExpr) == true) {
@@ -317,12 +299,11 @@ void AstDump::visitSymExpr(SymExpr* node) {
 
   if (var != 0 && var->immediate != 0) {
     const size_t bufSize = 128;
-    char         imm[bufSize];
-    char         buff[bufSize + 1];
+    char imm[bufSize];
+    char buff[bufSize + 1];
 
     snprint_imm(imm, bufSize, *var->immediate);
-    snprintf(buff, sizeof(buff), "%s%s", imm,
-            isImagType(var->type) ? "i" : "");
+    snprintf(buff, sizeof(buff), "%s%s", imm, isImagType(var->type) ? "i" : "");
 
     write(buff);
 
@@ -330,7 +311,6 @@ void AstDump::visitSymExpr(SymExpr* node) {
     writeSymbol(sym, false);
   }
 }
-
 
 //
 // UnresolvedSymExpr
@@ -359,8 +339,10 @@ bool AstDump::enterLoopExpr(LoopExpr* node) {
   }
 
   if (node->type == FORALL_EXPR) {
-    if (node->maybeArrayType) write("[ ");
-    else write("forall ");
+    if (node->maybeArrayType)
+      write("[ ");
+    else
+      write("forall ");
   } else {
     write("for ");
   }
@@ -373,8 +355,10 @@ bool AstDump::enterLoopExpr(LoopExpr* node) {
   if (node->zippered) write("zip");
   node->iteratorExpr->accept(this);
 
-  if (node->maybeArrayType) write("]");
-  else write("do");
+  if (node->maybeArrayType)
+    write("]");
+  else
+    write("do");
 
   if (node->cond) {
     write(" if ");
@@ -389,9 +373,7 @@ bool AstDump::enterLoopExpr(LoopExpr* node) {
   return false;
 }
 
-void AstDump::exitLoopExpr(LoopExpr* node) {
-}
-
+void AstDump::exitLoopExpr(LoopExpr* node) {}
 
 //
 // UseStmt
@@ -408,8 +390,7 @@ void AstDump::visitUseStmt(UseStmt* node) {
     write(true, "(", false);
   }
 
-  if (mNeedSpace)
-    fputc(' ', mFP);
+  if (mNeedSpace) fputc(' ', mFP);
 
   fprintf(mFP, "'use'");
 
@@ -464,8 +445,6 @@ void AstDump::visitImportStmt(ImportStmt* node) {
   write(false, ")", true);
 }
 
-
-
 //
 // BlockStmt
 //
@@ -473,17 +452,13 @@ bool AstDump::enterBlockStmt(BlockStmt* node) {
   newline();
 
   if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
-    if (node == fn->where)
-      write(false, "where ", false);
+    if (node == fn->where) write(false, "where ", false);
 
   write("{");
   printBlockID(node);
-  if ((node->blockTag & BLOCK_SCOPELESS))
-    write("scopeless");
-  if ((node->blockTag & BLOCK_TYPE_ONLY))
-    write("type");
-  if ((node->blockTag & BLOCK_EXTERN))
-    write("extern");
+  if ((node->blockTag & BLOCK_SCOPELESS)) write("scopeless");
+  if ((node->blockTag & BLOCK_TYPE_ONLY)) write("type");
+  if ((node->blockTag & BLOCK_EXTERN)) write("extern");
 
   ++mIndent;
 
@@ -497,12 +472,10 @@ void AstDump::exitBlockStmt(BlockStmt* node) {
   printBlockID(node);
 }
 
-
 bool AstDump::enterForallStmt(ForallStmt* node) {
   newline();
   write("Forall");
-  if (fLogIds)
-    fprintf(mFP, "[%d]", node->id);
+  if (fLogIds) fprintf(mFP, "[%d]", node->id);
   write("{");
   ++mIndent;
   newline();
@@ -574,8 +547,7 @@ bool AstDump::enterForallStmt(ForallStmt* node) {
   write("}");
   return false;
 }
-void AstDump::exitForallStmt(ForallStmt* node) {
-}
+void AstDump::exitForallStmt(ForallStmt* node) {}
 
 //
 // WhileDoStmt
@@ -584,8 +556,7 @@ bool AstDump::enterWhileDoStmt(WhileDoStmt* node) {
   newline();
 
   if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
-    if (node == fn->where)
-      write(false, "where ", false);
+    if (node == fn->where) write(false, "where ", false);
 
   write("WhileDo");
   printLoopStmtDetails(node);
@@ -604,7 +575,6 @@ void AstDump::exitWhileDoStmt(WhileDoStmt* node) {
   printBlockID(node);
 }
 
-
 //
 // DoWhileStmt
 //
@@ -612,8 +582,7 @@ bool AstDump::enterDoWhileStmt(DoWhileStmt* node) {
   newline();
 
   if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
-    if (node == fn->where)
-      write(false, "where ", false);
+    if (node == fn->where) write(false, "where ", false);
 
   write("DoWhile");
   printLoopStmtDetails(node);
@@ -632,7 +601,6 @@ void AstDump::exitDoWhileStmt(DoWhileStmt* node) {
   printBlockID(node);
 }
 
-
 //
 // ForLoop
 //
@@ -640,15 +608,12 @@ bool AstDump::enterForLoop(ForLoop* node) {
   newline();
 
   if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
-    if (node == fn->where)
-      write(false, "where ", false);
+    if (node == fn->where) write(false, "where ", false);
 
   write("ForLoop");
   printLoopStmtDetails(node);
-  if (node->isLoweredForallLoop())
-    write("lowered-forall");
-  if (node->isForExpr())
-    write("for-expr");
+  if (node->isLoweredForallLoop()) write("lowered-forall");
+  if (node->isForExpr()) write("for-expr");
   newline();
   write("{");
   printBlockID(node);
@@ -664,7 +629,6 @@ void AstDump::exitForLoop(ForLoop* node) {
   printBlockID(node);
 }
 
-
 //
 // CForLoop
 //
@@ -672,8 +636,7 @@ bool AstDump::enterCForLoop(CForLoop* node) {
   newline();
 
   if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
-    if (node == fn->where)
-      write(false, "where ", false);
+    if (node == fn->where) write(false, "where ", false);
 
   write("CForLoop");
   printLoopStmtDetails(node);
@@ -692,7 +655,6 @@ void AstDump::exitCForLoop(CForLoop* node) {
   printBlockID(node);
 }
 
-
 //
 // ParamForLoop
 //
@@ -700,8 +662,7 @@ bool AstDump::enterParamForLoop(ParamForLoop* node) {
   newline();
 
   if (FnSymbol* fn = toFnSymbol(node->parentSymbol))
-    if (node == fn->where)
-      write(false, "where ", false);
+    if (node == fn->where) write(false, "where ", false);
 
   write("ParamForLoop");
   printLoopStmtDetails(node);
@@ -720,7 +681,6 @@ void AstDump::exitParamForLoop(ParamForLoop* node) {
   printBlockID(node);
 }
 
-
 //
 // CondStmt
 //
@@ -738,20 +698,19 @@ void AstDump::visitEblockStmt(ExternBlockStmt* node) {
   write("(ExternBlockStmt");
 }
 
-
 //
 // GotoStmt
 //
 bool AstDump::enterGotoStmt(GotoStmt* node) {
   newline();
   switch (node->gotoTag) {
-    case GOTO_NORMAL:         write("goto");              break;
-    case GOTO_BREAK:          write("break");             break;
-    case GOTO_CONTINUE:       write("continue");          break;
-    case GOTO_RETURN:         write("gotoReturn");        break;
-    case GOTO_GETITER_END:    write("gotoGetiterEnd");    break;
-    case GOTO_ITER_RESUME:    write("gotoIterResume");    break;
-    case GOTO_ITER_END:       write("gotoIterEnd");       break;
+    case GOTO_NORMAL: write("goto"); break;
+    case GOTO_BREAK: write("break"); break;
+    case GOTO_CONTINUE: write("continue"); break;
+    case GOTO_RETURN: write("gotoReturn"); break;
+    case GOTO_GETITER_END: write("gotoGetiterEnd"); break;
+    case GOTO_ITER_RESUME: write("gotoIterResume"); break;
+    case GOTO_ITER_END: write("gotoIterEnd"); break;
     case GOTO_ERROR_HANDLING: write("gotoErrorHandling"); break;
     case GOTO_BREAK_ERROR_HANDLING: write("gotoBreakErrorHandling"); break;
     case GOTO_ERROR_HANDLING_RETURN: write("gotoErrorHandlingReturn"); break;
@@ -766,7 +725,6 @@ bool AstDump::enterGotoStmt(GotoStmt* node) {
   return true;
 }
 
-
 //
 // ForwardingStmt
 //
@@ -775,10 +733,7 @@ bool AstDump::enterForwardingStmt(ForwardingStmt* node) {
   return true;
 }
 
-void AstDump::exitForwardingStmt(ForwardingStmt* node) {
-  write(")");
-}
-
+void AstDump::exitForwardingStmt(ForwardingStmt* node) { write(")"); }
 
 //
 // DeferStmt
@@ -798,7 +753,6 @@ void AstDump::exitDeferStmt(DeferStmt* node) {
   newline();
   write("}");
 }
-
 
 //
 // TryStmt
@@ -828,8 +782,7 @@ void AstDump::exitTryStmt(TryStmt* node) {
 bool AstDump::enterCatchStmt(CatchStmt* node) {
   newline();
   write("Catch");
-  if (node->name() != NULL)
-    write(node->name());
+  if (node->name() != NULL) write(node->name());
   if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(node->type())) {
     write(":");
     write(urse->unresolved);
@@ -855,8 +808,7 @@ void AstDump::exitCatchStmt(CatchStmt* node) {
 bool AstDump::enterImplementsStmt(ImplementsStmt* node) {
   newline();
   write("ifc");
-  if (fLogIds)
-    fprintf(mFP, "[%d]", node->id);
+  if (fLogIds) fprintf(mFP, "[%d]", node->id);
   return true;
 }
 
@@ -906,14 +858,14 @@ void AstDump::writeFnSymbol(FnSymbol* fn) {
     }
   }
 
-  write( false, ")", true);
+  write(false, ")", true);
 
   switch (fn->retTag) {
-    case RET_VALUE:                 break;
-    case RET_REF:   write("ref");   break;
-    case RET_CONST_REF:   write("const ref");   break;
+    case RET_VALUE: break;
+    case RET_REF: write("ref"); break;
+    case RET_CONST_REF: write("const ref"); break;
     case RET_PARAM: write("param"); break;
-    case RET_TYPE:  write("type");  break;
+    case RET_TYPE: write("type"); break;
   }
 
   if (fn->retType && fn->retType->symbol) {
@@ -936,18 +888,18 @@ void AstDump::writeSymbol(Symbol* sym, bool def) {
   if (def) {
     if (ArgSymbol* arg = toArgSymbol(sym)) {
       switch (arg->intent) {
-        case INTENT_IN:        write("in arg");        break;
-        case INTENT_INOUT:     write("inout arg");     break;
-        case INTENT_OUT:       write("out arg");       break;
-        case INTENT_CONST:     write("const arg");     break;
-        case INTENT_CONST_IN:  write("const in arg");  break;
+        case INTENT_IN: write("in arg"); break;
+        case INTENT_INOUT: write("inout arg"); break;
+        case INTENT_OUT: write("out arg"); break;
+        case INTENT_CONST: write("const arg"); break;
+        case INTENT_CONST_IN: write("const in arg"); break;
 
         case INTENT_CONST_REF:
         case INTENT_REF:
         case INTENT_REF_MAYBE_CONST: {
-          if ( (arg->intent & INTENT_FLAG_CONST) )
+          if ((arg->intent & INTENT_FLAG_CONST))
             write("const ");
-          else if ( (arg->intent & INTENT_FLAG_MAYBE_CONST) )
+          else if ((arg->intent & INTENT_FLAG_MAYBE_CONST))
             write("const? ");
 
           if (arg->isWideRef()) {
@@ -957,45 +909,36 @@ void AstDump::writeSymbol(Symbol* sym, bool def) {
           }
           break;
         }
-        case INTENT_PARAM:     write("param arg");     break;
-        case INTENT_TYPE:      write("type arg");      break;
-        case INTENT_BLANK:     write("arg");           break;
+        case INTENT_PARAM: write("param arg"); break;
+        case INTENT_TYPE: write("type arg"); break;
+        case INTENT_BLANK: write("arg"); break;
       }
     }
   }
 
   write(sym->name);
 
-  if (fLogIds)
-    fprintf(mFP, "[%d]", sym->id);
+  if (fLogIds) fprintf(mFP, "[%d]", sym->id);
 
-  if (def &&
-      !toTypeSymbol(sym) &&
-      sym->type &&
-      sym->type->symbol &&
+  if (def && !toTypeSymbol(sym) && sym->type && sym->type->symbol &&
       sym->type != dtUnknown) {
     write(false, ":", false);
     writeSymbol(sym->type->symbol, false);
   }
 
-  if (sym->hasFlag(FLAG_GENERIC))
-    write(false, "(?)", false);
+  if (sym->hasFlag(FLAG_GENERIC)) write(false, "(?)", false);
 
   if (def)
     if (ArgSymbol* arg = toArgSymbol(sym))
-      if (arg->variableExpr)
-        write("...");
+      if (arg->variableExpr) write("...");
 
   mNeedSpace = true;
 }
 
-void AstDump::write(const char* text) {
-  write(true, text, true);
-}
+void AstDump::write(const char* text) { write(true, text, true); }
 
 void AstDump::write(bool spaceBefore, const char* text, bool spaceAfter) {
-  if (spaceBefore == true && mNeedSpace == true)
-    fputc(' ', mFP);
+  if (spaceBefore == true && mNeedSpace == true) fputc(' ', mFP);
 
   fputs(text, mFP);
 
@@ -1003,28 +946,22 @@ void AstDump::write(bool spaceBefore, const char* text, bool spaceAfter) {
 }
 
 void AstDump::printBlockID(Expr* expr) {
-  if (fdump_html_print_block_IDs)
-    fprintf(mFP, " %d", expr->id);
+  if (fdump_html_print_block_IDs) fprintf(mFP, " %d", expr->id);
 }
 
 void AstDump::printLoopStmtDetails(LoopStmt* loop) {
-  if (fLogIds)
-    fprintf(mFP, "[%d]", loop->id);
-  if (loop->hasVectorizationHazard())
-    write("hazard");
-  if (loop->isOrderIndependent())
-    write("order-independent");
+  if (fLogIds) fprintf(mFP, "[%d]", loop->id);
+  if (loop->hasVectorizationHazard()) write("hazard");
+  if (loop->isOrderIndependent()) write("order-independent");
   if (loop->hasAdditionalLLVMMetadata("chpl.loop.assertvectorized"))
     write("assert-vectorized");
-  if (loop->hasAdditionalLLVMMetadata())
-    write("additional-llvm-metadata");
+  if (loop->hasAdditionalLLVMMetadata()) write("additional-llvm-metadata");
 }
 
 void AstDump::newline() {
   fputc('\n', mFP);
 
-  for (int i = 0; i < 2 * mIndent; ++i)
-    fputc(' ', mFP);
+  for (int i = 0; i < 2 * mIndent; ++i) fputc(' ', mFP);
 
   mNeedSpace = false;
 }
