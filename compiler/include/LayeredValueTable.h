@@ -32,15 +32,15 @@
 #ifdef HAVE_LLVM
 // forward declare some llvm and clang things
 namespace llvm {
-  class BasicBlock;
-  class Type;
-  class Value;
+class BasicBlock;
+class Type;
+class Value;
 }
 namespace clang {
-  class NamedDecl;
-  class TypeDecl;
-  class ValueDecl;
-  class MacroInfo;
+class NamedDecl;
+class TypeDecl;
+class ValueDecl;
+class MacroInfo;
 }
 
 #include "llvm/ADT/StringMap.h"
@@ -48,12 +48,11 @@ namespace clang {
 
 void cleanupExternC();
 
-
 #ifdef HAVE_LLVM
 // should support TypedefDecl,EnumDecl,RecordDecl
 llvm::Type* codegenCType(const clang::TypeDecl* td);
 // should support FunctionDecl,VarDecl,EnumConstantDecl
-GenRet codegenCValue(const clang::ValueDecl *vd);
+GenRet codegenCValue(const clang::ValueDecl* vd);
 
 // forward declare.
 class Type;
@@ -65,98 +64,111 @@ class ModuleSymbol;
  * in LLVM and might need to refer to in the future.
  * That includes local variables, functions, globals, types...
  */
-class LayeredValueTable
-{
-  private:
-    struct Storage {
-      // We use both the cTypeDecl and cValueDecl fields
-      // in some situations. (e.g. struct stat vs fn stat).
-      // Generally only one field will be set.
-      struct s_u {
-        llvm::Value *value;
-        llvm::BasicBlock *block;
-        llvm::Type *type;
-        // Note that clang will cache clang->llvm for types, at least
-        // It would be possible for us to cache everything here
-        // but that is probably redundant.
-        clang::TypeDecl *cTypeDecl;
-        clang::ValueDecl *cValueDecl;
-        // Macros get stored here.
-        VarSymbol* chplVar;
-        // For macros
-        const char* castChplVarTo;
-        // 'forwardToName' and 'macro' are only for use during macro
-        // handling/clang parsing. After clang parsing is done they likely
-        // refer to invalid memory.
-        const char* forwardToName;
-        const clang::MacroInfo* macro;
-      } u;
-      int8_t isLVPtr;
-      bool isUnsigned;
-      // During scopeResolve for extern blocks, we set this
-      // to indicated that the symbol has already been imported
-      // into the Chapel AST.
-      bool addedToChapelAST;
-      // Line and file info for the C declaration
-      astlocT astloc;
-      // Store the type of the value so we can figure out the element type of
-      // LLVM opaque pointers.
-      Type* chplType;
+class LayeredValueTable {
+ private:
+  struct Storage {
+    // We use both the cTypeDecl and cValueDecl fields
+    // in some situations. (e.g. struct stat vs fn stat).
+    // Generally only one field will be set.
+    struct s_u {
+      llvm::Value* value;
+      llvm::BasicBlock* block;
+      llvm::Type* type;
+      // Note that clang will cache clang->llvm for types, at least
+      // It would be possible for us to cache everything here
+      // but that is probably redundant.
+      clang::TypeDecl* cTypeDecl;
+      clang::ValueDecl* cValueDecl;
+      // Macros get stored here.
+      VarSymbol* chplVar;
+      // For macros
+      const char* castChplVarTo;
+      // 'forwardToName' and 'macro' are only for use during macro
+      // handling/clang parsing. After clang parsing is done they likely
+      // refer to invalid memory.
+      const char* forwardToName;
+      const clang::MacroInfo* macro;
+    } u;
+    int8_t isLVPtr;
+    bool isUnsigned;
+    // During scopeResolve for extern blocks, we set this
+    // to indicated that the symbol has already been imported
+    // into the Chapel AST.
+    bool addedToChapelAST;
+    // Line and file info for the C declaration
+    astlocT astloc;
+    // Store the type of the value so we can figure out the element type of
+    // LLVM opaque pointers.
+    Type* chplType;
 
-      Storage() : astloc(0, NULL) {
-        u.value = NULL;
-        u.block = NULL;
-        u.type = NULL;
-        u.cTypeDecl = NULL;
-        u.cValueDecl = NULL;
-        u.chplVar = NULL;
-        u.castChplVarTo = NULL;
-        u.forwardToName = NULL;
-        u.macro = NULL;
-        isLVPtr = GEN_VAL;
-        isUnsigned = false;
-        addedToChapelAST = false;
-        chplType = NULL;
-      }
-    };
+    Storage() : astloc(0, NULL) {
+      u.value = NULL;
+      u.block = NULL;
+      u.type = NULL;
+      u.cTypeDecl = NULL;
+      u.cValueDecl = NULL;
+      u.chplVar = NULL;
+      u.castChplVarTo = NULL;
+      u.forwardToName = NULL;
+      u.macro = NULL;
+      isLVPtr = GEN_VAL;
+      isUnsigned = false;
+      addedToChapelAST = false;
+      chplType = NULL;
+    }
+  };
 
-    typedef llvm::StringMap<Storage> map_type;//just map, key is string, value is Storage
-    typedef std::list<map_type> layers_type;// each element of the list is a map
-    typedef layers_type::iterator layer_iterator;
-    typedef map_type::iterator value_iterator;
+  typedef llvm::StringMap<Storage>
+    map_type; //just map, key is string, value is Storage
+  typedef std::list<map_type> layers_type; // each element of the list is a map
+  typedef layers_type::iterator layer_iterator;
+  typedef map_type::iterator value_iterator;
 
-    layers_type layers;
+  layers_type layers;
 
-  public:
-    LayeredValueTable();
-    void addLayer();
-    void removeLayer();
-    void addValue(llvm::StringRef name, llvm::Value *value, uint8_t isLVPtr, bool isUnsigned);
-    void addGlobalValue(llvm::StringRef name, llvm::Value *value, uint8_t isLVPtr, bool isUnsigned, Type* type);
-    void addGlobalValue(llvm::StringRef name, GenRet gend);
-    void addGlobalType(llvm::StringRef name, llvm::Type *type, bool isUnsigned);
-    void addGlobalCDecl(clang::NamedDecl* cdecl);
-    void addGlobalCDecl(llvm::StringRef name, clang::NamedDecl* cdecl, const char* castToType=NULL);
-    void addGlobalVarSymbol(llvm::StringRef name, VarSymbol* var, const char* castToType=NULL);
-    void addBlock(llvm::StringRef name, llvm::BasicBlock *block);
-    void addMacro(llvm::StringRef name, const clang::MacroInfo *macro);
-    void addForwardName(llvm::StringRef name, const char* forwardName);
-    GenRet getValue(llvm::StringRef name);
-    llvm::BasicBlock *getBlock(llvm::StringRef name);
-    llvm::Type *getType(llvm::StringRef name, bool* isUnsigned=NULL);
-    void getCDecl(llvm::StringRef name, clang::TypeDecl** cTypeOut,
-        clang::ValueDecl** cValueOut, const char** cCastedToTypeOut=NULL,
-        astlocT *astlocOut=NULL);
-    bool isCArray(llvm::StringRef name);
-    VarSymbol* getVarSymbol(llvm::StringRef name);
-    const clang::MacroInfo* getMacro(llvm::StringRef name);
-    bool isAlreadyInChapelAST(llvm::StringRef name);
-    bool markAddedToChapelAST(llvm::StringRef name);
+ public:
+  LayeredValueTable();
+  void addLayer();
+  void removeLayer();
+  void addValue(llvm::StringRef name,
+                llvm::Value* value,
+                uint8_t isLVPtr,
+                bool isUnsigned);
+  void addGlobalValue(llvm::StringRef name,
+                      llvm::Value* value,
+                      uint8_t isLVPtr,
+                      bool isUnsigned,
+                      Type* type);
+  void addGlobalValue(llvm::StringRef name, GenRet gend);
+  void addGlobalType(llvm::StringRef name, llvm::Type* type, bool isUnsigned);
+  void addGlobalCDecl(clang::NamedDecl* cdecl);
+  void addGlobalCDecl(llvm::StringRef name,
+                      clang::NamedDecl* cdecl,
+                      const char* castToType = NULL);
+  void addGlobalVarSymbol(llvm::StringRef name,
+                          VarSymbol* var,
+                          const char* castToType = NULL);
+  void addBlock(llvm::StringRef name, llvm::BasicBlock* block);
+  void addMacro(llvm::StringRef name, const clang::MacroInfo* macro);
+  void addForwardName(llvm::StringRef name, const char* forwardName);
+  GenRet getValue(llvm::StringRef name);
+  llvm::BasicBlock* getBlock(llvm::StringRef name);
+  llvm::Type* getType(llvm::StringRef name, bool* isUnsigned = NULL);
+  void getCDecl(llvm::StringRef name,
+                clang::TypeDecl** cTypeOut,
+                clang::ValueDecl** cValueOut,
+                const char** cCastedToTypeOut = NULL,
+                astlocT* astlocOut = NULL);
+  bool isCArray(llvm::StringRef name);
+  VarSymbol* getVarSymbol(llvm::StringRef name);
+  const clang::MacroInfo* getMacro(llvm::StringRef name);
+  bool isAlreadyInChapelAST(llvm::StringRef name);
+  bool markAddedToChapelAST(llvm::StringRef name);
 
-    void swap(LayeredValueTable* other);
+  void swap(LayeredValueTable* other);
 
-  private:
-    Storage* get(llvm::StringRef name);
+ private:
+  Storage* get(llvm::StringRef name);
 };
 
 #endif // HAVE_LLVM

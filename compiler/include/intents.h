@@ -24,29 +24,29 @@
 // TODO: Consider moving other things (like printers) to this header
 // when/if we want to clean things up further.
 
-const int INTENT_FLAG_IN          = 0x01;
-const int INTENT_FLAG_OUT         = 0x02;
-const int INTENT_FLAG_CONST       = 0x04;
-const int INTENT_FLAG_REF         = 0x08;
-const int INTENT_FLAG_PARAM       = 0x10;
-const int INTENT_FLAG_TYPE        = 0x20;
-const int INTENT_FLAG_BLANK       = 0x40;
+const int INTENT_FLAG_IN = 0x01;
+const int INTENT_FLAG_OUT = 0x02;
+const int INTENT_FLAG_CONST = 0x04;
+const int INTENT_FLAG_REF = 0x08;
+const int INTENT_FLAG_PARAM = 0x10;
+const int INTENT_FLAG_TYPE = 0x20;
+const int INTENT_FLAG_BLANK = 0x40;
 const int INTENT_FLAG_MAYBE_CONST = 0x80;
 
 // If this enum is modified, ArgSymbol::intentDescrString()
 // and intentDescrString(IntentTag) should also be updated to match
 enum IntentTag {
-  INTENT_IN              = INTENT_FLAG_IN,
-  INTENT_OUT             = INTENT_FLAG_OUT,
-  INTENT_INOUT           = INTENT_FLAG_IN          | INTENT_FLAG_OUT,
-  INTENT_CONST           = INTENT_FLAG_CONST,
-  INTENT_CONST_IN        = INTENT_FLAG_CONST       | INTENT_FLAG_IN,
-  INTENT_REF             = INTENT_FLAG_REF,
-  INTENT_CONST_REF       = INTENT_FLAG_CONST       | INTENT_FLAG_REF,
+  INTENT_IN = INTENT_FLAG_IN,
+  INTENT_OUT = INTENT_FLAG_OUT,
+  INTENT_INOUT = INTENT_FLAG_IN | INTENT_FLAG_OUT,
+  INTENT_CONST = INTENT_FLAG_CONST,
+  INTENT_CONST_IN = INTENT_FLAG_CONST | INTENT_FLAG_IN,
+  INTENT_REF = INTENT_FLAG_REF,
+  INTENT_CONST_REF = INTENT_FLAG_CONST | INTENT_FLAG_REF,
   INTENT_REF_MAYBE_CONST = INTENT_FLAG_MAYBE_CONST | INTENT_FLAG_REF,
-  INTENT_PARAM           = INTENT_FLAG_PARAM,
-  INTENT_TYPE            = INTENT_FLAG_TYPE,
-  INTENT_BLANK           = INTENT_FLAG_BLANK
+  INTENT_PARAM = INTENT_FLAG_PARAM,
+  INTENT_TYPE = INTENT_FLAG_TYPE,
+  INTENT_BLANK = INTENT_FLAG_BLANK
 };
 
 /*
@@ -77,29 +77,23 @@ The remaining tags should be self-explanatory.
 */
 enum ForallIntentTag {
   // user-specified intents
-  TFI_DEFAULT,  // aka TFI_BLANK
-  TFI_CONST,                       // ShadowVarSymbol nicknames:
-  TFI_IN,                          //   SI
-  TFI_CONST_IN,                    //   "
-  TFI_REF,                         //   SR
-  TFI_CONST_REF,                   //   "
-  TFI_REDUCE,                      //   AS    (for Accumulation State)
-  TFI_TASK_PRIVATE,                //   TPV
+  TFI_DEFAULT,      // aka TFI_BLANK
+  TFI_CONST,        // ShadowVarSymbol nicknames:
+  TFI_IN,           //   SI
+  TFI_CONST_IN,     //   "
+  TFI_REF,          //   SR
+  TFI_CONST_REF,    //   "
+  TFI_REDUCE,       //   AS    (for Accumulation State)
+  TFI_TASK_PRIVATE, //   TPV
   // compiler-added helpers; note isCompilerAdded()
-  TFI_IN_PARENT,                   //   INP
-  TFI_REDUCE_OP,                   //   RP    (for Reduce oP)
-  TFI_REDUCE_PARENT_AS,            //   PAS
-  TFI_REDUCE_PARENT_OP,            //   PRP
+  TFI_IN_PARENT,        //   INP
+  TFI_REDUCE_OP,        //   RP    (for Reduce oP)
+  TFI_REDUCE_PARENT_AS, //   PAS
+  TFI_REDUCE_PARENT_OP, //   PRP
 };
 
 const char* forallIntentTagDescription(ForallIntentTag tfiTag);
 
-enum RetTag {
-  RET_VALUE,
-  RET_REF,
-  RET_CONST_REF,
-  RET_PARAM,
-  RET_TYPE
-};
+enum RetTag { RET_VALUE, RET_REF, RET_CONST_REF, RET_PARAM, RET_TYPE };
 
 #endif

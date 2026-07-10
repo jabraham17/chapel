@@ -27,7 +27,11 @@
 #include "genret.h"
 
 enum LLVMMetadataType {
-  LAT_NO_VALUE, LAT_INT, LAT_BOOL, LAT_STRING, LAT_ATTRIBUTE
+  LAT_NO_VALUE,
+  LAT_INT,
+  LAT_BOOL,
+  LAT_STRING,
+  LAT_ATTRIBUTE
 };
 struct LLVMMetadata;
 using LLVMMetadataPtr = std::shared_ptr<LLVMMetadata>;

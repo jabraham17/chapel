@@ -25,115 +25,112 @@
 
 #ifdef HAVE_LLVM
 namespace llvm {
-  class DIBuilder;
-  class DICompileUnit;
+class DIBuilder;
+class DICompileUnit;
 }
 #endif
 
 enum ModTag {
-  MOD_INTERNAL,  // an internal module that the user shouldn't know about
-  MOD_STANDARD,  // a standard module from the Chapel libraries
-  MOD_USER       // a module found along the user's search path
+  MOD_INTERNAL, // an internal module that the user shouldn't know about
+  MOD_STANDARD, // a standard module from the Chapel libraries
+  MOD_USER      // a module found along the user's search path
 };
 
 struct ArgumentDescription;
 struct ExternBlockInfo;
 
 class ModuleSymbol final : public Symbol {
-public:
-  static void             addTopLevelModule (ModuleSymbol* module);
+ public:
+  static void addTopLevelModule(ModuleSymbol* module);
 
-  static void             getTopLevelModules(std::vector<ModuleSymbol*>& mods);
+  static void getTopLevelModules(std::vector<ModuleSymbol*>& mods);
 
-  static const char*      modTagToString(ModTag modTag);
+  static const char* modTagToString(ModTag modTag);
 
-  static ModuleSymbol*    mainModule();
+  static ModuleSymbol* mainModule();
 
-  static void             setMainModule(ModuleSymbol* mainModule);
-  static void             setMainModuleName(const ArgumentDescription* desc,
-                                            const char*                arg);
-private:
-  static ModuleSymbol*    findMainModuleByName();
-  static ModuleSymbol*    findMainModuleFromMainFunction();
-  static ModuleSymbol*    findMainModuleFromCommandLine();
+  static void setMainModule(ModuleSymbol* mainModule);
+  static void setMainModuleName(const ArgumentDescription* desc,
+                                const char* arg);
 
-public:
-                          ModuleSymbol(const char* iName,
-                                       ModTag      iModTag,
-                                       BlockStmt*  iBlock);
+ private:
+  static ModuleSymbol* findMainModuleByName();
+  static ModuleSymbol* findMainModuleFromMainFunction();
+  static ModuleSymbol* findMainModuleFromCommandLine();
 
-                         ~ModuleSymbol() override = default;
+ public:
+  ModuleSymbol(const char* iName, ModTag iModTag, BlockStmt* iBlock);
+
+  ~ModuleSymbol() override = default;
 
   // Interface to BaseAST
-  void            verify() override;
-  void            accept(AstVisitor* visitor) override;
+  void verify() override;
+  void accept(AstVisitor* visitor) override;
 
   DECLARE_SYMBOL_COPY(ModuleSymbol);
   ModuleSymbol* copyInner(SymbolMap* map) override;
 
   // Interface to Symbol
-  void            replaceChild(BaseAST* oldAst, BaseAST* newAst) override;
-  void            codegenDef() override;
+  void replaceChild(BaseAST* oldAst, BaseAST* newAst) override;
+  void codegenDef() override;
 
   // New interface
   std::vector<AggregateType*> getTopLevelClasses();
-  std::vector<VarSymbol*>     getTopLevelConfigVars();
-  std::vector<VarSymbol*>     getTopLevelVariables();
-  std::vector<FnSymbol*>      getTopLevelFunctions(bool includeExterns);
-  std::vector<ModuleSymbol*>  getTopLevelModules();
+  std::vector<VarSymbol*> getTopLevelConfigVars();
+  std::vector<VarSymbol*> getTopLevelVariables();
+  std::vector<FnSymbol*> getTopLevelFunctions(bool includeExterns);
+  std::vector<ModuleSymbol*> getTopLevelModules();
 
-  void                    addDefaultUses();
+  void addDefaultUses();
 
-  void                    moduleUseAdd(ModuleSymbol* module);
-  void                    deadCodeModuleUseRemove(ModuleSymbol* module);
+  void moduleUseAdd(ModuleSymbol* module);
+  void deadCodeModuleUseRemove(ModuleSymbol* module);
 
-  std::string             path()                                         const;
+  std::string path() const;
 
-  ModTag                  modTag;
+  ModTag modTag;
 
-  BlockStmt*              block;
-  FnSymbol*               initFn;
-  FnSymbol*               deinitFn;
+  BlockStmt* block;
+  FnSymbol* initFn;
+  FnSymbol* deinitFn;
 
   std::vector<ModuleSymbol*> modUseList;
 
-  const char*             filename;
+  const char* filename;
 
 #ifdef HAVE_LLVM
-  ExternBlockInfo*        extern_info;
-  llvm::DIBuilder*        llvmDIBuilder;
-  llvm::DICompileUnit*    llvmDICompileUnit;
-  llvm::MDNode*           llvmDINameSpace;
+  ExternBlockInfo* extern_info;
+  llvm::DIBuilder* llvmDIBuilder;
+  llvm::DICompileUnit* llvmDICompileUnit;
+  llvm::MDNode* llvmDINameSpace;
 #else
-  void*                   extern_info;
-  void*                   llvmDIBuilder;
-  void*                   llvmDICompileUnit;
-  void*                   llvmDINameSpace;
+  void* extern_info;
+  void* llvmDIBuilder;
+  void* llvmDICompileUnit;
+  void* llvmDINameSpace;
 #endif
 
-private:
-  void                    getTopLevelConfigOrVariables(
-                                             std::vector<VarSymbol*>* contain,
-                                             Expr*            expr,
-                                             bool             config);
+ private:
+  void getTopLevelConfigOrVariables(std::vector<VarSymbol*>* contain,
+                                    Expr* expr,
+                                    bool config);
 };
 
-extern BlockStmt*         rootBlock;
-extern ModuleSymbol*      rootModule;
-extern ModuleSymbol*      theProgram;
-extern ModuleSymbol*      baseModule;
+extern BlockStmt* rootBlock;
+extern ModuleSymbol* rootModule;
+extern ModuleSymbol* theProgram;
+extern ModuleSymbol* baseModule;
 
-extern ModuleSymbol*      stringLiteralModule;
-extern ModuleSymbol*      standardModule;
-extern ModuleSymbol*      printModuleInitModule;
-extern ModuleSymbol*      ioModule;
+extern ModuleSymbol* stringLiteralModule;
+extern ModuleSymbol* standardModule;
+extern ModuleSymbol* printModuleInitModule;
+extern ModuleSymbol* ioModule;
 
 extern Vec<ModuleSymbol*> allModules;
 extern Vec<ModuleSymbol*> userModules;
 
+void initRootModule();
 
-void        initRootModule();
-
-void        initStringLiteralModule();
+void initStringLiteralModule();
 
 #endif

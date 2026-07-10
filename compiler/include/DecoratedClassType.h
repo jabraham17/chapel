@@ -44,50 +44,37 @@
 
 ************************************** | *************************************/
 
-
 const char* decoratedTypeAstr(ClassTypeDecoratorEnum d, const char* className);
 
 class DecoratedClassType final : public Type {
 
-public:
-                          DecoratedClassType(AggregateType* cls,
-                                             ClassTypeDecoratorEnum d);
-                         ~DecoratedClassType() override = default;
+ public:
+  DecoratedClassType(AggregateType* cls, ClassTypeDecoratorEnum d);
+  ~DecoratedClassType() override = default;
 
-  void                    accept(AstVisitor* visitor) override;
-  void              replaceChild(BaseAST* oldAst, BaseAST* newAst) override;
-  void                    verify() override;
-  GenRet                  codegen() override;
+  void accept(AstVisitor* visitor) override;
+  void replaceChild(BaseAST* oldAst, BaseAST* newAst) override;
+  void verify() override;
+  GenRet codegen() override;
   DECLARE_COPY(DecoratedClassType);
   DecoratedClassType* copyInner(SymbolMap* map) override;
 
+  AggregateType* getCanonicalClass() const;
 
-  AggregateType*          getCanonicalClass() const;
+  bool isNilable() const { return isDecoratorNilable(decorator); }
+  bool isNonNilable() const { return isDecoratorNonNilable(decorator); }
 
-  bool                    isNilable() const {
-    return isDecoratorNilable(decorator);
-  }
-  bool                    isNonNilable() const {
-    return isDecoratorNonNilable(decorator);
-  }
+  bool isBorrowed() const { return isDecoratorBorrowed(decorator); }
+  bool isUnmanaged() const { return isDecoratorUnmanaged(decorator); }
 
-  bool                    isBorrowed() const {
-    return isDecoratorBorrowed(decorator);
-  }
-  bool                    isUnmanaged() const {
-    return isDecoratorUnmanaged(decorator);
-  }
+  ClassTypeDecoratorEnum getDecorator() const { return decorator; }
 
-  ClassTypeDecoratorEnum  getDecorator() const {
-    return decorator;
-  }
-
-private:
+ private:
   // canonicalClass points to the AggregateType for the class
   // or to dtOwned/dtShared/etc
   // (dtBorrowed and dtUnmanaged are handled elsewhere)
-  AggregateType*              canonicalClass;
-  ClassTypeDecoratorEnum      decorator;
+  AggregateType* canonicalClass;
+  ClassTypeDecoratorEnum decorator;
 };
 
 bool classesWithSameKind(Type* a, Type* b);

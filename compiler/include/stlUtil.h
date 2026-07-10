@@ -41,7 +41,8 @@
 // expanding vector because they take begin() and end() before the
 // loop begins
 
-#define for_vector(TYPE, VAL, VEC) for (TYPE* VAL : chpl::uptoNullptrIterator(VEC))
+#define for_vector(TYPE, VAL, VEC)                 \
+  for (TYPE* VAL : chpl::uptoNullptrIterator(VEC))
 
 #define for_vector_allowing_0s(TYPE, VAL, VEC) for (TYPE* VAL : VEC)
 
@@ -50,6 +51,6 @@
 // did not exist. And over a regular std::set, a nullptr would be the first
 // entry and the loop would never fire, so I presume no uses like this exist
 // either
-#define for_set(TYPE, VAL, SET) for (TYPE * VAL : SET)
+#define for_set(TYPE, VAL, SET) for (TYPE* VAL : SET)
 
 #endif

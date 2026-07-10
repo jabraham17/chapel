@@ -25,63 +25,62 @@
 
 class ForLoop;
 
-class CForLoop final : public LoopStmt
-{
+class CForLoop final : public LoopStmt {
   //
   // Class interface
   //
-public:
-  static BlockStmt*      buildCForLoop(CallExpr*  cforInfo,
-                                       BlockStmt* body,
-                                       LLVMMetadataList attrs = {});
+ public:
+  static BlockStmt* buildCForLoop(CallExpr* cforInfo,
+                                  BlockStmt* body,
+                                  LLVMMetadataList attrs = {});
 
-  static CForLoop*       buildWithBodyFrom(ForLoop* forLoop);
-  static CForLoop*       buildWithBodyFrom(ForLoop* forLoop, SymbolMap &map);
+  static CForLoop* buildWithBodyFrom(ForLoop* forLoop);
+  static CForLoop* buildWithBodyFrom(ForLoop* forLoop, SymbolMap& map);
 
-  static CForLoop*       loopForClause(BlockStmt* clause);
+  static CForLoop* loopForClause(BlockStmt* clause);
 
   //
   // Instance Interface
   //
-public:
+ public:
   ~CForLoop() override = default;
 
   DECLARE_COPY(CForLoop);
   CForLoop* copyInner(SymbolMap* map) override;
 
-  GenRet         codegen()                                          override;
-  void           verify()                                           override;
-  void           accept(AstVisitor* visitor)                        override;
+  GenRet codegen() override;
+  void verify() override;
+  void accept(AstVisitor* visitor) override;
 
-  Expr*          getFirstExpr()                                     override;
-  Expr*          getNextExpr(Expr* expr)                            override;
+  Expr* getFirstExpr() override;
+  Expr* getNextExpr(Expr* expr) override;
 
-  bool           isCForLoop()                                 const override;
+  bool isCForLoop() const override;
 
-  bool           deadBlockCleanup()                                 override;
+  bool deadBlockCleanup() override;
 
-  void                   loopHeaderSet(BlockStmt* initBlock,
-                                       BlockStmt* testBlock,
-                                       BlockStmt* incrBlock);
+  void loopHeaderSet(BlockStmt* initBlock,
+                     BlockStmt* testBlock,
+                     BlockStmt* incrBlock);
 
-  BlockStmt*             initBlockGet()                               const;
-  BlockStmt*             testBlockGet()                               const;
-  BlockStmt*             incrBlockGet()                               const;
+  BlockStmt* initBlockGet() const;
+  BlockStmt* testBlockGet() const;
+  BlockStmt* incrBlockGet() const;
 
-  CallExpr*      blockInfoGet()                               const override;
-  CallExpr*      blockInfoSet(CallExpr* expr)                       override;
+  CallExpr* blockInfoGet() const override;
+  CallExpr* blockInfoSet(CallExpr* expr) override;
 
-private:
-                         CForLoop();
+ private:
+  CForLoop();
 
-                         CForLoop(BlockStmt* body);
+  CForLoop(BlockStmt* body);
 
-  std::string            codegenCForLoopHeader   (BlockStmt* block);
-  GenRet                 codegenCForLoopCondition(BlockStmt* block);
+  std::string codegenCForLoopHeader(BlockStmt* block);
+  GenRet codegenCForLoopCondition(BlockStmt* block);
 
-  BlockStmt*             mInitClause;
-  BlockStmt*             mTestClause;
-  BlockStmt*             mIncrClause;
+  BlockStmt* mInitClause;
+  BlockStmt* mTestClause;
+  BlockStmt* mIncrClause;
 };
 
 #endif

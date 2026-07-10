@@ -23,19 +23,15 @@
 
 #include "stmt.h"
 
-enum LoopExprType {
-  FOR_EXPR,
-  FOREACH_EXPR,
-  FORALL_EXPR
-};
+enum LoopExprType { FOR_EXPR, FOREACH_EXPR, FORALL_EXPR };
 
 class LoopExpr final : public Expr {
-public:
-  Expr* indices;       // DefExpr for index or
-                       // calls to _build_tuple containing DefExprs
+ public:
+  Expr* indices; // DefExpr for index or
+                 // calls to _build_tuple containing DefExprs
 
-  Expr* iteratorExpr;  // Expr or CallExpr to _build_tuple in zippered case
-  Expr* cond;          // filtering condition or NULL if none
+  Expr* iteratorExpr; // Expr or CallExpr to _build_tuple in zippered case
+  Expr* cond;         // filtering condition or NULL if none
   BlockStmt* loopBody;
 
   LoopExprType type;
@@ -60,13 +56,13 @@ public:
   LoopExpr(LoopExprType type, bool zippered, bool maybeArrayType);
 
   DECLARE_COPY(LoopExpr);
-  LoopExpr* copyInner(SymbolMap* map)                 override;
+  LoopExpr* copyInner(SymbolMap* map) override;
 
-  void    replaceChild(Expr* old_ast, Expr* new_ast)  override;
-  void    verify()                                    override;
-  void    accept(AstVisitor* visitor)                 override;
-  GenRet  codegen()                                   override;
-  Expr*   getFirstExpr()                              override;
+  void replaceChild(Expr* old_ast, Expr* new_ast) override;
+  void verify() override;
+  void accept(AstVisitor* visitor) override;
+  GenRet codegen() override;
+  Expr* getFirstExpr() override;
 };
 
 /**

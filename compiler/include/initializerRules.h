@@ -26,16 +26,16 @@ class BlockStmt;
 class CallExpr;
 class FnSymbol;
 
-bool      isSuperInit(CallExpr* stmt);
-bool      isThisInit (CallExpr* stmt);
-bool      isInitDone (CallExpr* stmt);
+bool isSuperInit(CallExpr* stmt);
+bool isThisInit(CallExpr* stmt);
+bool isInitDone(CallExpr* stmt);
 
-bool      hasInitDone(BlockStmt* block);
+bool hasInitDone(BlockStmt* block);
 
-void      errorOnFieldsInArgList(FnSymbol* fn);
+void errorOnFieldsInArgList(FnSymbol* fn);
 
-void      preNormalizeFields(AggregateType* at);
-void      preNormalizeInitMethod(FnSymbol* fn);
-void      preNormalizePostInit(AggregateType* at);
+void preNormalizeFields(AggregateType* at);
+void preNormalizeInitMethod(FnSymbol* fn);
+void preNormalizePostInit(AggregateType* at);
 
 #endif

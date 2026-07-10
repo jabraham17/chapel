@@ -34,7 +34,7 @@
 
 class Timer;
 
-extern int  instantiation_limit;
+extern int instantiation_limit;
 
 // optimization control flags
 extern bool fFastFlag;
@@ -91,10 +91,10 @@ extern bool fNoRemoveEmptyRecords;
 extern bool fNoInferLocalFields;
 extern bool fRemoveUnreachableBlocks;
 extern bool fReplaceArrayAccessesWithRefTemps;
-extern int  optimize_on_clause_limit;
-extern int  scalar_replace_limit;
-extern int  inline_iter_yield_limit;
-extern int  tuple_copy_limit;
+extern int optimize_on_clause_limit;
+extern int scalar_replace_limit;
+extern int inline_iter_yield_limit;
+extern int tuple_copy_limit;
 
 extern bool fNoOptimizeForallUnordered;
 extern bool fReportOptimizeForallUnordered;
@@ -165,13 +165,13 @@ extern const char* CHPL_ROCM_AMDGCN_PATH;
 extern const char* CHPL_GPU;
 extern const char* CHPL_GPU_ARCH;
 
-extern bool  printPasses;
+extern bool printPasses;
 extern FILE* printPassesFile;
-extern bool  printPassesMemory;
+extern bool printPassesMemory;
 
 extern char fExplainCall[256];
-extern int  explainCallID;
-extern int  breakOnResolveID;
+extern int explainCallID;
+extern int breakOnResolveID;
 extern bool fDenormalize;
 extern char fExplainInstantiation[256];
 /// If true, then print additional (disambiguation) information about
@@ -212,8 +212,8 @@ extern bool fInferImplementsStmts;
 extern bool fIteratorContexts;
 extern bool fReturnByRef;
 extern bool fOverrideChecking;
-extern int  ffloatOpt;
-extern int  fMaxCIdentLen;
+extern int ffloatOpt;
+extern int fMaxCIdentLen;
 
 extern bool fLlvmCodegen;
 
@@ -228,12 +228,12 @@ extern int breakOnCodegenID;
 
 extern bool fBuiltinRuntime;
 
-enum { LS_DEFAULT=0, LS_STATIC, LS_DYNAMIC };
+enum { LS_DEFAULT = 0, LS_STATIC, LS_DYNAMIC };
 
-extern int  fLinkStyle;
+extern int fLinkStyle;
 
-extern int  debugParserLevel;
-extern int  debugShortLoc;
+extern int debugParserLevel;
+extern int debugShortLoc;
 extern bool fLibraryCompile;
 extern bool fLibraryFortran;
 extern bool fLibraryMakefile;
@@ -246,7 +246,7 @@ extern bool fClientServerLibraryDebug;
 extern bool no_codegen;
 extern bool developer;
 extern bool fVerify;
-extern int  num_constants_per_variable;
+extern int num_constants_per_variable;
 extern bool printCppLineno;
 
 extern char defaultDist[256];
@@ -256,7 +256,7 @@ extern bool ignore_warnings;
 extern bool ignore_errors;
 extern bool ignore_user_errors;
 extern bool ignore_errors_for_pass;
-extern int  squelch_header_errors;
+extern int squelch_header_errors;
 
 extern bool fWarnIntUint;
 extern bool fWarnSmallIntegralFloat;
@@ -295,7 +295,7 @@ extern bool optimizeCCode;
 extern bool specializeCCode;
 
 extern bool fNoMemoryFrees;
-extern int  numGlobalsOnHeap;
+extern int numGlobalsOnHeap;
 extern bool preserveInlinedLineNumbers;
 
 extern int breakOnID;
@@ -303,7 +303,7 @@ extern int breakOnRemoveID;
 
 extern int fGPUBlockSize;
 const int gpuArchNameLen = 256;
-extern char fGpuArch[gpuArchNameLen+1];
+extern char fGpuArch[gpuArchNameLen + 1];
 extern bool fGpuPtxasEnforceOpt;
 extern bool fGpuSpecialization;
 extern const char* gGpuSdkPath;
@@ -358,7 +358,7 @@ extern bool fDynoGenStdLib;
 extern bool fDynoLibGenOrUse;
 
 extern size_t fDynoBreakOnHash;
-extern bool   fDynoBreakOnHashSet;
+extern bool fDynoBreakOnHashSet;
 
 extern bool fResolveConcreteFns;
 extern bool fIdBasedMunging;
@@ -368,7 +368,7 @@ extern bool fNoIOSerializeWriteThis;
 extern bool fNoIODeserializeReadThis;
 
 namespace chpl {
-  class Context;
+class Context;
 }
 class DynoErrorHandler;
 

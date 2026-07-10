@@ -30,7 +30,9 @@ extern int breakOnLLVMID;
 
 #ifdef HAVE_LLVM
 
-namespace llvm { class Value; }
+namespace llvm {
+class Value;
+}
 
 #if TRACK_LLVM_VALUES ///*** trackLLVMValue is active ***///
 
@@ -43,11 +45,11 @@ llvm::Value* trackLLVMValue(llvm::Value* val);
 
 #else ///*** trackLLVMValue is no-op ***///
 
-static inline const llvm::Value* trackLLVMValue(const llvm::Value* val)
-{ return val; }
+static inline const llvm::Value* trackLLVMValue(const llvm::Value* val) {
+  return val;
+}
 
-static inline llvm::Value* trackLLVMValue(llvm::Value* val)
-{ return val; }
+static inline llvm::Value* trackLLVMValue(llvm::Value* val) { return val; }
 
 #endif //TRACK_LLVM_VALUES
 #endif //HAVE_LLVM

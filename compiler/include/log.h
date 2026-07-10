@@ -42,29 +42,29 @@ void logSelectPass(const char* arg);
 // Also used by driver to configure the logger.
 void logSelectFormat(const char* arg);
 
-void  setupLogfiles();
-void  teardownLogfiles();
+void setupLogfiles();
+void teardownLogfiles();
 
-void  logWriteLog(const char* passName, int passNum, char logTag);
+void logWriteLog(const char* passName, int passNum, char logTag);
 
-bool  deletedIdON();
+bool deletedIdON();
 
-extern std::string  log_dir;
+extern std::string log_dir;
 extern std::set<std::string> log_modules;
 
-extern bool  fLogDir; // was --log-dir passed?
+extern bool fLogDir; // was --log-dir passed?
 
-extern bool  fLog;
-extern bool  fLogIds;
+extern bool fLog;
+extern bool fLogIds;
 extern LogFormat fLogFormat;
 
-extern int          fdump_html;
-extern std::string  fdump_html_chpl_home;
-extern bool         fdump_html_include_system_modules;
-extern bool         fdump_html_wrap_lines;
-extern bool         fdump_html_print_block_IDs;
+extern int fdump_html;
+extern std::string fdump_html_chpl_home;
+extern bool fdump_html_include_system_modules;
+extern bool fdump_html_wrap_lines;
+extern bool fdump_html_print_block_IDs;
 
-extern FILE*        deletedIdHandle;
-extern std::string  deletedIdFilename;
+extern FILE* deletedIdHandle;
+extern std::string deletedIdFilename;
 
 #endif

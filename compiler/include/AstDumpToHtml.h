@@ -33,7 +33,7 @@ class ModuleSymbol;
 class Symbol;
 
 class AstDumpToHtml final : public AstLogger {
-public:
+ public:
   //
   // This is the User interface to the logger.
   //
@@ -44,9 +44,9 @@ public:
   // A call to view() will dump the AST in every current Module to
   // the log directory and update index.html.
   //
-  static  void     init();
-  static  void     view(const char* passName);
-  static  void     done();
+  static void init();
+  static void view(const char* passName);
+  static void done();
 
   //
   // These functions are the "implementation" interface for the
@@ -56,76 +56,76 @@ public:
   // declared public so that they can be invoked by the AST nodes
   // themselves
   //
-  bool     enterCallExpr    (CallExpr*          node) override;
-  void     exitCallExpr     (CallExpr*          node) override;
+  bool enterCallExpr(CallExpr* node) override;
+  void exitCallExpr(CallExpr* node) override;
 
-  bool     enterDefExpr     (DefExpr*           node) override;
-  void     exitDefExpr      (DefExpr*           node) override;
+  bool enterDefExpr(DefExpr* node) override;
+  void exitDefExpr(DefExpr* node) override;
 
-  bool     enterNamedExpr   (NamedExpr*         node) override;
-  void     exitNamedExpr    (NamedExpr*         node) override;
+  bool enterNamedExpr(NamedExpr* node) override;
+  void exitNamedExpr(NamedExpr* node) override;
 
-  bool     enterIfExpr      (IfExpr*            node) override;
-  void     exitIfExpr       (IfExpr*            node) override;
+  bool enterIfExpr(IfExpr* node) override;
+  void exitIfExpr(IfExpr* node) override;
 
-  void     visitSymExpr     (SymExpr*           node) override;
+  void visitSymExpr(SymExpr* node) override;
 
-  void     visitUsymExpr    (UnresolvedSymExpr* node) override;
+  void visitUsymExpr(UnresolvedSymExpr* node) override;
 
-  bool     enterLoopExpr  (LoopExpr*        node) override;
-  void     exitLoopExpr   (LoopExpr*        node) override;
+  bool enterLoopExpr(LoopExpr* node) override;
+  void exitLoopExpr(LoopExpr* node) override;
 
-  void     visitUseStmt     (UseStmt*           node) override;
+  void visitUseStmt(UseStmt* node) override;
 
-  void     visitImportStmt  (ImportStmt*        node) override;
+  void visitImportStmt(ImportStmt* node) override;
 
-  bool     enterBlockStmt   (BlockStmt*         node) override;
-  void     exitBlockStmt    (BlockStmt*         node) override;
+  bool enterBlockStmt(BlockStmt* node) override;
+  void exitBlockStmt(BlockStmt* node) override;
 
-  bool     enterWhileDoStmt (WhileDoStmt*       node) override;
-  void     exitWhileDoStmt  (WhileDoStmt*       node) override;
+  bool enterWhileDoStmt(WhileDoStmt* node) override;
+  void exitWhileDoStmt(WhileDoStmt* node) override;
 
-  bool     enterDoWhileStmt (DoWhileStmt*       node) override;
-  void     exitDoWhileStmt  (DoWhileStmt*       node) override;
+  bool enterDoWhileStmt(DoWhileStmt* node) override;
+  void exitDoWhileStmt(DoWhileStmt* node) override;
 
-  bool     enterCForLoop    (CForLoop*          node) override;
-  void     exitCForLoop     (CForLoop*          node) override;
+  bool enterCForLoop(CForLoop* node) override;
+  void exitCForLoop(CForLoop* node) override;
 
-  bool     enterForLoop     (ForLoop*           node) override;
-  void     exitForLoop      (ForLoop*           node) override;
+  bool enterForLoop(ForLoop* node) override;
+  void exitForLoop(ForLoop* node) override;
 
-  bool     enterParamForLoop(ParamForLoop*      node) override;
-  void     exitParamForLoop (ParamForLoop*      node) override;
+  bool enterParamForLoop(ParamForLoop* node) override;
+  void exitParamForLoop(ParamForLoop* node) override;
 
-  bool     enterCondStmt    (CondStmt*          node) override;
-  void     exitCondStmt     (CondStmt*          node) override;
+  bool enterCondStmt(CondStmt* node) override;
+  void exitCondStmt(CondStmt* node) override;
 
-  void     visitEblockStmt  (ExternBlockStmt*   node) override;
+  void visitEblockStmt(ExternBlockStmt* node) override;
 
-  bool     enterGotoStmt    (GotoStmt*          node) override;
-  void     exitGotoStmt     (GotoStmt*          node) override;
+  bool enterGotoStmt(GotoStmt* node) override;
+  void exitGotoStmt(GotoStmt* node) override;
 
-private:
-                   AstDumpToHtml();
-                  ~AstDumpToHtml() override;
+ private:
+  AstDumpToHtml();
+  ~AstDumpToHtml() override;
 
-  bool             open(ModuleSymbol* module, const char* passName);
-  bool             close();
+  bool open(ModuleSymbol* module, const char* passName);
+  bool close();
 
-  void             writeFnSymbol(FnSymbol* fn);
-  void             writeSymbol(Symbol* sym, bool def);
+  void writeFnSymbol(FnSymbol* fn);
+  void writeSymbol(Symbol* sym, bool def);
 
-  const char*      html_file_name(int passNum, Symbol*     sym);
-  const char*      html_file_name(int passNum, const char* module);
-  void             adjacent_passes(Symbol* sym);
-  void             printBlockID(Expr* expr);
+  const char* html_file_name(int passNum, Symbol* sym);
+  const char* html_file_name(int passNum, const char* module);
+  void adjacent_passes(Symbol* sym);
+  void printBlockID(Expr* expr);
 
-  bool             hasHref(Symbol* sym);
+  bool hasHref(Symbol* sym);
 
-  static int       sPassIndex;
-  static  FILE*    sIndexFP;
+  static int sPassIndex;
+  static FILE* sIndexFP;
 
-  FILE*            mFP;             // The FILE* to the log file if the file is open
+  FILE* mFP; // The FILE* to the log file if the file is open
 };
 
 #endif

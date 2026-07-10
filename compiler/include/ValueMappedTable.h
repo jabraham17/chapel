@@ -32,8 +32,7 @@
     entries, e.g., an interned string table, a filename table or function
     table. If you attempt to add a duplicate entry to the table it will
     instead return the index of the previously added entry. */
-template <typename T>
-class ValueMappedTable {
+template <typename T> class ValueMappedTable {
  public:
   using Table = std::vector<T>;
 
@@ -49,12 +48,11 @@ class ValueMappedTable {
 
  public:
   ValueMappedTable() = default;
- ~ValueMappedTable() = default;
+  ~ValueMappedTable() = default;
 
-  ValueMappedTable(Table initial)
-    : table_(std::move(initial)) {
+  ValueMappedTable(Table initial) : table_(std::move(initial)) {
     checkForOverflow();
-    for (int i = 0; i < ((int) table_.size()); i++) {
+    for (int i = 0; i < ((int)table_.size()); i++) {
       valueToIndex_.insert({table_[i], i});
     }
   }
@@ -65,7 +63,7 @@ class ValueMappedTable {
     auto it = valueToIndex_.find(entry);
     if (it != valueToIndex_.end()) return it->second;
 
-    int ret = ((int) table_.size());
+    int ret = ((int)table_.size());
     valueToIndex_.emplace_hint(it, entry, ret);
     table_.push_back(entry);
 
@@ -79,13 +77,9 @@ class ValueMappedTable {
     return {};
   }
 
-  int size() const {
-    return ((int) table_.size());
-  }
+  int size() const { return ((int)table_.size()); }
 
-  const Table& table() const {
-    return table_;
-  }
+  const Table& table() const { return table_; }
 };
 
 #endif

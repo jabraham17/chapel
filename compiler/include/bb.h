@@ -37,8 +37,7 @@ class SymExpr;
 
 // Each basic block contains a list of expressions, in and out edges and an index.
 // The goto and label maps persist only between calls to buildBasicBlocks.
-class BasicBlock
-{
+class BasicBlock {
   //
   // Typedefs
   //
@@ -50,100 +49,93 @@ class BasicBlock
   //
   // Class methods/variables
   //
-public:
-  static void        clear(FnSymbol* fn);
+ public:
+  static void clear(FnSymbol* fn);
 
-  static void        buildBasicBlocks(FnSymbol* fn);
+  static void buildBasicBlocks(FnSymbol* fn);
 
-  static void        getReachableBlocks(FnSymbol*      fn,
-                                        BasicBlockSet& reachable);
+  static void getReachableBlocks(FnSymbol* fn, BasicBlockSet& reachable);
 
-  static void        ignoreUnreachableBlocks(FnSymbol* fn);
+  static void ignoreUnreachableBlocks(FnSymbol* fn);
 
-  static void        printBasicBlocks(FnSymbol* fn);
+  static void printBasicBlocks(FnSymbol* fn);
 
-  static void        buildLocalsVectorMap(FnSymbol*          fn,
-                                          Vec<Symbol*>&      locals,
-                                          Map<Symbol*, int>& localMap);
+  static void buildLocalsVectorMap(FnSymbol* fn,
+                                   Vec<Symbol*>& locals,
+                                   Map<Symbol*, int>& localMap);
 
   // Stores the basic block ids in order in according to reverse postorder.
   // Reverse postorder is useful for forward flow analysis
   // to visit a node before any successors
-  static void        computeForwardOrder(FnSymbol* fn,
-                                         std::vector<int> & order);
+  static void computeForwardOrder(FnSymbol* fn, std::vector<int>& order);
 
   // Stores the basic block ids in order according to reverse preorder.
   // Reverse preorder is useful for backward flow analysis
   // to visit a node after any successors
-  static void        computeBackwardOrder(FnSymbol* fn,
-                                          std::vector<int> & order);
+  static void computeBackwardOrder(FnSymbol* fn, std::vector<int>& order);
 
-  static void        backwardFlowAnalysis(FnSymbol*     fn,
-                                          BitVecVector& GEN,
-                                          BitVecVector& KILL,
-                                          BitVecVector& IN,
-                                          BitVecVector& OUT);
+  static void backwardFlowAnalysis(FnSymbol* fn,
+                                   BitVecVector& GEN,
+                                   BitVecVector& KILL,
+                                   BitVecVector& IN,
+                                   BitVecVector& OUT);
 
-  static void        forwardFlowAnalysis (FnSymbol*     fn,
-                                          BitVecVector& GEN,
-                                          BitVecVector& KILL,
-                                          BitVecVector& IN,
-                                          BitVecVector& OUT,
-                                          bool          intersect = true);
+  static void forwardFlowAnalysis(FnSymbol* fn,
+                                  BitVecVector& GEN,
+                                  BitVecVector& KILL,
+                                  BitVecVector& IN,
+                                  BitVecVector& OUT,
+                                  bool intersect = true);
 
-  static void        printLocalsVector(Vec<Symbol*>       locals,
-                                       Map<Symbol*, int>& localMap);
+  static void printLocalsVector(Vec<Symbol*> locals,
+                                Map<Symbol*, int>& localMap);
 
-  static void        printDefsVector(std::vector<SymExpr*> defs,
-                                     Map<SymExpr*, int>&   defMap);
+  static void printDefsVector(std::vector<SymExpr*> defs,
+                              Map<SymExpr*, int>& defMap);
 
-  static void        printLocalsVectorSets(BitVecVector& sets,
-                                           Vec<Symbol*>  locals);
+  static void printLocalsVectorSets(BitVecVector& sets, Vec<Symbol*> locals);
 
-  static void        printBitVectorSets(BitVecVector& sets);
+  static void printBitVectorSets(BitVecVector& sets);
 
-
-  static BasicBlock*                          basicBlock;
-  static Map<LabelSymbol*, BasicBlock*>       labelMaps;
+  static BasicBlock* basicBlock;
+  static Map<LabelSymbol*, BasicBlock*> labelMaps;
   static Map<LabelSymbol*, BasicBlockVector*> gotoMaps;
 
-private:
-  static void        buildBasicBlocks(FnSymbol* fn,
-                                      Expr*     stmt,
-                                      bool      mark);
-  static void        restart(FnSymbol* fn);
-  static void        append(Expr* expr, bool mark);
-  static void        thread(BasicBlock* src, BasicBlock* dst);
+ private:
+  static void buildBasicBlocks(FnSymbol* fn, Expr* stmt, bool mark);
+  static void restart(FnSymbol* fn);
+  static void append(Expr* expr, bool mark);
+  static void thread(BasicBlock* src, BasicBlock* dst);
 
-  static void        reset(FnSymbol* fn);
+  static void reset(FnSymbol* fn);
 
   static BasicBlock* steal();
 
-  static void        removeEmptyBlocks(FnSymbol* fn);
-  static bool        verifyBasicBlocks(FnSymbol* fn);
+  static void removeEmptyBlocks(FnSymbol* fn);
+  static bool verifyBasicBlocks(FnSymbol* fn);
 
-  static int         nextID;
+  static int nextID;
 
   static std::vector<BaseAST*> asts;
 
   //
   // Instance methods/variables
   //
-public:
-                     BasicBlock();
+ public:
+  BasicBlock();
 
-  void               remove();
+  void remove();
 
-  int                id;
+  int id;
 
   std::vector<Expr*> exprs;
-  std::vector<bool>  marks;
+  std::vector<bool> marks;
 
-  BasicBlockVector   ins;
-  BasicBlockVector   outs;
+  BasicBlockVector ins;
+  BasicBlockVector outs;
 
-private:
-  bool               isOK();
+ private:
+  bool isOK();
 };
 
 #endif

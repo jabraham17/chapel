@@ -24,42 +24,40 @@
 #include "LoopStmt.h"
 
 // parent of WhileDoStmt and DoWhileStmt
-class WhileStmt : public LoopStmt
-{
-public:
-  Expr*                  condExprGet()                                const;
-  SymExpr*               condExprForTmpVariableGet()                  const;
+class WhileStmt : public LoopStmt {
+ public:
+  Expr* condExprGet() const;
+  SymExpr* condExprForTmpVariableGet() const;
 
-protected:
-  WhileStmt(Expr*      sym, BlockStmt* initBody);
+ protected:
+  WhileStmt(Expr* sym, BlockStmt* initBody);
   WhileStmt(VarSymbol* sym, BlockStmt* initBody);
- ~WhileStmt() override = default;
+  ~WhileStmt() override = default;
 
-  void      copyInnerShare(const WhileStmt& ref, SymbolMap* map);
+  void copyInnerShare(const WhileStmt& ref, SymbolMap* map);
 
   // Interface to BaseAST
-  void      verify()                                 override;
+  void verify() override;
 
   // Interface to Expr
-  void      replaceChild(Expr* oldAst, Expr* newAst) override;
+  void replaceChild(Expr* oldAst, Expr* newAst) override;
 
   // New interface
-  bool      isWhileStmt()                      const override;
-  void      checkConstLoops()                        override;
-  bool      deadBlockCleanup()                       override;
-  CallExpr* blockInfoGet()                     const override;
-  CallExpr* blockInfoSet(CallExpr* expr)             override;
+  bool isWhileStmt() const override;
+  void checkConstLoops() override;
+  bool deadBlockCleanup() override;
+  CallExpr* blockInfoGet() const override;
+  CallExpr* blockInfoSet(CallExpr* expr) override;
 
-private:
-
+ private:
   // Helper functions for checkConstLoops()
-  SymExpr*               getWhileCondDef(VarSymbol* condSym);
-  void                   checkWhileLoopCondition(Expr* condExp);
-  bool                   symDeclaredInBlock(Symbol* condSym);
-  void                   checkConstWhileLoop();
-  bool                   loopBodyHasExits();
+  SymExpr* getWhileCondDef(VarSymbol* condSym);
+  void checkWhileLoopCondition(Expr* condExp);
+  bool symDeclaredInBlock(Symbol* condSym);
+  void checkConstWhileLoop();
+  bool loopBodyHasExits();
 
-  Expr*                  mCondExpr;
+  Expr* mCondExpr;
 };
 
 #endif

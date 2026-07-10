@@ -34,7 +34,7 @@ class ModuleSymbol;
 class Symbol;
 
 class AstDump final : public AstLogger {
-public:
+ public:
   //
   // This is the User interface to the logger.
   //
@@ -43,10 +43,10 @@ public:
   // are written.  The name of each file includes the name of the
   // Module, the number for the pass, and the name for the pass.
   //
-  static  void     view(const char* passName, int passNum);
+  static void view(const char* passName, int passNum);
 
-                   AstDump(FILE* fp);
-                  ~AstDump() override;
+  AstDump(FILE* fp);
+  ~AstDump() override;
 
   //
   // These functions are the "implementation" interface for the
@@ -56,98 +56,98 @@ public:
   // declared public so that they can be invoked by the AST nodes
   // themselves
   //
-  bool     enterArgSym      (ArgSymbol*         node) override;
+  bool enterArgSym(ArgSymbol* node) override;
 
-  bool     enterCallExpr    (CallExpr*          node) override;
-  void     exitCallExpr     (CallExpr*          node) override;
+  bool enterCallExpr(CallExpr* node) override;
+  void exitCallExpr(CallExpr* node) override;
 
-  bool     enterDefExpr     (DefExpr*           node) override;
+  bool enterDefExpr(DefExpr* node) override;
 
-  bool     enterNamedExpr   (NamedExpr*         node) override;
-  void     exitNamedExpr    (NamedExpr*         node) override;
+  bool enterNamedExpr(NamedExpr* node) override;
+  void exitNamedExpr(NamedExpr* node) override;
 
-  bool     enterIfExpr      (IfExpr*            node) override;
-  void     exitIfExpr       (IfExpr*            node) override;
+  bool enterIfExpr(IfExpr* node) override;
+  void exitIfExpr(IfExpr* node) override;
 
-  void     visitSymExpr     (SymExpr*           node) override;
+  void visitSymExpr(SymExpr* node) override;
 
-  void     visitUsymExpr    (UnresolvedSymExpr* node) override;
+  void visitUsymExpr(UnresolvedSymExpr* node) override;
 
-  bool     enterLoopExpr    (LoopExpr*        node) override;
-  void     exitLoopExpr     (LoopExpr*        node) override;
+  bool enterLoopExpr(LoopExpr* node) override;
+  void exitLoopExpr(LoopExpr* node) override;
 
-  void     visitUseStmt     (UseStmt*           node) override;
+  void visitUseStmt(UseStmt* node) override;
 
-  void     visitImportStmt  (ImportStmt*        node) override;
+  void visitImportStmt(ImportStmt* node) override;
 
-  bool     enterBlockStmt   (BlockStmt*         node) override;
-  void     exitBlockStmt    (BlockStmt*         node) override;
+  bool enterBlockStmt(BlockStmt* node) override;
+  void exitBlockStmt(BlockStmt* node) override;
 
-  bool     enterForallStmt  (ForallStmt*        node) override;
-  void     exitForallStmt   (ForallStmt*        node) override;
+  bool enterForallStmt(ForallStmt* node) override;
+  void exitForallStmt(ForallStmt* node) override;
 
-  bool     enterWhileDoStmt (WhileDoStmt*       node) override;
-  void     exitWhileDoStmt  (WhileDoStmt*       node) override;
+  bool enterWhileDoStmt(WhileDoStmt* node) override;
+  void exitWhileDoStmt(WhileDoStmt* node) override;
 
-  bool     enterDoWhileStmt (DoWhileStmt*       node) override;
-  void     exitDoWhileStmt  (DoWhileStmt*       node) override;
+  bool enterDoWhileStmt(DoWhileStmt* node) override;
+  void exitDoWhileStmt(DoWhileStmt* node) override;
 
-  bool     enterCForLoop    (CForLoop*          node) override;
-  void     exitCForLoop     (CForLoop*          node) override;
+  bool enterCForLoop(CForLoop* node) override;
+  void exitCForLoop(CForLoop* node) override;
 
-  bool     enterForLoop     (ForLoop*           node) override;
-  void     exitForLoop      (ForLoop*           node) override;
+  bool enterForLoop(ForLoop* node) override;
+  void exitForLoop(ForLoop* node) override;
 
-  bool     enterParamForLoop(ParamForLoop*      node) override;
-  void     exitParamForLoop (ParamForLoop*      node) override;
+  bool enterParamForLoop(ParamForLoop* node) override;
+  void exitParamForLoop(ParamForLoop* node) override;
 
-  bool     enterCondStmt    (CondStmt*          node) override;
+  bool enterCondStmt(CondStmt* node) override;
 
-  void     visitEblockStmt  (ExternBlockStmt*   node) override;
+  void visitEblockStmt(ExternBlockStmt* node) override;
 
-  bool     enterGotoStmt    (GotoStmt*          node) override;
+  bool enterGotoStmt(GotoStmt* node) override;
 
-  bool     enterForwardingStmt (ForwardingStmt*     node) override;
-  void     exitForwardingStmt  (ForwardingStmt*     node) override;
+  bool enterForwardingStmt(ForwardingStmt* node) override;
+  void exitForwardingStmt(ForwardingStmt* node) override;
 
-  bool     enterDeferStmt   (DeferStmt*         node) override;
-  void     exitDeferStmt    (DeferStmt*         node) override;
+  bool enterDeferStmt(DeferStmt* node) override;
+  void exitDeferStmt(DeferStmt* node) override;
 
-  bool     enterTryStmt     (TryStmt*           node) override;
-  void     exitTryStmt      (TryStmt*           node) override;
+  bool enterTryStmt(TryStmt* node) override;
+  void exitTryStmt(TryStmt* node) override;
 
-  bool     enterCatchStmt   (CatchStmt*         node) override;
-  void     exitCatchStmt    (CatchStmt*         node) override;
+  bool enterCatchStmt(CatchStmt* node) override;
+  void exitCatchStmt(CatchStmt* node) override;
 
-  bool     enterImplementsStmt(ImplementsStmt* node)  override;
+  bool enterImplementsStmt(ImplementsStmt* node) override;
 
-private:
-                   AstDump();
+ private:
+  AstDump();
 
-  bool             open(const ModuleSymbol* module, const char* passName, int passNum);
-  bool             close();
+  bool open(const ModuleSymbol* module, const char* passName, int passNum);
+  bool close();
 
-  void             writeFnSymbol(FnSymbol* fn);
+  void writeFnSymbol(FnSymbol* fn);
 
-  void             writeSymbol(const char* tag, Symbol* sym, bool def);
-  void             writeSymbol(Symbol* sym, bool def);
+  void writeSymbol(const char* tag, Symbol* sym, bool def);
+  void writeSymbol(Symbol* sym, bool def);
 
   // This is equivalent to write(true, text, true)
-  void             write(const char* text);
+  void write(const char* text);
 
   // This prints text with some help to manage leading/trailing whitespace
-  void             write(bool spaceBefore, const char* text, bool spaceAfter);
+  void write(bool spaceBefore, const char* text, bool spaceAfter);
 
-  void             printBlockID(Expr* expr);
-  void             printLoopStmtDetails(LoopStmt* loop);
-  void             newline();
+  void printBlockID(Expr* expr);
+  void printLoopStmtDetails(LoopStmt* loop);
+  void newline();
 
-  const char*      mName;           // The name of the file for the log
-  const char*      mPath;           // The full path to the file for the log
-  FILE*            mFP;             // The FILE* to the log file if the file is open
-  int              mIndent;         // The indentation level.  Increments for each BlockStmt
-  bool             mNeedSpace;      // Control inter-token spaces
-  bool             mDontCloseFP;    // true if mFP is owned by the user
+  const char* mName; // The name of the file for the log
+  const char* mPath; // The full path to the file for the log
+  FILE* mFP;         // The FILE* to the log file if the file is open
+  int mIndent;       // The indentation level.  Increments for each BlockStmt
+  bool mNeedSpace;   // Control inter-token spaces
+  bool mDontCloseFP; // true if mFP is owned by the user
 };
 
 #endif

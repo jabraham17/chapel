@@ -26,7 +26,7 @@
 void arrayViewElision();
 
 class ArrayViewElisionTransformer {
-public:
+ public:
   ArrayViewElisionTransformer() = delete;
   ArrayViewElisionTransformer(CallExpr* origCall);
 
@@ -34,7 +34,7 @@ public:
 
   void transform();
 
-private:
+ private:
   CallExpr* origCall_;
   CallExpr* origLhs_;
   CallExpr* origRhs_;
@@ -47,7 +47,7 @@ private:
 
 // interface for prefold
 class ArrayViewElisionPrefolder {
-public:
+ public:
   ArrayViewElisionPrefolder() = delete;
   ArrayViewElisionPrefolder(CallExpr* call);
   ~ArrayViewElisionPrefolder();
@@ -60,7 +60,7 @@ public:
   void report();
   void updateAndFoldConditional();
 
-private:
+ private:
   CallExpr* call_;
   Symbol* lhsBase_;
   Symbol* rhsBase_;
@@ -85,4 +85,3 @@ private:
   CallExpr* findOneProtoSliceCall(Expr* e);
   Symbol* getFlagReplacement();
 };
-

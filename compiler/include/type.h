@@ -40,7 +40,9 @@
 #include <vector>
 
 #ifdef HAVE_LLVM
-namespace llvm { class Type; }
+namespace llvm {
+class Type;
+}
 #endif
 
 /*
@@ -68,64 +70,59 @@ class VarSymbol;
 class IteratorInfo;
 
 class Type : public BaseAST {
-public:
-  virtual Type*          copy(SymbolMap* map      = NULL,
-                              bool       internal = false)                 = 0;
+ public:
+  virtual Type* copy(SymbolMap* map = NULL, bool internal = false) = 0;
 
   // Interface for BaseAST
-  GenRet         codegen()   override;
-  bool           inTree()    override;
-  QualifiedType  qualType()  override;
-  Type*          typeInfo()  override { return this; }
-  void           verify()    override;
+  GenRet codegen() override;
+  bool inTree() override;
+  QualifiedType qualType() override;
+  Type* typeInfo() override { return this; }
+  void verify() override;
 
-  virtual void           codegenDef();
-  virtual void           codegenPrototype();
+  virtual void codegenDef();
+  virtual void codegenPrototype();
 
-  virtual Symbol*        getField(const char* name, bool fatal = true)   const;
+  virtual Symbol* getField(const char* name, bool fatal = true) const;
 
-  const char*            name()                                          const;
+  const char* name() const;
 
-  void                   addSymbol(TypeSymbol* newSymbol);
+  void addSymbol(TypeSymbol* newSymbol);
 
-  bool                   isDefaultIntentConst()                          const;
-  bool                   isWidePtrType()                                 const;
+  bool isDefaultIntentConst() const;
+  bool isWidePtrType() const;
 
   // get/set on the type destructor
-  bool                   hasDestructor()                                 const;
-  FnSymbol*              getDestructor()                                 const;
-  void                   setDestructor(FnSymbol* fn);
+  bool hasDestructor() const;
+  FnSymbol* getDestructor() const;
+  void setDestructor(FnSymbol* fn);
 
-  Symbol*                getSubstitutionWithName(const char* name)       const;
-  void                   setSubstitutionWithName(const char* name,
-                                                 Symbol* value);
+  Symbol* getSubstitutionWithName(const char* name) const;
+  void setSubstitutionWithName(const char* name, Symbol* value);
 
-
-
-  TypeSymbol*            symbol;
+  TypeSymbol* symbol;
 
   // pointer to references for non-reference types
-  AggregateType*         refType;
+  AggregateType* refType;
 
   // Methods on this type. Note that this can contain NULLs
   // if a method was added and then removed.
-  Vec<FnSymbol*>         methods;
+  Vec<FnSymbol*> methods;
 
-  Symbol*                defaultValue;
+  Symbol* defaultValue;
 
   // Used only in PrimitiveType; replace with flag?
-  bool                   isInternalType;
+  bool isInternalType;
 
   // TODO: can this move to AggregateType?
-  Type*                  scalarPromotionType;
+  Type* scalarPromotionType;
 
-  SymbolMap              substitutions;
-  SymbolNameVec          substitutionsPostResolve;
+  SymbolMap substitutions;
+  SymbolNameVec substitutionsPostResolve;
 
   // whether the type has chpl__serialize and chpl__deserialize
   // this should be called after resolution (or after serializeMap is populated)
-  bool                   isSerializable();
-
+  bool isSerializable();
 
   // Only used for LLVM.
   llvm::SmallDenseMap<const char*, int> GEPMap;
@@ -134,22 +131,22 @@ public:
   int getLLVMAlignment();
 #endif
 
-protected:
+ protected:
   Type(AstTag astTag, Symbol* init_defaultVal);
- ~Type() override = default;
+  ~Type() override = default;
 
-private:
-  virtual void     replaceChild(BaseAST* old_ast, BaseAST* new_ast) = 0;
-  virtual Type*    copyInner(SymbolMap* map) = 0;
+ private:
+  virtual void replaceChild(BaseAST* old_ast, BaseAST* new_ast) = 0;
+  virtual Type* copyInner(SymbolMap* map) = 0;
 
-  FnSymbol*        destructor;
+  FnSymbol* destructor;
 };
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
 
 // If decorateAllClasses is true, an un-decorated default class type
 // 'C' will show as 'borrowed C'
-const char* toString(Type* type, bool decorateAllClasses=true);
+const char* toString(Type* type, bool decorateAllClasses = true);
 
 /************************************* | **************************************
 *                                                                             *
@@ -199,21 +196,19 @@ enum Qualifier {
 //   SymExpr(aRef) and Symbol(aRef) have QualifiedType(int, QUAL_REF)
 //
 class QualifiedType {
-public:
+ public:
   static const char* qualifierToStr(Qualifier q);
   static Qualifier qualifierForArgIntent(IntentTag intent);
   static Qualifier qualifierForRetTag(RetTag retTag);
 
   static bool qualifierIsConst(Qualifier q) {
-    return (q == QUAL_CONST ||
-            q == QUAL_CONST_REF ||
-            q == QUAL_CONST_VAL ||
+    return (q == QUAL_CONST || q == QUAL_CONST_REF || q == QUAL_CONST_VAL ||
             q == QUAL_CONST_WIDE_REF);
   }
 
   static bool qualifierIsRef(Qualifier q) {
-    return q == QUAL_REF        || q == QUAL_CONST_REF        ||
-           q == QUAL_WIDE_REF   || q == QUAL_CONST_WIDE_REF;
+    return q == QUAL_REF || q == QUAL_CONST_REF || q == QUAL_WIDE_REF ||
+           q == QUAL_CONST_WIDE_REF;
   }
 
   // TODO: Could be eliminated entirely with the typed converter online.
@@ -230,47 +225,30 @@ public:
       case QUAL_PARAM:
         // already const
         return q;
-      case QUAL_UNKNOWN:
-        return QUAL_CONST;
-      case QUAL_REF:
-        return QUAL_CONST_REF;
-      case QUAL_VAL:
-        return QUAL_CONST_VAL;
+      case QUAL_UNKNOWN: return QUAL_CONST;
+      case QUAL_REF: return QUAL_CONST_REF;
+      case QUAL_VAL: return QUAL_CONST_VAL;
       case QUAL_WIDE_REF:
         return QUAL_CONST_WIDE_REF;
-      // no default: update as Qualifier is updated
+        // no default: update as Qualifier is updated
     }
     return QUAL_UNKNOWN;
   }
 
   // QualifiedType methods
 
-  explicit QualifiedType(Type* type)
-    : _type(type), _qual(QUAL_UNKNOWN)
-  {
-  }
+  explicit QualifiedType(Type* type) : _type(type), _qual(QUAL_UNKNOWN) {}
 
-  QualifiedType(Qualifier qual, Type* type)
-    : _type(type), _qual(qual)
-  {
-  }
+  QualifiedType(Qualifier qual, Type* type) : _type(type), _qual(qual) {}
 
-  QualifiedType(Type* type, Qualifier qual)
-    : _type(type), _qual(qual)
-  {
-  }
+  QualifiedType(Type* type, Qualifier qual) : _type(type), _qual(qual) {}
 
-  bool isAbstract() const {
-    return qualifierIsAbstract(_qual);
-  }
+  bool isAbstract() const { return qualifierIsAbstract(_qual); }
 
-  bool isVal() const {
-    return (_qual == QUAL_VAL || _qual == QUAL_CONST_VAL);
-  }
+  bool isVal() const { return (_qual == QUAL_VAL || _qual == QUAL_CONST_VAL); }
 
   bool isRef() const {
-    return (_qual == QUAL_REF || _qual == QUAL_CONST_REF ||
-            isRefType());
+    return (_qual == QUAL_REF || _qual == QUAL_CONST_REF || isRefType());
   }
 
   bool isWideRef() const {
@@ -278,38 +256,26 @@ public:
             isWideRefType());
   }
 
-  bool isRefOrWideRef() const {
-    return isRef() || isWideRef();
-  }
+  bool isRefOrWideRef() const { return isRef() || isWideRef(); }
 
-  bool isConst() const {
-    return qualifierIsConst(_qual);
-  }
+  bool isConst() const { return qualifierIsConst(_qual); }
   // TODO: isImmutable
 
   bool isRefType() const;
 
   bool isWideRefType() const;
 
-  QualifiedType toRef() {
-    return QualifiedType(QUAL_REF, _type->getValType());
-  }
+  QualifiedType toRef() { return QualifiedType(QUAL_REF, _type->getValType()); }
 
-  QualifiedType toVal() {
-    return QualifiedType(QUAL_VAL, _type->getValType());
-  }
+  QualifiedType toVal() { return QualifiedType(QUAL_VAL, _type->getValType()); }
 
   QualifiedType toConst() {
     return QualifiedType(qualifierToConst(_qual), _type);
   }
 
-  Type* type() const {
-    return _type;
-  }
+  Type* type() const { return _type; }
 
-  Qualifier getQual() const {
-    return _qual;
-  }
+  Qualifier getQual() const { return _qual; }
 
   const char* qualStr() const;
 
@@ -323,13 +289,11 @@ public:
     return this->_type == rhs._type && this->_qual == rhs._qual;
   }
 
-  bool operator!=(const QualifiedType& rhs) const {
-    return !(*this == rhs);
-  }
+  bool operator!=(const QualifiedType& rhs) const { return !(*this == rhs); }
 
-private:
-  Type*      _type;
-  Qualifier  _qual;
+ private:
+  Type* _type;
+  Qualifier _qual;
 };
 
 /************************************* | **************************************
@@ -348,19 +312,19 @@ class EnumType final : public Type {
 
  public:
   EnumType();
- ~EnumType() override = default;
+  ~EnumType() override = default;
 
-  void verify()                                         override;
-  void accept(AstVisitor* visitor)                      override;
+  void verify() override;
+  void accept(AstVisitor* visitor) override;
   DECLARE_COPY(EnumType);
-  EnumType* copyInner(SymbolMap* map)                   override;
+  EnumType* copyInner(SymbolMap* map) override;
 
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast) override;
 
-  void codegenDef()                                     override;
+  void codegenDef() override;
 
-  bool isAbstract();  // is the enum abstract?  (has no associated values)
-  bool isConcrete();  // is the enum concrete?  (all have associated values)
+  bool isAbstract(); // is the enum abstract?  (has no associated values)
+  bool isConcrete(); // is the enum concrete?  (all have associated values)
   PrimitiveType* getIntegerType();
 
   llvm::SmallDenseMap<Symbol*, VarSymbol*> getConstantMap();
@@ -368,7 +332,6 @@ class EnumType final : public Type {
  private:
   llvm::SmallDenseMap<Symbol*, VarSymbol*> _constantMap;
 };
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -386,16 +349,15 @@ class EnumType final : public Type {
 
 class PrimitiveType final : public Type {
  public:
-  PrimitiveType(Symbol *init_defaultVal = NULL, bool internalType=false);
-  void verify()                                         override;
-  void accept(AstVisitor* visitor)                      override;
+  PrimitiveType(Symbol* init_defaultVal = NULL, bool internalType = false);
+  void verify() override;
+  void accept(AstVisitor* visitor) override;
   DECLARE_COPY(PrimitiveType);
-  PrimitiveType* copyInner(SymbolMap* map)              override;
+  PrimitiveType* copyInner(SymbolMap* map) override;
 
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast) override;
-  void codegenDef()                                     override;
+  void codegenDef() override;
 };
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -420,22 +382,21 @@ enum ConstrainedTypeUse {
 };
 
 class ConstrainedType final : public Type {
-public:
+ public:
   ConstrainedTypeUse ctUse;
 
   ConstrainedType(ConstrainedTypeUse use);
-  void verify()                                          override;
-  void accept(AstVisitor* visitor)                       override;
+  void verify() override;
+  void accept(AstVisitor* visitor) override;
   DECLARE_COPY(ConstrainedType);
-  ConstrainedType* copyInner(SymbolMap* map)             override;
-  void replaceChild(BaseAST* old_ast, BaseAST* new_ast)  override;
-  void codegenDef()                                      override;
+  ConstrainedType* copyInner(SymbolMap* map) override;
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast) override;
+  void codegenDef() override;
   const char* useString() const;
 
-  static TypeSymbol*      buildSym(const char* name, ConstrainedTypeUse use);
+  static TypeSymbol* buildSym(const char* name, ConstrainedTypeUse use);
   static ConstrainedType* buildType(const char* name, ConstrainedTypeUse use);
 };
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -450,9 +411,9 @@ class FunctionType final : public Type {
   enum Linkage { DEFAULT, EXTERN, EXPORT };
 
   // Masks are used to select options when implementing primitives.
-  static constexpr int MASK_WIDTH_LOCAL     = 0b00001;
-  static constexpr int MASK_WIDTH_WIDE      = 0b00010;
-  static constexpr int MASK_LINKAGE_EXTERN  = 0b00100;
+  static constexpr int MASK_WIDTH_LOCAL = 0b00001;
+  static constexpr int MASK_WIDTH_WIDE = 0b00010;
+  static constexpr int MASK_LINKAGE_EXTERN = 0b00100;
   static constexpr int MASK_LINKAGE_DEFAULT = 0b01000;
 
   class Formal {
@@ -461,9 +422,13 @@ class FunctionType final : public Type {
     IntentTag intent_ = INTENT_BLANK;
     const char* name_ = nullptr;
     FlagSet flags_ = 0;
+
    public:
-    Formal(Qualifier qual, Type* type, IntentTag intent,
-           const char* name, FlagSet flags);
+    Formal(Qualifier qual,
+           Type* type,
+           IntentTag intent,
+           const char* name,
+           FlagSet flags);
     bool operator==(const Formal& other) const;
     size_t hash() const;
     bool isGeneric() const;
@@ -491,16 +456,17 @@ class FunctionType final : public Type {
   bool isAnyFormalNamed_;
   const char* userTypeString_;
 
-  static const char*
-  buildUserTypeString(Kind kind,
-                      Width width,
-                      Linkage linkage,
-                      const std::vector<Formal>& formals,
-                      RetTag returnIntent,
-                      Type* returnType,
-                      bool throws);
+  static const char* buildUserTypeString(Kind kind,
+                                         Width width,
+                                         Linkage linkage,
+                                         const std::vector<Formal>& formals,
+                                         RetTag returnIntent,
+                                         Type* returnType,
+                                         bool throws);
 
-  FunctionType(Kind kind, Width width, Linkage linkage,
+  FunctionType(Kind kind,
+               Width width,
+               Linkage linkage,
                std::vector<Formal> formals,
                RetTag returnIntent,
                Type* returnType,
@@ -508,13 +474,16 @@ class FunctionType final : public Type {
                bool isAnyFormalNamed,
                const char* userTypeString);
 
-  static FunctionType* create(Kind kind, Width width, Linkage linkage,
+  static FunctionType* create(Kind kind,
+                              Width width,
+                              Linkage linkage,
                               std::vector<Formal> formals,
                               RetTag returnIntent,
                               Type* returnType,
                               bool throws);
+
  public:
- ~FunctionType() override;
+  ~FunctionType() override;
 
   void verify() override;
   void accept(AstVisitor* visitor) override;
@@ -524,7 +493,9 @@ class FunctionType final : public Type {
   void codegenDef() override;
 
   /*** Result is shared by functions of the same type. */
-  static FunctionType* get(Kind kind, Width width, Linkage linkage,
+  static FunctionType* get(Kind kind,
+                           Width width,
+                           Linkage linkage,
                            std::vector<Formal> formals,
                            RetTag returnIntent,
                            Type* returnType,
@@ -549,7 +520,7 @@ class FunctionType final : public Type {
   Linkage linkage() const;
   int numFormals() const;
   const Formal* formal(int idx) const;
-  const Formal* formalByOrdinal(Expr* actual, int* outIdx=nullptr) const;
+  const Formal* formalByOrdinal(Expr* actual, int* outIdx = nullptr) const;
   const Formals& formals() const;
   RetTag returnIntent() const;
   Type* returnType() const;
@@ -593,7 +564,6 @@ class FunctionType final : public Type {
 *                                                                             *
 ************************************** | *************************************/
 
-
 // Similar to TemporaryConversionSymbol and works with it for
 // temporarily representing a Type.
 class TemporaryConversionType final : public Type {
@@ -601,14 +571,12 @@ class TemporaryConversionType final : public Type {
   chpl::types::QualifiedType qt;
   explicit TemporaryConversionType(const chpl::types::Type* t);
   explicit TemporaryConversionType(chpl::types::QualifiedType qt);
-  void verify()                                         override;
-  void accept(AstVisitor* visitor)                      override;
+  void verify() override;
+  void accept(AstVisitor* visitor) override;
   DECLARE_COPY(TemporaryConversionType);
-  TemporaryConversionType* copyInner(SymbolMap* map)    override;
+  TemporaryConversionType* copyInner(SymbolMap* map) override;
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast) override;
 };
-
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -621,67 +589,67 @@ class TemporaryConversionType final : public Type {
 #endif
 
 // internal types
-TYPE_EXTERN Type*             dtAny;
-TYPE_EXTERN Type*             dtAnyComplex;
-TYPE_EXTERN Type*             dtAnyEnumerated;
-TYPE_EXTERN Type*             dtAnyImag;
-TYPE_EXTERN Type*             dtAnyReal;
-TYPE_EXTERN Type*             dtAnyPOD;
-TYPE_EXTERN Type*             dtAnyUnion;
-TYPE_EXTERN Type*             dtAnyProc;
+TYPE_EXTERN Type* dtAny;
+TYPE_EXTERN Type* dtAnyComplex;
+TYPE_EXTERN Type* dtAnyEnumerated;
+TYPE_EXTERN Type* dtAnyImag;
+TYPE_EXTERN Type* dtAnyReal;
+TYPE_EXTERN Type* dtAnyPOD;
+TYPE_EXTERN Type* dtAnyUnion;
+TYPE_EXTERN Type* dtAnyProc;
 
-TYPE_EXTERN Type*             dtIteratorRecord;
-TYPE_EXTERN Type*             dtIteratorClass;
-TYPE_EXTERN Type*             dtIntegral;
-TYPE_EXTERN Type*             dtNumeric;
-TYPE_EXTERN Type*             dtThunkRecord;
+TYPE_EXTERN Type* dtIteratorRecord;
+TYPE_EXTERN Type* dtIteratorClass;
+TYPE_EXTERN Type* dtIntegral;
+TYPE_EXTERN Type* dtNumeric;
+TYPE_EXTERN Type* dtThunkRecord;
 
-TYPE_EXTERN PrimitiveType*    dtNil;
-TYPE_EXTERN PrimitiveType*    dtUnknown;
-TYPE_EXTERN PrimitiveType*    dtVoid;
-TYPE_EXTERN PrimitiveType*    dtNothing;
-TYPE_EXTERN PrimitiveType*    dtAnyRecord;
-TYPE_EXTERN PrimitiveType*    dtBorrowed;
-TYPE_EXTERN PrimitiveType*    dtBorrowedNonNilable;
-TYPE_EXTERN PrimitiveType*    dtBorrowedNilable;
-TYPE_EXTERN PrimitiveType*    dtUninstantiated;
-TYPE_EXTERN PrimitiveType*    dtUnmanaged;
-TYPE_EXTERN PrimitiveType*    dtUnmanagedNonNilable;
-TYPE_EXTERN PrimitiveType*    dtUnmanagedNilable;
-TYPE_EXTERN PrimitiveType*    dtAnyManagementAnyNilable;
-TYPE_EXTERN PrimitiveType*    dtAnyManagementNonNilable;
-TYPE_EXTERN PrimitiveType*    dtAnyManagementNilable;
-TYPE_EXTERN PrimitiveType*    dtMethodToken;
-TYPE_EXTERN PrimitiveType*    dtDummyRef;
-TYPE_EXTERN PrimitiveType*    dtTypeDefaultToken;
-TYPE_EXTERN PrimitiveType*    dtModuleToken;
-TYPE_EXTERN PrimitiveType*    dtSplitInitType;
+TYPE_EXTERN PrimitiveType* dtNil;
+TYPE_EXTERN PrimitiveType* dtUnknown;
+TYPE_EXTERN PrimitiveType* dtVoid;
+TYPE_EXTERN PrimitiveType* dtNothing;
+TYPE_EXTERN PrimitiveType* dtAnyRecord;
+TYPE_EXTERN PrimitiveType* dtBorrowed;
+TYPE_EXTERN PrimitiveType* dtBorrowedNonNilable;
+TYPE_EXTERN PrimitiveType* dtBorrowedNilable;
+TYPE_EXTERN PrimitiveType* dtUninstantiated;
+TYPE_EXTERN PrimitiveType* dtUnmanaged;
+TYPE_EXTERN PrimitiveType* dtUnmanagedNonNilable;
+TYPE_EXTERN PrimitiveType* dtUnmanagedNilable;
+TYPE_EXTERN PrimitiveType* dtAnyManagementAnyNilable;
+TYPE_EXTERN PrimitiveType* dtAnyManagementNonNilable;
+TYPE_EXTERN PrimitiveType* dtAnyManagementNilable;
+TYPE_EXTERN PrimitiveType* dtMethodToken;
+TYPE_EXTERN PrimitiveType* dtDummyRef;
+TYPE_EXTERN PrimitiveType* dtTypeDefaultToken;
+TYPE_EXTERN PrimitiveType* dtModuleToken;
+TYPE_EXTERN PrimitiveType* dtSplitInitType;
 
 // primitive types
 // Anything declared as PrimitiveType* can now also be declared as Type*
 // This change was made to allow dtComplex to be represented by a record.
-TYPE_EXTERN PrimitiveType*    dtBool;
-TYPE_EXTERN PrimitiveType*    dtInt[INT_SIZE_NUM];
-TYPE_EXTERN PrimitiveType*    dtUInt[INT_SIZE_NUM];
-TYPE_EXTERN PrimitiveType*    dtReal[FLOAT_SIZE_NUM];
-TYPE_EXTERN PrimitiveType*    dtImag[FLOAT_SIZE_NUM];
-TYPE_EXTERN PrimitiveType*    dtOpaque;
-TYPE_EXTERN PrimitiveType*    dtTaskID;
-TYPE_EXTERN PrimitiveType*    dtSyncVarAuxFields;
+TYPE_EXTERN PrimitiveType* dtBool;
+TYPE_EXTERN PrimitiveType* dtInt[INT_SIZE_NUM];
+TYPE_EXTERN PrimitiveType* dtUInt[INT_SIZE_NUM];
+TYPE_EXTERN PrimitiveType* dtReal[FLOAT_SIZE_NUM];
+TYPE_EXTERN PrimitiveType* dtImag[FLOAT_SIZE_NUM];
+TYPE_EXTERN PrimitiveType* dtOpaque;
+TYPE_EXTERN PrimitiveType* dtTaskID;
+TYPE_EXTERN PrimitiveType* dtSyncVarAuxFields;
 
-TYPE_EXTERN PrimitiveType*    dtStringC; // the type of a C string (unowned)
+TYPE_EXTERN PrimitiveType* dtStringC; // the type of a C string (unowned)
 // TODO: replace raw dtCVoidPtr with a well-known AggregateType for c_ptr(void)
-TYPE_EXTERN PrimitiveType*    dtCVoidPtr; // the type of a C void* (unowned)
-TYPE_EXTERN PrimitiveType*    dtCFnPtr;   // a C function pointer (unowned)
+TYPE_EXTERN PrimitiveType* dtCVoidPtr; // the type of a C void* (unowned)
+TYPE_EXTERN PrimitiveType* dtCFnPtr;   // a C function pointer (unowned)
 
-TYPE_EXTERN Type*             dtComplex[COMPLEX_SIZE_NUM];
+TYPE_EXTERN Type* dtComplex[COMPLEX_SIZE_NUM];
 
 TYPE_EXTERN Map<Type*, Type*> wideClassMap; // class -> wide class
 TYPE_EXTERN Map<Type*, Type*> wideRefMap;   // reference -> wide reference
 
-void     initPrimitiveTypes();
-void     initChplProgram();
-void     initCompilerGlobals();
+void initPrimitiveTypes();
+void initChplProgram();
+void initCompilerGlobals();
 
 bool isBoolType(Type*);
 bool isIntType(Type*);
@@ -694,13 +662,13 @@ bool isComplexType(Type*);
 bool isEnumType(Type*);
 bool isLegalParamType(Type*);
 // returns the width in bytes of a numeric type
-int  getWidthOfType(Type*);
+int getWidthOfType(Type*);
 // returns the component width in bytes of a numeric type
 // like getWidthOfType but for complex types, returns getWidthOfType/2
 // since that is the width of the real or imaginary component.
-int  getComponentWidthOfType(Type*);
-int  get_mantissa_width(Type*);
-int  get_exponent_width(Type*);
+int getComponentWidthOfType(Type*);
+int get_mantissa_width(Type*);
+int get_exponent_width(Type*);
 bool isClass(Type* t); // includes ref, ddata, classes; not unmanaged
 bool isHeapAllocatedType(Type* t); // includes ddata, classes, wide classes
 bool isClassOrNil(Type* t);
@@ -710,10 +678,10 @@ bool isOwnedOrSharedOrBorrowed(Type* t);
 bool isClassLike(Type* t); // includes unmanaged, borrow, no ref
 
 bool isBuiltinGenericClassType(Type* t); // 'unmanaged' 'borrowed' etc
-bool isBuiltinGenericType(Type* t); // 'integral' 'unmanaged' etc
+bool isBuiltinGenericType(Type* t);      // 'integral' 'unmanaged' etc
 
 bool isClassLikeOrManaged(Type* t); // includes unmanaged, borrow, owned, no ref
-bool isClassLikeOrPtr(Type* t); // includes c_ptr, ddata
+bool isClassLikeOrPtr(Type* t);     // includes c_ptr, ddata
 bool isCVoidPtr(Type* t); // includes both c_ptr(void) and raw_c_void_ptr
 bool isClassLikeOrNil(Type* t);
 bool isRecord(Type* t);
@@ -756,19 +724,19 @@ bool typeNeedsCopyInitDeinit(Type* type);
 
 bool isPrimitiveScalar(Type* type);
 
-bool isNonGenericClass (Type* type);
+bool isNonGenericClass(Type* type);
 bool isNonGenericRecord(Type* type);
 
-bool isNonGenericClassWithInitializers (Type* type);
+bool isNonGenericClassWithInitializers(Type* type);
 bool isNonGenericRecordWithInitializers(Type* type);
 
-bool isGenericClass (Type* type);
+bool isGenericClass(Type* type);
 bool isGenericRecord(Type* type);
 
-bool isGenericClassWithInitializers (Type* type);
+bool isGenericClassWithInitializers(Type* type);
 bool isGenericRecordWithInitializers(Type* type);
 
-bool isClassWithInitializers (Type* type);
+bool isClassWithInitializers(Type* type);
 bool isRecordOrUnionWithInitializers(Type* type);
 
 bool needsGenericRecordInitializer(Type* type);
@@ -794,21 +762,16 @@ const Immediate& getDefaultImmediate(Type* t);
 // Returns strings explaining why a type is generic
 llvm::SmallVector<std::string, 2> explainGeneric(Type* t);
 
-
-#define CLASS_ID_TYPE dtInt[INT_SIZE_32]
-#define UNION_ID_TYPE dtInt[INT_SIZE_64]
-#define SIZE_TYPE dtInt[INT_SIZE_64]
-#define NODE_ID_TYPE dtInt[INT_SIZE_32]
+#define CLASS_ID_TYPE  dtInt[INT_SIZE_32]
+#define UNION_ID_TYPE  dtInt[INT_SIZE_64]
+#define SIZE_TYPE      dtInt[INT_SIZE_64]
+#define NODE_ID_TYPE   dtInt[INT_SIZE_32]
 #define HALT_FLAG_TYPE dtInt[INT_SIZE_32]
 #define SUBLOC_ID_TYPE dtInt[INT_SIZE_32]
 #define LOCALE_ID_TYPE dtLocaleID->typeInfo()
 
-#define is_arithmetic_type(t)                      \
-        (isIntType(t)        ||                    \
-         isUIntType(t)       ||                    \
-         isRealType(t)       ||                    \
-         isImagType(t)       ||                    \
-         isComplexType(t))
-
+#define is_arithmetic_type(t)                                         \
+  (isIntType(t) || isUIntType(t) || isRealType(t) || isImagType(t) || \
+   isComplexType(t))
 
 #endif

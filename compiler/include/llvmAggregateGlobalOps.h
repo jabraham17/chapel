@@ -30,16 +30,15 @@
 
 // the core implementation pass
 struct AggregateGlobalOpsOpt final {
-  const llvm::DataLayout *DL = nullptr;
+  const llvm::DataLayout* DL = nullptr;
   unsigned globalSpace = 100;
 
   AggregateGlobalOpsOpt();
   explicit AggregateGlobalOpsOpt(unsigned _globalSpace);
 
   bool run(llvm::Function& F);
-  llvm::Instruction* tryAggregating(llvm::Instruction *I,
-                                    llvm::Value* StartPtr,
-                                    bool DebugThis);
+  llvm::Instruction*
+  tryAggregating(llvm::Instruction* I, llvm::Value* StartPtr, bool DebugThis);
 };
 
 // old pass manager version
@@ -47,12 +46,12 @@ struct LegacyAggregateGlobalOpsOptPass final : public llvm::FunctionPass {
   static char ID; // Pass identification, replacement for typeid
   AggregateGlobalOpsOpt pass;
 
-  LegacyAggregateGlobalOpsOptPass() : llvm::FunctionPass(ID) { }
+  LegacyAggregateGlobalOpsOptPass() : llvm::FunctionPass(ID) {}
   explicit LegacyAggregateGlobalOpsOptPass(unsigned globalSpace)
-    : llvm::FunctionPass(ID), pass(globalSpace) { }
+    : llvm::FunctionPass(ID), pass(globalSpace) {}
 
-  bool runOnFunction(llvm::Function &F) override;
-  void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
+  bool runOnFunction(llvm::Function& F) override;
+  void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
 };
 
 // new pass manager version
@@ -61,15 +60,15 @@ struct AggregateGlobalOpsOptPass final
 
   AggregateGlobalOpsOpt pass;
 
-  AggregateGlobalOpsOptPass() { }
+  AggregateGlobalOpsOptPass() {}
   explicit AggregateGlobalOpsOptPass(unsigned globalSpace)
-    : pass(globalSpace) { }
+    : pass(globalSpace) {}
 
-  llvm::PreservedAnalyses run(llvm::Function &F,
-                              llvm::FunctionAnalysisManager &AM);
+  llvm::PreservedAnalyses run(llvm::Function& F,
+                              llvm::FunctionAnalysisManager& AM);
 };
 
-llvm::FunctionPass *createLegacyAggregateGlobalOpsOptPass(unsigned globalSpace);
+llvm::FunctionPass* createLegacyAggregateGlobalOpsOptPass(unsigned globalSpace);
 
 #endif
 

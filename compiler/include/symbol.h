@@ -43,11 +43,10 @@
 #include "clangUtil.h"
 
 // Forward declare MDNode.
-namespace llvm
-{
-  class MDNode;
-  class Function;
-  class FunctionType;
+namespace llvm {
+class MDNode;
+class Function;
+class FunctionType;
 }
 #endif
 
@@ -87,80 +86,78 @@ struct CharStarComparator {
 ************************************** | *************************************/
 
 class Symbol : public BaseAST {
-public:
+ public:
   // Interface for BaseAST
-  GenRet         codegen()   override;
-  bool           inTree()    override;
-  QualifiedType  qualType()  override;
-  Type*          typeInfo()  override { return type; }
-  void           verify()    override;
+  GenRet codegen() override;
+  bool inTree() override;
+  QualifiedType qualType() override;
+  Type* typeInfo() override { return type; }
+  void verify() override;
 
   // Note: copy may add copied Symbols to the supplied map
-  virtual Symbol*    copy(SymbolMap* map      = NULL,
-                          bool       internal = false)           = 0;
-  virtual void       replaceChild(BaseAST* oldAst,
-                                  BaseAST* newAst)               = 0;
+  virtual Symbol* copy(SymbolMap* map = NULL, bool internal = false) = 0;
+  virtual void replaceChild(BaseAST* oldAst, BaseAST* newAst) = 0;
 
-  virtual bool       isConstant()                              const;
-  virtual bool       isConstValWillNotChange();
-  virtual bool       isImmediate()                             const;
-  virtual bool       isParameter()                             const;
-          bool       isRenameable()                            const;
-          bool       isRef();
-          bool       isWideRef();
-          bool       isRefOrWideRef();
+  virtual bool isConstant() const;
+  virtual bool isConstValWillNotChange();
+  virtual bool isImmediate() const;
+  virtual bool isParameter() const;
+  bool isRenameable() const;
+  bool isRef();
+  bool isWideRef();
+  bool isRefOrWideRef();
 
-  virtual void       codegenDef();
+  virtual void codegenDef();
 
   // Returns the scope block in which this symbol is declared.
-  BlockStmt*         getDeclarationScope()                     const;
+  BlockStmt* getDeclarationScope() const;
 
-  bool               hasFlag(Flag flag)                        const;
-  bool               hasEitherFlag(Flag aflag, Flag bflag)     const;
+  bool hasFlag(Flag flag) const;
+  bool hasEitherFlag(Flag aflag, Flag bflag) const;
 
-  void               addFlag(Flag flag);
-  void               removeFlag(Flag flag);
-  void               copyFlags(const Symbol* other);
+  void addFlag(Flag flag);
+  void removeFlag(Flag flag);
+  void copyFlags(const Symbol* other);
 
-  bool               isKnownToBeGeneric();
-  virtual bool       isVisible(BaseAST* scope)                 const;
+  bool isKnownToBeGeneric();
+  virtual bool isVisible(BaseAST* scope) const;
 
   // Future: consider merging qual, type into a single
   // field of type QualifiedType
-  Qualifier          qual;
-  Type*              type;
-  FlagSet            flags;
+  Qualifier qual;
+  Type* type;
+  FlagSet flags;
   // Tuples can contain ref fields. In that event, a VarSymbol/ArgSymbol
   // needs to be able to track whether the ref field is ref or
   // const ref. It can depend on the variable for ref to arrays.
-  Qualifier*         fieldQualifiers;
+  Qualifier* fieldQualifiers;
 
   // these two must be astrs
-  const char*        name;
-  const char*        cname;    // Name of symbol for C code
+  const char* name;
+  const char* cname; // Name of symbol for C code
 
-  DefExpr*           defPoint; // Point of definition
+  DefExpr* defPoint; // Point of definition
 
   // Managing the list of SymExprs that refer to this Symbol
   // use for_SymbolSymExprs, for_SymbolDefs, for_SymbolUses
   // to traverse these.
-  void               addSymExpr(SymExpr* se);
-  void               removeSymExpr(SymExpr* se);
-  SymExpr*           firstSymExpr()                            const;
-  SymExpr*           lastSymExpr()                             const;
+  void addSymExpr(SymExpr* se);
+  void removeSymExpr(SymExpr* se);
+  SymExpr* firstSymExpr() const;
+  SymExpr* lastSymExpr() const;
   // Get the number of Defs or Uses up to the maximum number
-  int                countDefs(int max=INT_MAX)                const;
-  int                countUses(int max=INT_MAX)                const;
+  int countDefs(int max = INT_MAX) const;
+  int countUses(int max = INT_MAX) const;
   // Does the Symbol have any Uses? same as countUses() > 0
   // but may be faster.
-  bool               isUsed()                                  const;
-  bool               isDefined()                               const;
+  bool isUsed() const;
+  bool isDefined() const;
   // Return the single use of this Symbol, or NULL if there are 0 or >= 2
-  SymExpr*           getSingleUse()                            const;
+  SymExpr* getSingleUse() const;
   // Return the single def of this Symbol, or NULL if there are 0 or >= 2
-  SymExpr*           getSingleDef()                            const;
+  SymExpr* getSingleDef() const;
   // Same, considering only defs under 'parent'.
-  SymExpr*           getSingleDefUnder(Symbol* parent)         const;
+  SymExpr* getSingleDefUnder(Symbol* parent) const;
 
   // The compiler really ought to view a call to `init` that
   // constructs a const record as the single "def". However it
@@ -169,16 +166,14 @@ public:
   // This function finds the statement expression that is responsible
   // for initializing this symbol.
   // It can return NULL if it's unable to make sense of the AST pattern.
-  Expr*              getInitialization()                       const;
+  Expr* getInitialization() const;
 
   std::string deprecationMsg;
   const char* getDeprecationMsg() const;
   void maybeGenerateDeprecationWarning(Expr* context);
 
-  QualifiedType
-  static computeQualifiedType(bool isFormal, IntentTag intent, Type* type,
-                              Qualifier qual,
-                              bool isConst);
+  QualifiedType static computeQualifiedType(
+    bool isFormal, IntentTag intent, Type* type, Qualifier qual, bool isConst);
 
   std::string unstableMsg;
   const char* getUnstableMsg() const;
@@ -192,39 +187,32 @@ public:
   std::string getFirstEdition() const;
   std::string getLastEdition() const;
 
-protected:
-                     Symbol(AstTag      astTag,
-                            const char* init_name,
-                            Type*       init_type = dtUnknown);
+ protected:
+  Symbol(AstTag astTag, const char* init_name, Type* init_type = dtUnknown);
 
-                    ~Symbol() override;
+  ~Symbol() override;
 
-private:
-  virtual void       codegenPrototype(); // ie type decl
-  virtual Symbol*    copyInner(SymbolMap* map) = 0;
+ private:
+  virtual void codegenPrototype(); // ie type decl
+  virtual Symbol* copyInner(SymbolMap* map) = 0;
 
-
-  SymExpr*           symExprsHead;
-  SymExpr*           symExprsTail;
+  SymExpr* symExprsHead;
+  SymExpr* symExprsTail;
 };
 
 #define forv_Symbol(_p, _v) forv_Vec(Symbol, _p, _v)
 
-#define for_SymbolSymExprs(se, symbol)                                  \
-  for (SymExpr *se = (symbol)->firstSymExpr(),                          \
-         *_se_next = se ? se->symbolSymExprsNext : NULL;                \
-       se;                                                              \
-       se = _se_next,                                                   \
-         _se_next = se ? se->symbolSymExprsNext : NULL)
+#define for_SymbolSymExprs(se, symbol)                               \
+  for (SymExpr* se = (symbol)->firstSymExpr(),                       \
+                *_se_next = se ? se->symbolSymExprsNext : NULL;      \
+       se;                                                           \
+       se = _se_next, _se_next = se ? se->symbolSymExprsNext : NULL)
 
-#define for_SymbolDefs(def, symbol)                                      \
-  for_SymbolSymExprs(def, symbol)                                        \
-    if ((isDefAndOrUse(def) & 1))
+#define for_SymbolDefs(def, symbol)                             \
+  for_SymbolSymExprs(def, symbol) if ((isDefAndOrUse(def) & 1))
 
-#define for_SymbolUses(use, symbol)                                      \
-  for_SymbolSymExprs(use, symbol)                                        \
-    if ((isDefAndOrUse(use) & 2))
-
+#define for_SymbolUses(use, symbol)                             \
+  for_SymbolSymExprs(use, symbol) if ((isDefAndOrUse(use) & 2))
 
 bool isString(Symbol* symbol);
 bool isBytes(Symbol* symbol);
@@ -237,23 +225,20 @@ bool isBytes(Symbol* symbol);
 ************************************** | *************************************/
 
 class LcnSymbol : public Symbol {
-public:
-  int       depth()                                            const;
-  int       offset()                                           const;
+ public:
+  int depth() const;
+  int offset() const;
 
-  void      locationSet(int depth, int offset);
+  void locationSet(int depth, int offset);
 
-protected:
-            LcnSymbol(AstTag      astTag,
-                      const char* initName,
-                      Type*       initType);
+ protected:
+  LcnSymbol(AstTag astTag, const char* initName, Type* initType);
 
-           ~LcnSymbol() override = default;
+  ~LcnSymbol() override = default;
 
-private:
-
-  int       mDepth;                // Lexical depth relative to root
-  int       mOffset;               // Byte offset within frame
+ private:
+  int mDepth;  // Lexical depth relative to root
+  int mOffset; // Byte offset within frame
 };
 
 /************************************* | **************************************
@@ -263,49 +248,49 @@ private:
 ************************************** | *************************************/
 
 class VarSymbol : public LcnSymbol {
-public:
+ public:
   // Note that string immediate values are stored
   // with C escapes - that is newline is 2 chars \ n
-  Immediate   *immediate;
+  Immediate* immediate;
 
   //changed isconstant flag to reflect var, const, param: 0, 1, 2
   VarSymbol(const char* init_name, Type* init_type = dtUnknown);
   VarSymbol(const char* init_name, QualifiedType qType);
- ~VarSymbol() override;
+  ~VarSymbol() override;
 
-  void   verify()                                            override;
-  void   accept(AstVisitor* visitor)                         override;
+  void verify() override;
+  void accept(AstVisitor* visitor) override;
   DECLARE_SYMBOL_COPY(VarSymbol);
-  VarSymbol* copyInner(SymbolMap* map)                       override;
+  VarSymbol* copyInner(SymbolMap* map) override;
 
-  void   replaceChild(BaseAST* old_ast, BaseAST* new_ast)    override;
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast) override;
 
-  bool   isConstant()                                  const override;
-  bool   isConstValWillNotChange()                           override;
-  bool   isImmediate()                                 const override;
-  bool   isParameter()                                 const override;
-  bool   isType()                                               const;
+  bool isConstant() const override;
+  bool isConstValWillNotChange() override;
+  bool isImmediate() const override;
+  bool isParameter() const override;
+  bool isType() const;
 
-  GenRet codegenVarSymbol(bool lhsInSetReference=false);
-  GenRet codegen()                                           override;
-  void   codegenDefC(bool global = false, bool isHeader = false);
-  void   codegenDef()                                        override;
+  GenRet codegenVarSymbol(bool lhsInSetReference = false);
+  GenRet codegen() override;
+  void codegenDefC(bool global = false, bool isHeader = false);
+  void codegenDef() override;
   // global vars are different ...
-  void   codegenGlobalDef(bool isHeader);
+  void codegenGlobalDef(bool isHeader);
 
   void makeField();
 
-private:
+ private:
   bool isField;
 
-protected:
+ protected:
   // for subclasses
   VarSymbol(AstTag astTag, const char* initName, Type* initType);
 
-public:
+ public:
 #ifdef HAVE_LLVM
-  llvm::MDNode *llvmDIGlobalVariable;
-  llvm::MDNode *llvmDIVariable;
+  llvm::MDNode* llvmDIGlobalVariable;
+  llvm::MDNode* llvmDIVariable;
 #else
   void* llvmDIGlobalVariable;
   void* llvmDIVariable;
@@ -319,56 +304,54 @@ public:
 ************************************** | *************************************/
 
 class ArgSymbol final : public LcnSymbol {
-public:
-  ArgSymbol(IntentTag   iIntent,
+ public:
+  ArgSymbol(IntentTag iIntent,
             const char* iName,
-            Type*       iType,
-            Expr*       iTypeExpr     = NULL,
-            Expr*       iDefaultExpr  = NULL,
-            Expr*       iVariableExpr = NULL);
-
+            Type* iType,
+            Expr* iTypeExpr = NULL,
+            Expr* iDefaultExpr = NULL,
+            Expr* iVariableExpr = NULL);
 
   // Interface for BaseAST
-  GenRet codegen()                                       override;
+  GenRet codegen() override;
 
-  void   verify()                                        override;
-  void   accept(AstVisitor* visitor)                     override;
+  void verify() override;
+  void accept(AstVisitor* visitor) override;
   DECLARE_SYMBOL_COPY(ArgSymbol);
-  ArgSymbol* copyInner(SymbolMap* map)                   override;
-
+  ArgSymbol* copyInner(SymbolMap* map) override;
 
   // Interface for Symbol
-  void   replaceChild(BaseAST* oldAst, BaseAST* newAst)  override;
-  bool   isConstant()                              const override;
-  bool   isConstValWillNotChange()                       override;
-  bool   isParameter()                             const override;
+  void replaceChild(BaseAST* oldAst, BaseAST* newAst) override;
+  bool isConstant() const override;
+  bool isConstValWillNotChange() override;
+  bool isParameter() const override;
 
-  bool   isVisible(BaseAST* scope)                 const override;
+  bool isVisible(BaseAST* scope) const override;
 
-  const char*     intentDescrString() const;
+  const char* intentDescrString() const;
 
-  std::string     getPythonType(PythonFileType pxd);
-  std::string     getPythonDefaultValue();
-  std::string     getPythonArgTranslation();
+  std::string getPythonType(PythonFileType pxd);
+  std::string getPythonDefaultValue();
+  std::string getPythonArgTranslation();
 
-  std::string     demungeVarArgName(std::string* num=NULL);
+  std::string demungeVarArgName(std::string* num = NULL);
 
-  IntentTag       intent;
-  IntentTag       originalIntent; // stores orig intent after resolve intents
-  bool            typeExprFromDefaultExpr;
-  BlockStmt*      typeExpr;    // Type expr for arg type, or NULL.
-  BlockStmt*      defaultExpr;
+  IntentTag intent;
+  IntentTag originalIntent; // stores orig intent after resolve intents
+  bool typeExprFromDefaultExpr;
+  BlockStmt* typeExpr; // Type expr for arg type, or NULL.
+  BlockStmt* defaultExpr;
 
   // Stores the expression specified after an ellipsis in vararg formal.
   // This must resolve during function resolution to a parameter expression.
   // It can be omitted for variadic arguments or a query identifier.
-  BlockStmt*      variableExpr;
+  BlockStmt* variableExpr;
 
-  Type*           instantiatedFrom;
+  Type* instantiatedFrom;
 
-public:
+ public:
 #ifdef HAVE_LLVM
-  llvm::MDNode *llvmDIFormal;
+  llvm::MDNode* llvmDIFormal;
 #else
   void* llvmDIFormal;
 #endif
@@ -381,38 +364,37 @@ public:
 ************************************** | *************************************/
 
 class ShadowVarSymbol final : public VarSymbol {
-public:
+ public:
   ShadowVarSymbol(ForallIntentTag iIntent,
                   const char* iName,
                   SymExpr* outerVar,
                   Expr* iSpec = NULL);
 
-  void  verify()                                           override;
-  void  accept(AstVisitor* visitor)                        override;
+  void verify() override;
+  void accept(AstVisitor* visitor) override;
   DECLARE_SYMBOL_COPY(ShadowVarSymbol);
-  ShadowVarSymbol* copyInner(SymbolMap* map)               override;
+  ShadowVarSymbol* copyInner(SymbolMap* map) override;
 
-
-  void  replaceChild(BaseAST* oldAst, BaseAST* newAst)     override;
-  bool  isConstant()                                 const override;
-  bool  isConstValWillNotChange()                          override;
+  void replaceChild(BaseAST* oldAst, BaseAST* newAst) override;
+  bool isConstant() const override;
+  bool isConstValWillNotChange() override;
 
   const char* intentDescrString() const;
-  bool  isReduce()          const { return intent == TFI_REDUCE;       }
-  bool  isTaskPrivate()     const { return intent == TFI_TASK_PRIVATE; }
-  bool  isCompilerAdded()   const;
+  bool isReduce() const { return intent == TFI_REDUCE; }
+  bool isTaskPrivate() const { return intent == TFI_TASK_PRIVATE; }
+  bool isCompilerAdded() const;
 
-  static ShadowVarSymbol* buildForPrefix(ShadowVarPrefix prefix,
-                                         Expr* name, Expr* type, Expr* init);
+  static ShadowVarSymbol*
+  buildForPrefix(ShadowVarPrefix prefix, Expr* name, Expr* type, Expr* init);
   static ShadowVarSymbol* buildFromReduceIntent(Expr* ovar, Expr* riExpr);
 
   // The outer variable or NULL if not applicable.
-  Symbol* outerVarSym()    const;
+  Symbol* outerVarSym() const;
 
   // Returns the EXPR in "with (EXPR reduce x)".
-  Expr*  reduceOpExpr()    const;
+  Expr* reduceOpExpr() const;
 
-  BlockStmt* initBlock()   const { return svInitBlock; }
+  BlockStmt* initBlock() const { return svInitBlock; }
   BlockStmt* deinitBlock() const { return svDeinitBlock; }
 
   // Convert between TFI_[CONST]_IN and TFI_IN_PARENT svars.
@@ -421,11 +403,11 @@ public:
   // Convert between TFI_REDUCE and TFI_REDUCE_* svars.
   ShadowVarSymbol* ReduceOpForAccumState() const;
   ShadowVarSymbol* AccumStateForReduceOp() const;
-  ShadowVarSymbol* ReduceOpForParentRP()   const;
+  ShadowVarSymbol* ReduceOpForParentRP() const;
   ShadowVarSymbol* AccumStateForParentAS() const;
 
   // Remove no-longer-needed references to outside symbols when lowering.
-  void     removeSupportingReferences();
+  void removeSupportingReferences();
 
   // The intent for this variable.
   ForallIntentTag intent;
@@ -438,8 +420,8 @@ public:
   BlockStmt* specBlock;
 
   // Corresponding actions to be performed at task startup and teardown.
-  BlockStmt* svInitBlock;      // always present
-  BlockStmt* svDeinitBlock;    //  "
+  BlockStmt* svInitBlock;   // always present
+  BlockStmt* svDeinitBlock; //  "
 
   // This svar is for a task intent or TPV that is explicit in user code.
   bool svExplicit;
@@ -452,8 +434,8 @@ public:
 
 // TypeSymbol::llvmAlignment et al. obey this convention in LLVM codegen
 enum AlignmentStatus {
-  ALIGNMENT_UNINIT = 0,   // used only for assertions
-  ALIGNMENT_DEFER  = 1    // defer to LLVM to calculate
+  ALIGNMENT_UNINIT = 0, // used only for assertions
+  ALIGNMENT_DEFER = 1   // defer to LLVM to calculate
   // >1 ==> the ABI alignment
 };
 
@@ -466,7 +448,7 @@ class TypeSymbol final : public Symbol {
   // These type and alignment are set or finalized upon Type::codegenDef().
   // For a class type, they store the info about the corresponding struct.
   llvm::Type* llvmImplType;
-  int         llvmAlignment;  // see AlignmentStatus
+  int llvmAlignment; // see AlignmentStatus
 
   bool hasLLVMType() const;
 
@@ -475,26 +457,26 @@ class TypeSymbol final : public Symbol {
   //  - the non-structure versions return the info about the pointer.
   llvm::Type* getLLVMStructureType();
   llvm::Type* getLLVMType();
-  int getLLVMStructureAlignment();  // these two may return ALIGNMENT_DEFER
+  int getLLVMStructureAlignment(); // these two may return ALIGNMENT_DEFER
   int getLLVMAlignment();
 
-  int getABIAlignment(llvm::Type* llvmType);  // always >= 1, never "defer"
+  int getABIAlignment(llvm::Type* llvmType); // always >= 1, never "defer"
 
-  llvm::MDNode* llvmTbaaTypeDescriptor;       // scalar type descriptor
-  llvm::MDNode* llvmTbaaAccessTag;            // scalar access tag
-  llvm::MDNode* llvmConstTbaaAccessTag;       // scalar const access tag
-  llvm::MDNode* llvmTbaaAggTypeDescriptor;    // aggregate type descriptor
-  llvm::MDNode* llvmTbaaAggAccessTag;         // aggregate access tag
-  llvm::MDNode* llvmConstTbaaAggAccessTag;    // aggregate const access tag
-  llvm::MDNode* llvmTbaaStructCopyNode;       // tbaa.struct for memcpy
-  llvm::MDNode* llvmConstTbaaStructCopyNode;  // const tbaa.struct
+  llvm::MDNode* llvmTbaaTypeDescriptor;      // scalar type descriptor
+  llvm::MDNode* llvmTbaaAccessTag;           // scalar access tag
+  llvm::MDNode* llvmConstTbaaAccessTag;      // scalar const access tag
+  llvm::MDNode* llvmTbaaAggTypeDescriptor;   // aggregate type descriptor
+  llvm::MDNode* llvmTbaaAggAccessTag;        // aggregate access tag
+  llvm::MDNode* llvmConstTbaaAggAccessTag;   // aggregate const access tag
+  llvm::MDNode* llvmTbaaStructCopyNode;      // tbaa.struct for memcpy
+  llvm::MDNode* llvmConstTbaaStructCopyNode; // const tbaa.struct
   llvm::MDNode* llvmDIType;
   llvm::MDNode* llvmDIForwardType;
 #else
   // Keep same layout so toggling HAVE_LLVM
   // will not lead to build errors without make clean
   void* llvmImplType;
-  int   llvmAlignment;
+  int llvmAlignment;
   void* llvmTbaaTypeDescriptor;
   void* llvmTbaaAccessTag;
   void* llvmConstTbaaAccessTag;
@@ -508,16 +490,16 @@ class TypeSymbol final : public Symbol {
 #endif
 
   TypeSymbol(const char* init_name, Type* init_type);
-  void  verify()                                          override;
-  void  accept(AstVisitor* visitor)                       override;
+  void verify() override;
+  void accept(AstVisitor* visitor) override;
   DECLARE_SYMBOL_COPY(TypeSymbol);
-  TypeSymbol* copyInner(SymbolMap* map)                   override;
+  TypeSymbol* copyInner(SymbolMap* map) override;
 
-  void  replaceChild(BaseAST* old_ast, BaseAST* new_ast)  override;
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast) override;
 
-  GenRet codegen()                                        override;
-  void   codegenDef()                                     override;
-  void   codegenPrototype()                               override;
+  GenRet codegen() override;
+  void codegenDef() override;
+  void codegenPrototype() override;
 
   // This function is used to code generate the LLVM TBAA metadata
   // after all of the types have been defined.
@@ -554,24 +536,25 @@ class TypeSymbol final : public Symbol {
 ************************************** | *************************************/
 
 class InterfaceSymbol final : public Symbol {
-public:
-  static DefExpr* buildDef(const char* name, CallExpr* formals, BlockStmt* body);
+ public:
+  static DefExpr*
+  buildDef(const char* name, CallExpr* formals, BlockStmt* body);
   static DefExpr* buildFormal(const char* name, IntentTag intent);
   InterfaceSymbol(const char* name, BlockStmt* body);
- ~InterfaceSymbol() override;
+  ~InterfaceSymbol() override;
 
   DECLARE_SYMBOL_COPY(InterfaceSymbol);
-  InterfaceSymbol* copyInner(SymbolMap* map)             override;
-  void  verify()                                         override;
-  void  accept(AstVisitor* visitor)                      override;
+  InterfaceSymbol* copyInner(SymbolMap* map) override;
+  void verify() override;
+  void accept(AstVisitor* visitor) override;
 
-  void  replaceChild(BaseAST* oldAst, BaseAST* newAst)   override;
+  void replaceChild(BaseAST* oldAst, BaseAST* newAst) override;
 
-  int   numFormals()   const { return ifcFormals.length; }
-  int   numAssocCons() const { return associatedConstraints.size(); }
+  int numFormals() const { return ifcFormals.length; }
+  int numAssocCons() const { return associatedConstraints.size(); }
 
   // the DefExprs for each interface formal
-  AList      ifcFormals;
+  AList ifcFormals;
 
   // the body block of the interface declaration, always non-null
   BlockStmt* ifcBody;
@@ -589,7 +572,7 @@ public:
   // each FnSymbol for the interface's required function is mapped
   //  - to itself, if there is a default implementation
   //  - to gDummyWitness, otherwise
-  SymbolMap  requiredFns;
+  SymbolMap requiredFns;
 
   // Set to true if this interface has an "eny intent" function; such interfaces
   // cannot be used in CG functions, because the resulting intent of the call to
@@ -611,19 +594,19 @@ extern InterfaceSymbol* gSerializable;
 ************************************** | *************************************/
 
 class EnumSymbol final : public Symbol {
-public:
-                  EnumSymbol(const char* initName);
+ public:
+  EnumSymbol(const char* initName);
 
-  void  verify()                                        override;
-  void  accept(AstVisitor* visitor)                     override;
+  void verify() override;
+  void accept(AstVisitor* visitor) override;
 
   DECLARE_SYMBOL_COPY(EnumSymbol);
-  EnumSymbol* copyInner(SymbolMap* map)                 override;
+  EnumSymbol* copyInner(SymbolMap* map) override;
 
-  void  replaceChild(BaseAST* oldAst, BaseAST* newAst)  override;
-  void  codegenDef()                                    override;
+  void replaceChild(BaseAST* oldAst, BaseAST* newAst) override;
+  void codegenDef() override;
 
-  bool  isParameter()                             const override;
+  bool isParameter() const override;
 
   Immediate* getImmediate();
 };
@@ -643,17 +626,17 @@ public:
 ************************************** | *************************************/
 
 class LabelSymbol final : public Symbol {
-public:
+ public:
   GotoStmt* iterResumeGoto;
   LabelSymbol(const char* init_name);
 
-  void  verify()                                          override;
-  void  accept(AstVisitor* visitor)                       override;
+  void verify() override;
+  void accept(AstVisitor* visitor) override;
   DECLARE_SYMBOL_COPY(LabelSymbol);
-  LabelSymbol* copyInner(SymbolMap* map)                  override;
+  LabelSymbol* copyInner(SymbolMap* map) override;
 
-  void  replaceChild(BaseAST* old_ast, BaseAST* new_ast)  override;
-  void  codegenDef()                                      override;
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast) override;
+  void codegenDef() override;
 };
 
 /************************************* | **************************************
@@ -667,20 +650,21 @@ public:
    AST copies from an AST node referring to something not yet converted.
    */
 class TemporaryConversionSymbol final : public Symbol {
-public:
+ public:
   chpl::ID symId;
   const chpl::resolution::ResolvedFunction* rfn;
 
   explicit TemporaryConversionSymbol(chpl::ID symId);
-  explicit TemporaryConversionSymbol(const chpl::resolution::ResolvedFunction* rfn);
+  explicit TemporaryConversionSymbol(
+    const chpl::resolution::ResolvedFunction* rfn);
 
-  void  verify()                                          override;
-  void  accept(AstVisitor* visitor)                       override;
+  void verify() override;
+  void accept(AstVisitor* visitor) override;
   DECLARE_SYMBOL_COPY(TemporaryConversionSymbol);
-  TemporaryConversionSymbol* copyInner(SymbolMap* map)    override;
+  TemporaryConversionSymbol* copyInner(SymbolMap* map) override;
 
-  void  replaceChild(BaseAST* old_ast, BaseAST* new_ast)  override;
-  void  codegenDef()                                      override;
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast) override;
+  void codegenDef() override;
 };
 
 /************************************* | **************************************
@@ -688,8 +672,6 @@ public:
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
-
-
 
 inline bool Symbol::hasFlag(Flag flag) const {
   CHECK_FLAG(flag);
@@ -703,7 +685,7 @@ inline void Symbol::addFlag(Flag flag) {
 
 inline void Symbol::copyFlags(const Symbol* other) {
   flags |= other->flags;
-  qual   = other->qual;
+  qual = other->qual;
 }
 
 inline void Symbol::removeFlag(Flag flag) {
@@ -725,9 +707,7 @@ inline bool Symbol::isWideRef() {
   return (q.isWideRef() || type->symbol->hasFlag(FLAG_WIDE_REF));
 }
 
-inline bool Symbol::isRefOrWideRef() {
-  return isRef() || isWideRef();
-}
+inline bool Symbol::isRefOrWideRef() { return isRef() || isWideRef(); }
 
 // Is this a compiler-added helper / not to be reported to user?
 inline bool ShadowVarSymbol::isCompilerAdded() const {
@@ -735,23 +715,21 @@ inline bool ShadowVarSymbol::isCompilerAdded() const {
     case TFI_IN_PARENT:
     case TFI_REDUCE_OP:
     case TFI_REDUCE_PARENT_AS:
-    case TFI_REDUCE_PARENT_OP:
-      return true;
-    default:
-      return false;
+    case TFI_REDUCE_PARENT_OP: return true;
+    default: return false;
   }
 }
 
 #ifdef HAVE_LLVM
 inline bool TypeSymbol::hasLLVMType() const { return llvmImplType != nullptr; }
-inline llvm::Type* Type::getLLVMType() { return symbol->getLLVMType();  }
-inline int Type::getLLVMAlignment()    { return symbol->getLLVMAlignment();}
+inline llvm::Type* Type::getLLVMType() { return symbol->getLLVMType(); }
+inline int Type::getLLVMAlignment() { return symbol->getLLVMAlignment(); }
 
-static inline
-bool isDeferredAlignment(int align) { return align <= ALIGNMENT_DEFER; }
-int  llvmAlignmentOrDefer(int alignment, llvm::Type* type);
+static inline bool isDeferredAlignment(int align) {
+  return align <= ALIGNMENT_DEFER;
+}
+int llvmAlignmentOrDefer(int alignment, llvm::Type* type);
 #endif
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -763,25 +741,25 @@ int  llvmAlignmentOrDefer(int alignment, llvm::Type* type);
 bool isValidString(std::string str, int64_t* numCodepoints);
 
 // Creates a new string literal with the given value.
-VarSymbol *new_StringSymbol(const char *s);
+VarSymbol* new_StringSymbol(const char* s);
 //
 // Creates a new bytes literal with the given value.
-VarSymbol *new_BytesSymbol(const char *s);
+VarSymbol* new_BytesSymbol(const char* s);
 //
 // Creates a new string or bytes literal with the given value.
-VarSymbol *new_StringOrBytesSymbol(const char *s, AggregateType *at);
+VarSymbol* new_StringOrBytesSymbol(const char* s, AggregateType* at);
 
 // Creates a new C string literal with the given value.
-VarSymbol *new_CStringSymbol(const char *s);
+VarSymbol* new_CStringSymbol(const char* s);
 
 // Creates a new boolean literal with the given value
-VarSymbol *new_BoolSymbol(bool b);
+VarSymbol* new_BoolSymbol(bool b);
 
 // Creates a new (signed) integer literal with the given value and bit-width.
-VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size=INT_SIZE_64);
+VarSymbol* new_IntSymbol(int64_t b, IF1_int_type size = INT_SIZE_64);
 
 // Creates a new unsigned integer literal with the given value and bit-width.
-VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size=INT_SIZE_64);
+VarSymbol* new_UIntSymbol(uint64_t b, IF1_int_type size = INT_SIZE_64);
 
 // Creates a new real literal with the given value and bit-width.
 // n should be a string argument containing a Chapel decimal or hexadecimal
@@ -789,8 +767,7 @@ VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size=INT_SIZE_64);
 // value will be computed. The resulting symbol will have a cname
 // equal to a fixed-up n, or to an n previously passed to this
 // function that has the same value.
-VarSymbol *new_RealSymbol(const char *n,
-                          IF1_float_type size=FLOAT_SIZE_64);
+VarSymbol* new_RealSymbol(const char* n, IF1_float_type size = FLOAT_SIZE_64);
 
 // Creates a new real literal with the given value, where the
 // bit-width will be taken as 32 for the 'float' case and 64 for the
@@ -805,23 +782,24 @@ VarSymbol* new_RealSymbol(double val);
 // value will be computed. The resulting symbol will have a cname
 // equal to a fixed-up n, or to an n previously passed to this
 // function that has the same value.
-VarSymbol *new_ImagSymbol(const char *n,
-                          IF1_float_type size=FLOAT_SIZE_64);
+VarSymbol* new_ImagSymbol(const char* n, IF1_float_type size = FLOAT_SIZE_64);
 
 // Creates a new complex literal with the given value and bit-width.
 // n is used for the cname of the new symbol,
 // but only if the value has not already been cached.
-VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,
-                             IF1_complex_type size=COMPLEX_SIZE_128);
+VarSymbol* new_ComplexSymbol(const char* n,
+                             long double r,
+                             long double i,
+                             IF1_complex_type size = COMPLEX_SIZE_128);
 
-VarSymbol *new_CommIDSymbol(int64_t b);
+VarSymbol* new_CommIDSymbol(int64_t b);
 
-VarSymbol *new_ImmediateSymbol(Immediate *imm);
+VarSymbol* new_ImmediateSymbol(Immediate* imm);
 
 // Get an Immediate stored in a VarSymbol or an EnumSymbol.
 // When called on an EnumSymbol, requires that the enum type is already
 // resolved.
-Immediate *getSymbolImmediate(Symbol* sym);
+Immediate* getSymbolImmediate(Symbol* sym);
 
 void createInitStringLiterals();
 void resetTempID();
@@ -838,19 +816,19 @@ VarSymbol* newTempConst(QualifiedType qt);
 const char* intentDescrString(IntentTag intent);
 
 // cache some popular strings
-extern const char* astrSassign; // =
-extern const char* astrSdot;    // .
-extern const char* astrSeq;     // ==
-extern const char* astrSne;     // !=
-extern const char* astrSgt;     // >
-extern const char* astrSgte;    // >=
-extern const char* astrSlt;     // <
-extern const char* astrSlte;    // <=
-extern const char* astrSswap;   // <=>
-extern const char* astrScolon;  // :
-extern const char* astrScomma;  // ,
-extern const char* astrSstar;   // *
-extern const char* astrSstarstar;   // **
+extern const char* astrSassign;   // =
+extern const char* astrSdot;      // .
+extern const char* astrSeq;       // ==
+extern const char* astrSne;       // !=
+extern const char* astrSgt;       // >
+extern const char* astrSgte;      // >=
+extern const char* astrSlt;       // <
+extern const char* astrSlte;      // <=
+extern const char* astrSswap;     // <=>
+extern const char* astrScolon;    // :
+extern const char* astrScomma;    // ,
+extern const char* astrSstar;     // *
+extern const char* astrSstarstar; // **
 extern const char* astr_defaultOf;
 extern const char* astrInit;
 extern const char* astrInitEquals;
@@ -907,73 +885,73 @@ extern HashMap<Immediate*, ImmHashFns, VarSymbol*> stringLiteralsHash;
 
 extern StringChainHash uniqueStringHash;
 
-extern Symbol *gNil;
-extern Symbol *gUnknown;
-extern Symbol *gMethodToken;
-extern Symbol *gTypeDefaultToken;
+extern Symbol* gNil;
+extern Symbol* gUnknown;
+extern Symbol* gMethodToken;
+extern Symbol* gTypeDefaultToken;
 extern Symbol *gLeaderTag, *gFollowerTag, *gStandaloneTag;
-extern Symbol *gModuleToken;
-extern Symbol *gNoInit;
-extern Symbol *gSplitInit;
-extern Symbol *gVoid;
-extern Symbol *gNone;
-extern Symbol *gStringC;
-extern Symbol *gOpaque;
-extern Symbol *gTimer;
-extern Symbol *gTaskID;
+extern Symbol* gModuleToken;
+extern Symbol* gNoInit;
+extern Symbol* gSplitInit;
+extern Symbol* gVoid;
+extern Symbol* gNone;
+extern Symbol* gStringC;
+extern Symbol* gOpaque;
+extern Symbol* gTimer;
+extern Symbol* gTaskID;
 // Used in InterfaceSymbol::requiredFns
-extern Symbol *gDummyWitness;
+extern Symbol* gDummyWitness;
 // Pass this to a return-by-ref formal when the result is not needed.
 // Used when inlining iterators for ForallStmts.
-extern Symbol *gDummyRef;
+extern Symbol* gDummyRef;
 // used in convert-uast to mark a SymExpr needing future adjustment
-extern Symbol *gFixupRequiredToken;
+extern Symbol* gFixupRequiredToken;
 // used to disambiguate promotion cache entries
-extern Symbol *gIgnoredPromotionToken;
+extern Symbol* gIgnoredPromotionToken;
 
-extern VarSymbol *gTrue;
-extern VarSymbol *gFalse;
-extern VarSymbol *gNodeID;
-extern VarSymbol *gModuleInitIndentLevel;
-extern VarSymbol *gInfinity;
-extern VarSymbol *gNan;
-extern VarSymbol *gUninstantiated;
-extern VarSymbol *gCpuVsGpuToken;  // true branch runs on CPU
-extern VarSymbol *gIteratorBreakToken;
+extern VarSymbol* gTrue;
+extern VarSymbol* gFalse;
+extern VarSymbol* gNodeID;
+extern VarSymbol* gModuleInitIndentLevel;
+extern VarSymbol* gInfinity;
+extern VarSymbol* gNan;
+extern VarSymbol* gUninstantiated;
+extern VarSymbol* gCpuVsGpuToken; // true branch runs on CPU
+extern VarSymbol* gIteratorBreakToken;
 
 extern llvm::SmallVector<VarSymbol*, 10> gCompilerGlobalParams;
 
-extern Symbol *gSyncVarAuxFields;
+extern Symbol* gSyncVarAuxFields;
 
 extern FnSymbol* chplUserMain;
 
 namespace llvmStageNum {
 typedef enum {
-       // The first options here refer to high-level Chapel LLVM optimization
-       NOPRINT = 0,
-       NONE,
-       BASIC,
-       FULL,
-       ASM,
-       EVERY, // after every optimization if possible
-       // These options allow instrumenting the pass pipeline
-       // and match ExtensionPointTy in PassManagerBuilder
-       EarlyAsPossible,
-       ModuleOptimizerEarly,
-       LateLoopOptimizer,
-       LoopOptimizerEnd,
-       ScalarOptimizerLate,
-       EarlySimplification,
-       OptimizerEarly,
-       OptimizerLast,
-       CGSCCOptimizerLate,
-       VectorizerStart,
-       EnabledOnOptLevel0,
-       Peephole,
-       // Updating these? Be sure to leave LAST as the last
-       // element and update llvmStageName to reflect this order.
-       LAST,
-     } llvmStageNum_t;
+  // The first options here refer to high-level Chapel LLVM optimization
+  NOPRINT = 0,
+  NONE,
+  BASIC,
+  FULL,
+  ASM,
+  EVERY, // after every optimization if possible
+  // These options allow instrumenting the pass pipeline
+  // and match ExtensionPointTy in PassManagerBuilder
+  EarlyAsPossible,
+  ModuleOptimizerEarly,
+  LateLoopOptimizer,
+  LoopOptimizerEnd,
+  ScalarOptimizerLate,
+  EarlySimplification,
+  OptimizerEarly,
+  OptimizerLast,
+  CGSCCOptimizerLate,
+  VectorizerStart,
+  EnabledOnOptLevel0,
+  Peephole,
+  // Updating these? Be sure to leave LAST as the last
+  // element and update llvmStageName to reflect this order.
+  LAST,
+} llvmStageNum_t;
 }
 using llvmStageNum::llvmStageNum_t;
 
@@ -983,7 +961,7 @@ bool shouldLlvmPrintIrToFile();
 extern chpl::owned<llvm::raw_fd_ostream> llvmPrintIrFile;
 llvm::raw_fd_ostream* getLlvmPrintIrFile();
 
-const char *llvmStageNameFromLlvmStageNum(llvmStageNum_t stageNum);
+const char* llvmStageNameFromLlvmStageNum(llvmStageNum_t stageNum);
 llvmStageNum_t llvmStageNumFromLlvmStageName(const char* stageName);
 
 void addNameToPrintLlvmIrRequestedNames(const char* name);
@@ -993,7 +971,9 @@ bool shouldLlvmPrintIrCName(const char* name);
 std::vector<std::string> gatherPrintLlvmIrCNames();
 
 #ifdef HAVE_LLVM
-void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage);
+void printLlvmIr(const char* name,
+                 llvm::Function* func,
+                 llvmStageNum_t numStage);
 #endif
 
 // Restore list of cnames to print, from tmp file on disk into memory.
@@ -1007,7 +987,7 @@ const char* toString(Symbol* sym, bool withTypeAndIntent);
 
 struct SymbolMapKeyValue {
   Symbol *key, *value;
-  SymbolMapKeyValue(Symbol* k, Symbol* v): key(k), value(v) { }
+  SymbolMapKeyValue(Symbol* k, Symbol* v) : key(k), value(v) {}
 };
 typedef std::vector<SymbolMapKeyValue> SymbolMapVector;
 SymbolMapVector sortedSymbolMapElts(const SymbolMap& map);

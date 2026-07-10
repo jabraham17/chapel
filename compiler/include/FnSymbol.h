@@ -59,16 +59,18 @@ struct InterfaceReps {
   // one for each assoc constraint
   std::vector<InterfaceReps*> conReps;
 
-  int  numAssocCons() const { return conReps.size(); }
-  bool empty()        const { return symReps.n == 0 && conReps.empty(); }
+  int numAssocCons() const { return conReps.size(); }
+  bool empty() const { return symReps.n == 0 && conReps.empty(); }
 
-  ~InterfaceReps() { for (InterfaceReps* ar: conReps) delete ar; }
+  ~InterfaceReps() {
+    for (InterfaceReps* ar : conReps) delete ar;
+  }
 };
 
 // Additional data for interface constraints / constrained generics / CG.
 // Stored in a FnSymbol for a constrained-generic function.
 class InterfaceInfo {
-public:
+ public:
   InterfaceInfo(FnSymbol* parent);
   void addConstrainedType(DefExpr* def);
   void addInterfaceConstraint(IfcConstraint* icon);
@@ -90,237 +92,234 @@ public:
 };
 
 class FnSymbol final : public Symbol {
-public:
+ public:
   // each formal is an ArgSymbol, but the elements are DefExprs
-  AList                      formals;
+  AList formals;
 
   // The return type of the function. This field is not fully established
   // until function resolution, and could be NULL before then.  Up to that
   // point, return type information is stored in the retExprType field.
-  Type*                      retType;
+  Type* retType;
 
-  BlockStmt*                 where;
-  BlockStmt*                 lifetimeConstraints;
-  BlockStmt*                 retExprType;
-  BlockStmt*                 body;
-  IntentTag                  thisTag;
-  RetTag                     retTag;
+  BlockStmt* where;
+  BlockStmt* lifetimeConstraints;
+  BlockStmt* retExprType;
+  BlockStmt* body;
+  IntentTag thisTag;
+  RetTag retTag;
 
   // If the parenful version of this function is deprecated, the deprecation
   // message.
-  std::string                parenfulDeprecationMsg;
-  const char*                getParenfulDeprecationMsg() const;
+  std::string parenfulDeprecationMsg;
+  const char* getParenfulDeprecationMsg() const;
 
   // Support for iterator lowering.
-  IteratorInfo*              iteratorInfo;
+  IteratorInfo* iteratorInfo;
   // Pointers to other iterator variants - serial, standalone, etc.
-  IteratorGroup*             iteratorGroup;
+  IteratorGroup* iteratorGroup;
   // Support for genericsCache.
-  GenericsCacheInfo*         cacheInfo;
+  GenericsCacheInfo* cacheInfo;
   // Support for interface constraints / constrained generics / CG.
-  InterfaceInfo*             interfaceInfo;
+  InterfaceInfo* interfaceInfo;
 
-  Symbol*                    _this;
-  FnSymbol*                  instantiatedFrom;
+  Symbol* _this;
+  FnSymbol* instantiatedFrom;
 
-  SymbolMap                  substitutions;
-  SymbolNameVec              substitutionsPostResolve;
+  SymbolMap substitutions;
+  SymbolNameVec substitutionsPostResolve;
 
-  astlocT                    userInstantiationPointLoc;
+  astlocT userInstantiationPointLoc;
 
-private:
-  BlockStmt*                 _instantiationPoint;
-  FnSymbol*                  _backupInstantiationPoint;
+ private:
+  BlockStmt* _instantiationPoint;
+  FnSymbol* _backupInstantiationPoint;
 
-public:
-  std::vector<BasicBlock*>*  basicBlocks;
-  Vec<CallExpr*>*            calledBy;
-  const char*                userString;
+ public:
+  std::vector<BasicBlock*>* basicBlocks;
+  Vec<CallExpr*>* calledBy;
+  const char* userString;
 
   // pointer to value function (created in function resolution
   // and used in cullOverReferences)
-  FnSymbol*                  valueFunction;
+  FnSymbol* valueFunction;
 
-  int                        codegenUniqueNum;
+  int codegenUniqueNum;
 
   // Used to store the return symbol during partial copying.
-  Symbol*                    retSymbol;
+  Symbol* retSymbol;
 
 #ifdef HAVE_LLVM
-  llvm::MDNode*              llvmDISubprogram;
+  llvm::MDNode* llvmDISubprogram;
 #else
-  void*                      llvmDISubprogram;
+  void* llvmDISubprogram;
 #endif
 
+  FnSymbol(const char* initName);
+  ~FnSymbol() override;
 
-                             FnSymbol(const char* initName);
-                            ~FnSymbol() override;
-
-  void                       verify() override;
-  void                       accept(AstVisitor* visitor) override;
+  void verify() override;
+  void accept(AstVisitor* visitor) override;
 
   DECLARE_SYMBOL_COPY(FnSymbol);
   FnSymbol* copyInner(SymbolMap* map) override;
 
-  FnSymbol*                  copyInnerCore(SymbolMap* map);
-  void                       replaceChild(BaseAST* oldAst, BaseAST* newAst) override;
+  FnSymbol* copyInnerCore(SymbolMap* map);
+  void replaceChild(BaseAST* oldAst, BaseAST* newAst) override;
 
-  FnSymbol*                  partialCopy(SymbolMap* map);
-  void                       finalizeCopy();
+  FnSymbol* partialCopy(SymbolMap* map);
+  void finalizeCopy();
 
   // Returns an LLVM type or a C-cast expression
-  GenRet                     codegenFunctionType(bool forHeader);
-  GenRet                     codegenCast(GenRet fnPtr);
+  GenRet codegenFunctionType(bool forHeader);
+  GenRet codegenCast(GenRet fnPtr);
 
-  GenRet                     codegenAsValue();
-  GenRet                     codegenAsCallBaseExpr();
-  GenRet                     codegen() override;
-  void                       codegenHeaderC();
-  void                       codegenPrototype() override;
-  void                       codegenDef() override;
-  void                       codegenFortran(int indent);
-  void                       codegenPython(PythonFileType pxd);
-  GenRet                     codegenPXDType();
-  GenRet                     codegenPYXType();
-  std::string                getPythonArrayReturnStmts();
+  GenRet codegenAsValue();
+  GenRet codegenAsCallBaseExpr();
+  GenRet codegen() override;
+  void codegenHeaderC();
+  void codegenPrototype() override;
+  void codegenDef() override;
+  void codegenFortran(int indent);
+  void codegenPython(PythonFileType pxd);
+  GenRet codegenPXDType();
+  GenRet codegenPYXType();
+  std::string getPythonArrayReturnStmts();
 
-  void                       insertAtHead(Expr* ast);
-  void                       insertAtHead(const char* format, ...);
+  void insertAtHead(Expr* ast);
+  void insertAtHead(const char* format, ...);
 
-  void                       insertAtTail(Expr* ast);
-  void                       insertAtTail(const char* format, ...);
+  void insertAtTail(Expr* ast);
+  void insertAtTail(const char* format, ...);
 
-  void                       insertFormalAtHead(BaseAST* ast);
-  void                       insertFormalAtTail(BaseAST* ast);
+  void insertFormalAtHead(BaseAST* ast);
+  void insertFormalAtTail(BaseAST* ast);
 
-  void                       insertBeforeEpilogue(Expr* ast);
+  void insertBeforeEpilogue(Expr* ast);
 
   // insertIntoEpilogue adds an Expr before the final return,
   // but after the epilogue label
-  void                       insertIntoEpilogue(Expr* ast);
+  void insertIntoEpilogue(Expr* ast);
 
-  LabelSymbol*               getEpilogueLabel();
-  LabelSymbol*               getOrCreateEpilogueLabel();
+  LabelSymbol* getEpilogueLabel();
+  LabelSymbol* getOrCreateEpilogueLabel();
 
   // getReturnSymbol returns the variable marked RVV, but if
   // the return-by-ref transformation has been applied, it returns gVoid.
-  Symbol*                    getReturnSymbol();
+  Symbol* getReturnSymbol();
 
   // Compute the type based on the current signature. Does not resolve.
-  FunctionType*             computeAndSetType();
+  FunctionType* computeAndSetType();
 
   // Determine if this function is used as a "first class procedure".
-  bool                      isUsedAsValue()                              const;
+  bool isUsedAsValue() const;
 
   // Determine if this function has "extern" or "export" linkage.
-  bool                      hasForeignLinkage()                          const;
+  bool hasForeignLinkage() const;
 
   // Removes all statements from body and adds all statements from block.
-  void                       replaceBodyStmtsWithStmts(BlockStmt* block);
+  void replaceBodyStmtsWithStmts(BlockStmt* block);
   // Removes all statements from body and adds the passed statement.
-  void                       replaceBodyStmtsWithStmt(Expr* stmt);
+  void replaceBodyStmtsWithStmt(Expr* stmt);
 
   // Sets instantiationPoint and backupInstantiationPoint appropriately
   //  expr might be a call or a BlockStmt
-  void                       setInstantiationPoint(Expr* expr);
+  void setInstantiationPoint(Expr* expr);
   // returns instantiationPoint or uses the backupInstantiationPoint
   // if necessary
-  BlockStmt*                 instantiationPoint()                        const;
+  BlockStmt* instantiationPoint() const;
 
-  int                        numFormals()                                const;
-  ArgSymbol*                 getFormal(int i)                            const;
+  int numFormals() const;
+  ArgSymbol* getFormal(int i) const;
 
-  void                       collapseBlocks();
+  void collapseBlocks();
 
-  CallExpr*                  singleInvocation()                          const;
+  CallExpr* singleInvocation() const;
 
-  TagGenericResult           tagIfGeneric(SymbolMap* map = NULL, bool abortOK = false);
+  TagGenericResult tagIfGeneric(SymbolMap* map = NULL, bool abortOK = false);
 
-  bool                       isNormalized()                              const;
-  void                       setNormalized(bool value);
+  bool isNormalized() const;
+  void setNormalized(bool value);
 
-  bool                       isResolved()                                const;
-  bool                       isErrorHandlingLowered()                    const;
+  bool isResolved() const;
+  bool isErrorHandlingLowered() const;
 
-  bool                       isMethod()                                  const;
-  bool                       isMethodOnClass()                           const;
-  bool                       isMethodOnRecord()                          const;
-  bool                       isTypeMethod()                              const;
-  bool                       isSignature()                               const;
-  bool                       isAnonymous()                               const;
+  bool isMethod() const;
+  bool isMethodOnClass() const;
+  bool isMethodOnRecord() const;
+  bool isTypeMethod() const;
+  bool isSignature() const;
+  bool isAnonymous() const;
 
-  void                       setMethod(bool value);
+  void setMethod(bool value);
 
-  bool                       isPrimaryMethod()                           const;
-  bool                       isSecondaryMethod()                         const;
-  bool                       isCompilerGenerated()                       const;
+  bool isPrimaryMethod() const;
+  bool isSecondaryMethod() const;
+  bool isCompilerGenerated() const;
 
-  bool                       isInitializer()                             const;
-  bool                       isPostInitializer()                         const;
-  bool                       isDefaultInit()                             const;
-  bool                       isDefaultCopyInit()                         const;
-  bool                       isCopyInit()                                const;
+  bool isInitializer() const;
+  bool isPostInitializer() const;
+  bool isDefaultInit() const;
+  bool isDefaultCopyInit() const;
+  bool isCopyInit() const;
 
-  bool                       isGeneric()                                 const;
-  bool                       isGenericIsValid()                          const;
-  void                       setGeneric(bool generic);
-  void                       clearGeneric();
-  bool                       isConstrainedGeneric()                      const;
-  InterfaceInfo*             ensureInterfaceInfo();
-  void                       addConstrainedType(DefExpr* def);
-  void                       addInterfaceConstraint(IfcConstraint* icon);
+  bool isGeneric() const;
+  bool isGenericIsValid() const;
+  void setGeneric(bool generic);
+  void clearGeneric();
+  bool isConstrainedGeneric() const;
+  InterfaceInfo* ensureInterfaceInfo();
+  void addConstrainedType(DefExpr* def);
+  void addInterfaceConstraint(IfcConstraint* icon);
 
-  Type*                      getReceiverType()                           const;
+  Type* getReceiverType() const;
 
-  FunctionType*              getType()                                   const;
+  FunctionType* getType() const;
 
-  bool                       isIterator()                                const;
+  bool isIterator() const;
 
-  bool                       returnsRefOrConstRef()                      const;
+  bool returnsRefOrConstRef() const;
 
-  QualifiedType              getReturnQualType()                         const;
+  QualifiedType getReturnQualType() const;
 
-  void                       printDocs(std::ostream* file,
-                                       unsigned int  tabs);
+  void printDocs(std::ostream* file, unsigned int tabs);
 
-  void                       throwsErrorInit();
-  bool                       throwsError()                               const;
-  bool                       retExprDefinesNonVoid()                     const;
+  void throwsErrorInit();
+  bool throwsError() const;
+  bool retExprDefinesNonVoid() const;
 
-  Symbol*                    getSubstitutionWithName(const char* name)   const;
+  Symbol* getSubstitutionWithName(const char* name) const;
 
-  std::string                nameAndArgsToString(const char* sep,
-                                                 bool forError,
-                                                 bool& printedUnderline) const;
+  std::string nameAndArgsToString(const char* sep,
+                                  bool forError,
+                                  bool& printedUnderline) const;
 
-private:
-  std::string                docsDirective();
+ private:
+  std::string docsDirective();
 
-  bool                       hasGenericFormals(SymbolMap* map)           const;
+  bool hasGenericFormals(SymbolMap* map) const;
 
-  bool                       mIsNormalized;
-  bool                       _throwsError;
-  bool                       mIsGeneric;
-  bool                       mIsGenericIsValid;
+  bool mIsNormalized;
+  bool _throwsError;
+  bool mIsGeneric;
+  bool mIsGenericIsValid;
 };
 
-const char*                     toString(FnSymbol* fn);
+const char* toString(FnSymbol* fn);
 
-const char*                     retTagDescrString(RetTag retTag);
+const char* retTagDescrString(RetTag retTag);
 
-extern FnSymbol*                initStringLiterals;
+extern FnSymbol* initStringLiterals;
 
-extern FnSymbol*                chpl_gen_main;
+extern FnSymbol* chpl_gen_main;
 
-extern FnSymbol*                gAddModuleFn;
+extern FnSymbol* gAddModuleFn;
 
-extern FnSymbol*                gGenericTupleTypeCtor;
-extern FnSymbol*                gGenericTupleDestroy;
+extern FnSymbol* gGenericTupleTypeCtor;
+extern FnSymbol* gGenericTupleDestroy;
 
-extern const char*              ftableName;
-extern const char*              ftableSizeName;
+extern const char* ftableName;
+extern const char* ftableSizeName;
 extern std::map<FnSymbol*, int> ftableMap;
-extern std::vector<FnSymbol*>   ftableVec;
-
+extern std::vector<FnSymbol*> ftableVec;
 
 #endif

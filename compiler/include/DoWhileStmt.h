@@ -23,37 +23,34 @@
 
 #include "WhileStmt.h"
 
-class DoWhileStmt final : public WhileStmt
-{
+class DoWhileStmt final : public WhileStmt {
   //
   // Class interface
   //
-public:
-  static BlockStmt*      build(Expr* cond, BlockStmt* body,
-                                LLVMMetadataList attrs = {});
-
+ public:
+  static BlockStmt*
+  build(Expr* cond, BlockStmt* body, LLVMMetadataList attrs = {});
 
   //
   // Instance interface
   //
-public:
+ public:
   ~DoWhileStmt() override = default;
 
   DECLARE_COPY(DoWhileStmt);
-  DoWhileStmt*   copyInner(SymbolMap* map)                          override;
+  DoWhileStmt* copyInner(SymbolMap* map) override;
 
-  bool           isDoWhileStmt()                              const override
-                 { return true; }
+  bool isDoWhileStmt() const override { return true; }
 
-  GenRet         codegen()                                          override;
-  void           accept(AstVisitor* visitor)                        override;
+  GenRet codegen() override;
+  void accept(AstVisitor* visitor) override;
 
-  Expr*          getFirstExpr()                                     override;
-  Expr*          getNextExpr(Expr* expr)                            override;
+  Expr* getFirstExpr() override;
+  Expr* getNextExpr(Expr* expr) override;
 
-private:
-                 DoWhileStmt(Expr*      cond, BlockStmt* body);
-                 DoWhileStmt(VarSymbol* var,  BlockStmt* body);
+ private:
+  DoWhileStmt(Expr* cond, BlockStmt* body);
+  DoWhileStmt(VarSymbol* var, BlockStmt* body);
 };
 
 #endif

@@ -48,13 +48,15 @@ struct fileinfo {
   const char* pathname;
 };
 
-void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL,
-                      const char** tmpservername=NULL,
-                      bool skip_compile_link=false,
-                      const std::vector<const char *>& splitFiles
-                        = std::vector<const char*>());
+void codegen_makefile(
+  fileinfo* mainfile,
+  const char** tmpbinname = NULL,
+  const char** tmpservername = NULL,
+  bool skip_compile_link = false,
+  const std::vector<const char*>& splitFiles = std::vector<const char*>());
 
-void ensureDirExists(const char* dirname, const char* explanation,
+void ensureDirExists(const char* dirname,
+                     const char* explanation,
                      bool checkWriteable = true);
 const char* getCwd();
 void deleteDir(const char* dirname);
@@ -65,19 +67,16 @@ const char* getDirectory(const char* filename);
 const char* stripdirectories(const char* filename);
 
 void openCFile(fileinfo* fi, const char* name, const char* ext = NULL);
-void closeCFile(fileinfo* fi, bool beautifyIt=true);
+void closeCFile(fileinfo* fi, bool beautifyIt = true);
 
 fileinfo* openTmpFile(const char* tmpfilename, const char* mode = "w");
 
-void      openfile(fileinfo*   thefile,
-                   const char* mode);
+void openfile(fileinfo* thefile, const char* mode);
 
-FILE*     openfile(const char* filename,
-                   const char* mode  = "w",
-                   bool        fatal = true);
+FILE* openfile(const char* filename, const char* mode = "w", bool fatal = true);
 
-void      closefile(fileinfo* thefile);
-void      closefile(FILE*     thefile);
+void closefile(fileinfo* thefile);
+void closefile(FILE* thefile);
 
 FILE* openInputFile(const char* filename);
 void closeInputFile(FILE* infile);
@@ -103,7 +102,8 @@ void addIncInfo(const char* incDir, bool fromCmdLine = false);
 // Save (append) provided string into the given tmp file.
 // Input string is assumed to be null-terminated.
 // For storing information that needs to be saved between driver phases.
-void saveDriverTmp(const char* tmpFilePath, std::string_view stringToSave,
+void saveDriverTmp(const char* tmpFilePath,
+                   std::string_view stringToSave,
                    bool appendNewline = true);
 // Like saveDriverTmp, but accepts a vector of strings to save in one go without
 // repeatedly opening/closing file. Newline separated by default unless
@@ -120,8 +120,8 @@ void restoreDriverTmp(const char* tmpFilePath,
 // Like restoreDriverTmp, but just saves the entire contents of the file into
 // the given string including newlines.
 void restoreDriverTmpMultiline(
-    const char* tmpFilePath,
-    std::function<void(std::string_view)> restoreSavedString);
+  const char* tmpFilePath,
+  std::function<void(std::string_view)> restoreSavedString);
 
 // Restore lib dir, lib name, and inc dir info that was saved to disk, for
 // compiler-driver use.
@@ -143,14 +143,15 @@ const char* filenameToModulename(const char* filename);
 const char* getIntermediateDirName();
 
 void readArgsFromCommand(std::string path, std::vector<std::string>& args);
-bool readArgsFromFile(std::string path, std::vector<std::string>& cmds,
-                      bool errFatal=true);
+bool readArgsFromFile(std::string path,
+                      std::vector<std::string>& cmds,
+                      bool errFatal = true);
 void expandInstallationPaths(std::string& arg);
 void expandInstallationPaths(std::vector<std::string>& args);
 
-char*       chplRealPath(const char* path);
-char*       dirHasFile(const char* dir, const char* file);
-char*       findProgramPath(const char* argv0);
-bool        isSameFile(const char* pathA, const char* pathB);
+char* chplRealPath(const char* path);
+char* dirHasFile(const char* dir, const char* file);
+char* findProgramPath(const char* argv0);
+bool isSameFile(const char* pathA, const char* pathB);
 
 #endif

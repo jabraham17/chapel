@@ -34,7 +34,6 @@ extern bool resolved;
 extern bool intentsResolved;
 extern bool iteratorsLowered;
 
-
 //
 // prototypes of functions that are called as passes (alphabetical)
 //
@@ -85,7 +84,7 @@ void verify();
 // prototypes for functions called as post-pass checks.
 //
 void checkInvariants(char log_tag);
-void checkPrimitives();                 // constrains primitive use
+void checkPrimitives(); // constrains primitive use
 void checkPostResolution();
 // These checks can be applied after any pass.
 void checkForDuplicateUses();
@@ -99,8 +98,8 @@ void checkReturnTypesHaveRefTypes();
 // buildDefaultFunctions.cpp
 void buildDefaultDestructor(AggregateType* ct);
 void buildEnumFunctions(EnumType* et);
-FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
-                         bool setter, bool typeMethod);
+FnSymbol*
+build_accessor(AggregateType* ct, Symbol* field, bool setter, bool typeMethod);
 
 // createTaskFunctions.cpp
 void initForTaskIntents();
@@ -124,20 +123,27 @@ void checkTypeParamTaskIntent(SymExpr* outerSE);
 BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* anchor);
 
 // interfaces.cpp, interfaceResolution.cpp
-void  introduceConstrainedTypes(FnSymbol* fn);
-void  insertResolutionPoint(Expr* ref, Symbol* sym);
-TypeSymbol* desugarInterfaceAsType(FnSymbol* parentFn, ArgSymbol* arg,
-                                   Expr* ref, InterfaceSymbol* isym);
-Type* desugarInterfaceAsType(ArgSymbol* arg, SymExpr* se,
+void introduceConstrainedTypes(FnSymbol* fn);
+void insertResolutionPoint(Expr* ref, Symbol* sym);
+TypeSymbol* desugarInterfaceAsType(FnSymbol* parentFn,
+                                   ArgSymbol* arg,
+                                   Expr* ref,
+                                   InterfaceSymbol* isym);
+Type* desugarInterfaceAsType(ArgSymbol* arg,
+                             SymExpr* se,
                              InterfaceSymbol* isym);
-void  markImplStmtWrapFnAsFailure(FnSymbol* wrapFn);
-void  wrapImplementsStatements();
+void markImplStmtWrapFnAsFailure(FnSymbol* wrapFn);
+void wrapImplementsStatements();
 FnSymbol* wrapOneImplementsStatement(ImplementsStmt* istm);
-void  handleCallsToOtherCGfuns(FnSymbol* origFn, InterfaceInfo* ifcInfo,
-                               SymbolMap& copyMap, FnSymbol* newFn);
+void handleCallsToOtherCGfuns(FnSymbol* origFn,
+                              InterfaceInfo* ifcInfo,
+                              SymbolMap& copyMap,
+                              FnSymbol* newFn);
 
 // iterator.cpp
-CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,
+CallExpr* setIteratorRecordShape(Expr* ref,
+                                 Symbol* ir,
+                                 Symbol* shapeSpec,
                                  LoopExprType type);
 void setIteratorRecordShape(CallExpr* call);
 bool checkIteratorFromForExpr(Expr* ref, Symbol* shape);
@@ -167,7 +173,7 @@ Type* getOrMakeWideTypeDuringCodegen(Type* refType);
 CallExpr* findDownEndCount(FnSymbol* fn);
 
 // resolution
-Expr*     resolveExpr(Expr* expr);
-void      resolveBlockStmt(BlockStmt* blockStmt);
+Expr* resolveExpr(Expr* expr);
+void resolveBlockStmt(BlockStmt* blockStmt);
 
 #endif

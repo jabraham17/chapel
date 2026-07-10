@@ -25,10 +25,10 @@
 
 // Forward declare some LLVM things
 namespace llvm {
-  class Type;
-  class Function;
-  class FunctionType;
-  class ModulePass;
+class Type;
+class Function;
+class FunctionType;
+class ModulePass;
 }
 
 #include "llvm/ADT/DenseMap.h"
@@ -109,17 +109,17 @@ struct GlobalPointerInfo {
   llvm::Function* globalToWideFn;
   llvm::Function* wideToGlobalFn;
 
-  GlobalPointerInfo() : wideTy(NULL),
-                        addrFn(NULL), locFn(NULL), nodeFn(NULL), makeFn(NULL),
-                        globalToWideFn(NULL), wideToGlobalFn(NULL) { }
+  GlobalPointerInfo()
+    : wideTy(NULL), addrFn(NULL), locFn(NULL), nodeFn(NULL), makeFn(NULL),
+      globalToWideFn(NULL), wideToGlobalFn(NULL) {}
 };
 
-#define GLOBAL_TYPE ".gt."
-#define GLOBAL_FN ".gf."
-#define GLOBAL_FN_GLOBAL_ADDR ".gf.addr."
-#define GLOBAL_FN_GLOBAL_LOCID ".gf.loc."
-#define GLOBAL_FN_GLOBAL_NODEID ".gf.node."
-#define GLOBAL_FN_GLOBAL_MAKE ".gf.make."
+#define GLOBAL_TYPE              ".gt."
+#define GLOBAL_FN                ".gf."
+#define GLOBAL_FN_GLOBAL_ADDR    ".gf.addr."
+#define GLOBAL_FN_GLOBAL_LOCID   ".gf.loc."
+#define GLOBAL_FN_GLOBAL_NODEID  ".gf.node."
+#define GLOBAL_FN_GLOBAL_MAKE    ".gf.make."
 #define GLOBAL_FN_GLOBAL_TO_WIDE ".gf.g2w."
 #define GLOBAL_FN_WIDE_TO_GLOBAL ".gf.w2g."
 
@@ -170,18 +170,16 @@ struct GlobalToWideInfo {
   runtime_fn_t preservingFn;
 
   GlobalToWideInfo()
-    : globalSpace(0), wideSpace(0), globalPtrBits(0),
-      localeIdType(NULL), nodeIdType(NULL), gTypes(), specialFunctions(),
-      getFn(NULL), getFnType(NULL),
-      putFn(NULL), putFnType(NULL),
-      getPutFn(NULL), getPutFnType(NULL),
-      memsetFn(NULL), memsetFnType(NULL),
-      hasPreservingFn(false), preservingFn(NULL) { }
+    : globalSpace(0), wideSpace(0), globalPtrBits(0), localeIdType(NULL),
+      nodeIdType(NULL), gTypes(), specialFunctions(), getFn(NULL),
+      getFnType(NULL), putFn(NULL), putFnType(NULL), getPutFn(NULL),
+      getPutFnType(NULL), memsetFn(NULL), memsetFnType(NULL),
+      hasPreservingFn(false), preservingFn(NULL) {}
 };
 
 // helper
 struct GlobalToWide final {
-  GlobalToWideInfo * info = nullptr;
+  GlobalToWideInfo* info = nullptr;
   std::string layoutAfterwards = "";
 
   bool debugPassOne = false;
@@ -193,11 +191,11 @@ struct GlobalToWide final {
    *   (could remove p record for address space 'space')
    */
   GlobalToWide(GlobalToWideInfo* info, std::string layout)
-    :  info(info), layoutAfterwards(layout) { }
+    : info(info), layoutAfterwards(layout) {}
 
   // Constructor for running within opt, for testing and
   // bugpoint.
-  GlobalToWide() { }
+  GlobalToWide() {}
 
   // returns true if the module was changed
   bool run(llvm::Module& M);
@@ -209,16 +207,16 @@ struct LegacyGlobalToWidePass final : public llvm::ModulePass {
   GlobalToWide pass;
 
   LegacyGlobalToWidePass(GlobalToWideInfo* info, std::string layout)
-    : llvm::ModulePass(ID), pass(info, layout) { }
+    : llvm::ModulePass(ID), pass(info, layout) {}
 
-  LegacyGlobalToWidePass() : llvm::ModulePass(ID) { }
+  LegacyGlobalToWidePass() : llvm::ModulePass(ID) {}
 
-  bool runOnModule(llvm::Module &M) override;
+  bool runOnModule(llvm::Module& M) override;
 
   // TODO: getAnalysisUsage
 };
 
-llvm::ModulePass *createLegacyGlobalToWidePass(GlobalToWideInfo* info,
+llvm::ModulePass* createLegacyGlobalToWidePass(GlobalToWideInfo* info,
                                                std::string setLayout);
 
 // new pass
@@ -226,29 +224,44 @@ struct GlobalToWidePass final : public llvm::PassInfoMixin<GlobalToWidePass> {
   GlobalToWide pass;
 
   GlobalToWidePass(GlobalToWideInfo* info, std::string layout)
-    : pass(info, layout) { }
+    : pass(info, layout) {}
 
-  GlobalToWidePass() { }
+  GlobalToWidePass() {}
 
-  llvm::PreservedAnalyses run(llvm::Module &F,
-                              llvm::ModuleAnalysisManager &AM);
+  llvm::PreservedAnalyses run(llvm::Module& F, llvm::ModuleAnalysisManager& AM);
 };
 
-
 // helper functions
-llvm::Type* convertTypeGlobalToWide(llvm::Module *module, GlobalToWideInfo* info, llvm::Type* t);
+llvm::Type* convertTypeGlobalToWide(llvm::Module* module,
+                                    GlobalToWideInfo* info,
+                                    llvm::Type* t);
 
 bool containsGlobalPointers(GlobalToWideInfo* info, llvm::Type* t);
 
-void populateFunctionsForGlobalType(llvm::Module *module, GlobalToWideInfo* info, llvm::Type* globalPtrTy);
-void populateFunctionsForGlobalToWideType(llvm::Module *module, GlobalToWideInfo* info, llvm::Type* globalPtrTy);
+void populateFunctionsForGlobalType(llvm::Module* module,
+                                    GlobalToWideInfo* info,
+                                    llvm::Type* globalPtrTy);
+void populateFunctionsForGlobalToWideType(llvm::Module* module,
+                                          GlobalToWideInfo* info,
+                                          llvm::Type* globalPtrTy);
 
-llvm::Function* getAddrFn(llvm::Module *module, GlobalToWideInfo* info, llvm::Type* globalPtrTy);
-llvm::Function* getLocFn(llvm::Module *module, GlobalToWideInfo* info, llvm::Type* globalPtrTy);
-llvm::Function* getNodeFn(llvm::Module *module, GlobalToWideInfo* info, llvm::Type* globalPtrTy);
-llvm::Function* getMakeFn(llvm::Module *module, GlobalToWideInfo* info, llvm::Type* globalPtrTy);
-llvm::Function* getGlobalToWideFn(llvm::Module *module, GlobalToWideInfo* info, llvm::Type* globalPtrTy);
-llvm::Function* getWideToGlobalFn(llvm::Module *module, GlobalToWideInfo* info, llvm::Type* globalPtrTy);
+llvm::Function* getAddrFn(llvm::Module* module,
+                          GlobalToWideInfo* info,
+                          llvm::Type* globalPtrTy);
+llvm::Function*
+getLocFn(llvm::Module* module, GlobalToWideInfo* info, llvm::Type* globalPtrTy);
+llvm::Function* getNodeFn(llvm::Module* module,
+                          GlobalToWideInfo* info,
+                          llvm::Type* globalPtrTy);
+llvm::Function* getMakeFn(llvm::Module* module,
+                          GlobalToWideInfo* info,
+                          llvm::Type* globalPtrTy);
+llvm::Function* getGlobalToWideFn(llvm::Module* module,
+                                  GlobalToWideInfo* info,
+                                  llvm::Type* globalPtrTy);
+llvm::Function* getWideToGlobalFn(llvm::Module* module,
+                                  GlobalToWideInfo* info,
+                                  llvm::Type* globalPtrTy);
 
 #endif
 

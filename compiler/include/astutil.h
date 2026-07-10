@@ -74,9 +74,11 @@ void collect_stmts(BaseAST* ast, std::vector<Expr*>& stmts);
 void collectDefExprs(BaseAST* ast, std::vector<DefExpr*>& defExprs);
 void collectDefExprs(BaseAST* ast, llvm::SmallVectorImpl<DefExpr*>& defExprs);
 void collectForallStmts(BaseAST* ast, std::vector<ForallStmt*>& forallStmts);
-void collectCForLoopStmtsPreorder(BaseAST* ast, std::vector<CForLoop*>& cforloopStmts);
+void collectCForLoopStmtsPreorder(BaseAST* ast,
+                                  std::vector<CForLoop*>& cforloopStmts);
 void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs);
-void collectCallExprsForGpuEligibilityAnalysis(BaseAST* ast, std::vector<CallExpr*>& callExprs);
+void collectCallExprsForGpuEligibilityAnalysis(
+  BaseAST* ast, std::vector<CallExpr*>& callExprs);
 void collectBlockStmts(BaseAST* ast, std::vector<BlockStmt*>& blockStmts);
 void collectForLoops(BaseAST* ast, std::vector<ForLoop*>& forLoops);
 void collectMyCallExprs(BaseAST* ast,
@@ -85,8 +87,12 @@ void collectMyCallExprs(BaseAST* ast,
 void collectGotoStmts(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts);
 void collectSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs);
 void collectSymExprs(BaseAST* ast, llvm::SmallVectorImpl<SymExpr*>& symExprs);
-void collectSymExprsFor(BaseAST* ast, Symbol* sym, std::vector<SymExpr*>& symExprs);
-void collectSymExprsFor(BaseAST* ast, const Symbol* sym1, const Symbol* sym2,
+void collectSymExprsFor(BaseAST* ast,
+                        Symbol* sym,
+                        std::vector<SymExpr*>& symExprs);
+void collectSymExprsFor(BaseAST* ast,
+                        const Symbol* sym1,
+                        const Symbol* sym2,
                         std::vector<SymExpr*>& symExprs);
 void collectLcnSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs);
 void collectSymbols(BaseAST* ast, std::vector<Symbol*>& symbols);
@@ -109,8 +115,9 @@ using AdjustTypeFn = std::function<Type*(Type*)>;
 // if able. Returns the newly computed type. If the symbol is a 'TypeSymbol',
 // will not set 'sym->type'. The caller is responsible for walking the live
 // uses of the type symbol and retargeting them to the newly computed type.
-Type* maybeAdjustSymbolType(Symbol* sym, AdjustTypeFn adjustTypeFn,
-                            bool preserveRefLevels=true);
+Type* maybeAdjustSymbolType(Symbol* sym,
+                            AdjustTypeFn adjustTypeFn,
+                            bool preserveRefLevels = true);
 
 // Given 'adjustTypeFn', walk all symbols and re-assign the type of the symbol
 // if the type produced by 'adjustTypeFn' differs from the symbol's current
@@ -118,7 +125,7 @@ Type* maybeAdjustSymbolType(Symbol* sym, AdjustTypeFn adjustTypeFn,
 // function will adjust all uses of the 'TypeSymbol' to point to the new type
 // instead of setting 'sym->type'.
 void adjustAllSymbolTypes(AdjustTypeFn adjustTypeFn,
-                          bool preserveRefLevels=true);
+                          bool preserveRefLevels = true);
 
 //
 // collect set of symbols and vector of SymExpr; can be used to
@@ -136,7 +143,6 @@ void collectSymbolSetSymExprVec(BaseAST* ast,
 void collectSymbolSet(BaseAST* ast, Vec<Symbol*>& symSet);
 void collectSymbolSet(BaseAST* ast, std::set<Symbol*>& symSet);
 void collectSymbolSet(BaseAST* ast, llvm::SmallPtrSetImpl<Symbol*>& symSet);
-
 
 //
 // Checks if a callExpr is one of the op= primitives
@@ -170,39 +176,37 @@ int isDefAndOrUse(SymExpr* se);
 
 // builds the vectors for every variable/argument in 'symSet'
 void buildDefUseMaps(Vec<Symbol*>& symSet,
-                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
+                     Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*, Vec<SymExpr*>*>& useMap);
 
 // builds the vectors for every variable/argument in the entire
 // program
-void buildDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
+void buildDefUseMaps(Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*, Vec<SymExpr*>*>& useMap);
 
 // builds the vectors for every variable/argument in 'fn' and looks
 // for uses and defs only in 'fn'
 void buildDefUseMaps(FnSymbol* fn,
-                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
+                     Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*, Vec<SymExpr*>*>& useMap);
 
 // builds the vectors for every variable declaration in the given block
 // and looks for uses and defs within the same block (scope).
 void buildDefUseMaps(BlockStmt* block,
-                     Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                     Map<Symbol*,Vec<SymExpr*>*>& useMap);
-
+                     Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                     Map<Symbol*, Vec<SymExpr*>*>& useMap);
 
 //
 // add a def to a defMap or a use to a useMap
 //
-void addDef(Map<Symbol*,Vec<SymExpr*>*>& defMap, SymExpr* def);
-void addUse(Map<Symbol*,Vec<SymExpr*>*>& useMap, SymExpr* use);
-
+void addDef(Map<Symbol*, Vec<SymExpr*>*>& defMap, SymExpr* def);
+void addUse(Map<Symbol*, Vec<SymExpr*>*>& useMap, SymExpr* use);
 
 //
 // free memory consumed by defMap and useMap
 //
-void freeDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                    Map<Symbol*,Vec<SymExpr*>*>& useMap);
+void freeDefUseMaps(Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                    Map<Symbol*, Vec<SymExpr*>*>& useMap);
 
 //
 // stylized loops over defs and uses: to loop over the defs/uses
@@ -210,12 +214,11 @@ void freeDefUseMaps(Map<Symbol*,Vec<SymExpr*>*>& defMap,
 // for_defs/for_uses and the resulting declared variable def/use will
 // contain the defs/uses
 //
-#define for_defs(def, defMap, sym)                \
-  for_uses(def, defMap, sym)
+#define for_defs(def, defMap, sym) for_uses(def, defMap, sym)
 
 #define for_uses(use, useMap, sym)                \
   if (Vec<SymExpr*>* macro_vec = useMap.get(sym)) \
-    forv_Vec(SymExpr, use, *macro_vec)
+  forv_Vec(SymExpr, use, *macro_vec)
 
 //
 // build useSet and defSet for a vector of symbols 'syms' where the
@@ -237,7 +240,7 @@ void parent_insert_help(BaseAST* parent, Expr* ast);
 void sibling_insert_help(BaseAST* sibling, BaseAST* ast);
 void insert_help(BaseAST* ast, Expr* parentExpr, Symbol* parentSymbol);
 
-ArgSymbol* actual_to_formal( Expr *a);
+ArgSymbol* actual_to_formal(Expr* a);
 Expr* formal_to_actual(CallExpr* call, Symbol* formal);
 
 bool isExternType(Type* t);
@@ -258,10 +261,9 @@ void convertToQualifiedRefs();
 
 bool shouldWarnUnstableFor(BaseAST* ast);
 
-bool symExprIsUsedAsRef(
-  SymExpr* use,
-  bool constRef,
-  std::function<bool(SymExpr*, CallExpr*)> checkForMove);
+bool symExprIsUsedAsRef(SymExpr* use,
+                        bool constRef,
+                        std::function<bool(SymExpr*, CallExpr*)> checkForMove);
 
 // Returns 'true' if the given 'SymExpr' refers to a 'FnSymbol' that is being
 // used as a value. This function relies on typed AST to make determinations.

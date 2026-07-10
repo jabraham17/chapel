@@ -34,30 +34,26 @@ struct PromotedPair {
   llvm::Value* b;
   bool isSigned;
   PromotedPair(llvm::Value* a, llvm::Value* b, bool isSigned)
-    : a(a), b(b), isSigned(isSigned)
-  {
-  }
+    : a(a), b(b), isSigned(isSigned) {}
 };
 
 bool isArrayVecOrStruct(llvm::Type* t);
 
-
-template<typename Ty>
-constexpr static bool is_Inst_or_BBiterator() {
+template <typename Ty> constexpr static bool is_Inst_or_BBiterator() {
   return (std::is_pointer_v<Ty> &&
           std::is_base_of_v<llvm::Instruction, std::remove_pointer_t<Ty>>) ||
-          std::is_same_v<llvm::BasicBlock::iterator, Ty>;
+         std::is_same_v<llvm::BasicBlock::iterator, Ty>;
 }
 
 #if HAVE_LLVM_VER >= 200
 template <typename Ty,
-          std::enable_if_t<is_Inst_or_BBiterator<Ty>(),  bool> = true>
+          std::enable_if_t<is_Inst_or_BBiterator<Ty>(), bool> = true>
 static llvm::BasicBlock::iterator getInsertPosition(Ty I) {
   return llvm::BasicBlock::iterator(I);
 }
 #else
 template <typename Ty,
-          std::enable_if_t<is_Inst_or_BBiterator<Ty>(),  bool> = true>
+          std::enable_if_t<is_Inst_or_BBiterator<Ty>(), bool> = true>
 static llvm::Instruction* getInsertPosition(Ty I) {
   if constexpr (std::is_same_v<llvm::BasicBlock::iterator, Ty>) {
     return &*I;
@@ -69,28 +65,44 @@ static llvm::Instruction* getInsertPosition(Ty I) {
 
 // align=0 means undefined alignment; this does not follow 'AlignmentStatus'
 // creates an alloca instruction and inserts it before insertBefore
-llvm::AllocaInst* makeAlloca(llvm::Type* type, const char* name, llvm::Instruction* insertBefore, unsigned n=1, unsigned align=0);
+llvm::AllocaInst* makeAlloca(llvm::Type* type,
+                             const char* name,
+                             llvm::Instruction* insertBefore,
+                             unsigned n = 1,
+                             unsigned align = 0);
 
 // creates an alloca instruction at the top of the function
 // must be followed by setValueAlignment()
 // todo: add Type* and Symbol* args to createAllocaInFunctionEntry instead
-llvm::AllocaInst* createAllocaInFunctionEntry(llvm::IRBuilder<>* irBuilder, llvm::Type* type, const char* name);
+llvm::AllocaInst* createAllocaInFunctionEntry(llvm::IRBuilder<>* irBuilder,
+                                              llvm::Type* type,
+                                              const char* name);
 
-PromotedPair convertValuesToLarger(llvm::IRBuilder<> *irBuilder, llvm::Value *value1, llvm::Value *value2, bool isSigned1 = false, bool isSigned2 = false);
-llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
-                                const llvm::DataLayout& layout,
-                                llvm::LLVMContext &ctx,
-                                llvm::Value *value, llvm::Type *newType,
-                                llvm::AllocaInst **alloca, // an alloca generated
-                                bool isSigned=false, bool force=false);
+PromotedPair convertValuesToLarger(llvm::IRBuilder<>* irBuilder,
+                                   llvm::Value* value1,
+                                   llvm::Value* value2,
+                                   bool isSigned1 = false,
+                                   bool isSigned2 = false);
+llvm::Value*
+convertValueToType(llvm::IRBuilder<>* irBuilder,
+                   const llvm::DataLayout& layout,
+                   llvm::LLVMContext& ctx,
+                   llvm::Value* value,
+                   llvm::Type* newType,
+                   llvm::AllocaInst** alloca, // an alloca generated
+                   bool isSigned = false,
+                   bool force = false);
 
 void makeLifetimeStart(llvm::IRBuilder<>* irBuilder,
                        const llvm::DataLayout& layout,
-                       llvm::LLVMContext &ctx,
-                       llvm::Type *valType, llvm::Value *addr);
+                       llvm::LLVMContext& ctx,
+                       llvm::Type* valType,
+                       llvm::Value* addr);
 
 int64_t getTypeSizeInBytes(const llvm::DataLayout& layout, llvm::Type* ty);
-bool isTypeSizeSmallerThan(const llvm::DataLayout& layout, llvm::Type* ty, uint64_t max_size_bytes);
+bool isTypeSizeSmallerThan(const llvm::DataLayout& layout,
+                           llvm::Type* ty,
+                           uint64_t max_size_bytes);
 
 void print_llvm(llvm::Type* t);
 void print_llvm(llvm::Value* v);
@@ -111,7 +123,8 @@ void nprint_view(const llvm::Metadata* m);
 
 llvm::AttrBuilder llvmPrepareAttrBuilder(llvm::LLVMContext& ctx);
 
-void llvmAddAttr(llvm::LLVMContext& ctx, llvm::AttributeList& attrs,
+void llvmAddAttr(llvm::LLVMContext& ctx,
+                 llvm::AttributeList& attrs,
                  size_t idx,
                  llvm::AttrBuilder& b);
 
@@ -125,10 +138,10 @@ llvm::Type* tryComputingPointerElementType(llvm::Value* ptr);
 
 // These functions return the LLVM equivalent of a `void*`
 // Newer LLVMs don't distinguish between pointer type, these return an opaque `ptr`
-llvm::Type* getPointerType(llvm::LLVMContext& ctx, unsigned AS=0);
-llvm::Type* getPointerType(llvm::IRBuilder<>* irBuilder, unsigned AS=0);
+llvm::Type* getPointerType(llvm::LLVMContext& ctx, unsigned AS = 0);
+llvm::Type* getPointerType(llvm::IRBuilder<>* irBuilder, unsigned AS = 0);
 // although this takes a type, it returns an opaque `ptr` on newer LLVMs
-llvm::Type* getPointerType(llvm::Type* eltType, unsigned AS=0);
+llvm::Type* getPointerType(llvm::Type* eltType, unsigned AS = 0);
 
 #endif //HAVE_LLVM
 #endif //LLVMUTIL_H

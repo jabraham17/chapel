@@ -29,13 +29,13 @@ class VisibilityStmt;
 
 extern bool fDetailedErrors;
 
-extern int         chplLineno;
-extern bool        chplParseString;
+extern int chplLineno;
+extern bool chplParseString;
 extern const char* chplParseStringMsg;
 
 extern const char* currentModuleName;
 
-extern int         yystartlineno;
+extern int yystartlineno;
 extern const char* yyfilename;
 
 extern bool parsingPrivate;
@@ -47,7 +47,7 @@ extern bool printTokens;
 // the "In {function|module|class} 'foo'" header for error messages.
 extern chpl::ID dynoIdForLastContainingDecl;
 
-void               parseAndConvertUast();
+void parseAndConvertUast();
 
 void noteParsedIncludedModule(ModuleSymbol* mod, const char* path);
 

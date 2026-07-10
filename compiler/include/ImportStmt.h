@@ -37,7 +37,8 @@ class ImportStmt final : public VisibilityStmt {
  public:
   ImportStmt(BaseAST* source, bool isPrivate = true);
   ImportStmt(BaseAST* source, const char* rename, bool isPrivate = true);
-  ImportStmt(BaseAST* source, std::vector<const char*>* namesList,
+  ImportStmt(BaseAST* source,
+             std::vector<const char*>* namesList,
              std::map<const char*, const char*>* renamesList,
              bool isPrivate = true);
 

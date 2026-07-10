@@ -34,29 +34,28 @@ class ArgSymbol;
 class FnSymbol;
 
 class PartialCopyData final {
-public:
-                          PartialCopyData();
-                         ~PartialCopyData();
+ public:
+  PartialCopyData();
+  ~PartialCopyData();
 
-  SymbolMap               partialCopyMap;
+  SymbolMap partialCopyMap;
 
-  FnSymbol*               partialCopySource;
+  FnSymbol* partialCopySource;
 
-  ArgSymbol*              varargOldFormal;
+  ArgSymbol* varargOldFormal;
   std::vector<ArgSymbol*> varargNewFormals;
-
 };
 
-bool             hasPartialCopyData(const FnSymbol* fn);
+bool hasPartialCopyData(const FnSymbol* fn);
 
 PartialCopyData* getPartialCopyData(FnSymbol* fn);
 
 PartialCopyData& addPartialCopyData(FnSymbol* fn);
 
-void             clearPartialCopyData(FnSymbol* fn);
+void clearPartialCopyData(FnSymbol* fn);
 
-void             clearPartialCopyDataFnMap();
+void clearPartialCopyDataFnMap();
 
-void             checkEmptyPartialCopyDataFnMap();
+void checkEmptyPartialCopyDataFnMap();
 
 #endif

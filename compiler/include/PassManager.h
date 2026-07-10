@@ -71,9 +71,7 @@ template <typename T, typename ResultType = void> class PassT {
     // return nothing
   }
 
-  virtual bool hasNext() {
-    return false;
-  }
+  virtual bool hasNext() { return false; }
 
   virtual void processNext() {
     // do nothing
@@ -116,7 +114,6 @@ template <typename T, typename ResultType = void> class PassT {
 template <typename T, typename U, typename ResultType = void>
 class PassTU : public PassT<T, ResultType> {
  public:
-
   // We need this to get an overload of an inherited method
   using PassT<T, ResultType>::process;
 
@@ -128,9 +125,7 @@ class PassTU : public PassT<T, ResultType> {
 
   void enqueue(T x, U y) { TUQueue_.push_back({x, y}); }
 
-  bool hasNext() override {
-    return !TQueue_.empty() || !TUQueue_.empty();
-  }
+  bool hasNext() override { return !TQueue_.empty() || !TUQueue_.empty(); }
 
   void processNext() override {
     if (!TQueue_.empty()) {
@@ -147,8 +142,7 @@ class PassTU : public PassT<T, ResultType> {
 
  private:
   // This might be different for different ordering guarantees
-  template<typename QT>
-  using Queue = std::vector<QT>;
+  template <typename QT> using Queue = std::vector<QT>;
 
   Queue<T> TQueue_;
   Queue<std::pair<T, U>> TUQueue_;

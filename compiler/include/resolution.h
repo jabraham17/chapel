@@ -40,54 +40,50 @@ struct Serializers {
   FnSymbol* destroyer;
 };
 
+extern int explainCallLine;
 
-extern int                              explainCallLine;
+extern SymbolMap paramMap;
 
-extern SymbolMap                        paramMap;
+extern Vec<CallExpr*> callStack;
 
-extern Vec<CallExpr*>                   callStack;
+extern Map<Type*, FnSymbol*> autoDestroyMap;
 
-extern Map<Type*,     FnSymbol*>        autoDestroyMap;
+extern Map<Type*, FnSymbol*> valueToRuntimeTypeMap;
 
-extern Map<Type*,     FnSymbol*>        valueToRuntimeTypeMap;
+extern std::map<Type*, Serializers> serializeMap;
 
-extern std::map<Type*,     Serializers> serializeMap;
+bool propagateNotPOD(Type* t);
 
+void lowerPrimInit(CallExpr* call, Expr* preventingSplitInit);
+void resolveInitVar(CallExpr* call); // lowers PRIM_INIT_VAR_SPLIT_INIT
+void fixPrimInitsAndAddCasts(FnSymbol* fn);
 
+bool isTupleContainingOnlyReferences(Type* t);
 
-bool       propagateNotPOD(Type* t);
+bool isTupleContainingAnyReferences(Type* t);
 
-void       lowerPrimInit(CallExpr* call, Expr* preventingSplitInit);
-void       resolveInitVar(CallExpr* call); // lowers PRIM_INIT_VAR_SPLIT_INIT
-void       fixPrimInitsAndAddCasts(FnSymbol* fn);
+void ensureEnumTypeResolved(EnumType* etype);
 
-bool       isTupleContainingOnlyReferences(Type* t);
+bool tryingToResolve();
+void resolveFnForCall(FnSymbol* fn, CallExpr* call);
+FnSymbol* tryResolveFunction(FnSymbol* fn);
+void printCallstackForLastError();
 
-bool       isTupleContainingAnyReferences(Type* t);
+bool canInstantiate(Type* actualType, Type* formalType);
 
-void       ensureEnumTypeResolved(EnumType* etype);
+Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType);
+Type* getMoreInstantiatedParentForGenericFormal(Type* actualType,
+                                                Type* formalType);
 
-bool       tryingToResolve();
-void       resolveFnForCall(FnSymbol* fn, CallExpr* call);
-FnSymbol*  tryResolveFunction(FnSymbol* fn);
-void       printCallstackForLastError();
+bool isInstantiation(Type* sub, Type* super);
 
-bool       canInstantiate(Type* actualType, Type* formalType);
-
-Type*      getConcreteParentForGenericFormal(Type* actualType,
-                                             Type* formalType);
-Type*      getMoreInstantiatedParentForGenericFormal(Type* actualType,
-                                                     Type* formalType);
-
-bool       isInstantiation(Type* sub, Type* super);
-
-bool       formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn);
-bool       formalRequiresTemp(FunctionType::Formal formal);
+bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn);
+bool formalRequiresTemp(FunctionType::Formal formal);
 
 // If formalRequiresTemp(formal,fn), when this function returns true,
 // the new strategy of making the temporary at the call site will be used.
 // (if it returns false, the temporary will be inside fn)
-bool       shouldAddInFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn);
+bool shouldAddInFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn);
 
 // This function concerns an initialization expression such as:
 //   var x = <expr>;
@@ -98,11 +94,11 @@ bool       shouldAddInFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn);
 //  var y = ...;
 //  var x = y;   // requires a copy-init
 //  var z = functionReturningRecordByValue(); // does not require a copy-init
-bool       doesCopyInitializationRequireCopy(Expr* initFrom);
+bool doesCopyInitializationRequireCopy(Expr* initFrom);
 
 // Similar to the above, but it's OK to return a local value
 // variable without a copy.
-bool       doesValueReturnRequireCopy(Expr* initFrom);
+bool doesValueReturnRequireCopy(Expr* initFrom);
 
 // explain call stuff
 bool explainCallMatch(CallExpr* call);
@@ -125,32 +121,31 @@ bool canInstantiateOrCoerceDecorators(ClassTypeDecoratorEnum actual,
                                       bool allowNonSubtypes,
                                       bool implicitBang);
 
-bool canCoerceAsSubtype(Type*     actualType,
-                        Symbol*   actualSym,
-                        Type*     formalType,
+bool canCoerceAsSubtype(Type* actualType,
+                        Symbol* actualSym,
+                        Type* formalType,
                         ArgSymbol* formalSym,
                         FnSymbol* fn,
-                        bool*     promotes = NULL,
-                        bool*     paramNarrows = NULL);
+                        bool* promotes = NULL,
+                        bool* paramNarrows = NULL);
 
-bool canCoerce(Type*     actualType,
-               Symbol*   actualSym,
-               Type*     formalType,
+bool canCoerce(Type* actualType,
+               Symbol* actualSym,
+               Type* formalType,
                ArgSymbol* formalSym,
                FnSymbol* fn,
-               bool*     promotes = NULL,
-               bool*     paramNarrows = NULL);
+               bool* promotes = NULL,
+               bool* paramNarrows = NULL);
 
-bool canDispatch(Type*     actualType,
-                 Symbol*   actualSym,
-                 Type*     formalType,
+bool canDispatch(Type* actualType,
+                 Symbol* actualSym,
+                 Type* formalType,
                  ArgSymbol* formalSym = NULL,
-                 FnSymbol* fn          = NULL,
-                 bool*     promotes    = NULL,
-                 bool*     paramNarrows= NULL,
-                 bool      paramCoerce = false,
+                 FnSymbol* fn = NULL,
+                 bool* promotes = NULL,
+                 bool* paramNarrows = NULL,
+                 bool paramCoerce = false,
                  FunctionType* fnType = nullptr);
-
 
 void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
 
@@ -168,12 +163,14 @@ void convertFieldsOfRecordThis(FnSymbol* fn);
 
 // forall intents
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
-void  resolveForallStmts2();
-bool shouldReplaceForLoopWithForall(ForLoop *forLoop);
+void resolveForallStmts2();
+bool shouldReplaceForLoopWithForall(ForLoop* forLoop);
 Expr* replaceForWithForallIfNeeded(ForLoop* forLoop);
-void  setReduceSVars(ShadowVarSymbol*& PRP, ShadowVarSymbol*& PAS,
-                     ShadowVarSymbol*& RP, ShadowVarSymbol* AS);
-void setupAndResolveShadowVars(LoopWithShadowVarsInterface *fs);
+void setReduceSVars(ShadowVarSymbol*& PRP,
+                    ShadowVarSymbol*& PAS,
+                    ShadowVarSymbol*& RP,
+                    ShadowVarSymbol* AS);
+void setupAndResolveShadowVars(LoopWithShadowVarsInterface* fs);
 bool preserveShadowVar(Symbol* var);
 void adjustNothingShadowVariables();
 Expr* lowerPrimReduce(CallExpr* call);
@@ -187,28 +184,42 @@ void resolveConstrainedGenericFun(FnSymbol* fn);
 bool isConstrainedGenericSymbol(Symbol* sym);
 void resolveConstrainedGenericSymbol(Symbol* sym, bool mustBeCG);
 Expr* resolveCallToAssociatedType(CallExpr* call, ConstrainedType* recv);
-struct ConstraintSat { ImplementsStmt* istm; IfcConstraint* icon; int indx;
-  ConstraintSat(ImplementsStmt* s): istm(s), icon(0), indx(0) { }
-  ConstraintSat(IfcConstraint* c, int i): istm(0), icon(c), indx(i) { } };
-ConstraintSat trySatisfyConstraintAtCallsite(CallExpr*      callsite,
-                                             Expr*          addlSite,
+struct ConstraintSat {
+  ImplementsStmt* istm;
+  IfcConstraint* icon;
+  int indx;
+  ConstraintSat(ImplementsStmt* s) : istm(s), icon(0), indx(0) {}
+  ConstraintSat(IfcConstraint* c, int i) : istm(0), icon(c), indx(i) {}
+};
+ConstraintSat trySatisfyConstraintAtCallsite(CallExpr* callsite,
+                                             Expr* addlSite,
                                              IfcConstraint* constraint,
-                                             SymbolMap&     substitutions);
+                                             SymbolMap& substitutions);
 bool tryingToImplementInterface();
-ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr* call, Expr* addlSite,
+ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr* call,
+                                              Expr* addlSite,
                                               IfcConstraint* constraint,
                                               SymbolMap& substitutions);
-void cgAddRepsToSubstitutions(FnSymbol* fn, SymbolMap& substitutions,
-                              ImplementsStmt* istm, int indx);
-void cgAddInterimRepsToSubstitutions(FnSymbol* fn, SymbolMap& substitutions,
-                                     IfcConstraint* tgtIcon,  int tgtIndx,
-                                     IfcConstraint* callIcon, int callIndx);
+void cgAddRepsToSubstitutions(FnSymbol* fn,
+                              SymbolMap& substitutions,
+                              ImplementsStmt* istm,
+                              int indx);
+void cgAddInterimRepsToSubstitutions(FnSymbol* fn,
+                                     SymbolMap& substitutions,
+                                     IfcConstraint* tgtIcon,
+                                     int tgtIndx,
+                                     IfcConstraint* callIcon,
+                                     int callIndx);
 
-void cgConvertAggregateTypes(FnSymbol* fn, Expr* anchor,
+void cgConvertAggregateTypes(FnSymbol* fn,
+                             Expr* anchor,
                              SymbolMap& substitutions);
-void recordCGInterimInstantiations(CallExpr* call, ResolutionCandidate* best1,
-                       ResolutionCandidate* best2, ResolutionCandidate* best3);
-void adjustForCGinstantiation(FnSymbol* fn, SymbolMap& substitutions,
+void recordCGInterimInstantiations(CallExpr* call,
+                                   ResolutionCandidate* best1,
+                                   ResolutionCandidate* best2,
+                                   ResolutionCandidate* best3);
+void adjustForCGinstantiation(FnSymbol* fn,
+                              SymbolMap& substitutions,
                               bool isInterimInstantiation);
 bool cgActualCanMatch(FnSymbol* fn, Type* formalT, ConstrainedType* actualCT);
 bool cgFormalCanMatch(FnSymbol* fn, Type* formalT);
@@ -216,9 +227,9 @@ void startInterfaceChecking();
 void finishInterfaceChecking();
 
 FnSymbol* instantiateWithoutCall(FnSymbol* fn, SymbolMap& subs);
-FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs,
-                               VisibilityInfo* info);
-void      instantiateBody(FnSymbol* fn);
+FnSymbol*
+instantiateSignature(FnSymbol* fn, SymbolMap& subs, VisibilityInfo* info);
+void instantiateBody(FnSymbol* fn);
 
 // generics support
 void checkInfiniteWhereInstantiation(FnSymbol* fn);
@@ -227,37 +238,35 @@ void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var);
 
 FnSymbol* determineRootFunc(FnSymbol* fn);
 
-void determineAllSubs(FnSymbol*  fn,
-                      FnSymbol*  root,
+void determineAllSubs(FnSymbol* fn,
+                      FnSymbol* root,
                       SymbolMap& subs,
                       SymbolMap& allSubs);
 
 void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn);
 
 class DisambiguationContext {
-public:
-                 DisambiguationContext(CallInfo& info, BlockStmt* searchScope);
-  Vec<Symbol*>*  actuals;
-  Expr*          scope;
-  bool           explain;
-  bool           isMethodCall;
-  bool           useOldVisibility;
+ public:
+  DisambiguationContext(CallInfo& info, BlockStmt* searchScope);
+  Vec<Symbol*>* actuals;
+  Expr* scope;
+  bool explain;
+  bool isMethodCall;
+  bool useOldVisibility;
 
-private:
-                 DisambiguationContext();
+ private:
+  DisambiguationContext();
 };
 
-
-ResolutionCandidate*
-disambiguateForInit(CallInfo&                    info,
-                    Vec<ResolutionCandidate*>&   candidates);
+ResolutionCandidate* disambiguateForInit(CallInfo& info,
+                                         Vec<ResolutionCandidate*>& candidates);
 
 // Regular resolve functions
-void      resolveCall(CallExpr* call);
-void      resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
+void resolveCall(CallExpr* call);
+void resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
 
-Type*     resolveDefaultGenericTypeSymExpr(SymExpr* se);
-Type*     resolveTypeAlias(SymExpr* se);
+Type* resolveDefaultGenericTypeSymExpr(SymExpr* se);
+Type* resolveTypeAlias(SymExpr* se);
 
 enum class PoiSearchMode {
   NORMAL,
@@ -265,21 +274,24 @@ enum class PoiSearchMode {
   POI_ONLY,
 };
 
-FnSymbol* tryResolveCall(CallExpr* call, bool checkWithin=false, PoiSearchMode poiMode = PoiSearchMode::NORMAL);
-bool      resolveFunctionPointerCall(CallExpr* call, bool checkOnly, bool* resolved = nullptr);
-void      makeRefType(Type* type);
+FnSymbol* tryResolveCall(CallExpr* call,
+                         bool checkWithin = false,
+                         PoiSearchMode poiMode = PoiSearchMode::NORMAL);
+bool resolveFunctionPointerCall(CallExpr* call,
+                                bool checkOnly,
+                                bool* resolved = nullptr);
+void makeRefType(Type* type);
 
 // FnSymbol changes
-void      insertFormalTemps(FnSymbol* fn);
-void      ensureInMethodList(FnSymbol* fn);
-void      setReturnAndReturnSymbolType(FnSymbol* fn, Type* retType);
+void insertFormalTemps(FnSymbol* fn);
+void ensureInMethodList(FnSymbol* fn);
+void setReturnAndReturnSymbolType(FnSymbol* fn, Type* retType);
 
-
-bool      hasAutoCopyForType(Type* type);
-FnSymbol* getAutoCopyForType(Type* type);   // requires hasAutoCopyForType()==true
-void      getAutoCopyTypeKeys(Vec<Type*>& keys);
-FnSymbol* getAutoCopy(Type* t);             // returns NULL if there are none
-FnSymbol* getAutoDestroy(Type* t);          //  "
+bool hasAutoCopyForType(Type* type);
+FnSymbol* getAutoCopyForType(Type* type); // requires hasAutoCopyForType()==true
+void getAutoCopyTypeKeys(Vec<Type*>& keys);
+FnSymbol* getAutoCopy(Type* t);    // returns NULL if there are none
+FnSymbol* getAutoDestroy(Type* t); //  "
 
 FnSymbol* getInitCopyDuringResolution(Type* t);
 
@@ -300,22 +312,24 @@ bool recordContainingCopyMutatesField(Type* at);
 // resolution errors and warnings
 
 // This one does not call USR_STOP
-void printResolutionErrorUnresolved(CallInfo&                  info,
-                                    Vec<FnSymbol*>&            visibleFns);
+void printResolutionErrorUnresolved(CallInfo& info, Vec<FnSymbol*>& visibleFns);
 
-void printResolutionErrorAmbiguous (CallInfo&                  info,
-                                    Vec<ResolutionCandidate*>& candidates);
+void printResolutionErrorAmbiguous(CallInfo& info,
+                                   Vec<ResolutionCandidate*>& candidates);
 void printUndecoratedClassTypeNote(Expr* ctx, Type* type);
 
 FnSymbol* resolveNormalCall(CallExpr* call);
 
-void resolveNormalCallCompilerWarningStuff(CallExpr* call, FnSymbol* resolvedFn);
+void resolveNormalCallCompilerWarningStuff(CallExpr* call,
+                                           FnSymbol* resolvedFn);
 
 void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs);
 
 // warn for some int -> uint and small int -> real
-void warnForSomeNumericConversions(BaseAST* context, Type* formalType,
-                                   Type* actualType, Symbol* actual);
+void warnForSomeNumericConversions(BaseAST* context,
+                                   Type* formalType,
+                                   Type* actualType,
+                                   Symbol* actual);
 
 void lvalueCheck(CallExpr* call);
 
@@ -339,9 +353,15 @@ bool fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
 AggregateType* computeNonRefTuple(AggregateType* t);
 
 AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t);
-AggregateType* computeTupleWithIntentForArg(IntentTag intent, AggregateType* t, ArgSymbol* arg);
+AggregateType* computeTupleWithIntentForArg(IntentTag intent,
+                                            AggregateType* t,
+                                            ArgSymbol* arg);
 
-void addTupleCoercion(AggregateType* fromT, AggregateType* toT, Symbol* fromSym, Symbol* toSym, Expr* insertBefore);
+void addTupleCoercion(AggregateType* fromT,
+                      AggregateType* toT,
+                      Symbol* fromSym,
+                      Symbol* toSym,
+                      Expr* insertBefore);
 
 // other resolution functions
 bool evaluateWhereClause(FnSymbol* fn);
@@ -380,12 +400,14 @@ void resolveDestructor(AggregateType* at);
 
 void fixTypeNames(AggregateType* at);
 
-Type* getInstantiationType(Type* actualType, Symbol* actualSym,
-                           Type* formalType, Symbol* formalSym,
+Type* getInstantiationType(Type* actualType,
+                           Symbol* actualSym,
+                           Type* formalType,
+                           Symbol* formalSym,
                            Expr* ctx,
-                           bool allowCoercion=true,
-                           bool implicitBang=false,
-                           bool inOrOtherValue=false);
+                           bool allowCoercion = true,
+                           bool implicitBang = false,
+                           bool inOrOtherValue = false);
 
 // in/out/inout but excluding formals to chpl__coerceMove etc
 bool inOrOutFormalNeedingCopyType(ArgSymbol* formal);
@@ -411,7 +433,8 @@ void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx);
 // emit a warning for
 //   var x: domain;
 // as a field or variable (it should be, var x: domain(?)).
-void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
+void checkSurprisingGenericDecls(Symbol* sym,
+                                 Expr* typeExpr,
                                  AggregateType* forFieldInHere);
 
 // These enable resolution for functions that don't really match
@@ -426,8 +449,9 @@ void stopGenerousResolutionForErrors();
 extern bool newErrorRecord;
 class NewErrorRecorder {
   bool prevRecord;
-public:
-  NewErrorRecorder(): prevRecord(newErrorRecord) { newErrorRecord = false; }
+
+ public:
+  NewErrorRecorder() : prevRecord(newErrorRecord) { newErrorRecord = false; }
   ~NewErrorRecorder() { newErrorRecord = this->prevRecord; }
 };
 
@@ -437,14 +461,12 @@ static inline bool seenNewCompilationError() { return newErrorRecord; }
 // In chpl__initCopy etc we have a definedConst argument. This argument can be
 // at different places in the function signature. In various places, we call the
 // function below to make sure it is where we expect it to be.
-static inline void sanityCheckDefinedConstArg(BaseAST *arg) {
-  if(SymExpr* argSE = toSymExpr(arg)) {
+static inline void sanityCheckDefinedConstArg(BaseAST* arg) {
+  if (SymExpr* argSE = toSymExpr(arg)) {
     INT_ASSERT(argSE->symbol()->type == dtBool);
-  }
-  else if (ArgSymbol *argSym = toArgSymbol(arg)) {
+  } else if (ArgSymbol* argSym = toArgSymbol(arg)) {
     INT_ASSERT(argSym->type == dtBool);
-  }
-  else {
+  } else {
     INT_FATAL("Illegal argument was found while looking for definedConst");
   }
 }

@@ -24,7 +24,7 @@
 #include <cstdint>
 
 class MemoryTracker {
-public:
+ public:
   static bool platformSupportsMemoryTracking();
   using MemoryInBytes = int64_t;
   using MemoryInMB = double;
@@ -41,10 +41,10 @@ public:
 
   MemoryInBytes usedBytes() const;
 
-private:
+ private:
   MemoryInBytes mRefMemoryUsage;
   MemoryInBytes mAccumMemoryUsage;
-  bool          mRunning;
+  bool mRunning;
 };
 
 #endif

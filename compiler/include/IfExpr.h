@@ -26,13 +26,11 @@
 
 #include <ostream>
 
-
 class IfExpr final : public Expr {
-public:
-
+ public:
   IfExpr(Expr* condition, Expr* thenExpr, Expr* elseExpr);
 
-  Expr*      getCondition();
+  Expr* getCondition();
   BlockStmt* getThenStmt();
   BlockStmt* getElseStmt();
 
@@ -41,15 +39,15 @@ public:
   DECLARE_COPY(IfExpr);
   IfExpr* copyInner(SymbolMap* map) override;
 
-  Expr*         getFirstExpr() override;
-  void          replaceChild(Expr* old_ast, Expr* new_ast) override;
+  Expr* getFirstExpr() override;
+  void replaceChild(Expr* old_ast, Expr* new_ast) override;
   QualifiedType qualType() override;
 
-  void   accept(AstVisitor* visitor) override;
+  void accept(AstVisitor* visitor) override;
   GenRet codegen() override;
-  void   prettyPrint(std::ostream* o) override;
+  void prettyPrint(std::ostream* o) override;
 
-private:
+ private:
   Expr* condition;
   BlockStmt* thenStmt;
   BlockStmt* elseStmt;

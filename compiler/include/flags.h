@@ -21,7 +21,6 @@
 #ifndef CHPL_FLAGS_H_
 #define CHPL_FLAGS_H_
 
-
 //
 // HOW TO ADD A FLAG:
 // - add an entry (sorted alphabetically) to the list in
@@ -40,32 +39,26 @@
 // "flags aid(id)" where id is the integral symbol id.
 //
 
-
 #include "chpl.h"
 #include <bitset>
-
 
 class BaseAST;
 class Symbol;
 class TypeSymbol;
 
-
 enum Flag {
   FLAG_UNKNOWN = 0,
-#define PRAGMA(name__, canParse__, parseStr__, desc__) \
-  FLAG_ ## name__,
+#define PRAGMA(name__, canParse__, parseStr__, desc__) FLAG_##name__,
 #include "chpl/uast/PragmaList.h"
 #undef PRAGMA
   NUM_FLAGS,
   FLAG_FIRST = FLAG_UNKNOWN + 1, // index of the first flag
-  FLAG_LAST  = NUM_FLAGS - 1     // index of the last flag
+  FLAG_LAST = NUM_FLAGS - 1      // index of the last flag
 };
 typedef std::bitset<NUM_FLAGS> FlagSet;
 
 // only meaningful flags are allowed
-#define CHECK_FLAG(FLAG) \
-  INT_ASSERT(FLAG_FIRST <= (FLAG) && (FLAG) <= FLAG_LAST)
-
+#define CHECK_FLAG(FLAG) INT_ASSERT(FLAG_FIRST <= (FLAG) && (FLAG) <= FLAG_LAST)
 
 Flag pragma2flag(const char* str);
 void initFlags();
@@ -81,6 +74,5 @@ bool hasFlag(BaseAST* ast, Flag flag);
 void addFlag(BaseAST* ast, Flag flag);
 void removeFlag(BaseAST* ast, Flag flag);
 // End gdb support
-
 
 #endif

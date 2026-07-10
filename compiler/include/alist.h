@@ -44,8 +44,8 @@ class AList {
   Expr* last(void);  // begin backwards iteration over a list
 
   // other ways to get elements from the list
-  Expr* only(void);            // return the single element in a list
-  Expr* get(int index)  const; // get the index-th element in a list
+  Expr* only(void);           // return the single element in a list
+  Expr* get(int index) const; // get the index-th element in a list
 
   bool empty() const;
 
@@ -61,73 +61,81 @@ class AList {
 
   // codegen list. Separator only used for C codegenning.
   GenRet codegen(const char* separator = ", ");
+
  private:
   void performInsertAtHead(Expr* new_ast);
   void performInsertAtTail(Expr* new_ast);
 };
 
-#define for_alist(node, list)                                           \
-  for (Expr *node = (list).head,                                        \
-         *_alist_next = node ? node->next : NULL;                       \
-       node;                                                            \
-       node = _alist_next,                                              \
-         _alist_next = node ? node->next : NULL)
+#define for_alist(node, list)                                             \
+  for (Expr* node = (list).head, *_alist_next = node ? node->next : NULL; \
+       node;                                                              \
+       node = _alist_next, _alist_next = node ? node->next : NULL)
 
-#define for_alist_backward(node, list)                                  \
-  for (Expr *node = (list).tail,                                        \
-         *_alist_prev = node ? node->prev : NULL;                       \
-       node;                                                            \
-       node = _alist_prev,                                              \
-         _alist_prev = node ? node->prev : NULL)
+#define for_alist_backward(node, list)                                    \
+  for (Expr* node = (list).tail, *_alist_prev = node ? node->prev : NULL; \
+       node;                                                              \
+       node = _alist_prev, _alist_prev = node ? node->prev : NULL)
 
-#define for_enums(node, et)                                             \
-  for (DefExpr *node = toDefExpr((et)->constants.head),                 \
-         *_alist_next = node ? toDefExpr(node->next) : NULL;            \
-       node;                                                            \
-       node = _alist_next,                                              \
-         _alist_next = node ? toDefExpr(node->next) : NULL)
+#define for_enums(node, et)                                                   \
+  for (DefExpr* node = toDefExpr((et)->constants.head),                       \
+                *_alist_next = node ? toDefExpr(node->next) : NULL;           \
+       node;                                                                  \
+       node = _alist_next, _alist_next = node ? toDefExpr(node->next) : NULL)
 
-#define for_enums_backward(node, et)                                    \
-  for (DefExpr *node = toDefExpr((et)->constants.tail),                 \
-         *_alist_prev = node ? toDefExpr(node->prev) : NULL;            \
-       node;                                                            \
-       node = _alist_prev,                                              \
-         _alist_prev = node ? toDefExpr(node->prev) : NULL)
+#define for_enums_backward(node, et)                                          \
+  for (DefExpr* node = toDefExpr((et)->constants.tail),                       \
+                *_alist_prev = node ? toDefExpr(node->prev) : NULL;           \
+       node;                                                                  \
+       node = _alist_prev, _alist_prev = node ? toDefExpr(node->prev) : NULL)
 
 // for_formals(arg, fn) arg is ArgSymbol*, fn is FnSymbol*
-#define for_formals(formal, fn)                                         \
-  for (ArgSymbol *formal = ((fn)->formals.head) ? toArgSymbol(toDefExpr((fn)->formals.head)->sym) : NULL, \
-         *_alist_next = (formal && formal->defPoint->next) ? toArgSymbol(toDefExpr((formal)->defPoint->next)->sym) : NULL; \
-       (formal);                                                        \
-       formal = _alist_next,                                            \
-         _alist_next = (formal && formal->defPoint->next) ? toArgSymbol(toDefExpr((formal)->defPoint->next)->sym) : NULL)
+#define for_formals(formal, fn)                                                \
+  for (ArgSymbol* formal = ((fn)->formals.head)                                \
+                             ? toArgSymbol(toDefExpr((fn)->formals.head)->sym) \
+                             : NULL,                                           \
+                  *_alist_next =                                               \
+                    (formal && formal->defPoint->next)                         \
+                      ? toArgSymbol(toDefExpr((formal)->defPoint->next)->sym)  \
+                      : NULL;                                                  \
+       (formal);                                                               \
+       formal = _alist_next,                                                   \
+                  _alist_next =                                                \
+                    (formal && formal->defPoint->next)                         \
+                      ? toArgSymbol(toDefExpr((formal)->defPoint->next)->sym)  \
+                      : NULL)
 
-#define next_formal(formal)                                             \
-  ((formal && formal->defPoint->next) ? toArgSymbol(toDefExpr((formal)->defPoint->next)->sym) : NULL)
+#define next_formal(formal)                                  \
+  ((formal && formal->defPoint->next)                        \
+     ? toArgSymbol(toDefExpr((formal)->defPoint->next)->sym) \
+     : NULL)
 
-#define for_formals_backward(formal, fn)                                \
-  for (ArgSymbol *formal = ((fn)->formals.tail) ? toArgSymbol(toDefExpr((fn)->formals.tail)->sym) : NULL, \
-         *_alist_prev = (formal && formal->defPoint->prev) ? toArgSymbol(toDefExpr((formal)->defPoint->prev)->sym) : NULL; \
-       (formal);                                                        \
-       formal = _alist_prev,                                            \
-         _alist_prev = (formal && formal->defPoint->prev) ? toArgSymbol(toDefExpr((formal)->defPoint->prev)->sym) : NULL)
+#define for_formals_backward(formal, fn)                                       \
+  for (ArgSymbol* formal = ((fn)->formals.tail)                                \
+                             ? toArgSymbol(toDefExpr((fn)->formals.tail)->sym) \
+                             : NULL,                                           \
+                  *_alist_prev =                                               \
+                    (formal && formal->defPoint->prev)                         \
+                      ? toArgSymbol(toDefExpr((formal)->defPoint->prev)->sym)  \
+                      : NULL;                                                  \
+       (formal);                                                               \
+       formal = _alist_prev,                                                   \
+                  _alist_prev =                                                \
+                    (formal && formal->defPoint->prev)                         \
+                      ? toArgSymbol(toDefExpr((formal)->defPoint->prev)->sym)  \
+                      : NULL)
 
-#define for_actuals(actual, call)                                       \
-  for (Expr *actual = (call)->argList.head,                             \
-         *_alist_next = actual ? actual->next : NULL;                   \
-       actual;                                                          \
-       actual = _alist_next,                                            \
-         _alist_next = actual ? actual->next : NULL)
+#define for_actuals(actual, call)                                        \
+  for (Expr* actual = (call)->argList.head,                              \
+             *_alist_next = actual ? actual->next : NULL;                \
+       actual;                                                           \
+       actual = _alist_next, _alist_next = actual ? actual->next : NULL)
 
-#define for_actuals_backward(actual, call)                              \
-  for (Expr *actual = (call)->argList.tail,                             \
-         *_alist_prev = actual ? actual->prev : NULL;                   \
-       actual;                                                          \
-       actual = _alist_prev,                                            \
-         _alist_prev = actual ? actual->prev : NULL)
-
-
-
+#define for_actuals_backward(actual, call)                               \
+  for (Expr* actual = (call)->argList.tail,                              \
+             *_alist_prev = actual ? actual->prev : NULL;                \
+       actual;                                                           \
+       actual = _alist_prev, _alist_prev = actual ? actual->prev : NULL)
 
 //
 // Visits the formal and actual parameters of a normal call or a virtual
@@ -142,13 +150,16 @@ class AList {
 
 #define for_formals_actuals(formal, actual, call)                             \
   FnSymbol* _alist_fn = (call)->resolvedFunction();                           \
-  Expr*     actual    = (call)->argList.head;                                 \
+  Expr* actual = (call)->argList.head;                                        \
                                                                               \
   if (_alist_fn) {                                                            \
     if (_alist_fn->numFormals() != (call)->argList.length) {                  \
       INT_FATAL(call,                                                         \
-                "number of actuals (%d) does not match number of formals (%d) in %s()", \
-                (call)->argList.length, _alist_fn->numFormals(), _alist_fn->name); \
+                "number of actuals (%d) does not match number of formals "    \
+                "(%d) in %s()",                                               \
+                (call)->argList.length,                                       \
+                _alist_fn->numFormals(),                                      \
+                _alist_fn->name);                                             \
     }                                                                         \
                                                                               \
   } else if ((call)->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {                 \
@@ -156,8 +167,11 @@ class AList {
                                                                               \
     if (_alist_fn->numFormals() != (call)->argList.length - 2) {              \
       INT_FATAL(call,                                                         \
-                "number of actuals (%d) does not match number of formals (%d) in %s()", \
-                (call)->argList.length - 2, _alist_fn->numFormals(), _alist_fn->name); \
+                "number of actuals (%d) does not match number of formals "    \
+                "(%d) in %s()",                                               \
+                (call)->argList.length - 2,                                   \
+                _alist_fn->numFormals(),                                      \
+                _alist_fn->name);                                             \
     }                                                                         \
                                                                               \
     actual = actual->next->next;                                              \
@@ -165,57 +179,58 @@ class AList {
                                                                               \
   Expr* _alist_actual_next = (actual) ? actual->next : NULL;                  \
                                                                               \
-  for (ArgSymbol* formal = (_alist_fn && _alist_fn->formals.head) ?           \
-         toArgSymbol(toDefExpr(_alist_fn->formals.head)->sym) : NULL,         \
+  for (ArgSymbol* formal =                                                    \
+         (_alist_fn && _alist_fn->formals.head)                               \
+           ? toArgSymbol(toDefExpr(_alist_fn->formals.head)->sym)             \
+           : NULL,                                                            \
                                                                               \
-       *_alist_formal_next = (formal && formal->defPoint->next) ?             \
-         toArgSymbol(toDefExpr((formal)->defPoint->next)->sym) : NULL;        \
+                  *_alist_formal_next =                                       \
+                    (formal && formal->defPoint->next)                        \
+                      ? toArgSymbol(toDefExpr((formal)->defPoint->next)->sym) \
+                      : NULL;                                                 \
                                                                               \
        (formal);                                                              \
                                                                               \
-       formal             = _alist_formal_next,                               \
-       _alist_formal_next = (formal && formal->defPoint->next) ?              \
-          toArgSymbol(toDefExpr((formal)->defPoint->next)->sym) : NULL,       \
-       actual             = _alist_actual_next,                               \
-       _alist_actual_next = (actual) ? actual->next : NULL)
+       formal = _alist_formal_next,                                           \
+                  _alist_formal_next =                                        \
+                    (formal && formal->defPoint->next)                        \
+                      ? toArgSymbol(toDefExpr((formal)->defPoint->next)->sym) \
+                      : NULL,                                                 \
+                  actual = _alist_actual_next,                                \
+                  _alist_actual_next = (actual) ? actual->next : NULL)
 
+#define for_fields(field, ct)                                                  \
+  for (Symbol* field = ((ct)->fields.head) ? toDefExpr((ct)->fields.head)->sym \
+                                           : NULL,                             \
+               *_alist_next = (field && field->defPoint->next)                 \
+                                ? toDefExpr(field->defPoint->next)->sym        \
+                                : NULL;                                        \
+       (field);                                                                \
+       field = _alist_next,                                                    \
+               _alist_next = (field && field->defPoint->next)                  \
+                               ? toDefExpr(field->defPoint->next)->sym         \
+                               : NULL)
 
+#define for_fields_backward(field, ct)                                         \
+  for (Symbol* field = ((ct)->fields.tail) ? toDefExpr((ct)->fields.tail)->sym \
+                                           : NULL,                             \
+               *_alist_prev = (field && field->defPoint->prev)                 \
+                                ? toDefExpr(field->defPoint->prev)->sym        \
+                                : NULL;                                        \
+       (field);                                                                \
+       field = _alist_prev,                                                    \
+               _alist_prev = (field && field->defPoint->prev)                  \
+                               ? toDefExpr(field->defPoint->prev)->sym         \
+                               : NULL)
 
-#define for_fields(field, ct)                                           \
-  for (Symbol *field = ((ct)->fields.head) ? toDefExpr((ct)->fields.head)->sym : NULL, \
-         *_alist_next = (field && field->defPoint->next) ? toDefExpr(field->defPoint->next)->sym : NULL; \
-       (field);                                                         \
-       field = _alist_next,                                             \
-         _alist_next = (field && field->defPoint->next) ? toDefExpr(field->defPoint->next)->sym : NULL)
+inline AList::AList() : head(NULL), tail(NULL), parent(NULL), length(0) {}
 
-#define for_fields_backward(field, ct)                                  \
-  for (Symbol *field = ((ct)->fields.tail) ? toDefExpr((ct)->fields.tail)->sym : NULL, \
-         *_alist_prev = (field && field->defPoint->prev) ? toDefExpr(field->defPoint->prev)->sym : NULL; \
-       (field);                                                         \
-       field = _alist_prev,                                             \
-         _alist_prev = (field && field->defPoint->prev) ? toDefExpr(field->defPoint->prev)->sym : NULL)
+inline Expr* AList::first(void) { return head; }
 
-inline AList::AList() :
-  head(NULL),
-  tail(NULL),
-  parent(NULL),
-  length(0)
-{ }
-
-
-inline Expr* AList::first(void) {
-  return head;
-}
-
-
-inline Expr* AList::last(void) {
-  return tail;
-}
-
+inline Expr* AList::last(void) { return tail; }
 
 inline Expr* AList::only(void) {
-  if (!head)
-    INT_FATAL("only() called on empty list");
+  if (!head) INT_FATAL("only() called on empty list");
 
   if (head == tail)
     return first();
@@ -231,7 +246,7 @@ inline Expr* AList::only(void) {
 #include "expr-class-def.h"
 
 inline Expr* AList::get(int index) const {
-  if (index <=0) {
+  if (index <= 0) {
     INT_FATAL("Indexing list must use positive integer");
   }
 
@@ -250,8 +265,6 @@ inline Expr* AList::get(int index) const {
   return NULL;
 }
 
-inline bool AList::empty() const {
-  return length == 0;
-}
+inline bool AList::empty() const { return length == 0; }
 
 #endif

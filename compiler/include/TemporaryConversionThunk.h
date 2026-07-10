@@ -56,45 +56,49 @@ class TemporaryConversionThunk : public Expr {
 
   // Required methods for Expr
 
-  void  verify()                                          override;
-  void  accept(AstVisitor* visitor)                       override;
+  void verify() override;
+  void accept(AstVisitor* visitor) override;
   DECLARE_COPY(TemporaryConversionThunk);
-  TemporaryConversionThunk* copyInner(SymbolMap* map)                        override;
-  Expr* getFirstExpr()                                    override;
-  GenRet codegen()                                        override;
+  TemporaryConversionThunk* copyInner(SymbolMap* map) override;
+  Expr* getFirstExpr() override;
+  GenRet codegen() override;
 };
 
-template <typename F, typename...Args>
+template <typename F, typename... Args>
 class SpecThunk : public TemporaryConversionThunk {
  protected:
   F builder;
   std::tuple<Args...> argTuple;
 
-  template <typename T, typename std::enable_if<std::is_base_of<Expr, typename std::remove_pointer<T>::type>::value>::type* = nullptr>
+  template <typename T,
+            typename std::enable_if<std::is_base_of<
+              Expr,
+              typename std::remove_pointer<T>::type>::value>::type* = nullptr>
   void process(T expr) {
     auto child = static_cast<Expr*>(expr);
     if (child) children.insertAtTailWithoutFlattening(child);
   }
 
-  template <typename T, typename std::enable_if<!std::is_base_of<Expr, typename std::remove_pointer<T>::type>::value>::type* = nullptr>
+  template <typename T,
+            typename std::enable_if<!std::is_base_of<
+              Expr,
+              typename std::remove_pointer<T>::type>::value>::type* = nullptr>
   void process(T t) {
     // Nothing to do for non-AST nodes.
   }
 
-  template <size_t ...Is>
-  void processArguments(std::index_sequence<Is...>) {
-    auto dummy = { (process(std::get<Is>(argTuple)), 0)... };
-    (void) dummy;
+  template <size_t... Is> void processArguments(std::index_sequence<Is...>) {
+    auto dummy = {(process(std::get<Is>(argTuple)), 0)...};
+    (void)dummy;
   }
 
-  template <size_t ...Is>
-  Expr* doApplyFunction(std::index_sequence<Is...>) {
+  template <size_t... Is> Expr* doApplyFunction(std::index_sequence<Is...>) {
     return builder(std::get<Is>(argTuple)...);
   }
+
  public:
-  SpecThunk(F f, Args...args) :
-    builder(std::forward<F>(f)),
-    argTuple(std::forward<Args>(args)...) {
+  SpecThunk(F f, Args... args)
+    : builder(std::forward<F>(f)), argTuple(std::forward<Args>(args)...) {
     processArguments(std::index_sequence_for<Args...>());
   }
 
@@ -111,16 +115,17 @@ class SpecThunk : public TemporaryConversionThunk {
   }
 };
 
-template <typename F, typename...Args>
-TemporaryConversionThunk* buildThunk(F f, Args...args) {
-  return new SpecThunk<F, Args...>(std::forward<F>(f), std::forward<Args>(args)...);
+template <typename F, typename... Args>
+TemporaryConversionThunk* buildThunk(F f, Args... args) {
+  return new SpecThunk<F, Args...>(std::forward<F>(f),
+                                   std::forward<Args>(args)...);
 }
 
-template <typename C, typename...Args>
-TemporaryConversionThunk* buildClassThunk(Args...args) {
-  return buildThunk([](Args...args) {
-    return new C(std::forward<Args>(args)...);
-  }, std::forward<Args>(args)...);
+template <typename C, typename... Args>
+TemporaryConversionThunk* buildClassThunk(Args... args) {
+  return buildThunk(
+    [](Args... args) { return new C(std::forward<Args>(args)...); },
+    std::forward<Args>(args)...);
 }
 
 #endif

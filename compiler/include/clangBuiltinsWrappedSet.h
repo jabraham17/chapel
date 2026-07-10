@@ -24,20 +24,17 @@
 #include <unordered_set>
 #include <string>
 #define WRAPPER_PREFIX "chpl_clang_builtin_wrapper_"
-std::unordered_set<std::string> chplClangBuiltinWrappedFunctions =
-{
-"cabs",
-"cabsf",
-"cabsl",
-"cimag",
-"cimagf",
-"cimagl",
-"creal",
-"crealf",
-"creall",
-"conj",
-"conjf",
-"conjl"
-};
+std::unordered_set<std::string> chplClangBuiltinWrappedFunctions = {"cabs",
+                                                                    "cabsf",
+                                                                    "cabsl",
+                                                                    "cimag",
+                                                                    "cimagf",
+                                                                    "cimagl",
+                                                                    "creal",
+                                                                    "crealf",
+                                                                    "creall",
+                                                                    "conj",
+                                                                    "conjf",
+                                                                    "conjl"};
 
 #endif

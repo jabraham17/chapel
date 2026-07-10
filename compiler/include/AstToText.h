@@ -67,119 +67,114 @@ class LoopExpr;
 
 #include <string>
 
-class AstToText
-{
-public:
+class AstToText {
+ public:
   AstToText() = default;
- ~AstToText() = default;
+  ~AstToText() = default;
 
   // A reference to the generate text
-  const std::string&     text()                                        const;
-
-
+  const std::string& text() const;
 
   // These functions assume a user facing requirement for enumerating the
   // formals i.e. the internal formal(s) associated with a method are not
   // shown or accessible through this portion of the API.
   //
-  void                   appendNameAndFormals(FnSymbol* fn);
-  void                   appendName(FnSymbol* fn);
-  void                   appendFormals(FnSymbol* fn);
+  void appendNameAndFormals(FnSymbol* fn);
+  void appendName(FnSymbol* fn);
+  void appendFormals(FnSymbol* fn);
 
-  int                    numFormals(FnSymbol* fn)                      const;
+  int numFormals(FnSymbol* fn) const;
 
-  void                   appendFormal(FnSymbol* fn, int oneBasedIndex);
+  void appendFormal(FnSymbol* fn, int oneBasedIndex);
 
-  void                   appendEnumDecl(EnumType* et);
-  void                   appendVarDef(VarSymbol* var);
+  void appendEnumDecl(EnumType* et);
+  void appendVarDef(VarSymbol* var);
 
-  void                   appendExpr(Expr* expr, bool printingType, const char *outer = nullptr, bool unary=false, bool postfix=false, bool isRHS=false);
+  void appendExpr(Expr* expr,
+                  bool printingType,
+                  const char* outer = nullptr,
+                  bool unary = false,
+                  bool postfix = false,
+                  bool isRHS = false);
 
-private:
-
+ private:
   //
   // Support for function names
   //
-  void                   appendThisIntent(FnSymbol* fn);
-  void                   appendClassName (FnSymbol* fn);
+  void appendThisIntent(FnSymbol* fn);
+  void appendClassName(FnSymbol* fn);
 
   //
   // Helper function for normalizing formals list
   //
-  bool                   skipParens(FnSymbol* fn)                      const;
+  bool skipParens(FnSymbol* fn) const;
 
   //
   // Helper functions for normalizing a single formal
   //
-  void                   appendFormalIntent(ArgSymbol* arg);
+  void appendFormalIntent(ArgSymbol* arg);
 
-  void                   appendFormalName(ArgSymbol* arg);
+  void appendFormalName(ArgSymbol* arg);
 
-  void                   appendFormalType(ArgSymbol* arg);
-  bool                   handleNormalizedTypeOf(BlockStmt* bs);
+  void appendFormalType(ArgSymbol* arg);
+  bool handleNormalizedTypeOf(BlockStmt* bs);
 
-  void                   appendFormalVariableExpr(ArgSymbol* arg);
+  void appendFormalVariableExpr(ArgSymbol* arg);
 
-  void                   appendFormalDefault(ArgSymbol* arg);
-  bool                   isTypeDefault(Expr* expr)                     const;
+  void appendFormalDefault(ArgSymbol* arg);
+  bool isTypeDefault(Expr* expr) const;
 
   //
   // Helper function for appending domain calls with multiple arguments
   //
-  void                   appendDomain(CallExpr* expr, bool printingType);
+  void appendDomain(CallExpr* expr, bool printingType);
 
   //
   // Support for selecting formals for functions and methods
   //
-  int                    indexForThis(FnSymbol* fn)                    const;
-  int                    indexOfFirstFormal(FnSymbol* fn)              const;
-  ArgSymbol*             formalGet(FnSymbol* fn, int oneBasedIndex)    const;
+  int indexForThis(FnSymbol* fn) const;
+  int indexOfFirstFormal(FnSymbol* fn) const;
+  ArgSymbol* formalGet(FnSymbol* fn, int oneBasedIndex) const;
 
   //
   // Formatting the expressions found in formals (skeleton)
   //
-  void                   appendExpr(UnresolvedSymExpr* expr);
+  void appendExpr(UnresolvedSymExpr* expr);
 
-  void                   appendExpr(SymExpr*           expr,
-                                    bool               printingType,
-                                    bool               quoteStrings);
+  void appendExpr(SymExpr* expr, bool printingType, bool quoteStrings);
 
-  void                   appendExpr(CallExpr*          expr,
-                                    bool               printingType, const char *outer, bool unary, bool postfix, bool isRHS);
+  void appendExpr(CallExpr* expr,
+                  bool printingType,
+                  const char* outer,
+                  bool unary,
+                  bool postfix,
+                  bool isRHS);
 
-  void                   appendExpr(CallExpr*          expr,
-                                    const char*        fnName,
-                                    bool               printingType);
+  void appendExpr(CallExpr* expr, const char* fnName, bool printingType);
 
-  void                   appendExpr(DefExpr*           expr,
-                                    bool               printingType);
+  void appendExpr(DefExpr* expr, bool printingType);
 
-  void                   appendExprTypeVar(DefExpr*           expr);
+  void appendExprTypeVar(DefExpr* expr);
 
-  void                   appendExpr(NamedExpr*         expr,
-                                    bool               printingType);
+  void appendExpr(NamedExpr* expr, bool printingType);
 
-  void                   appendExpr(const char*        name);
+  void appendExpr(const char* name);
 
-  void                   appendExpr(IfExpr*            expr,
-                                    bool               printingType);
+  void appendExpr(IfExpr* expr, bool printingType);
 
-  void                   appendExpr(LoopExpr*            expr,
-                                    bool               printingType);
+  void appendExpr(LoopExpr* expr, bool printingType);
 
-  void                   appendSpecialExpr(const char* name,
-                                           const char* root,
-                                           const char* repl);
+  void appendSpecialExpr(const char* name, const char* root, const char* repl);
 
-  std::string            removeOuterParens(const char* parenExpr)      const;
+  std::string removeOuterParens(const char* parenExpr) const;
 
-  bool                   isMtThis (CallExpr* expr)                     const;
-  bool                   isMtOther(CallExpr* expr)                     const;
-  bool                   isMtArg  (CallExpr* expr, bool expectThis)    const;
+  bool isMtThis(CallExpr* expr) const;
+  bool isMtOther(CallExpr* expr) const;
+  bool isMtArg(CallExpr* expr, bool expectThis) const;
 
-  void                   appendEnumConstants(EnumType* et);
+  void appendEnumConstants(EnumType* et);
 
-  std::string            mText;
+  std::string mText;
 };
 
 #endif

@@ -53,118 +53,106 @@ typedef std::pair<Symbol*, const char*> SymAndReferencedName;
 // A preliminary version of a class to support the scope resolve pass
 // This is currently a thin wrapping over a previous typedef + functions
 class ResolveScope {
-public:
-  static ResolveScope*  getRootModule();
+ public:
+  static ResolveScope* getRootModule();
 
-  static ResolveScope*  findOrCreateScopeFor(DefExpr* def);
+  static ResolveScope* findOrCreateScopeFor(DefExpr* def);
 
-  static ResolveScope*  getScopeFor(BaseAST* ast);
+  static ResolveScope* getScopeFor(BaseAST* ast);
 
-  static void           destroyAstMap();
+  static void destroyAstMap();
 
-public:
+ public:
   importUseProgress progress;
 
-                        ResolveScope(ModuleSymbol*       modSym,
-                                     const ResolveScope* parent);
+  ResolveScope(ModuleSymbol* modSym, const ResolveScope* parent);
 
-                        ResolveScope(BaseAST*            ast,
-                                     const ResolveScope* parent);
+  ResolveScope(BaseAST* ast, const ResolveScope* parent);
 
-  std::string           name()                                           const;
+  std::string name() const;
 
-  int                   depth()                                          const;
+  int depth() const;
 
-  int                   numBindings()                                    const;
+  int numBindings() const;
 
-  BlockStmt*            asBlockStmt()                                    const;
+  BlockStmt* asBlockStmt() const;
 
-  ModuleSymbol*         enclosingModule()                                const;
+  ModuleSymbol* enclosingModule() const;
 
-  bool                  extend(Symbol*        sym, bool isTopLevel=false);
+  bool extend(Symbol* sym, bool isTopLevel = false);
 
-  bool                  extend(VisibilityStmt* stmt);
+  bool extend(VisibilityStmt* stmt);
 
-  SymAndReferencedName  lookupForImport(Expr* expr, bool isUse)          const;
+  SymAndReferencedName lookupForImport(Expr* expr, bool isUse) const;
 
-  Symbol*               lookup(Expr*       expr, bool isUse=false)       const;
+  Symbol* lookup(Expr* expr, bool isUse = false) const;
 
-  Symbol*               lookupNameLocally(const char* name,
-                                          bool isUse=false)              const;
+  Symbol* lookupNameLocally(const char* name, bool isUse = false) const;
 
-  Symbol*               lookupPublicVisStmts(const char* name)           const;
+  Symbol* lookupPublicVisStmts(const char* name) const;
 
-  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
-                                                     BaseAST *context);
+  Symbol* lookupPublicUnqualAccessSyms(const char* name, BaseAST* context);
 
   Symbol*
   lookupPublicUnqualAccessSyms(const char* name,
-                               BaseAST *context,
-                               std::map<Symbol *, astlocT *>& renameLocs,
+                               BaseAST* context,
+                               std::map<Symbol*, astlocT*>& renameLocs,
                                std::map<Symbol*, VisibilityStmt*>& reexportPts,
                                bool followUses = false);
 
   // Support for UseStmt with only/except
   // Has the potential to return multiple fields
   // Includes public and private fields
-  void                  getFields(const char*           fieldName,
-                                  std::vector<Symbol*>& symbols)         const;
+  void getFields(const char* fieldName, std::vector<Symbol*>& symbols) const;
 
-  bool                  matchesTypeWithMethods(const char* name)         const;
+  bool matchesTypeWithMethods(const char* name) const;
 
-  void                  describe()                                       const;
+  void describe() const;
 
-  bool                  canReexport;
+  bool canReexport;
 
-private:
-  typedef std::vector<VisibilityStmt*>   UseImportList;
-  typedef std::vector<Symbol*>           SymList;
+ private:
+  typedef std::vector<VisibilityStmt*> UseImportList;
+  typedef std::vector<Symbol*> SymList;
 
-  typedef std::set<const ResolveScope*>  ScopeSet;
+  typedef std::set<const ResolveScope*> ScopeSet;
 
   typedef std::map<const char*, Symbol*> Bindings;
   typedef std::map<Symbol*, UseImportList> UseImportMap;
 
-                        ResolveScope();
+  ResolveScope();
 
-  void                  addBuiltIns();
+  void addBuiltIns();
 
-  bool                  isSymbolAndMethod(Symbol* sym0,
-                                          Symbol* sym1);
+  bool isSymbolAndMethod(Symbol* sym0, Symbol* sym1);
 
-  void                  extendMethodTracking(FnSymbol* newFn);
+  void extendMethodTracking(FnSymbol* newFn);
 
-  Symbol*               lookup(UnresolvedSymExpr* usymExpr,
-                               bool isUse=false)                         const;
+  Symbol* lookup(UnresolvedSymExpr* usymExpr, bool isUse = false) const;
 
-  Symbol*               lookupWithUses(UnresolvedSymExpr* usymExpr,
-                                       bool isUse=false)                 const;
+  Symbol* lookupWithUses(UnresolvedSymExpr* usymExpr, bool isUse = false) const;
 
-  bool                  isRepeat(Symbol* toAdd, const SymList& symbols)  const;
+  bool isRepeat(Symbol* toAdd, const SymList& symbols) const;
 
-  Symbol*               getFieldFromPath(CallExpr* dottedExpr,
-                                         bool isUse=false)               const;
+  Symbol* getFieldFromPath(CallExpr* dottedExpr, bool isUse = false) const;
 
-  Symbol*               getField(const char* fieldName)                  const;
+  Symbol* getField(const char* fieldName) const;
 
-  Symbol*               getFieldLocally(const char* fieldName)           const;
+  Symbol* getFieldLocally(const char* fieldName) const;
 
-  void                  getFields(const char* fieldName,
-                                  ScopeSet&   visited,
-                                  SymList&    symbols)                   const;
+  void
+  getFields(const char* fieldName, ScopeSet& visited, SymList& symbols) const;
 
-  bool                  getFieldsWithUses(const char* fieldName,
-                                          SymList&    symbols)           const;
+  bool getFieldsWithUses(const char* fieldName, SymList& symbols) const;
 
   void buildBreadthFirstUseImportList(UseImportList& useList) const;
   void buildBfsUseImportRespectPrivate(UseImportList& useImportList) const;
 
   void buildBreadthFirstUseImportList(UseImportList& modules,
                                       UseImportList& current,
-                                      UseImportMap&  visited) const;
+                                      UseImportMap& visited) const;
 
-  bool                 skipUse(UseImportMap&  visited,
-                               const UseStmt* current)                  const;
+  bool skipUse(UseImportMap& visited, const UseStmt* current) const;
 
   Symbol* followImportUseChains(const char* name) const;
   Symbol* lookupNameLocallyForImport(const char* name) const;
@@ -173,11 +161,11 @@ private:
                                CallExpr*& call,
                                const ResolveScope*& scope) const;
 
-  BaseAST*              mAstRef;
-  const ResolveScope*   mParent;
-  Bindings              mBindings;
+  BaseAST* mAstRef;
+  const ResolveScope* mParent;
+  Bindings mBindings;
   std::set<const char*> mMethodsOnTypeName;
-  UseImportList         mUseImportList;
+  UseImportList mUseImportList;
 };
 
 extern ResolveScope* rootScope;

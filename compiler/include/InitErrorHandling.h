@@ -26,53 +26,45 @@
 #include <set>
 
 class InitErrorHandling {
-public:
-  enum InitPhase {
-    cPhase0,
-    cPhase1,
-    cPhase2
-  };
+ public:
+  enum InitPhase { cPhase0, cPhase1, cPhase2 };
 
+  InitErrorHandling(FnSymbol* fn);
+  InitErrorHandling(CondStmt* cond, const InitErrorHandling& curr);
 
-                  InitErrorHandling(FnSymbol*   fn);
-                  InitErrorHandling(CondStmt* cond,
-                                    const InitErrorHandling& curr);
+  void merge(const InitErrorHandling& fork);
 
-  void            merge(const InitErrorHandling& fork);
+  FnSymbol* theFn() const;
 
-  FnSymbol*       theFn()                                                const;
+  InitPhase currPhase() const;
 
-  InitPhase       currPhase()                                            const;
+  InitPhase startPhase(BlockStmt* block) const;
+  bool isPhase0() const;
+  bool isPhase1() const;
+  bool isPhase2() const;
 
-  InitPhase       startPhase(BlockStmt* block)                           const;
-  bool            isPhase0()                                             const;
-  bool            isPhase1()                                             const;
-  bool            isPhase2()                                             const;
-
-  void            completePhase1(CallExpr* insertBefore);
-  void            completePhase0(CallExpr* initStmt);
+  void completePhase1(CallExpr* insertBefore);
+  void completePhase0(CallExpr* initStmt);
 
   bool isInitDone(CallExpr* stmt) const;
 
-  void            describe(int offset = 0)                               const;
+  void describe(int offset = 0) const;
 
   void removeInitDone();
 
-private:
+ private:
+  InitErrorHandling();
 
-                  InitErrorHandling();
-
-  InitPhase       startPhase(FnSymbol*  fn)                              const;
+  InitPhase startPhase(FnSymbol* fn) const;
   bool hasInitDone(BlockStmt* block);
 
-  const char*     phaseToString(InitPhase phase)                         const;
+  const char* phaseToString(InitPhase phase) const;
 
-  FnSymbol*       mFn;
-  InitPhase       mPhase;
-
+  FnSymbol* mFn;
+  InitPhase mPhase;
 };
 
 bool isInitStmt(CallExpr* stmt);
 bool isResolvedSuperInit(CallExpr* stmt);
-bool isResolvedThisInit (CallExpr* stmt);
+bool isResolvedThisInit(CallExpr* stmt);
 #endif

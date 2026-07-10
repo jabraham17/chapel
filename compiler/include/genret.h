@@ -25,9 +25,9 @@
 
 #ifdef HAVE_LLVM
 namespace llvm {
-  class MDNode;
-  class Value;
-  class Type;
+class MDNode;
+class Value;
+class Type;
 }
 #endif
 
@@ -96,29 +96,30 @@ extern GenRet baseASTCodegenString(const char* str);
 
  */
 class GenRet {
-public:
+ public:
   // When generating c, this should be set.
   // expression or type goes here
   std::string c;
 
 #ifdef HAVE_LLVM
   // one of the following is set when generating LLVM
-  llvm::Value *val=nullptr; // use val->getType() to obtain LLVM type
-  llvm::Type *type=nullptr; // set when generating a type only
-  Type *surroundingStruct=nullptr; // surrounding structure, if this is a field
-  uint64_t fieldOffset=0; // byte offset of this field within struct
-  llvm::MDNode *fieldTbaaTypeDescriptor=nullptr;
-  llvm::MDNode *aliasScope=nullptr;
-  llvm::MDNode *noalias=nullptr;
+  llvm::Value* val = nullptr; // use val->getType() to obtain LLVM type
+  llvm::Type* type = nullptr; // set when generating a type only
+  Type* surroundingStruct =
+    nullptr;                // surrounding structure, if this is a field
+  uint64_t fieldOffset = 0; // byte offset of this field within struct
+  llvm::MDNode* fieldTbaaTypeDescriptor = nullptr;
+  llvm::MDNode* aliasScope = nullptr;
+  llvm::MDNode* noalias = nullptr;
 #else
   // Keeping same layout for non-LLVM builds
-  void* val=nullptr;
-  void* type=nullptr;
-  void* surroundingStruct=nullptr;
-  uint64_t fieldOffset=0;
-  void* fieldTbaaTypeDescriptor=nullptr;
-  void* aliasScope=nullptr;
-  void* noalias=nullptr;
+  void* val = nullptr;
+  void* type = nullptr;
+  void* surroundingStruct = nullptr;
+  uint64_t fieldOffset = 0;
+  void* fieldTbaaTypeDescriptor = nullptr;
+  void* aliasScope = nullptr;
+  void* noalias = nullptr;
 #endif
 
   // Used for generating LLVM parallel_loop_accesses metadata.
@@ -133,16 +134,16 @@ public:
   // type of the result of codegenValue on it - that is, chplType
   // corresponds to the case when isLVPtr == GEN_VAL, and does not change
   // if isLVPtr is GEN_PTR or GEN_WIDE_PTR.
-  Type *chplType = nullptr;
+  Type* chplType = nullptr;
   uint8_t isLVPtr = GEN_VAL;
-                   // for some L-value expression, we set isLVPtr
-                   // if the generated expression is a possible lvalue
-                   // If isLVPtr is set, the expression is the address
-                   // of the e.g. variable we are referring to.
-                   //
-                   // If it's a wide pointer, we use put/get and set
-                   //  isLVPtr = GEN_WIDE_PTR > 0. If it's a local pointer,
-                   //  isLVPtr = GEN_PTR > 0.
+  // for some L-value expression, we set isLVPtr
+  // if the generated expression is a possible lvalue
+  // If isLVPtr is set, the expression is the address
+  // of the e.g. variable we are referring to.
+  //
+  // If it's a wide pointer, we use put/get and set
+  //  isLVPtr = GEN_WIDE_PTR > 0. If it's a local pointer,
+  //  isLVPtr = GEN_PTR > 0.
 
   bool isUnsigned = false; // Is this expression unsigned?
                            // Needed for LLVM code generation in order to
@@ -150,24 +151,15 @@ public:
                            // called type, since LLVM native integer types do
                            // not include signed-ness.
 
-  GenRet() { }
+  GenRet() {}
 
   // Allow implicit conversion from AST elements.
-  GenRet(BaseAST* ast) {
-    *this = baseASTCodegen(ast);
-  }
-  GenRet(int x) {
-    *this = baseASTCodegenInt(x);
-  }
-  GenRet(const char* str) {
-    *this = baseASTCodegenString(str);
-  }
+  GenRet(BaseAST* ast) { *this = baseASTCodegen(ast); }
+  GenRet(int x) { *this = baseASTCodegenInt(x); }
+  GenRet(const char* str) { *this = baseASTCodegenString(str); }
 
   // Return true if this GenRet is empty
-  bool isEmpty() const {
-    return c.empty() && val == NULL && type == NULL;
-  }
+  bool isEmpty() const { return c.empty() && val == NULL && type == NULL; }
 };
-
 
 #endif //GENRET_H

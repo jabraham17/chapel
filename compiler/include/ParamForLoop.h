@@ -23,71 +23,63 @@
 
 #include "LoopStmt.h"
 
-class ParamForLoop final : public LoopStmt
-{
+class ParamForLoop final : public LoopStmt {
   //
   // Class interface
   //
-public:
-  static BlockStmt*      buildParamForLoop(VarSymbol* indexVar,
-                                           Expr*      range,
-                                           BlockStmt* stmts);
+ public:
+  static BlockStmt*
+  buildParamForLoop(VarSymbol* indexVar, Expr* range, BlockStmt* stmts);
 
-private:
-  static VarSymbol*      newParamVar();
-
+ private:
+  static VarSymbol* newParamVar();
 
   //
   // Instance Interface
   //
-public:
-                         ParamForLoop(VarSymbol*   indexVar,
-                                      VarSymbol*   low,
-                                      VarSymbol*   high,
-                                      VarSymbol*   stride,
-                                      LabelSymbol* continueLabel,
-                                      LabelSymbol* breakLabel,
-                                      BlockStmt*   initBody);
+ public:
+  ParamForLoop(VarSymbol* indexVar,
+               VarSymbol* low,
+               VarSymbol* high,
+               VarSymbol* stride,
+               LabelSymbol* continueLabel,
+               LabelSymbol* breakLabel,
+               BlockStmt* initBody);
 
-                        ~ParamForLoop() override = default;
+  ~ParamForLoop() override = default;
 
   DECLARE_COPY(ParamForLoop);
   ParamForLoop* copyInner(SymbolMap* map) override;
 
-  GenRet                 codegen()                                 override;
-  void                   verify()                                  override;
-  void                   accept(AstVisitor* visitor)               override;
+  GenRet codegen() override;
+  void verify() override;
+  void accept(AstVisitor* visitor) override;
 
-  Expr*                  getFirstExpr()                            override;
-  Expr*                  getNextExpr(Expr* expr)                   override;
+  Expr* getFirstExpr() override;
+  Expr* getNextExpr(Expr* expr) override;
 
-  bool                   isParamForLoop()                    const override
-                         { return true; }
+  bool isParamForLoop() const override { return true; }
 
-  CallExpr*              blockInfoGet()                      const override;
-  CallExpr*              blockInfoSet(CallExpr* expr)              override;
+  CallExpr* blockInfoGet() const override;
+  CallExpr* blockInfoSet(CallExpr* expr) override;
 
-  SymExpr*               indexExprGet()                               const;
-  SymExpr*               lowExprGet()                                 const;
-  SymExpr*               highExprGet()                                const;
-  SymExpr*               strideExprGet()                              const;
+  SymExpr* indexExprGet() const;
+  SymExpr* lowExprGet() const;
+  SymExpr* highExprGet() const;
+  SymExpr* strideExprGet() const;
 
-  CallExpr*              resolveInfo()                                const;
+  CallExpr* resolveInfo() const;
 
-  BlockStmt*             copyBody(SymbolMap* map);
+  BlockStmt* copyBody(SymbolMap* map);
 
-  CallExpr*              foldForResolve();
+  CallExpr* foldForResolve();
 
-private:
-                         ParamForLoop();
+ private:
+  ParamForLoop();
 
-  Type*                  indexType();
-  void                   validateLoop(VarSymbol* lvar,
-                                      VarSymbol* hvar,
-                                      VarSymbol* svar);
-  void                   validateLoop(EnumSymbol* lvar,
-                                      EnumSymbol* hvar,
-                                      VarSymbol* svar);
+  Type* indexType();
+  void validateLoop(VarSymbol* lvar, VarSymbol* hvar, VarSymbol* svar);
+  void validateLoop(EnumSymbol* lvar, EnumSymbol* hvar, VarSymbol* svar);
 
   //
   // NOAKES 2014/12/11
@@ -99,7 +91,7 @@ private:
   //
   // Migrate the blockInfo directly in to ParamForLoop to enable a path to
   // decoupling ParamForLoop from BlockStmt.
-  CallExpr*              mResolveInfo;
+  CallExpr* mResolveInfo;
 };
 
 #endif

@@ -24,14 +24,12 @@
 #include "AstVisitor.h"
 #include "baseAST.h"
 
-class AstCount final : public AstVisitor
-{
-public:
-
+class AstCount final : public AstVisitor {
+ public:
   // Create member variables for each AST node type
   // that is handled by the baseAST macro.
 #define decl_members(type) int num##type
-foreach_ast(decl_members);
+  foreach_ast(decl_members);
 #undef decl_members
 
   // Create member variables for AST types not handled
@@ -42,132 +40,131 @@ foreach_ast(decl_members);
   int numForLoop;
   int numParamForLoop;
 
-   AstCount();
+  AstCount();
   ~AstCount() override = default;
 
   int total();
 
-  bool   enterThunk          (TemporaryConversionThunk* node) override;
-  void   exitThunk           (TemporaryConversionThunk* node) override;
+  bool enterThunk(TemporaryConversionThunk* node) override;
+  void exitThunk(TemporaryConversionThunk* node) override;
   //
   // The sub-classes of Type
   //
-  bool   enterAggrType       (AggregateType*     node) override;
-  void   exitAggrType        (AggregateType*     node) override;
+  bool enterAggrType(AggregateType* node) override;
+  void exitAggrType(AggregateType* node) override;
 
-  bool   enterDecoratedClassType(DecoratedClassType* node) override;
-  void   exitDecoratedClassType (DecoratedClassType* node) override;
+  bool enterDecoratedClassType(DecoratedClassType* node) override;
+  void exitDecoratedClassType(DecoratedClassType* node) override;
 
-  bool   enterEnumType       (EnumType*          node) override;
-  void   exitEnumType        (EnumType*          node) override;
-  void   visitConstrainedType(ConstrainedType*   node) override;
-  void   visitPrimType       (PrimitiveType*     node) override;
-  void   visitFunctionType   (FunctionType*      node) override;
+  bool enterEnumType(EnumType* node) override;
+  void exitEnumType(EnumType* node) override;
+  void visitConstrainedType(ConstrainedType* node) override;
+  void visitPrimType(PrimitiveType* node) override;
+  void visitFunctionType(FunctionType* node) override;
 
   //
   // The sub-classes of Symbol
   //
-  bool   enterArgSym         (ArgSymbol*         node) override;
-  void   exitArgSym          (ArgSymbol*         node) override;
+  bool enterArgSym(ArgSymbol* node) override;
+  void exitArgSym(ArgSymbol* node) override;
 
-  void   visitEnumSym        (EnumSymbol*        node) override;
+  void visitEnumSym(EnumSymbol* node) override;
 
-  bool   enterFnSym          (FnSymbol*          node) override;
-  void   exitFnSym           (FnSymbol*          node) override;
+  bool enterFnSym(FnSymbol* node) override;
+  void exitFnSym(FnSymbol* node) override;
 
-  bool   enterInterfaceSym   (InterfaceSymbol*   node) override;
-  void   exitInterfaceSym    (InterfaceSymbol*   node) override;
+  bool enterInterfaceSym(InterfaceSymbol* node) override;
+  void exitInterfaceSym(InterfaceSymbol* node) override;
 
-  void   visitLabelSym       (LabelSymbol*       node) override;
-  void visitTemporaryConversionSymbol(TemporaryConversionSymbol* node)override;
+  void visitLabelSym(LabelSymbol* node) override;
+  void visitTemporaryConversionSymbol(TemporaryConversionSymbol* node) override;
 
-  bool   enterModSym         (ModuleSymbol*      node) override;
-  void   exitModSym          (ModuleSymbol*      node) override;
+  bool enterModSym(ModuleSymbol* node) override;
+  void exitModSym(ModuleSymbol* node) override;
 
-  bool   enterTypeSym        (TypeSymbol*        node) override;
-  void   exitTypeSym         (TypeSymbol*        node) override;
+  bool enterTypeSym(TypeSymbol* node) override;
+  void exitTypeSym(TypeSymbol* node) override;
 
-  void   visitVarSym         (VarSymbol*         node) override;
+  void visitVarSym(VarSymbol* node) override;
 
   //
   // The sub-classes of Expr
   //
-  bool   enterCallExpr       (CallExpr*          node) override;
-  void   exitCallExpr        (CallExpr*          node) override;
+  bool enterCallExpr(CallExpr* node) override;
+  void exitCallExpr(CallExpr* node) override;
 
-  bool   enterContextCallExpr(ContextCallExpr*   node) override;
-  void   exitContextCallExpr (ContextCallExpr*   node) override;
+  bool enterContextCallExpr(ContextCallExpr* node) override;
+  void exitContextCallExpr(ContextCallExpr* node) override;
 
-  bool   enterDefExpr        (DefExpr*           node) override;
-  void   exitDefExpr         (DefExpr*           node) override;
+  bool enterDefExpr(DefExpr* node) override;
+  void exitDefExpr(DefExpr* node) override;
 
-  bool   enterNamedExpr      (NamedExpr*         node) override;
-  void   exitNamedExpr       (NamedExpr*         node) override;
+  bool enterNamedExpr(NamedExpr* node) override;
+  void exitNamedExpr(NamedExpr* node) override;
 
-  bool   enterIfcConstraint  (IfcConstraint*     node) override;
-  void   exitIfcConstraint   (IfcConstraint*     node) override;
+  bool enterIfcConstraint(IfcConstraint* node) override;
+  void exitIfcConstraint(IfcConstraint* node) override;
 
-  bool   enterIfExpr         (IfExpr*            node) override;
-  void   exitIfExpr          (IfExpr*            node) override;
+  bool enterIfExpr(IfExpr* node) override;
+  void exitIfExpr(IfExpr* node) override;
 
-  void   visitSymExpr        (SymExpr*           node) override;
+  void visitSymExpr(SymExpr* node) override;
 
-  void   visitUsymExpr       (UnresolvedSymExpr* node) override;
+  void visitUsymExpr(UnresolvedSymExpr* node) override;
 
-  bool   enterLoopExpr       (LoopExpr*          node) override;
-  void   exitLoopExpr        (LoopExpr*          node) override;
+  bool enterLoopExpr(LoopExpr* node) override;
+  void exitLoopExpr(LoopExpr* node) override;
 
   //
   // The sub-classes of Stmt
   //
-  void   visitUseStmt        (UseStmt*           node) override;
+  void visitUseStmt(UseStmt* node) override;
 
-  void   visitImportStmt     (ImportStmt*        node) override;
+  void visitImportStmt(ImportStmt* node) override;
 
-  bool   enterBlockStmt      (BlockStmt*         node) override;
-  void   exitBlockStmt       (BlockStmt*         node) override;
+  bool enterBlockStmt(BlockStmt* node) override;
+  void exitBlockStmt(BlockStmt* node) override;
 
-  bool   enterForallStmt     (ForallStmt*        node) override;
-  void   exitForallStmt      (ForallStmt*        node) override;
+  bool enterForallStmt(ForallStmt* node) override;
+  void exitForallStmt(ForallStmt* node) override;
 
-  bool   enterWhileDoStmt    (WhileDoStmt*       node) override;
-  void   exitWhileDoStmt     (WhileDoStmt*       node) override;
+  bool enterWhileDoStmt(WhileDoStmt* node) override;
+  void exitWhileDoStmt(WhileDoStmt* node) override;
 
-  bool   enterDoWhileStmt    (DoWhileStmt*       node) override;
-  void   exitDoWhileStmt     (DoWhileStmt*       node) override;
+  bool enterDoWhileStmt(DoWhileStmt* node) override;
+  void exitDoWhileStmt(DoWhileStmt* node) override;
 
-  bool   enterCForLoop       (CForLoop*          node) override;
-  void   exitCForLoop        (CForLoop*          node) override;
+  bool enterCForLoop(CForLoop* node) override;
+  void exitCForLoop(CForLoop* node) override;
 
-  bool   enterForLoop        (ForLoop*           node) override;
-  void   exitForLoop         (ForLoop*           node) override;
+  bool enterForLoop(ForLoop* node) override;
+  void exitForLoop(ForLoop* node) override;
 
-  bool   enterParamForLoop   (ParamForLoop*      node) override;
-  void   exitParamForLoop    (ParamForLoop*      node) override;
+  bool enterParamForLoop(ParamForLoop* node) override;
+  void exitParamForLoop(ParamForLoop* node) override;
 
-  bool   enterCondStmt       (CondStmt*          node) override;
-  void   exitCondStmt        (CondStmt*          node) override;
+  bool enterCondStmt(CondStmt* node) override;
+  void exitCondStmt(CondStmt* node) override;
 
-  void   visitEblockStmt     (ExternBlockStmt*   node) override;
+  void visitEblockStmt(ExternBlockStmt* node) override;
 
-  bool   enterForwardingStmt (ForwardingStmt*    node) override;
-  void   exitForwardingStmt  (ForwardingStmt*    node) override;
+  bool enterForwardingStmt(ForwardingStmt* node) override;
+  void exitForwardingStmt(ForwardingStmt* node) override;
 
-  bool   enterGotoStmt       (GotoStmt*          node) override;
-  void   exitGotoStmt        (GotoStmt*          node) override;
+  bool enterGotoStmt(GotoStmt* node) override;
+  void exitGotoStmt(GotoStmt* node) override;
 
-  bool   enterDeferStmt      (DeferStmt*         node) override;
-  void   exitDeferStmt       (DeferStmt*         node) override;
+  bool enterDeferStmt(DeferStmt* node) override;
+  void exitDeferStmt(DeferStmt* node) override;
 
-  bool   enterTryStmt        (TryStmt*           node) override;
-  void   exitTryStmt         (TryStmt*           node) override;
+  bool enterTryStmt(TryStmt* node) override;
+  void exitTryStmt(TryStmt* node) override;
 
-  bool   enterCatchStmt      (CatchStmt*         node) override;
-  void   exitCatchStmt       (CatchStmt*         node) override;
+  bool enterCatchStmt(CatchStmt* node) override;
+  void exitCatchStmt(CatchStmt* node) override;
 
-  bool   enterImplementsStmt (ImplementsStmt*    node) override;
-  void   exitImplementsStmt  (ImplementsStmt*    node) override;
-
+  bool enterImplementsStmt(ImplementsStmt* node) override;
+  void exitImplementsStmt(ImplementsStmt* node) override;
 };
 
 #endif

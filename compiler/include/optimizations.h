@@ -54,8 +54,8 @@ class LifetimeInformation;
 void removeUnnecessaryGotos(FnSymbol* fn, bool removeEpilogueLabel = false);
 size_t localCopyPropagation(FnSymbol* fn);
 size_t globalCopyPropagation(FnSymbol* fn);
-void eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
-                                        Map<Symbol*,Vec<SymExpr*>*>& useMap,
+void eliminateSingleAssignmentReference(Map<Symbol*, Vec<SymExpr*>*>& defMap,
+                                        Map<Symbol*, Vec<SymExpr*>*>& useMap,
                                         Symbol* var);
 size_t singleAssignmentRefPropagation(FnSymbol* fn);
 void cleanupLoopBlocks(FnSymbol* fn);
@@ -66,12 +66,12 @@ bool outlivesBlock(LifetimeInformation* info, Symbol* sym, BlockStmt* block);
 
 void checkLifetimesForForallUnorderedOps(FnSymbol* fn,
                                          LifetimeInformation* lifetimeInfo);
-std::vector<Expr *> getLastStmtsForForallUnorderedOps(ForallStmt *forall);
+std::vector<Expr*> getLastStmtsForForallUnorderedOps(ForallStmt* forall);
 void optimizeForallUnorderedOps();
 
 void liveVariableAnalysis(FnSymbol* fn,
                           Vec<Symbol*>& locals,
-                          Map<Symbol*,int>& localID,
+                          Map<Symbol*, int>& localID,
                           Vec<SymExpr*>& useSet,
                           Vec<SymExpr*>& defSet,
                           std::vector<BitVec*>& OUT);
@@ -82,15 +82,15 @@ void inferConstRefs();
 
 void computeNoAliasSets();
 
-void removeInitOrAutoCopyPostResolution(CallExpr *call);
-void setDefinedConstForDomainSymbol(Symbol *domainSym, Expr *nextExpr,
-                                    Symbol *isConst);
+void removeInitOrAutoCopyPostResolution(CallExpr* call);
+void setDefinedConstForDomainSymbol(Symbol* domainSym,
+                                    Expr* nextExpr,
+                                    Symbol* isConst);
 void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
                                            std::set<Flag>* flags);
-void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
-                                           FlagSet* flags);
-void setDefinedConstForPrimSetMemberIfApplicable(CallExpr *call);
-void setDefinedConstForFieldsInInitializer(FnSymbol *fn);
+void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr, FlagSet* flags);
+void setDefinedConstForPrimSetMemberIfApplicable(CallExpr* call);
+void setDefinedConstForFieldsInInitializer(FnSymbol* fn);
 
 bool isLoopGpuBound(CForLoop* loop);
 void gpuTransforms();

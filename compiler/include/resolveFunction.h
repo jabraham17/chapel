@@ -29,28 +29,28 @@ class VarSymbol;
 class Symbol;
 class BaseAST;
 
-void  resolveSignatureAndFunction(FnSymbol* fn);
-void  resolveSignature(FnSymbol* fn);
-void  resolveFunction(FnSymbol* fn, CallExpr* forCall = 0);
+void resolveSignatureAndFunction(FnSymbol* fn);
+void resolveSignature(FnSymbol* fn);
+void resolveFunction(FnSymbol* fn, CallExpr* forCall = 0);
 
-bool  isParallelIterator(FnSymbol* fn);
-bool  isLeaderIterator(FnSymbol* fn);
-bool  isFollowerIterator(FnSymbol* fn);
-bool  isStandaloneIterator(FnSymbol* fn);
+bool isParallelIterator(FnSymbol* fn);
+bool isLeaderIterator(FnSymbol* fn);
+bool isFollowerIterator(FnSymbol* fn);
+bool isStandaloneIterator(FnSymbol* fn);
 
 // If yieldType is not NULL, the type yielded by an iterator will
 // be stored in it.
-void  resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldType);
-void  resolveReturnType(FnSymbol* fn);
-void  resolveSpecifiedReturnType(FnSymbol* fn);
+void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldType);
+void resolveReturnType(FnSymbol* fn);
+void resolveSpecifiedReturnType(FnSymbol* fn);
 
-Type* getReturnedTupleType(FnSymbol*      fn,
-                           AggregateType* retType);
+Type* getReturnedTupleType(FnSymbol* fn, AggregateType* retType);
 
 void markTempDeadLastMention(VarSymbol* var);
 
 void maybeSuggestToByteCall(Symbol* from,
-                            Type* fromType, Type* toType,
+                            Type* fromType,
+                            Type* toType,
                             BaseAST* where);
 
 #endif

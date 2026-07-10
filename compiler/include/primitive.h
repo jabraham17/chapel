@@ -59,35 +59,35 @@ enum {
   FAST_AND_LOCAL
 };
 
-
-class PrimitiveOp { public:
-  PrimitiveTag  tag;
-  const char*   name;
+class PrimitiveOp {
+ public:
+  PrimitiveTag tag;
+  const char* name;
   QualifiedType (*returnInfo)(CallExpr*); // aka qualifiedTypeFn
   void (*codegenFn)(CallExpr*, GenRet&);
-  bool          isEssential; // has effects visible outside of the function
-  bool          passLineno;  // pass line number and filename to this primitive
+  bool isEssential; // has effects visible outside of the function
+  bool passLineno;  // pass line number and filename to this primitive
 
-  PrimitiveOp(PrimitiveTag  atag,
-              const char*   aname,
+  PrimitiveOp(PrimitiveTag atag,
+              const char* aname,
               QualifiedType (*areturnInfo)(CallExpr*));
 };
 
-extern HashMap<const char *, StringHashFns, PrimitiveOp *> primitives_map;
+extern HashMap<const char*, StringHashFns, PrimitiveOp*> primitives_map;
 
-extern PrimitiveOp*     primitives[NUM_KNOWN_PRIMS];
+extern PrimitiveOp* primitives[NUM_KNOWN_PRIMS];
 
 extern Vec<const char*> memDescsVec;
 
-void       printPrimitiveCounts(const char* passName);
+void printPrimitiveCounts(const char* passName);
 
-void       initPrimitive();
+void initPrimitive();
 
 VarSymbol* newMemDesc(const char* str);
 
 VarSymbol* newMemDesc(Type* type);
 
-bool       getSettingPrimitiveDstSrc(CallExpr* call, Expr** dest, Expr** src);
+bool getSettingPrimitiveDstSrc(CallExpr* call, Expr** dest, Expr** src);
 
 void registerPrimitiveCodegen(PrimitiveTag tag, void (*fn)(CallExpr*, GenRet&));
 

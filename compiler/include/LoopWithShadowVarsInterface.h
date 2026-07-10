@@ -37,7 +37,7 @@ struct LoopWithShadowVarsInterface {
   virtual bool isInductionVar(Symbol* sym) = 0;
 
   virtual bool isForallStmt() = 0;
-  virtual ForallStmt *forallStmt() = 0;
+  virtual ForallStmt* forallStmt() = 0;
 };
 
 #endif

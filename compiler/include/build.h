@@ -61,7 +61,8 @@ Expr* buildNamedActual(const char* name, Expr* expr);
 
 Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index = NULL);
 
-SymExpr* buildIntLiteral(const char* pch, const char* file = NULL, int line = -1);
+SymExpr*
+buildIntLiteral(const char* pch, const char* file = NULL, int line = -1);
 SymExpr* buildRealLiteral(const char* pch);
 SymExpr* buildImagLiteral(const char* pch);
 SymExpr* buildStringLiteral(const char* pch);
@@ -75,11 +76,15 @@ BlockStmt* buildChapelStmt(Expr* expr = NULL);
 BlockStmt* buildErrorStandin();
 
 BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse);
-BlockStmt* buildUseStmt(Expr* mod, const char* rename,
-                        std::vector<PotentialRename*>* names, bool except,
+BlockStmt* buildUseStmt(Expr* mod,
+                        const char* rename,
+                        std::vector<PotentialRename*>* names,
+                        bool except,
                         bool privateUse);
-BlockStmt* buildUseStmt(Expr* mod, Expr* rename,
-                        std::vector<PotentialRename*>* names, bool except,
+BlockStmt* buildUseStmt(Expr* mod,
+                        Expr* rename,
+                        std::vector<PotentialRename*>* names,
+                        bool except,
                         bool privateUse);
 ImportStmt* buildImportStmt(Expr* mod);
 ImportStmt* buildImportStmt(Expr* mod, const char* rename);
@@ -91,36 +96,37 @@ bool processStringInRequireStmt(Expr* expr,
                                 bool parseTime,
                                 const char* modFilename);
 BlockStmt* buildRequireStmt(CallExpr* args, bool atModuleScope);
-DefExpr* buildQueriedExpr(const char *expr);
+DefExpr* buildQueriedExpr(const char* expr);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
 BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = NULL);
-CallExpr*  buildIfVar(const char* name, Expr* rhs, bool isConst);
+CallExpr* buildIfVar(const char* name, Expr* rhs, bool isConst);
 
 ModuleSymbol* buildModule(const char* name,
-                          ModTag      modTag,
-                          BlockStmt*  block,
+                          ModTag modTag,
+                          BlockStmt* block,
                           const char* filename,
-                          bool        priv,
-                          bool        prototype);
+                          bool priv,
+                          bool prototype);
 
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2 = NULL);
 CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr);
 BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body);
-void       checkIndices(BaseAST* indices);
-void       destructureIndices(BlockStmt* block,
-                              BaseAST*   indices,
-                              Expr*      init,
-                              bool       coforall);
+void checkIndices(BaseAST* indices);
+void destructureIndices(BlockStmt* block,
+                        BaseAST* indices,
+                        Expr* init,
+                        bool coforall);
 BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  Expr* iterator,
                                  CallExpr* byref_vars,
                                  BlockStmt* body,
                                  bool zippered = false);
 BlockStmt* buildGotoStmt(GotoTag tag, const char* name);
-BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1 = NULL, Expr* e2 = NULL);
+BlockStmt*
+buildPrimitiveStmt(PrimitiveTag tag, Expr* e1 = NULL, Expr* e2 = NULL);
 BlockStmt* buildDeleteStmt(CallExpr* exprlist);
 Expr* buildForLoopExpr(Expr* indices,
                        Expr* iterator,
@@ -141,8 +147,9 @@ Expr* buildForallLoopExpr(Expr* indices,
                           bool maybeArrayType = false,
                           bool zippered = false);
 Expr* buildForallLoopExprFromArrayType(CallExpr* buildArrRTTypeCall,
-                                           bool recursiveCall = false);
-BlockStmt* buildParamForLoopStmt(VarSymbol* indexVar, Expr* range, BlockStmt* block);
+                                       bool recursiveCall = false);
+BlockStmt*
+buildParamForLoopStmt(VarSymbol* indexVar, Expr* range, BlockStmt* block);
 BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, const char* op);
 BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, PrimitiveTag op);
 BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs);
@@ -152,48 +159,53 @@ BlockStmt* buildSelectStmt(Expr* s, BlockStmt* whenstmts);
 CallExpr* buildReduceExpr(Expr* op, Expr* data, bool zippered = false);
 CallExpr* buildScanExpr(Expr* op, Expr* data, bool zippered = false);
 
-
 std::set<Flag>* buildVarDeclFlags(Flag flag1 = FLAG_UNKNOWN,
                                   Flag flag2 = FLAG_UNKNOWN);
 BlockStmt* buildVarDecls(BlockStmt* stmts,
-                         std::set<Flag>* flags = NULL, Expr* cnameExpr = NULL);
+                         std::set<Flag>* flags = NULL,
+                         Expr* cnameExpr = NULL);
 
-DefExpr*  buildClassDefExpr(const char*               name,
-                            const char*               cname,
-                            AggregateTag              tag,
-                            const std::vector<Expr*>& inherits,
-                            BlockStmt*                decls,
-                            Flag                      isExtern,
-                            ModTag                    modTag);
+DefExpr* buildClassDefExpr(const char* name,
+                           const char* cname,
+                           AggregateTag tag,
+                           const std::vector<Expr*>& inherits,
+                           BlockStmt* decls,
+                           Flag isExtern,
+                           ModTag modTag);
 
 AggregateType* installInternalType(AggregateType* ct, AggregateType* dt);
 
 void setupTypeIntentArg(ArgSymbol* arg);
 
-DefExpr*  buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
-DefExpr*  buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init);
+DefExpr* buildArgDefExpr(
+  IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
+DefExpr*
+buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init);
 FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);
 
-void setupExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr,
+void setupExternExportFunctionDecl(Flag externOrExport,
+                                   Expr* paramCNameExpr,
                                    FnSymbol* fn);
 
-BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr, BlockStmt* blockFnDef);
+BlockStmt* buildExternExportFunctionDecl(Flag externOrExport,
+                                         Expr* paramCNameExpr,
+                                         BlockStmt* blockFnDef);
 
-void setupFunctionDecl(FnSymbol*   fn,
-                       RetTag      optRetTag,
-                       Expr*       optRetType,
-                       bool        optThrowsError,
-                       Expr*       optWhere,
-                       Expr*       optLifetimeConstraints,
-                       BlockStmt*  optFnBody);
+void setupFunctionDecl(FnSymbol* fn,
+                       RetTag optRetTag,
+                       Expr* optRetType,
+                       bool optThrowsError,
+                       Expr* optWhere,
+                       Expr* optLifetimeConstraints,
+                       BlockStmt* optFnBody);
 
-BlockStmt* buildFunctionDecl(FnSymbol*   fn,
-                             RetTag      optRetTag,
-                             Expr*       optRetType,
-                             bool        optThrowsError,
-                             Expr*       optWhere,
-                             Expr*       optLifetimeConstraints,
-                             BlockStmt*  optFnBody);
+BlockStmt* buildFunctionDecl(FnSymbol* fn,
+                             RetTag optRetTag,
+                             Expr* optRetType,
+                             bool optThrowsError,
+                             Expr* optWhere,
+                             Expr* optLifetimeConstraints,
+                             BlockStmt* optFnBody);
 void applyPrivateToBlock(BlockStmt* block);
 ForwardingStmt* buildForwardingStmt(DefExpr* fnDef);
 ForwardingStmt* buildForwardingStmt(DefExpr* fnDef,
@@ -201,7 +213,8 @@ ForwardingStmt* buildForwardingStmt(DefExpr* fnDef,
                                     bool except);
 BlockStmt* buildConditionalLocalStmt(Expr* condExpr, Expr* stmt);
 BlockStmt* buildLocalStmt(Expr* stmt);
-BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
+BlockStmt* buildManagerBlock(Expr* managerExpr,
+                             std::set<Flag>* flags,
                              const char* resourceName,
                              Symbol*& outStoredResource);
 Expr* buildManageStmt(BlockStmt* managers, BlockStmt* block, ModTag modTag);
@@ -210,8 +223,8 @@ BlockStmt* buildBeginStmt(CallExpr* byref_vars, Expr* stmt);
 BlockStmt* buildSyncStmt(Expr* stmt);
 BlockStmt* buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block);
 BlockStmt* buildExternBlockStmt(const char* c_code);
-CallExpr*  buildPreDecIncWarning(Expr* expr, char sign);
-BlockStmt* convertTypesToExtern(BlockStmt*, const char* cname=nullptr);
+CallExpr* buildPreDecIncWarning(Expr* expr, char sign);
+BlockStmt* convertTypesToExtern(BlockStmt*, const char* cname = nullptr);
 BlockStmt* handleConfigTypes(BlockStmt*);
 
 // In the following routines 'open[high|low]' are used to indicate
@@ -219,10 +232,12 @@ BlockStmt* handleConfigTypes(BlockStmt*);
 // present, Chapel only supports open intervals on the high bound,
 // so those that say that the low bound is open are unused, but
 // here if we decide to add `lo<..<hi` and/or `lo<..hi` later.
-CallExpr* buildBoundedRange(Expr* low, Expr* high,
-                            bool openlow=false, bool openhigh=false);
-CallExpr* buildLowBoundedRange(Expr* low, bool open=false);
-CallExpr* buildHighBoundedRange(Expr* high, bool open=false);
+CallExpr* buildBoundedRange(Expr* low,
+                            Expr* high,
+                            bool openlow = false,
+                            bool openhigh = false);
+CallExpr* buildLowBoundedRange(Expr* low, bool open = false);
+CallExpr* buildHighBoundedRange(Expr* high, bool open = false);
 CallExpr* buildUnboundedRange();
 
 Expr* tryExpr(Expr*);

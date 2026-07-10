@@ -30,19 +30,19 @@
 #include <map>
 
 struct lessAstr {
-  bool operator() (const char* lhs, const char* rhs) const {
-    return strcmp(lhs,rhs) < 0;
+  bool operator()(const char* lhs, const char* rhs) const {
+    return strcmp(lhs, rhs) < 0;
   }
 };
 
 struct ConstructDIType;
 class DebugData {
-private:
+ private:
   bool optimized;
   std::map<const char*, llvm::DIFile*, lessAstr> filesByName;
 
-public:
-  DebugData(bool optimized): optimized(optimized) {}
+ public:
+  DebugData(bool optimized) : optimized(optimized) {}
   void finalize();
   void createCompileUnit(ModuleSymbol* modSym,
                          const char* file,
@@ -62,7 +62,7 @@ public:
   llvm::DIVariable* getVariable(VarSymbol* varSym);
   llvm::DIVariable* getFormalArg(ArgSymbol* argSym, unsigned int ArgNo);
 
-private:
+ private:
   llvm::DIType* constructType(Type* type);
   llvm::DIFile* constructFile(llvm::DIBuilder* DIB, const char* file);
   llvm::DINamespace* constructModuleScope(ModuleSymbol* modSym);
@@ -71,16 +71,17 @@ private:
   llvm::DIVariable* constructVariable(VarSymbol* varSym);
   llvm::DIVariable* constructFormalArg(ArgSymbol* argSym, unsigned int ArgNo);
 
-// These methods are not part of the public interface, but are needed by
-// ConstructDIType subclasses to help construct types.
-public:
+  // These methods are not part of the public interface, but are needed by
+  // ConstructDIType subclasses to help construct types.
+ public:
   llvm::DIType* constructTypeForPointer(llvm::Type* ty, Type* type);
-  llvm::DIType* constructTypeForAggregate(llvm::StructType* ty, AggregateType* type);
+  llvm::DIType* constructTypeForAggregate(llvm::StructType* ty,
+                                          AggregateType* type);
   llvm::DIType* constructTypeFromChplType(llvm::Type* ty, Type* type);
   llvm::DIType* maybeWrapTypeInPointer(llvm::DIType* N, Type* type);
 };
 
-extern DebugData *debugInfo;
+extern DebugData* debugInfo;
 
 #endif
 #endif

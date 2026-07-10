@@ -36,9 +36,9 @@ class Type;
 class TypeSymbol;
 
 enum PythonFileType {
-  C_PXD, // used for C extern declarations in Cython
-  PYTHON_PYX,  // used for Python translations in Cython
-  C_PYX // use for C code in the .pyx file
+  C_PXD,      // used for C extern declarations in Cython
+  PYTHON_PYX, // used for Python translations in Cython
+  C_PYX       // use for C code in the .pyx file
 };
 
 // Stores arg/function symbol to element type for the arg's array or function's
@@ -46,7 +46,7 @@ enum PythonFileType {
 extern std::map<Symbol*, TypeSymbol*> exportedArrayElementType;
 
 extern std::string libDir;
-extern std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
+extern std::map<TypeSymbol*, std::pair<std::string, std::string>> pythonNames;
 extern std::map<TypeSymbol*, std::string> fortranKindNames;
 extern std::map<TypeSymbol*, std::string> fortranTypeNames;
 

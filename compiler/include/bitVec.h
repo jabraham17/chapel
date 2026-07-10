@@ -24,61 +24,59 @@
 #include <cstddef>
 
 class BitVec {
-public:
+ public:
   unsigned* data;
-  size_t    in_size;
-  size_t    ndata;
+  size_t in_size;
+  size_t ndata;
 
+  BitVec(size_t in_size);
+  BitVec(const BitVec& rhs);
 
-         BitVec(size_t in_size);
-         BitVec(const BitVec& rhs);
+  ~BitVec();
 
-        ~BitVec();
+  void clear();
+  bool get(size_t i) const;
+  bool operator[](size_t i) const { return get(i); }
 
-  void   clear();
-  bool   get(size_t i) const;
-  bool   operator[](size_t i) const { return get(i); }
+  void unset(size_t i);
 
-  void   unset(size_t i);
+  void disjunction(const BitVec& other);
+  void intersection(const BitVec& other);
 
-  void   disjunction(const BitVec& other);
-  void   intersection(const BitVec& other);
-
-  void   operator =  (const BitVec& other) { this->copy(other);         }
+  void operator=(const BitVec& other) { this->copy(other); }
 
   // Synonyms for disjunction (union) and (conjunction) intersection above.
-  void   operator |= (const BitVec& other) { this->disjunction(other);  }
-  void   operator += (const BitVec& other) { this->disjunction(other);  }
-  void   operator &= (const BitVec& other) { this->intersection(other); }
-  void   operator -= (const BitVec& other);
+  void operator|=(const BitVec& other) { this->disjunction(other); }
+  void operator+=(const BitVec& other) { this->disjunction(other); }
+  void operator&=(const BitVec& other) { this->intersection(other); }
+  void operator-=(const BitVec& other);
 
   // Added functionality to make this compatible with std::bitset and thus
   // boosts dynamic bitset if that gets into the STL, or we start using boost
-  bool   equals(const BitVec& other) const;
+  bool equals(const BitVec& other) const;
 
-  void   set();
-  void   set(size_t i);
+  void set();
+  void set(size_t i);
 
-  void   reset();
-  void   reset(size_t i);
+  void reset();
+  void reset(size_t i);
 
-  void   copy(const BitVec& other);
-  void   copy(size_t i, bool value);
+  void copy(const BitVec& other);
+  void copy(size_t i, bool value);
 
-  void   flip();
-  void   flip(size_t i);
+  void flip();
+  void flip(size_t i);
 
-  size_t count()                                                     const;
-  size_t size()                                                      const;
+  size_t count() const;
+  size_t size() const;
 
-  bool   test(size_t i)                                              const;
+  bool test(size_t i) const;
 
-  bool   any()                                                       const;
-  bool   none()                                                      const;
+  bool any() const;
+  bool none() const;
 };
 
-inline void BitVec::operator-=(const BitVec& other)
-{
+inline void BitVec::operator-=(const BitVec& other) {
   BitVec not_other(other);
 
   not_other.flip();
@@ -86,18 +84,13 @@ inline void BitVec::operator-=(const BitVec& other)
   this->intersection(not_other);
 }
 
-inline bool operator==(const BitVec& a, const BitVec& b)
-{
-  return a.equals(b);
+inline bool operator==(const BitVec& a, const BitVec& b) { return a.equals(b); }
+
+inline bool operator!=(const BitVec& a, const BitVec& b) {
+  return !a.equals(b);
 }
 
-inline bool operator!=(const BitVec& a, const BitVec& b)
-{
-  return ! a.equals(b);
-}
-
-inline BitVec operator&(const BitVec& a, const BitVec& b)
-{
+inline BitVec operator&(const BitVec& a, const BitVec& b) {
   BitVec result(a);
 
   result.intersection(b);
@@ -105,8 +98,7 @@ inline BitVec operator&(const BitVec& a, const BitVec& b)
   return result;
 }
 
-inline BitVec operator|(const BitVec& a, const BitVec& b)
-{
+inline BitVec operator|(const BitVec& a, const BitVec& b) {
   BitVec result(a);
 
   result.disjunction(b);
@@ -115,13 +107,9 @@ inline BitVec operator|(const BitVec& a, const BitVec& b)
 }
 
 // An alias for operator|.
-inline BitVec operator+(const BitVec& a, const BitVec& b)
-{
-  return a | b;
-}
+inline BitVec operator+(const BitVec& a, const BitVec& b) { return a | b; }
 
-inline BitVec operator-(const BitVec& a, const BitVec& b)
-{
+inline BitVec operator-(const BitVec& a, const BitVec& b) {
   BitVec result(b);
 
   result.flip();

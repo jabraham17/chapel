@@ -95,78 +95,69 @@ typedef enum {
 } ResolutionCandidateFailureReason;
 
 class ResolutionCandidate {
-public:
-                          ResolutionCandidate(FnSymbol* fn);
+ public:
+  ResolutionCandidate(FnSymbol* fn);
 
-  bool                    isApplicable(CallInfo& info,
-                                       VisibilityInfo* visInfo);
+  bool isApplicable(CallInfo& info, VisibilityInfo* visInfo);
 
-  FnSymbol*               fn;
-  llvm::SmallVector<Symbol*, 8>    formalIdxToActual;
+  FnSymbol* fn;
+  llvm::SmallVector<Symbol*, 8> formalIdxToActual;
   llvm::SmallVector<ArgSymbol*, 8> actualIdxToFormal;
 
   // One ImplementsStmt per IfcConstraint when 'fn' is CG
   std::vector<ImplementsStmt*> witnessIstms;
   // Is this a CG "interim instantiation"?
-  bool                    isInterimInstantiation;
+  bool isInterimInstantiation;
   // Does any argument use promotion?
-  bool                    anyPromotes;
+  bool anyPromotes;
 
   // Have the below counts about implicit conversions been computed?
-  bool                    nImplicitConversionsComputed;
+  bool nImplicitConversionsComputed;
   // Does it convert any negative params to unsigned?
-  bool                    anyNegParamToUnsigned;
+  bool anyNegParamToUnsigned;
   // How many implicit conversions?
-  int                     nImplicitConversions;
+  int nImplicitConversions;
   // How many param-narrowing implicit conversions?
-  int                     nParamNarrowingImplicitConversions;
+  int nParamNarrowingImplicitConversions;
 
   // What is the visibility distance? This is -1 if it has not been computed.
-  int                     visibilityDistance;
+  int visibilityDistance;
 
-  Symbol*                 failingArgument; // actual or formal
+  Symbol* failingArgument; // actual or formal
   ResolutionCandidateFailureReason reason;
 
-private:
-                          ResolutionCandidate();
+ private:
+  ResolutionCandidate();
 
-  bool                    isApplicableConcrete(CallInfo& info,
-                                               VisibilityInfo* visInfo);
+  bool isApplicableConcrete(CallInfo& info, VisibilityInfo* visInfo);
 
-  bool                    isApplicableGeneric(CallInfo& info,
-                                              VisibilityInfo* visInfo);
+  bool isApplicableGeneric(CallInfo& info, VisibilityInfo* visInfo);
 
-  bool                    isApplicableCG(CallInfo& info,
-                                         VisibilityInfo* visInfo);
+  bool isApplicableCG(CallInfo& info, VisibilityInfo* visInfo);
 
-  bool                    computeAlignment(CallInfo& info);
+  bool computeAlignment(CallInfo& info);
 
-  bool                    computeSubstitutions(Expr* ctx);
+  bool computeSubstitutions(Expr* ctx);
 
-  bool                    verifyGenericFormal(ArgSymbol* formal)       const;
+  bool verifyGenericFormal(ArgSymbol* formal) const;
 
-  void                    computeSubstitution(ArgSymbol* formal,
-                                              Symbol*    actual,
-                                              Expr*      ctx);
+  void computeSubstitution(ArgSymbol* formal, Symbol* actual, Expr* ctx);
 
-  void                    computeSubstitutionForDefaultExpr(ArgSymbol* formal,
-                                                            Expr*      ctx);
+  void computeSubstitutionForDefaultExpr(ArgSymbol* formal, Expr* ctx);
 
-  void                    resolveTypedefedArgTypes();
+  void resolveTypedefedArgTypes();
 
-  bool                    checkResolveFormalsWhereClauses(CallInfo& info,
-                                                    VisibilityInfo* visInfo);
+  bool checkResolveFormalsWhereClauses(CallInfo& info, VisibilityInfo* visInfo);
 
-  bool                    checkGenericFormals(Expr* ctx);
-  bool                    checkGenericFormalsFromDefaults(Expr* ctx);
+  bool checkGenericFormals(Expr* ctx);
+  bool checkGenericFormalsFromDefaults(Expr* ctx);
 
-  SymbolMap               substitutions;
+  SymbolMap substitutions;
 };
-
 
 void explainCandidateRejection(CallInfo& info, FnSymbol* fn);
 
-void explainGatherCandidate(const CallInfo&            info,
+void explainGatherCandidate(const CallInfo& info,
                             Vec<ResolutionCandidate*>& candidates);
 
 bool failedCandidateIsBetterMatch(ResolutionCandidate* a,

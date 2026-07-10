@@ -1,4 +1,4 @@
- /*
+/*
  * Copyright 2020-2026 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
@@ -46,55 +46,57 @@ scoping rules without needing to know about CatchStmt
 
 class CatchStmt final : public Stmt {
 
-public:
+ public:
   static CatchStmt* build(DefExpr* def, BlockStmt* body);
   static CatchStmt* build(const char* name, Expr* type, BlockStmt* body);
   static CatchStmt* build(const char* name, BlockStmt* body);
   static CatchStmt* build(BlockStmt* body);
 
-  enum CatchallState { NOT_CATCHALL = 0, CATCHALL = 1, NOT_YET_COMPUTED = 2};
+  enum CatchallState { NOT_CATCHALL = 0, CATCHALL = 1, NOT_YET_COMPUTED = 2 };
 
-   CatchStmt(const char* name, Expr* type, BlockStmt* body, bool createdErr = false,
-             CatchallState wasCatchall = CatchallState::NOT_YET_COMPUTED);
+  CatchStmt(const char* name,
+            Expr* type,
+            BlockStmt* body,
+            bool createdErr = false,
+            CatchallState wasCatchall = CatchallState::NOT_YET_COMPUTED);
   ~CatchStmt() override = default;
 
   const char* name() const;
-  Expr*       type() const;
+  Expr* type() const;
 
   // body() returns the body of the catch block, including the
   // conditional testing its filter (e.g., `e: MyError`) if there is
   // one; bodyWithoutTest() just returns the code block that follows
   // the test without that conditional
 
-  BlockStmt*  body() const;
-  BlockStmt*  bodyWithoutTest();
+  BlockStmt* body() const;
+  BlockStmt* bodyWithoutTest();
 
-  bool        computeIsCatchall();
-  bool        isCatchall();
+  bool computeIsCatchall();
+  bool isCatchall();
 
-  void                accept(AstVisitor* visitor) override;
-  void                replaceChild(Expr* old_ast, Expr* new_ast) override;
-  Expr*               getFirstExpr() override;
-  Expr*               getNextExpr(Expr* expr) override;
-  void                verify() override;
+  void accept(AstVisitor* visitor) override;
+  void replaceChild(Expr* old_ast, Expr* new_ast) override;
+  Expr* getFirstExpr() override;
+  Expr* getNextExpr(Expr* expr) override;
+  void verify() override;
 
-  void                createErrSym();
-  void                cleanup();
+  void createErrSym();
+  void cleanup();
 
-  GenRet              codegen() override;
+  GenRet codegen() override;
   DECLARE_COPY(CatchStmt);
   CatchStmt* copyInner(SymbolMap* map) override;
 
   const char* _name;
-  Expr*       _type;
-  BlockStmt*  _body;
-  bool  _createdErr;
+  Expr* _type;
+  BlockStmt* _body;
+  bool _createdErr;
 
   CatchallState _wasCatchall;
 
-private:
+ private:
   CatchStmt();
-
 };
 
 #endif

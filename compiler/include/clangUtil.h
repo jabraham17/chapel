@@ -38,26 +38,26 @@
 
 // forward declare some llvm and clang things
 namespace llvm {
-  class Function;
-  class Type;
-  class Value;
+class Function;
+class Type;
+class Value;
 #if HAVE_LLVM_VER >= 220
-  enum class VectorLibrary;
+enum class VectorLibrary;
 #endif
 }
 namespace clang {
-  class Decl;
-  class FunctionDecl;
-  class QualType;
-  class RecordType;
-  class Type;
-  class TypeDecl;
-  class ValueDecl;
+class Decl;
+class FunctionDecl;
+class QualType;
+class RecordType;
+class Type;
+class TypeDecl;
+class ValueDecl;
 
-  namespace CodeGen {
-    class ABIArgInfo;
-    class CGFunctionInfo;
-  }
+namespace CodeGen {
+class ABIArgInfo;
+class CGFunctionInfo;
+}
 }
 
 #endif
@@ -74,13 +74,15 @@ void cleanupExternC();
 llvm::Type* codegenCType(const clang::TypeDecl* td);
 llvm::Type* codegenCType(const clang::QualType& qType);
 // should support FunctionDecl,VarDecl,EnumConstantDecl
-GenRet codegenCValue(const clang::ValueDecl *vd);
+GenRet codegenCValue(const clang::ValueDecl* vd);
 
 llvm::Function* getFunctionLLVM(const char* name);
 clang::FunctionDecl* getFunctionDeclClang(const char* name);
 
 llvm::Type* getTypeLLVM(const char* name);
-int getCRecordMemberGEP(const char* typeName, const char* fieldName, bool& isCArrayField);
+int getCRecordMemberGEP(const char* typeName,
+                        const char* fieldName,
+                        bool& isCArrayField);
 
 bool isCTypeUnion(const char* name);
 
@@ -90,18 +92,19 @@ llvm::MaybeAlign getPointerAlign(clang::LangAS AS = clang::LangAS::Default);
 llvm::MaybeAlign getPointerAlign(int AS = 0);
 #endif
 int getCTypeAlignment(Type* type);
-int getCTypeAlignment(const clang::QualType &qt);
+int getCTypeAlignment(const clang::QualType& qt);
 
-const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD);
+const clang::CodeGen::CGFunctionInfo&
+getClangABIInfoFD(clang::FunctionDecl* FD);
 const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn);
 const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FunctionType* ft);
 
 const clang::CodeGen::ABIArgInfo*
-getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg,
-             FnSymbol* fn=nullptr);
+getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI,
+             int curCArg,
+             FnSymbol* fn = nullptr);
 
-const clang::CodeGen::ABIArgInfo*
-getSingleCGArgInfo(Type* type);
+const clang::CodeGen::ABIArgInfo* getSingleCGArgInfo(Type* type);
 
 bool useDarwinArmFix(Type* type);
 
@@ -116,7 +119,8 @@ void initializeGenInfo(void);
 void computeClangArgs(std::vector<std::string>& clangCCArgs);
 void runClang(const char* just_parse_filename);
 
-bool lookupInExternBlock(ModuleSymbol* module, const char* name,
+bool lookupInExternBlock(ModuleSymbol* module,
+                         const char* name,
                          clang::TypeDecl** cTypeOut,
                          clang::ValueDecl** cValueOut,
                          const char** cCastedToTypeOut,
@@ -150,8 +154,10 @@ codegenFunctionTypeLLVM(FunctionType* ft,
                         std::vector<const char*>& outArgNames);
 
 template <typename Ty,
-          std::enable_if_t<std::is_pointer_v<Ty> &&
-                           std::is_base_of_v<clang::TypeDecl, std::remove_pointer_t<Ty>>, bool> = true>
+          std::enable_if_t<
+            std::is_pointer_v<Ty> &&
+              std::is_base_of_v<clang::TypeDecl, std::remove_pointer_t<Ty>>,
+            bool> = true>
 const clang::Type* getClangASTType(clang::ASTContext& ctx, Ty decl) {
 #if LLVM_VERSION_MAJOR >= 22
   if constexpr (std::is_same_v<Ty, clang::TagDecl*>) {

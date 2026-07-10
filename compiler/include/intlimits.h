@@ -58,5 +58,3 @@
 #ifndef UINT64_MAX
 #define UINT64_MAX (std::numeric_limits<uint64_t>::max())
 #endif
-
-

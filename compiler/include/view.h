@@ -35,11 +35,11 @@ class ResolutionCandidate;
 
 BaseAST* aid(int id);
 BaseAST* aid09(int id);
-Expr*    aidExpr(int id);
+Expr* aidExpr(int id);
 
 // counterparts of the above for convenient shortcuts
 BaseAST* aid(BaseAST* ast);
-Expr*    aidExpr(BaseAST* ast);
+Expr* aidExpr(BaseAST* ast);
 
 bool inTree(BaseAST* ast);
 bool inTree(int id);
@@ -98,12 +98,12 @@ void set_view(std::set<BlockStmt*>& bss);
 void set_view(std::set<FnSymbol*>& bss);
 void set_view(std::set<FnSymbol*>* bss);
 
-void vec_view(Vec<Symbol*,   VEC_INTEGRAL_SIZE>* v);
-void vec_view(Vec<Symbol*,   VEC_INTEGRAL_SIZE>& v);
+void vec_view(Vec<Symbol*, VEC_INTEGRAL_SIZE>* v);
+void vec_view(Vec<Symbol*, VEC_INTEGRAL_SIZE>& v);
 void vec_view(Vec<FnSymbol*, VEC_INTEGRAL_SIZE>* v);
 void vec_view(Vec<FnSymbol*, VEC_INTEGRAL_SIZE>& v);
-void vec_view(Vec<SymExpr*,  VEC_INTEGRAL_SIZE>* v);
-void vec_view(Vec<SymExpr*,  VEC_INTEGRAL_SIZE>& v);
+void vec_view(Vec<SymExpr*, VEC_INTEGRAL_SIZE>* v);
+void vec_view(Vec<SymExpr*, VEC_INTEGRAL_SIZE>& v);
 void vec_view(Vec<BlockStmt*, VEC_INTEGRAL_SIZE>* v);
 void vec_view(Vec<BlockStmt*, VEC_INTEGRAL_SIZE>& v);
 void vec_view(Vec<ResolutionCandidate*, VEC_INTEGRAL_SIZE>* v);
@@ -141,22 +141,22 @@ const char* shortLoc(BaseAST* ast);
 const char* debugLoc(int id);
 const char* debugLoc(BaseAST* ast);
 
-int     debugID(int id);
-int     debugID(BaseAST* ast);
+int debugID(int id);
+int debugID(BaseAST* ast);
 
-void    debugSummary(int id);
-void    debugSummary(BaseAST* ast);
-void    debugSummary(const char* str);
-void    debugSummary(bool b);
+void debugSummary(int id);
+void debugSummary(BaseAST* ast);
+void debugSummary(const char* str);
+void debugSummary(bool b);
 
 Symbol* debugParentSym(int id);
 Symbol* debugParentSym(BaseAST* ast);
 
-Expr*   debugParentExpr(int id);
-Expr*   debugParentExpr(BaseAST* ast);
+Expr* debugParentExpr(int id);
+Expr* debugParentExpr(BaseAST* ast);
 
-void    blockSummary(int id);
-void    blockSummary(BaseAST* ast);
-void    blockSummary(BlockStmt* block, Symbol* sym);
+void blockSummary(int id);
+void blockSummary(BaseAST* ast);
+void blockSummary(BlockStmt* block, Symbol* sym);
 
 #endif

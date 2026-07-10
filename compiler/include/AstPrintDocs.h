@@ -27,42 +27,42 @@
 
 #include "AstVisitorTraverse.h"
 
-
 class AstPrintDocs final : public AstVisitorTraverse {
-public:
-   AstPrintDocs(std::string moduleName, std::string path, std::string parentName);
+ public:
+  AstPrintDocs(std::string moduleName,
+               std::string path,
+               std::string parentName);
   ~AstPrintDocs() override;
 
-  bool   enterAggrType    (AggregateType*     node) override;
-  void   exitAggrType     (AggregateType*     node) override;
-  bool   enterEnumType    (EnumType*          node) override;
-  void   visitPrimType    (PrimitiveType*     node) override;
+  bool enterAggrType(AggregateType* node) override;
+  void exitAggrType(AggregateType* node) override;
+  bool enterEnumType(EnumType* node) override;
+  void visitPrimType(PrimitiveType* node) override;
 
-  bool   enterFnSym       (FnSymbol*          node) override;
-  bool   enterInterfaceSym(InterfaceSymbol*   node) override;
-  bool   enterModSym      (ModuleSymbol*      node) override;
-  void   exitModSym       (ModuleSymbol*      node) override;
-  void   visitVarSym      (VarSymbol*         node) override;
+  bool enterFnSym(FnSymbol* node) override;
+  bool enterInterfaceSym(InterfaceSymbol* node) override;
+  bool enterModSym(ModuleSymbol* node) override;
+  void exitModSym(ModuleSymbol* node) override;
+  void visitVarSym(VarSymbol* node) override;
 
+  bool enterLoopExpr(LoopExpr* node) override;
 
-  bool   enterLoopExpr    (LoopExpr*          node) override;
+  bool enterBlockStmt(BlockStmt* node) override;
+  bool enterForallStmt(ForallStmt* node) override;
+  bool enterWhileDoStmt(WhileDoStmt* node) override;
+  bool enterDoWhileStmt(DoWhileStmt* node) override;
+  bool enterCForLoop(CForLoop* node) override;
+  bool enterForLoop(ForLoop* node) override;
+  bool enterParamForLoop(ParamForLoop* node) override;
+  bool enterCondStmt(CondStmt* node) override;
+  bool enterGotoStmt(GotoStmt* node) override;
 
-  bool   enterBlockStmt   (BlockStmt*         node) override;
-  bool   enterForallStmt  (ForallStmt*        node) override;
-  bool   enterWhileDoStmt (WhileDoStmt*       node) override;
-  bool   enterDoWhileStmt (DoWhileStmt*       node) override;
-  bool   enterCForLoop    (CForLoop*          node) override;
-  bool   enterForLoop     (ForLoop*           node) override;
-  bool   enterParamForLoop(ParamForLoop*      node) override;
-  bool   enterCondStmt    (CondStmt*          node) override;
-  bool   enterGotoStmt    (GotoStmt*          node) override;
-
-private:
-  std::ofstream*  file;
-  unsigned int    tabs;
-  std::string     moduleName;
-  std::string     pathWithoutPostfix;
-  std::string     parentName;
+ private:
+  std::ofstream* file;
+  unsigned int tabs;
+  std::string moduleName;
+  std::string pathWithoutPostfix;
+  std::string parentName;
 };
 
 #endif

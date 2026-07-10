@@ -23,42 +23,37 @@
 
 #include "WhileStmt.h"
 
-class WhileDoStmt final : public WhileStmt
-{
+class WhileDoStmt final : public WhileStmt {
   //
   // Class interface
   //
-public:
-  static BlockStmt*      build(Expr* cond, BlockStmt* body, LLVMMetadataList attrs = {});
+ public:
+  static BlockStmt*
+  build(Expr* cond, BlockStmt* body, LLVMMetadataList attrs = {});
 
-private:
-  static bool            isPrimitiveCForLoop(Expr* cond);
-
+ private:
+  static bool isPrimitiveCForLoop(Expr* cond);
 
   //
   // Instance interface
   //
-public:
-                        ~WhileDoStmt() override = default;
-                         WhileDoStmt(Expr* cond, BlockStmt* body)
-                           : WhileStmt(cond, body) { }
+ public:
+  ~WhileDoStmt() override = default;
+  WhileDoStmt(Expr* cond, BlockStmt* body) : WhileStmt(cond, body) {}
 
   DECLARE_COPY(WhileDoStmt);
-  WhileDoStmt*           copyInner(SymbolMap* map)                   override;
+  WhileDoStmt* copyInner(SymbolMap* map) override;
 
-  bool                   isWhileDoStmt()                             const override
-                         { return true; }
+  bool isWhileDoStmt() const override { return true; }
 
-  GenRet                 codegen()                                   override;
-  void                   accept(AstVisitor* visitor)                 override;
+  GenRet codegen() override;
+  void accept(AstVisitor* visitor) override;
 
-  Expr*                  getFirstExpr()                              override;
-  Expr*                  getNextExpr(Expr* expr)                     override;
+  Expr* getFirstExpr() override;
+  Expr* getNextExpr(Expr* expr) override;
 
-private:
-                         WhileDoStmt(VarSymbol* var,  BlockStmt* body)
-                           : WhileStmt(var, body) {
-                         }
+ private:
+  WhileDoStmt(VarSymbol* var, BlockStmt* body) : WhileStmt(var, body) {}
 };
 
 #endif

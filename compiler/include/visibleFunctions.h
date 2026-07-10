@@ -33,11 +33,10 @@ class FnSymbol;
 
 #include "llvm/ADT/SmallPtrSet.h"
 
-template <typename T, size_t N=8>
-using PtrSet = llvm::SmallPtrSet<T, N>;
+template <typename T, size_t N = 8> using PtrSet = llvm::SmallPtrSet<T, N>;
 
 class VisibilityInfo {
-public:
+ public:
   // for proper scope traversal
   BlockStmt* currStart;
   BlockStmt* nextPOI;
@@ -55,34 +54,33 @@ public:
   bool inPOI() { return poiDepth > 0; }
 };
 
-bool       scopeMayDefineHazard(BlockStmt* scope, const char* fnName);
-bool       scopeDefinesVisibleFunctions(BlockStmt* scope);
+bool scopeMayDefineHazard(BlockStmt* scope, const char* fnName);
+bool scopeDefinesVisibleFunctions(BlockStmt* scope);
 
-void       findVisibleFunctionsAllPOIs(CallInfo&       info,
-                                       Vec<FnSymbol*>& visibleFns);
+void findVisibleFunctionsAllPOIs(CallInfo& info, Vec<FnSymbol*>& visibleFns);
 
-void       findVisibleFunctions(CallInfo&             info,
-                                VisibilityInfo*       visInfo,
-                                PtrSet<BlockStmt*>* visited,
-                                int*                  numVisitedP,
-                                Vec<FnSymbol*>&       visibleFns);
+void findVisibleFunctions(CallInfo& info,
+                          VisibilityInfo* visInfo,
+                          PtrSet<BlockStmt*>* visited,
+                          int* numVisitedP,
+                          Vec<FnSymbol*>& visibleFns);
 
-void       getMoreVisibleFunctionsOrMethods(const char*  name,
-                                CallExpr*                call,
-                                VisibilityInfo*          visInfo,
-                                PtrSet<BlockStmt*>*    visited,
-                                Vec<FnSymbol*>&          visibleFns);
+void getMoreVisibleFunctionsOrMethods(const char* name,
+                                      CallExpr* call,
+                                      VisibilityInfo* visInfo,
+                                      PtrSet<BlockStmt*>* visited,
+                                      Vec<FnSymbol*>& visibleFns);
 
-void       getVisibleFunctions(const char*      name,
-                               CallExpr*        call,
-                               Vec<FnSymbol*>&  visibleFns);
+void getVisibleFunctions(const char* name,
+                         CallExpr* call,
+                         Vec<FnSymbol*>& visibleFns);
 BlockStmt* getVisibleFnsInstantiationPt(BlockStmt* block);
 
 BlockStmt* getVisibilityScope(Expr* expr);
 BlockStmt* getInstantiationPoint(Expr* expr);
 
-void       initTypeHelperNames();
-void       visibleFunctionsClear();
+void initTypeHelperNames();
+void visibleFunctionsClear();
 
 // Not necessary to call this directly in most cases - but if making
 // a call to 'getVisibleFunctions' after some generic instantiation

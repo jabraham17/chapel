@@ -37,22 +37,22 @@
 
 // forward declare some LLVM things.
 namespace llvm {
-  namespace legacy {
-    class FunctionPassManager;
-  }
+namespace legacy {
+class FunctionPassManager;
+}
 }
 
 namespace clang {
-  namespace CodeGen {
-    class CGFunctionInfo;
-  }
+namespace CodeGen {
+class CGFunctionInfo;
+}
 }
 
 // and some chpl frontend things
 namespace chpl {
-  namespace libraries {
-    class LibraryFile;
-  }
+namespace libraries {
+class LibraryFile;
+}
 }
 
 #include "llvm/Analysis/LoopAnalysisManager.h"
@@ -74,12 +74,10 @@ struct ClangInfo;
 
 /* This class contains information helpful in generating
  * code for nested loops. */
-struct LoopData
-{
+struct LoopData {
 #ifdef HAVE_LLVM
-  LoopData(llvm::MDNode *accessGroup, bool markMemoryOps)
-    : accessGroup(accessGroup), markMemoryOps(markMemoryOps)
-  { }
+  LoopData(llvm::MDNode* accessGroup, bool markMemoryOps)
+    : accessGroup(accessGroup), markMemoryOps(markMemoryOps) {}
   llvm::MDNode* accessGroup;
   bool markMemoryOps; // mark load/store with the access group
 #endif
@@ -143,15 +141,15 @@ struct GenInfo {
   std::unique_ptr<LayeredValueTable> lvt;
 
   // Once we get to code generation....
-  llvm::Module *module;
-  llvm::IRBuilder<> *irBuilder;
-  llvm::MDBuilder *mdBuilder;
+  llvm::Module* module;
+  llvm::IRBuilder<>* irBuilder;
+  llvm::MDBuilder* mdBuilder;
   llvm::TargetMachine* targetMachine;
 
   LLVMGenFilenames llvmGenFilenames;
 
   std::vector<LoopData> loopStack;
-  std::vector<std::pair<llvm::AllocaInst*, llvm::Type*> > currentStackVariables;
+  std::vector<std::pair<llvm::AllocaInst*, llvm::Type*>> currentStackVariables;
   const clang::CodeGen::CGFunctionInfo* currentFunctionABI;
 
   // tbaa information
@@ -193,11 +191,10 @@ struct GenInfo {
   GenInfo();
 };
 
-
 extern GenInfo* gGenInfo;
-extern int      gMaxVMT;
-extern int      gStmtCount;
-extern bool     gCodegenGPU;
+extern int gMaxVMT;
+extern int gStmtCount;
+extern bool gCodegenGPU;
 
 // Map from filename to an integer that will represent an unique ID for each
 // generated GET/PUT
@@ -232,14 +229,14 @@ std::string real_to_string(double num);
 std::string zlineToString(BaseAST* ast);
 void zlineToFileIfNeeded(BaseAST* ast, FILE* outfile);
 const char* idCommentTemp(BaseAST* ast);
-void genComment(const char* comment, bool push=false);
+void genComment(const char* comment, bool push = false);
 void flushStatements(void);
 
 GenRet codegenCallExpr(const char* fnName);
 GenRet codegenCallExpr(const char* fnName, GenRet a1);
 GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
 GenRet codegenCallExprWithArgs(const char* fnName,
-                               std::vector<GenRet> & args,
+                               std::vector<GenRet>& args,
                                FnSymbol* fnSym = nullptr,
                                astlocT callLoc = astlocT::unknownLoc(),
                                ClangFunctionDeclPtr FD = nullptr,
@@ -248,8 +245,10 @@ GenRet codegenGetLocaleID(void);
 GenRet codegenUseGlobal(const char* global);
 GenRet codegenProcedurePointerFetch(Expr* baseExpr);
 GenRet codegenValueMaybeDeref(Expr* baseExpr);
-void   codegenGlobalInt64(const char* cname, int64_t value, bool isHeader,
-                          bool isConstant=true);
+void codegenGlobalInt64(const char* cname,
+                        int64_t value,
+                        bool isHeader,
+                        bool isConstant = true);
 
 bool argRequiresCPtr(IntentTag intent, Type* t, bool isReceiver);
 bool argRequiresCPtr(ArgSymbol* formal);

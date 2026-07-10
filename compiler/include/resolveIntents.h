@@ -32,4 +32,3 @@ IntentTag concreteIntentForArg(ArgSymbol* arg);
 void resolveArgIntent(ArgSymbol* arg);
 
 #endif
-

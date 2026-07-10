@@ -37,12 +37,12 @@ extern Map<FnSymbol*, Vec<FnSymbol*>*> virtualParentsMap;
 extern Map<FnSymbol*, Vec<FnSymbol*>*> virtualChildrenMap;
 
 // Map types to arrays of virtual methods
-extern Map<Type*,     Vec<FnSymbol*>*> virtualMethodTable;
+extern Map<Type*, Vec<FnSymbol*>*> virtualMethodTable;
 
 // Map a method to its index within the array of methods
-extern Map<FnSymbol*, int>             virtualMethodMap;
+extern Map<FnSymbol*, int> virtualMethodMap;
 
-extern bool                            inDynamicDispatchResolution;
+extern bool inDynamicDispatchResolution;
 
 void resolveDynamicDispatches();
 

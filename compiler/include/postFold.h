@@ -26,6 +26,6 @@ class Expr;
 
 Expr* postFold(Expr* expr);
 
-bool  requiresImplicitDestroy(CallExpr* call);
+bool requiresImplicitDestroy(CallExpr* call);
 
 #endif

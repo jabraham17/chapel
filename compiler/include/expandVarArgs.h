@@ -25,10 +25,8 @@ class CallInfo;
 class FnSymbol;
 class PartialCopyData;
 
-FnSymbol* expandIfVarArgs(FnSymbol* fn,
-                          CallInfo& info);
+FnSymbol* expandIfVarArgs(FnSymbol* fn, CallInfo& info);
 
-void      substituteVarargTupleRefs(FnSymbol*              fn,
-                                    const PartialCopyData* pci);
+void substituteVarargTupleRefs(FnSymbol* fn, const PartialCopyData* pci);
 
 #endif

@@ -29,10 +29,11 @@ class ArgSymbol;
 class CallInfo;
 class FnSymbol;
 
-FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
-                                CallInfo&                info,
-                                llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal,
-                                bool                     fastFollowerChecks);
+FnSymbol*
+wrapAndCleanUpActuals(FnSymbol* fn,
+                      CallInfo& info,
+                      llvm::SmallVectorImpl<ArgSymbol*>& actualIdxToFormal,
+                      bool fastFollowerChecks);
 
 const char* unwrapFnName(FnSymbol* fn);
 

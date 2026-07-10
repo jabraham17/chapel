@@ -25,7 +25,6 @@
 
 #include "llvm/ADT/SmallPtrSet.h"
 
-
 class ResolveScope;
 
 class UseStmt final : public VisibilityStmt {
@@ -35,71 +34,71 @@ class UseStmt final : public VisibilityStmt {
  public:
   UseStmt(BaseAST* source, const char* modRename, bool isPrivate);
 
-  UseStmt(BaseAST*                            source,
-          const char*                         modRename,
-          std::vector<const char*>*           args,
-          bool                                exclude,
+  UseStmt(BaseAST* source,
+          const char* modRename,
+          std::vector<const char*>* args,
+          bool exclude,
           std::map<const char*, const char*>* renames,
           bool isPrivate);
 
   DECLARE_COPY(UseStmt);
   UseStmt* copyInner(SymbolMap* map) override;
 
-  Expr*   getFirstExpr() override;
+  Expr* getFirstExpr() override;
 
-  void    replaceChild(Expr* oldAst, Expr* newAst) override;
+  void replaceChild(Expr* oldAst, Expr* newAst) override;
 
-  void    accept(AstVisitor* visitor) override;
+  void accept(AstVisitor* visitor) override;
 
-  void    verify() override;
+  void verify() override;
 
-  GenRet  codegen() override;
+  GenRet codegen() override;
 
-  bool            isPlainUse()                                           const;
+  bool isPlainUse() const;
 
-  bool            hasOnlyList()                                          const;
+  bool hasOnlyList() const;
 
-  bool            hasOnlyNothing()                                       const;
+  bool hasOnlyNothing() const;
 
-  bool            hasExceptList()                                        const;
+  bool hasExceptList() const;
 
-  void            scopeResolve(ResolveScope* scope);
+  void scopeResolve(ResolveScope* scope);
 
-  UseStmt*        applyOuterUse(const UseStmt* outer);
-  ImportStmt*     applyOuterImport(const ImportStmt* outer);
+  UseStmt* applyOuterUse(const UseStmt* outer);
+  ImportStmt* applyOuterImport(const ImportStmt* outer);
 
   PtrSet<const char*> typeWasNamed(Type* t) const override;
   void typeWasNamed(Type* t, PtrSet<const char*>* namedTypes) const;
 
-  bool            skipSymbolSearch(const char* name)            const override;
+  bool skipSymbolSearch(const char* name) const override;
 
-  bool            providesNewSymbols(const UseStmt* other)               const;
-  bool            providesNewSymbols(const ImportStmt* other)            const;
+  bool providesNewSymbols(const UseStmt* other) const;
+  bool providesNewSymbols(const ImportStmt* other) const;
 
-  BaseAST*        getSearchScope()                              const override;
+  BaseAST* getSearchScope() const override;
 
-  void            writeListPredicate(FILE* mFP)                          const;
+  void writeListPredicate(FILE* mFP) const;
 
-  bool            canReexport;
+  bool canReexport;
 
-private:
-  bool            isEnum(const Symbol* sym)                              const;
+ private:
+  bool isEnum(const Symbol* sym) const;
 
-  bool            isValid(Expr* expr)                                    const;
+  bool isValid(Expr* expr) const;
 
-  void            validateList();
+  void validateList();
 
-  void            validateNamed();
+  void validateNamed();
 
-  bool            matchedNameOrRename(const char* name)             const;
+  bool matchedNameOrRename(const char* name) const;
 
-  void            noRepeats()                                            const;
+  void noRepeats() const;
 
-public:
-  std::vector<const char*>           named;
+ public:
+  std::vector<const char*> named;
 
-private:
-  bool                               except;
+ private:
+  bool except;
 };
 
 #endif

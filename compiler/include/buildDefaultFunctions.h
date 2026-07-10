@@ -32,4 +32,3 @@
 FnSymbol* buildSerializeFnSymbol(AggregateType* ct, ArgSymbol** filearg);
 
 #endif
-

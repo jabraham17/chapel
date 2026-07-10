@@ -24,25 +24,25 @@
 #include <sys/time.h>
 
 class Timer {
-public:
-                 Timer();
-                ~Timer() = default;
+ public:
+  Timer();
+  ~Timer() = default;
 
-  void           clear();
+  void clear();
 
-  void           start();
-  void           stop();
+  void start();
+  void stop();
 
-  double         elapsedSecs()  const;
-  unsigned long  elapsedUsecs() const;
+  double elapsedSecs() const;
+  unsigned long elapsedUsecs() const;
 
-private:
-  unsigned long  diffUsec()     const;
+ private:
+  unsigned long diffUsec() const;
 
   struct timeval mRefTime;
 
-  bool           mRunning;
-  unsigned long  mAccumUsec;
+  bool mRunning;
+  unsigned long mAccumUsec;
 };
 
 #endif

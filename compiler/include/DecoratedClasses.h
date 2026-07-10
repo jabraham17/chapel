@@ -28,16 +28,16 @@ using ClassTypeDecoratorEnum = ClassTypeDecorator::ClassTypeDecoratorEnum;
 
 #define NUM_PACKED_DECORATED_TYPES 6
 
-static inline
-ClassTypeDecoratorEnum removeNilableFromDecorator(ClassTypeDecoratorEnum d) {
+static inline ClassTypeDecoratorEnum
+removeNilableFromDecorator(ClassTypeDecoratorEnum d) {
   return ClassTypeDecorator::removeNilableFromDecorator(d);
 }
-static inline
-ClassTypeDecoratorEnum addNonNilToDecorator(ClassTypeDecoratorEnum d) {
+static inline ClassTypeDecoratorEnum
+addNonNilToDecorator(ClassTypeDecoratorEnum d) {
   return ClassTypeDecorator::addNonNilToDecorator(d);
 }
-static inline
-ClassTypeDecoratorEnum addNilableToDecorator(ClassTypeDecoratorEnum d) {
+static inline ClassTypeDecoratorEnum
+addNilableToDecorator(ClassTypeDecoratorEnum d) {
   return ClassTypeDecorator::addNilableToDecorator(d);
 }
 static inline bool isDecoratorUnknownNilability(ClassTypeDecoratorEnum d) {
@@ -61,9 +61,9 @@ static inline bool isDecoratorManaged(ClassTypeDecoratorEnum d) {
 static inline bool isDecoratorUnknownManagement(ClassTypeDecoratorEnum d) {
   return ClassTypeDecorator::isDecoratorUnknownManagement(d);
 }
-static inline
-ClassTypeDecoratorEnum combineDecorators(ClassTypeDecoratorEnum formalD,
-                                         ClassTypeDecoratorEnum actualD) {
+static inline ClassTypeDecoratorEnum
+combineDecorators(ClassTypeDecoratorEnum formalD,
+                  ClassTypeDecoratorEnum actualD) {
   return ClassTypeDecorator::combineDecorators(formalD, actualD);
 }
 

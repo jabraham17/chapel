@@ -27,8 +27,8 @@
 #include "symbol.h"
 
 namespace llvm {
-  class Loop;
-  class LPMUpdater;
+class Loop;
+class LPMUpdater;
 }
 
 #include "llvm/Analysis/LoopAnalysisManager.h"
@@ -44,40 +44,40 @@ struct DumpIR {
   // (doesn't get the right pass name)
   DumpIR() : stage(llvmStageNum::NOPRINT) {}
 
-  explicit DumpIR(llvmStageNum_t stage) : stage(stage) { }
+  explicit DumpIR(llvmStageNum_t stage) : stage(stage) {}
 
-  void run(llvm::Function &F);
+  void run(llvm::Function& F);
 };
 // new pass manager version
 struct DumpIRPass : public llvm::PassInfoMixin<DumpIRPass> {
   DumpIR pass;
 
-  DumpIRPass() : pass() { }
-  explicit DumpIRPass(llvmStageNum_t stage) : pass(stage) { }
+  DumpIRPass() : pass() {}
+  explicit DumpIRPass(llvmStageNum_t stage) : pass(stage) {}
   llvm::PreservedAnalyses run(llvm::Function& function,
                               llvm::FunctionAnalysisManager& analysisManager);
   llvm::PreservedAnalyses run(llvm::Loop& L,
                               llvm::LoopAnalysisManager& AM,
                               llvm::LoopStandardAnalysisResults& AR,
                               llvm::LPMUpdater& U);
-  llvm::PreservedAnalyses run(llvm::LazyCallGraph::SCC &C,
-                              llvm::CGSCCAnalysisManager &AM,
-                              llvm::LazyCallGraph &CG,
-                              llvm::CGSCCUpdateResult &);
+  llvm::PreservedAnalyses run(llvm::LazyCallGraph::SCC& C,
+                              llvm::CGSCCAnalysisManager& AM,
+                              llvm::LazyCallGraph& CG,
+                              llvm::CGSCCUpdateResult&);
 };
 // old pass manager version
 struct LegacyDumpIRPass : public llvm::FunctionPass {
   static char ID; // Pass identification, replacement for typeid
   DumpIR pass;
 
-  LegacyDumpIRPass() : llvm::FunctionPass(ID), pass() { }
+  LegacyDumpIRPass() : llvm::FunctionPass(ID), pass() {}
   explicit LegacyDumpIRPass(llvmStageNum_t stage)
-    : llvm::FunctionPass(ID), pass(stage) { }
+    : llvm::FunctionPass(ID), pass(stage) {}
 
   bool runOnFunction(llvm::Function& function) override;
 
   // We don't modify the program, so we preserve all analyses.
-  void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
+  void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
 };
 
 llvm::FunctionPass* createLegacyDumpIrPass(llvmStageNum_t stage);

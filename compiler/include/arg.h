@@ -55,34 +55,32 @@ struct ArgumentDescription;
 
 typedef void ArgumentFunction(const ArgumentDescription* desc, const char* arg);
 
-struct ArgumentState
-{
-  const char**         file_argument;
-  int                  nfile_arguments;
-  const char**         env_argument;
-  int                  nenv_arguments;
+struct ArgumentState {
+  const char** file_argument;
+  int nfile_arguments;
+  const char** env_argument;
+  int nenv_arguments;
 
-  const char*          program_name;
-  const char*          program_loc;
+  const char* program_name;
+  const char* program_loc;
   ArgumentDescription* desc;
 };
 
-struct ArgumentDescription
-{
-  const char*          name;
-  char                 key;
-  const char*          argumentOptions;
-  const char*          description;
-  const char*          type;
-  void*                location;
-  const char*          env;
-  ArgumentFunction*    pfn;
+struct ArgumentDescription {
+  const char* name;
+  char key;
+  const char* argumentOptions;
+  const char* description;
+  const char* type;
+  void* location;
+  const char* env;
+  ArgumentFunction* pfn;
 };
 
 void usage(const ArgumentState* arg_state,
-           int                  status,
-           bool                 printEnvHelp,
-           bool                 printCurrentSettings);
+           int status,
+           bool printEnvHelp,
+           bool printCurrentSettings);
 
 void init_args(ArgumentState* state, const char* argv0, void* mainAddr);
 

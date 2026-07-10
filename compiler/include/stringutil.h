@@ -49,40 +49,63 @@ const char* istr(int i);
 
 const char* asubstr(const char* s, const char* e);
 
-int8_t      str2int8(const char* str, bool userSupplied = false,
-                     const char* file = NULL, int line = -1);
-int16_t     str2int16(const char* str, bool userSupplied = false,
-                      const char* file = NULL, int line = -1);
-int32_t     str2int32(const char* str, bool userSupplied = false,
-                      const char* file = NULL, int line = -1);
-int64_t     str2int64(const char* str, bool userSupplied = false,
-                      const char* file = NULL, int line = -1);
-uint8_t     str2uint8(const char* str, bool userSupplied = false,
-                      const char* file = NULL, int line = -1);
-uint16_t    str2uint16(const char* str, bool userSupplied = false,
-                       const char* file = NULL, int line = -1);
-uint32_t    str2uint32(const char* str, bool userSupplied = false,
-                       const char* file = NULL, int line = -1);
-uint64_t    str2uint64(const char* str, bool userSupplied = false,
-                       const char* file = NULL, int line = -1);
+int8_t str2int8(const char* str,
+                bool userSupplied = false,
+                const char* file = NULL,
+                int line = -1);
+int16_t str2int16(const char* str,
+                  bool userSupplied = false,
+                  const char* file = NULL,
+                  int line = -1);
+int32_t str2int32(const char* str,
+                  bool userSupplied = false,
+                  const char* file = NULL,
+                  int line = -1);
+int64_t str2int64(const char* str,
+                  bool userSupplied = false,
+                  const char* file = NULL,
+                  int line = -1);
+uint8_t str2uint8(const char* str,
+                  bool userSupplied = false,
+                  const char* file = NULL,
+                  int line = -1);
+uint16_t str2uint16(const char* str,
+                    bool userSupplied = false,
+                    const char* file = NULL,
+                    int line = -1);
+uint32_t str2uint32(const char* str,
+                    bool userSupplied = false,
+                    const char* file = NULL,
+                    int line = -1);
+uint64_t str2uint64(const char* str,
+                    bool userSupplied = false,
+                    const char* file = NULL,
+                    int line = -1);
 
-uint64_t    binStr2uint64(const char* str, bool userSupplied = false,
-                          const char* filename = NULL, int line = -1);
-uint64_t    octStr2uint64(const char* str, bool userSupplied = false,
-                          const char* filename = NULL, int line = -1);
-uint64_t    hexStr2uint64(const char* str, bool userSupplied = false,
-                          const char* filename = NULL, int line = -1);
+uint64_t binStr2uint64(const char* str,
+                       bool userSupplied = false,
+                       const char* filename = NULL,
+                       int line = -1);
+uint64_t octStr2uint64(const char* str,
+                       bool userSupplied = false,
+                       const char* filename = NULL,
+                       int line = -1);
+uint64_t hexStr2uint64(const char* str,
+                       bool userSupplied = false,
+                       const char* filename = NULL,
+                       int line = -1);
 
 // std::string utilities
-       std::string erasePrefix(std::string s, int count);
-       std::string firstNonEmptyLine(const std::string& s);
-inline bool        isEmpty(const std::string& s);
+std::string erasePrefix(std::string s, int count);
+std::string firstNonEmptyLine(const std::string& s);
+inline bool isEmpty(const std::string& s);
 inline std::string ltrim(std::string s);
-       std::string ltrimAllLines(std::string s);
-       int         minimumPrefix(const std::string& s);
+std::string ltrimAllLines(std::string s);
+int minimumPrefix(const std::string& s);
 
 // these string split functions always append to the passed vector
-void splitString(const std::string& s, std::vector<std::string>& vec,
+void splitString(const std::string& s,
+                 std::vector<std::string>& vec,
                  const char* delimiters);
 void splitStringWhitespace(const std::string& s, std::vector<std::string>& vec);
 void splitStringWhitespace(const char* s, std::vector<std::string>& vec);

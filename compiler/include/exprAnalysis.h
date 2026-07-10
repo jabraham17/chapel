@@ -24,7 +24,6 @@
 #include "expr.h"
 #include "symbol.h"
 
-
 /*
  * This class contains necessary data structures and member functions
  * for expression analysis. At this point it is only used in
@@ -50,26 +49,27 @@
  */
 class SafeExprAnalysis {
 
-  private:
-    std::map<Expr*,bool> safeExprCache;
-    std::map<FnSymbol*,bool> safeFnCache;
-    std::map<FnSymbol*,bool> globalManipFuncCache;
-    std::map<FnSymbol*,bool> externManipFuncCache;
-  public:
-    bool isNonEssentialPrimitive(CallExpr* ce);
+ private:
+  std::map<Expr*, bool> safeExprCache;
+  std::map<FnSymbol*, bool> safeFnCache;
+  std::map<FnSymbol*, bool> globalManipFuncCache;
+  std::map<FnSymbol*, bool> externManipFuncCache;
 
-    bool exprHasNoSideEffects(Expr* e, Expr* exprToMove);
-    bool fnHasNoSideEffects(FnSymbol* fn);
+ public:
+  bool isNonEssentialPrimitive(CallExpr* ce);
 
-    bool isSafePrimitive(CallExpr* ce);
+  bool exprHasNoSideEffects(Expr* e, Expr* exprToMove);
+  bool fnHasNoSideEffects(FnSymbol* fn);
 
-    bool isRegisteredGlobalManip(FnSymbol* fn);
-    bool getGlobalManip(FnSymbol* fn);
-    void registerGlobalManip(FnSymbol* fn, bool manip);
+  bool isSafePrimitive(CallExpr* ce);
 
-    bool isRegisteredExternManip(FnSymbol* fn);
-    bool getExternManip(FnSymbol* fn);
-    void registerExternManip(FnSymbol* fn, bool manip);
+  bool isRegisteredGlobalManip(FnSymbol* fn);
+  bool getGlobalManip(FnSymbol* fn);
+  void registerGlobalManip(FnSymbol* fn, bool manip);
+
+  bool isRegisteredExternManip(FnSymbol* fn);
+  bool getExternManip(FnSymbol* fn);
+  void registerExternManip(FnSymbol* fn, bool manip);
 };
 
 #endif

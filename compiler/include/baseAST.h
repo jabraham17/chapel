@@ -47,53 +47,55 @@
 // foreach_ast: invoke a macro for every AST node type, separating
 //              invocations by ;
 //
-#define foreach_ast_sep(macro, sep)                \
-  macro(TemporaryConversionThunk)  sep             \
+#define foreach_ast_sep(macro, sep)    \
+  macro(TemporaryConversionThunk) sep  \
+                                       \
+  macro(PrimitiveType)                 \
+  sep macro(ConstrainedType)           \
+  sep macro(EnumType)                  \
+  sep macro(AggregateType)             \
+  sep macro(FunctionType)              \
+  sep macro(TemporaryConversionType)   \
+  sep macro(DecoratedClassType)        \
+  sep                    \
                                                    \
-  macro(PrimitiveType) sep                         \
-  macro(ConstrainedType) sep                       \
-  macro(EnumType) sep                              \
-  macro(AggregateType) sep                         \
-  macro(FunctionType) sep                          \
-  macro(TemporaryConversionType)  sep              \
-  macro(DecoratedClassType) sep                    \
+  macro(ModuleSymbol)             \
+  sep macro(VarSymbol)                 \
+  sep macro(ArgSymbol)                 \
+  sep macro(ShadowVarSymbol)           \
+  sep macro(TypeSymbol)                \
+  sep macro(FnSymbol)                  \
+  sep macro(InterfaceSymbol)           \
+  sep macro(EnumSymbol)                \
+  sep macro(LabelSymbol)               \
+  sep macro(TemporaryConversionSymbol) \
+  sep            \
                                                    \
-  macro(ModuleSymbol) sep                          \
-  macro(VarSymbol)    sep                          \
-  macro(ArgSymbol)    sep                          \
-  macro(ShadowVarSymbol) sep                       \
-  macro(TypeSymbol)   sep                          \
-  macro(FnSymbol)     sep                          \
-  macro(InterfaceSymbol) sep                       \
-  macro(EnumSymbol)   sep                          \
-  macro(LabelSymbol)  sep                          \
-  macro(TemporaryConversionSymbol)  sep            \
+  macro(SymExpr)                     \
+  sep macro(UnresolvedSymExpr)         \
+  sep macro(DefExpr)                   \
+  sep macro(CallExpr)                  \
+  sep macro(ContextCallExpr)           \
+  sep macro(LoopExpr)                  \
+  sep macro(NamedExpr)                 \
+  sep macro(IfcConstraint)             \
+  sep macro(IfExpr)                    \
+  sep                                \
                                                    \
-  macro(SymExpr) sep                               \
-  macro(UnresolvedSymExpr) sep                     \
-  macro(DefExpr) sep                               \
-  macro(CallExpr) sep                              \
-  macro(ContextCallExpr) sep                       \
-  macro(LoopExpr) sep                              \
-  macro(NamedExpr) sep                             \
-  macro(IfcConstraint) sep                         \
-  macro(IfExpr) sep                                \
-                                                   \
-  macro(UseStmt) sep                               \
-  macro(ImportStmt) sep                            \
-  macro(BlockStmt) sep                             \
-  macro(CondStmt) sep                              \
-  macro(GotoStmt) sep                              \
-  macro(DeferStmt) sep                             \
-  macro(ForallStmt) sep                            \
-  macro(TryStmt) sep                               \
-  macro(ForwardingStmt) sep                        \
-  macro(CatchStmt) sep                             \
-  macro(ImplementsStmt) sep                        \
-  macro(ExternBlockStmt)
+  macro(UseStmt) \
+  sep macro(ImportStmt)                \
+  sep macro(BlockStmt)                 \
+  sep macro(CondStmt)                  \
+  sep macro(GotoStmt)                  \
+  sep macro(DeferStmt)                 \
+  sep macro(ForallStmt)                \
+  sep macro(TryStmt)                   \
+  sep macro(ForwardingStmt)            \
+  sep macro(CatchStmt)                 \
+  sep macro(ImplementsStmt)            \
+  sep macro(ExternBlockStmt)
 
-#define foreach_ast(macro)                         \
-  foreach_ast_sep(macro, ;)
+#define foreach_ast(macro) foreach_ast_sep(macro, ;)
 
 class BaseAST;
 class AstVisitor;
@@ -119,9 +121,7 @@ class QualifiedType;
 foreach_ast(proto_classes);
 #undef proto_classes
 
-#define def_vec_hash(SomeType) \
-    template<> \
-    uintptr_t _vec_hasher(SomeType* obj);
+#define def_vec_hash(SomeType) template <> uintptr_t _vec_hasher(SomeType* obj);
 
 foreach_ast(def_vec_hash);
 def_vec_hash(Symbol);
@@ -135,8 +135,8 @@ def_vec_hash(BaseAST);
 //
 // type definitions for common maps
 //
-typedef Map<Symbol*,Symbol*>     SymbolMap;
-typedef MapElem<Symbol*,Symbol*> SymbolMapElem;
+typedef Map<Symbol*, Symbol*> SymbolMap;
+typedef MapElem<Symbol*, Symbol*> SymbolMapElem;
 
 typedef struct {
   const char* name; //key
@@ -195,15 +195,17 @@ enum AstTag {
   E_DecoratedClassType,
 };
 
-static inline bool isExpr(AstTag tag)
-{ return tag >= E_SymExpr && tag <= E_TemporaryConversionThunk; }
+static inline bool isExpr(AstTag tag) {
+  return tag >= E_SymExpr && tag <= E_TemporaryConversionThunk;
+}
 
-static inline bool isSymbol(AstTag tag)
-{ return tag >= E_TemporaryConversionSymbol && tag <= E_LabelSymbol; }
+static inline bool isSymbol(AstTag tag) {
+  return tag >= E_TemporaryConversionSymbol && tag <= E_LabelSymbol;
+}
 
-static inline bool isType(AstTag tag)
-{ return tag >= E_PrimitiveType  && tag <= E_DecoratedClassType; }
-
+static inline bool isType(AstTag tag) {
+  return tag >= E_PrimitiveType && tag <= E_DecoratedClassType;
+}
 
 //
 // macros used to define the copy method on all AST node types, and to
@@ -213,32 +215,28 @@ static inline bool isType(AstTag tag)
 // The outermost call to copy invokes the copyInner method used to
 // implement the recursive copy.
 //
-#define DECLARE_COPY(type)                                              \
-  type* copy(SymbolMap* map = NULL, bool internal = false) override {   \
-    SymbolMap localMap;                                                 \
-    if (!map)                                                           \
-      map = &localMap;                                                  \
-    type* _this = copyInner(map);                                       \
-    _this->astloc = astloc;                                             \
-    if (!internal)                                                      \
-      update_symbols(_this, map);                                       \
-    return _this;                                                       \
+#define DECLARE_COPY(type)                                            \
+  type* copy(SymbolMap* map = NULL, bool internal = false) override { \
+    SymbolMap localMap;                                               \
+    if (!map) map = &localMap;                                        \
+    type* _this = copyInner(map);                                     \
+    _this->astloc = astloc;                                           \
+    if (!internal) update_symbols(_this, map);                        \
+    return _this;                                                     \
   }
 
 // This should be expanded verbatim and overloaded, so we don't create a map if
 // internal is false.
 // copyInner must now copy flags.
-#define DECLARE_SYMBOL_COPY(type)                                       \
-  type* copy(SymbolMap* map = NULL, bool internal = false) override {   \
-    SymbolMap localMap;                                                 \
-    if (!map)                                                           \
-      map = &localMap;                                                  \
-    type* _this = copyInner(map);                                       \
-    _this->astloc = astloc;                                             \
-    map->put(this, _this);                                              \
-    if (!internal)                                                      \
-      update_symbols(_this, map);                                       \
-    return _this;                                                       \
+#define DECLARE_SYMBOL_COPY(type)                                     \
+  type* copy(SymbolMap* map = NULL, bool internal = false) override { \
+    SymbolMap localMap;                                               \
+    if (!map) map = &localMap;                                        \
+    type* _this = copyInner(map);                                     \
+    _this->astloc = astloc;                                           \
+    map->put(this, _this);                                            \
+    if (!internal) update_symbols(_this, map);                        \
+    return _this;                                                     \
   }
 
 //
@@ -250,17 +248,17 @@ static inline bool isType(AstTag tag)
 // abstract parent of all AST node types
 //
 class BaseAST {
-public:
-  virtual GenRet    codegen()                                          = 0;
-  virtual bool      inTree()                                           = 0;
-  virtual QualifiedType qualType()                                     = 0;
-  virtual Type*     typeInfo()                                         = 0;
-  virtual void      verify()                                           = 0;
-  virtual void      accept(AstVisitor* visitor)                        = 0;
+ public:
+  virtual GenRet codegen() = 0;
+  virtual bool inTree() = 0;
+  virtual QualifiedType qualType() = 0;
+  virtual Type* typeInfo() = 0;
+  virtual void verify() = 0;
+  virtual void accept(AstVisitor* visitor) = 0;
 
-  const char*       fname()                                      const;
-  int               linenum()                                    const;
-  const char*       stringLoc()                                  const;
+  const char* fname() const;
+  int linenum() const;
+  const char* stringLoc() const;
 
   // This AST is a symbol with the flag 'FLAG_RESOLVED_EARLY' or it is
   // contained in a symbol marked with that flag. It should be handled
@@ -268,31 +266,31 @@ public:
   // in particular it should not be mutated by those passes (except in
   // rare cases, e.g., the symbol is a module and needs to have other
   // symbols inserted into it that the old compiler generated).
-  bool              wasResolvedEarly();
+  bool wasResolvedEarly();
 
-  bool              isRef();
-  bool              isWideRef();
-  bool              isRefOrWideRef();
-  FnSymbol*         getFunction();
-  ModuleSymbol*     getModule();
-  Type*             getValType();
-  Type*             getRefType();
-  Type*             getWideRefType();
+  bool isRef();
+  bool isWideRef();
+  bool isRefOrWideRef();
+  FnSymbol* getFunction();
+  ModuleSymbol* getModule();
+  Type* getValType();
+  Type* getRefType();
+  Type* getWideRefType();
 
-  const char*       astTagAsString()                             const;
+  const char* astTagAsString() const;
 
-  AstTag            astTag;     // BaseAST subclass
-  int               id;         // Unique ID
-  astlocT           astloc;     // Location of this node in the source code
+  AstTag astTag;  // BaseAST subclass
+  int id;         // Unique ID
+  astlocT astloc; // Location of this node in the source code
 
-  static  const     std::string tabText;
+  static const std::string tabText;
 
-protected:
-                    BaseAST(AstTag type);
-  virtual          ~BaseAST() = default;
+ protected:
+  BaseAST(AstTag type);
+  virtual ~BaseAST() = default;
 
-private:
-                    BaseAST();
+ private:
+  BaseAST();
 };
 
 GenRet baseASTCodegen(BaseAST* ast);
@@ -300,81 +298,63 @@ GenRet baseASTCodegenInt(int x);
 GenRet baseASTCodegenString(const char* str);
 
 // get the current AST node id
-int    lastNodeIDUsed();
+int lastNodeIDUsed();
 
 // trace various AST node removals
-void   trace_remove(BaseAST* ast, char flag);
+void trace_remove(BaseAST* ast, char flag);
 
 void verifyInTree(BaseAST* ast, const char* msg);
 
 //
 // class test inlines: determine the dynamic type of a BaseAST*
 //
-static inline bool isExpr(const BaseAST* a)
-{ return a && isExpr(a->astTag); }
+static inline bool isExpr(const BaseAST* a) { return a && isExpr(a->astTag); }
 
-static inline bool isSymbol(const BaseAST* a)
-{ return a && isSymbol(a->astTag); }
+static inline bool isSymbol(const BaseAST* a) {
+  return a && isSymbol(a->astTag);
+}
 
-static inline bool isType(const BaseAST* a)
-{ return a && isType(a->astTag); }
+static inline bool isType(const BaseAST* a) { return a && isType(a->astTag); }
 
-static inline bool isLcnSymbol(const BaseAST* a)
-{ return a && (a->astTag == E_ArgSymbol || a->astTag == E_VarSymbol || a->astTag == E_ShadowVarSymbol); }
+static inline bool isLcnSymbol(const BaseAST* a) {
+  return a && (a->astTag == E_ArgSymbol || a->astTag == E_VarSymbol ||
+               a->astTag == E_ShadowVarSymbol);
+}
 
-static inline bool isVarSymbol(const BaseAST* a)
-{ return a && (a->astTag == E_VarSymbol || a->astTag == E_ShadowVarSymbol); }
+static inline bool isVarSymbol(const BaseAST* a) {
+  return a && (a->astTag == E_VarSymbol || a->astTag == E_ShadowVarSymbol);
+}
 
-static inline bool isCallExpr(const BaseAST* a)
-{ return a && (a->astTag == E_CallExpr || a->astTag == E_ContextCallExpr); }
-
+static inline bool isCallExpr(const BaseAST* a) {
+  return a && (a->astTag == E_CallExpr || a->astTag == E_ContextCallExpr);
+}
 
 #define def_is_ast(Type)                          \
-  static inline bool is##Type(const BaseAST* a)   \
-  {                                               \
+  static inline bool is##Type(const BaseAST* a) { \
     return a && a->astTag == E_##Type;            \
   }
 
-def_is_ast(TemporaryConversionThunk)
-def_is_ast(SymExpr)
-def_is_ast(UnresolvedSymExpr)
-def_is_ast(DefExpr)
-def_is_ast(ContextCallExpr)
-def_is_ast(LoopExpr)
-def_is_ast(NamedExpr)
-def_is_ast(IfcConstraint)
-def_is_ast(IfExpr)
-def_is_ast(UseStmt)
-def_is_ast(ImportStmt)
-def_is_ast(BlockStmt)
-def_is_ast(CondStmt)
-def_is_ast(GotoStmt)
-def_is_ast(DeferStmt)
-def_is_ast(ForallStmt)
-def_is_ast(TryStmt)
-def_is_ast(ForwardingStmt)
-def_is_ast(CatchStmt)
-def_is_ast(ImplementsStmt)
-def_is_ast(ExternBlockStmt)
-def_is_ast(ModuleSymbol)
-def_is_ast(ArgSymbol)
-def_is_ast(ShadowVarSymbol)
-def_is_ast(TypeSymbol)
-def_is_ast(FnSymbol)
-def_is_ast(InterfaceSymbol)
-def_is_ast(EnumSymbol)
-def_is_ast(LabelSymbol)
-def_is_ast(TemporaryConversionSymbol)
-def_is_ast(PrimitiveType)
-def_is_ast(FunctionType)
-def_is_ast(ConstrainedType)
-def_is_ast(EnumType)
-def_is_ast(AggregateType)
-def_is_ast(TemporaryConversionType)
-def_is_ast(DecoratedClassType)
+def_is_ast(TemporaryConversionThunk) def_is_ast(SymExpr)
+  def_is_ast(UnresolvedSymExpr) def_is_ast(DefExpr) def_is_ast(ContextCallExpr)
+    def_is_ast(LoopExpr) def_is_ast(NamedExpr) def_is_ast(IfcConstraint)
+      def_is_ast(IfExpr) def_is_ast(UseStmt) def_is_ast(ImportStmt)
+        def_is_ast(BlockStmt) def_is_ast(CondStmt) def_is_ast(GotoStmt)
+          def_is_ast(DeferStmt) def_is_ast(ForallStmt) def_is_ast(TryStmt)
+            def_is_ast(ForwardingStmt) def_is_ast(CatchStmt)
+              def_is_ast(ImplementsStmt) def_is_ast(ExternBlockStmt)
+                def_is_ast(ModuleSymbol) def_is_ast(ArgSymbol)
+                  def_is_ast(ShadowVarSymbol) def_is_ast(TypeSymbol)
+                    def_is_ast(FnSymbol) def_is_ast(InterfaceSymbol)
+                      def_is_ast(EnumSymbol) def_is_ast(LabelSymbol)
+                        def_is_ast(TemporaryConversionSymbol)
+                          def_is_ast(PrimitiveType) def_is_ast(FunctionType)
+                            def_is_ast(ConstrainedType) def_is_ast(EnumType)
+                              def_is_ast(AggregateType)
+                                def_is_ast(TemporaryConversionType)
+                                  def_is_ast(DecoratedClassType)
 #undef def_is_ast
 
-bool isLoopStmt(const BaseAST* a);
+                                    bool isLoopStmt(const BaseAST* a);
 bool isWhileStmt(const BaseAST* a);
 bool isWhileDoStmt(const BaseAST* a);
 bool isDoWhileStmt(const BaseAST* a);
@@ -387,54 +367,37 @@ bool isCForLoop(const BaseAST* a);
 // safe downcast inlines: downcast BaseAST*, Expr*, Symbol*, or Type*
 //   note: toDerivedClass is equivalent to dynamic_cast<DerivedClass*>
 //
-#define def_to_ast(Type) \
-  static inline Type * to##Type(BaseAST* a) { return is##Type(a) ? (Type*)a : NULL; } \
-  static inline const Type * toConst##Type(const BaseAST* a) \
-    { return is##Type(a) ? (const Type*)a : NULL; }
+#define def_to_ast(Type)                                      \
+  static inline Type* to##Type(BaseAST* a) {                  \
+    return is##Type(a) ? (Type*)a : NULL;                     \
+  }                                                           \
+  static inline const Type* toConst##Type(const BaseAST* a) { \
+    return is##Type(a) ? (const Type*)a : NULL;               \
+  }
 
-def_to_ast(TemporaryConversionThunk)
-def_to_ast(SymExpr)
-def_to_ast(UnresolvedSymExpr)
-def_to_ast(DefExpr)
-def_to_ast(ContextCallExpr)
-def_to_ast(LoopExpr)
-def_to_ast(NamedExpr)
-def_to_ast(IfcConstraint)
-def_to_ast(IfExpr)
-def_to_ast(UseStmt)
-def_to_ast(ImportStmt)
-def_to_ast(BlockStmt)
-def_to_ast(CondStmt)
-def_to_ast(GotoStmt)
-def_to_ast(DeferStmt)
-def_to_ast(ForallStmt)
-def_to_ast(TryStmt)
-def_to_ast(ForwardingStmt)
-def_to_ast(CatchStmt)
-def_to_ast(ImplementsStmt)
-def_to_ast(ExternBlockStmt)
-def_to_ast(Expr)
-def_to_ast(ModuleSymbol)
-def_to_ast(VarSymbol)
-def_to_ast(ArgSymbol)
-def_to_ast(ShadowVarSymbol)
-def_to_ast(TypeSymbol)
-def_to_ast(FnSymbol)
-def_to_ast(InterfaceSymbol)
-def_to_ast(EnumSymbol)
-def_to_ast(LabelSymbol)
-def_to_ast(TemporaryConversionSymbol)
-def_to_ast(Symbol)
-def_to_ast(PrimitiveType)
-def_to_ast(FunctionType)
-def_to_ast(ConstrainedType)
-def_to_ast(EnumType)
-def_to_ast(AggregateType)
-def_to_ast(TemporaryConversionType)
-def_to_ast(DecoratedClassType)
-def_to_ast(Type)
+def_to_ast(TemporaryConversionThunk) def_to_ast(SymExpr)
+  def_to_ast(UnresolvedSymExpr) def_to_ast(DefExpr) def_to_ast(ContextCallExpr)
+    def_to_ast(LoopExpr) def_to_ast(NamedExpr) def_to_ast(IfcConstraint)
+      def_to_ast(IfExpr) def_to_ast(UseStmt) def_to_ast(ImportStmt)
+        def_to_ast(BlockStmt) def_to_ast(CondStmt) def_to_ast(GotoStmt)
+          def_to_ast(DeferStmt) def_to_ast(ForallStmt) def_to_ast(TryStmt)
+            def_to_ast(ForwardingStmt) def_to_ast(CatchStmt)
+              def_to_ast(ImplementsStmt) def_to_ast(ExternBlockStmt)
+                def_to_ast(Expr) def_to_ast(ModuleSymbol) def_to_ast(VarSymbol)
+                  def_to_ast(ArgSymbol) def_to_ast(ShadowVarSymbol)
+                    def_to_ast(TypeSymbol) def_to_ast(FnSymbol)
+                      def_to_ast(InterfaceSymbol) def_to_ast(EnumSymbol)
+                        def_to_ast(LabelSymbol)
+                          def_to_ast(TemporaryConversionSymbol)
+                            def_to_ast(Symbol) def_to_ast(PrimitiveType)
+                              def_to_ast(FunctionType)
+                                def_to_ast(ConstrainedType) def_to_ast(EnumType)
+                                  def_to_ast(AggregateType)
+                                    def_to_ast(TemporaryConversionType)
+                                      def_to_ast(DecoratedClassType)
+                                        def_to_ast(Type)
 
-def_to_ast(LoopStmt);
+                                          def_to_ast(LoopStmt);
 def_to_ast(WhileStmt);
 def_to_ast(WhileDoStmt);
 def_to_ast(DoWhileStmt);
@@ -444,60 +407,42 @@ def_to_ast(ParamForLoop);
 
 #undef def_to_ast
 
-#define def_less_ast(SomeType) \
-  namespace std { \
-    template<> struct less<SomeType*> { \
-      bool operator()(const SomeType* lhs, const SomeType* rhs) const { \
-        if (lhs == NULL && rhs != NULL) return true; \
-        if (lhs != NULL && rhs == NULL) return false; \
-        if (lhs == NULL && rhs == NULL) return false; \
-        return ((const BaseAST*)lhs)->id < ((const BaseAST*)rhs)->id; \
-      } \
-    }; \
+#define def_less_ast(SomeType)                                        \
+  namespace std {                                                     \
+  template <> struct less<SomeType*> {                                \
+    bool operator()(const SomeType* lhs, const SomeType* rhs) const { \
+      if (lhs == NULL && rhs != NULL) return true;                    \
+      if (lhs != NULL && rhs == NULL) return false;                   \
+      if (lhs == NULL && rhs == NULL) return false;                   \
+      return ((const BaseAST*)lhs)->id < ((const BaseAST*)rhs)->id;   \
+    }                                                                 \
+  };                                                                  \
   }
 
-def_less_ast(TemporaryConversionThunk)
-def_less_ast(SymExpr)
-def_less_ast(UnresolvedSymExpr)
-def_less_ast(DefExpr)
-def_less_ast(ContextCallExpr)
-def_less_ast(LoopExpr)
-def_less_ast(NamedExpr)
-def_less_ast(IfcConstraint)
-def_less_ast(IfExpr)
-def_less_ast(UseStmt)
-def_less_ast(ImportStmt)
-def_less_ast(BlockStmt)
-def_less_ast(CondStmt)
-def_less_ast(GotoStmt)
-def_less_ast(DeferStmt)
-def_less_ast(ForallStmt)
-def_less_ast(TryStmt)
-def_less_ast(ForwardingStmt)
-def_less_ast(CatchStmt)
-def_less_ast(ImplementsStmt)
-def_less_ast(ExternBlockStmt)
-def_less_ast(Expr)
-def_less_ast(ModuleSymbol)
-def_less_ast(VarSymbol)
-def_less_ast(ArgSymbol)
-def_less_ast(ShadowVarSymbol)
-def_less_ast(TypeSymbol)
-def_less_ast(FnSymbol)
-def_less_ast(InterfaceSymbol)
-def_less_ast(EnumSymbol)
-def_less_ast(LabelSymbol)
-def_less_ast(TemporaryConversionSymbol)
-def_less_ast(Symbol)
-def_less_ast(PrimitiveType)
-def_less_ast(ConstrainedType)
-def_less_ast(EnumType)
-def_less_ast(AggregateType)
-def_less_ast(TemporaryConversionType)
-def_less_ast(DecoratedClassType)
-def_less_ast(Type)
+def_less_ast(TemporaryConversionThunk) def_less_ast(SymExpr)
+  def_less_ast(UnresolvedSymExpr) def_less_ast(DefExpr)
+    def_less_ast(ContextCallExpr) def_less_ast(LoopExpr) def_less_ast(NamedExpr)
+      def_less_ast(IfcConstraint) def_less_ast(IfExpr) def_less_ast(UseStmt)
+        def_less_ast(ImportStmt) def_less_ast(BlockStmt) def_less_ast(CondStmt)
+          def_less_ast(GotoStmt) def_less_ast(DeferStmt)
+            def_less_ast(ForallStmt) def_less_ast(TryStmt)
+              def_less_ast(ForwardingStmt) def_less_ast(CatchStmt)
+                def_less_ast(ImplementsStmt) def_less_ast(ExternBlockStmt)
+                  def_less_ast(Expr) def_less_ast(ModuleSymbol)
+                    def_less_ast(VarSymbol) def_less_ast(ArgSymbol)
+                      def_less_ast(ShadowVarSymbol) def_less_ast(TypeSymbol)
+                        def_less_ast(FnSymbol) def_less_ast(InterfaceSymbol)
+                          def_less_ast(EnumSymbol) def_less_ast(LabelSymbol)
+                            def_less_ast(TemporaryConversionSymbol)
+                              def_less_ast(Symbol) def_less_ast(PrimitiveType)
+                                def_less_ast(ConstrainedType)
+                                  def_less_ast(EnumType)
+                                    def_less_ast(AggregateType)
+                                      def_less_ast(TemporaryConversionType)
+                                        def_less_ast(DecoratedClassType)
+                                          def_less_ast(Type)
 
-def_less_ast(LoopStmt);
+                                            def_less_ast(LoopStmt);
 def_less_ast(WhileStmt);
 def_less_ast(WhileDoStmt);
 def_less_ast(DoWhileStmt);
@@ -507,34 +452,31 @@ def_less_ast(ParamForLoop);
 
 #undef def_less_ast
 
-static inline LcnSymbol* toLcnSymbol(BaseAST* a)
-{
-  return isLcnSymbol(a) ? (LcnSymbol*) a : NULL;
+static inline LcnSymbol* toLcnSymbol(BaseAST* a) {
+  return isLcnSymbol(a) ? (LcnSymbol*)a : NULL;
 }
 
-static inline const LcnSymbol* toConstLcnSymbol(const BaseAST* a)
-{
-  return isLcnSymbol(a) ? (const LcnSymbol*) a : NULL;
+static inline const LcnSymbol* toConstLcnSymbol(const BaseAST* a) {
+  return isLcnSymbol(a) ? (const LcnSymbol*)a : NULL;
 }
 
 CallExpr* getDesignatedCall(const ContextCallExpr* a);
 
-static inline CallExpr* toCallExpr(BaseAST* a)
-{
+static inline CallExpr* toCallExpr(BaseAST* a) {
   if (!a) return NULL;
-  if (a->astTag == E_CallExpr) return (CallExpr*) a;
-  if (a->astTag == E_ContextCallExpr) return getDesignatedCall((ContextCallExpr*)a);
+  if (a->astTag == E_CallExpr) return (CallExpr*)a;
+  if (a->astTag == E_ContextCallExpr)
+    return getDesignatedCall((ContextCallExpr*)a);
   return NULL;
 }
 
-static inline const CallExpr* toConstCallExpr(const BaseAST* a)
-{
+static inline const CallExpr* toConstCallExpr(const BaseAST* a) {
   if (!a) return NULL;
-  if (a->astTag == E_CallExpr) return (const CallExpr*) a;
-  if (a->astTag == E_ContextCallExpr) return getDesignatedCall((const ContextCallExpr*)a);
+  if (a->astTag == E_CallExpr) return (const CallExpr*)a;
+  if (a->astTag == E_ContextCallExpr)
+    return getDesignatedCall((const ContextCallExpr*)a);
   return NULL;
 }
-
 
 //
 // traversal macros
@@ -544,187 +486,184 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
 // can also be used to define recursive functions that work over a
 // portion of the AST.  See collectSymExprs for a simple example.
 //
-#define AST_CALL_CHILD(_a, _t, _m, call, ...)                           \
-  if (((_t*)_a)->_m) {                                                  \
-    BaseAST* next_ast = ((_t*)_a)->_m;                                  \
-    call(next_ast, __VA_ARGS__);                                        \
+#define AST_CALL_CHILD(_a, _t, _m, call, ...) \
+  if (((_t*)_a)->_m) {                        \
+    BaseAST* next_ast = ((_t*)_a)->_m;        \
+    call(next_ast, __VA_ARGS__);              \
   }
 
-#define AST_CALL_LIST(_a, _t, _m, call, ...)                            \
-  for_alist(next_ast, ((_t*)_a)->_m) {                                  \
-    call(next_ast, __VA_ARGS__);                                        \
-  }
+#define AST_CALL_LIST(_a, _t, _m, call, ...)                          \
+  for_alist(next_ast, ((_t*)_a)->_m) { call(next_ast, __VA_ARGS__); }
 
 // Do not use for_vector to avoid #include astutil.h
-#define AST_CALL_STDVEC(_vec, _t, call, ...)                                 \
-  for (std::vector<_t*>::iterator it = _vec.begin(); it != _vec.end(); it++) \
-    { if (*it) call(*it, __VA_ARGS__); }
+#define AST_CALL_STDVEC(_vec, _t, call, ...)                                   \
+  for (std::vector<_t*>::iterator it = _vec.begin(); it != _vec.end(); it++) { \
+    if (*it) call(*it, __VA_ARGS__);                                           \
+  }
 
-#define AST_CHILDREN_CALL(_a, call, ...)                                \
-  switch (_a->astTag) {                                                 \
-  case E_TemporaryConversionThunk:                                      \
-    AST_CALL_LIST(_a, TemporaryConversionThunk, children, call, __VA_ARGS__); \
-    break;                                                              \
-  case E_CallExpr:                                                      \
-    AST_CALL_CHILD(_a, CallExpr, baseExpr, call, __VA_ARGS__);          \
-    AST_CALL_LIST(_a, CallExpr, argList, call, __VA_ARGS__);            \
-    break;                                                              \
-  case E_ContextCallExpr:                                               \
-    AST_CALL_LIST(_a, ContextCallExpr, options, call, __VA_ARGS__);     \
-    break;                                                              \
-  case E_LoopExpr:                                                      \
-    AST_CALL_CHILD(_a, LoopExpr, indices,      call, __VA_ARGS__);      \
-    AST_CALL_CHILD(_a, LoopExpr, iteratorExpr, call, __VA_ARGS__);      \
-    AST_CALL_CHILD(_a, LoopExpr, cond,         call, __VA_ARGS__);      \
-    AST_CALL_CHILD(_a, LoopExpr, loopBody,     call, __VA_ARGS__);      \
-    break;                                                              \
-  case E_NamedExpr:                                                     \
-    AST_CALL_CHILD(_a, NamedExpr, actual, call, __VA_ARGS__);           \
-    break;                                                              \
-  case E_IfcConstraint:                                                 \
-    AST_CALL_CHILD(_a, IfcConstraint, interfaceExpr, call, __VA_ARGS__);\
-    AST_CALL_LIST(_a,  IfcConstraint, consActuals,   call, __VA_ARGS__);\
-    break;                                                              \
-  case E_IfExpr:                                                        \
-    AST_CALL_CHILD(_a, IfExpr, getCondition(), call, __VA_ARGS__);      \
-    AST_CALL_CHILD(_a, IfExpr, getThenStmt(), call, __VA_ARGS__);       \
-    AST_CALL_CHILD(_a, IfExpr, getElseStmt(), call, __VA_ARGS__);       \
-    break;                                                              \
-  case E_DefExpr:                                                       \
-    AST_CALL_CHILD(_a, DefExpr, init, call, __VA_ARGS__);               \
-    AST_CALL_CHILD(_a, DefExpr, exprType, call, __VA_ARGS__);           \
-    AST_CALL_CHILD(_a, DefExpr, sym, call, __VA_ARGS__);                \
-    break;                                                              \
-  case E_UseStmt:                                                       \
-    AST_CALL_CHILD(_a, UseStmt, src, call, __VA_ARGS__);                \
-    break;                                                              \
-  case E_ImportStmt:                                                    \
-    AST_CALL_CHILD(_a, ImportStmt, src, call, __VA_ARGS__);             \
-    break;                                                              \
-                                                                           \
-  case E_BlockStmt: {                                                      \
-    if (isWhileDoStmt(_a) == true) {                                       \
-      AST_CALL_LIST (_a, WhileStmt,    body,           call, __VA_ARGS__); \
-      AST_CALL_CHILD(_a, WhileStmt,    condExprGet(),  call, __VA_ARGS__); \
-                                                                           \
-    } else if (isDoWhileStmt(_a)  == true) {                               \
-      AST_CALL_LIST (_a, WhileStmt,    body,           call, __VA_ARGS__); \
-      AST_CALL_CHILD(_a, WhileStmt,    condExprGet(),  call, __VA_ARGS__); \
-                                                                           \
-    } else if (isForLoop(_a)      == true) {                               \
-      AST_CALL_LIST (_a, ForLoop,      shadowVariables(), call, __VA_ARGS__); \
-      AST_CALL_LIST (_a, ForLoop,      body,           call, __VA_ARGS__); \
-      AST_CALL_CHILD(_a, ForLoop,      indexGet(),     call, __VA_ARGS__); \
-      AST_CALL_CHILD(_a, ForLoop,      iteratorGet(),  call, __VA_ARGS__); \
-                                                                           \
-    } else if (isCoforallLoop(_a) == true) {                               \
-      AST_CALL_LIST (_a, ForLoop,      body,           call, __VA_ARGS__); \
-      AST_CALL_CHILD(_a, ForLoop,      indexGet(),     call, __VA_ARGS__); \
-      AST_CALL_CHILD(_a, ForLoop,      iteratorGet(),  call, __VA_ARGS__); \
-                                                                           \
-    } else if (isCForLoop(_a)     == true) {                               \
-      AST_CALL_LIST (_a, CForLoop,     body,           call, __VA_ARGS__); \
-      AST_CALL_CHILD(_a, CForLoop,     initBlockGet(), call, __VA_ARGS__); \
-      AST_CALL_CHILD(_a, CForLoop,     testBlockGet(), call, __VA_ARGS__); \
-      AST_CALL_CHILD(_a, CForLoop,     incrBlockGet(), call, __VA_ARGS__); \
-                                                                           \
-    } else if (isParamForLoop(_a) == true) {                               \
-      AST_CALL_LIST (_a, ParamForLoop, body,           call, __VA_ARGS__); \
-      AST_CALL_CHILD(_a, ParamForLoop, resolveInfo(),  call, __VA_ARGS__); \
-                                                                           \
-    } else  {                                                              \
-      AST_CALL_LIST (_a, BlockStmt,    body,           call, __VA_ARGS__); \
-      AST_CALL_CHILD(_a, BlockStmt,    blockInfoGet(), call, __VA_ARGS__); \
-      AST_CALL_CHILD(_a, BlockStmt,    useList,        call, __VA_ARGS__); \
-      AST_CALL_CHILD(_a, BlockStmt,    modRefs,        call, __VA_ARGS__); \
-      AST_CALL_CHILD(_a, BlockStmt,    byrefVars,      call, __VA_ARGS__); \
-    }                                                                      \
-    break;                                                                 \
-  }                                                                        \
-                                                                           \
-  case E_CondStmt:                                                      \
-    AST_CALL_CHILD(_a, CondStmt, condExpr, call, __VA_ARGS__);          \
-    AST_CALL_CHILD(_a, CondStmt, thenStmt, call, __VA_ARGS__);          \
-    AST_CALL_CHILD(_a, CondStmt, elseStmt, call, __VA_ARGS__);          \
-    break;                                                              \
-  case E_GotoStmt:                                                      \
-    AST_CALL_CHILD(_a, GotoStmt, label, call, __VA_ARGS__);             \
-    break;                                                              \
-  case E_ForwardingStmt:                                                \
-    AST_CALL_CHILD(_a, ForwardingStmt, toFnDef, call, __VA_ARGS__);     \
-    break;                                                              \
-  case E_DeferStmt:                                                     \
-    AST_CALL_CHILD(_a, DeferStmt, body(), call, __VA_ARGS__);           \
-    break;                                                              \
-  case E_TryStmt:                                                       \
-    AST_CALL_CHILD(_a, TryStmt, _body, call, __VA_ARGS__);              \
-    AST_CALL_LIST(_a, TryStmt, _catches, call, __VA_ARGS__);            \
-    break;                                                              \
-  case E_CatchStmt:                                                     \
-    AST_CALL_CHILD(_a, CatchStmt, _type, call, __VA_ARGS__);            \
-    AST_CALL_CHILD(_a, CatchStmt, _body, call, __VA_ARGS__);            \
-    break;                                                              \
-  case E_ImplementsStmt:                                                \
-    AST_CALL_CHILD(_a, ImplementsStmt, iConstraint, call, __VA_ARGS__); \
-    AST_CALL_CHILD(_a, ImplementsStmt, implBody, call, __VA_ARGS__);    \
-    break;                                                              \
-  case E_ForallStmt:                                                          \
-    AST_CALL_LIST (_a, ForallStmt, inductionVariables(),  call, __VA_ARGS__); \
-    AST_CALL_LIST (_a, ForallStmt, iteratedExpressions(), call, __VA_ARGS__); \
-    AST_CALL_LIST (_a, ForallStmt, shadowVariables(),     call, __VA_ARGS__); \
-    AST_CALL_CHILD(_a, ForallStmt, fRecIterIRdef,         call, __VA_ARGS__); \
-    AST_CALL_CHILD(_a, ForallStmt, fRecIterICdef,         call, __VA_ARGS__); \
-    AST_CALL_CHILD(_a, ForallStmt, fRecIterGetIterator,   call, __VA_ARGS__); \
-    AST_CALL_CHILD(_a, ForallStmt, fRecIterFreeIterator,  call, __VA_ARGS__); \
-    AST_CALL_CHILD(_a, ForallStmt, zipCall(),             call, __VA_ARGS__); \
-    AST_CALL_CHILD(_a, ForallStmt, loopBody(),            call, __VA_ARGS__); \
-    break;                                                                    \
-  case E_ModuleSymbol:                                                  \
-    AST_CALL_CHILD(_a, ModuleSymbol, block, call, __VA_ARGS__);         \
-    break;                                                              \
-  case E_ArgSymbol:                                                     \
-    AST_CALL_CHILD(_a, ArgSymbol, typeExpr, call, __VA_ARGS__);         \
-    AST_CALL_CHILD(_a, ArgSymbol, defaultExpr, call, __VA_ARGS__);      \
-    AST_CALL_CHILD(_a, ArgSymbol, variableExpr, call, __VA_ARGS__);     \
-    break;                                                              \
-  case E_ShadowVarSymbol:                                                   \
-    AST_CALL_CHILD(_a, ShadowVarSymbol, outerVarSE,    call, __VA_ARGS__);  \
-    AST_CALL_CHILD(_a, ShadowVarSymbol, specBlock,     call, __VA_ARGS__);  \
-    AST_CALL_CHILD(_a, ShadowVarSymbol, svInitBlock,   call, __VA_ARGS__);  \
-    AST_CALL_CHILD(_a, ShadowVarSymbol, svDeinitBlock, call, __VA_ARGS__);  \
-    break;                                                                  \
-  case E_TypeSymbol:                                                    \
-    AST_CALL_CHILD(_a, Symbol, type, call, __VA_ARGS__);                \
-    break;                                                              \
-  case E_FnSymbol:                                                      \
-    AST_CALL_LIST(_a, FnSymbol, formals, call, __VA_ARGS__);            \
-    AST_CALL_CHILD(_a, FnSymbol, body, call, __VA_ARGS__);              \
-    AST_CALL_CHILD(_a, FnSymbol, where, call, __VA_ARGS__);             \
-    AST_CALL_CHILD(_a, FnSymbol, lifetimeConstraints, call, __VA_ARGS__); \
-    if (InterfaceInfo* ifcInfo = ((FnSymbol*)_a)->interfaceInfo) {      \
-      AST_CALL_LIST(ifcInfo, InterfaceInfo,                             \
-                    constrainedTypes,         call, __VA_ARGS__);       \
-      AST_CALL_LIST(ifcInfo, InterfaceInfo,                             \
-                    interfaceConstraints,     call, __VA_ARGS__);       \
-    }                                                                   \
-    AST_CALL_CHILD(_a, FnSymbol, retExprType, call, __VA_ARGS__);       \
-    break;                                                              \
-  case E_InterfaceSymbol:                                               \
-    AST_CALL_LIST(_a,  InterfaceSymbol, ifcFormals, call, __VA_ARGS__); \
-    AST_CALL_CHILD(_a, InterfaceSymbol, ifcBody,    call, __VA_ARGS__); \
-    break;                                                              \
-  case E_EnumType:                                                      \
-    AST_CALL_LIST(_a, EnumType, constants, call, __VA_ARGS__);          \
-    break;                                                              \
-  case E_AggregateType:                                                 \
-    AST_CALL_LIST(_a, AggregateType, fields, call, __VA_ARGS__);        \
-    AST_CALL_LIST(_a, AggregateType, inherits, call, __VA_ARGS__);      \
-    AST_CALL_LIST(_a, AggregateType, forwardingTo, call, __VA_ARGS__);  \
-    break;                                                              \
-  case E_DecoratedClassType:                                            \
-    break;                                                              \
-  default:                                                              \
-    break;                                                              \
+#define AST_CHILDREN_CALL(_a, call, ...)                                       \
+  switch (_a->astTag) {                                                        \
+    case E_TemporaryConversionThunk:                                           \
+      AST_CALL_LIST(                                                           \
+        _a, TemporaryConversionThunk, children, call, __VA_ARGS__);            \
+      break;                                                                   \
+    case E_CallExpr:                                                           \
+      AST_CALL_CHILD(_a, CallExpr, baseExpr, call, __VA_ARGS__);               \
+      AST_CALL_LIST(_a, CallExpr, argList, call, __VA_ARGS__);                 \
+      break;                                                                   \
+    case E_ContextCallExpr:                                                    \
+      AST_CALL_LIST(_a, ContextCallExpr, options, call, __VA_ARGS__);          \
+      break;                                                                   \
+    case E_LoopExpr:                                                           \
+      AST_CALL_CHILD(_a, LoopExpr, indices, call, __VA_ARGS__);                \
+      AST_CALL_CHILD(_a, LoopExpr, iteratorExpr, call, __VA_ARGS__);           \
+      AST_CALL_CHILD(_a, LoopExpr, cond, call, __VA_ARGS__);                   \
+      AST_CALL_CHILD(_a, LoopExpr, loopBody, call, __VA_ARGS__);               \
+      break;                                                                   \
+    case E_NamedExpr:                                                          \
+      AST_CALL_CHILD(_a, NamedExpr, actual, call, __VA_ARGS__);                \
+      break;                                                                   \
+    case E_IfcConstraint:                                                      \
+      AST_CALL_CHILD(_a, IfcConstraint, interfaceExpr, call, __VA_ARGS__);     \
+      AST_CALL_LIST(_a, IfcConstraint, consActuals, call, __VA_ARGS__);        \
+      break;                                                                   \
+    case E_IfExpr:                                                             \
+      AST_CALL_CHILD(_a, IfExpr, getCondition(), call, __VA_ARGS__);           \
+      AST_CALL_CHILD(_a, IfExpr, getThenStmt(), call, __VA_ARGS__);            \
+      AST_CALL_CHILD(_a, IfExpr, getElseStmt(), call, __VA_ARGS__);            \
+      break;                                                                   \
+    case E_DefExpr:                                                            \
+      AST_CALL_CHILD(_a, DefExpr, init, call, __VA_ARGS__);                    \
+      AST_CALL_CHILD(_a, DefExpr, exprType, call, __VA_ARGS__);                \
+      AST_CALL_CHILD(_a, DefExpr, sym, call, __VA_ARGS__);                     \
+      break;                                                                   \
+    case E_UseStmt: AST_CALL_CHILD(_a, UseStmt, src, call, __VA_ARGS__);       \
+      break;                                                                   \
+    case E_ImportStmt:                                                         \
+      AST_CALL_CHILD(_a, ImportStmt, src, call, __VA_ARGS__);                  \
+      break;                                                                   \
+                                                                               \
+    case E_BlockStmt: {                                                        \
+      if (isWhileDoStmt(_a) == true) {                                         \
+        AST_CALL_LIST(_a, WhileStmt, body, call, __VA_ARGS__);                 \
+        AST_CALL_CHILD(_a, WhileStmt, condExprGet(), call, __VA_ARGS__);       \
+                                                                               \
+      } else if (isDoWhileStmt(_a) == true) {                                  \
+        AST_CALL_LIST(_a, WhileStmt, body, call, __VA_ARGS__);                 \
+        AST_CALL_CHILD(_a, WhileStmt, condExprGet(), call, __VA_ARGS__);       \
+                                                                               \
+      } else if (isForLoop(_a) == true) {                                      \
+        AST_CALL_LIST(_a, ForLoop, shadowVariables(), call, __VA_ARGS__);      \
+        AST_CALL_LIST(_a, ForLoop, body, call, __VA_ARGS__);                   \
+        AST_CALL_CHILD(_a, ForLoop, indexGet(), call, __VA_ARGS__);            \
+        AST_CALL_CHILD(_a, ForLoop, iteratorGet(), call, __VA_ARGS__);         \
+                                                                               \
+      } else if (isCoforallLoop(_a) == true) {                                 \
+        AST_CALL_LIST(_a, ForLoop, body, call, __VA_ARGS__);                   \
+        AST_CALL_CHILD(_a, ForLoop, indexGet(), call, __VA_ARGS__);            \
+        AST_CALL_CHILD(_a, ForLoop, iteratorGet(), call, __VA_ARGS__);         \
+                                                                               \
+      } else if (isCForLoop(_a) == true) {                                     \
+        AST_CALL_LIST(_a, CForLoop, body, call, __VA_ARGS__);                  \
+        AST_CALL_CHILD(_a, CForLoop, initBlockGet(), call, __VA_ARGS__);       \
+        AST_CALL_CHILD(_a, CForLoop, testBlockGet(), call, __VA_ARGS__);       \
+        AST_CALL_CHILD(_a, CForLoop, incrBlockGet(), call, __VA_ARGS__);       \
+                                                                               \
+      } else if (isParamForLoop(_a) == true) {                                 \
+        AST_CALL_LIST(_a, ParamForLoop, body, call, __VA_ARGS__);              \
+        AST_CALL_CHILD(_a, ParamForLoop, resolveInfo(), call, __VA_ARGS__);    \
+                                                                               \
+      } else {                                                                 \
+        AST_CALL_LIST(_a, BlockStmt, body, call, __VA_ARGS__);                 \
+        AST_CALL_CHILD(_a, BlockStmt, blockInfoGet(), call, __VA_ARGS__);      \
+        AST_CALL_CHILD(_a, BlockStmt, useList, call, __VA_ARGS__);             \
+        AST_CALL_CHILD(_a, BlockStmt, modRefs, call, __VA_ARGS__);             \
+        AST_CALL_CHILD(_a, BlockStmt, byrefVars, call, __VA_ARGS__);           \
+      }                                                                        \
+      break;                                                                   \
+    }                                                                          \
+                                                                               \
+    case E_CondStmt:                                                           \
+      AST_CALL_CHILD(_a, CondStmt, condExpr, call, __VA_ARGS__);               \
+      AST_CALL_CHILD(_a, CondStmt, thenStmt, call, __VA_ARGS__);               \
+      AST_CALL_CHILD(_a, CondStmt, elseStmt, call, __VA_ARGS__);               \
+      break;                                                                   \
+    case E_GotoStmt:                                                           \
+      AST_CALL_CHILD(_a, GotoStmt, label, call, __VA_ARGS__);                  \
+      break;                                                                   \
+    case E_ForwardingStmt:                                                     \
+      AST_CALL_CHILD(_a, ForwardingStmt, toFnDef, call, __VA_ARGS__);          \
+      break;                                                                   \
+    case E_DeferStmt:                                                          \
+      AST_CALL_CHILD(_a, DeferStmt, body(), call, __VA_ARGS__);                \
+      break;                                                                   \
+    case E_TryStmt:                                                            \
+      AST_CALL_CHILD(_a, TryStmt, _body, call, __VA_ARGS__);                   \
+      AST_CALL_LIST(_a, TryStmt, _catches, call, __VA_ARGS__);                 \
+      break;                                                                   \
+    case E_CatchStmt:                                                          \
+      AST_CALL_CHILD(_a, CatchStmt, _type, call, __VA_ARGS__);                 \
+      AST_CALL_CHILD(_a, CatchStmt, _body, call, __VA_ARGS__);                 \
+      break;                                                                   \
+    case E_ImplementsStmt:                                                     \
+      AST_CALL_CHILD(_a, ImplementsStmt, iConstraint, call, __VA_ARGS__);      \
+      AST_CALL_CHILD(_a, ImplementsStmt, implBody, call, __VA_ARGS__);         \
+      break;                                                                   \
+    case E_ForallStmt:                                                         \
+      AST_CALL_LIST(_a, ForallStmt, inductionVariables(), call, __VA_ARGS__);  \
+      AST_CALL_LIST(_a, ForallStmt, iteratedExpressions(), call, __VA_ARGS__); \
+      AST_CALL_LIST(_a, ForallStmt, shadowVariables(), call, __VA_ARGS__);     \
+      AST_CALL_CHILD(_a, ForallStmt, fRecIterIRdef, call, __VA_ARGS__);        \
+      AST_CALL_CHILD(_a, ForallStmt, fRecIterICdef, call, __VA_ARGS__);        \
+      AST_CALL_CHILD(_a, ForallStmt, fRecIterGetIterator, call, __VA_ARGS__);  \
+      AST_CALL_CHILD(_a, ForallStmt, fRecIterFreeIterator, call, __VA_ARGS__); \
+      AST_CALL_CHILD(_a, ForallStmt, zipCall(), call, __VA_ARGS__);            \
+      AST_CALL_CHILD(_a, ForallStmt, loopBody(), call, __VA_ARGS__);           \
+      break;                                                                   \
+    case E_ModuleSymbol:                                                       \
+      AST_CALL_CHILD(_a, ModuleSymbol, block, call, __VA_ARGS__);              \
+      break;                                                                   \
+    case E_ArgSymbol:                                                          \
+      AST_CALL_CHILD(_a, ArgSymbol, typeExpr, call, __VA_ARGS__);              \
+      AST_CALL_CHILD(_a, ArgSymbol, defaultExpr, call, __VA_ARGS__);           \
+      AST_CALL_CHILD(_a, ArgSymbol, variableExpr, call, __VA_ARGS__);          \
+      break;                                                                   \
+    case E_ShadowVarSymbol:                                                    \
+      AST_CALL_CHILD(_a, ShadowVarSymbol, outerVarSE, call, __VA_ARGS__);      \
+      AST_CALL_CHILD(_a, ShadowVarSymbol, specBlock, call, __VA_ARGS__);       \
+      AST_CALL_CHILD(_a, ShadowVarSymbol, svInitBlock, call, __VA_ARGS__);     \
+      AST_CALL_CHILD(_a, ShadowVarSymbol, svDeinitBlock, call, __VA_ARGS__);   \
+      break;                                                                   \
+    case E_TypeSymbol:                                                         \
+      AST_CALL_CHILD(_a, Symbol, type, call, __VA_ARGS__);                     \
+      break;                                                                   \
+    case E_FnSymbol:                                                           \
+      AST_CALL_LIST(_a, FnSymbol, formals, call, __VA_ARGS__);                 \
+      AST_CALL_CHILD(_a, FnSymbol, body, call, __VA_ARGS__);                   \
+      AST_CALL_CHILD(_a, FnSymbol, where, call, __VA_ARGS__);                  \
+      AST_CALL_CHILD(_a, FnSymbol, lifetimeConstraints, call, __VA_ARGS__);    \
+      if (InterfaceInfo* ifcInfo = ((FnSymbol*)_a)->interfaceInfo) {           \
+        AST_CALL_LIST(                                                         \
+          ifcInfo, InterfaceInfo, constrainedTypes, call, __VA_ARGS__);        \
+        AST_CALL_LIST(                                                         \
+          ifcInfo, InterfaceInfo, interfaceConstraints, call, __VA_ARGS__);    \
+      }                                                                        \
+      AST_CALL_CHILD(_a, FnSymbol, retExprType, call, __VA_ARGS__);            \
+      break;                                                                   \
+    case E_InterfaceSymbol:                                                    \
+      AST_CALL_LIST(_a, InterfaceSymbol, ifcFormals, call, __VA_ARGS__);       \
+      AST_CALL_CHILD(_a, InterfaceSymbol, ifcBody, call, __VA_ARGS__);         \
+      break;                                                                   \
+    case E_EnumType:                                                           \
+      AST_CALL_LIST(_a, EnumType, constants, call, __VA_ARGS__);               \
+      break;                                                                   \
+    case E_AggregateType:                                                      \
+      AST_CALL_LIST(_a, AggregateType, fields, call, __VA_ARGS__);             \
+      AST_CALL_LIST(_a, AggregateType, inherits, call, __VA_ARGS__);           \
+      AST_CALL_LIST(_a, AggregateType, forwardingTo, call, __VA_ARGS__);       \
+      break;                                                                   \
+    case E_DecoratedClassType: break;                                          \
+    default: break;                                                            \
   }
 
 //

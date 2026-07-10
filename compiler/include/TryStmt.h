@@ -23,46 +23,46 @@
 
 #include "stmt.h"
 
-class TryStmt final : public Stmt
-{
+class TryStmt final : public Stmt {
 
-public:
+ public:
+  static BlockStmt* build(bool tryBang, Expr* expr);
+  static BlockStmt* build(bool tryBang,
+                          BlockStmt* body,
+                          BlockStmt* catches,
+                          bool isSyncTry = false);
+  static BlockStmt* buildWithCatchall(BlockStmt* body, BlockStmt* onErr);
 
-  static BlockStmt*   build(bool tryBang, Expr*      expr);
-  static BlockStmt*   build(bool tryBang, BlockStmt* body, BlockStmt* catches,
-                            bool isSyncTry = false);
-  static BlockStmt*   buildWithCatchall(BlockStmt* body, BlockStmt* onErr);
-
-  TryStmt(bool tryBang, BlockStmt* body, BlockStmt* catches,
+  TryStmt(bool tryBang,
+          BlockStmt* body,
+          BlockStmt* catches,
           bool isSyncTry = false);
- ~TryStmt() override = default;
+  ~TryStmt() override = default;
 
-  BlockStmt*          body() const;
-  bool                tryBang() const;
-  bool                isSyncTry() const;
-  bool                isForManageStmt() const;
+  BlockStmt* body() const;
+  bool tryBang() const;
+  bool isSyncTry() const;
+  bool isForManageStmt() const;
 
-  void                accept(AstVisitor* visitor) override;
-  void                replaceChild(Expr* old_ast, Expr* new_ast) override;
-  Expr*               getFirstExpr() override;
-  Expr*               getNextExpr(Expr* expr) override;
-  void                verify() override;
-  GenRet              codegen() override;
+  void accept(AstVisitor* visitor) override;
+  void replaceChild(Expr* old_ast, Expr* new_ast) override;
+  Expr* getFirstExpr() override;
+  Expr* getNextExpr(Expr* expr) override;
+  void verify() override;
+  GenRet codegen() override;
   DECLARE_COPY(TryStmt);
   TryStmt* copyInner(SymbolMap* map) override;
 
-
   // intended to be private, but astutil.h macros need public access
-  BlockStmt*          _body;
-  AList               _catches;
+  BlockStmt* _body;
+  AList _catches;
 
-private:
-  bool                _tryBang;
-  bool                _isSyncTry;
+ private:
+  bool _tryBang;
+  bool _isSyncTry;
 
-  static BlockStmt*   buildChplStmt(Expr* expr);
-                      TryStmt();
-
+  static BlockStmt* buildChplStmt(Expr* expr);
+  TryStmt();
 };
 
 #endif

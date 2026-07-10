@@ -49,8 +49,8 @@ class UastConverter {
   // Provide the set of functions that should be converted with full
   // type information.
   // This doesn't do anything for the untyped Converter.
-  virtual void
-  setFunctionsToConvertWithTypes(const chpl::resolution::CalledFnsSet& calledFns) = 0;
+  virtual void setFunctionsToConvertWithTypes(
+    const chpl::resolution::CalledFnsSet& calledFns) = 0;
 
   virtual void setSymbolsToIgnore(std::unordered_set<chpl::ID> ignore) = 0;
   virtual void eraseSymbolToIgnore(chpl::ID ignore) = 0;
@@ -66,8 +66,8 @@ class UastConverter {
                                        ModuleSymbol* modSym) = 0;
 
   // convert a toplevel module
-  virtual ModuleSymbol*
-  convertToplevelModule(const chpl::uast::Module* mod, ModTag modTag) = 0;
+  virtual ModuleSymbol* convertToplevelModule(const chpl::uast::Module* mod,
+                                              ModTag modTag) = 0;
 
   // convert AST, in an untyped manner
   virtual Expr* convertAST(const chpl::uast::AstNode* node) = 0;
@@ -80,8 +80,10 @@ class UastConverter {
   // Generate main functions (for use with TConverter)
   virtual void createMainFunctions() = 0;
 
-  virtual void noteConvertedSym(const chpl::uast::AstNode* ast, Symbol* sym) = 0;
-  virtual void noteConvertedFn(const chpl::resolution::TypedFnSignature* sig, FnSymbol* fn) = 0;
+  virtual void noteConvertedSym(const chpl::uast::AstNode* ast,
+                                Symbol* sym) = 0;
+  virtual void noteConvertedFn(const chpl::resolution::TypedFnSignature* sig,
+                               FnSymbol* fn) = 0;
 };
 
 chpl::owned<UastConverter> createUntypedConverter(chpl::Context* context);

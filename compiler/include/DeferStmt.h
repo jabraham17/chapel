@@ -23,41 +23,40 @@
 
 #include "stmt.h"
 
-class DeferStmt final : public Stmt
-{
+class DeferStmt final : public Stmt {
 
-public:
-  enum  Kind { DEFAULT, UNCHECKED };
+ public:
+  enum Kind { DEFAULT, UNCHECKED };
 
-  BlockStmt*          body() const;
-  Kind                kind() const;
+  BlockStmt* body() const;
+  Kind kind() const;
 
-  bool                isUncheckedDefer() const;
+  bool isUncheckedDefer() const;
 
   // To be invoked by the parser; returns a BlockStmt
   // containing the DeferStmt.
-  static BlockStmt*   build(BlockStmt* body);
+  static BlockStmt* build(BlockStmt* body);
 
-                      DeferStmt(Kind kind, BlockStmt* body);
-                      DeferStmt(BlockStmt* body);
-                      DeferStmt(CallExpr* call);
-                     ~DeferStmt() override = default;
+  DeferStmt(Kind kind, BlockStmt* body);
+  DeferStmt(BlockStmt* body);
+  DeferStmt(CallExpr* call);
+  ~DeferStmt() override = default;
 
-  void                accept(AstVisitor* visitor) override;
-  void                replaceChild(Expr* old_ast, Expr* new_ast) override;
-  Expr*               getFirstExpr() override;
-  Expr*               getNextExpr(Expr* expr) override;
-  void                verify() override;
-  GenRet              codegen() override;
+  void accept(AstVisitor* visitor) override;
+  void replaceChild(Expr* old_ast, Expr* new_ast) override;
+  Expr* getFirstExpr() override;
+  Expr* getNextExpr(Expr* expr) override;
+  void verify() override;
+  GenRet codegen() override;
   DECLARE_COPY(DeferStmt);
   DeferStmt* copyInner(SymbolMap* map) override;
 
-private:
-  static BlockStmt*   buildChplStmt(Expr* expr);
-                      DeferStmt();
+ private:
+  static BlockStmt* buildChplStmt(Expr* expr);
+  DeferStmt();
 
-  BlockStmt*          body_;
-  Kind                kind_ = DEFAULT;
+  BlockStmt* body_;
+  Kind kind_ = DEFAULT;
 };
 
 void checkDefersAfterParsing();

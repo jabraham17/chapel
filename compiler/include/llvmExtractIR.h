@@ -25,24 +25,23 @@
 #include <memory>
 
 #ifdef HAVE_LLVM
-namespace llvm
-{
-  class Function;
-  class GlobalValue;
-  class Module;
+namespace llvm {
+class Function;
+class GlobalValue;
+class Module;
 }
 
 // creates a new module by extracting just the 'gvs' passed
 // and creating prototypes for other things referenced.
 std::unique_ptr<llvm::Module>
 extractLLVM(const llvm::Module* fromModule,
-            std::set<const llvm::GlobalValue*> &gvs);
+            std::set<const llvm::GlobalValue*>& gvs);
 
 // removes dead code / unreferenced functions as is done in extractLLVM
 void removeUnreferencedLLVM(llvm::Module* mod);
 
 // extracts only the functions in 'gvs' and prints those
-void extractAndPrintFunctionsLLVM(std::set<const llvm::GlobalValue*> *gvs);
+void extractAndPrintFunctionsLLVM(std::set<const llvm::GlobalValue*>* gvs);
 
 #endif // end HAVE_LLVM
 

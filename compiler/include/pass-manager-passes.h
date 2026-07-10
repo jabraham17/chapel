@@ -40,8 +40,8 @@ class ExpandExternArrayCalls : public PassT<FnSymbol*> {
   bool shouldProcess(FnSymbol* fn) override;
   void process(FnSymbol* fn) override;
 
-  static bool
-  isFormalArray(ArgSymbol* formal, UnresolvedSymExpr** outType=nullptr);
+  static bool isFormalArray(ArgSymbol* formal,
+                            UnresolvedSymExpr** outType = nullptr);
 
   static bool isRetExprVoid(BlockStmt* retExprType);
 };
@@ -77,40 +77,40 @@ class FixupDestructors : public PassT<FnSymbol*> {
   This pass over calls is a workaround which plugs leaks coming from forall
   exprs that are array types.
 */
-class AutoDestroyLoopExprTemps: public PassT<CallExpr*> {
+class AutoDestroyLoopExprTemps : public PassT<CallExpr*> {
  public:
   bool shouldProcess(CallExpr* call) override;
   void process(CallExpr* call) override;
 };
 
-class InsertDestructorCalls: public PassT<CallExpr*> {
-  public:
-    bool shouldProcess(CallExpr* fn) override;
-    void process(CallExpr* fn) override;
+class InsertDestructorCalls : public PassT<CallExpr*> {
+ public:
+  bool shouldProcess(CallExpr* fn) override;
+  void process(CallExpr* fn) override;
 };
 
-class LowerAutoDestroyRuntimeType: public PassT<CallExpr*> {
-  public:
-    bool shouldProcess(CallExpr* fn) override;
-    void process(CallExpr* fn) override;
+class LowerAutoDestroyRuntimeType : public PassT<CallExpr*> {
+ public:
+  bool shouldProcess(CallExpr* fn) override;
+  void process(CallExpr* fn) override;
 };
 
-class InsertCopiesForYields: public PassT<CallExpr*> {
-  public:
-    bool shouldProcess(CallExpr* fn) override;
-    void process(CallExpr* fn) override;
+class InsertCopiesForYields : public PassT<CallExpr*> {
+ public:
+  bool shouldProcess(CallExpr* fn) override;
+  void process(CallExpr* fn) override;
 };
 
-class CallDestructorsCallCleanup: public PassT<CallExpr*> {
-  public:
-    bool shouldProcess(CallExpr* fn) override;
-    void process(CallExpr* fn) override;
+class CallDestructorsCallCleanup : public PassT<CallExpr*> {
+ public:
+  bool shouldProcess(CallExpr* fn) override;
+  void process(CallExpr* fn) override;
 };
 
-class RemoveElidedOnBlocks: public PassT<BlockStmt*> {
-  public:
-    bool shouldProcess(BlockStmt* fn) override;
-    void process(BlockStmt* fn) override;
+class RemoveElidedOnBlocks : public PassT<BlockStmt*> {
+ public:
+  bool shouldProcess(BlockStmt* fn) override;
+  void process(BlockStmt* fn) override;
 };
 
 /**
@@ -306,8 +306,8 @@ class InsertLineNumbers : public PassTU<FnSymbol*, CallExpr*> {
   static bool mustAddLineInfoActualsToCall(CallExpr* call);
   static LineAndFile makeASTLine(CallExpr* call);
   static void insertLineNumber(CallExpr* call, LineAndFile lineAndFile);
-  static void assertInvariants(FnSymbol *fn);
-  LineAndFile getLineAndFileForFn(FnSymbol *fn);
+  static void assertInvariants(FnSymbol* fn);
+  LineAndFile getLineAndFileForFn(FnSymbol* fn);
 
   std::unordered_map<FnSymbol*, LineAndFile> lineAndFilenameMap;
   std::unordered_set<CallExpr*> fixedCalls;

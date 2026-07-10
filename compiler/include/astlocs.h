@@ -34,30 +34,27 @@ class Expr;
 // how an AST node knows its location in the source code
 // (assumed to get copied upon assignment and parameter passing)
 class astlocT {
-private:
+ private:
   // Primarily, astlocT stores the location in the id_ field,
   // which is computed for each AST element by the dyno parser.
-  chpl::ID            id_;        // id from dyno
+  chpl::ID id_; // id from dyno
 
   // Secondarily, an astlocT can store a filename / line number
   // directly for use in extern C blocks.
   // Also, the filename and line number fields are used to
   // cache the result of running the query to compute that
   // information from the ID.
-  mutable const char* filename_;  // filename of location
-  mutable int         lineno_;    // line number of location
+  mutable const char* filename_; // filename of location
+  mutable int lineno_;           // line number of location
 
-public:
+ public:
   astlocT(int linenoArg, const char* filenameArg)
-    : id_(), filename_(filenameArg), lineno_(linenoArg)
-  {
+    : id_(), filename_(filenameArg), lineno_(linenoArg) {
     if (filenameArg != nullptr && strlen(filenameArg) > 0)
       assert(astr(filename_) == filename_);
   }
 
-  astlocT(chpl::ID id)
-    : id_(std::move(id)), filename_(nullptr), lineno_(0)
-  { }
+  astlocT(chpl::ID id) : id_(std::move(id)), filename_(nullptr), lineno_(0) {}
 
   static astlocT unknownLoc(const char* filenameArg = "unknown") {
     return astlocT(0, astr(filenameArg));
@@ -69,20 +66,16 @@ public:
   const char* stringLineno() const;
 
   bool isEmpty() const {
-    if (filename_ != nullptr)
-      return false;
+    if (filename_ != nullptr) return false;
 
     return id_.isEmpty();
   }
 
-  const chpl::ID& id() const {
-    return id_;
-  }
+  const chpl::ID& id() const { return id_; }
 
   // always returns an astr or nullptr
   const char* filename() const {
-    if (filename_ != nullptr || id_.isEmpty())
-      return filename_;
+    if (filename_ != nullptr || id_.isEmpty()) return filename_;
 
     // otherwise, get the filename from the id
     const char* name = nullptr;
@@ -92,8 +85,7 @@ public:
   }
 
   int lineno() const {
-    if (filename_ != nullptr || id_.isEmpty())
-      return lineno_;
+    if (filename_ != nullptr || id_.isEmpty()) return lineno_;
 
     // otherwise, get the lineno from the id
     const char* name = nullptr;
@@ -109,16 +101,12 @@ public:
   bool operator==(const astlocT& other) const {
     return this->compare(other) == 0;
   }
-  bool operator!=(const astlocT& other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const astlocT& other) const { return !(*this == other); }
 
   bool operator<(const astlocT& other) const {
     return this->compare(other) < 0;
   }
-  bool operator>(const astlocT other) const {
-    return this->compare(other) > 0;
-  }
+  bool operator>(const astlocT other) const { return this->compare(other) > 0; }
   bool operator<=(const astlocT other) const {
     return this->compare(other) <= 0;
   }
@@ -144,7 +132,7 @@ public:
 extern astlocT currentAstLoc;
 
 class astlocMarker {
-public:
+ public:
   astlocMarker(astlocT newAstLoc);
   astlocMarker(int lineno, const char* filename);
   astlocMarker(chpl::Location location);

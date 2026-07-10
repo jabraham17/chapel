@@ -29,31 +29,31 @@ class FnSymbol;
 class CallExpr;
 
 class IteratorInfo {
-public:
+ public:
   IteratorInfo();
 
-  FnSymbol*      iterator;
-  FnSymbol*      getIterator;
+  FnSymbol* iterator;
+  FnSymbol* getIterator;
   AggregateType* iclass;
   AggregateType* irecord;
-  FnSymbol*      advance;
-  FnSymbol*      zip1;
-  FnSymbol*      zip2;
-  FnSymbol*      zip3;
-  FnSymbol*      zip4;
-  FnSymbol*      hasMore;
-  FnSymbol*      getValue;
-  FnSymbol*      init;
-  FnSymbol*      incr;
+  FnSymbol* advance;
+  FnSymbol* zip1;
+  FnSymbol* zip2;
+  FnSymbol* zip3;
+  FnSymbol* zip4;
+  FnSymbol* hasMore;
+  FnSymbol* getValue;
+  FnSymbol* init;
+  FnSymbol* incr;
 
-  Type*          yieldedType;
-  RetTag         iteratorRetTag;
+  Type* yieldedType;
+  RetTag iteratorRetTag;
 };
 
 void cleanupIteratorInfo(FnSymbol* host);
 
 class IteratorGroup {
-public:
+ public:
   FnSymbol* serial;
   FnSymbol* standalone;
   FnSymbol* leader;
@@ -75,10 +75,12 @@ void showIteratorGroup(int id);
 
 CallExpr* isSingleLoopIterator(FnSymbol* fn, std::vector<BaseAST*>& asts);
 CondStmt* isIBBCondStmt(BaseAST* ast);
-void      createIteratorBreakBlocks();
-void      addIteratorBreakBlocksInline(Expr* loopRef, Symbol* IC,
-                                       BlockStmt* loopBody, CallExpr* yield,
-                                       std::vector<Expr*>* delayedRemoval);
+void createIteratorBreakBlocks();
+void addIteratorBreakBlocksInline(Expr* loopRef,
+                                  Symbol* IC,
+                                  BlockStmt* loopBody,
+                                  CallExpr* yield,
+                                  std::vector<Expr*>* delayedRemoval);
 BlockStmt* getAndRemoveIteratorBreakBlockForYield(std::vector<Expr*>* delayedRm,
                                                   CallExpr* yield);
 
@@ -92,8 +94,8 @@ void removeRetSymbolAndUses(FnSymbol* fn);
  Creates (and returns) a field to add to an iterator class.
  'type' is used if local==NULL.
  */
-Symbol* createICField(int& i, Symbol* local, Type* type,
-                      bool isValueField, FnSymbol* fn);
+Symbol* createICField(
+  int& i, Symbol* local, Type* type, bool isValueField, FnSymbol* fn);
 /*
  When converting an iterator that captures outer variables or has state
  between yields, replace the uses of outer variables (captured in formals)
@@ -128,16 +130,16 @@ void cleanupPrimIRFieldValByFormal();
 
 void lowerIterator(FnSymbol* fn);
 
-CallExpr *buildFastFollowerCheckCallForZipOrProm(std::vector<SymExpr *> exprs,
-                                                 const char *fnName,
-                                                 const char *boolOp,
-                                                 Symbol *lead);
-CallExpr *generateFastFollowersForZip(CallExpr *iterCall,
-                                      Symbol *leadIdxCopy,
-                                      SymbolMap *map = NULL,
+CallExpr* buildFastFollowerCheckCallForZipOrProm(std::vector<SymExpr*> exprs,
+                                                 const char* fnName,
+                                                 const char* boolOp,
+                                                 Symbol* lead);
+CallExpr* generateFastFollowersForZip(CallExpr* iterCall,
+                                      Symbol* leadIdxCopy,
+                                      SymbolMap* map = NULL,
                                       bool getIterator = true);
-CallExpr *generateRegularFollowersForZip(CallExpr *iterCall,
-                                         Symbol *leadIdxCopy,
-                                         SymbolMap *map = NULL,
+CallExpr* generateRegularFollowersForZip(CallExpr* iterCall,
+                                         Symbol* leadIdxCopy,
+                                         SymbolMap* map = NULL,
                                          bool getIterator = true);
 #endif

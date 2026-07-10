@@ -25,56 +25,55 @@
 #include "symbol.h"
 
 enum LocalityInfo {
-  UNKNOWN,  // it may be anything
-  PENDING,  // we will make a decision later
-  LOCAL,    // we know this is local
-  UNAGGREGATABLE  // neither local, nor aggregatable
+  UNKNOWN,       // it may be anything
+  PENDING,       // we will make a decision later
+  LOCAL,         // we know this is local
+  UNAGGREGATABLE // neither local, nor aggregatable
 };
 
 // we use this during normalize when transforming an assignment for potential
 // aggregation
 class AggregationCandidateInfo {
-  public:
+ public:
+  CallExpr* candidate;
+  ForallStmt* forall;
 
-    CallExpr *candidate;
-    ForallStmt *forall;
+  LocalityInfo lhsLocalityInfo;
+  LocalityInfo rhsLocalityInfo;
 
-    LocalityInfo lhsLocalityInfo;
-    LocalityInfo rhsLocalityInfo;
+  CallExpr* lhsLogicalChild;
+  Expr* rhsLogicalChild;
 
-    CallExpr *lhsLogicalChild;
-    Expr *rhsLogicalChild;
+  // during normalize, we may generate aggregators for both sides of the
+  // assignment. However, after resolve we can have at most one aggregator per
+  // assignment ...
+  Symbol* srcAggregator; // remote rhs
+  Symbol* dstAggregator; // remote lhs
 
-    // during normalize, we may generate aggregators for both sides of the
-    // assignment. However, after resolve we can have at most one aggregator per
-    // assignment ...
-    Symbol *srcAggregator;   // remote rhs
-    Symbol *dstAggregator;   // remote lhs
+  AggregationCandidateInfo(CallExpr* candidate, ForallStmt* forall);
 
-    AggregationCandidateInfo(CallExpr *candidate, ForallStmt *forall);
-
-    void addAggregators();
-    void removeSideEffectsFromPrimitive();
-    void transformCandidate();
+  void addAggregators();
+  void removeSideEffectsFromPrimitive();
+  void transformCandidate();
 };
 
 // interface for normalize
 void doPreNormalizeArrayOptimizations();
-Symbol *earlyNormalizeForallIterand(CallExpr *call, ForallStmt *forall);
+Symbol* earlyNormalizeForallIterand(CallExpr* call, ForallStmt* forall);
 
 // interface for resolution
-Expr *preFoldMaybeLocalThis(CallExpr *call);
-Expr *preFoldMaybeLocalArrElem(CallExpr *call);
-Expr *preFoldMaybeAggregateAssign(CallExpr *call);
-void adjustPrimsInFastFollowerBody(BlockStmt *body);
+Expr* preFoldMaybeLocalThis(CallExpr* call);
+Expr* preFoldMaybeLocalArrElem(CallExpr* call);
+Expr* preFoldMaybeAggregateAssign(CallExpr* call);
+void adjustPrimsInFastFollowerBody(BlockStmt* body);
 
 void finalizeForallOptimizationsResolution();
 
 // interface for lowerForalls
-void removeAggregationFromRecursiveForall(ForallStmt *forall);
+void removeAggregationFromRecursiveForall(ForallStmt* forall);
 
 // interface for licm
-void transformConditionalAggregation(CondStmt *cond);
+void transformConditionalAggregation(CondStmt* cond);
 void cleanupRemainingAggCondStmts();
 
 #endif

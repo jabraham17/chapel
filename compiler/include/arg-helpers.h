@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 
-
 /**
  * This file contains various functions that are used by the command line
  * argument parser. This parser is used by both Chapel and chpldoc.
@@ -42,21 +41,23 @@ bool startsWith(const char* str, const char* prefix);
 void clean_exit(int status);
 std::string findProgramPath(const char* argv0, void* mainAddr);
 
-uint64_t    hexStr2uint64(const char* str, bool userSupplied,
-                          const char* filename, int line);
-uint64_t    str2uint64(const char* str, bool userSupplied,
-                       const char* file, int line);
-int64_t     str2int64(const char* str, bool userSupplied,
-                      const char* file, int line);
+uint64_t hexStr2uint64(const char* str,
+                       bool userSupplied,
+                       const char* filename,
+                       int line);
+uint64_t
+str2uint64(const char* str, bool userSupplied, const char* file, int line);
+int64_t
+str2int64(const char* str, bool userSupplied, const char* file, int line);
 
 // Functions for implementation specific erroring behavior
 // (calls out to INT_FATAL and the like in Chapel and using
 // cerr and the like in chpldoc) ---
 
-void arg_fatalError(const char *msg);
-void arg_fatalUserError(const char *msg);
-const char *arg_programLoc(const char *argv0, void *mainAddr);
-void arg_fatalErrorCont(const char *msg);
-void arg_warn(const char *msg, const char* path);
+void arg_fatalError(const char* msg);
+void arg_fatalUserError(const char* msg);
+const char* arg_programLoc(const char* argv0, void* mainAddr);
+void arg_fatalErrorCont(const char* msg);
+void arg_warn(const char* msg, const char* path);
 
 #endif

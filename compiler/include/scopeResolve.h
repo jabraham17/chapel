@@ -38,33 +38,33 @@ class astlocT;
 #include <map>
 #include <vector>
 
-void     addToSymbolTable(FnSymbol* fn);
-void     addToSymbolTable(DefExpr* def);
+void addToSymbolTable(FnSymbol* fn);
+void addToSymbolTable(DefExpr* def);
 
-Symbol*  lookup(const char*           name,
-                BaseAST*              context);
+Symbol* lookup(const char* name, BaseAST* context);
 
-void     lookup(const char*           name,
-                BaseAST*              context,
-                llvm::SmallVectorImpl<Symbol*>& symbols,
-                std::map<Symbol*, astlocT*>& renameLocs,
-                std::map<Symbol*, VisibilityStmt*>& reexportPts,
-                bool storeRenames = false);
+void lookup(const char* name,
+            BaseAST* context,
+            llvm::SmallVectorImpl<Symbol*>& symbols,
+            std::map<Symbol*, astlocT*>& renameLocs,
+            std::map<Symbol*, VisibilityStmt*>& reexportPts,
+            bool storeRenames = false);
 
-Symbol*  lookupAndCount(const char*           name,
-                        BaseAST*              context,
-                        int&                  nSymbolsFound,
-                        bool storeRenames = false,
-                        astlocT** renameLoc = NULL,
-                        bool issueErrors = true);
+Symbol* lookupAndCount(const char* name,
+                       BaseAST* context,
+                       int& nSymbolsFound,
+                       bool storeRenames = false,
+                       astlocT** renameLoc = NULL,
+                       bool issueErrors = true);
 
 // Lookup a name while ignoring extern blocks.
 // Also considers modules used/imported and the root module for builtins.
 // For use by externCResolve.
-Symbol* lookupInModuleOrBuiltins(ModuleSymbol* mod, const char* name,
-                                int& nSymbolsFound);
+Symbol* lookupInModuleOrBuiltins(ModuleSymbol* mod,
+                                 const char* name,
+                                 int& nSymbolsFound);
 
-void checkConflictingSymbols(llvm::SmallVectorImpl<Symbol *>& symbols,
+void checkConflictingSymbols(llvm::SmallVectorImpl<Symbol*>& symbols,
                              const char* name,
                              BaseAST* context,
                              bool storeRenames,
@@ -81,6 +81,5 @@ void resolveUnmanagedBorrows(CallExpr* call);
 // block info call
 CallExpr* findBlockInfo(Expr* exprInAst);
 bool isTaskBlockInfo(CallExpr* call);
-
 
 #endif
