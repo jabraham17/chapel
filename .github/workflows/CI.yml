@@ -380,6 +380,7 @@ jobs:
       - make_doc
       - make_mason
       - check_dyno_linters
+      - check_clang_format
       - check_compiler_dyno_tests
       - make_check_llvm_none
       - check_annotations_rt_calls
