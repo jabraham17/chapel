@@ -22,7 +22,6 @@
 // header by auto-defining undefined X-macros to sensible defaults, and
 // by clearing the macro definitions at the end of the file.
 
-
 #ifndef TYPE_NODE
 #define TYPE_NODE(NAME)
 #endif

@@ -28,13 +28,12 @@
 namespace chpl {
 namespace resolution {
 
-
 struct CalledFnOrder {
   int depth = -1; // depth of call graph at which this one was added
   int index = -1; // index in the call graph at which this one was added
 };
 
-bool operator ==(const CalledFnOrder& x, const CalledFnOrder& y);
+bool operator==(const CalledFnOrder& x, const CalledFnOrder& y);
 
 // key: a ResolvedFunction* that was called
 // value: the depth at which that ResolvedFunction was added
@@ -58,9 +57,7 @@ int gatherTransitiveFnsCalledByFn(Context* context,
                                   CalledFnsSet& called);
 
 /* Gathers a concrete function as well as the functions called by it. */
-int gatherTransitiveFnsForFnId(Context* context,
-                               ID fnId,
-                               CalledFnsSet& called);
+int gatherTransitiveFnsForFnId(Context* context, ID fnId, CalledFnsSet& called);
 
 /* Gather ResolvedFunctions called directly by module initialization code
    for this module into a set.
@@ -76,7 +73,6 @@ int gatherFnsCalledByModInit(Context* context,
 int gatherTransitiveFnsCalledByModInit(Context* context,
                                        ID moduleId,
                                        CalledFnsSet& called);
-
 
 } // end namespace resolution
 } // end namespace chpl

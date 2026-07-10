@@ -73,7 +73,7 @@ class PlaceholderType final : public Type {
     : Type(typetags::PlaceholderType), id_(std::move(id)) {}
 
   bool contentsMatchInner(const Type* other) const override {
-    auto rhs = (const PlaceholderType*) other;
+    auto rhs = (const PlaceholderType*)other;
     return id_ == rhs->id_;
   }
 
@@ -81,17 +81,13 @@ class PlaceholderType final : public Type {
     id_.mark(context);
   }
 
-  Genericity genericity() const override {
-    return CONCRETE;
-  }
+  Genericity genericity() const override { return CONCRETE; }
 
-  static owned<PlaceholderType> const&
-  getPlaceholderType(Context* context,
-                   ID id);
+  static owned<PlaceholderType> const& getPlaceholderType(Context* context,
+                                                          ID id);
 
  public:
-  static const PlaceholderType* get(Context* context,
-                                    ID id);
+  static const PlaceholderType* get(Context* context, ID id);
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {

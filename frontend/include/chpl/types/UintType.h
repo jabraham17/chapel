@@ -25,18 +25,15 @@
 namespace chpl {
 namespace types {
 
-
 /**
   This class represents a uint type, e.g. `uint` or `uint(32)`.
  */
 class UintType final : public PrimitiveType {
  private:
-  UintType(int bitwidth)
-    : PrimitiveType(typetags::UintType, bitwidth)
-  { }
+  UintType(int bitwidth) : PrimitiveType(typetags::UintType, bitwidth) {}
 
   bool contentsMatchInner(const Type* other) const override {
-    return primitiveTypeContentsMatchInner((PrimitiveType*) other);
+    return primitiveTypeContentsMatchInner((PrimitiveType*)other);
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -51,13 +48,9 @@ class UintType final : public PrimitiveType {
   static const UintType* get(Context* context, int bitwidth);
 
   /** what is stored in bitwidth_ for the default 'uint'? */
-  static int defaultBitwidth() {
-    return 64;
-  }
+  static int defaultBitwidth() { return 64; }
 
-  int bitwidth() const override {
-    return bitwidth_;
-  }
+  int bitwidth() const override { return bitwidth_; }
 
   bool isDefaultWidth() const override {
     return bitwidth_ == defaultBitwidth();
@@ -65,21 +58,16 @@ class UintType final : public PrimitiveType {
 
   const char* c_str() const override {
     switch (bitwidth_) {
-      case 8:
-        return "uint(8)";
-      case 16:
-        return "uint(16)";
-      case 32:
-        return "uint(32)";
-      case 64:
-        return "uint(64)";
+      case 8: return "uint(8)";
+      case 16: return "uint(16)";
+      case 32: return "uint(32)";
+      case 64: return "uint(64)";
       default:
         CHPL_ASSERT(false && "uint bit width case not handled");
         return "uint(<unknown>)";
     }
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

@@ -28,7 +28,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a formal. For example, `x` is a formal
   in the below:
@@ -42,29 +41,32 @@ namespace uast {
   The Formals are stored inside of a Function.
  */
 class Formal final : public VarLikeDecl {
- friend class AstNode;
+  friend class AstNode;
 
  public:
   enum Intent {
     // Use Qualifier here for consistent enum values.
-    DEFAULT_INTENT    = (int) Qualifier::DEFAULT_INTENT,
-    CONST             = (int) Qualifier::CONST_INTENT,
-    CONST_REF         = (int) Qualifier::CONST_REF,
-    REF               = (int) Qualifier::REF,
-    IN                = (int) Qualifier::IN,
-    CONST_IN          = (int) Qualifier::CONST_IN,
-    OUT               = (int) Qualifier::OUT,
-    INOUT             = (int) Qualifier::INOUT,
-    PARAM             = (int) Qualifier::PARAM,
-    TYPE              = (int) Qualifier::TYPE
+    DEFAULT_INTENT = (int)Qualifier::DEFAULT_INTENT,
+    CONST = (int)Qualifier::CONST_INTENT,
+    CONST_REF = (int)Qualifier::CONST_REF,
+    REF = (int)Qualifier::REF,
+    IN = (int)Qualifier::IN,
+    CONST_IN = (int)Qualifier::CONST_IN,
+    OUT = (int)Qualifier::OUT,
+    INOUT = (int)Qualifier::INOUT,
+    PARAM = (int)Qualifier::PARAM,
+    TYPE = (int)Qualifier::TYPE
   };
 
  private:
-  Formal(AstList children, int attributeGroupChildNum, UniqueString name,
+  Formal(AstList children,
+         int attributeGroupChildNum,
+         UniqueString name,
          Formal::Intent intent,
          int8_t typeExpressionChildNum,
          int8_t initExpressionChildNum)
-    : VarLikeDecl(asttags::Formal, std::move(children),
+    : VarLikeDecl(asttags::Formal,
+                  std::move(children),
                   attributeGroupChildNum,
                   Decl::DEFAULT_VISIBILITY,
                   Decl::DEFAULT_LINKAGE,
@@ -72,20 +74,17 @@ class Formal final : public VarLikeDecl {
                   name,
                   (Qualifier)((int)intent),
                   typeExpressionChildNum,
-                  initExpressionChildNum) {
-  }
+                  initExpressionChildNum) {}
 
   void serializeInner(Serializer& ser) const override {
     varLikeDeclSerializeInner(ser);
   }
 
-  explicit Formal(Deserializer& des)
-    : VarLikeDecl(asttags::Formal, des) {
-  }
+  explicit Formal(Deserializer& des) : VarLikeDecl(asttags::Formal, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Formal* lhs = this;
-    const Formal* rhs = (const Formal*) other;
+    const Formal* rhs = (const Formal*)other;
     return lhs->varLikeDeclContentsMatchInner(rhs);
   }
 
@@ -96,7 +95,8 @@ class Formal final : public VarLikeDecl {
  public:
   ~Formal() override = default;
 
-  static owned<Formal> build(Builder* builder, Location loc,
+  static owned<Formal> build(Builder* builder,
+                             Location loc,
                              owned<AttributeGroup> attributeGroup,
                              UniqueString name,
                              Intent intent,
@@ -117,11 +117,8 @@ class Formal final : public VarLikeDecl {
     `type T = proc(int)`, where the formal _might_ be anonymous if it is
     taken to represent a type.
   */
-  inline bool isExplicitlyAnonymous() const {
-    return name() == USTR("_");
-  }
+  inline bool isExplicitlyAnonymous() const { return name() == USTR("_"); }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

@@ -26,35 +26,28 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents some missing AST due to an error.
  */
 class ErroneousExpression final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  ErroneousExpression()
-    : AstNode(asttags::ErroneousExpression) {
-  }
+  ErroneousExpression() : AstNode(asttags::ErroneousExpression) {}
 
-  void serializeInner(Serializer& ser) const override { }
+  void serializeInner(Serializer& ser) const override {}
 
   explicit ErroneousExpression(Deserializer& des)
-    : AstNode(asttags::ErroneousExpression, des) { }
+    : AstNode(asttags::ErroneousExpression, des) {}
 
  private:
-  bool contentsMatchInner(const AstNode* other) const override {
-    return true;
-  }
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  bool contentsMatchInner(const AstNode* other) const override { return true; }
+  void markUniqueStringsInner(Context* context) const override {}
 
  public:
   ~ErroneousExpression() = default;
   static owned<ErroneousExpression> build(Builder* builder, Location loc);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

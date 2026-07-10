@@ -69,7 +69,6 @@ void setFileText(Context* context, std::string path, std::string text);
  */
 void setFileText(Context* context, UniqueString path, std::string text);
 
-
 /**
  This function returns `true` if the current revision already has contents
  stored in the fileText query for the given path.
@@ -86,23 +85,20 @@ bool hasFileText(Context* context, const std::string& path);
 
   When parsing a toplevel module, 'parentSymbolPath' should be "".
  */
-const uast::BuilderResult&
-parseFileToBuilderResult(Context* context, UniqueString path,
-                         UniqueString parentSymbolPath);
+const uast::BuilderResult& parseFileToBuilderResult(
+  Context* context, UniqueString path, UniqueString parentSymbolPath);
 
 /**
   Like parseFileToBuilderResult but also runs post-parse checks on the resulting
   builder result.
  */
-const uast::BuilderResult&
-parseFileToBuilderResultAndCheck(Context* context, UniqueString path,
-                                 UniqueString parentSymbolPath);
+const uast::BuilderResult& parseFileToBuilderResultAndCheck(
+  Context* context, UniqueString path, UniqueString parentSymbolPath);
 
 std::vector<const uast::AstNode*>
 introspectParsedTopLevelExpressions(Context* context);
 
-std::vector<UniqueString>
-introspectParsedFiles(Context* context);
+std::vector<UniqueString> introspectParsedFiles(Context* context);
 
 /**
   Like parseFileToBuilderResult but parses whatever file contained 'id'.
@@ -111,17 +107,17 @@ introspectParsedFiles(Context* context);
   If setParentSymbolPath is not nullptr, sets it to the parentSymbolPath used
   when creating the BuilderResult.
  */
-const uast::BuilderResult*
-parseFileContainingIdToBuilderResult(Context* context, ID id,
-                                     UniqueString* setSymbolPath=nullptr,
-                                     UniqueString* setParentSymbolPath=nullptr);
+const uast::BuilderResult* parseFileContainingIdToBuilderResult(
+  Context* context,
+  ID id,
+  UniqueString* setSymbolPath = nullptr,
+  UniqueString* setParentSymbolPath = nullptr);
 
 /**
   A function for counting the tokens when parsing
 */
 void countTokens(Context* context, UniqueString path, ParserStats* parseStats);
 // TODO: Expose this in a more reasonable manner
-
 
 // These functions can't return the Location for a Comment
 // because Comments don't have IDs. If Locations for Comments are needed,
@@ -148,9 +144,9 @@ const Location& locateAst(Context* context, const uast::AstNode* ast);
     Additional location maps for things like dot fields are required because
     they are not themselves AST nodes.
 */
-#define LOCATION_MAP(ast__, location__) \
+#define LOCATION_MAP(ast__, location__)                         \
   Location locate##location__##WithId(Context* context, ID id); \
-  Location locate##location__##WithAst(Context* context, \
+  Location locate##location__##WithAst(Context* context,        \
                                        const uast::ast__* ast);
 #include "chpl/uast/all-location-maps.h"
 #undef LOCATION_MAP
@@ -169,8 +165,8 @@ using ModuleVec = std::vector<const uast::Module*>;
   Unlike 'parseFileToBuilderResult' this query will report any errors
   encountered while parsing to the context.
  */
-const ModuleVec& parse(Context* context, UniqueString path,
-                       UniqueString parentSymbolPath);
+const ModuleVec&
+parse(Context* context, UniqueString path, UniqueString parentSymbolPath);
 
 /**
   Convenience function to parse a file with parentSymbolPath="". Any errors
@@ -254,7 +250,6 @@ void setPrependedInternalModulePath(Context* context,
 */
 const std::vector<UniqueString>& prependedStandardModulePath(Context* context);
 
-
 /**
   Set a list of paths to be prepended to the standard module path. This is
   typically set using the compiler flag --prepend-standard-module-dir and will
@@ -315,19 +310,19 @@ void setBundledModulePath(Context* context, UniqueString path);
   of problematic modules can be swapped in instead.
  */
 void setupModuleSearchPaths(
-                  Context* context,
-                  const std::string& chplHome,
-                  const std::string& moduleRoot,
-                  const std::string& chplLocaleModel,
-                  bool enableTaskTracking,
-                  const std::string& chplTasks,
-                  const std::string& chplComm,
-                  const std::string& chplSysModulesSubdir,
-                  const std::string& chplModulePath,
-                  const std::vector<std::string>& prependInternalModulePaths,
-                  const std::vector<std::string>& prependStandardModulePaths,
-                  const std::vector<std::string>& cmdLinePaths,
-                  const std::vector<std::string>& inputFilenames);
+  Context* context,
+  const std::string& chplHome,
+  const std::string& moduleRoot,
+  const std::string& chplLocaleModel,
+  bool enableTaskTracking,
+  const std::string& chplTasks,
+  const std::string& chplComm,
+  const std::string& chplSysModulesSubdir,
+  const std::string& chplModulePath,
+  const std::vector<std::string>& prependInternalModulePaths,
+  const std::vector<std::string>& prependStandardModulePaths,
+  const std::vector<std::string>& cmdLinePaths,
+  const std::vector<std::string>& inputFilenames);
 
 /**
   Overload of the more general setupModuleSearchPaths that uses the
@@ -379,7 +374,6 @@ bool idIsInBundledModule(Context* context, ID id);
  */
 bool idIsInStandardModule(Context* context, ID id);
 
-
 /**
  Returns true if the file path refers to the internal modules.
  (Typically, that would be if it begins with $CHPL_HOME/modules/internal).
@@ -387,8 +381,7 @@ bool idIsInStandardModule(Context* context, ID id);
 
  Also considers paths from --prepend-internal-module-dir, if any.
  */
-bool
-filePathIsInInternalModule(Context* context, UniqueString filePath);
+bool filePathIsInInternalModule(Context* context, UniqueString filePath);
 
 /**
  Returns true if the file path corresponds to the standard modules.
@@ -404,8 +397,7 @@ filePathIsInInternalModule(Context* context, UniqueString filePath);
 
  Also considers paths from --prepend-standard-module-dir, if any.
  */
-bool
-filePathIsInStandardModule(Context* context, UniqueString filePath);
+bool filePathIsInStandardModule(Context* context, UniqueString filePath);
 
 /**
  Returns true if the file path corresponds to the bundled modules.
@@ -415,8 +407,7 @@ filePathIsInStandardModule(Context* context, UniqueString filePath);
  Also considers paths, if any, from --prepend-internal-module-dir
  and --prepend-standard-module-dir.
  */
-bool
-filePathIsInBundledModule(Context* context, UniqueString filePath);
+bool filePathIsInBundledModule(Context* context, UniqueString filePath);
 
 /**
   Check if a file exists. This is a query, so that duplicate checks
@@ -469,14 +460,12 @@ struct IdAndName {
   UniqueString name;
 };
 
-
 /**
  This query parses a submodule for 'include submodule'.
  The ID passed should be the ID of an Include statement.
  Returns nullptr if no such file can be found.
  */
-const uast::Module* getIncludedSubmodule(Context* context,
-                                         ID includeModuleId);
+const uast::Module* getIncludedSubmodule(Context* context, ID includeModuleId);
 
 /**
  Returns the uast node with the given ID.
@@ -622,8 +611,8 @@ ID idToContainingMultiDeclId(Context* context, ID id);
   Given an ID for a Record/Union/Class Decl,
   returns the declaration with the given name, if any.
  */
-const uast::VarLikeDecl* idToFieldWithName(Context* context, ID typeDeclId,
-                                           UniqueString fieldName);
+const uast::VarLikeDecl*
+idToFieldWithName(Context* context, ID typeDeclId, UniqueString fieldName);
 
 /**
   Given an AST node for a (multi-)declaration, find a Variable
@@ -656,8 +645,7 @@ typeQueriesInExpression(Context* context, const uast::AstNode* expr);
 
   Ignores all other AST nodes in the Record/Union/Class.
  */
-ID fieldIdWithName(Context* context, ID typeDeclId,
-                   UniqueString fieldName);
+ID fieldIdWithName(Context* context, ID typeDeclId, UniqueString fieldName);
 
 /**
   Given an ID for a Record/Union/Class Decl, returns 'true'
@@ -674,9 +662,7 @@ void setConfigSettings(Context* context, ConfigSettingsList keys);
 /**
  * Get any config settings that were set from the command line and stored
  */
-const
-ConfigSettingsList& configSettings(Context* context);
-
+const ConfigSettingsList& configSettings(Context* context);
 
 void setAttributeToolNames(Context* context, AttributeToolNamesList keys);
 
@@ -694,8 +680,8 @@ const uast::AttributeGroup* idToAttributeGroup(Context* context, ID id);
   to use or else attributes for children of MultiDecls or TupleDecls will not
   be found.
  */
-const uast::AttributeGroup*
-astToAttributeGroup(Context* context, const uast::AstNode* node);
+const uast::AttributeGroup* astToAttributeGroup(Context* context,
+                                                const uast::AstNode* node);
 
 /**
   Given an ID 'idMention' representing a mention of a symbol, and an
@@ -711,8 +697,7 @@ astToAttributeGroup(Context* context, const uast::AstNode* node);
   Identifier. The 'idTarget' should refer to a NamedDecl. If it does
   not, then nothing is reported.
 */
-void reportDeprecationWarningForId(Context* context, ID idMention,
-                                   ID idTarget);
+void reportDeprecationWarningForId(Context* context, ID idMention, ID idTarget);
 
 /**
   Returns the state of --warn-unstable or -internal or -standard
@@ -740,8 +725,7 @@ bool shouldWarnUnstableForId(Context* context, const ID& id);
   Identifier. The 'idTarget' should refer to a NamedDecl. If it does
   not, then nothing is reported.
 */
-void reportUnstableWarningForId(Context* context, ID idMention,
-                                ID idTarget);
+void reportUnstableWarningForId(Context* context, ID idMention, ID idTarget);
 
 /*
   Given an ID, returns the module kind for the ID.
@@ -771,9 +755,10 @@ bool isCallToClassManager(const uast::FnCall* call);
  This is guaranteed to succeed, even if modules haven't been configured,
  because Dyno provides stubs for all internal types.
  */
-#define INTERNAL_TYPE(modname__, camelname__, name__, content__)\
+#define INTERNAL_TYPE(modname__, camelname__, name__, content__)            \
   ID get##camelname__##IdFromTopLevel##modname__##Module(Context* context); \
-  IdAndName get##camelname__##TypeFromTopLevel##modname__##Module(Context* context);
+  IdAndName get##camelname__##TypeFromTopLevel##modname__##Module(          \
+    Context* context);
 #include "chpl/resolution/all-internal-types-list.h"
 
 } // end namespace parsing

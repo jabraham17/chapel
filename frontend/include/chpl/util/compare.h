@@ -24,8 +24,7 @@
 
 namespace chpl {
 
-template <typename K, typename V>
-struct FirstElementComparator {
+template <typename K, typename V> struct FirstElementComparator {
   bool operator()(const std::pair<K, V>& a, const std::pair<K, V>& b) const {
     return a.first < b.first;
   }

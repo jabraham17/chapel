@@ -27,37 +27,32 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This is an abstract parent class for int/real/imag numeric literals.
  */
 template <typename ValueT, typename ParamT>
 class NumericLiteral : public Literal {
- friend class AstNode;
+  friend class AstNode;
 
  protected:
   UniqueString text_;
 
   NumericLiteral(AstTag tag, const ParamT* value, UniqueString text)
-    : Literal(tag, value),
-      text_(text)
-  { }
+    : Literal(tag, value), text_(text) {}
 
   void numericLiteralSerializeInner(Serializer& ser) const {
     literalSerializeInner(ser);
     ser.write(text_);
   }
 
-  NumericLiteral(AstTag tag, Deserializer& des)
-    : Literal(tag, des) {
+  NumericLiteral(AstTag tag, Deserializer& des) : Literal(tag, des) {
     text_ = des.read<UniqueString>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     auto lhs = this;
-    auto* rhs = (const NumericLiteral<ValueT, ParamT>*) other;
-    return lhs->literalContentsMatchInner(rhs) &&
-           lhs->text_ == rhs->text_;
+    auto* rhs = (const NumericLiteral<ValueT, ParamT>*)other;
+    return lhs->literalContentsMatchInner(rhs) && lhs->text_ == rhs->text_;
   }
   void markUniqueStringsInner(Context* context) const override {
     literalMarkUniqueStringsInner(context);
@@ -74,7 +69,7 @@ class NumericLiteral : public Literal {
    Returns the value of this NumericLiteral.
    */
   ValueT value() const {
-    const ParamT* p = (const ParamT*) value_;
+    const ParamT* p = (const ParamT*)value_;
     return p->value();
   }
   /**
@@ -84,8 +79,7 @@ class NumericLiteral : public Literal {
 };
 
 template <typename ValueT, typename ParamT>
-NumericLiteral<ValueT, ParamT>::~NumericLiteral() { }
-
+NumericLiteral<ValueT, ParamT>::~NumericLiteral() {}
 
 } // end namespace uast
 } // end namespace chpl

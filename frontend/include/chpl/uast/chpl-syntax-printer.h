@@ -25,45 +25,46 @@
 #include "chpl/uast/AstTag.h"
 #include "chpl/uast/forward-declare-uast.h"
 
-
-#include<iostream>
+#include <iostream>
 
 namespace chpl {
 
-  /*
+/*
     With this function we are trying to create a faithful representation
     of the uAST in Chapel syntax. The goal is to generate strings that could
     be copy/pasted and compiled back to the same uAST.
   */
-  void printChapelSyntax(std::ostream& os, const uast::AstNode* node);
+void printChapelSyntax(std::ostream& os, const uast::AstNode* node);
 
-
-  /*
+/*
     This function can be used to generate the signature of a function without
     the declaration (proc, iter etc). Suitable for the userString field
     of the old AST.
   */
-  void printFunctionSignature(std::ostream& os, const uast::Function* node);
+void printFunctionSignature(std::ostream& os, const uast::Function* node);
 
-  void printFunctionSignature(std::ostream& os,
-                              const uast::FunctionSignature* node);
+void printFunctionSignature(std::ostream& os,
+                            const uast::FunctionSignature* node);
 
-  /*
+/*
    * Do we want to print spaces around this binary operator?
    */
-  bool wantSpaces(UniqueString op, bool printingType);
+bool wantSpaces(UniqueString op, bool printingType);
 
-  /*
+/*
    * Given an AST node outer, with one child inner, this function
    * returns true if we need to emit parens around the child expression.
    * That is, if emitting the expression without parenthesis would
    * change the semantics from what the AST represents.
    */
-  bool needParens(UniqueString outer, UniqueString inner,
-                  bool outerUnary, bool outerPostfix,
-                  bool innerUnary, bool innerPostfix,
-                  bool innerIsRHS);
-  /*
+bool needParens(UniqueString outer,
+                UniqueString inner,
+                bool outerUnary,
+                bool outerPostfix,
+                bool innerUnary,
+                bool innerPostfix,
+                bool innerIsRHS);
+/*
    * Operator precedence according to the table in the spec,
    * expressions.rst
    *
@@ -76,6 +77,6 @@ namespace chpl {
    * Returns precedence: higher is tighter-binding.
    * Returns -1 for unhandled operator -- caller should respond conservatively.
    */
-  int opToPrecedence(UniqueString op, bool unary, bool postfix);
+int opToPrecedence(UniqueString op, bool unary, bool postfix);
 }
 #endif

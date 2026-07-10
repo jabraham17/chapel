@@ -25,24 +25,18 @@
 namespace chpl {
 namespace types {
 
-
 /**
   This class represents the type of `nil`.
  */
 class NilType final : public Type {
  private:
-  NilType() : Type(typetags::NilType) { }
+  NilType() : Type(typetags::NilType) {}
 
-  bool contentsMatchInner(const Type* other) const override {
-    return true;
-  }
+  bool contentsMatchInner(const Type* other) const override { return true; }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
-  Genericity genericity() const override {
-    return CONCRETE;
-  }
+  Genericity genericity() const override { return CONCRETE; }
 
   static const owned<NilType>& getNilType(Context* context);
 
@@ -53,7 +47,6 @@ class NilType final : public Type {
 
   void stringify(std::ostream& ss, StringifyKind stringKind) const override;
 };
-
 
 } // end namespace uast
 } // end namespace chpl

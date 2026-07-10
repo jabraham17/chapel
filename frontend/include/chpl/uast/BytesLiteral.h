@@ -27,27 +27,24 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a bytes literal, for example `b"hello"`
   and `b''' bytes contents here '''`.
  */
 class BytesLiteral final : public StringLikeLiteral {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   BytesLiteral(const types::StringParam* value,
                StringLikeLiteral::QuoteStyle quotes)
-    : StringLikeLiteral(asttags::BytesLiteral, value, quotes)
-  { }
+    : StringLikeLiteral(asttags::BytesLiteral, value, quotes) {}
 
   void serializeInner(Serializer& ser) const override {
     stringLikeLiteralSerializeInner(ser);
   }
 
   explicit BytesLiteral(Deserializer& des)
-    : StringLikeLiteral(asttags::BytesLiteral, des)
-  { }
+    : StringLikeLiteral(asttags::BytesLiteral, des) {}
 
   // contentsMatchInner / markUniqueStringsInner are in StringLikeLiteral
   // and would need to be defined here if any fields are added.
@@ -55,11 +52,11 @@ class BytesLiteral final : public StringLikeLiteral {
  public:
   ~BytesLiteral() override = default;
 
-  static owned<BytesLiteral> build(Builder* builder, Location loc,
+  static owned<BytesLiteral> build(Builder* builder,
+                                   Location loc,
                                    const std::string& value,
                                    StringLikeLiteral::QuoteStyle quotes);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

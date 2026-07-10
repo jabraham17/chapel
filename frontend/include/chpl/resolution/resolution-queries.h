@@ -27,7 +27,6 @@
 namespace chpl {
 namespace resolution {
 
-
 ////// resolution basics
 
 /**
@@ -50,15 +49,13 @@ resolveModuleStmtStandalone(Context* context, ID id);
   Specialized version of resolveModuleStmt when the statement is an
   'implements'. This does the work of constructing an 'ImplementationPoint'.
  */
-const ImplementationPoint* resolveImplementsStmt(Context* rc,
-                                                 ID id);
+const ImplementationPoint* resolveImplementsStmt(Context* rc, ID id);
 
 /**
   Determine the type etc. that 'name' would have at the module level.
  */
-const ResolvedExpression& resolveNameInModule(Context* context,
-                                              ID modId,
-                                              UniqueString name);
+const ResolvedExpression&
+resolveNameInModule(Context* context, ID modId, UniqueString name);
 
 /**
   Resolve the contents of a Module
@@ -75,8 +72,7 @@ const ResolutionResultByPostorderID& scopeResolveModule(Context* context,
 /**
   Compute the type for a NamedDecl with a particular id.
  */
-const types::QualifiedType& typeForModuleLevelSymbol(
-    Context* context, ID id);
+const types::QualifiedType& typeForModuleLevelSymbol(Context* context, ID id);
 
 /**
   Compute the type for a Builtin type using just its name
@@ -154,11 +150,10 @@ scopeResolveEnumElement(Context* context,
   `param` if enough information is present, but in some cases will not be
   (e.g., due to ambiguity).
  */
-types::QualifiedType
-typeForScopeResolvedEnumElement(Context* context,
-                                const ID& enumTypeId,
-                                const ID& refersToId,
-                                bool ambiguous);
+types::QualifiedType typeForScopeResolvedEnumElement(Context* context,
+                                                     const ID& enumTypeId,
+                                                     const ID& refersToId,
+                                                     bool ambiguous);
 
 types::QualifiedType
 typeForScopeResolvedEnumElement(Context* context,
@@ -203,16 +198,16 @@ typedSignatureInitial(ResolutionContext* rc, const UntypedFnSignature* untyped);
   The TypedFnSignature will represent generic and potentially unknown
   types if the function is generic.
  */
-const TypedFnSignature*
-typedSignatureInitialForId(ResolutionContext* rc, ID id);
+const TypedFnSignature* typedSignatureInitialForId(ResolutionContext* rc,
+                                                   ID id);
 
 /**
   Compute an initial TypedFnSignature, but using placeholder types for
   type queries and "any type" markers. This TypedFnSignature can serve
   as a template for satisfying interface.
  */
-const TypedFnSignature*
-typedSignatureTemplateForId(ResolutionContext* rc, ID id);
+const TypedFnSignature* typedSignatureTemplateForId(ResolutionContext* rc,
+                                                    ID id);
 
 /**
   Returns a Type that represents the initial type provided by a TypeDecl
@@ -255,13 +250,12 @@ const ResolvedFields& resolveFieldDecl(ResolutionContext* rc,
   If fieldTypesOnly is true, only resolves the type expressions of the fields
   when possible (e.g. if the field has a type expression).
  */
-const ResolvedFieldResults&
-resolveFieldResults(ResolutionContext* rc,
-                    const types::CompositeType* ct,
-                    ID fieldId,
-                    DefaultsPolicy defaultsPolicy,
-                    bool syntaxOnly = false,
-                    bool fieldTypesOnly = true);
+const ResolvedFieldResults& resolveFieldResults(ResolutionContext* rc,
+                                                const types::CompositeType* ct,
+                                                ID fieldId,
+                                                DefaultsPolicy defaultsPolicy,
+                                                bool syntaxOnly = false,
+                                                bool fieldTypesOnly = true);
 
 /**
   Creates a ResolvedFields from ResolvedFieldResults.
@@ -269,8 +263,9 @@ resolveFieldResults(ResolutionContext* rc,
   When combined with ``resolveFieldResults``, it has the same effect as
   having called ``resolveFieldDecl``.
 */
-const ResolvedFields& resolvedFieldsFromResults(ResolutionContext* rc,
-                                                const ResolvedFieldResults& results);
+const ResolvedFields&
+resolvedFieldsFromResults(ResolutionContext* rc,
+                          const ResolvedFieldResults& results);
 
 /**
   Compute the fields and their types for a CompositeType
@@ -308,9 +303,8 @@ const ResolvedFields& fieldsForTypeDecl(ResolutionContext* rc,
   that contains the field directly.
 
 */
-const types::CompositeType* isNameOfField(Context* context,
-                                          UniqueString name,
-                                          const types::Type* t);
+const types::CompositeType*
+isNameOfField(Context* context, UniqueString name, const types::Type* t);
 
 /**
   Computes the version of a type assuming that defaults for generics
@@ -326,10 +320,8 @@ const types::QualifiedType typeWithDefaults(ResolutionContext* rc,
 
   Considers types in the ignore set as concrete.
  */
-types::Type::Genericity
-getTypeGenericityIgnoring(Context* context,
-                          const types::Type* t,
-                          std::set<const types::Type*>& ignore);
+types::Type::Genericity getTypeGenericityIgnoring(
+  Context* context, const types::Type* t, std::set<const types::Type*>& ignore);
 
 /**
   Compute whether a QualifiedType is generic or not.
@@ -370,10 +362,11 @@ bool isFieldSyntacticallyGeneric(Context* context,
   This is also used to decide if a field needs to be include in a type's
   substitutions.
  */
-bool shouldIncludeFieldInTypeConstructor(Context* context,
-                                         const ID& fieldId,
-                                         const types::QualifiedType& fieldType,
-                                         types::QualifiedType* formalType = nullptr);
+bool shouldIncludeFieldInTypeConstructor(
+  Context* context,
+  const ID& fieldId,
+  const types::QualifiedType& fieldType,
+  types::QualifiedType* formalType = nullptr);
 
 /**
   Compute an initial TypedFnSignature for a type constructor for a
@@ -424,7 +417,6 @@ const ResolvedFunction* resolveFunctionIfPossible(ResolutionContext* rc,
                                                   const TypedFnSignature* sig,
                                                   const PoiScope* poiScope);
 
-
 /**
   Given a scope corresponding to a module, find all visible
   implementation points for a particular interface.
@@ -439,8 +431,7 @@ visibileImplementationPointsForInterface(Context* context,
   Helper to resolve a concrete function using the above queries.
   Will return `nullptr` if the function is generic or has a `where false`.
   */
-const ResolvedFunction*
-resolveConcreteFunction(Context* context, ID id);
+const ResolvedFunction* resolveConcreteFunction(Context* context, ID id);
 
 /**
   Compute a ResolvedFunction given a TypedFnSignature, but don't
@@ -453,13 +444,12 @@ const ResolvedFunction* scopeResolveFunction(Context* context, ID id);
  * and initialization expressions.
  */
 const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
-                                                          ID id);
+                                                           ID id);
 
 /*
  * Scope-resolve an EnumDecl's constants
  */
-const ResolutionResultByPostorderID& scopeResolveEnum(Context* context,
-                                                      ID id);
+const ResolutionResultByPostorderID& scopeResolveEnum(Context* context, ID id);
 
 /**
   Compute the return type for a function. If the function is an iterator,
@@ -487,10 +477,8 @@ types::QualifiedType yieldType(ResolutionContext* rc,
 /* Returns a pair of (yieldType(), returnType()) for the function.
    These can differ if the function has ITER kind, which may
    have an 'int' return type but creates an iterable yielding 'int' when called. */
-const std::pair<types::QualifiedType, types::QualifiedType>&
-returnTypes(ResolutionContext* rc,
-            const TypedFnSignature* sig,
-            const PoiScope* poiScope);
+const std::pair<types::QualifiedType, types::QualifiedType>& returnTypes(
+  ResolutionContext* rc, const TypedFnSignature* sig, const PoiScope* poiScope);
 
 /**
   Compute the types for any generic 'out' formal types after instantiation
@@ -524,7 +512,9 @@ const TypedFnSignature* inferRefMaybeConstFormals(ResolutionContext* rc,
   Check if any of the formals are still generic, which is invalid. Emits
   an error if so.
  */
-bool checkUninstantiatedFormals(Context* context, const uast::AstNode* astForErr, const TypedFnSignature* sig);
+bool checkUninstantiatedFormals(Context* context,
+                                const uast::AstNode* astForErr,
+                                const TypedFnSignature* sig);
 
 /////// call resolution
 
@@ -532,10 +522,8 @@ bool checkUninstantiatedFormals(Context* context, const uast::AstNode* astForErr
   Compute the (potentially generic) TypedFnSignatures of possibly applicable
   candidate functions from a list of visible functions.
  */
-const CandidatesAndForwardingInfo&
-filterCandidatesInitial(ResolutionContext* rc,
-                        MatchingIdsWithName lst,
-                        CallInfo call);
+const CandidatesAndForwardingInfo& filterCandidatesInitial(
+  ResolutionContext* rc, MatchingIdsWithName lst, CallInfo call);
 
 /**
   Further filter the result of filterCandidatesInitial down by doing
@@ -546,14 +534,14 @@ filterCandidatesInitial(ResolutionContext* rc,
   inScope/inPoiScope.
 
  */
-void
-filterCandidatesInstantiating(ResolutionContext* rc,
-                              const CandidatesAndForwardingInfo& lst,
-                              const CallInfo& call,
-                              const Scope* inScope,
-                              const PoiScope* inPoiScope,
-                              CandidatesAndForwardingInfo& result,
-                              std::vector<ApplicabilityResult>* rejected = nullptr);
+void filterCandidatesInstantiating(
+  ResolutionContext* rc,
+  const CandidatesAndForwardingInfo& lst,
+  const CallInfo& call,
+  const Scope* inScope,
+  const PoiScope* inPoiScope,
+  CandidatesAndForwardingInfo& result,
+  std::vector<ApplicabilityResult>* rejected = nullptr);
 
 /**
   Given a uast::Call, a CallInfo representing the call, a Scope representing the
@@ -564,12 +552,13 @@ filterCandidatesInstantiating(ResolutionContext* rc,
   'resolveCallInMethod' should be used instead when resolving a non-method call
   within a method.
  */
-CallResolutionResult resolveCall(ResolutionContext* rc,
-                                 const uast::Call* call,
-                                 const CallInfo& ci,
-                                 const CallScopeInfo& inScopes,
-                                 std::vector<ApplicabilityResult>* rejected=nullptr,
-                                 bool skipForwarding = false);
+CallResolutionResult
+resolveCall(ResolutionContext* rc,
+            const uast::Call* call,
+            const CallInfo& ci,
+            const CallScopeInfo& inScopes,
+            std::vector<ApplicabilityResult>* rejected = nullptr,
+            bool skipForwarding = false);
 
 /**
   Similar to resolveCall, but handles the implicit scope provided by a method.
@@ -579,12 +568,13 @@ CallResolutionResult resolveCall(ResolutionContext* rc,
 
   If implicitReceiver.type() == nullptr, it will be ignored.
  */
-CallResolutionResult resolveCallInMethod(ResolutionContext* rc,
-                                         const uast::Call* call,
-                                         const CallInfo& ci,
-                                         const CallScopeInfo& inScopes,
-                                         types::QualifiedType implicitReceiver,
-                                         std::vector<ApplicabilityResult>* rejected=nullptr);
+CallResolutionResult
+resolveCallInMethod(ResolutionContext* rc,
+                    const uast::Call* call,
+                    const CallInfo& ci,
+                    const CallScopeInfo& inScopes,
+                    types::QualifiedType implicitReceiver,
+                    std::vector<ApplicabilityResult>* rejected = nullptr);
 
 /**
   Given a CallInfo representing a call, a Scope representing the
@@ -592,11 +582,12 @@ CallResolutionResult resolveCallInMethod(ResolutionContext* rc,
   scope of that call, find the most specific candidates as well
   as the point-of-instantiation scopes that were used when resolving them.
  */
-CallResolutionResult resolveGeneratedCall(ResolutionContext* rc,
-                                          const uast::AstNode* astForErrAndPoi,
-                                          const CallInfo& ci,
-                                          const CallScopeInfo& inScopes,
-                                          std::vector<ApplicabilityResult>* rejected = nullptr);
+CallResolutionResult
+resolveGeneratedCall(ResolutionContext* rc,
+                     const uast::AstNode* astForErrAndPoi,
+                     const CallInfo& ci,
+                     const CallScopeInfo& inScopes,
+                     std::vector<ApplicabilityResult>* rejected = nullptr);
 
 /**
   Similar to resolveGeneratedCall but handles the implicit scope
@@ -624,17 +615,18 @@ const TypedFnSignature* tryResolveInitEq(Context* context,
 // helper for tryResolveZeroArgInit: add substitutions from a type to a list
 // of actuals. In practice, "zero-arg" init calls are really init calls where
 // arguments are given by the field substitutions etc.
-bool addExistingSubstitutionsAsActuals(Context* context,
-                                       const types::Type* type,
-                                       std::vector<CallInfoActual>& outActuals,
-                                       std::vector<const uast::AstNode*>& outActualAsts);
-
+bool addExistingSubstitutionsAsActuals(
+  Context* context,
+  const types::Type* type,
+  std::vector<CallInfoActual>& outActuals,
+  std::vector<const uast::AstNode*>& outActualAsts);
 
 // tries to resolve an (unambiguous) init()
-const TypedFnSignature* tryResolveZeroArgInit(Context* context,
-                                              const uast::AstNode* astForScopeOrErr,
-                                              const types::Type* toInit,
-                                              const PoiScope* poiScope = nullptr);
+const TypedFnSignature*
+tryResolveZeroArgInit(Context* context,
+                      const uast::AstNode* astForScopeOrErr,
+                      const types::Type* toInit,
+                      const PoiScope* poiScope = nullptr);
 
 // tries to resolve an (unambiguous) assign
 const TypedFnSignature* tryResolveAssign(Context* context,
@@ -658,9 +650,10 @@ const TypedFnSignature* tryResolveDeinit(Context* context,
   from the interface, but the types do not provide the required functions,
   associated types, etc.
   */
-const ImplementationWitness* findMatchingImplementationPoint(ResolutionContext* rc,
-                                                            const types::InterfaceType* ift,
-                                                            const CallScopeInfo& inScopes);
+const ImplementationWitness*
+findMatchingImplementationPoint(ResolutionContext* rc,
+                                const types::InterfaceType* ift,
+                                const CallScopeInfo& inScopes);
 
 /**
   Given the location of an implementation point, check that the constraints
@@ -668,10 +661,11 @@ const ImplementationWitness* findMatchingImplementationPoint(ResolutionContext* 
   'findMatchingImplementationPoint', but can be used standalone if a desired
   implementation point is already known.
  */
-const ImplementationWitness* checkInterfaceConstraints(ResolutionContext* rc,
-                                                       const types::InterfaceType* ift,
-                                                       const ID& implPointId,
-                                                       const CallScopeInfo& inScopes);
+const ImplementationWitness*
+checkInterfaceConstraints(ResolutionContext* rc,
+                          const types::InterfaceType* ift,
+                          const ID& implPointId,
+                          const CallScopeInfo& inScopes);
 
 /**
   In a given scope, first try to search for interface implementation points,
@@ -681,12 +675,13 @@ const ImplementationWitness* checkInterfaceConstraints(ResolutionContext* rc,
   The 'implPointId' here can be any ID that serves as the "anchor" for where
   the ghost implementation notionally exists.
  */
-const ImplementationWitness* findOrImplementInterface(ResolutionContext* rc,
-                                                      const types::InterfaceType* ift,
-                                                      const types::Type* forType,
-                                                      const CallScopeInfo& inScopes,
-                                                      const ID& implPointId,
-                                                      bool& foundExisting);
+const ImplementationWitness*
+findOrImplementInterface(ResolutionContext* rc,
+                         const types::InterfaceType* ift,
+                         const types::Type* forType,
+                         const CallScopeInfo& inScopes,
+                         const ID& implPointId,
+                         bool& foundExisting);
 
 /**
   Determine whether type 't' is copyable/assignable from const or/and from ref.
@@ -704,11 +699,10 @@ CopyableAssignableInfo getCopyOrAssignableInfo(ResolutionContext* rc,
 const std::unordered_map<UniqueString, types::QualifiedType>&
 getCompilerGeneratedGlobals(Context* context);
 
-void
-reportInvalidMultipleInheritance(Context* context,
-                                 const uast::Class* node,
-                                 const uast::AstNode* firstParent,
-                                 const uast::AstNode* secondParent);
+void reportInvalidMultipleInheritance(Context* context,
+                                      const uast::Class* node,
+                                      const uast::AstNode* firstParent,
+                                      const uast::AstNode* secondParent);
 
 void reportDeprecatedSyncRead(Context* context,
                               const types::Type* syncT,
@@ -721,14 +715,16 @@ void reportDeprecatedSyncRead(Context* context,
   test functions. This helper retrieves the list of test functions that has
   been collected.
  */
-const std::vector<const uast::Function*>& getTestsGatheredViaPrimitive(Context* context);
+const std::vector<const uast::Function*>&
+getTestsGatheredViaPrimitive(Context* context);
 
 /**
   Retrieve the 'param' tag for an iterator constant. If the 'iterKind' enum
   is not available, this will return an unknown type.
  */
 const types::QualifiedType&
-getIterKindConstantOrUnknown(Context* context, uast::Function::IteratorKind kind);
+getIterKindConstantOrUnknown(Context* context,
+                             uast::Function::IteratorKind kind);
 
 /**
   Returns the field in 'ad' (or its parent) that matches 'name'.
@@ -764,8 +760,7 @@ taggedYieldTypeForType(ResolutionContext* rc,
                        const Scope* overrideLookupScope = nullptr);
 
 const types::QualifiedType&
-yieldTypeForIterator(ResolutionContext* rc,
-                     const types::IteratorType* iter);
+yieldTypeForIterator(ResolutionContext* rc, const types::IteratorType* iter);
 
 const types::Type* shapeForIterator(Context* context,
                                     const types::IteratorType* iter);
@@ -801,11 +796,14 @@ builderResultForDefaultFunction(Context* context,
 
 /** Get the 'promotion type' for the given type. E.g., the promotion type
     for a range is the type of the range's elements. */
-const types::QualifiedType& getPromotionType(Context* context, types::QualifiedType qt, bool skipIfRunning = false);
+const types::QualifiedType& getPromotionType(Context* context,
+                                             types::QualifiedType qt,
+                                             bool skipIfRunning = false);
 
 /// \cond DO_NOT_DOCUMENT
 // Common helper for ArrayType and DomainType
-const types::RuntimeType* getRuntimeType(Context* context, const types::CompositeType* ct);
+const types::RuntimeType* getRuntimeType(Context* context,
+                                         const types::CompositeType* ct);
 /// \endcond
 
 Access accessForQualifier(uast::Qualifier q);
@@ -813,7 +811,7 @@ Access accessForQualifier(uast::Qualifier q);
 const MostSpecificCandidate*
 determineBestReturnIntentOverload(const MostSpecificCandidates& candidates,
                                   Access access,
-                                  types::QualifiedType::Kind &outReturnKind,
+                                  types::QualifiedType::Kind& outReturnKind,
                                   bool& outAmbiguity);
 
 /**
@@ -827,7 +825,6 @@ bool const& noteErrorMessage(Context* context, UniqueString message);
   Same as `noteErrorMessage`, but for warning messages.
  */
 bool const& noteWarningMessage(Context* context, UniqueString message);
-
 
 } // end namespace resolution
 } // end namespace chpl

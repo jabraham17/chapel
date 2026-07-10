@@ -27,7 +27,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a for loop. For example:
 
@@ -43,17 +42,19 @@ namespace uast {
 
  */
 class For final : public IndexableLoop {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  For(AstList children,  int8_t indexChildNum,
+  For(AstList children,
+      int8_t indexChildNum,
       int8_t iterandChildNum,
       BlockStyle blockStyle,
       int loopBodyChildNum,
       bool isExpressionLevel,
       bool isParam,
       int attributeGroupChildNum)
-    : IndexableLoop(asttags::For, std::move(children),
+    : IndexableLoop(asttags::For,
+                    std::move(children),
                     indexChildNum,
                     iterandChildNum,
                     /*withClauseChildNum*/ NO_CHILD,
@@ -71,20 +72,17 @@ class For final : public IndexableLoop {
     ser.write(isParam_);
   }
 
-  explicit For(Deserializer& des)
-    : IndexableLoop(asttags::For, des) {
+  explicit For(Deserializer& des) : IndexableLoop(asttags::For, des) {
     isParam_ = des.read<bool>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const For* lhs = this;
-    const For* rhs = (const For*) other;
+    const For* rhs = (const For*)other;
 
-    if (lhs->isParam_ != rhs->isParam_)
-      return false;
+    if (lhs->isParam_ != rhs->isParam_) return false;
 
-    if (!lhs->indexableLoopContentsMatchInner(rhs))
-      return false;
+    if (!lhs->indexableLoopContentsMatchInner(rhs)) return false;
 
     return true;
   }
@@ -103,7 +101,8 @@ class For final : public IndexableLoop {
   /**
     Create and return a for loop.
   */
-  static owned<For> build(Builder* builder, Location loc,
+  static owned<For> build(Builder* builder,
+                          Location loc,
                           owned<Decl> index,
                           owned<AstNode> iterand,
                           BlockStyle blockStyle,
@@ -115,11 +114,8 @@ class For final : public IndexableLoop {
   /**
     Returns true if this for loop is param.
   */
-  bool isParam() const {
-    return isParam_;
-  }
+  bool isParam() const { return isParam_; }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

@@ -26,7 +26,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a throw statement. For example:
 
@@ -41,35 +40,30 @@ namespace uast {
   \endrst
 */
 class Throw final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  Throw(AstList children)
-      : AstNode(asttags::Throw, std::move(children)) {
+  Throw(AstList children) : AstNode(asttags::Throw, std::move(children)) {
     CHPL_ASSERT(numChildren() == 1);
   }
 
-  void serializeInner(Serializer& ser) const override { }
+  void serializeInner(Serializer& ser) const override {}
 
-  explicit Throw(Deserializer& des) : AstNode(asttags::Throw, des) { }
+  explicit Throw(Deserializer& des) : AstNode(asttags::Throw, des) {}
 
-  bool contentsMatchInner(const AstNode* other) const override {
-    return true;
-  }
+  bool contentsMatchInner(const AstNode* other) const override { return true; }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
   // Always exists, position of the first and only element.
   static const int8_t errorExprChildNum_ = 0;
 
  public:
-
   /**
     Create and return a throw statement.
   */
-  static owned<Throw> build(Builder* builder, Location loc,
-                            owned<AstNode> expr);
+  static owned<Throw>
+  build(Builder* builder, Location loc, owned<AstNode> expr);
 
   /**
     Return the error expression of this throw statement.
@@ -79,7 +73,6 @@ class Throw final : public AstNode {
     return ast;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

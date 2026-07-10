@@ -27,7 +27,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents any sort of block-like construct. Candidates for
   use of this abstract class have:
@@ -46,22 +45,20 @@ namespace uast {
   This is because the conditional may have an else block.
  */
 class SimpleBlockLike : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  protected:
   BlockStyle blockStyle_;
   int bodyChildNum_;
   int numBodyStmts_;
 
-  SimpleBlockLike(AstTag tag, AstList children, BlockStyle blockStyle,
+  SimpleBlockLike(AstTag tag,
+                  AstList children,
+                  BlockStyle blockStyle,
                   int bodyChildNum,
                   int numBodyStmts)
-    : AstNode(tag, std::move(children)),
-      blockStyle_(blockStyle),
-      bodyChildNum_(bodyChildNum),
-      numBodyStmts_(numBodyStmts) {
-
-  }
+    : AstNode(tag, std::move(children)), blockStyle_(blockStyle),
+      bodyChildNum_(bodyChildNum), numBodyStmts_(numBodyStmts) {}
 
   void simpleBlockLikeSerializeInner(Serializer& ser) const {
     ser.write(blockStyle_);
@@ -69,8 +66,7 @@ class SimpleBlockLike : public AstNode {
     ser.writeVInt(numBodyStmts_);
   }
 
-  SimpleBlockLike(AstTag tag, Deserializer& des)
-    : AstNode(tag, des) {
+  SimpleBlockLike(AstTag tag, Deserializer& des) : AstNode(tag, des) {
     blockStyle_ = des.read<BlockStyle>();
     bodyChildNum_ = des.readVInt();
     numBodyStmts_ = des.readVInt();
@@ -80,20 +76,16 @@ class SimpleBlockLike : public AstNode {
     const SimpleBlockLike* lhs = this;
     const SimpleBlockLike* rhs = other->toSimpleBlockLike();
 
-    if (lhs->blockStyle_ != rhs->blockStyle_)
-      return false;
+    if (lhs->blockStyle_ != rhs->blockStyle_) return false;
 
-    if (lhs->bodyChildNum_ != rhs->bodyChildNum_)
-      return false;
+    if (lhs->bodyChildNum_ != rhs->bodyChildNum_) return false;
 
-    if (lhs->numBodyStmts_ != rhs->numBodyStmts_)
-      return false;
+    if (lhs->numBodyStmts_ != rhs->numBodyStmts_) return false;
 
     return true;
   }
 
-  void simpleBlockLikeMarkUniqueStringsInner(Context* context) const {
-  }
+  void simpleBlockLikeMarkUniqueStringsInner(Context* context) const {}
 
  public:
   virtual ~SimpleBlockLike() override = 0; // this is an abstract base class
@@ -110,9 +102,7 @@ class SimpleBlockLike : public AstNode {
   /**
     Return the number of statements in this.
   */
-  int numStmts() const {
-    return this->numBodyStmts_;
-  }
+  int numStmts() const { return this->numBodyStmts_; }
 
   /**
     Return the i'th statement in this.
@@ -126,11 +116,8 @@ class SimpleBlockLike : public AstNode {
   /**
     Get the block style of this.
   */
-  BlockStyle blockStyle() const {
-    return blockStyle_;
-  }
+  BlockStyle blockStyle() const { return blockStyle_; }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

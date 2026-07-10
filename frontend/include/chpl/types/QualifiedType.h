@@ -87,15 +87,12 @@ class QualifiedType final {
   const Param* param_ = nullptr;
 
  public:
-  QualifiedType() { }
+  QualifiedType() {}
 
-  QualifiedType(Kind kind, const Type* type)
-    : kind_(kind), type_(type)
-  { }
+  QualifiedType(Kind kind, const Type* type) : kind_(kind), type_(type) {}
 
   QualifiedType(Kind kind, const Type* type, const Param* param)
-    : kind_(kind), type_(type), param_(param)
-  {
+    : kind_(kind), type_(type), param_(param) {
     // should only set param_ for kind_ == PARAM
     CHPL_ASSERT(param_ == nullptr || kind_ == Kind::PARAM);
   }
@@ -120,12 +117,8 @@ class QualifiedType final {
     yet have a param value. */
   const Param* param() const { return param_; }
 
-  bool hasTypePtr() const {
-    return type_ != nullptr;
-  }
-  bool hasParamPtr() const {
-    return param_ != nullptr;
-  }
+  bool hasTypePtr() const { return type_ != nullptr; }
+  bool hasParamPtr() const { return param_ != nullptr; }
 
   /** Returns the fast-to-compute genericity of the contained Type pointer.
       Does not include consideration of fields. If the type can have fields
@@ -134,8 +127,7 @@ class QualifiedType final {
       To consider fields, use the getTypeGenericity.
    */
   Type::Genericity typeGenericity() const {
-    if (type_ == nullptr)
-      return Type::MAYBE_GENERIC;
+    if (type_ == nullptr) return Type::MAYBE_GENERIC;
 
     return type_->genericity();
   }
@@ -148,19 +140,17 @@ class QualifiedType final {
   */
   Type::Genericity genericity() const {
     bool genericParam = kind_ == PARAM && !hasParamPtr();
-    if (genericParam || kind_ == TYPE_QUERY)
-      return Type::GENERIC;
+    if (genericParam || kind_ == TYPE_QUERY) return Type::GENERIC;
 
     // params with know values (hasParamPtr()) can't be generic.
-    if (kind_ == PARAM)
-      return Type::CONCRETE;
+    if (kind_ == PARAM) return Type::CONCRETE;
 
     return typeGenericity();
   }
 
   bool isUnknown() const {
     return isUnknownKindOrType() ||
-      (kind_ == PARAM && !hasParamPtr() && !isParamKnownTuple());
+           (kind_ == PARAM && !hasParamPtr() && !isParamKnownTuple());
   }
 
   bool isUnknownKindOrType() const {
@@ -175,9 +165,7 @@ class QualifiedType final {
     return isUnknown() || (genericity() != Type::CONCRETE);
   }
 
-  bool isUnknownOrErroneous() const {
-    return isUnknown() || isErroneousType();
-  }
+  bool isUnknownOrErroneous() const { return isUnknown() || isErroneousType(); }
 
   /** Returns true if kind is TYPE */
   bool isType() const { return kind_ == Kind::TYPE; }
@@ -209,35 +197,25 @@ class QualifiedType final {
     be modified by some other aliasing variable).
     In particular, returns true for all kinds other than REF and VALUE.
    */
-  bool isConst() const {
-    return uast::isConstQualifier(kind_);
-  }
+  bool isConst() const { return uast::isConstQualifier(kind_); }
   /** Returns true if the type refers to something immutable
       (that cannot be modified by any task / other reference to it). */
-  bool isImmutable() const {
-    return uast::isImmutableQualifier(kind_);
-  }
+  bool isImmutable() const { return uast::isImmutableQualifier(kind_); }
   /**
     Returns true if the value is a reference, whether constant or mutable.
    */
-  bool isRef() const {
-    return uast::isRefQualifier(kind_);
-  }
+  bool isRef() const { return uast::isRefQualifier(kind_); }
   /**
     Returns true if the value is an in-intent formal, whether constant or
     mutable.
    */
-  bool isIn() const {
-    return uast::isInQualifier(kind_);
-  }
+  bool isIn() const { return uast::isInQualifier(kind_); }
 
   /**
     Returns true if the kind is one of the non-concrete intents
     (unknown, default intent, or const intent) and false otherwise.
    */
-  bool isNonConcreteIntent() const {
-    return uast::isGenericQualifier(kind_);
-  }
+  bool isNonConcreteIntent() const { return uast::isGenericQualifier(kind_); }
 
   /**
     Returns true if the type might need to get more info from split-init.
@@ -247,8 +225,7 @@ class QualifiedType final {
   static QualifiedType createParamBool(Context* context, bool x);
 
   bool operator==(const QualifiedType& other) const {
-    return kind_ == other.kind_ &&
-           type_ == other.type_ &&
+    return kind_ == other.kind_ && type_ == other.type_ &&
            param_ == other.param_;
   }
   bool operator!=(const QualifiedType& other) const {
@@ -261,7 +238,7 @@ class QualifiedType final {
     std::swap(this->param_, other.param_);
   }
   size_t hash() const {
-    size_t h1 = (size_t) kind_;
+    size_t h1 = (size_t)kind_;
     size_t h2 = chpl::hash(type_);
     size_t h3 = chpl::hash(param_);
 
@@ -283,9 +260,9 @@ class QualifiedType final {
 
 } // end namespace types
 
-template <>
-struct stringify<types::QualifiedType::Kind> {
-  void operator()(std::ostream& os, StringifyKind stringKind,
+template <> struct stringify<types::QualifiedType::Kind> {
+  void operator()(std::ostream& os,
+                  StringifyKind stringKind,
                   types::QualifiedType::Kind k) {
     os << types::QualifiedType::kindToString(k);
   }
@@ -294,29 +271,24 @@ struct stringify<types::QualifiedType::Kind> {
 // docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT
 
-template <>
-struct mark<types::QualifiedType::Kind> {
+template <> struct mark<types::QualifiedType::Kind> {
   void operator()(Context* context, types::QualifiedType::Kind t) {
     // No need to mark enums
   }
 };
 
-
 /// \endcond
 
 } // end namespace chpl
 
-
 namespace std {
 
-template<> struct hash<chpl::types::QualifiedType>
-{
+template <> struct hash<chpl::types::QualifiedType> {
   size_t operator()(const chpl::types::QualifiedType& key) const {
     return key.hash();
   }
 };
 
 } // end namespace std
-
 
 #endif

@@ -26,7 +26,6 @@
 namespace chpl {
 namespace types {
 
-
 /**
   General subclass for "things that have management". Mostly this will be basic
   class types (e.g., the `C` in `managed C?`), but we also want to share the
@@ -37,17 +36,16 @@ namespace types {
 class ManageableType : public CompositeType {
  protected:
   ManageableType(typetags::TypeTag tag,
-                ID id, UniqueString name,
-                const CompositeType* instantiatedFrom,
-                SubstitutionsMap subs,
-                CompositeType::Linkage linkage)
-    : CompositeType(tag, std::move(id), name, instantiatedFrom,
-                    std::move(subs),
-                    linkage) {}
+                 ID id,
+                 UniqueString name,
+                 const CompositeType* instantiatedFrom,
+                 SubstitutionsMap subs,
+                 CompositeType::Linkage linkage)
+    : CompositeType(
+        tag, std::move(id), name, instantiatedFrom, std::move(subs), linkage) {}
 };
 
 } // end namespace types
-
 
 } // end namespace chpl
 

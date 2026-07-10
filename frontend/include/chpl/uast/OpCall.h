@@ -27,7 +27,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a call to an operator.
 
@@ -36,37 +35,34 @@ namespace uast {
 
  */
 class OpCall final : public Call {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   // which operator
   UniqueString op_;
 
   OpCall(AstList children, UniqueString op)
-    : Call(asttags::OpCall, std::move(children),
+    : Call(asttags::OpCall,
+           std::move(children),
            /* hasCalledExpression */ false),
-      op_(op) {
-  }
+      op_(op) {}
 
   void serializeInner(Serializer& ser) const override {
     callSerializeInner(ser);
     ser.write(op_);
   }
 
-  explicit OpCall(Deserializer& des)
-    : Call(asttags::OpCall, des) {
+  explicit OpCall(Deserializer& des) : Call(asttags::OpCall, des) {
     op_ = des.read<UniqueString>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const OpCall* lhs = this;
-    const OpCall* rhs = (const OpCall*) other;
+    const OpCall* rhs = (const OpCall*)other;
 
-    if (lhs->op_ != rhs->op_)
-      return false;
+    if (lhs->op_ != rhs->op_) return false;
 
-    if (!lhs->callContentsMatchInner(rhs))
-      return false;
+    if (!lhs->callContentsMatchInner(rhs)) return false;
 
     return true;
   }
@@ -84,10 +80,8 @@ class OpCall final : public Call {
                              UniqueString op,
                              owned<AstNode> lhs,
                              owned<AstNode> rhs);
-  static owned<OpCall> build(Builder* builder,
-                             Location loc,
-                             UniqueString op,
-                             owned<AstNode> expr);
+  static owned<OpCall>
+  build(Builder* builder, Location loc, UniqueString op, owned<AstNode> expr);
 
   /** Returns the name of the operator called */
   UniqueString op() const { return op_; }
@@ -109,7 +103,6 @@ class OpCall final : public Call {
 
 // Returns true if the given string is an operator name
 bool isOpName(UniqueString name);
-
 
 } // end namespace uast
 } // end namespace chpl

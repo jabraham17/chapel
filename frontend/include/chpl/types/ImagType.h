@@ -25,18 +25,15 @@
 namespace chpl {
 namespace types {
 
-
 /**
   This class represents a imag type, e.g. `imag` or `imag(32)`.
  */
 class ImagType final : public PrimitiveType {
  private:
-  ImagType(int bitwidth)
-    : PrimitiveType(typetags::ImagType, bitwidth)
-  { }
+  ImagType(int bitwidth) : PrimitiveType(typetags::ImagType, bitwidth) {}
 
   bool contentsMatchInner(const Type* other) const override {
-    return primitiveTypeContentsMatchInner((PrimitiveType*) other);
+    return primitiveTypeContentsMatchInner((PrimitiveType*)other);
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -46,18 +43,14 @@ class ImagType final : public PrimitiveType {
   static const owned<ImagType>& getImagType(Context* context, int bitwidth);
 
   /** what is stored in bitwidth_ for the default 'imag' ? */
-  static int defaultBitwidth() {
-    return 64;
-  }
+  static int defaultBitwidth() { return 64; }
 
  public:
   ~ImagType() = default;
 
   static const ImagType* get(Context* context, int bitwidth);
 
-  int bitwidth() const override {
-    return bitwidth_;
-  }
+  int bitwidth() const override { return bitwidth_; }
 
   bool isDefaultWidth() const override {
     return bitwidth_ == defaultBitwidth();
@@ -65,17 +58,14 @@ class ImagType final : public PrimitiveType {
 
   const char* c_str() const override {
     switch (bitwidth_) {
-      case 32:
-        return "imag(32)";
-      case 64:
-          return "imag(64)";
+      case 32: return "imag(32)";
+      case 64: return "imag(64)";
       default:
         CHPL_ASSERT(false && "imag bit width case not handled");
         return "real(<unknown>)";
     }
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

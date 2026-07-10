@@ -25,21 +25,17 @@
 namespace chpl {
 namespace types {
 
-
 /**
   This class represents an erroneous type - that is, a type used as an error
   sentinel type. Errors with this type should be ignored.
  */
 class ErroneousType final : public Type {
  private:
-  ErroneousType() : Type(typetags::ErroneousType) { }
+  ErroneousType() : Type(typetags::ErroneousType) {}
 
-  bool contentsMatchInner(const Type* other) const override {
-    return true;
-  }
+  bool contentsMatchInner(const Type* other) const override { return true; }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
   Genericity genericity() const override {
     return CONCRETE; // assume it's not generic when we continue
@@ -52,7 +48,6 @@ class ErroneousType final : public Type {
 
   static const ErroneousType* get(Context* context);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

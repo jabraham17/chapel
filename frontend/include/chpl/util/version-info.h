@@ -21,8 +21,7 @@
 #ifndef CHPL_UTIL_VERSION_INFO_H
 #define CHPL_UTIL_VERSION_INFO_H
 
-namespace chpl
-{
+namespace chpl {
 
 /*
   Returns the gitSHA value from the most recent source modification that was
@@ -69,8 +68,6 @@ std::string getVersion();
 */
 bool getIsOfficialRelease();
 
-
 } // namespace chpl
-
 
 #endif // CHPL_UTIL_VERSION_INFO_H

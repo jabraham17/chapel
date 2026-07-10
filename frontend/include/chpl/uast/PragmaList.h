@@ -35,13 +35,16 @@
 
 // flags to be added to the aggregation markers
 PRAGMA(AGG_MARKER, npr, "aggregation marker", ncm)
-PRAGMA(AGG_IN_STATIC_ONLY_CLONE, npr,
+PRAGMA(AGG_IN_STATIC_ONLY_CLONE,
+       npr,
        "static only aggregation marker",
        "this aggregation is happening in a static only forall clone")
-PRAGMA(AGG_IN_STATIC_AND_DYNAMIC_CLONE, npr,
+PRAGMA(AGG_IN_STATIC_AND_DYNAMIC_CLONE,
+       npr,
        "static and dynamic aggregation marker",
        "this aggregation is happening in a static and dynamic forall clone")
-PRAGMA(AGG_GENERATOR, ypr,
+PRAGMA(AGG_GENERATOR,
+       ypr,
        "aggregator generator",
        "this function generates and returns an aggregator")
 
@@ -62,10 +65,12 @@ PRAGMA(NO_ARRAY_VIEW_ELISION, ypr, "no array view elision", ncm)
 // the allocator function does not retain a reference to the referenced object.
 PRAGMA(ALLOCATOR, ypr, "allocator", "allocates heap storage")
 PRAGMA(ALLOW_REF, ypr, "allow ref", ncm)
-PRAGMA(ALWAYS_PROPAGATE_LINE_FILE_INFO, ypr,
+PRAGMA(ALWAYS_PROPAGATE_LINE_FILE_INFO,
+       ypr,
        "always propagate line file info",
        "counterpart to INSERT_LINE_FILE_INFO")
-PRAGMA(ALWAYS_RVF, ypr,
+PRAGMA(ALWAYS_RVF,
+       ypr,
        "always RVF",
        "attach to a type to force RVF for objects of that type")
 PRAGMA(ANONYMOUS_FN, npr, "anonymous fn", ncm)
@@ -77,14 +82,14 @@ PRAGMA(DONT_UNREF_FOR_YIELDS, ypr, "do not unref for yields", ncm)
 PRAGMA(ARG_THIS, npr, "arg this", "the hidden object argument")
 PRAGMA(ARRAY, ypr, "array", ncm)
 PRAGMA(ARRAY_OF_BORROWS, npr, "array of borrows", "array of borrows")
-PRAGMA(ASSIGNOP, npr,
-       "assignop",
-       "this fn is assignment or an <op>= operator")
-PRAGMA(ATOMIC_MODULE, ypr, "atomic module",
+PRAGMA(ASSIGNOP, npr, "assignop", "this fn is assignment or an <op>= operator")
+PRAGMA(ATOMIC_MODULE,
+       ypr,
+       "atomic module",
        "module containing implementations of atomic types")
 PRAGMA(ATOMIC_TYPE, ypr, "atomic type", "type that implements an atomic")
-PRAGMA(AUTO_COPY_FN,  ypr, "auto copy fn", "auto copy function")
-PRAGMA(AUTO_DESTROY_FN,  ypr, "auto destroy fn", "auto destroy function")
+PRAGMA(AUTO_COPY_FN, ypr, "auto copy fn", "auto copy function")
+PRAGMA(AUTO_DESTROY_FN, ypr, "auto destroy fn", "auto destroy function")
 PRAGMA(AUTO_II, npr, "auto ii", ncm)
 PRAGMA(BASE_ARRAY, ypr, "base array", ncm)
 PRAGMA(BASE_DOMAIN, ypr, "base domain", ncm)
@@ -92,45 +97,52 @@ PRAGMA(BASE_DIST, ypr, "base dist", ncm)
 PRAGMA(BEGIN, npr, "begin", ncm)
 PRAGMA(BEGIN_BLOCK, npr, "begin block", ncm)
 PRAGMA(BROADCAST_FN, npr, "serialized broadcast function", ncm)
-PRAGMA(BUILD_TUPLE, ypr,
+PRAGMA(BUILD_TUPLE,
+       ypr,
        "build tuple",
        "used to mark the build_tuple functions")
-PRAGMA(BUILD_TUPLE_TYPE, ypr,
+PRAGMA(BUILD_TUPLE_TYPE,
+       ypr,
        "build tuple type",
        "used to mark the build_tuple type functions")
 
-PRAGMA(C_FLEXIBLE_ARRAY_FIELD, npr,
+PRAGMA(C_FLEXIBLE_ARRAY_FIELD,
+       npr,
        "c flexible array member",
        "marks fields generated for C flexible array members")
 
-PRAGMA(CHAPEL_STRING_LITERAL, npr,
+PRAGMA(CHAPEL_STRING_LITERAL,
+       npr,
        "chapel string literal id",
        "mark Chapel strings created from literals")
-PRAGMA(CHAPEL_BYTES_LITERAL, npr,
+PRAGMA(CHAPEL_BYTES_LITERAL,
+       npr,
        "chapel bytes literal id",
        "mark Chapel bytes created from literals")
 // When resolution encounters the def of the variable 'chpl__iter',
 // as indicated by this flag, it launches into enacting forall intents
 // for the forall loop that this variable was created for.
-PRAGMA(CHPL__ITER, npr,
+PRAGMA(CHPL__ITER,
+       npr,
        "chpl__iter",
        "used as a marker to implement forall intents")
 // Marks chpl__iter things created for ForallStmt.
 PRAGMA(CHPL__ITER_NEWSTYLE, npr, "chpl__iter_newstyle", ncm)
 // TODO: Remove this pragma once we have an attribute or otherwise remove/rename
 // or nodoc the chpl_ prefix on symbols we want documented
-PRAGMA(CHPLDOC_IGNORE_CHPL_PREFIX, ypr,
+PRAGMA(CHPLDOC_IGNORE_CHPL_PREFIX,
+       ypr,
        "chpldoc ignore chpl prefix",
-       "generate chpldoc documentation for this symbol even though it starts with chpl_")
+       "generate chpldoc documentation for this symbol even though it starts "
+       "with chpl_")
 PRAGMA(COBEGIN_OR_COFORALL, npr, "cobegin or coforall", ncm)
 PRAGMA(COBEGIN_OR_COFORALL_BLOCK, npr, "cobegin or coforall block", ncm)
-PRAGMA(COERCE_TEMP, npr,
+PRAGMA(COERCE_TEMP,
+       npr,
        "coerce temp",
        "a temporary that was stores the result of a coercion")
 PRAGMA(COERCE_FN, ypr, "coerce fn", "coerce copy/move function")
-PRAGMA(CODEGENNED, npr,
-       "codegenned",
-       "code has been generated for this type")
+PRAGMA(CODEGENNED, npr, "codegenned", "code has been generated for this type")
 PRAGMA(COFORALL_INDEX_VAR, npr, "coforall index var", ncm)
 PRAGMA(COMMAND_LINE_SETTING, ypr, "command line setting", ncm)
 // The compiler-generated flag has these meanings:
@@ -141,54 +153,64 @@ PRAGMA(COMMAND_LINE_SETTING, ypr, "command line setting", ncm)
 //    applies to assignment, copy, initialization routines
 // 3. When additional checking for user-written code can be relaxed
 //    for functions added by the compiler (e.g. with error handling)
-PRAGMA(COMPILER_GENERATED, ypr,
+PRAGMA(COMPILER_GENERATED,
+       ypr,
        "compiler generated",
        "marks functions that are compiler-generated or supplied by an "
        "internal module")
-PRAGMA(COMPILER_ADDED_WHERE, npr,
+PRAGMA(COMPILER_ADDED_WHERE,
+       npr,
        "compiler added where",
        "marks functions that have a where clause only because compiler "
        "added one")
-PRAGMA(COMPILER_ADDED_AGGREGATOR, npr,
+PRAGMA(COMPILER_ADDED_AGGREGATOR,
+       npr,
        "compiler added aggregator",
        "marks aggregator symbols that the compiler added")
 
 PRAGMA(COMPILER_NESTED_FUNCTION, npr, "compiler nested function", ncm)
-PRAGMA(CONCURRENTLY_ACCESSED, npr,
+PRAGMA(CONCURRENTLY_ACCESSED,
+       npr,
        "concurrently accessed",
        "local variables accessed by multiple threads")
 PRAGMA(CONFIG, npr, "config", "config variable, constant, or parameter")
 PRAGMA(CONST, npr, "const", "constant")
 // this shadow variable is constant, whereas the outer variable is not
-PRAGMA(CONST_DUE_TO_TASK_FORALL_INTENT, npr,
+PRAGMA(CONST_DUE_TO_TASK_FORALL_INTENT,
+       npr,
        "const due to task or forall intent",
        ncm)
 PRAGMA(C_ARRAY, ypr, "c_array record", "marks c_array record")
 PRAGMA(C_PTR_CLASS, ypr, "c_ptr class", "marks c_ptr class")
 PRAGMA(C_PTRCONST_CLASS, ypr, "c_ptrConst class", "marks c_ptrConst class")
-PRAGMA(COPY_MUTATES, ypr,
+PRAGMA(COPY_MUTATES,
+       ypr,
        "copy mutates",
        "the initCopy function / copy initializer takes its argument by ref")
 PRAGMA(DATA_CLASS, ypr, "data class", ncm)
 
 // Flag for temporaries created for default values
 PRAGMA(DEFAULT_ACTUAL, npr, "default actual temp", ncm)
-PRAGMA(DEFAULT_ACTUAL_FUNCTION, npr,
+PRAGMA(DEFAULT_ACTUAL_FUNCTION,
+       npr,
        "default actual function",
        "applied to functions created for formal default values")
 
 // Enable override for default-intent for types defined in terms of record/class
-PRAGMA(DEFAULT_INTENT_IS_REF, ypr,
+PRAGMA(DEFAULT_INTENT_IS_REF,
+       ypr,
        "default intent is ref",
        "The default intent for this type is ref")
 
 // Default intent should be determined by function body
 // (ie. it is a ref if it is modified in the function body)
-PRAGMA(DEFAULT_INTENT_IS_REF_MAYBE_CONST, ypr,
+PRAGMA(DEFAULT_INTENT_IS_REF_MAYBE_CONST,
+       ypr,
        "default intent is ref if modified",
        "The default intent for this type is ref if modified const "
        "ref otherwise")
-PRAGMA(NO_USER_DEBUG_INFO, ypr,
+PRAGMA(NO_USER_DEBUG_INFO,
+       ypr,
        "no user debug info",
        "Do not emit user-level debug info for this symbol")
 
@@ -200,28 +222,32 @@ PRAGMA(SHARING_KIND_ENUM, ypr, "sharing kind enum", ncm)
 
 PRAGMA(COPY_INIT, npr, "copy initializer", ncm)
 PRAGMA(DEFAULT_INIT, npr, "default initializer", ncm)
-PRAGMA(DESTRUCTOR, npr,
+PRAGMA(DESTRUCTOR,
+       npr,
        "destructor",
        "applied to functions that are destructors")
-PRAGMA(DEPRECATED, npr,
-       "deprecated",
-       "applied to symbols that are deprecated")
-PRAGMA(DEPRECATED_IMPLICIT_CONVERSION, npr,
+PRAGMA(DEPRECATED, npr, "deprecated", "applied to symbols that are deprecated")
+PRAGMA(DEPRECATED_IMPLICIT_CONVERSION,
+       npr,
        "deprecated implicit conversions",
        "implicit conversions when passing to this formal are deprecated")
-PRAGMA(DEPRECATED_PARENFUL, npr,
+PRAGMA(DEPRECATED_PARENFUL,
+       npr,
        "deprecated parenful",
        "applied to parenless functions whose parenful forms are deprecated")
-PRAGMA(IGNORE_DEPRECATED_USE, ypr,
+PRAGMA(IGNORE_DEPRECATED_USE,
+       ypr,
        "ignore deprecated use",
        "applied to symbols that are allowed to use other deprecated symbols")
 PRAGMA(DISTRIBUTION, ypr, "distribution", ncm)
-PRAGMA(DOCS_ONLY, ypr,
+PRAGMA(DOCS_ONLY,
+       ypr,
        "docs only",
        "this symbol is for documentation purposes only - ignore this "
        "symbol when compiling")
 PRAGMA(DOMAIN, ypr, "domain", ncm)
-PRAGMA(DONT_DISABLE_REMOTE_VALUE_FORWARDING, ypr,
+PRAGMA(DONT_DISABLE_REMOTE_VALUE_FORWARDING,
+       ypr,
        "dont disable remote value forwarding",
        ncm)
 PRAGMA(DOWN_END_COUNT_FN, ypr, "down end count fn", ncm)
@@ -231,85 +257,166 @@ PRAGMA(ERROR_MODE_FATAL, ypr, "error mode fatal", ncm)
 PRAGMA(ERROR_MODE_RELAXED, ypr, "error mode relaxed", ncm)
 PRAGMA(ERROR_MODE_STRICT, ypr, "error mode strict", ncm)
 PRAGMA(ERROR_VARIABLE, npr, "error variable", ncm)
-PRAGMA(EPILOGUE_LABEL, npr,
+PRAGMA(EPILOGUE_LABEL,
+       npr,
        "epilogue label",
        "distinguishes the epilogue label from other labels")
 PRAGMA(ERROR_LABEL, ypr, "error label", ncm)
-PRAGMA(BAD_UNINSTANTIATED_FORMAL, npr, "bad uninstantiated formal", "this formal was generic and not correctly instantiated with its default value")
+PRAGMA(BAD_UNINSTANTIATED_FORMAL,
+       npr,
+       "bad uninstantiated formal",
+       "this formal was generic and not correctly instantiated with its "
+       "default value")
 PRAGMA(EXPANDED_VARARGS, npr, "expanded varargs", ncm)
 PRAGMA(EXPAND_TUPLES_WITH_VALUES, ypr, "expand tuples with values", ncm)
 PRAGMA(EXPORT, npr, "export", ncm)
-PRAGMA(EXPORT_INIT, ypr,
+PRAGMA(EXPORT_INIT,
+       ypr,
        "export init",
        "indicate that the module's initialization function should "
        "be exported")
 PRAGMA(EXPORT_WRAPPER, ypr, "export wrapper", ncm)
-PRAGMA(EXPR_TEMP, npr,
+PRAGMA(EXPR_TEMP,
+       npr,
        "expr temp",
        "temporary that stores the result of an expression")
 PRAGMA(EXTERN, npr, "extern", "extern variables, types, and functions")
 PRAGMA(EXTERN_UNION, npr, "extern union", "extern union")
-PRAGMA(EXTERN_FN_WITH_ARRAY_ARG, "npr",
+PRAGMA(EXTERN_FN_WITH_ARRAY_ARG,
+       "npr",
        "extern fn with array arg",
        "extern functions with array arguments")
-PRAGMA(FAST_ON, npr,
+PRAGMA(FAST_ON,
+       npr,
        "fast on",
        "with ON/ON_BLOCK, \"on block\", use fast spawning "
        "option (if available)")
-PRAGMA(FAST_ON_SAFE_EXTERN, ypr,
+PRAGMA(FAST_ON_SAFE_EXTERN,
+       ypr,
        "fast-on safe extern function",
        "extern function is safe for fast-on optimization")
-PRAGMA(FIELD_ACCESSOR, npr,
+PRAGMA(FIELD_ACCESSOR,
+       npr,
        "field accessor",
        "field setter/getter function, user-declared or compiler-generated")
-PRAGMA(FIRST_CLASS_FUNCTION_INVOCATION, npr,
+PRAGMA(FIRST_CLASS_FUNCTION_INVOCATION,
+       npr,
        "first class function invocation",
        "proxy for first-class function invocation")
 PRAGMA(FN_RETARG, npr, "fn returns via _retArg", ncm)
-PRAGMA(FOLLOWER_INDEX, npr,
+PRAGMA(FOLLOWER_INDEX,
+       npr,
        "follower index",
        "a variable representing a follower loop index")
-PRAGMA(FORALL_BREAK_LABEL, npr,
+PRAGMA(FORALL_BREAK_LABEL,
+       npr,
        "forall break label",
        "target of error handling in the forall")
-PRAGMA(FORMAL_TEMP, npr,
+PRAGMA(FORMAL_TEMP,
+       npr,
        "formal temp",
        "a formal temp requiring write-back for an out or inout argument")
-PRAGMA(FORMAL_TEMP_OUT, npr, "formal temp out", "a formal temp to back an out argument")
-PRAGMA(FORMAL_TEMP_OUT_CALLSITE, npr, "formal temp out callsite", "a formal temp to handle out/inout writeback at the callsite")
+PRAGMA(FORMAL_TEMP_OUT,
+       npr,
+       "formal temp out",
+       "a formal temp to back an out argument")
+PRAGMA(FORMAL_TEMP_OUT_CALLSITE,
+       npr,
+       "formal temp out callsite",
+       "a formal temp to handle out/inout writeback at the callsite")
 PRAGMA(FORWARDING_FN, npr, "forwarding function", ncm)
 PRAGMA(FUNCTION_CLASS, npr, "function class", "function class representation")
-PRAGMA(FUNCTION_TERMINATES_PROGRAM, ypr, "function terminates program", "function that causes the program to exit")
-PRAGMA(GENERATE_SIGNATURE, ypr, "generate signature", "compiler should codegen a function signature")
+PRAGMA(FUNCTION_TERMINATES_PROGRAM,
+       ypr,
+       "function terminates program",
+       "function that causes the program to exit")
+PRAGMA(GENERATE_SIGNATURE,
+       ypr,
+       "generate signature",
+       "compiler should codegen a function signature")
 // When applied to an argument, this flag means that the arg accepts a value
 // but has unspecified type.
 PRAGMA(GENERIC, npr, "generic", "generic types, functions and arguments")
-PRAGMA(DELAY_GENERIC_EXPANSION, npr, "delay instantiation", "generics instances whose instantiation  will be determined shortly")
+PRAGMA(DELAY_GENERIC_EXPANSION,
+       npr,
+       "delay instantiation",
+       "generics instances whose instantiation  will be determined shortly")
 PRAGMA(GEN_MAIN_FUNC, npr, "generated main", "compiler generated main function")
 
-PRAGMA(GET_LINE_NUMBER, ypr, "get line number", "replace calls to this function with the line number of the call")
-PRAGMA(GET_FILE_NAME, ypr, "get file name", "replace calls to this function with the name of the file the call is in")
-PRAGMA(GET_FUNCTION_NAME, ypr, "get function name", "replace calls to this function with the name of the function that called it")
-PRAGMA(GET_MODULE_NAME, ypr, "get module name", "replace calls to this function with the name of the module the call was in")
+PRAGMA(GET_LINE_NUMBER,
+       ypr,
+       "get line number",
+       "replace calls to this function with the line number of the call")
+PRAGMA(
+  GET_FILE_NAME,
+  ypr,
+  "get file name",
+  "replace calls to this function with the name of the file the call is in")
+PRAGMA(
+  GET_FUNCTION_NAME,
+  ypr,
+  "get function name",
+  "replace calls to this function with the name of the function that called it")
+PRAGMA(
+  GET_MODULE_NAME,
+  ypr,
+  "get module name",
+  "replace calls to this function with the name of the module the call was in")
 
-PRAGMA(GLOBAL_TYPE_SYMBOL, ypr, "global type symbol", "is accessible through a global type variable")
-PRAGMA(GLOBAL_VAR_BUILTIN, ypr, "global var builtin", "is accessible through a global symbol variable")
+PRAGMA(GLOBAL_TYPE_SYMBOL,
+       ypr,
+       "global type symbol",
+       "is accessible through a global type variable")
+PRAGMA(GLOBAL_VAR_BUILTIN,
+       ypr,
+       "global var builtin",
+       "is accessible through a global symbol variable")
 
 // GPU-related flags
-PRAGMA(GPU_KERNEL, npr, "GPU kernel", "GPU kernel function to be launched on the device")
-PRAGMA(GPU_CODEGEN, ypr, "codegen for GPU", "this function may execute on a GPU")
-PRAGMA(GPU_AND_CPU_CODEGEN, ypr, "codegen for CPU and GPU", "this function may execute on a GPU or on a CPU")
-PRAGMA(GPU_SPECIALIZATION, npr, "gpu specialization", "reachable only from `on (a GPU sublocale)`")
+PRAGMA(GPU_KERNEL,
+       npr,
+       "GPU kernel",
+       "GPU kernel function to be launched on the device")
+PRAGMA(GPU_CODEGEN,
+       ypr,
+       "codegen for GPU",
+       "this function may execute on a GPU")
+PRAGMA(GPU_AND_CPU_CODEGEN,
+       ypr,
+       "codegen for CPU and GPU",
+       "this function may execute on a GPU or on a CPU")
+PRAGMA(GPU_SPECIALIZATION,
+       npr,
+       "gpu specialization",
+       "reachable only from `on (a GPU sublocale)`")
 PRAGMA(NO_GPU_CODEGEN, ypr, "no gpu codegen", "this function is GPU-ineligible")
-PRAGMA(NOT_CALLED_FROM_GPU, ypr, "not called from gpu", "runtime error if this function is called from a gpu")
-PRAGMA(ASSERT_ON_GPU, ypr, "assert on gpu", "triggers runtime assertion if not running on device")
+PRAGMA(NOT_CALLED_FROM_GPU,
+       ypr,
+       "not called from gpu",
+       "runtime error if this function is called from a gpu")
+PRAGMA(ASSERT_ON_GPU,
+       ypr,
+       "assert on gpu",
+       "triggers runtime assertion if not running on device")
 
-PRAGMA(HAS_EDITION, npr, "has edition",
-       "applied to breaking changes to indicate which edition they are associated with")
+PRAGMA(HAS_EDITION,
+       npr,
+       "has edition",
+       "applied to breaking changes to indicate which edition they are "
+       "associated with")
 PRAGMA(HAS_POSTINIT, ypr, "has postinit", "type that has a postinit method")
-PRAGMA(HAS_RUNTIME_TYPE, ypr, "has runtime type", "type that has an associated runtime type")
-PRAGMA(IGNORE_RUNTIME_TYPE, ypr, "ignore runtime type", "use the static type only in the return value")
-PRAGMA(IGNORE_IN_GLOBAL_ANALYSIS, ypr, "ignore in global analysis", "ignore this function in global use-before-def analysis")
+PRAGMA(HAS_RUNTIME_TYPE,
+       ypr,
+       "has runtime type",
+       "type that has an associated runtime type")
+PRAGMA(IGNORE_RUNTIME_TYPE,
+       ypr,
+       "ignore runtime type",
+       "use the static type only in the return value")
+PRAGMA(IGNORE_IN_GLOBAL_ANALYSIS,
+       ypr,
+       "ignore in global analysis",
+       "ignore this function in global use-before-def analysis")
 PRAGMA(REDUCTION_TEMP, npr, "reduction temp variable", ncm)
 PRAGMA(RVV, npr, "RVV", "variable is the return value variable")
 PRAGMA(YVV, npr, "YVV", "variable is a yield value variable")
@@ -318,40 +425,82 @@ PRAGMA(IF_EXPR_RESULT, npr, "if-expr result", ncm)
 PRAGMA(IMPLICIT_ALIAS_FIELD, npr, "implicit alias field", ncm)
 PRAGMA(IMPLICIT_MODULE, npr, "implicit top-level module", ncm)
 PRAGMA(INCLUDED_MODULE, npr, "included sub-module", ncm)
-PRAGMA(INCOMPLETE, npr, "incomplete", "an extern type that is incomplete in the C/C++ sense")
+PRAGMA(INCOMPLETE,
+       npr,
+       "incomplete",
+       "an extern type that is incomplete in the C/C++ sense")
 PRAGMA(INDEX_VAR, npr, "index var", ncm)
 PRAGMA(INFER_CUSTOM_TYPE, ypr, "infer custom type", ncm)
 PRAGMA(IS_ARRAY_VIEW, npr, "is array view", "this expression is an array view")
 
 PRAGMA(MANAGER_HANDLE, npr, "manager handle", ncm)
-PRAGMA(MANAGER_RESOURCE_INFER_STORAGE, npr, "manager resource infer storage", ncm)
+PRAGMA(MANAGER_RESOURCE_INFER_STORAGE,
+       npr,
+       "manager resource infer storage",
+       ncm)
 
-PRAGMA(IFC_ANY_RETURN_INTENT, ypr, "ifc any return intent", "allow a function with any return intent to be a witness for this interface requirement")
+PRAGMA(IFC_ANY_RETURN_INTENT,
+       ypr,
+       "ifc any return intent",
+       "allow a function with any return intent to be a witness for this "
+       "interface requirement")
 // This can also mark a temp that serves as an intermediate step of
 // destructuring a tuple-typed INDEX_OF_INTEREST variable
 // into loop index variables.
-PRAGMA(INDEX_OF_INTEREST, npr, "an _indexOfInterest or chpl__followIdx variable", ncm)
-PRAGMA(INIT_COPY_FN,  ypr, "init copy fn", "init copy function")
+PRAGMA(INDEX_OF_INTEREST,
+       npr,
+       "an _indexOfInterest or chpl__followIdx variable",
+       ncm)
+PRAGMA(INIT_COPY_FN, ypr, "init copy fn", "init copy function")
 PRAGMA(INIT_TUPLE, ypr, "tuple init fn", ncm)
 PRAGMA(INLINE, npr, "inline", ncm)
 PRAGMA(INLINED_FN, npr, "inlined function", ncm)
-PRAGMA(INLINE_ITERATOR, npr, "inline iterator", "iterators that are always inlined, e.g., leaders")
+PRAGMA(INLINE_ITERATOR,
+       npr,
+       "inline iterator",
+       "iterators that are always inlined, e.g., leaders")
 PRAGMA(NO_INLINE, ypr, "no inline", ncm)
 PRAGMA(INSERT_AUTO_DESTROY, ypr, "insert auto destroy", ncm)
-PRAGMA(INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW, npr, "insert auto destroy for explicit new", ncm)
+PRAGMA(INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW,
+       npr,
+       "insert auto destroy for explicit new",
+       ncm)
 PRAGMA(INSERT_LINE_FILE_INFO, ypr, "insert line file info", ncm)
-PRAGMA(INSTANTIATED_PARAM, npr, "instantiated param", "this formal is bound to a param")
-PRAGMA(INSTANTIATED_GENERIC, npr, "instantiated generic", "this is an instantiation of a generic")
-PRAGMA(INSTANTIATED_FROM_ANY, npr, "instantiated from any", "this is an instantiation from any type")
-PRAGMA(INTENT_REF_MAYBE_CONST_FORMAL, ypr, "intent ref maybe const formal", "The intent for this formal is ref if it is modified, const ref otherwise")
+PRAGMA(INSTANTIATED_PARAM,
+       npr,
+       "instantiated param",
+       "this formal is bound to a param")
+PRAGMA(INSTANTIATED_GENERIC,
+       npr,
+       "instantiated generic",
+       "this is an instantiation of a generic")
+PRAGMA(INSTANTIATED_FROM_ANY,
+       npr,
+       "instantiated from any",
+       "this is an instantiation from any type")
+PRAGMA(
+  INTENT_REF_MAYBE_CONST_FORMAL,
+  ypr,
+  "intent ref maybe const formal",
+  "The intent for this formal is ref if it is modified, const ref otherwise")
 PRAGMA(IMPLEMENTS_WRAPPER, npr, "ImplementsStmt wrapper", ncm)
-PRAGMA(INVISIBLE_FN, npr, "invisible fn", "invisible function (not a candidate for resolution)")
+PRAGMA(INVISIBLE_FN,
+       npr,
+       "invisible fn",
+       "invisible function (not a candidate for resolution)")
 PRAGMA(ITERATOR_CLASS, npr, "iterator class", ncm)
 PRAGMA(ITERATOR_FN, npr, "iterator fn", ncm)
 PRAGMA(ITERATOR_RECORD, npr, "iterator record", ncm)
-PRAGMA(ITERATOR_WITH_ON, npr, "iterator with on", "iterator which contains an on block")
+PRAGMA(ITERATOR_WITH_ON,
+       npr,
+       "iterator with on",
+       "iterator which contains an on block")
 
-PRAGMA(ALWAYS_RESOLVE, ypr, "always resolve function", "keep this function even if it is not called so it can be called during codegen e.g.")
+PRAGMA(ALWAYS_RESOLVE,
+       ypr,
+       "always resolve function",
+       "keep this function even if it is not called so it can be called during "
+       "codegen e.g.")
 
 // In resolution, functions marked as last-resort are considered only if
 // no functions without that flag are found. This usually is used to create
@@ -380,8 +529,14 @@ PRAGMA(LINE_NUMBER_OK, ypr, "lineno ok", ncm)
 PRAGMA(LLVM_READNONE, ypr, "llvm readnone", ncm)
 PRAGMA(LLVM_RETURN_NOALIAS, ypr, "llvm return noalias", ncm)
 
-PRAGMA(LOCALE_MODEL_ALLOC, ypr, "locale model alloc", "locale model specific alloc")
-PRAGMA(LOCALE_MODEL_FREE, ypr, "locale model free", "locale model specific free")
+PRAGMA(LOCALE_MODEL_ALLOC,
+       ypr,
+       "locale model alloc",
+       "locale model specific alloc")
+PRAGMA(LOCALE_MODEL_FREE,
+       ypr,
+       "locale model free",
+       "locale model specific free")
 PRAGMA(INC_RUNNING_TASK, ypr, "inc running task", "running task incrementer")
 PRAGMA(DEC_RUNNING_TASK, ypr, "dec running task", "running task decrementer")
 PRAGMA(LOCALE_PRIVATE, ypr, "locale private", ncm)
@@ -392,50 +547,114 @@ PRAGMA(LOCALE_PRIVATE, ypr, "locale private", ncm)
 // narrow return value.
 PRAGMA(LOCAL_ARGS, ypr, "local args", "arguments and return value are narrow")
 PRAGMA(LOCAL_FIELD, ypr, "local field", "field is local to aggregate type")
-PRAGMA(LOCAL_FN, ypr, "local fn", "function is completely local (no communication)")
+PRAGMA(LOCAL_FN,
+       ypr,
+       "local fn",
+       "function is completely local (no communication)")
 PRAGMA(LOCAL_ON, npr, "local on", ncm)
 PRAGMA(LOOP_BODY_ARGUMENT_CLASS, npr, "loop body argument class", ncm)
 PRAGMA(MANAGED_POINTER, ypr, "managed pointer", "e.g. Owned and Shared")
-PRAGMA(MANAGED_POINTER_NONNILABLE, npr, "managed pointer nonnilable", "e.g. non-nilable Owned and Shared")
-PRAGMA(MARKED_GENERIC, npr, "marked generic", "marked generic using the type query syntax")
-PRAGMA(RET_TYPE_MARKED_GENERIC, npr, "ret type marked generic", "ret type marked generic with (?)")
-PRAGMA(SUPERCLASS_MARKED_GENERIC, npr, "superclass marked generic", "superclass is marked generic")
-PRAGMA(MAYBE_ARRAY_TYPE, npr, "maybe array type", "function may be computing array type")
-PRAGMA(MAYBE_COPY_ELIDED, npr, "maybe copy elided", "symbol might be dead early due to copy elision")
+PRAGMA(MANAGED_POINTER_NONNILABLE,
+       npr,
+       "managed pointer nonnilable",
+       "e.g. non-nilable Owned and Shared")
+PRAGMA(MARKED_GENERIC,
+       npr,
+       "marked generic",
+       "marked generic using the type query syntax")
+PRAGMA(RET_TYPE_MARKED_GENERIC,
+       npr,
+       "ret type marked generic",
+       "ret type marked generic with (?)")
+PRAGMA(SUPERCLASS_MARKED_GENERIC,
+       npr,
+       "superclass marked generic",
+       "superclass is marked generic")
+PRAGMA(MAYBE_ARRAY_TYPE,
+       npr,
+       "maybe array type",
+       "function may be computing array type")
+PRAGMA(MAYBE_COPY_ELIDED,
+       npr,
+       "maybe copy elided",
+       "symbol might be dead early due to copy elision")
 PRAGMA(MAYBE_PARAM, npr, "maybe param", "symbol can resolve to a param")
 PRAGMA(MAYBE_REF, npr, "maybe ref", "symbol can resolve to a ref")
-PRAGMA(SPLIT_INITED, npr, "split inited", "variable was initialized with split init")
-PRAGMA(USED_IN_TYPE, npr, "used in type", "call-expr temporary used in creating a type")
+PRAGMA(SPLIT_INITED,
+       npr,
+       "split inited",
+       "variable was initialized with split init")
+PRAGMA(USED_IN_TYPE,
+       npr,
+       "used in type",
+       "call-expr temporary used in creating a type")
 PRAGMA(MAYBE_TYPE, npr, "maybe type", "symbol can resolve to a type")
-PRAGMA(MEMORY_ORDER_TYPE, ypr, "memory order type", "type implementing chpl memory order (normally called memoryOrder)")
-PRAGMA(C_MEMORY_ORDER_TYPE, ypr, "c memory order type", "type implementing c memory order (normally called memory_order)")
+PRAGMA(MEMORY_ORDER_TYPE,
+       ypr,
+       "memory order type",
+       "type implementing chpl memory order (normally called memoryOrder)")
+PRAGMA(C_MEMORY_ORDER_TYPE,
+       ypr,
+       "c memory order type",
+       "type implementing c memory order (normally called memory_order)")
 PRAGMA(METHOD, npr, "method", "function that is a method")
-PRAGMA(METHOD_PRIMARY, npr, "primary method", "function that is a method and defined in type declaration")
+PRAGMA(METHOD_PRIMARY,
+       npr,
+       "primary method",
+       "function that is a method and defined in type declaration")
 
 // marks top-level modules mentioned on the compiler command line
-PRAGMA(MODULE_FROM_COMMAND_LINE_FILE, npr, "module from command line file", "This is a module that came from a file named on the compiler command line")
+PRAGMA(
+  MODULE_FROM_COMMAND_LINE_FILE,
+  npr,
+  "module from command line file",
+  "This is a module that came from a file named on the compiler command line")
 
 PRAGMA(MODULE_INIT, npr, "module init", "a module init function")
 PRAGMA(MODULE_DEINIT, npr, "module deinit", "a module deinit function")
 
-PRAGMA(MODULE_INCLUDED_BY_DEFAULT, ypr, "module included by default", "module is included by default")
+PRAGMA(MODULE_INCLUDED_BY_DEFAULT,
+       ypr,
+       "module included by default",
+       "module is included by default")
 
 // This flag marks the result of an autoCopy as necessary.
 // Necessary autoCopies are not removed by the removeUnnecessaryAutoCopyCalls optimization.
-PRAGMA(NECESSARY_AUTO_COPY, npr, "necessary auto copy", "a variable containing a necessary autoCopy")
+PRAGMA(NECESSARY_AUTO_COPY,
+       npr,
+       "necessary auto copy",
+       "a variable containing a necessary autoCopy")
 PRAGMA(NEW_WRAPPER, npr, "_new wrapper", ncm)
 PRAGMA(IGNORE_NOINIT, ypr, "ignore noinit", "this type must be initialized")
-PRAGMA(NON_BLOCKING, npr, "non blocking", "with ON/ON_BLOCK, non-blocking on functions")
+PRAGMA(NON_BLOCKING,
+       npr,
+       "non blocking",
+       "with ON/ON_BLOCK, non-blocking on functions")
 PRAGMA(NO_AUTO_DESTROY, ypr, "no auto destroy", ncm)
 PRAGMA(NO_FN_BODY, npr, "no fn body", "function has no body")
-PRAGMA(NO_CAPTURE_FOR_TASKING, npr, "no capture for tasking", "does not need to be captured before spawning tasks")
-PRAGMA(NO_CODEGEN, ypr, "no codegen", "do not generate e.g. C code defining this symbol")
-PRAGMA(NO_COPY, ypr, "no copy", "do not apply chpl__initCopy to initialization of a variable")
-PRAGMA(ERROR_ON_COPY, ypr, "error on copy", "error if actual is copied at callsite")
+PRAGMA(NO_CAPTURE_FOR_TASKING,
+       npr,
+       "no capture for tasking",
+       "does not need to be captured before spawning tasks")
+PRAGMA(NO_CODEGEN,
+       ypr,
+       "no codegen",
+       "do not generate e.g. C code defining this symbol")
+PRAGMA(NO_COPY,
+       ypr,
+       "no copy",
+       "do not apply chpl__initCopy to initialization of a variable")
+PRAGMA(ERROR_ON_COPY,
+       ypr,
+       "error on copy",
+       "error if actual is copied at callsite")
 PRAGMA(NO_COPY_RETURN, ypr, "no copy return", ncm)
 PRAGMA(NO_COPY_RETURNS_OWNED, ypr, "no copy returns owned", ncm)
 PRAGMA(NO_DEFAULT_FUNCTIONS, ypr, "no default functions", ncm)
-PRAGMA(NO_IMPLICIT_COPY, ypr, "no implicit copy", "function does not require autoCopy/autoDestroy")
+PRAGMA(NO_IMPLICIT_COPY,
+       ypr,
+       "no implicit copy",
+       "function does not require autoCopy/autoDestroy")
 
 // This flag disables initialization entirely. In contrast, `= noinit`
 // will possibly run a `proc noinit` initializer.
@@ -451,10 +670,19 @@ PRAGMA(NO_RVF, ypr, "do not RVF", ncm)
 PRAGMA(NO_WIDE_CLASS, ypr, "no wide class", ncm)
 
 // See ORDER_INDEPENDENT_YIELDING_LOOPS below
-PRAGMA(NOT_ORDER_INDEPENDENT_YIELDING_LOOPS, ypr, "not order independent yielding loops", "yielding loops in iterator itself are not order independent")
+PRAGMA(NOT_ORDER_INDEPENDENT_YIELDING_LOOPS,
+       ypr,
+       "not order independent yielding loops",
+       "yielding loops in iterator itself are not order independent")
 
-PRAGMA(LOOP_INDICES_MUTABLE, ypr, "loop indices mutable", "do not opportunistically mark loop indices as 'const'")
-PRAGMA(LOOP_INDEX_MUTABLE, ypr, "loop index mutable", "do not mark this loop index as 'const'")
+PRAGMA(LOOP_INDICES_MUTABLE,
+       ypr,
+       "loop indices mutable",
+       "do not opportunistically mark loop indices as 'const'")
+PRAGMA(LOOP_INDEX_MUTABLE,
+       ypr,
+       "loop index mutable",
+       "do not mark this loop index as 'const'")
 
 // See POD below
 PRAGMA(NOT_POD, ypr, "not plain old data", "bit copy overridden")
@@ -512,7 +740,10 @@ PRAGMA(OUTSIDE_TRY, npr, "outside try", ncm)
 // So this applies only to code within this specific iterator.
 // It should generally be set on serial, standalone, and follower iterators.
 // Not setting it implies that the loop has a vectorization hazard.
-PRAGMA(ORDER_INDEPENDENT_YIELDING_LOOPS, ypr, "order independent yielding loops", "yielding loops in iterator itself are order independent")
+PRAGMA(ORDER_INDEPENDENT_YIELDING_LOOPS,
+       ypr,
+       "order independent yielding loops",
+       "yielding loops in iterator itself are order independent")
 
 PRAGMA(OWNED, ypr, "owned", "owned class instance for lifetime checking")
 
@@ -538,57 +769,133 @@ PRAGMA(POD, ypr, "plain old data", "data can be bit copied")
 // These will be allocated outside of the loop in the IR (with an alloca
 // instruction). So, it should mark all variables other than those that
 // are loop-local stack variables inside of an order-independent loop.
-PRAGMA(POINTS_OUTSIDE_ORDER_INDEPENDENT_LOOP, npr, "points outside order independent loop", "points to memory other than local variables inside order independent loop")
+PRAGMA(
+  POINTS_OUTSIDE_ORDER_INDEPENDENT_LOOP,
+  npr,
+  "points outside order independent loop",
+  "points to memory other than local variables inside order independent loop")
 
-PRAGMA(PRIMITIVE_TYPE, ypr, "primitive type", "attached to primitive types to keep them from being deleted")
+PRAGMA(PRIMITIVE_TYPE,
+       ypr,
+       "primitive type",
+       "attached to primitive types to keep them from being deleted")
 PRAGMA(PRINT_MODULE_INIT_FN, ypr, "print module init fn", ncm)
-PRAGMA(PRINT_MODULE_INIT_INDENT_LEVEL, ypr, "print module init indent level", ncm)
+PRAGMA(PRINT_MODULE_INIT_INDENT_LEVEL,
+       ypr,
+       "print module init indent level",
+       ncm)
 PRAGMA(PRIVATE, npr, "private", ncm)
 PRAGMA(PROMOTION_WRAPPER, npr, "promotion wrapper", ncm)
 PRAGMA(PROMOTION_PROTO_FIELD, npr, "temporary promotion field", ncm)
 PRAGMA(PROMOTION_ITERATOR_RECORD, npr, "promotion iterator record", ncm)
 PRAGMA(PROTOTYPE_MODULE, npr, "prototype module", ncm)
 PRAGMA(RANGE, ypr, "range", "indicates the range type")
-PRAGMA(RECURSIVE_ITERATOR, npr, "recursive iterator", "iterators which call themselves")
+PRAGMA(RECURSIVE_ITERATOR,
+       npr,
+       "recursive iterator",
+       "iterators which call themselves")
 PRAGMA(REDUCESCANOP, ypr, "ReduceScanOp", "the ReduceScanOp class")
 PRAGMA(REF, ypr, "ref", ncm)
 PRAGMA(REF_IF_MODIFIED, npr, "ref if modified", ncm)
-PRAGMA(REF_FOR_CONST_FIELD_OF_THIS, npr, "reference to a const field of 'this'", ncm)
+PRAGMA(REF_FOR_CONST_FIELD_OF_THIS,
+       npr,
+       "reference to a const field of 'this'",
+       ncm)
 PRAGMA(REF_ITERATOR_CLASS, npr, "ref iterator class", ncm)
 // "ref to const" is like Chapel's 'const ref' variable:
 // * it is illegal to modify the referenced thing through this variable
 // * the referenced thing may change, observably through this variable
-PRAGMA(REF_TO_CONST, npr, "reference to a const", "a temp or a function that returns a reference to a Chapel const, e.g. an accessor to a const field or its result")
-PRAGMA(REF_TO_CONST_WHEN_CONST_THIS, ypr, "reference to const when const this", "a function that returns a reference to a Chapel const when 'this' is const")
-PRAGMA(REF_TO_IMMUTABLE, npr, "ref to immutable", "a reference to something that never changes during its lifetime")
+PRAGMA(REF_TO_CONST,
+       npr,
+       "reference to a const",
+       "a temp or a function that returns a reference to a Chapel const, e.g. "
+       "an accessor to a const field or its result")
+PRAGMA(
+  REF_TO_CONST_WHEN_CONST_THIS,
+  ypr,
+  "reference to const when const this",
+  "a function that returns a reference to a Chapel const when 'this' is const")
+PRAGMA(REF_TO_IMMUTABLE,
+       npr,
+       "ref to immutable",
+       "a reference to something that never changes during its lifetime")
 PRAGMA(REF_VAR, ypr, "ref var", "reference variable")
 PRAGMA(REF_TEMP, npr, "ref temp", "compiler-inserted reference temporary")
-PRAGMA(REMOVABLE_ARRAY_ACCESS, ypr, "removable array access", "array access calls that can be replaced with a reference")
+PRAGMA(REMOVABLE_ARRAY_ACCESS,
+       ypr,
+       "removable array access",
+       "array access calls that can be replaced with a reference")
 PRAGMA(REMOVABLE_AUTO_COPY, ypr, "removable auto copy", ncm)
 PRAGMA(REMOVABLE_AUTO_DESTROY, ypr, "removable auto destroy", ncm)
 PRAGMA(COMPILER_ADDED_REMOTE_FENCE, ypr, "compiler added remote fence", ncm)
 PRAGMA(RESOLVED, npr, "resolved", "this function has been resolved")
-PRAGMA(RESOLVED_EARLY, npr, "resolved early", "this symbol has been resolved early")
-PRAGMA(PRECOMPILED, npr, "precompiled in library file", "this function has already been compiled in a library file")
+PRAGMA(RESOLVED_EARLY,
+       npr,
+       "resolved early",
+       "this symbol has been resolved early")
+PRAGMA(PRECOMPILED,
+       npr,
+       "precompiled in library file",
+       "this function has already been compiled in a library file")
 PRAGMA(RETARG, npr, "symbol is a _retArg", ncm)
-PRAGMA(RETURNS_ALIASING_ARRAY, ypr, "fn returns aliasing array", "array alias/slice/reindex/rank change function")
-PRAGMA(FN_RETURNS_ITERATOR, ypr, "fn returns iterator", "proc that can return an iterator instead of promoting it to an array")
-PRAGMA(FN_UNORDERED_SAFE, ypr, "fn unordered safe", "function does not inhibit unordered optimization")
-PRAGMA(FN_SYNCHRONIZATION_FREE, ypr, "fn synchronization free", "function does not include any task synchronization")
-PRAGMA(RETURNS_INFINITE_LIFETIME, ypr, "fn returns infinite lifetime", "function returns a pointer with infinite lifetime for lifetime analysis")
-PRAGMA(RETURN_SCOPE, npr, "return scope", "indicates an argument that can be returned without error in lifetime checking")
-PRAGMA(RETURN_NOT_OWNED, ypr, "return not owned", "scope for return value should ignore owned fields")
+PRAGMA(RETURNS_ALIASING_ARRAY,
+       ypr,
+       "fn returns aliasing array",
+       "array alias/slice/reindex/rank change function")
+PRAGMA(FN_RETURNS_ITERATOR,
+       ypr,
+       "fn returns iterator",
+       "proc that can return an iterator instead of promoting it to an array")
+PRAGMA(FN_UNORDERED_SAFE,
+       ypr,
+       "fn unordered safe",
+       "function does not inhibit unordered optimization")
+PRAGMA(FN_SYNCHRONIZATION_FREE,
+       ypr,
+       "fn synchronization free",
+       "function does not include any task synchronization")
+PRAGMA(
+  RETURNS_INFINITE_LIFETIME,
+  ypr,
+  "fn returns infinite lifetime",
+  "function returns a pointer with infinite lifetime for lifetime analysis")
+PRAGMA(RETURN_SCOPE,
+       npr,
+       "return scope",
+       "indicates an argument that can be returned without error in lifetime "
+       "checking")
+PRAGMA(RETURN_NOT_OWNED,
+       ypr,
+       "return not owned",
+       "scope for return value should ignore owned fields")
 // See buildRuntimeTypeToValueFns() in functionResolution.cpp for more info on RUNTIME_TYPE_INIT_FN
-PRAGMA(RUNTIME_TYPE_INIT_FN, ypr, "runtime type init fn", "function for initializing runtime time types")
-PRAGMA(RUNTIME_TYPE_VALUE, npr, "runtime type value", "associated runtime type (value)")
+PRAGMA(RUNTIME_TYPE_INIT_FN,
+       ypr,
+       "runtime type init fn",
+       "function for initializing runtime time types")
+PRAGMA(RUNTIME_TYPE_VALUE,
+       npr,
+       "runtime type value",
+       "associated runtime type (value)")
 PRAGMA(SAFE, ypr, "safe", "safe (activate lifetime checking)")
 PRAGMA(SCOPE, npr, "scope", "scoped (lifetime checking like a local variable)")
-PRAGMA(SHOULD_NOT_PASS_BY_REF, npr, "should not pass by ref", "this symbol should be passed by value (not by reference) for performance, not for correctness")
+PRAGMA(SHOULD_NOT_PASS_BY_REF,
+       npr,
+       "should not pass by ref",
+       "this symbol should be passed by value (not by reference) for "
+       "performance, not for correctness")
 
 PRAGMA(SUPER_CLASS, npr, "super class", ncm)
 PRAGMA(SUPER_TEMP, npr, "temporary of super field", ncm)
-PRAGMA(SUPPRESS_LVALUE_ERRORS, ypr, "suppress lvalue error", "do not report an lvalue error if it occurs in a function with this flag")
-PRAGMA(SUPPRESS_GENERIC_ACTUAL_WARNING, ypr, "suppress generic actual warning", "do not report a generic actual warning for calls to this function")
+PRAGMA(
+  SUPPRESS_LVALUE_ERRORS,
+  ypr,
+  "suppress lvalue error",
+  "do not report an lvalue error if it occurs in a function with this flag")
+PRAGMA(SUPPRESS_GENERIC_ACTUAL_WARNING,
+       ypr,
+       "suppress generic actual warning",
+       "do not report a generic actual warning for calls to this function")
 
 // represents an interface formal, assoc. type, or required function
 // within a constrained generic function
@@ -613,57 +920,165 @@ PRAGMA(TUPLE, ypr, "tuple", ncm)
 PRAGMA(TUPLE_CAST_FN, ypr, "tuple cast fn", ncm)
 PRAGMA(TUPLE_WITH_REF, npr, "tuple contains ref", ncm)
 PRAGMA(STAR_TUPLE, ypr, "star tuple", "mark tuple types as star tuple types")
-PRAGMA(STAR_TUPLE_ACCESSOR, ypr, "star tuple accessor", "this function for star tuple types")
+PRAGMA(STAR_TUPLE_ACCESSOR,
+       ypr,
+       "star tuple accessor",
+       "this function for star tuple types")
 
-PRAGMA(TYPE_ASSIGN_FROM_CONST, npr, "type has = from const", "type supports assignment from a const rhs")
-PRAGMA(TYPE_ASSIGN_FROM_REF, npr, "type has = from ref", "type supports assignment from a potentially non-const rhs")
-PRAGMA(TYPE_INIT_EQUAL_FROM_CONST,  npr, "type has init= from const", "type supports init= with const other")
-PRAGMA(TYPE_INIT_EQUAL_FROM_REF,  npr, "type has init= from ref", "type supports init= from a potentially non-const other argument")
-PRAGMA(TYPE_DEFAULT_VALUE, npr, "type has default value", "type has a default value")
-PRAGMA(TYPE_NO_DEFAULT_VALUE, npr, "type has no default value", "type has no default value")
+PRAGMA(TYPE_ASSIGN_FROM_CONST,
+       npr,
+       "type has = from const",
+       "type supports assignment from a const rhs")
+PRAGMA(TYPE_ASSIGN_FROM_REF,
+       npr,
+       "type has = from ref",
+       "type supports assignment from a potentially non-const rhs")
+PRAGMA(TYPE_INIT_EQUAL_FROM_CONST,
+       npr,
+       "type has init= from const",
+       "type supports init= with const other")
+PRAGMA(TYPE_INIT_EQUAL_FROM_REF,
+       npr,
+       "type has init= from ref",
+       "type supports init= from a potentially non-const other argument")
+PRAGMA(TYPE_DEFAULT_VALUE,
+       npr,
+       "type has default value",
+       "type has a default value")
+PRAGMA(TYPE_NO_DEFAULT_VALUE,
+       npr,
+       "type has no default value",
+       "type has no default value")
 
-PRAGMA(TYPE_DEFAULT_INIT_EQUAL, npr, "type uses default init=", "type uses compiler-generated default init=")
-PRAGMA(TYPE_CUSTOM_INIT_EQUAL, npr, "type uses custom init=", "type has user-provided custom init=")
-PRAGMA(TYPE_DEFAULT_ASSIGN, npr, "type uses default =", "type uses compiler-generated default =")
-PRAGMA(TYPE_CUSTOM_ASSIGN, npr, "type uses custom =", "type has user-provided custom =")
+PRAGMA(TYPE_DEFAULT_INIT_EQUAL,
+       npr,
+       "type uses default init=",
+       "type uses compiler-generated default init=")
+PRAGMA(TYPE_CUSTOM_INIT_EQUAL,
+       npr,
+       "type uses custom init=",
+       "type has user-provided custom init=")
+PRAGMA(TYPE_DEFAULT_ASSIGN,
+       npr,
+       "type uses default =",
+       "type uses compiler-generated default =")
+PRAGMA(TYPE_CUSTOM_ASSIGN,
+       npr,
+       "type uses custom =",
+       "type has user-provided custom =")
 
-PRAGMA(TYPE_VARIABLE, npr, "type variable", "contains a type instead of a value")
-PRAGMA(UNCHECKED_THROWS,  ypr, "unchecked throws", "function throws but handling the errors is not required even in strict mode")
-PRAGMA(UNREF_FN,  ypr, "unref fn", "function to remove reference fields from tuples or copy array slices when returning")
-PRAGMA(UNSAFE,  ypr, "unsafe", "unsafe (disable lifetime and nilability checking)")
-PRAGMA(UNSTABLE, npr, "@unstable", "applied to symbols that may misbehave or are subject to change in the future, hence unstable")
-PRAGMA(IGNORE_TRANSFER_ERRORS,  ypr, "ignore transfer errors", "ignore errors for ownership transfer from non-nilable owned")
-PRAGMA(FIND_USER_LINE,  ypr, "find user line", "report errors with user line number")
-PRAGMA(USER_VARIABLE_NAME,  npr, "user variable name", "temporary uses name of user variable")
-PRAGMA(VECTORIZE_YIELDING_LOOPS, ypr, "vectorize yielding loops", "used to explicitly vectorize yielding loops in iterators")
+PRAGMA(TYPE_VARIABLE,
+       npr,
+       "type variable",
+       "contains a type instead of a value")
+PRAGMA(
+  UNCHECKED_THROWS,
+  ypr,
+  "unchecked throws",
+  "function throws but handling the errors is not required even in strict mode")
+PRAGMA(UNREF_FN,
+       ypr,
+       "unref fn",
+       "function to remove reference fields from tuples or copy array slices "
+       "when returning")
+PRAGMA(UNSAFE,
+       ypr,
+       "unsafe",
+       "unsafe (disable lifetime and nilability checking)")
+PRAGMA(UNSTABLE,
+       npr,
+       "@unstable",
+       "applied to symbols that may misbehave or are subject to change in the "
+       "future, hence unstable")
+PRAGMA(IGNORE_TRANSFER_ERRORS,
+       ypr,
+       "ignore transfer errors",
+       "ignore errors for ownership transfer from non-nilable owned")
+PRAGMA(FIND_USER_LINE,
+       ypr,
+       "find user line",
+       "report errors with user line number")
+PRAGMA(USER_VARIABLE_NAME,
+       npr,
+       "user variable name",
+       "temporary uses name of user variable")
+PRAGMA(VECTORIZE_YIELDING_LOOPS,
+       ypr,
+       "vectorize yielding loops",
+       "used to explicitly vectorize yielding loops in iterators")
 PRAGMA(VIRTUAL, npr, "virtual", ncm)
-PRAGMA(VOID_NO_RETURN_VALUE, npr, "no return value for void", "function does not return a value if the return type is void")
+PRAGMA(VOID_NO_RETURN_VALUE,
+       npr,
+       "no return value for void",
+       "function does not return a value if the return type is void")
 // Used to mark where a compiler generated flag was removed (but is desired
 // elsewhere).
-PRAGMA(WAS_COMPILER_GENERATED, npr, "was compiler generated", "used to be marked compiler generated")
+PRAGMA(WAS_COMPILER_GENERATED,
+       npr,
+       "was compiler generated",
+       "used to be marked compiler generated")
 PRAGMA(WIDE_REF, npr, "wide", ncm)
 PRAGMA(WIDE_CLASS, npr, "wide class", ncm)
 PRAGMA(WRAPPER, npr, "wrapper", "wrapper function")
-PRAGMA(WRAPPER_NEEDS_START_FENCE, npr, "wrapper needs start fence", "add PRIM_START_RMEM_FENCE to the start of the wrapper function")
-PRAGMA(WRAPPER_NEEDS_FINISH_FENCE, npr, "wrapper needs finish fence", "add PRIM_FINISH_RMEM_FENCE to the end of the wrapper function")
-PRAGMA(WRAP_WRITTEN_FORMAL, npr, "wrap written formal", "formal argument for wrapper for out/inout intent")
-PRAGMA(YIELD_WITHIN_ON, npr, "yield within on", "iterator that yields within an on")
-
+PRAGMA(WRAPPER_NEEDS_START_FENCE,
+       npr,
+       "wrapper needs start fence",
+       "add PRIM_START_RMEM_FENCE to the start of the wrapper function")
+PRAGMA(WRAPPER_NEEDS_FINISH_FENCE,
+       npr,
+       "wrapper needs finish fence",
+       "add PRIM_FINISH_RMEM_FENCE to the end of the wrapper function")
+PRAGMA(WRAP_WRITTEN_FORMAL,
+       npr,
+       "wrap written formal",
+       "formal argument for wrapper for out/inout intent")
+PRAGMA(YIELD_WITHIN_ON,
+       npr,
+       "yield within on",
+       "iterator that yields within an on")
 
 // These flags are for use with PRIM_OPTIMIZATION_INFO
-PRAGMA(OPT_INFO_LHS_OUTLIVES_FORALL, npr, "lhs outlives forall", "lhs or destination outlives forall")
-PRAGMA(OPT_INFO_RHS_OUTLIVES_FORALL, npr, "rhs outlives forall", "rhs or sourceoutlives forall")
-PRAGMA(OPT_INFO_NO_TASK_PRIVATE, npr, "forall no task private", "forall does not use task private storage")
-PRAGMA(OPT_INFO_NO_BLOCKING, npr, "forall not blocking", "forall does not have blocking synchronization")
+PRAGMA(OPT_INFO_LHS_OUTLIVES_FORALL,
+       npr,
+       "lhs outlives forall",
+       "lhs or destination outlives forall")
+PRAGMA(OPT_INFO_RHS_OUTLIVES_FORALL,
+       npr,
+       "rhs outlives forall",
+       "rhs or sourceoutlives forall")
+PRAGMA(OPT_INFO_NO_TASK_PRIVATE,
+       npr,
+       "forall no task private",
+       "forall does not use task private storage")
+PRAGMA(OPT_INFO_NO_BLOCKING,
+       npr,
+       "forall not blocking",
+       "forall does not have blocking synchronization")
 
-PRAGMA(DESERIALIZATION_BLOCK_MARKER, npr, "marks deserialization options", "then block is var else block is ref serialization")
+PRAGMA(DESERIALIZATION_BLOCK_MARKER,
+       npr,
+       "marks deserialization options",
+       "then block is var else block is ref serialization")
 
-PRAGMA(EXEMPT_INSTANTIATION_LIMIT, ypr, "fn exempt instantiation limit", "compiler will not limit the number of instantiations of this function")
+PRAGMA(EXEMPT_INSTANTIATION_LIMIT,
+       ypr,
+       "fn exempt instantiation limit",
+       "compiler will not limit the number of instantiations of this function")
 
-PRAGMA(COMPUTE_UNIFIED_TYPE_HELP, ypr, "compute unified type helper", "identify the internal chpl_computeUnifiedTypeHelp() routine")
-PRAGMA(DO_NOT_RESOLVE_UNLESS_CALLED, npr, "do not resolve unless called", "do not resolve this function unless it is called (e.g. if it contains only compilerError)")
+PRAGMA(COMPUTE_UNIFIED_TYPE_HELP,
+       ypr,
+       "compute unified type helper",
+       "identify the internal chpl_computeUnifiedTypeHelp() routine")
+PRAGMA(DO_NOT_RESOLVE_UNLESS_CALLED,
+       npr,
+       "do not resolve unless called",
+       "do not resolve this function unless it is called (e.g. if it contains "
+       "only compilerError)")
 PRAGMA(TASK_PRIVATE_VARIABLE, npr, "task private variable", ncm)
-PRAGMA(TFI_BORROW_TEMP, npr, "temporary for storing borrow of a shadow var", ncm)
+PRAGMA(TFI_BORROW_TEMP,
+       npr,
+       "temporary for storing borrow of a shadow var",
+       ncm)
 PRAGMA(EXEMPT_REF_PROPAGATION, npr, "exempt variable from ref propagation", ncm)
 
 #undef ypr

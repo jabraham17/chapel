@@ -113,7 +113,7 @@ class IdAndFlags {
       simplification to avoid growing the size. */
   class FlagSet {
    private:
-     llvm::SmallVector<Flags, 4> flagVec;
+    llvm::SmallVector<Flags, 4> flagVec;
 
    public:
     FlagSet() = default;
@@ -159,11 +159,15 @@ class IdAndFlags {
   Flags flags_ = 0;
 
  public:
-  IdAndFlags() { }
+  IdAndFlags() {}
 
-  IdAndFlags(ID id, bool isPublic, bool isMethodOrField,
-             bool isParenfulFunction, bool isMethod,
-             bool isModule, bool isType);
+  IdAndFlags(ID id,
+             bool isPublic,
+             bool isMethodOrField,
+             bool isParenfulFunction,
+             bool isMethod,
+             bool isModule,
+             bool isType);
 
   static IdAndFlags createForModule(ID id, bool isPublic) {
     return IdAndFlags(std::move(id),
@@ -206,12 +210,9 @@ class IdAndFlags {
   }
 
   bool operator==(const IdAndFlags& other) const {
-    return id_ == other.id_ &&
-           flags_ == other.flags_;
+    return id_ == other.id_ && flags_ == other.flags_;
   }
-  bool operator!=(const IdAndFlags& other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const IdAndFlags& other) const { return !(*this == other); }
 
   size_t hash() const {
     size_t ret = 0;
@@ -220,29 +221,15 @@ class IdAndFlags {
     return ret;
   }
 
-  void mark(Context* context) const {
-    id_.mark(context);
-  }
+  void mark(Context* context) const { id_.mark(context); }
 
   const ID& id() const { return id_; }
-  bool isPublic() const {
-    return (flags_ & PUBLIC) != 0;
-  }
-  bool isMethodOrField() const {
-    return (flags_ & METHOD_FIELD) != 0;
-  }
-  bool isMethod() const {
-    return (flags_ & METHOD) != 0;
-  }
-  bool isParenfulFunction() const {
-    return (flags_ & PARENFUL_FUNCTION) != 0;
-  }
-  bool isModule() const {
-    return (flags_ & MODULE) != 0;
-  }
-  bool isType() const {
-    return (flags_ & TYPE) != 0;
-  }
+  bool isPublic() const { return (flags_ & PUBLIC) != 0; }
+  bool isMethodOrField() const { return (flags_ & METHOD_FIELD) != 0; }
+  bool isMethod() const { return (flags_ & METHOD) != 0; }
+  bool isParenfulFunction() const { return (flags_ & PARENFUL_FUNCTION) != 0; }
+  bool isModule() const { return (flags_ & MODULE) != 0; }
+  bool isType() const { return (flags_ & TYPE) != 0; }
 
   bool isFunctionLike() const {
     // * functions are obviously function-like (shouldn't stop lookup)
@@ -318,7 +305,7 @@ class LookupResult {
   Collects IDs with a particular name.
  */
 class OwnedIdsWithName {
- friend class MatchingIdsWithName;
+  friend class MatchingIdsWithName;
 
  private:
   // If there is just one ID with this name, it is stored here,
@@ -336,11 +323,8 @@ class OwnedIdsWithName {
  public:
   /** Construct an OwnedIdsWithName containing one IdAndFlags */
   OwnedIdsWithName(IdAndFlags idv)
-    : idv_(std::move(idv)),
-      flagsAnd_(idv_.flags_),
-      flagsOr_(idv_.flags_),
-      moreIdvs_(nullptr)
-  { }
+    : idv_(std::move(idv)), flagsAnd_(idv_.flags_), flagsOr_(idv_.flags_),
+      moreIdvs_(nullptr) {}
 
   /** Append an IdAndFlags to an OwnedIdsWithName. */
   void appendIdAndFlags(IdAndFlags idv) {
@@ -375,15 +359,14 @@ class OwnedIdsWithName {
 
   bool operator==(const OwnedIdsWithName& other) const {
     // check the initial fields
-    if (idv_ != other.idv_ ||
-        flagsAnd_ != other.flagsAnd_ ||
+    if (idv_ != other.idv_ || flagsAnd_ != other.flagsAnd_ ||
         flagsOr_ != other.flagsOr_)
       return false;
 
     // check moreIdvs for null ptr vs not null ptr
-    if ((moreIdvs_.get()==nullptr) != (other.moreIdvs_.get()==nullptr))
+    if ((moreIdvs_.get() == nullptr) != (other.moreIdvs_.get() == nullptr))
       return false;
-    if (moreIdvs_.get()==nullptr && other.moreIdvs_.get()==nullptr)
+    if (moreIdvs_.get() == nullptr && other.moreIdvs_.get() == nullptr)
       return true;
 
     // otherwise, check the vector elements, which cannot be nullptr here
@@ -408,14 +391,12 @@ class OwnedIdsWithName {
   /// \endcond DO_NOT_DOCUMENT
 };
 
-
 /**
   A DeclMap has key = string name, and value = vector of ID of a NamedDecl
   Using an ID here prevents needing to recompute the Scope
   if (say) something in the body of a Function changed.
  */
 using DeclMap = std::unordered_map<UniqueString, OwnedIdsWithName>;
-
 
 /**
   Gather matches to 'name' that match 'filterFlags' and aren't
@@ -468,11 +449,13 @@ class Scope {
  public:
   /** Construct an empty scope.
       This scope will not yet store any defined symbols. */
-  Scope() { }
+  Scope() {}
 
   /** Construct a Scope for a particular AST node
       and with a particular parent. */
-  Scope(Context* context, const uast::AstNode* ast, const Scope* parentScope,
+  Scope(Context* context,
+        const uast::AstNode* ast,
+        const Scope* parentScope,
         bool autoUsesModules);
 
   /** Add a builtin type with the provided name. This needs to
@@ -515,13 +498,11 @@ class Scope {
   /** Returns 'true' if this Scope directly contains use or import statements
       including the automatic 'use' for the standard library. */
   bool containsUseImport() const {
-    return (flags_ & (CONTAINS_USE_IMPORT|AUTO_USES_MODULES)) != 0;
+    return (flags_ & (CONTAINS_USE_IMPORT | AUTO_USES_MODULES)) != 0;
   }
 
   /** Returns 'true' if this Scope directly contains 'require' statements */
-  bool containsRequire() const {
-    return (flags_ & CONTAINS_REQUIRE) != 0;
-  }
+  bool containsRequire() const { return (flags_ & CONTAINS_REQUIRE) != 0; }
 
   /** Returns 'true' if this Scope directly contains an 'extern' block
       (with C code to supporting interoperability) */
@@ -531,16 +512,12 @@ class Scope {
 
   /** Returns 'true' if the Scope includes the automatic 'use' for
       the standard library. */
-  bool autoUsesModules() const {
-    return (flags_ & AUTO_USES_MODULES) != 0;
-  }
+  bool autoUsesModules() const { return (flags_ & AUTO_USES_MODULES) != 0; }
 
   /** Returns 'true' if this Scope represents a method's scope.
       Methods have special scoping behavior to use other fields/methods
       without writing 'this.bla'. */
-  bool isMethodScope() const {
-    return (flags_ & METHOD_SCOPE) != 0;
-  }
+  bool isMethodScope() const { return (flags_ & METHOD_SCOPE) != 0; }
 
   /** Returns 'true' if this Scope directly contains any Functions */
   bool containsFunctionDecls() const {
@@ -556,8 +533,8 @@ class Scope {
                              MatchingIdsWithName& result,
                              IdAndFlags::Flags filterFlags,
                              const IdAndFlags::FlagSet& excludeFlagSet) const {
-    return lookupInDeclMap(declared_, name, result,
-                           filterFlags, excludeFlagSet);
+    return lookupInDeclMap(
+      declared_, name, result, filterFlags, excludeFlagSet);
   }
 
   /** Check to see if the scope contains IDs with the provided name. */
@@ -572,25 +549,19 @@ class Scope {
                     std::set<UniqueString>& namesDefinedMultiply) const;
 
   bool operator==(const Scope& other) const {
-    return parentScope_ == other.parentScope_ &&
-           tag_ == other.tag_ &&
-           flags_ == other.flags_ &&
-           id_ == other.id_ &&
-           declared_ == other.declared_ &&
-           name_ == other.name_;
+    return parentScope_ == other.parentScope_ && tag_ == other.tag_ &&
+           flags_ == other.flags_ && id_ == other.id_ &&
+           declared_ == other.declared_ && name_ == other.name_;
   }
-  bool operator!=(const Scope& other) const {
-    return !(*this == other);
-  }
-  static bool update(owned<Scope>& keep,
-                     owned<Scope>& addin) {
+  bool operator!=(const Scope& other) const { return !(*this == other); }
+  static bool update(owned<Scope>& keep, owned<Scope>& addin) {
     return defaultUpdateOwned(keep, addin);
   }
   void mark(Context* context) const {
     context->markPointer(parentScope_);
     id_.mark(context);
     name_.mark(context);
-    for (const auto& pair: declared_) {
+    for (const auto& pair : declared_) {
       pair.first.mark(context);
       pair.second.mark(context);
     }
@@ -698,21 +669,20 @@ class VisibilitySymbols {
   // the names/renames:
   //  pair.first is the name as declared
   //  pair.second is the name here
-  std::vector<std::pair<UniqueString,UniqueString>> names_;
+  std::vector<std::pair<UniqueString, UniqueString>> names_;
 
  public:
-  VisibilitySymbols() { }
-  VisibilitySymbols(const Scope* scope, Kind kind,
-                    bool isPrivate, bool isModulePrivate,
+  VisibilitySymbols() {}
+  VisibilitySymbols(const Scope* scope,
+                    Kind kind,
+                    bool isPrivate,
+                    bool isModulePrivate,
                     ShadowScope shadowScopeLevel,
                     ID visibilityClauseId,
-                    std::vector<std::pair<UniqueString,UniqueString>> names)
-    : scope_(scope), kind_(kind),
-      isPrivate_(isPrivate), isModulePrivate_(isModulePrivate),
-      shadowScopeLevel_(shadowScopeLevel),
-      visibilityClauseId_(visibilityClauseId),
-      names_(std::move(names))
-  {
+                    std::vector<std::pair<UniqueString, UniqueString>> names)
+    : scope_(scope), kind_(kind), isPrivate_(isPrivate),
+      isModulePrivate_(isModulePrivate), shadowScopeLevel_(shadowScopeLevel),
+      visibilityClauseId_(visibilityClauseId), names_(std::move(names)) {
     CHPL_ASSERT(shadowScopeLevel == REGULAR_SCOPE ||
                 shadowScopeLevel == SHADOW_SCOPE_ONE ||
                 shadowScopeLevel == SHADOW_SCOPE_TWO);
@@ -732,15 +702,13 @@ class VisibilitySymbols {
 
   /** Returns the shadow scope level of the symbols here */
   ShadowScope shadowScopeLevel() const {
-    return (ShadowScope) shadowScopeLevel_;
+    return (ShadowScope)shadowScopeLevel_;
   }
 
   /**
     Returns the ID of the use/import clause that this VisibilitySymbols was
     created to represent. */
-  const ID& visibilityClauseId() const {
-    return visibilityClauseId_;
-  }
+  const ID& visibilityClauseId() const { return visibilityClauseId_; }
 
   /** Returns 'true' if the name 'name' could be brought in by use/import
       represented here.
@@ -752,15 +720,14 @@ class VisibilitySymbols {
       stores the declared name in `declared`
       Returns false if `name` is not found
   */
-  bool lookupName(UniqueString name, UniqueString &declared) const;
+  bool lookupName(UniqueString name, UniqueString& declared) const;
 
   /** Return a vector of pairs of (original name, new name here)
       for the names declared here. */
-  const std::vector<std::pair<UniqueString,UniqueString>>& names() const;
+  const std::vector<std::pair<UniqueString, UniqueString>>& names() const;
 
-  bool operator==(const VisibilitySymbols &other) const {
-    return scope_ == other.scope_ &&
-           kind_ == other.kind_ &&
+  bool operator==(const VisibilitySymbols& other) const {
+    return scope_ == other.scope_ && kind_ == other.kind_ &&
            isPrivate_ == other.isPrivate_ &&
            isModulePrivate_ == other.isModulePrivate_ &&
            shadowScopeLevel_ == other.shadowScopeLevel_ &&
@@ -781,8 +748,7 @@ class VisibilitySymbols {
     visibilityClauseId_.swap(other.visibilityClauseId_);
   }
 
-  static bool update(VisibilitySymbols& keep,
-                     VisibilitySymbols& addin) {
+  static bool update(VisibilitySymbols& keep, VisibilitySymbols& addin) {
     return defaultUpdate(keep, addin);
   }
 
@@ -815,12 +781,10 @@ class ResolvedVisibilityScope {
   using VisibilitySymbolsIterable = Iterable<std::vector<VisibilitySymbols>>;
   using ModuleIdsIterator = Iterable<std::vector<ID>>;
 
-  ResolvedVisibilityScope(const Scope* scope)
-    : scope_(scope)
-  { }
+  ResolvedVisibilityScope(const Scope* scope) : scope_(scope) {}
 
   /** Return the scope */
-  const Scope *scope() const { return scope_; }
+  const Scope* scope() const { return scope_; }
 
   /** Return an iterator over the visibility clauses */
   VisibilitySymbolsIterable visibilityClauses() const {
@@ -833,14 +797,19 @@ class ResolvedVisibilityScope {
   }
 
   /** Add a visibility clause */
-  void addVisibilityClause(const Scope* scope, VisibilitySymbols::Kind kind,
-                           bool isPrivate, bool isModulePrivate,
-                           VisibilitySymbols::ShadowScope shadowScopeLevel,
-                           ID visibilityClauseId,
-                           std::vector<std::pair<UniqueString,UniqueString>> n)
-  {
-    auto elt = VisibilitySymbols(scope, kind,
-                                 isPrivate, isModulePrivate, shadowScopeLevel,
+  void
+  addVisibilityClause(const Scope* scope,
+                      VisibilitySymbols::Kind kind,
+                      bool isPrivate,
+                      bool isModulePrivate,
+                      VisibilitySymbols::ShadowScope shadowScopeLevel,
+                      ID visibilityClauseId,
+                      std::vector<std::pair<UniqueString, UniqueString>> n) {
+    auto elt = VisibilitySymbols(scope,
+                                 kind,
+                                 isPrivate,
+                                 isModulePrivate,
+                                 shadowScopeLevel,
                                  std::move(visibilityClauseId),
                                  std::move(n));
     visibilityClauses_.push_back(std::move(elt));
@@ -868,7 +837,7 @@ class ResolvedVisibilityScope {
     for (const auto& sym : visibilityClauses_) {
       sym.mark(context);
     }
-    for (const auto& id: modulesNamedInUseOrImport_) {
+    for (const auto& id : modulesNamedInUseOrImport_) {
       id.mark(context);
     }
   }
@@ -988,29 +957,25 @@ using LookupConfig = unsigned int;
 // to make Scope itself not depend on the contents, too.
 class PoiScope {
  private:
-  const Scope* inScope_ = nullptr;         // parent Scope for the Call
-  const PoiScope* inFnPoi_ = nullptr;      // what is the POI of this POI?
+  const Scope* inScope_ = nullptr;    // parent Scope for the Call
+  const PoiScope* inFnPoi_ = nullptr; // what is the POI of this POI?
 
  public:
-  PoiScope(const Scope *scope, const PoiScope *poiScope)
-      : inScope_(scope), inFnPoi_(poiScope) {}
+  PoiScope(const Scope* scope, const PoiScope* poiScope)
+    : inScope_(scope), inFnPoi_(poiScope) {}
 
   /** return the parent scope for the call */
-  const Scope *inScope() const { return inScope_; }
+  const Scope* inScope() const { return inScope_; }
 
   /** return the POI of this POI */
-  const PoiScope *inFnPoi() const { return inFnPoi_; }
+  const PoiScope* inFnPoi() const { return inFnPoi_; }
 
   bool operator==(const PoiScope& other) const {
-    return inScope_ == other.inScope_ &&
-           inFnPoi_ == other.inFnPoi_;
+    return inScope_ == other.inScope_ && inFnPoi_ == other.inFnPoi_;
   }
-  bool operator!=(const PoiScope& other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const PoiScope& other) const { return !(*this == other); }
 
-  static bool update(owned<PoiScope>& keep,
-                     owned<PoiScope>& addin) {
+  static bool update(owned<PoiScope>& keep, owned<PoiScope>& addin) {
     return defaultUpdateOwned(keep, addin);
   }
   void mark(Context* context) const {
@@ -1021,7 +986,7 @@ class PoiScope {
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
     ss << "PoiScope ";
     if (inScope() != nullptr) {
-      inScope()->stringify(ss,stringKind);
+      inScope()->stringify(ss, stringKind);
     } else {
       ss << "null";
     }
@@ -1052,20 +1017,17 @@ class InnermostMatch {
   MatchesFound found_ = ZERO;
 
  public:
-  InnermostMatch() { }
-  InnermostMatch(ID id, MatchesFound found)
-    : id_(id), found_(found)
-  { }
+  InnermostMatch() {}
+  InnermostMatch(ID id, MatchesFound found) : id_(id), found_(found) {}
 
   /** Return the id */
-  ID id() const { return id_;}
+  ID id() const { return id_; }
 
   /** Return the matches found */
-  MatchesFound found() const { return found_;}
+  MatchesFound found() const { return found_; }
 
   bool operator==(const InnermostMatch& other) const {
-    return id_ == other.id_ &&
-           found_ == other.found_;
+    return id_ == other.id_ && found_ == other.found_;
   }
   bool operator!=(const InnermostMatch& other) const {
     return !(*this == other);
@@ -1077,9 +1039,7 @@ class InnermostMatch {
   static bool update(InnermostMatch& keep, InnermostMatch& addin) {
     return defaultUpdate(keep, addin);
   }
-  void mark(Context* context) const {
-    id_.mark(context);
-  }
+  void mark(Context* context) const { id_.mark(context); }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
     ss << "InnermostMatch not yet stringified";
@@ -1090,14 +1050,13 @@ class InnermostMatch {
   /// \endcond DO_NOT_DOCUMENT
 };
 
-
 /** ResultVisibilityTrace stores a tracing of the name lookup process
     which can be useful for error messages. */
 struct ResultVisibilityTrace {
   struct VisibilityTraceElt {
     // these contain details for a use/import
     VisibilitySymbols::ShadowScope shadowScope =
-       VisibilitySymbols::REGULAR_SCOPE;
+      VisibilitySymbols::REGULAR_SCOPE;
     const ResolvedVisibilityScope* resolvedVisibilityScope = nullptr;
     ID visibilityClauseId;
     VisibilityStmtKind visibilityStmtKind = VIS_USE;
@@ -1133,8 +1092,7 @@ struct ResultVisibilityTrace {
              automaticModule == other.automaticModule &&
              toplevelModule == other.toplevelModule &&
              containingModule == other.containingModule &&
-             externBlock == other.externBlock &&
-             rootScope == other.rootScope;
+             externBlock == other.externBlock && rootScope == other.rootScope;
     }
     bool operator!=(const VisibilityTraceElt& other) const {
       return !(*this == other);
@@ -1158,8 +1116,7 @@ struct ResultVisibilityTrace {
   std::vector<VisibilityTraceElt> visibleThrough;
 
   bool operator==(const ResultVisibilityTrace& other) const {
-    return scope == other.scope &&
-           visibleThrough == other.visibleThrough;
+    return scope == other.scope && visibleThrough == other.visibleThrough;
   }
   bool operator!=(const ResultVisibilityTrace& other) const {
     return !(*this == other);
@@ -1176,8 +1133,8 @@ struct ResultVisibilityTrace {
   Contains IDs with a particular name that matched some filter.
  */
 class MatchingIdsWithName {
- // To allow us to use the internals of OwnedIdsWithName
- friend class OwnedIdsWithName;
+  // To allow us to use the internals of OwnedIdsWithName
+  friend class OwnedIdsWithName;
 
  public:
   using const_iterator = std::vector<IdAndFlags>::const_iterator;
@@ -1197,9 +1154,7 @@ class MatchingIdsWithName {
   /** Construct a MatchingIdsWithName referring to one ID. Assumes
       that the caller did any necessary filtering.
     */
-  MatchingIdsWithName(IdAndFlags idv) {
-    idvs_.push_back(std::move(idv));
-  }
+  MatchingIdsWithName(IdAndFlags idv) { idvs_.push_back(std::move(idv)); }
 
  public:
   /**
@@ -1207,13 +1162,13 @@ class MatchingIdsWithName {
    */
   class MatchingIdsWithNameIter {
     friend class MatchingIdsWithName;
+
    private:
     /** The ID this iterator is pointing too. */
     const IdAndFlags* currentIdv;
 
     MatchingIdsWithNameIter(const IdAndFlags* currentIdv)
-      : currentIdv(currentIdv) {
-    }
+      : currentIdv(currentIdv) {}
 
    public:
     bool operator!=(const MatchingIdsWithNameIter& other) const {
@@ -1240,19 +1195,16 @@ class MatchingIdsWithName {
     using iterator_category = std::forward_iterator_tag;
   };
 
-  static MatchingIdsWithName
-  createWithIdAndFlags(IdAndFlags idv) {
+  static MatchingIdsWithName createWithIdAndFlags(IdAndFlags idv) {
     return MatchingIdsWithName(std::move(idv));
   }
 
   /** Construct a empty MatchingIdsWithName containing no IDs. */
-  MatchingIdsWithName() { }
+  MatchingIdsWithName() {}
 
   /** Note that when populating this list, we found functions and non-functions
       at the same scope level. */
-  void noteFnNonFnConflict() {
-    encounteredFnNonFnConflict_ = true;
-  }
+  void noteFnNonFnConflict() { encounteredFnNonFnConflict_ = true; }
 
   /** Returns 'true' if we found functions and non-functions at the same scope level. */
   bool encounteredFnNonFnConflict() const {
@@ -1260,9 +1212,7 @@ class MatchingIdsWithName {
   }
 
   /** Append an IdAndFlags. */
-  void append(IdAndFlags idv) {
-    idvs_.push_back(std::move(idv));
-  }
+  void append(IdAndFlags idv) { idvs_.push_back(std::move(idv)); }
 
   /** Remove any duplicates IDs present here. */
   void removeDuplicateIds(std::vector<ResultVisibilityTrace>* traces = nullptr);
@@ -1270,41 +1220,35 @@ class MatchingIdsWithName {
   /** Truncate to a particular number of IDs. Must be < numIds(). */
   void truncate(int sz);
 
-  /** Remove all IDs. */ 
+  /** Remove all IDs. */
   void clear();
 
   /** Returns 'true' if this MatchingIdsWithName has no IDs */
   bool isEmpty() const { return idvs_.empty(); }
 
   /** Return the number of IDs stored here */
-  int numIds() const {
-    return (int) idvs_.size();
-  }
+  int numIds() const { return (int)idvs_.size(); }
 
   /** Returns the first ID in this list. */
-  const ID& firstId() const {
-    return idvs_.front().id();
-  }
+  const ID& firstId() const { return idvs_.front().id(); }
 
   /** Returns the first IdAndFlags in this list. */
-  const IdAndFlags& firstIdAndFlags() const {
-    return idvs_.front();
-  }
+  const IdAndFlags& firstIdAndFlags() const { return idvs_.front(); }
 
   /** Return the i'th ID in the list */
   const ID& id(int i) const {
-    CHPL_ASSERT(0 <= i && i < (int) idvs_.size());
+    CHPL_ASSERT(0 <= i && i < (int)idvs_.size());
     return idvs_[i].id();
   }
 
   /** Return the i'th IdAndFlags in the list */
   const IdAndFlags& idAndFlags(int i) const {
-    CHPL_ASSERT(0 <= i && i < (int) idvs_.size());
+    CHPL_ASSERT(0 <= i && i < (int)idvs_.size());
     return idvs_[i];
   }
   /** Return a mutable reference to the i'th IdAndFlags in the list */
   IdAndFlags& idAndFlags(int i) {
-    CHPL_ASSERT(0 <= i && i < (int) idvs_.size());
+    CHPL_ASSERT(0 <= i && i < (int)idvs_.size());
     return idvs_[i];
   }
 
@@ -1353,12 +1297,10 @@ class MatchingIdsWithName {
 
   void swap(MatchingIdsWithName& other) {
     idvs_.swap(other.idvs_);
-    std::swap(encounteredFnNonFnConflict_,
-              other.encounteredFnNonFnConflict_);
+    std::swap(encounteredFnNonFnConflict_, other.encounteredFnNonFnConflict_);
   }
 
-  static bool update(MatchingIdsWithName& keep,
-                     MatchingIdsWithName& addin) {
+  static bool update(MatchingIdsWithName& keep, MatchingIdsWithName& addin) {
     return defaultUpdate(keep, addin);
   }
 
@@ -1376,18 +1318,13 @@ struct CheckedScope {
   UniqueString forName;
   const Scope* scope = nullptr;
 
-  CheckedScope(UniqueString forName,
-               const Scope* scope)
-    : forName(forName), scope(scope) {
-  }
+  CheckedScope(UniqueString forName, const Scope* scope)
+    : forName(forName), scope(scope) {}
 
   bool operator==(const CheckedScope& other) const {
-    return forName == other.forName &&
-           scope == other.scope;
+    return forName == other.forName && scope == other.scope;
   }
-  bool operator!=(const CheckedScope& other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const CheckedScope& other) const { return !(*this == other); }
   size_t hash() const {
     size_t ret = 0;
     ret = hash_combine(ret, chpl::hash(forName));
@@ -1403,7 +1340,7 @@ class ModulePublicSymbols {
   DeclMap syms_;
 
  public:
-  ModulePublicSymbols(DeclMap syms) : syms_(std::move(syms)) { }
+  ModulePublicSymbols(DeclMap syms) : syms_(std::move(syms)) {}
 
   const DeclMap& syms() const { return syms_; }
 
@@ -1425,7 +1362,7 @@ class ModulePublicSymbols {
     return defaultUpdateOwned(keep, addin);
   }
   void mark(Context* context) const {
-    for (const auto& pair: syms_) {
+    for (const auto& pair : syms_) {
       pair.first.mark(context);
       pair.second.mark(context);
     }
@@ -1463,7 +1400,9 @@ class MethodLookupHelper {
                                     const ID& methodId) const = 0;
   /** Returns 'true' if, based on the current receiver type, we should
       search a VisibilitySymbols clause for tertiary methods */
-  virtual bool shouldCheckForTertiaryMethods(Context* context, const VisibilitySymbols* toCheck) const = 0;
+  virtual bool
+  shouldCheckForTertiaryMethods(Context* context,
+                                const VisibilitySymbols* toCheck) const = 0;
 };
 
 /** This type helps lookupNameInScope and related functions.
@@ -1491,30 +1430,25 @@ class ReceiverScopeHelper {
   methodLookupForMethodId(Context* context, const ID& methodId) const = 0;
 };
 
-
 } // end namespace resolution
 
 /// \cond DO_NOT_DOCUMENT
 
-template <>
-struct stringify<resolution::VisibilityStmtKind> {
-  void operator()(std::ostream& streamOut, StringifyKind stringKind,
+template <> struct stringify<resolution::VisibilityStmtKind> {
+  void operator()(std::ostream& streamOut,
+                  StringifyKind stringKind,
                   resolution::VisibilityStmtKind kind) const {
     switch (kind) {
-      case resolution::VisibilityStmtKind::VIS_USE:
-        streamOut << "use";
-        break;
+      case resolution::VisibilityStmtKind::VIS_USE: streamOut << "use"; break;
       case resolution::VisibilityStmtKind::VIS_IMPORT:
         streamOut << "import";
         break;
-      default:
-        CHPL_ASSERT(false && "should not reach this point");
+      default: CHPL_ASSERT(false && "should not reach this point");
     }
   }
 };
 
-template <>
-struct mark<resolution::VisibilityStmtKind> {
+template <> struct mark<resolution::VisibilityStmtKind> {
   void operator()(Context* context, resolution::VisibilityStmtKind t) {
     // No need to mark enums
   }
@@ -1522,48 +1456,40 @@ struct mark<resolution::VisibilityStmtKind> {
 
 /// \endcond
 
-
 } // end namespace chpl
-
 
 namespace std {
 
 /// \cond DO_NOT_DOCUMENT
-template<> struct hash<chpl::resolution::IdAndFlags>
-{
+template <> struct hash<chpl::resolution::IdAndFlags> {
   size_t operator()(const chpl::resolution::IdAndFlags& key) const {
     return key.hash();
   }
 };
 
-template<> struct hash<chpl::resolution::IdAndFlags::FlagSet>
-{
+template <> struct hash<chpl::resolution::IdAndFlags::FlagSet> {
   size_t operator()(const chpl::resolution::IdAndFlags::FlagSet& key) const {
     return key.hash();
   }
 };
 
-template<> struct hash<chpl::resolution::MatchingIdsWithName>
-{
+template <> struct hash<chpl::resolution::MatchingIdsWithName> {
   size_t operator()(const chpl::resolution::MatchingIdsWithName& key) const {
     return key.hash();
   }
 };
 
-template <>
-struct hash<chpl::resolution::VisibilityStmtKind> {
+template <> struct hash<chpl::resolution::VisibilityStmtKind> {
   size_t operator()(const chpl::resolution::VisibilityStmtKind& key) const {
     return (size_t)key;
   }
 };
 
-template <>
-struct hash<chpl::resolution::CheckedScope> {
+template <> struct hash<chpl::resolution::CheckedScope> {
   size_t operator()(const chpl::resolution::CheckedScope& key) const {
     return key.hash();
   }
 };
-
 
 /// \endcond
 

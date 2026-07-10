@@ -35,10 +35,8 @@
 #include <cstring>
 #include <string>
 
-
 namespace chpl {
 class Context;
-
 
 /**
   This class represents a unique'd string.
@@ -48,22 +46,18 @@ class Context;
 
  */
 class UniqueString final {
- friend class Context;
+  friend class Context;
 
  private:
   detail::PODUniqueString s;
 
  public:
   /** create a UniqueString storing the empty string */
-  UniqueString() {
-    this->s.i = detail::InlinedString::get();
-  }
+  UniqueString() { this->s.i = detail::InlinedString::get(); }
   /** create a UniqueString from a PODUniqueString.
       this constructor intentionally allows implicit conversion.
    */
-  UniqueString(detail::PODUniqueString s)
-    : s(s) {
-  }
+  UniqueString(detail::PODUniqueString s) : s(s) {}
 
   /**
     Get or create a unique string for a NULL-terminated C string.
@@ -81,7 +75,8 @@ class UniqueString final {
     terminator.
    */
   static UniqueString getConcat(Context* context,
-                                const char* s1, const char* s2,
+                                const char* s1,
+                                const char* s2,
                                 const char* s3 = nullptr,
                                 const char* s4 = nullptr,
                                 const char* s5 = nullptr,
@@ -89,14 +84,10 @@ class UniqueString final {
                                 const char* s7 = nullptr,
                                 const char* s8 = nullptr,
                                 const char* s9 = nullptr) {
-    auto ret = detail::PODUniqueString::getConcat(context,
-                                                    s1, s2,
-                                                    s3, s4,
-                                                    s5, s6,
-                                                    s7, s8, s9);
+    auto ret = detail::PODUniqueString::getConcat(
+      context, s1, s2, s3, s4, s5, s6, s7, s8, s9);
     return UniqueString(ret);
   }
-
 
   /**
     Get or create a unique string for a string from a pointer
@@ -126,40 +117,29 @@ class UniqueString final {
     The returned pointer may refer to invalid memory if the UniqueString
     goes out of scope.
    */
-  const char* c_str() const {
-    return s.i.c_str();
-  }
+  const char* c_str() const { return s.i.c_str(); }
 
   /**
     Return the length of the unique string.
    */
-  size_t length() const {
-    return s.i.length();
-  }
+  size_t length() const { return s.i.length(); }
 
   /**
     Return the null-terminated string as a pointer to an entry
     in Context's string table. This pointer is safe to use after
     this UniqueString goes out of scope.
    */
-  const char* astr(Context* context) const {
-    return s.i.astr(context);
-  }
+  const char* astr(Context* context) const { return s.i.astr(context); }
 
   /** return a std::string containing the string */
   // diffs from stringify, converts the UniqueString into a string
   // representation similar to std::ostream.str()
-  std::string str() const {
-    return std::string(c_str(), length());
-  }
+  std::string str() const { return std::string(c_str(), length()); }
 
   /**
     Returns a reference to the string as an llvm::StringRef
    */
-  llvm::StringRef stringRef() {
-    return llvm::StringRef(c_str(), length());
-  }
-
+  llvm::StringRef stringRef() { return llvm::StringRef(c_str(), length()); }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
@@ -167,13 +147,9 @@ class UniqueString final {
 
   static UniqueString deserialize(Deserializer& des);
 
-  bool isEmpty() const {
-    return s.isEmpty();
-  }
+  bool isEmpty() const { return s.isEmpty(); }
 
-  detail::PODUniqueString podUniqueString() const {
-    return s;
-  }
+  detail::PODUniqueString podUniqueString() const { return s; }
 
   /**
     Checks to see if the string starts with another string.
@@ -250,9 +226,7 @@ class UniqueString final {
   }
 
   /** allow 'if (myString)' to check for nonempty */
-  explicit operator bool() const {
-    return !isEmpty();
-  }
+  explicit operator bool() const { return !isEmpty(); }
 
   inline bool operator==(const UniqueString other) const {
     return this->s.i.v == other.s.i.v;
@@ -266,7 +240,7 @@ class UniqueString final {
     \endrst
    */
   inline bool operator==(const char* other) const {
-    (void)s;                    // mark field as used for linter
+    (void)s; // mark field as used for linter
     return 0 == this->compare(other);
   }
 
@@ -279,7 +253,7 @@ class UniqueString final {
     \endrst
    */
   inline bool operator==(const std::string& other) const {
-    (void)s;                    // mark field as used for linter
+    (void)s; // mark field as used for linter
     return 0 == this->compare(other.c_str());
   }
 
@@ -299,7 +273,7 @@ class UniqueString final {
   inline bool operator<=(const UniqueString other) const {
     return this->compare(other) <= 0;
   }
-   inline bool operator>(const UniqueString other) const {
+  inline bool operator>(const UniqueString other) const {
     return this->compare(other) > 0;
   }
   inline bool operator>=(const UniqueString other) const {
@@ -318,7 +292,7 @@ class UniqueString final {
 
   size_t hash() const {
     std::hash<size_t> hasher;
-    return hasher((size_t) s.i.v);
+    return hasher((size_t)s.i.v);
   }
   void swap(UniqueString& other) {
     UniqueString oldThis = *this;
@@ -328,14 +302,11 @@ class UniqueString final {
 
   static bool update(UniqueString& keep, UniqueString& addin);
 
-  void mark(Context* context) const {
-    s.i.mark(context);
-  }
+  void mark(Context* context) const { s.i.mark(context); }
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
-
 };
 
 std::ostream& operator<<(std::ostream&, const chpl::UniqueString&);
@@ -343,22 +314,20 @@ std::ostream& operator<<(std::ostream&, const chpl::UniqueString&);
 } // end namespace chpl
 
 namespace std {
-  template<> struct less<chpl::UniqueString> {
-    bool operator()(const chpl::UniqueString lhs,
-                    const chpl::UniqueString rhs) const {
-      return lhs.compare(rhs) < 0;
-    }
-  };
-  template<> struct hash<chpl::UniqueString> {
-    size_t operator()(const chpl::UniqueString key) const {
-      return key.hash();
-    }
-  };
-  template<> struct hash<chpl::detail::PODUniqueString> {
-    size_t operator()(const chpl::detail::PODUniqueString key) const {
-      return key.hash();
-    }
-  };
+template <> struct less<chpl::UniqueString> {
+  bool operator()(const chpl::UniqueString lhs,
+                  const chpl::UniqueString rhs) const {
+    return lhs.compare(rhs) < 0;
+  }
+};
+template <> struct hash<chpl::UniqueString> {
+  size_t operator()(const chpl::UniqueString key) const { return key.hash(); }
+};
+template <> struct hash<chpl::detail::PODUniqueString> {
+  size_t operator()(const chpl::detail::PODUniqueString key) const {
+    return key.hash();
+  }
+};
 
 } // end namespace std
 

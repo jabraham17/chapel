@@ -27,7 +27,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a let statement. For example:
 
@@ -41,14 +40,13 @@ namespace uast {
 
  */
 class Let final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   int numDecls_;
 
   Let(AstList children, int numDecls)
-    : AstNode(asttags::Let, std::move(children)),
-      numDecls_(numDecls) {
+    : AstNode(asttags::Let, std::move(children)), numDecls_(numDecls) {
     CHPL_ASSERT(numChildren() >= 2);
     CHPL_ASSERT(1 <= numDecls && (numDecls == numChildren() - 1));
   }
@@ -57,8 +55,7 @@ class Let final : public AstNode {
     ser.writeVInt(numDecls_);
   }
 
-  explicit Let(Deserializer& des)
-    : AstNode(asttags::Let, des) {
+  explicit Let(Deserializer& des) : AstNode(asttags::Let, des) {
     numDecls_ = des.readVInt();
   }
 
@@ -68,8 +65,7 @@ class Let final : public AstNode {
     return lhs->numDecls_ == rhs->numDecls_;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
   std::string dumpChildLabelInner(int i) const override;
 
@@ -79,7 +75,8 @@ class Let final : public AstNode {
   /**
    Create a Let containing the passed declarations and expression.
   */
-  static owned<Let> build(Builder* builder, Location loc,
+  static owned<Let> build(Builder* builder,
+                          Location loc,
                           AstList decls,
                           owned<AstNode> expression);
 
@@ -95,9 +92,7 @@ class Let final : public AstNode {
   /**
     Return the number of declarations in this let statement.
   */
-  int numDecls() const {
-    return numDecls_;
-  }
+  int numDecls() const { return numDecls_; }
 
   /**
     Return the i'th declaration in this let statement.
@@ -106,7 +101,7 @@ class Let final : public AstNode {
     CHPL_ASSERT(i >= 0 && i < numDecls_);
     auto ret = child(i);
     CHPL_ASSERT(ret && ret->isDecl());
-    return (const Decl*) ret;
+    return (const Decl*)ret;
   }
 
   /**
@@ -118,7 +113,6 @@ class Let final : public AstNode {
     return ret;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

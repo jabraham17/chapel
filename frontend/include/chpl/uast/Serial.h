@@ -28,7 +28,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a serial statement. For example:
 
@@ -49,39 +48,39 @@ namespace uast {
 
  */
 class Serial final : public SimpleBlockLike {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   int8_t condChildNum_;
 
-  Serial(AstList children, int8_t condChildNum, BlockStyle blockStyle,
+  Serial(AstList children,
+         int8_t condChildNum,
+         BlockStyle blockStyle,
          int bodyChildNum,
          int numBodyStmts)
-    : SimpleBlockLike(asttags::Serial, std::move(children), blockStyle,
+    : SimpleBlockLike(asttags::Serial,
+                      std::move(children),
+                      blockStyle,
                       bodyChildNum,
                       numBodyStmts),
-      condChildNum_(condChildNum) {
-  }
+      condChildNum_(condChildNum) {}
 
   void serializeInner(Serializer& ser) const override {
     simpleBlockLikeSerializeInner(ser);
     ser.write(condChildNum_);
   }
 
-  explicit Serial(Deserializer& des)
-    : SimpleBlockLike(asttags::Serial, des) {
+  explicit Serial(Deserializer& des) : SimpleBlockLike(asttags::Serial, des) {
     condChildNum_ = des.read<int8_t>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Serial* lhs = this;
-    const Serial* rhs = (const Serial*) other;
+    const Serial* rhs = (const Serial*)other;
 
-    if (lhs->condChildNum_ != rhs->condChildNum_)
-      return false;
+    if (lhs->condChildNum_ != rhs->condChildNum_) return false;
 
-    if (!lhs->simpleBlockLikeContentsMatchInner(rhs))
-      return false;
+    if (!lhs->simpleBlockLikeContentsMatchInner(rhs)) return false;
 
     return true;
   }
@@ -93,20 +92,18 @@ class Serial final : public SimpleBlockLike {
   std::string dumpChildLabelInner(int i) const override;
 
  public:
-
   /**
     Create and return a serial statement containing the passed statements.
   */
-  static owned<Serial> build(Builder* builder, Location loc,
-                             BlockStyle blockStyle,
-                             AstList stmts);
-
+  static owned<Serial>
+  build(Builder* builder, Location loc, BlockStyle blockStyle, AstList stmts);
 
   /**
     Create and return a serial statement with the given condition and
     containing the passed statements.
   */
-  static owned<Serial> build(Builder* builder, Location loc,
+  static owned<Serial> build(Builder* builder,
+                             Location loc,
                              owned<AstNode> condition,
                              BlockStyle blockStyle,
                              AstList stmts);
@@ -119,7 +116,6 @@ class Serial final : public SimpleBlockLike {
     return condChildNum_ < 0 ? nullptr : child(condChildNum_);
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

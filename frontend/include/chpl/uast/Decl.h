@@ -26,14 +26,13 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This is an abstract base class for declarations.
   Note that most Decls inherit from NamedDecl,
   however these declarations might be contained in MultiDecl or TupleDecl.
  */
 class Decl : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  public:
   enum Visibility {
@@ -42,11 +41,7 @@ class Decl : public AstNode {
     PRIVATE,
   };
 
-  enum Linkage {
-    DEFAULT_LINKAGE,
-    EXTERN,
-    EXPORT
-  };
+  enum Linkage { DEFAULT_LINKAGE, EXTERN, EXPORT };
 
  private:
   Visibility visibility_;
@@ -55,34 +50,29 @@ class Decl : public AstNode {
   int destinationChildNum_;
 
  protected:
-  Decl(AstTag tag, Visibility visibility,
-       Linkage linkage)
-    : AstNode(tag),
-      visibility_(visibility),
-      linkage_(linkage),
-      linkageNameChildNum_(NO_CHILD),
-      destinationChildNum_(NO_CHILD) {
-  }
+  Decl(AstTag tag, Visibility visibility, Linkage linkage)
+    : AstNode(tag), visibility_(visibility), linkage_(linkage),
+      linkageNameChildNum_(NO_CHILD), destinationChildNum_(NO_CHILD) {}
 
-  Decl(AstTag tag, AstList children, int attributeGroupChildNum,
+  Decl(AstTag tag,
+       AstList children,
+       int attributeGroupChildNum,
        Visibility visibility,
        Linkage linkage,
        int linkageNameChildNum)
     : AstNode(tag, std::move(children), attributeGroupChildNum),
-      visibility_(visibility),
-      linkage_(linkage),
+      visibility_(visibility), linkage_(linkage),
       linkageNameChildNum_(linkageNameChildNum),
       destinationChildNum_(NO_CHILD) {
-
 
     if (linkageNameChildNum_ >= 0) {
       CHPL_ASSERT(linkage_ != DEFAULT_LINKAGE);
     }
 
     CHPL_ASSERT(NO_CHILD <= linkageNameChildNum_ &&
-                 linkageNameChildNum_ < (ssize_t)children_.size());
+                linkageNameChildNum_ < (ssize_t)children_.size());
     CHPL_ASSERT(NO_CHILD <= destinationChildNum_ &&
-                 destinationChildNum_ < (ssize_t)children_.size());
+                destinationChildNum_ < (ssize_t)children_.size());
   }
 
   void declSerializeInner(Serializer& ser) const {
@@ -92,12 +82,11 @@ class Decl : public AstNode {
     ser.writeVInt(destinationChildNum_);
   }
 
-  Decl(AstTag tag, Deserializer& des)
-    : AstNode(tag, des) {
-      visibility_ = des.read<Decl::Visibility>();
-      linkage_ = des.read<Decl::Linkage>();
-      linkageNameChildNum_ = des.readVInt();
-      destinationChildNum_ = des.readVInt();
+  Decl(AstTag tag, Deserializer& des) : AstNode(tag, des) {
+    visibility_ = des.read<Decl::Visibility>();
+    linkage_ = des.read<Decl::Linkage>();
+    linkageNameChildNum_ = des.readVInt();
+    destinationChildNum_ = des.readVInt();
   }
 
   bool declContentsMatchInner(const Decl* other) const {
@@ -107,7 +96,7 @@ class Decl : public AstNode {
            this->destinationChildNum_ == other->destinationChildNum_;
   }
 
-  void declMarkUniqueStringsInner(Context* context) const { }
+  void declMarkUniqueStringsInner(Context* context) const {}
 
   void dumpFieldsInner(const DumpSettings& s) const override;
   std::string dumpChildLabelInner(int i) const override;
@@ -118,16 +107,12 @@ class Decl : public AstNode {
   /**
     Return the visibility of this declaration, e.g. "PUBLIC" or "PRIVATE".
   */
-  Visibility visibility() const {
-    return visibility_;
-  }
+  Visibility visibility() const { return visibility_; }
 
   /**
     Return the linkage of this declaration, e.g. "EXTERN" or "EXPORT".
   */
-  Linkage linkage() const {
-    return linkage_;
-  }
+  Linkage linkage() const { return linkage_; }
 
   /**
    Return the linkage name expression, e.g. "f_c_name"
@@ -175,26 +160,19 @@ class Decl : public AstNode {
   static const char* linkageToString(Linkage x);
 };
 
-
-
 } // end namespace uast
 
 DECLARE_SERDE_ENUM(uast::Decl::Visibility, uint8_t);
 DECLARE_SERDE_ENUM(uast::Decl::Linkage, uint8_t);
 
-template<> struct stringify<uast::Decl::Linkage> {
+template <> struct stringify<uast::Decl::Linkage> {
   void operator()(std::ostream& streamOut,
                   StringifyKind stringKind,
                   const uast::Decl::Linkage& stringMe) const {
     switch (stringMe) {
-      case uast::Decl::Linkage::DEFAULT_LINKAGE:
-        break;
-      case uast::Decl::Linkage::EXPORT:
-        streamOut << "export";
-        break;
-      case uast::Decl::Linkage::EXTERN:
-        streamOut << "extern";
-        break;
+      case uast::Decl::Linkage::DEFAULT_LINKAGE: break;
+      case uast::Decl::Linkage::EXPORT: streamOut << "export"; break;
+      case uast::Decl::Linkage::EXTERN: streamOut << "extern"; break;
     }
   }
 };
@@ -202,10 +180,9 @@ template<> struct stringify<uast::Decl::Linkage> {
 
 namespace std {
 
-template<> struct hash<chpl::uast::Decl::Visibility>
-{
+template <> struct hash<chpl::uast::Decl::Visibility> {
   size_t operator()(const chpl::uast::Decl::Visibility& key) const {
-    return (size_t) key;
+    return (size_t)key;
   }
 };
 

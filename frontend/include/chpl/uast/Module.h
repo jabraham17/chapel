@@ -26,7 +26,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a module declaration. For example:
 
@@ -39,7 +38,7 @@ namespace uast {
   is a declaration for a module named M.
  */
 class Module final : public NamedDecl {
- friend class AstNode;
+  friend class AstNode;
 
  public:
   enum Kind {
@@ -51,50 +50,47 @@ class Module final : public NamedDecl {
  private:
   Kind kind_;
 
-  Module(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
+  Module(AstList children,
+         int attributeGroupChildNum,
+         Decl::Visibility vis,
          UniqueString name,
          Kind kind)
-    : NamedDecl(asttags::Module, std::move(children), attributeGroupChildNum,
+    : NamedDecl(asttags::Module,
+                std::move(children),
+                attributeGroupChildNum,
                 vis,
                 Decl::DEFAULT_LINKAGE,
                 /*linkageNameChildNum*/ NO_CHILD,
                 name),
-                kind_(kind) {
-
-  }
+      kind_(kind) {}
 
   void serializeInner(Serializer& ser) const override {
     namedDeclSerializeInner(ser);
     ser.write(kind_);
   }
 
-  explicit Module(Deserializer& des)
-    : NamedDecl(asttags::Module, des) {
+  explicit Module(Deserializer& des) : NamedDecl(asttags::Module, des) {
     kind_ = des.read<Kind>();
   }
 
-
   bool contentsMatchInner(const AstNode* other) const override {
     const Module* lhs = this;
-    const Module* rhs = (const Module*) other;
-    return lhs->namedDeclContentsMatchInner(rhs) &&
-           lhs->kind_ == rhs->kind_;
-
+    const Module* rhs = (const Module*)other;
+    return lhs->namedDeclContentsMatchInner(rhs) && lhs->kind_ == rhs->kind_;
   }
   void markUniqueStringsInner(Context* context) const override {
     namedDeclMarkUniqueStringsInner(context);
   }
 
-  int stmtChildNum() const {
-    return attributeGroup() ? 1 : 0;
-  }
+  int stmtChildNum() const { return attributeGroup() ? 1 : 0; }
 
   void dumpFieldsInner(const DumpSettings& s) const override;
 
  public:
   ~Module() override = default;
 
-  static owned<Module> build(Builder* builder, Location loc,
+  static owned<Module> build(Builder* builder,
+                             Location loc,
                              owned<AttributeGroup> attributeGroup,
                              Decl::Visibility vis,
                              UniqueString name,
@@ -110,9 +106,8 @@ class Module final : public NamedDecl {
     Iterate over the statements in this module.
   */
   AstListIteratorPair<AstNode> stmts() const {
-    auto begin = numStmts()
-        ? children_.begin() + stmtChildNum()
-        : children_.end();
+    auto begin =
+      numStmts() ? children_.begin() + stmtChildNum() : children_.end();
     auto end = begin + numStmts();
     return AstListIteratorPair<AstNode>(begin, end);
   }
@@ -121,7 +116,7 @@ class Module final : public NamedDecl {
     Return the number of statements in this module.
   */
   int numStmts() const {
-    return attributeGroup() ? numChildren()-1 : numChildren();
+    return attributeGroup() ? numChildren() - 1 : numChildren();
   }
 
   /**
@@ -139,29 +134,24 @@ class Module final : public NamedDecl {
   static const char* moduleKindToString(Kind kind);
 };
 
-
 } // end namespace uast
 
 DECLARE_SERDE_ENUM(uast::Module::Kind, uint8_t);
 
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<uast::Module::Kind> {
-  bool operator()(uast::Module::Kind& keep,
-                  uast::Module::Kind& addin) const {
+template <> struct update<uast::Module::Kind> {
+  bool operator()(uast::Module::Kind& keep, uast::Module::Kind& addin) const {
     return defaultUpdateBasic(keep, addin);
   }
 };
 
-template<> struct mark<uast::Module::Kind> {
-  void operator()(Context* context,
-                  const uast::Module::Kind& keep) const {
+template <> struct mark<uast::Module::Kind> {
+  void operator()(Context* context, const uast::Module::Kind& keep) const {
     // nothing to do for enum
   }
 };
 
-
 /// \endcond DO_NOT_DOCUMENT
-
 
 } // end namespace chpl
 

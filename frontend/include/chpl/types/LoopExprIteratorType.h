@@ -73,21 +73,20 @@ class LoopExprIteratorType final : public IteratorType {
                        QualifiedType iterand,
                        ID sourceLocation)
     : IteratorType(typetags::LoopExprIteratorType, poiScope),
-      yieldType_(std::move(yieldType)),
-      isZippered_(isZippered), supportsParallel_(supportsParallel),
-      iterand_(std::move(iterand)), sourceLocation_(std::move(sourceLocation)) {
+      yieldType_(std::move(yieldType)), isZippered_(isZippered),
+      supportsParallel_(supportsParallel), iterand_(std::move(iterand)),
+      sourceLocation_(std::move(sourceLocation)) {
     if (isZippered_) {
       CHPL_ASSERT(iterand_.type() && iterand_.type()->isTupleType());
     }
   }
 
   bool contentsMatchInner(const Type* other) const override {
-    auto rhs = (LoopExprIteratorType*) other;
+    auto rhs = (LoopExprIteratorType*)other;
     return iteratorTypeContentsMatchInner(rhs) &&
            isZippered_ == rhs->isZippered_ &&
            supportsParallel_ == rhs->supportsParallel_ &&
-           iterand_ == rhs->iterand_ &&
-           sourceLocation_ == rhs->sourceLocation_;
+           iterand_ == rhs->iterand_ && sourceLocation_ == rhs->sourceLocation_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -116,30 +115,24 @@ class LoopExprIteratorType final : public IteratorType {
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
-    return get(context, yieldType_.substitute(context, subs),
-               poiScope_, isZippered_, supportsParallel_,
-               iterand_.substitute(context, subs), sourceLocation_);
+    return get(context,
+               yieldType_.substitute(context, subs),
+               poiScope_,
+               isZippered_,
+               supportsParallel_,
+               iterand_.substitute(context, subs),
+               sourceLocation_);
   }
 
-  const QualifiedType& yieldType() const {
-    return yieldType_;
-  }
+  const QualifiedType& yieldType() const { return yieldType_; }
 
-  bool isZippered() const {
-    return isZippered_;
-  }
+  bool isZippered() const { return isZippered_; }
 
-  bool supportsParallel() const {
-    return supportsParallel_;
-  }
+  bool supportsParallel() const { return supportsParallel_; }
 
-  const ID& sourceLocation() const {
-    return sourceLocation_;
-  }
+  const ID& sourceLocation() const { return sourceLocation_; }
 
-  const QualifiedType& iterand() const {
-    return iterand_;
-  }
+  const QualifiedType& iterand() const { return iterand_; }
 };
 
 } // end namespace types

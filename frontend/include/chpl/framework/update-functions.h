@@ -37,15 +37,14 @@
 namespace chpl {
 class Context;
 
-template<typename T> struct update {
+template <typename T> struct update {
   bool operator()(T& keep, T& addin) const {
     // run update static method
     return T::update(keep, addin);
   }
 };
 
-template<typename T>
-static inline bool defaultUpdate(T& keep, T& addin) {
+template <typename T> static inline bool defaultUpdate(T& keep, T& addin) {
   std::equal_to<T> eq;
   if (eq(keep, addin)) {
     return false;
@@ -54,8 +53,7 @@ static inline bool defaultUpdate(T& keep, T& addin) {
     return true;
   }
 }
-template<typename T>
-static inline bool defaultUpdateBasic(T& keep, T& addin) {
+template <typename T> static inline bool defaultUpdateBasic(T& keep, T& addin) {
   if (keep == addin) {
     return false;
   } else {
@@ -64,21 +62,20 @@ static inline bool defaultUpdateBasic(T& keep, T& addin) {
   }
 }
 
-template<typename K, typename V>
-static inline bool
-defaultUpdateMap(std::map<K, V>& keep, std::map<K, V>& addin) {
+template <typename K, typename V>
+static inline bool defaultUpdateMap(std::map<K, V>& keep,
+                                    std::map<K, V>& addin) {
   return defaultUpdate(keep, addin);
 }
 
-template<typename T>
-static inline bool
-defaultUpdateSet(std::set<T>& keep, std::set<T>& addin) {
+template <typename T>
+static inline bool defaultUpdateSet(std::set<T>& keep, std::set<T>& addin) {
   return defaultUpdate(keep, addin);
 }
 
-template<typename T>
-static inline bool
-defaultUpdateVec(std::vector<T>& keep, std::vector<T>& addin) {
+template <typename T>
+static inline bool defaultUpdateVec(std::vector<T>& keep,
+                                    std::vector<T>& addin) {
   if (keep.size() == addin.size()) {
     bool anyUpdated = false;
     // try updating the elements individually
@@ -95,9 +92,9 @@ defaultUpdateVec(std::vector<T>& keep, std::vector<T>& addin) {
   }
 }
 
-template<typename T>
-static inline bool
-defaultUpdateOptional(chpl::optional<T>& keep, chpl::optional<T>& addin) {
+template <typename T>
+static inline bool defaultUpdateOptional(chpl::optional<T>& keep,
+                                         chpl::optional<T>& addin) {
   if (keep && addin) {
     chpl::update<T> combiner;
     return combiner(*keep, *addin);
@@ -109,11 +106,10 @@ defaultUpdateOptional(chpl::optional<T>& keep, chpl::optional<T>& addin) {
   }
 }
 
-template<typename T>
+template <typename T>
 static inline bool defaultUpdateOwned(owned<T>& keep, owned<T>& addin) {
   // are they both null?
-  if (keep.get() == nullptr && addin.get() == nullptr)
-    return false;
+  if (keep.get() == nullptr && addin.get() == nullptr) return false;
 
   // is one null but not the other?
   if (keep.get() == nullptr || addin.get() == nullptr) {
@@ -133,10 +129,9 @@ static inline bool defaultUpdateOwned(owned<T>& keep, owned<T>& addin) {
   return true;
 }
 
-template<typename A, typename B>
-static inline bool defaultUpdatePair(std::pair<A,B>& keep,
-                                     std::pair<A,B>& addin)
-{
+template <typename A, typename B>
+static inline bool defaultUpdatePair(std::pair<A, B>& keep,
+                                     std::pair<A, B>& addin) {
   chpl::update<A> aCombiner;
   chpl::update<B> bCombiner;
 
@@ -147,76 +142,74 @@ static inline bool defaultUpdatePair(std::pair<A,B>& keep,
 }
 
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<std::string> {
+template <> struct update<std::string> {
   bool operator()(std::string& keep, std::string& addin) const {
     return defaultUpdate(keep, addin);
   }
 };
 
-template<typename T> struct update<T*> {
+template <typename T> struct update<T*> {
   bool operator()(T*& keep, T*& addin) const {
     return defaultUpdateBasic(keep, addin);
   }
 };
 
-template<typename T> struct update<owned<T>> {
+template <typename T> struct update<owned<T>> {
   bool operator()(owned<T>& keep, owned<T>& addin) const {
     // call the static update method will usually use updateEqSwap
     return T::update(keep, addin);
   }
 };
 
-template<> struct update<int> {
+template <> struct update<int> {
   bool operator()(int& keep, int& addin) const {
     return defaultUpdateBasic(keep, addin);
   }
 };
 
-template<> struct update<bool> {
+template <> struct update<bool> {
   bool operator()(bool& keep, bool& addin) const {
     return defaultUpdateBasic(keep, addin);
   }
 };
 
-template<typename T> struct update<std::vector<T>> {
+template <typename T> struct update<std::vector<T>> {
   bool operator()(std::vector<T>& keep, std::vector<T>& addin) const {
     return defaultUpdateVec(keep, addin);
   }
 };
 
-template<typename T> struct update<chpl::optional<T>> {
+template <typename T> struct update<chpl::optional<T>> {
   bool operator()(chpl::optional<T>& keep, chpl::optional<T>& addin) const {
     return defaultUpdateOptional(keep, addin);
   }
 };
 
-template<typename K, typename V> struct update<std::map<K, V>> {
+template <typename K, typename V> struct update<std::map<K, V>> {
   bool operator()(std::map<K, V>& keep, std::map<K, V>& addin) const {
     return defaultUpdateMap(keep, addin);
   }
 };
 
-template<typename T> struct update<std::set<T>> {
+template <typename T> struct update<std::set<T>> {
   bool operator()(std::set<T>& keep, std::set<T>& addin) const {
     return defaultUpdateSet(keep, addin);
   }
 };
 
-template<typename K, typename V> struct update<std::unordered_map<K,V>> {
-  bool operator()(std::unordered_map<K,V>& keep,
-                  std::unordered_map<K,V>& addin) const {
+template <typename K, typename V> struct update<std::unordered_map<K, V>> {
+  bool operator()(std::unordered_map<K, V>& keep,
+                  std::unordered_map<K, V>& addin) const {
     return defaultUpdate(keep, addin);
   }
 };
 
-template<typename A, typename B> struct update<std::pair<A,B>> {
-  bool operator()(std::pair<A,B>& keep,
-                  std::pair<A,B>& addin) const {
+template <typename A, typename B> struct update<std::pair<A, B>> {
+  bool operator()(std::pair<A, B>& keep, std::pair<A, B>& addin) const {
     return defaultUpdatePair(keep, addin);
   }
 };
 /// \endcond
-
 
 } // end namespace chpl
 

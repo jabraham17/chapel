@@ -24,8 +24,7 @@
 #include <string>
 #include "chpl/framework/UniqueString.h"
 
-namespace chpl
-{
+namespace chpl {
 
 /*
   Removes the Sphinx inline markup for printing messages to the console.
@@ -39,6 +38,5 @@ std::string removeSphinxMarkup(UniqueString msg);
 std::string removeSphinxMarkup(const std::string& msg);
 
 } // namespace chpl
-
 
 #endif // CHPL_UTIL_FILTERING_H

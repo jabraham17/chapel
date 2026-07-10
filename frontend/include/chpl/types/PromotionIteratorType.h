@@ -51,12 +51,11 @@ class PromotionIteratorType final : public IteratorType {
                         QualifiedType yieldType,
                         resolution::PromotedFormalMap promotedFormals)
     : IteratorType(typetags::PromotionIteratorType, poiScope),
-      scalarFn_(scalarFn),
-      yieldType_(std::move(yieldType)),
+      scalarFn_(scalarFn), yieldType_(std::move(yieldType)),
       promotedFormals_(std::move(promotedFormals)) {}
 
   bool contentsMatchInner(const Type* other) const override {
-    auto rhs = (PromotionIteratorType*) other;
+    auto rhs = (PromotionIteratorType*)other;
     return iteratorTypeContentsMatchInner(rhs) &&
            this->scalarFn_ == rhs->scalarFn_ &&
            this->yieldType_ == rhs->yieldType_ &&
@@ -73,26 +72,25 @@ class PromotionIteratorType final : public IteratorType {
                            resolution::PromotedFormalMap promotedFormals);
 
  public:
-  static const PromotionIteratorType* get(Context* context,
-                                          const resolution::PoiScope* poiScope,
-                                          const resolution::TypedFnSignature* scalarFn,
-                                          QualifiedType retType,
-                                          resolution::PromotedFormalMap promotedFormals);
+  static const PromotionIteratorType*
+  get(Context* context,
+      const resolution::PoiScope* poiScope,
+      const resolution::TypedFnSignature* scalarFn,
+      QualifiedType retType,
+      resolution::PromotedFormalMap promotedFormals);
 
   virtual const Type* substitute(Context* context,
                                  const PlaceholderMap& subs) const override {
-    return get(context, poiScope_, scalarFn_->substitute(context, subs),
+    return get(context,
+               poiScope_,
+               scalarFn_->substitute(context, subs),
                yieldType_.substitute(context, subs),
                resolution::substituteInMap(context, promotedFormals_, subs));
   }
 
-  const resolution::TypedFnSignature* scalarFn() const {
-    return scalarFn_;
-  }
+  const resolution::TypedFnSignature* scalarFn() const { return scalarFn_; }
 
-  const QualifiedType& yieldType() const {
-    return yieldType_;
-  }
+  const QualifiedType& yieldType() const { return yieldType_; }
 
   const resolution::PromotedFormalMap& promotedFormals() const {
     return promotedFormals_;

@@ -28,7 +28,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a coforall loop. For example:
 
@@ -44,31 +43,32 @@ namespace uast {
 
  */
 class Coforall final : public IndexableLoop {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  Coforall(AstList children, int8_t indexChildNum,
+  Coforall(AstList children,
+           int8_t indexChildNum,
            int8_t iterandChildNum,
            int8_t withClauseChildNum,
            BlockStyle blockStyle,
            int loopBodyChildNum,
            int attributeGroupChildNum)
-    : IndexableLoop(asttags::Coforall, std::move(children),
+    : IndexableLoop(asttags::Coforall,
+                    std::move(children),
                     indexChildNum,
                     iterandChildNum,
                     withClauseChildNum,
                     blockStyle,
                     loopBodyChildNum,
                     /*isExpressionLevel*/ false,
-                    attributeGroupChildNum) {
-  }
+                    attributeGroupChildNum) {}
 
   void serializeInner(Serializer& ser) const override {
     indexableLoopSerializeInner(ser);
   }
 
   explicit Coforall(Deserializer& des)
-    : IndexableLoop(asttags::Coforall, des) { }
+    : IndexableLoop(asttags::Coforall, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     return indexableLoopContentsMatchInner(other->toIndexableLoop());
@@ -84,7 +84,8 @@ class Coforall final : public IndexableLoop {
   /**
     Create and return a coforall loop.
   */
-  static owned<Coforall> build(Builder* builder, Location loc,
+  static owned<Coforall> build(Builder* builder,
+                               Location loc,
                                owned<Decl> index,
                                owned<AstNode> iterand,
                                owned<WithClause> withClause,
@@ -92,7 +93,6 @@ class Coforall final : public IndexableLoop {
                                owned<Block> body,
                                owned<AttributeGroup> attributeGroup = nullptr);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

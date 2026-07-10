@@ -32,7 +32,7 @@
 
 #ifdef HAVE_LLVM
 namespace clang {
-  class DiagnosticOptions;
+class DiagnosticOptions;
 }
 #endif
 
@@ -41,7 +41,6 @@ class Context;
 class TemporaryFileResult;
 
 namespace util {
-
 
 /** Return the currently set clang flags.
     The first vector element is the clang to run (like argv[0]). */
@@ -87,23 +86,23 @@ const bool& precompiledHeaderContainsFunction(Context* context,
     if present, or an empty QualifiedType otherwise.
  */
 const types::QualifiedType& precompiledHeaderTypeForSymbol(
-    Context* context, const TemporaryFileResult* pch, UniqueString name);
+  Context* context, const TemporaryFileResult* pch, UniqueString name);
 
 /** Given a TemporaryFileResult created from createClangPrecompiledHeader,
     generate a TypedFnSignature from the function with the passed ID
     if present, or nullptr otherwise.
  */
 const resolution::TypedFnSignature* const& precompiledHeaderSigForFn(
-    Context* context, const TemporaryFileResult* pch, ID fnId);
+  Context* context, const TemporaryFileResult* pch, ID fnId);
 
 /** Given a TemporaryFileResult created from createClangPrecompiledHeader,
     return the Chapel equivalent of the return type of the function
     with the passed name if present, or an empty QualifiedType otherwise.
  */
 const types::QualifiedType& precompiledHeaderRetTypeForFn(
-    Context* context, const TemporaryFileResult* pch, UniqueString name);
+  Context* context, const TemporaryFileResult* pch, UniqueString name);
 
-}  // end namespace util
-}  // end namespace chpl
+} // end namespace util
+} // end namespace chpl
 
 #endif

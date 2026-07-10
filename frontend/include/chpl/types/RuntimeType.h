@@ -36,8 +36,8 @@ class RuntimeType final : public Type {
  private:
   const resolution::TypedFnSignature* initializer_;
 
-  RuntimeType(const resolution::TypedFnSignature* initializer):
-    Type(typetags::RuntimeType), initializer_(initializer) {
+  RuntimeType(const resolution::TypedFnSignature* initializer)
+    : Type(typetags::RuntimeType), initializer_(initializer) {
     CHPL_ASSERT(initializer != nullptr);
     CHPL_ASSERT(!initializer->needsInstantiation());
   }
@@ -47,7 +47,7 @@ class RuntimeType final : public Type {
                  const resolution::TypedFnSignature* initializer);
 
   bool contentsMatchInner(const Type* other) const override {
-    auto rhs = (const RuntimeType*) other;
+    auto rhs = (const RuntimeType*)other;
     return initializer_ == rhs->initializer_;
   }
 
@@ -55,20 +55,20 @@ class RuntimeType final : public Type {
     initializer_->mark(context);
   }
 
-  Genericity genericity() const override {
-    return CONCRETE;
-  }
+  Genericity genericity() const override { return CONCRETE; }
 
  public:
-  static const RuntimeType* get(Context* context,
-                                const resolution::TypedFnSignature* initializer);
+  static const RuntimeType*
+  get(Context* context, const resolution::TypedFnSignature* initializer);
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
     return get(context, initializer_->substitute(context, subs));
   }
 
-  const resolution::TypedFnSignature* initializer() const { return initializer_; }
+  const resolution::TypedFnSignature* initializer() const {
+    return initializer_;
+  }
 };
 
 } // end namespace types

@@ -28,12 +28,11 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This abstract class represents an indexable loop.
  */
 class IndexableLoop : public Loop {
- friend class AstNode;
+  friend class AstNode;
 
  protected:
   int8_t indexChildNum_;
@@ -41,7 +40,8 @@ class IndexableLoop : public Loop {
   int8_t withClauseChildNum_;
   bool isExpressionLevel_;
 
-  IndexableLoop(AstTag tag, AstList children,
+  IndexableLoop(AstTag tag,
+                AstList children,
                 int8_t indexChildNum,
                 int8_t iterandChildNum,
                 int8_t withClauseChildNum,
@@ -49,10 +49,12 @@ class IndexableLoop : public Loop {
                 int loopBodyChildNum,
                 bool isExpressionLevel,
                 int attributeGroupChildNum)
-    : Loop(tag, std::move(children), blockStyle,
-           loopBodyChildNum, attributeGroupChildNum),
-      indexChildNum_(indexChildNum),
-      iterandChildNum_(iterandChildNum),
+    : Loop(tag,
+           std::move(children),
+           blockStyle,
+           loopBodyChildNum,
+           attributeGroupChildNum),
+      indexChildNum_(indexChildNum), iterandChildNum_(iterandChildNum),
       withClauseChildNum_(withClauseChildNum),
       isExpressionLevel_(isExpressionLevel) {
 
@@ -67,8 +69,7 @@ class IndexableLoop : public Loop {
     ser.write(isExpressionLevel_);
   }
 
-  explicit IndexableLoop(AstTag tag, Deserializer& des)
-    : Loop(tag, des) {
+  explicit IndexableLoop(AstTag tag, Deserializer& des) : Loop(tag, des) {
     indexChildNum_ = des.read<int8_t>();
     iterandChildNum_ = des.read<int8_t>();
     withClauseChildNum_ = des.read<int8_t>();
@@ -79,20 +80,15 @@ class IndexableLoop : public Loop {
     const IndexableLoop* lhs = this;
     const IndexableLoop* rhs = other;
 
-    if (lhs->indexChildNum_ != rhs->indexChildNum_)
-      return false;
+    if (lhs->indexChildNum_ != rhs->indexChildNum_) return false;
 
-    if (lhs->iterandChildNum_ != rhs->iterandChildNum_)
-      return false;
+    if (lhs->iterandChildNum_ != rhs->iterandChildNum_) return false;
 
-    if (lhs->withClauseChildNum_ != rhs->withClauseChildNum_)
-      return false;
+    if (lhs->withClauseChildNum_ != rhs->withClauseChildNum_) return false;
 
-    if (lhs->isExpressionLevel_ != rhs->isExpressionLevel_)
-      return false;
+    if (lhs->isExpressionLevel_ != rhs->isExpressionLevel_) return false;
 
-    if (!lhs->loopContentsMatchInner(other))
-      return false;
+    if (!lhs->loopContentsMatchInner(other)) return false;
 
     return true;
   }
@@ -115,7 +111,7 @@ class IndexableLoop : public Loop {
     if (indexChildNum_ < 0) return nullptr;
     const AstNode* ast = child(indexChildNum_);
     CHPL_ASSERT(ast->isDecl());
-    return (const Decl*) ast;
+    return (const Decl*)ast;
   }
 
   /**
@@ -141,11 +137,8 @@ class IndexableLoop : public Loop {
   /**
     Returns true if this indexable loop appears at the expression level.
   */
-  bool isExpressionLevel() const {
-    return isExpressionLevel_;
-  }
+  bool isExpressionLevel() const { return isExpressionLevel_; }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

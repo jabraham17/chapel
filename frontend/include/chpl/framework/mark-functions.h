@@ -36,8 +36,7 @@
 
 namespace chpl {
 
-
-template<typename T> struct mark {
+template <typename T> struct mark {
   void operator()(Context* context, const T& keep) const {
     // run the mark method
     return keep.mark(context);
@@ -45,61 +44,61 @@ template<typename T> struct mark {
 };
 
 /// \cond DO_NOT_DOCUMENT
-template<typename T> struct mark<T*> {
+template <typename T> struct mark<T*> {
   void operator()(Context* context, const T* keep) const {
     context->markUnownedPointer(keep);
   }
 };
 
-template<typename T> struct mark<owned<T>> {
+template <typename T> struct mark<owned<T>> {
   void operator()(Context* context, owned<T>& keep) const {
     context->markOwnedPointer(keep.get());
   }
 };
 
-template<> struct mark<int> {
+template <> struct mark<int> {
   void operator()(Context* context, const int& keep) const {
     // nothing to do
   }
 };
 
-template<> struct mark<char> {
+template <> struct mark<char> {
   void operator()(Context* context, const char& keep) const {
     // nothing to do
   }
 };
 
-template<> struct mark<bool> {
+template <> struct mark<bool> {
   void operator()(Context* context, const bool& keep) const {
     // nothing to do
   }
 };
 
-template<> struct mark<std::string> {
+template <> struct mark<std::string> {
   void operator()(Context* context, const std::string& keep) const {
     // nothing to do
   }
 };
 
-template<typename T> struct mark<std::vector<T>> {
+template <typename T> struct mark<std::vector<T>> {
   void operator()(Context* context, const std::vector<T>& keep) const {
-    for (auto const &elt : keep) {
+    for (auto const& elt : keep) {
       chpl::mark<T> marker;
       marker(context, elt);
     }
   }
 };
 
-template<typename T> struct mark<llvm::SmallVector<T>> {
+template <typename T> struct mark<llvm::SmallVector<T>> {
   void operator()(Context* context, const llvm::SmallVector<T>& keep) const {
-    for (auto const &elt : keep) {
+    for (auto const& elt : keep) {
       chpl::mark<T> marker;
       marker(context, elt);
     }
   }
 };
 
-template<typename T> struct mark<chpl::optional<T>> {
+template <typename T> struct mark<chpl::optional<T>> {
   void operator()(Context* context, const chpl::optional<T>& keep) const {
     if (keep) {
       chpl::mark<T> marker;
@@ -108,10 +107,9 @@ template<typename T> struct mark<chpl::optional<T>> {
   }
 };
 
-
-template<typename K, typename V> struct mark<std::map<K, V>> {
+template <typename K, typename V> struct mark<std::map<K, V>> {
   void operator()(Context* context, const std::map<K, V>& keep) const {
-    for (auto &p : keep) {
+    for (auto& p : keep) {
       chpl::mark<K> kMarker;
       chpl::mark<V> vMarker;
       kMarker(context, p.first);
@@ -120,18 +118,19 @@ template<typename K, typename V> struct mark<std::map<K, V>> {
   }
 };
 
-template<typename T> struct mark<std::set<T>> {
+template <typename T> struct mark<std::set<T>> {
   void operator()(Context* context, const std::set<T>& keep) const {
-    for (auto const &elt : keep) {
+    for (auto const& elt : keep) {
       chpl::mark<T> marker;
       marker(context, elt);
     }
   }
 };
 
-template<typename K, typename V> struct mark<std::unordered_map<K,V>> {
-  void operator()(Context* context, const std::unordered_map<K,V>& keep) const {
-    for (auto const &pair : keep) {
+template <typename K, typename V> struct mark<std::unordered_map<K, V>> {
+  void operator()(Context* context,
+                  const std::unordered_map<K, V>& keep) const {
+    for (auto const& pair : keep) {
       chpl::mark<K> keyMarker;
       chpl::mark<V> valMarker;
       keyMarker(context, pair.first);
@@ -140,8 +139,8 @@ template<typename K, typename V> struct mark<std::unordered_map<K,V>> {
   }
 };
 
-template<typename A, typename B> struct mark<std::pair<A,B>> {
-  void operator()(Context* context, const std::pair<A,B>& keep) const {
+template <typename A, typename B> struct mark<std::pair<A, B>> {
+  void operator()(Context* context, const std::pair<A, B>& keep) const {
     chpl::mark<A> firstMarker;
     chpl::mark<B> secondMarker;
     firstMarker(context, keep.first);
@@ -149,33 +148,33 @@ template<typename A, typename B> struct mark<std::pair<A,B>> {
   }
 };
 
-template <typename Tuple, size_t ... Is>
-void mark_tuple_impl(Context* context, const Tuple& tuple, std::index_sequence<Is...>) {
+template <typename Tuple, size_t... Is>
+void mark_tuple_impl(Context* context,
+                     const Tuple& tuple,
+                     std::index_sequence<Is...>) {
   auto doMark = [&](auto& x) {
     // Template specialization uses T*, we have const T*&. Get the former.
-    using marker_type =
-      typename std::remove_const<
-        typename std::remove_reference<decltype(x)>::type>::type;
+    using marker_type = typename std::remove_const<
+      typename std::remove_reference<decltype(x)>::type>::type;
     mark<marker_type> marker;
     marker(context, x);
   };
-  auto dummy = {(doMark(std::get<Is>(tuple)),0)...};
-  (void) dummy;
+  auto dummy = {(doMark(std::get<Is>(tuple)), 0)...};
+  (void)dummy;
 }
 
-template<typename ... Ts> struct mark<std::tuple<Ts...>> {
+template <typename... Ts> struct mark<std::tuple<Ts...>> {
   void operator()(Context* context, const std::tuple<Ts...>& keep) const {
     mark_tuple_impl(context, keep, std::index_sequence_for<Ts...>());
   }
 };
-template<typename ... Ts> struct mark<const std::tuple<Ts...>> {
+template <typename... Ts> struct mark<const std::tuple<Ts...>> {
   void operator()(Context* context, const std::tuple<Ts...>& keep) const {
     mark_tuple_impl(context, keep, std::index_sequence_for<Ts...>());
   }
 };
 
 /// \endcond
-
 
 } // end namespace chpl
 

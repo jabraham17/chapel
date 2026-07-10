@@ -25,25 +25,19 @@
 namespace chpl {
 namespace types {
 
-
 /**
   This class represents an unknown type when the type is
   not known because it is not yet established.
  */
 class UnknownType final : public Type {
  private:
-  UnknownType() : Type(typetags::UnknownType) { }
+  UnknownType() : Type(typetags::UnknownType) {}
 
-  bool contentsMatchInner(const Type* other) const override {
-    return true;
-  }
+  bool contentsMatchInner(const Type* other) const override { return true; }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
-  Genericity genericity() const override {
-    return MAYBE_GENERIC;
-  }
+  Genericity genericity() const override { return MAYBE_GENERIC; }
 
   static const owned<UnknownType>& getUnknownType(Context* context);
 
@@ -52,7 +46,6 @@ class UnknownType final : public Type {
 
   static const UnknownType* get(Context* context);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

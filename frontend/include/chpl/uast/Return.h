@@ -26,7 +26,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a return statement. For example:
 
@@ -42,12 +41,12 @@ namespace uast {
 
  */
 class Return final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   int8_t valueChildNum_;
 
-  Return(AstList children,  int8_t valueChildNum)
+  Return(AstList children, int8_t valueChildNum)
     : AstNode(asttags::Return, std::move(children)),
       valueChildNum_(valueChildNum) {
     CHPL_ASSERT(valueChildNum_ <= 0);
@@ -57,23 +56,20 @@ class Return final : public AstNode {
     ser.write(valueChildNum_);
   }
 
-  explicit Return(Deserializer& des)
-    : AstNode(asttags::Return, des) {
+  explicit Return(Deserializer& des) : AstNode(asttags::Return, des) {
     valueChildNum_ = des.read<int8_t>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Return* lhs = this;
-    const Return* rhs = (const Return*) other;
+    const Return* rhs = (const Return*)other;
 
-    if (lhs->valueChildNum_ != rhs->valueChildNum_)
-      return false;
+    if (lhs->valueChildNum_ != rhs->valueChildNum_) return false;
 
     return true;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
  public:
   ~Return() override = default;
@@ -82,8 +78,8 @@ class Return final : public AstNode {
     Create and return a return statement. If value is nullptr, then there
     is no return value.
   */
-  static owned<Return> build(Builder* builder, Location loc,
-                             owned<AstNode> value);
+  static owned<Return>
+  build(Builder* builder, Location loc, owned<AstNode> value);
 
   /**
     Returns the value of this return statement, or nullptr if there
@@ -95,7 +91,6 @@ class Return final : public AstNode {
     return ret;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

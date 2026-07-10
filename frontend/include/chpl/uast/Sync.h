@@ -27,7 +27,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a sync statement. For example:
 
@@ -51,12 +50,13 @@ namespace uast {
  */
 
 class Sync final : public SimpleBlockLike {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  Sync(AstList stmts, BlockStyle blockStyle, int bodyChildNum,
-       int numBodyStmts)
-    : SimpleBlockLike(asttags::Sync, std::move(stmts), blockStyle,
+  Sync(AstList stmts, BlockStyle blockStyle, int bodyChildNum, int numBodyStmts)
+    : SimpleBlockLike(asttags::Sync,
+                      std::move(stmts),
+                      blockStyle,
                       bodyChildNum,
                       numBodyStmts) {
     CHPL_ASSERT(bodyChildNum_ >= 0);
@@ -66,7 +66,7 @@ class Sync final : public SimpleBlockLike {
     simpleBlockLikeSerializeInner(ser);
   }
 
-  explicit Sync(Deserializer& des) : SimpleBlockLike(asttags::Sync, des) { }
+  explicit Sync(Deserializer& des) : SimpleBlockLike(asttags::Sync, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     return simpleBlockLikeContentsMatchInner(other);
@@ -82,11 +82,9 @@ class Sync final : public SimpleBlockLike {
   /**
    Create and return a Sync containing the passed stmts.
    */
-  static owned<Sync> build(Builder* builder, Location loc,
-                           BlockStyle blockStyle,
-                           AstList stmts);
+  static owned<Sync>
+  build(Builder* builder, Location loc, BlockStyle blockStyle, AstList stmts);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

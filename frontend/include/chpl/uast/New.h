@@ -39,57 +39,47 @@ namespace uast {
   is a New node (representing 'new bar').
 */
 class New : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  public:
   /**
     Possible management flavors for a new expression.
   */
-  enum Management {
-    DEFAULT_MANAGEMENT,
-    BORROWED,
-    OWNED,
-    SHARED,
-    UNMANAGED
-  };
+  enum Management { DEFAULT_MANAGEMENT, BORROWED, OWNED, SHARED, UNMANAGED };
 
  private:
   Management management_;
 
   New(AstList children, New::Management management)
-    : AstNode(asttags::New, std::move(children)),
-      management_(management) {}
+    : AstNode(asttags::New, std::move(children)), management_(management) {}
 
   void serializeInner(Serializer& ser) const override {
     ser.write(management_);
   }
 
-  explicit New(Deserializer& des)
-    : AstNode(asttags::New, des) {
+  explicit New(Deserializer& des) : AstNode(asttags::New, des) {
     management_ = des.read<Management>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const New* lhs = this;
-    const New* rhs = (const New*) other;
+    const New* rhs = (const New*)other;
 
-    if (lhs->management_ != rhs->management_)
-      return false;
+    if (lhs->management_ != rhs->management_) return false;
 
     return true;
   }
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
   void dumpFieldsInner(const DumpSettings& s) const override;
 
  public:
-
   /**
     Create and return a new expression with the given type expression and
     management style.
   */
-  static owned<New> build(Builder* builder, Location loc,
+  static owned<New> build(Builder* builder,
+                          Location loc,
                           owned<AstNode> typeExpression,
                           Management management);
 
@@ -104,9 +94,7 @@ class New : public AstNode {
   /**
     Returns the management style of this new expression.
   */
-  Management management() const {
-    return management_;
-  }
+  Management management() const { return management_; }
 
   /**
     Given a management style, return the Chapel keyword representing it.
@@ -120,21 +108,18 @@ class New : public AstNode {
   static Management stringToManagement(UniqueString ustr);
 };
 
-
-
 } // end namespace uast
 
 /// \cond DO_NOT_DOCUMENT
 
-template <>
-struct mark<uast::New::Management> {
+template <> struct mark<uast::New::Management> {
   void operator()(Context* context, uast::New::Management t) {
     // No need to mark enums
   }
 };
-template <>
-struct stringify<uast::New::Management> {
-  void operator()(std::ostream& os, StringifyKind stringKind,
+template <> struct stringify<uast::New::Management> {
+  void operator()(std::ostream& os,
+                  StringifyKind stringKind,
                   uast::New::Management k) {
     os << uast::New::managementToString(k);
   }
@@ -148,13 +133,12 @@ DECLARE_SERDE_ENUM(uast::New::Management, uint8_t);
 
 namespace std {
 
-template <>
-struct hash<chpl::uast::New::Management> {
+template <> struct hash<chpl::uast::New::Management> {
   size_t operator()(const chpl::uast::New::Management& key) const {
     return (size_t)key;
   }
 };
 
-}  // end namespace std
+} // end namespace std
 
 #endif

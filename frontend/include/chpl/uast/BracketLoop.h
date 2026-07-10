@@ -28,7 +28,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a bracket loop. For example:
 
@@ -42,32 +41,33 @@ namespace uast {
 
  */
 class BracketLoop final : public IndexableLoop {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  BracketLoop(AstList children, int8_t indexChildNum,
+  BracketLoop(AstList children,
+              int8_t indexChildNum,
               int8_t iterandChildNum,
               int8_t withClauseChildNum,
               BlockStyle blockStyle,
               int loopBodyChildNum,
               bool isExpressionLevel,
               int attributeGroupChildNum)
-    : IndexableLoop(asttags::BracketLoop, std::move(children),
+    : IndexableLoop(asttags::BracketLoop,
+                    std::move(children),
                     indexChildNum,
                     iterandChildNum,
                     withClauseChildNum,
                     blockStyle,
                     loopBodyChildNum,
                     isExpressionLevel,
-                    attributeGroupChildNum) {
-  }
+                    attributeGroupChildNum) {}
 
   void serializeInner(Serializer& ser) const override {
     indexableLoopSerializeInner(ser);
   }
 
   explicit BracketLoop(Deserializer& des)
-    : IndexableLoop(asttags::BracketLoop, des) { }
+    : IndexableLoop(asttags::BracketLoop, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     return indexableLoopContentsMatchInner(other->toIndexableLoop());
@@ -83,23 +83,22 @@ class BracketLoop final : public IndexableLoop {
   /**
     Create and return a bracket loop.
   */
-  static owned<BracketLoop> build(Builder* builder, Location loc,
-                                  owned<Decl> index,
-                                  owned<AstNode> iterand,
-                                  owned<WithClause> withClause,
-                                  BlockStyle blockStyle,
-                                  owned<Block> body,
-                                  bool isExpressionLevel,
-                                  owned<AttributeGroup> attributeGroup = nullptr);
+  static owned<BracketLoop>
+  build(Builder* builder,
+        Location loc,
+        owned<Decl> index,
+        owned<AstNode> iterand,
+        owned<WithClause> withClause,
+        BlockStyle blockStyle,
+        owned<Block> body,
+        bool isExpressionLevel,
+        owned<AttributeGroup> attributeGroup = nullptr);
 
   /**
    * Check if this bracket loop is actually an array type
    */
   bool isMaybeArrayType() const;
 };
-
-
-
 
 } // end namespace uast
 } // end namespace chpl

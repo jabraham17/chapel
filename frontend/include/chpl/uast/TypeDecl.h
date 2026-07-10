@@ -25,32 +25,34 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This is an abstract base class for Symbols defining a type
   (e.g. classes, records, enums).
  */
 class TypeDecl : public NamedDecl {
- friend class AstNode;
+  friend class AstNode;
 
  protected:
-  TypeDecl(asttags::AstTag tag, AstList children, int attributeGroupChildNum,
+  TypeDecl(asttags::AstTag tag,
+           AstList children,
+           int attributeGroupChildNum,
            Decl::Visibility vis,
            Decl::Linkage linkage,
            int linkageNameChildNum,
            UniqueString name)
-    : NamedDecl(tag, std::move(children), attributeGroupChildNum, vis,
+    : NamedDecl(tag,
+                std::move(children),
+                attributeGroupChildNum,
+                vis,
                 linkage,
                 linkageNameChildNum,
-                name) {
-
-  }
+                name) {}
 
   void typeDeclSerializeInner(Serializer& ser) const {
     namedDeclSerializeInner(ser);
   }
 
-  TypeDecl(AstTag tag, Deserializer& des) : NamedDecl(tag, des) { }
+  TypeDecl(AstTag tag, Deserializer& des) : NamedDecl(tag, des) {}
 
   bool typeDeclContentsMatchInner(const TypeDecl* other) const {
     return namedDeclContentsMatchInner(other);
@@ -63,7 +65,6 @@ class TypeDecl : public NamedDecl {
  public:
   virtual ~TypeDecl() = 0; // this is an abstract base class
 };
-
 
 } // end namespace uast
 } // end namespace chpl

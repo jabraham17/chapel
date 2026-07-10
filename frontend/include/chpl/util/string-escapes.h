@@ -24,7 +24,6 @@
 
 namespace chpl {
 
-
 /** checks for interior null bytes in the string */
 bool stringContainsZeroBytes(const char* s, size_t len);
 
@@ -51,7 +50,6 @@ std::string unescapeStringId(const std::string& str);
 
 /** remove \ escapes from something stored as a symbolPath in an ID */
 std::string unescapeStringId(const char* str);
-
 
 } // end namespace chpl
 

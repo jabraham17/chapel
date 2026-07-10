@@ -26,47 +26,48 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This is an abstract base class for declarations that carry a name.
  */
 class NamedDecl : public Decl {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   UniqueString name_;
 
  protected:
-  NamedDecl(AstTag tag, Decl::Visibility visibility, Decl::Linkage linkage,
+  NamedDecl(AstTag tag,
+            Decl::Visibility visibility,
+            Decl::Linkage linkage,
             UniqueString name)
-    : Decl(tag, visibility, linkage),
-      name_(name) {
-  }
+    : Decl(tag, visibility, linkage), name_(name) {}
 
-  NamedDecl(AstTag tag, AstList children, int attributeGroupChildNum,
+  NamedDecl(AstTag tag,
+            AstList children,
+            int attributeGroupChildNum,
             Decl::Visibility visibility,
             Decl::Linkage linkage,
             int linkageNameChildNum,
             UniqueString name)
-    : Decl(tag, std::move(children), attributeGroupChildNum, visibility,
+    : Decl(tag,
+           std::move(children),
+           attributeGroupChildNum,
+           visibility,
            linkage,
            linkageNameChildNum),
-      name_(name) {
-  }
+      name_(name) {}
 
   void namedDeclSerializeInner(Serializer& ser) const {
     declSerializeInner(ser);
     ser.write(name_);
   }
 
-  NamedDecl(AstTag tag, Deserializer& des)
-    : Decl(tag, des) {
+  NamedDecl(AstTag tag, Deserializer& des) : Decl(tag, des) {
     name_ = des.read<UniqueString>();
   }
 
   bool namedDeclContentsMatchInner(const NamedDecl* other) const {
-    return this->name_ == other->name_ &&
-           declContentsMatchInner(other);
+    return this->name_ == other->name_ && declContentsMatchInner(other);
   }
 
   void namedDeclMarkUniqueStringsInner(Context* context) const {
@@ -80,7 +81,6 @@ class NamedDecl : public Decl {
 
   UniqueString name() const { return name_; }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

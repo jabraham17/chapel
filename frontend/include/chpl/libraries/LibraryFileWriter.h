@@ -33,10 +33,9 @@ namespace chpl {
 // forward declarations
 class Context;
 namespace uast {
-  class Module;
+class Module;
 }
 namespace libraries {
-
 
 class LibraryFileWriter;
 
@@ -44,7 +43,7 @@ class LibraryFileWriter;
   Helper object for registering serialized uAST positions during serialization
  */
 class LibraryFileSerializationHelper {
- friend class LibraryFileWriter;
+  friend class LibraryFileWriter;
 
  private:
   uint64_t moduleSectionStart = 0;
@@ -68,7 +67,7 @@ class LibraryFileSerializationHelper {
   // Only nodes in symbolTableSet are represented here.
   std::unordered_map<const uast::AstNode*, uint32_t> locOffsets;
 
-  LibraryFileSerializationHelper() { }
+  LibraryFileSerializationHelper() {}
 
  public:
   /** Record that a symbol should be present in the symbol table. */
@@ -79,7 +78,6 @@ class LibraryFileSerializationHelper {
   /* Should be called when finishing serialization of a uAST node */
   void endAst(const uast::AstNode* ast, std::ostream& os);
 };
-
 
 /** For writing a .dyno library file */
 class LibraryFileWriter {
@@ -184,8 +182,7 @@ class LibraryFileWriter {
   /**
     Construct a LibraryFileWriter to output to 'outputFilePath' */
   LibraryFileWriter(Context* context, std::string outputFilePath)
-    : context(context), outputFilePath(outputFilePath)
-  { }
+    : context(context), outputFilePath(outputFilePath) {}
 
   /**
     Parse the uAST for the provided source paths and save
@@ -215,7 +212,6 @@ class LibraryFileWriter {
   static std::vector<UniqueString>
   gatherTopLevelModuleNames(Context* context, std::vector<UniqueString> paths);
 };
-
 
 } // end namespace libraries
 } // end namespace chpl

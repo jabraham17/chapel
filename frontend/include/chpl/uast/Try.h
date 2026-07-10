@@ -29,7 +29,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a try statement or try expression. For example:
 
@@ -53,7 +52,7 @@ namespace uast {
   block.
  */
 class Try final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   // body position is always the same
@@ -72,11 +71,9 @@ class Try final : public AstNode {
       bool containsBlock,
       bool isExpressionLevel,
       bool isTryBang)
-        : AstNode(asttags::Try, std::move(children)),
-          numHandlers_(numHandlers),
-          containsBlock_(containsBlock),
-          isExpressionLevel_(isExpressionLevel),
-          isTryBang_(isTryBang) {
+    : AstNode(asttags::Try, std::move(children)), numHandlers_(numHandlers),
+      containsBlock_(containsBlock), isExpressionLevel_(isExpressionLevel),
+      isTryBang_(isTryBang) {
     if (isExpressionLevel_) {
       CHPL_ASSERT(numHandlers == 0);
     }
@@ -94,24 +91,22 @@ class Try final : public AstNode {
     ser.write(isTryBang_);
   }
 
-  explicit Try(Deserializer& des)
-    : AstNode(asttags::Try, des) {
-      numHandlers_ = des.readVInt();
-      containsBlock_ = des.read<bool>();
-      isExpressionLevel_ = des.read<bool>();
-      isTryBang_ = des.read<bool>();
+  explicit Try(Deserializer& des) : AstNode(asttags::Try, des) {
+    numHandlers_ = des.readVInt();
+    containsBlock_ = des.read<bool>();
+    isExpressionLevel_ = des.read<bool>();
+    isTryBang_ = des.read<bool>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Try* rhs = other->toTry();
     return this->numHandlers_ == rhs->numHandlers_ &&
-      this->containsBlock_ == rhs->containsBlock_ &&
-      this->isExpressionLevel_ == rhs->isExpressionLevel_ &&
-      this->isTryBang_ == rhs->isTryBang_;
+           this->containsBlock_ == rhs->containsBlock_ &&
+           this->isExpressionLevel_ == rhs->isExpressionLevel_ &&
+           this->isTryBang_ == rhs->isTryBang_;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
   void dumpFieldsInner(const DumpSettings& s) const override;
   std::string dumpChildLabelInner(int i) const override;
@@ -122,14 +117,17 @@ class Try final : public AstNode {
   /**
     Create and return a try statement.
   */
-  static owned<Try> build(Builder* builder, Location loc, owned<Block> body,
+  static owned<Try> build(Builder* builder,
+                          Location loc,
+                          owned<Block> body,
                           AstList catches,
                           bool isTryBang);
 
   /**
     Create and return a try expression or decorated statement.
   */
-  static owned<Try> build(Builder* builder, Location loc,
+  static owned<Try> build(Builder* builder,
+                          Location loc,
                           owned<AstNode> expr,
                           bool isTryBang,
                           bool isExpressionLevel);
@@ -141,7 +139,7 @@ class Try final : public AstNode {
   const Block* body() const {
     if (containsBlock_) {
       CHPL_ASSERT(numBodyStmts_ == 1);
-      return (Block*) child(bodyChildNum_);
+      return (Block*)child(bodyChildNum_);
     } else {
       return nullptr;
     }
@@ -154,8 +152,8 @@ class Try final : public AstNode {
     if (const Block* stmtBody = body()) {
       return stmtBody->stmts();
     } else {
-      auto begin = numBodyStmts_ ? children_.begin() + bodyChildNum_
-                                 : children_.end();
+      auto begin =
+        numBodyStmts_ ? children_.begin() + bodyChildNum_ : children_.end();
       auto end = begin + numBodyStmts_;
       return AstListIteratorPair<AstNode>(begin, end);
     }
@@ -190,8 +188,8 @@ class Try final : public AstNode {
     Iterate over the catch blocks contained in this try.
   */
   AstListIteratorPair<Catch> handlers() const {
-    auto begin = numHandlers_ ? children_.begin() + numBodyStmts_
-                              : children_.end();
+    auto begin =
+      numHandlers_ ? children_.begin() + numBodyStmts_ : children_.end();
     auto end = begin + numHandlers_;
     return AstListIteratorPair<Catch>(begin, end);
   }
@@ -199,9 +197,7 @@ class Try final : public AstNode {
   /**
     Return the number of catch blocks contained in this try.
   */
-  int numHandlers() const {
-    return numHandlers_;
-  }
+  int numHandlers() const { return numHandlers_; }
 
   /**
     Return the i'th catch block contained in this try.
@@ -216,18 +212,13 @@ class Try final : public AstNode {
   /**
     Return true if this try is at an expression level.
   */
-  bool isExpressionLevel() const {
-    return isExpressionLevel_;
-  }
+  bool isExpressionLevel() const { return isExpressionLevel_; }
 
   /**
     Return true if this try should halt when an error is not handled.
   */
-  bool isTryBang() const {
-    return isTryBang_;
-  }
+  bool isTryBang() const { return isTryBang_; }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

@@ -85,26 +85,25 @@ struct InlinedString {
   };
 
   enum {
-    INLINE_TAG=0xbb, // could be any odd value
-    MAX_SIZE_INLINED=sizeof(uintptr_t)-2
+    INLINE_TAG = 0xbb, // could be any odd value
+    MAX_SIZE_INLINED = sizeof(uintptr_t) - 2
   };
 
   static inline bool alignmentIndicatesTag(const char* s) {
-    uintptr_t val = (uintptr_t) s;
+    uintptr_t val = (uintptr_t)s;
     // check if the low-order bits are the tag indicating inline
     return (val == 0) || ((val & 0xff) == INLINE_TAG);
   }
 
   static char* dataAssumingTag(void* vptr) {
-    char* ptr = (char*) vptr;
+    char* ptr = (char*)vptr;
 
     // assuming the tag is present, where is the string data?
     // on a little endian system, need to pass over the tag.
     // on big endian systems, the tag is after the null terminator,
     // so no action is necessary.
 
-    if (little_endian())
-      ptr += 1; // pass over the tag
+    if (little_endian()) ptr += 1; // pass over the tag
 
     return ptr;
   }
@@ -115,8 +114,7 @@ struct InlinedString {
    */
   static inline InlinedString buildInlined(const char* s, size_t len) {
     // Store empty strings as nullptr
-    if (s == nullptr || len == 0)
-      return {{ nullptr }};
+    if (s == nullptr || len == 0) return {{nullptr}};
 
     CHPL_ASSERT(len <= MAX_SIZE_INLINED);
     CHPL_ASSERT(!stringContainsZeroBytes(s, len));
@@ -127,7 +125,7 @@ struct InlinedString {
     // (since null byte will come from the zeros in val)
     memcpy(dst, s, len);
     // create a struct with the value we created and return it
-    return {{ (const char*) val }};
+    return {{(const char*)val}};
   }
 
   /**
@@ -136,17 +134,15 @@ struct InlinedString {
    */
   static inline InlinedString buildFromAlignedPtr(const char* s, size_t len) {
     CHPL_ASSERT(!alignmentIndicatesTag(s));
-    return {{ s }};
+    return {{s}};
   }
 
-  static InlinedString buildUsingContextTable(Context* context,
-                                              const char* s, size_t len);
+  static InlinedString
+  buildUsingContextTable(Context* context, const char* s, size_t len);
 
   // innerNull indicates if the string contains an inner null byte
-  static InlinedString get(Context* context,
-                             const char* s,
-                             size_t len,
-                             bool innerNull) {
+  static InlinedString
+  get(Context* context, const char* s, size_t len, bool innerNull) {
     if (len <= MAX_SIZE_INLINED && !innerNull) {
       // if it fits inline, just return that
       return InlinedString::buildInlined(s, len);
@@ -164,13 +160,12 @@ struct InlinedString {
   static InlinedString get(Context* context, const char* s) {
     size_t len = 0;
     if (s != NULL) len = strlen(s);
-    return InlinedString::get(context, s, len, /*innerNull*/ false );
+    return InlinedString::get(context, s, len, /*innerNull*/ false);
   }
-  static InlinedString get() {
-    return InlinedString::buildInlined("", 0);
-  }
+  static InlinedString get() { return InlinedString::buildInlined("", 0); }
   static InlinedString getConcat(Context* context,
-                                 const char* s1, const char* s2,
+                                 const char* s1,
+                                 const char* s2,
                                  const char* s3 = nullptr,
                                  const char* s4 = nullptr,
                                  const char* s5 = nullptr,
@@ -179,12 +174,10 @@ struct InlinedString {
                                  const char* s8 = nullptr,
                                  const char* s9 = nullptr);
 
-  bool isInline() const {
-    return alignmentIndicatesTag(this->v);
-  }
+  bool isInline() const { return alignmentIndicatesTag(this->v); }
   const char* c_str() const {
     if (this->isInline()) {
-      return dataAssumingTag((void*) &this->v);
+      return dataAssumingTag((void*)&this->v);
     }
 
     // otherwise, s is a real pointer
@@ -195,9 +188,7 @@ struct InlinedString {
   // return a long-lived pointer
   const char* astr(Context* context) const;
 
-  std::string str() const {
-    return std::string(c_str(), length());
-  }
+  std::string str() const { return std::string(c_str(), length()); }
 
   bool isEmpty() const {
     if (isInline()) {
@@ -221,13 +212,14 @@ struct InlinedString {
 struct PODUniqueString {
   InlinedString i;
   static PODUniqueString get(Context* context, const char* s, size_t len) {
-    return { InlinedString::get(context, s, len) };
+    return {InlinedString::get(context, s, len)};
   }
   static PODUniqueString get(Context* context, const char* s) {
-    return { InlinedString::get(context, s) };
+    return {InlinedString::get(context, s)};
   }
   static PODUniqueString getConcat(Context* context,
-                                   const char* s1, const char* s2,
+                                   const char* s1,
+                                   const char* s2,
                                    const char* s3 = nullptr,
                                    const char* s4 = nullptr,
                                    const char* s5 = nullptr,
@@ -235,36 +227,23 @@ struct PODUniqueString {
                                    const char* s7 = nullptr,
                                    const char* s8 = nullptr,
                                    const char* s9 = nullptr) {
-    return { InlinedString::getConcat(context, s1, s2,
-                                      s3, s4,
-                                      s5, s6,
-                                      s7, s8, s9) };
+    return {
+      InlinedString::getConcat(context, s1, s2, s3, s4, s5, s6, s7, s8, s9)};
   }
-
 
   static inline PODUniqueString get() {
     PODUniqueString ret = {InlinedString::get()};
     return ret;
   }
-  const char* c_str() const {
-    return i.c_str();
-  }
-  size_t length() const {
-    return i.length();
-  }
+  const char* c_str() const { return i.c_str(); }
+  size_t length() const { return i.length(); }
 
   // return a long-lived pointer
-  const char* astr(Context* context) const {
-    return i.astr(context);
-  }
+  const char* astr(Context* context) const { return i.astr(context); }
 
-  std::string str() const {
-    return std::string(c_str(), length());
-  }
+  std::string str() const { return std::string(c_str(), length()); }
 
-  bool isEmpty() const {
-    return i.isEmpty();
-  }
+  bool isEmpty() const { return i.isEmpty(); }
   inline bool operator==(const PODUniqueString other) const {
     return this->i.v == other.i.v;
   }
@@ -273,13 +252,10 @@ struct PODUniqueString {
   }
   size_t hash() const {
     std::hash<size_t> hasher;
-    return hasher((size_t) i.v);
+    return hasher((size_t)i.v);
   }
-  void mark(Context* context) const {
-    i.mark(context);
-  }
+  void mark(Context* context) const { i.mark(context); }
 };
-
 
 } // end namespace detail
 } // end namespace chpl

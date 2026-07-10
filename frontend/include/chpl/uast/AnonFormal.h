@@ -25,10 +25,8 @@
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/Qualifier.h"
 
-
 namespace chpl {
 namespace uast {
-
 
 /**
   This class represents an anonymous formal. Anonymous formals can
@@ -63,7 +61,7 @@ namespace uast {
   They also do not carry an initialization expression.
 */
 class AnonFormal final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  public:
   using Intent = Formal::Intent;
@@ -72,39 +70,36 @@ class AnonFormal final : public AstNode {
   Intent intent_;
   int8_t typeExpressionChildNum_ = NO_CHILD;
 
-  AnonFormal(AstList children, Intent intent,
-             int8_t typeExpressionChildNum)
-    : AstNode(asttags::AnonFormal, std::move(children)),
-      intent_(intent),
-      typeExpressionChildNum_(typeExpressionChildNum) {
-  }
+  AnonFormal(AstList children, Intent intent, int8_t typeExpressionChildNum)
+    : AstNode(asttags::AnonFormal, std::move(children)), intent_(intent),
+      typeExpressionChildNum_(typeExpressionChildNum) {}
 
   void serializeInner(Serializer& ser) const override {
     ser.write(intent_);
     ser.write(typeExpressionChildNum_);
   }
 
-  explicit AnonFormal(Deserializer& des)
-    : AstNode(asttags::AnonFormal, des) {
+  explicit AnonFormal(Deserializer& des) : AstNode(asttags::AnonFormal, des) {
     intent_ = des.read<Formal::Intent>();
     typeExpressionChildNum_ = des.read<int8_t>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const AnonFormal* lhs = this;
-    const AnonFormal* rhs = (const AnonFormal*) other;
+    const AnonFormal* rhs = (const AnonFormal*)other;
     return lhs->intent_ == rhs->intent_ &&
            lhs->typeExpressionChildNum_ == rhs->typeExpressionChildNum_;
   }
 
-  void markUniqueStringsInner(Context* context) const override { }
+  void markUniqueStringsInner(Context* context) const override {}
 
   void dumpInner(const DumpSettings& s) const;
 
  public:
   ~AnonFormal() override = default;
 
-  static owned<AnonFormal> build(Builder* builder, Location loc,
+  static owned<AnonFormal> build(Builder* builder,
+                                 Location loc,
                                  Intent intent,
                                  owned<AstNode> typeExpression);
 
@@ -114,7 +109,7 @@ class AnonFormal final : public AstNode {
   */
   Intent intent() const { return intent_; }
 
-  Qualifier storageKind() const { return ((Qualifier) intent_); }
+  Qualifier storageKind() const { return ((Qualifier)intent_); }
 
   /**
     Returns the type expression of the formal.
@@ -130,12 +125,9 @@ class AnonFormal final : public AstNode {
   }
 };
 
-
 } // end namespace uast
 
-
 DECLARE_SERDE_ENUM(uast::Formal::Intent, uint8_t);
-
 
 } // end namespace chpl
 

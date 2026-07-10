@@ -25,7 +25,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This abstract class represents something call-like.
   It represents a called expression as well as a number of actuals.
@@ -34,33 +33,26 @@ namespace uast {
   are the actuals.
  */
 class Call : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  protected:
   bool hasCalledExpression_;
 
-  Call(AstTag tag)
-    : AstNode(tag), hasCalledExpression_(false) {
-  }
+  Call(AstTag tag) : AstNode(tag), hasCalledExpression_(false) {}
   Call(AstTag tag, AstList children, bool hasCalledExpression)
     : AstNode(tag, std::move(children)),
-      hasCalledExpression_(hasCalledExpression) {
-  }
+      hasCalledExpression_(hasCalledExpression) {}
 
   void callSerializeInner(Serializer& ser) const {
     ser.write(hasCalledExpression_);
   }
 
-  explicit Call(AstTag tag, Deserializer& des)
-    : AstNode(tag, des) {
+  explicit Call(AstTag tag, Deserializer& des) : AstNode(tag, des) {
     hasCalledExpression_ = des.read<bool>();
   }
 
-  bool callContentsMatchInner(const Call* other) const {
-    return true;
-  }
-  void callMarkUniqueStringsInner(Context* context) const {
-  }
+  bool callContentsMatchInner(const Call* other) const { return true; }
+  void callMarkUniqueStringsInner(Context* context) const {}
 
   virtual std::string dumpChildLabelInner(int i) const override;
 
@@ -71,20 +63,17 @@ class Call : public AstNode {
    Returns an iterable expression over the actuals of a call.
    */
   AstListIteratorPair<AstNode> actuals() const {
-    return
-      AstListIteratorPair<AstNode>(children_.begin()+hasCalledExpression_,
-                                      children_.end());
+    return AstListIteratorPair<AstNode>(
+      children_.begin() + hasCalledExpression_, children_.end());
   }
 
   // note: the reason for the +/- 1 below is that the
   // 0'th child is the called expression, which does
   // not count as an "actual".
 
-  int numActuals() const {
-    return this->numChildren() - hasCalledExpression_;
-  }
+  int numActuals() const { return this->numChildren() - hasCalledExpression_; }
   const AstNode* actual(int i) const {
-    const AstNode* ast = this->child(i+hasCalledExpression_);
+    const AstNode* ast = this->child(i + hasCalledExpression_);
     return ast;
   }
 
@@ -103,7 +92,6 @@ class Call : public AstNode {
     }
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

@@ -24,10 +24,8 @@
 #include "chpl/uast/Loop.h"
 #include "chpl/framework/UniqueString.h"
 
-
 namespace chpl {
 namespace uast {
-
 
 /**
   This class represents a label. For example:
@@ -43,21 +41,17 @@ namespace uast {
 
 */
 class Label final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   Label(AstList children, UniqueString name)
-    : AstNode(asttags::Label, std::move(children)),
-      name_(name) {
+    : AstNode(asttags::Label, std::move(children)), name_(name) {
     CHPL_ASSERT(numChildren() == 1);
   }
 
-  void serializeInner(Serializer& ser) const override {
-    ser.write(name_);
-  }
+  void serializeInner(Serializer& ser) const override { ser.write(name_); }
 
-  explicit Label(Deserializer& des)
-    : AstNode(asttags::Label, des) {
+  explicit Label(Deserializer& des) : AstNode(asttags::Label, des) {
     name_ = des.read<UniqueString>();
   }
 
@@ -67,8 +61,7 @@ class Label final : public AstNode {
 
     CHPL_ASSERT(lhs->loopChildNum_ == rhs->loopChildNum_);
 
-    if (lhs->name_ != rhs->name_)
-      return false;
+    if (lhs->name_ != rhs->name_) return false;
 
     return true;
   }
@@ -88,9 +81,8 @@ class Label final : public AstNode {
   /**
     Create and return a label statement.
   */
-  static owned<Label> build(Builder* builder, Location loc,
-                            UniqueString name,
-                            owned<Loop> loop);
+  static owned<Label>
+  build(Builder* builder, Location loc, UniqueString name, owned<Loop> loop);
 
   /**
     Return the loop of this label statement.
@@ -104,11 +96,8 @@ class Label final : public AstNode {
   /**
     Return the name of this label statement.
   */
-  UniqueString name() const {
-    return name_;
-  }
+  UniqueString name() const { return name_; }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

@@ -28,7 +28,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a manage statement. For example:
 
@@ -44,17 +43,21 @@ namespace uast {
   that can be referred to as 'res'.
  */
 class Manage final : public SimpleBlockLike {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   int managerExprChildNum_;
   int numManagerExprs_;
 
-  Manage(AstList stmts, int managerExprChildNum, int numManagerExprs,
+  Manage(AstList stmts,
+         int managerExprChildNum,
+         int numManagerExprs,
          BlockStyle blockStyle,
          int bodyChildNum,
          int numBodyStmts)
-    : SimpleBlockLike(asttags::Manage, std::move(stmts), blockStyle,
+    : SimpleBlockLike(asttags::Manage,
+                      std::move(stmts),
+                      blockStyle,
                       bodyChildNum,
                       numBodyStmts),
       managerExprChildNum_(managerExprChildNum),
@@ -62,11 +65,11 @@ class Manage final : public SimpleBlockLike {
     CHPL_ASSERT(0 <= managerExprChildNum_);
     CHPL_ASSERT(managerExprChildNum_ < numChildren());
 
-    #ifndef NDEBUG
-      for (auto mgr : managers()) {
-        if (auto as = mgr->toAs()) CHPL_ASSERT(as->rename()->isVariable());
-      }
-    #endif
+#ifndef NDEBUG
+    for (auto mgr : managers()) {
+      if (auto as = mgr->toAs()) CHPL_ASSERT(as->rename()->isVariable());
+    }
+#endif
   }
 
   void serializeInner(Serializer& ser) const override {
@@ -75,18 +78,17 @@ class Manage final : public SimpleBlockLike {
     ser.writeVInt(numManagerExprs_);
   }
 
-  explicit Manage(Deserializer& des)
-    : SimpleBlockLike(asttags::Manage, des) {
+  explicit Manage(Deserializer& des) : SimpleBlockLike(asttags::Manage, des) {
     managerExprChildNum_ = des.readVInt();
     numManagerExprs_ = des.readVInt();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Manage* lhs = this;
-    const Manage* rhs = (const Manage*) other;
+    const Manage* rhs = (const Manage*)other;
     return lhs->managerExprChildNum_ == rhs->managerExprChildNum_ &&
-        lhs->numManagerExprs_ == rhs->numManagerExprs_ &&
-        lhs->simpleBlockLikeContentsMatchInner(rhs);
+           lhs->numManagerExprs_ == rhs->numManagerExprs_ &&
+           lhs->simpleBlockLikeContentsMatchInner(rhs);
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -101,7 +103,8 @@ class Manage final : public SimpleBlockLike {
   /**
     Create and return a Manage containing the passed managers and statements.
   */
-  static owned<Manage> build(Builder* builder, Location loc,
+  static owned<Manage> build(Builder* builder,
+                             Location loc,
                              AstList managers,
                              BlockStyle blockStyle,
                              AstList stmts);
@@ -121,9 +124,7 @@ class Manage final : public SimpleBlockLike {
   /**
     Return the number of managers in this manage statement.
   */
-  int numManagers() const {
-    return numManagerExprs_;
-  }
+  int numManagers() const { return numManagerExprs_; }
 
   /**
     Return the i'th manager in this manage statement.
@@ -134,7 +135,6 @@ class Manage final : public SimpleBlockLike {
     return ret;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

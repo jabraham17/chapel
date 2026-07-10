@@ -28,7 +28,6 @@
 namespace chpl {
 namespace types {
 
-
 /**
   This class represents an class type including a memory management decorator.
   E.g. if we have `class C`, then `borrowed C?` or `shared C` are ClassTypes.
@@ -42,23 +41,17 @@ class ClassType final : public Type {
   ClassType(const ManageableType* manageableType,
             const Type* manager,
             ClassTypeDecorator decorator)
-    : Type(typetags::ClassType),
-      manageableType_(manageableType),
-      manager_(manager),
-      decorator_(decorator)
-  { }
+    : Type(typetags::ClassType), manageableType_(manageableType),
+      manager_(manager), decorator_(decorator) {}
 
   bool contentsMatchInner(const Type* other) const override {
     const ClassType* lhs = this;
-    const ClassType* rhs = (const ClassType*) other;
+    const ClassType* rhs = (const ClassType*)other;
     return lhs->manageableType_ == rhs->manageableType_ &&
-           lhs->manager_ == rhs->manager_ &&
-           lhs->decorator_ == rhs->decorator_;
+           lhs->manager_ == rhs->manager_ && lhs->decorator_ == rhs->decorator_;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
-
+  void markUniqueStringsInner(Context* context) const override {}
 
   static const owned<ClassType>&
   getClassType(Context* context,
@@ -87,7 +80,8 @@ class ClassType final : public Type {
                          const PlaceholderMap& subs) const override {
     return get(context,
                Type::substitute(context, manageableType_, subs),
-               Type::substitute(context, manager_, subs), decorator_);
+               Type::substitute(context, manager_, subs),
+               decorator_);
   }
 
   /** Returns the ClassTypeDecorator for this ClassType.
@@ -98,15 +92,12 @@ class ClassType final : public Type {
       if the decorator does not indicate a managed type.
       This can return a record type or AnyOwnedType / AnySharedType. */
   const Type* manager() const {
-    if (!decorator_.isManaged())
-      return nullptr;
+    if (!decorator_.isManaged()) return nullptr;
     return manager_;
   }
 
   /** Returns the type being managed */
-  const ManageableType* manageableType() const {
-    return manageableType_;
-  }
+  const ManageableType* manageableType() const { return manageableType_; }
 
   /** Returns the basic class type */
   const BasicClassType* basicClassType() const {
@@ -121,9 +112,7 @@ class ClassType final : public Type {
   /** Returns the recordType for the manager. This will be instantiated,
       e.g. as '_owned(C)' for some class C. */
   const RecordType* managerRecordType(Context* context) const;
-
 };
-
 
 } // end namespace uast
 } // end namespace chpl

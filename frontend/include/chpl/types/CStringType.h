@@ -25,24 +25,18 @@
 namespace chpl {
 namespace types {
 
-
 /**
   This class represents the string type.
  */
 class CStringType final : public Type {
  private:
-  CStringType() : Type(typetags::CStringType) { }
+  CStringType() : Type(typetags::CStringType) {}
 
-  bool contentsMatchInner(const Type* other) const override {
-    return true;
-  }
+  bool contentsMatchInner(const Type* other) const override { return true; }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
-  Genericity genericity() const override {
-    return CONCRETE;
-  }
+  Genericity genericity() const override { return CONCRETE; }
 
   static const owned<CStringType>& getCStringType(Context* context);
 
@@ -53,7 +47,6 @@ class CStringType final : public Type {
 
   void stringify(std::ostream& ss, StringifyKind stringKind) const override;
 };
-
 
 } // end namespace uast
 } // end namespace chpl

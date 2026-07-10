@@ -340,7 +340,8 @@ PRIMITIVE_R(FIELD_BY_NUM, "field by num")
 
 PRIMITIVE_G(CLASS_NAME_BY_ID, "class name by id")
 
-PRIMITIVE_R(ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL, "iterator record field value by formal")
+PRIMITIVE_R(ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL,
+            "iterator record field value by formal")
 PRIMITIVE_R(ITERATOR_RECORD_SET_SHAPE, "iterator record set shape")
 PRIMITIVE_R(IS_GENERIC_TYPE, "is generic type")
 PRIMITIVE_R(IS_CLASS_TYPE, "is class type")

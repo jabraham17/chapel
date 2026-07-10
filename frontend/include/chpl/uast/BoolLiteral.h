@@ -27,29 +27,26 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a boolean literal.
  */
 class BoolLiteral final : public Literal {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   explicit BoolLiteral(const types::BoolParam* value)
-    : Literal(asttags::BoolLiteral, value) {
-  }
+    : Literal(asttags::BoolLiteral, value) {}
 
   void serializeInner(Serializer& ser) const override {
     literalSerializeInner(ser);
   }
 
-  explicit BoolLiteral(Deserializer& des)
-    : Literal(asttags::BoolLiteral, des) {
+  explicit BoolLiteral(Deserializer& des) : Literal(asttags::BoolLiteral, des) {
     assert(value_->isBoolParam());
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
-    const BoolLiteral* rhs = (const BoolLiteral*) other;
+    const BoolLiteral* rhs = (const BoolLiteral*)other;
     return literalContentsMatchInner(rhs);
   }
 
@@ -65,18 +62,16 @@ class BoolLiteral final : public Literal {
   /**
     Create and return a BoolLiteral.
   */
-  static owned<BoolLiteral> build(Builder* builder, Location loc,
-                                  bool value);
+  static owned<BoolLiteral> build(Builder* builder, Location loc, bool value);
 
   /**
     Returns the value of this bool literal.
   */
   bool value() const {
-    auto p = (const types::BoolParam*) value_;
+    auto p = (const types::BoolParam*)value_;
     return p->value() != 0;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

@@ -28,7 +28,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a conditional. For example:
 
@@ -43,7 +42,7 @@ namespace uast {
 
  */
 class Conditional final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   // Condition always exists, and its position is always the same.
@@ -61,10 +60,9 @@ class Conditional final : public AstNode {
               BlockStyle thenBlockStyle,
               BlockStyle elseBlockStyle,
               bool isExpressionLevel)
-      : AstNode(asttags::Conditional, std::move(children)),
-        thenBlockStyle_(thenBlockStyle),
-        elseBlockStyle_(elseBlockStyle),
-        isExpressionLevel_(isExpressionLevel) {
+    : AstNode(asttags::Conditional, std::move(children)),
+      thenBlockStyle_(thenBlockStyle), elseBlockStyle_(elseBlockStyle),
+      isExpressionLevel_(isExpressionLevel) {
 
     CHPL_ASSERT(children_[thenBodyChildNum_]->isBlock());
 
@@ -79,7 +77,6 @@ class Conditional final : public AstNode {
 
     CHPL_ASSERT(elseBlockStyle_ != BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK);
 
-
     if (isExpressionLevel_) {
       CHPL_ASSERT(thenBlockStyle_ == BlockStyle::IMPLICIT);
       CHPL_ASSERT(elseBlockStyle_ == BlockStyle::IMPLICIT);
@@ -89,8 +86,8 @@ class Conditional final : public AstNode {
       CHPL_ASSERT(numElseStmts() <= 1);
     }
 
-    CHPL_ASSERT(conditionChildNum_ < (int) children_.size());
-    CHPL_ASSERT(thenBodyChildNum_ < (int) children_.size());
+    CHPL_ASSERT(conditionChildNum_ < (int)children_.size());
+    CHPL_ASSERT(thenBodyChildNum_ < (int)children_.size());
   }
 
   void serializeInner(Serializer& ser) const override {
@@ -99,8 +96,7 @@ class Conditional final : public AstNode {
     ser.write(isExpressionLevel_);
   }
 
-  explicit Conditional(Deserializer& des)
-    : AstNode(asttags::Conditional, des) {
+  explicit Conditional(Deserializer& des) : AstNode(asttags::Conditional, des) {
     thenBlockStyle_ = des.read<BlockStyle>();
     elseBlockStyle_ = des.read<BlockStyle>();
     isExpressionLevel_ = des.read<bool>();
@@ -110,20 +106,16 @@ class Conditional final : public AstNode {
     const Conditional* lhs = this;
     const Conditional* rhs = other->toConditional();
 
-    if (lhs->thenBlockStyle_ != rhs->thenBlockStyle_)
-      return false;
+    if (lhs->thenBlockStyle_ != rhs->thenBlockStyle_) return false;
 
-    if (lhs->elseBlockStyle_ != rhs->elseBlockStyle_)
-      return false;
+    if (lhs->elseBlockStyle_ != rhs->elseBlockStyle_) return false;
 
-    if (lhs->isExpressionLevel_ != rhs->isExpressionLevel_)
-      return false;
+    if (lhs->isExpressionLevel_ != rhs->isExpressionLevel_) return false;
 
     return true;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
   void dumpFieldsInner(const DumpSettings& s) const override;
   std::string dumpChildLabelInner(int i) const override;
@@ -134,7 +126,8 @@ class Conditional final : public AstNode {
   /**
     Create and return a conditional.
   */
-  static owned<Conditional> build(Builder* builder, Location loc,
+  static owned<Conditional> build(Builder* builder,
+                                  Location loc,
                                   owned<AstNode> condition,
                                   BlockStyle thenBlockStyle,
                                   owned<Block> thenBlock,
@@ -145,7 +138,8 @@ class Conditional final : public AstNode {
   /**
     Create and return a conditional without an else block.
   */
-  static owned<Conditional> build(Builder* builder, Location loc,
+  static owned<Conditional> build(Builder* builder,
+                                  Location loc,
                                   owned<AstNode> condition,
                                   BlockStyle thenBlockStyle,
                                   owned<Block> thenBlock,
@@ -164,7 +158,7 @@ class Conditional final : public AstNode {
    */
   const Block* thenBlock() const {
     auto ret = child(thenBodyChildNum_);
-    return (const Block*) ret;
+    return (const Block*)ret;
   }
 
   /**
@@ -177,23 +171,17 @@ class Conditional final : public AstNode {
   /**
     Get the number of statements in the then block of this conditional.
   */
-  int numThenStmts() const {
-    return thenBlock()->numStmts();
-  }
+  int numThenStmts() const { return thenBlock()->numStmts(); }
 
   /**
     Get the i'th statement in the then block of this conditional.
   */
-  const AstNode* thenStmt(int i) const {
-    return thenBlock()->stmt(i);
-  }
+  const AstNode* thenStmt(int i) const { return thenBlock()->stmt(i); }
 
   /**
     Returns the block style of the then block of this conditional.
   */
-  BlockStyle thenBlockStyle() const {
-    return thenBlockStyle_;
-  }
+  BlockStyle thenBlockStyle() const { return thenBlockStyle_; }
 
   /**
     Returns true if this conditional has an else block.
@@ -207,13 +195,12 @@ class Conditional final : public AstNode {
     nullptr if this Conditional has no else.
    */
   const Block* elseBlock() const {
-    if (!hasElseBlock())
-      return nullptr;
+    if (!hasElseBlock()) return nullptr;
 
     auto ret = child(elseBodyChildNum_);
     CHPL_ASSERT(ret->isBlock());
 
-    return (const Block*) ret;
+    return (const Block*)ret;
   }
 
   /**
@@ -223,8 +210,7 @@ class Conditional final : public AstNode {
     const Block* elseB = elseBlock();
 
     if (elseB == nullptr) {
-      return AstListIteratorPair<AstNode>(children_.end(),
-                                          children_.end());
+      return AstListIteratorPair<AstNode>(children_.end(), children_.end());
     }
 
     return elseB->stmts();
@@ -258,18 +244,13 @@ class Conditional final : public AstNode {
   /**
     Returns the block style of the else block of this conditional.
   */
-  BlockStyle elseBlockStyle() const {
-    return elseBlockStyle_;
-  }
+  BlockStyle elseBlockStyle() const { return elseBlockStyle_; }
 
   /**
     Return true if this conditional is at an expression level.
   */
-  bool isExpressionLevel() const {
-    return isExpressionLevel_;
-  }
+  bool isExpressionLevel() const { return isExpressionLevel_; }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

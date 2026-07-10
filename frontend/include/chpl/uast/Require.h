@@ -26,7 +26,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a require statement.
 
@@ -39,23 +38,18 @@ namespace uast {
   \endrst
 */
 class Require final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  Require(AstList children)
-    : AstNode(asttags::Require, std::move(children)) {
-  }
+  Require(AstList children) : AstNode(asttags::Require, std::move(children)) {}
 
-  void serializeInner(Serializer& ser) const override { }
+  void serializeInner(Serializer& ser) const override {}
 
-  explicit Require(Deserializer& des) : AstNode(asttags::Require, des) { }
+  explicit Require(Deserializer& des) : AstNode(asttags::Require, des) {}
 
-  bool contentsMatchInner(const AstNode* other) const override {
-    return true;
-  }
+  bool contentsMatchInner(const AstNode* other) const override { return true; }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
  public:
   ~Require() override = default;
@@ -63,23 +57,19 @@ class Require final : public AstNode {
   /**
     Create and return a require statement.
   */
-  static owned<Require> build(Builder* builder, Location loc,
-                              AstList exprs);
+  static owned<Require> build(Builder* builder, Location loc, AstList exprs);
 
   /**
     Return a way to iterate over the expressions of this require statement.
   */
   AstListIteratorPair<AstNode> exprs() const {
-    return AstListIteratorPair<AstNode>(children_.begin(),
-                                           children_.end());
+    return AstListIteratorPair<AstNode>(children_.begin(), children_.end());
   }
 
   /**
     Return the number of expressions in this require statement.
   */
-  int numExprs() const {
-    return this->numChildren();
-  }
+  int numExprs() const { return this->numChildren(); }
 
   /**
     Return the i'th expression in this require statement.
@@ -89,7 +79,6 @@ class Require final : public AstNode {
     return ast;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

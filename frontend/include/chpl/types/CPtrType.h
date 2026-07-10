@@ -31,10 +31,11 @@ class CPtrType final : public PtrType {
  private:
   const bool isConst_ = false;
 
-  CPtrType(const CPtrType* instantiatedFrom, const Type* eltType,
+  CPtrType(const CPtrType* instantiatedFrom,
+           const Type* eltType,
            bool isConst = false)
-      : PtrType(typetags::CPtrType, instantiatedFrom, eltType),
-        isConst_(isConst) {}
+    : PtrType(typetags::CPtrType, instantiatedFrom, eltType),
+      isConst_(isConst) {}
 
   bool contentsMatchInner(const Type* other) const override {
     auto rhs = (CPtrType*)other;
@@ -46,7 +47,8 @@ class CPtrType final : public PtrType {
 
   static const owned<CPtrType>& getCPtrType(Context* context,
                                             const CPtrType* instantiatedFrom,
-                                            const Type* eltType, bool isConst);
+                                            const Type* eltType,
+                                            bool isConst);
 
  public:
   static const CPtrType* get(Context* context);

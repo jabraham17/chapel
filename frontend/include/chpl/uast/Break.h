@@ -41,7 +41,7 @@ namespace uast {
   \endrst
 */
 class Break : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   int8_t targetChildNum_;
@@ -56,8 +56,7 @@ class Break : public AstNode {
     ser.write(targetChildNum_);
   }
 
-  explicit Break(Deserializer& des)
-   : AstNode(asttags::Break, des) {
+  explicit Break(Deserializer& des) : AstNode(asttags::Break, des) {
     targetChildNum_ = des.read<int8_t>();
   }
 
@@ -65,24 +64,21 @@ class Break : public AstNode {
     const Break* lhs = this;
     const Break* rhs = other->toBreak();
 
-    if (lhs->targetChildNum_ != rhs->targetChildNum_)
-      return false;
+    if (lhs->targetChildNum_ != rhs->targetChildNum_) return false;
 
     return true;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
   std::string dumpChildLabelInner(int i) const override;
 
  public:
-
   /**
     Create and return a break statement.
   */
-  static owned<Break> build(Builder* builder, Location loc,
-                            owned<Identifier> target);
+  static owned<Break>
+  build(Builder* builder, Location loc, owned<Identifier> target);
 
   /**
     Returns the target of this break statement, or nullptr if there
@@ -95,7 +91,6 @@ class Break : public AstNode {
     return (const Identifier*)ret;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

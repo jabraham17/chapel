@@ -24,10 +24,8 @@
 #include "chpl/uast/Comment.h"
 #include "chpl/framework/Location.h"
 
-
 namespace chpl {
 namespace uast {
-
 
 /**
   This class represents a declaration for multiple variables.
@@ -51,12 +49,16 @@ namespace uast {
 
  */
 class MultiDecl final : public Decl {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  MultiDecl(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
+  MultiDecl(AstList children,
+            int attributeGroupChildNum,
+            Decl::Visibility vis,
             Decl::Linkage linkage)
-    : Decl(asttags::MultiDecl, std::move(children), attributeGroupChildNum,
+    : Decl(asttags::MultiDecl,
+           std::move(children),
+           attributeGroupChildNum,
            vis,
            linkage,
            /*linkageNameChildNum*/ NO_CHILD) {
@@ -68,18 +70,15 @@ class MultiDecl final : public Decl {
     declSerializeInner(ser);
   }
 
-  explicit MultiDecl(Deserializer& des)
-    : Decl(asttags::MultiDecl, des) { }
+  explicit MultiDecl(Deserializer& des) : Decl(asttags::MultiDecl, des) {}
 
   bool isAcceptableMultiDecl();
 
-  int declOrCommentChildNum() const {
-    return attributeGroup() ? 1 : 0;
-  }
+  int declOrCommentChildNum() const { return attributeGroup() ? 1 : 0; }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const MultiDecl* lhs = this;
-    const MultiDecl* rhs = (const MultiDecl*) other;
+    const MultiDecl* rhs = (const MultiDecl*)other;
     return lhs->declContentsMatchInner(rhs);
   }
 
@@ -90,7 +89,8 @@ class MultiDecl final : public Decl {
  public:
   ~MultiDecl() override = default;
 
-  static owned<MultiDecl> build(Builder* builder, Location loc,
+  static owned<MultiDecl> build(Builder* builder,
+                                Location loc,
                                 owned<AttributeGroup> attributeGroup,
                                 Decl::Visibility vis,
                                 Decl::Linkage linkage,
@@ -101,8 +101,8 @@ class MultiDecl final : public Decl {
    */
   AstListIteratorPair<AstNode> declOrComments() const {
     auto begin = numDeclOrComments()
-        ? children_.begin() + declOrCommentChildNum()
-        : children_.end();
+                   ? children_.begin() + declOrCommentChildNum()
+                   : children_.end();
     auto end = begin + numDeclOrComments();
     return AstListIteratorPair<AstNode>(begin, end);
   }
@@ -132,13 +132,12 @@ class MultiDecl final : public Decl {
    */
   AstListNoCommentsIteratorPair<Decl> decls() const {
     auto begin = numDeclOrComments()
-        ? children_.begin() + declOrCommentChildNum()
-        : children_.end();
+                   ? children_.begin() + declOrCommentChildNum()
+                   : children_.end();
     auto end = begin + numDeclOrComments();
     return AstListNoCommentsIteratorPair<Decl>(begin, end);
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

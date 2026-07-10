@@ -71,10 +71,8 @@ class ID final {
     Construct an ID with a symbol path and postorder traversal number
    */
   ID(UniqueString symbolPath, int postOrderId, int numChildIds)
-      : symbolPath_(symbolPath),
-        postOrderId_(postOrderId),
-        numChildIds_(numChildIds) {
-  }
+    : symbolPath_(symbolPath), postOrderId_(postOrderId),
+      numChildIds_(numChildIds) {}
 
   /**
     Construct an ID with specified symbol path, and default postorder traversal
@@ -125,8 +123,9 @@ class ID final {
     which means this is an ID for something that defines a new symbol
     scope.
    */
-   bool isSymbolDefiningScope() const { return postOrderId_ == -1 ||
-                                               postOrderId_ == ID_GEN_START; }
+  bool isSymbolDefiningScope() const {
+    return postOrderId_ == -1 || postOrderId_ == ID_GEN_START;
+  }
 
   /**
     Some IDs are introduced during compilation and don't represent
@@ -140,7 +139,7 @@ class ID final {
     if (postOrderId_ <= ID_GEN_START) {
       return FabricatedIdKind::Generated;
     } else {
-      return (FabricatedIdKind) postOrderId_;
+      return (FabricatedIdKind)postOrderId_;
     }
   }
 
@@ -169,9 +168,8 @@ class ID final {
   /**
     Create an ID that represents a uAST node created during compilation.
    */
-  static ID generatedId(UniqueString symbolPath,
-                       int postOrderId,
-                       int numChildIds);
+  static ID
+  generatedId(UniqueString symbolPath, int postOrderId, int numChildIds);
 
   /**
     Return the number of ids contained in this node, not including itself. In
@@ -247,14 +245,13 @@ class ID final {
                                           UniqueString symbolPath);
 
   /** Given a symbol path, return the portion after the '#'. */
-  static UniqueString overloadPart(Context* context,
-                                   UniqueString symbolPath);
+  static UniqueString overloadPart(Context* context, UniqueString symbolPath);
 
   /**
     Given a symbol path, expand it into a vector
     of pairs, containing the path component and the repeat number.
    */
-  static std::vector<std::pair<UniqueString,int>>
+  static std::vector<std::pair<UniqueString, int>>
   expandSymbolPath(Context* context, UniqueString symbolPath);
 
   bool operator==(const ID& other) const {
@@ -263,26 +260,14 @@ class ID final {
            postOrderId_ == other.postOrderId_;
   }
 
-  bool operator!=(const ID& other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const ID& other) const { return !(*this == other); }
 
-  bool operator<(const ID& other) const {
-    return this->compare(other) < 0;
-  }
-  bool operator<=(const ID& other) const {
-    return this->compare(other) <= 0;
-  }
-  bool operator>(const ID& other) const {
-    return this->compare(other) > 0;
-  }
-  bool operator>=(const ID& other) const {
-    return this->compare(other) >= 0;
-  }
+  bool operator<(const ID& other) const { return this->compare(other) < 0; }
+  bool operator<=(const ID& other) const { return this->compare(other) <= 0; }
+  bool operator>(const ID& other) const { return this->compare(other) > 0; }
+  bool operator>=(const ID& other) const { return this->compare(other) >= 0; }
 
-  bool isEmpty() const {
-    return symbolPath_.isEmpty();
-  }
+  bool isEmpty() const { return symbolPath_.isEmpty(); }
 
   inline explicit operator bool() const { return !isEmpty(); }
 
@@ -298,9 +283,7 @@ class ID final {
     std::swap(numChildIds_, other.numChildIds_);
   }
 
-  void mark(Context* context) const {
-    this->symbolPath_.mark(context);
-  }
+  void mark(Context* context) const { this->symbolPath_.mark(context); }
 
   static bool update(ID& keep, ID& addin);
 
@@ -334,20 +317,17 @@ class ID final {
 
 /// \endcond
 
-
 } // end namespace chpl
 
 namespace std {
-  template<> struct less<chpl::ID> {
-    inline bool operator()(const chpl::ID& lhs, const chpl::ID& rhs) const {
-      return lhs.compare(rhs) < 0;
-    }
-  };
-  template<> struct hash<chpl::ID> {
-    inline size_t operator()(const chpl::ID& key) const {
-      return key.hash();
-    }
-  };
+template <> struct less<chpl::ID> {
+  inline bool operator()(const chpl::ID& lhs, const chpl::ID& rhs) const {
+    return lhs.compare(rhs) < 0;
+  }
+};
+template <> struct hash<chpl::ID> {
+  inline size_t operator()(const chpl::ID& key) const { return key.hash(); }
+};
 } // end namespace std
 
 #endif

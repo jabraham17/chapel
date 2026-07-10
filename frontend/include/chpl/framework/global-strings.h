@@ -51,59 +51,55 @@ template<> USTRTemplate<'f, 'o', 'o', '\0'>
 
 #define EXPAND1(s, i) ((sizeof((s)) - 1) < (i) ? '\0' : s[(i)])
 
-#define EXPAND2(s, i) \
-  EXPAND1(s, i),      \
-  EXPAND1(s, i + 1)
+#define EXPAND2(s, i) EXPAND1(s, i), EXPAND1(s, i + 1)
 
-#define EXPAND4(s, i) \
-  EXPAND2(s, i),      \
-  EXPAND2(s, i + 2)
+#define EXPAND4(s, i) EXPAND2(s, i), EXPAND2(s, i + 2)
 
-#define EXPAND8(s, i) \
-  EXPAND4(s, i),      \
-  EXPAND4(s, i + 4)
+#define EXPAND8(s, i) EXPAND4(s, i), EXPAND4(s, i + 4)
 
-#define EXPAND16(s, i) \
-  EXPAND8(s, i),    \
-  EXPAND8(s, i + 8)
+#define EXPAND16(s, i) EXPAND8(s, i), EXPAND8(s, i + 8)
 
-#define EXPAND32(s) \
-  EXPAND16(s, 0),    \
-  EXPAND16(s, 16)
+#define EXPAND32(s) EXPAND16(s, 0), EXPAND16(s, 16)
 
-#define USTR(s) ({static_assert(sizeof((s)) < MAXLEN, "String to USTR too long"); chpl::detail::USTRTemplate<EXPAND32((s))>::value;})
+#define USTR(s)                                                     \
+  ({                                                                \
+    static_assert(sizeof((s)) < MAXLEN, "String to USTR too long"); \
+    chpl::detail::USTRTemplate<EXPAND32((s))>::value;               \
+  })
 
 /// \cond DO_NOT_DOCUMENT
 namespace chpl {
 
-  namespace detail {
-    struct GlobalStrings {
-#define X(field, str) UniqueString field; static_assert(sizeof(str) < MAXLEN, "global string too long: " str);
-  #include "all-global-strings.h"
+namespace detail {
+struct GlobalStrings {
+#define X(field, str)                                                  \
+  UniqueString field;                                                  \
+  static_assert(sizeof(str) < MAXLEN, "global string too long: " str);
+#include "all-global-strings.h"
 #undef X
-    };
+};
 
-    extern GlobalStrings globalStrings;
+extern GlobalStrings globalStrings;
 
-    /* This weird template is just to support a static_assert below,
+/* This weird template is just to support a static_assert below,
      We need the truthiness to be dependent on the template
      parameters so it is't just static_assert(false, ...);*/
-    template <char... T> struct dependent_false : std::false_type {};
+template <char... T> struct dependent_false : std::false_type {};
 
-    /* Base case for no matching global string */
-    template <char... c> struct USTRTemplate {
-      static_assert(dependent_false<c...>::value, "No matching USTR");
-    };
+/* Base case for no matching global string */
+template <char... c> struct USTRTemplate {
+  static_assert(dependent_false<c...>::value, "No matching USTR");
+};
 
-    /* Stamp out a template specialization for each global string */
-#define X(field, str)                                                          \
-  template <> struct USTRTemplate<EXPAND32(str)> {                             \
-    static constexpr UniqueString& value = globalStrings.field;                \
+/* Stamp out a template specialization for each global string */
+#define X(field, str)                                           \
+  template <> struct USTRTemplate<EXPAND32(str)> {              \
+    static constexpr UniqueString& value = globalStrings.field; \
   };
 #include "all-global-strings.h"
 #undef X
 
-   } // namespace detail
+} // namespace detail
 } // namespace chpl
 /// \endcond
 

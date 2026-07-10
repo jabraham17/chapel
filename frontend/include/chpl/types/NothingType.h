@@ -25,24 +25,18 @@
 namespace chpl {
 namespace types {
 
-
 /**
   This class represents the nothing type.
  */
 class NothingType final : public Type {
  private:
-  NothingType() : Type(typetags::NothingType) { }
+  NothingType() : Type(typetags::NothingType) {}
 
-  bool contentsMatchInner(const Type* other) const override {
-    return true;
-  }
+  bool contentsMatchInner(const Type* other) const override { return true; }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
-  Genericity genericity() const override {
-    return CONCRETE;
-  }
+  Genericity genericity() const override { return CONCRETE; }
 
   static const owned<NothingType>& getNothingType(Context* context);
 
@@ -54,7 +48,6 @@ class NothingType final : public Type {
   virtual void stringify(std::ostream& ss,
                          chpl::StringifyKind stringKind) const override;
 };
-
 
 } // end namespace uast
 } // end namespace chpl

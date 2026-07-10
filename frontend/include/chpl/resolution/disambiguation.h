@@ -25,7 +25,6 @@
 namespace chpl {
 namespace resolution {
 
-
 /**
   Given the result of filterCandidatesInstantiating, run overload
   resolution aka disambiguation to determine the most specific functions.
@@ -43,13 +42,11 @@ namespace resolution {
   'forwarding' statement is in use.
  */
 MostSpecificCandidates
-findMostSpecificCandidates(
-    ResolutionContext* rc,
-    const CandidatesAndForwardingInfo& lst,
-    const CallInfo& call,
-    const Scope* callInScope,
-    const PoiScope* callInPoiScope);
-
+findMostSpecificCandidates(ResolutionContext* rc,
+                           const CandidatesAndForwardingInfo& lst,
+                           const CallInfo& call,
+                           const Scope* callInScope,
+                           const PoiScope* callInPoiScope);
 
 } // end namespace resolution
 } // end namespace chpl

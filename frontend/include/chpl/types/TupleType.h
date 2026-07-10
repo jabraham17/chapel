@@ -26,7 +26,6 @@
 namespace chpl {
 namespace types {
 
-
 /**
   This class represents a tuple type e.g. `(int, real)`.
  */
@@ -40,15 +39,18 @@ class TupleType final : public CompositeType {
   void computeIsStarTuple();
   void computeIsParamKnown();
 
-  TupleType(ID id, UniqueString name,
+  TupleType(ID id,
+            UniqueString name,
             const TupleType* instantiatedFrom,
             SubstitutionsMap subs,
             bool isVarArgTuple)
-    : CompositeType(typetags::TupleType, id, name,
-                    instantiatedFrom, std::move(subs),
+    : CompositeType(typetags::TupleType,
+                    id,
+                    name,
+                    instantiatedFrom,
+                    std::move(subs),
                     uast::Decl::DEFAULT_LINKAGE),
-      isVarArgTuple_(isVarArgTuple)
-  {
+      isVarArgTuple_(isVarArgTuple) {
     assert(!id.isEmpty());
     assert(!name.isEmpty());
     // Let a single entry in the SubstitutionsMap with a postOrderId of '-1'
@@ -66,9 +68,8 @@ class TupleType final : public CompositeType {
     computeIsParamKnown();
   }
 
-
   bool contentsMatchInner(const Type* other) const override {
-    const TupleType* rhs = (const TupleType*) other;
+    const TupleType* rhs = (const TupleType*)other;
     return isStarTuple_ == rhs->isStarTuple_ &&
            compositeTypeContentsMatchInner(rhs);
   }
@@ -77,39 +78,40 @@ class TupleType final : public CompositeType {
     compositeTypeMarkUniqueStringsInner(context);
   }
 
-  static const owned<TupleType>&
-  getTupleType(Context* context,
-               const TupleType* instantiatedFrom,
-               SubstitutionsMap subs,
-               bool isVarArgTuple = false);
+  static const owned<TupleType>& getTupleType(Context* context,
+                                              const TupleType* instantiatedFrom,
+                                              SubstitutionsMap subs,
+                                              bool isVarArgTuple = false);
 
  public:
   /** Return a value tuple type based on the vector of actual types. The types
       are made const if `makeConst` is set to true. */
-  static const TupleType*
-  getValueTuple(Context* context, std::vector<const Type*> eltTypes, bool makeConst=false);
+  static const TupleType* getValueTuple(Context* context,
+                                        std::vector<const Type*> eltTypes,
+                                        bool makeConst = false);
 
   /** Return a referential tuple type based on the vector of actual types. The
       types are made const if `makeConst` is set to true. */
-  static const TupleType*
-  getReferentialTuple(Context* context, std::vector<const Type*> eltTypes, bool makeConst=false);
+  static const TupleType* getReferentialTuple(Context* context,
+                                              std::vector<const Type*> eltTypes,
+                                              bool makeConst = false);
 
-  static const TupleType*
-  getQualifiedTuple(Context* context,
-                    std::vector<QualifiedType> eltTypes,
-                    bool isVarArgTuple = false);
+  static const TupleType* getQualifiedTuple(Context* context,
+                                            std::vector<QualifiedType> eltTypes,
+                                            bool isVarArgTuple = false);
 
-  static const TupleType*
-  getVarArgTuple(Context* context,
-                 QualifiedType paramSize,
-                 QualifiedType starEltType);
+  static const TupleType* getVarArgTuple(Context* context,
+                                         QualifiedType paramSize,
+                                         QualifiedType starEltType);
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
     return getTupleType(context,
-                        Type::substitute(context, (const TupleType*) instantiatedFrom_, subs),
+                        Type::substitute(
+                          context, (const TupleType*)instantiatedFrom_, subs),
                         resolution::substituteInMap(context, subs_, subs),
-                        isVarArgTuple_).get();
+                        isVarArgTuple_)
+      .get();
   }
 
   /** Return the generic tuple type `_tuple` */
@@ -149,13 +151,13 @@ class TupleType final : public CompositeType {
 
   /** Return the value tuple variant of this tuple type. Element types are
       made const if `makeConst` is set to true. */
-  const TupleType* toValueTuple(Context* context, bool makeConst=false) const;
+  const TupleType* toValueTuple(Context* context, bool makeConst = false) const;
 
   /** Return the referential tuple variant of this tuple type. Element types
       are made const if `makeConst` is set to true. */
-  const TupleType* toReferentialTuple(Context* context, bool makeConst=false) const;
+  const TupleType* toReferentialTuple(Context* context,
+                                      bool makeConst = false) const;
 };
-
 
 } // end namespace uast
 } // end namespace chpl

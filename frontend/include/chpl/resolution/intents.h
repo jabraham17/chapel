@@ -25,7 +25,6 @@
 namespace chpl {
 namespace resolution {
 
-
 /** Resolve the intent of a formal argument based on its type
     and (possibly generic) intent. For example 'const' is a generic
     intent and it has different behavior depending on the type.
@@ -41,9 +40,8 @@ namespace resolution {
     If the type is not known or only partially known, this function
     can return a generic intent.
  */
-types::QualifiedType::Kind resolveIntent(const types::QualifiedType& t,
-                                         bool isThis, bool isInit);
-
+types::QualifiedType::Kind
+resolveIntent(const types::QualifiedType& t, bool isThis, bool isInit);
 
 } // end namespace resolution
 } // end namespace chpl

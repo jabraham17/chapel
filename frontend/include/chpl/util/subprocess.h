@@ -29,7 +29,6 @@
 
 namespace chpl {
 
-
 /**
  Launch a subprocess
 

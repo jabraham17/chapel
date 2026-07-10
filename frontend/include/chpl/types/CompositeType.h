@@ -105,21 +105,21 @@ class CompositeType : public Type {
   Linkage linkage_ = uast::Decl::DEFAULT_LINKAGE;
 
   CompositeType(typetags::TypeTag tag,
-                ID id, UniqueString name,
+                ID id,
+                UniqueString name,
                 const CompositeType* instantiatedFrom,
                 SubstitutionsMap subs,
                 Linkage linkage)
-    : Type(tag), id_(id), name_(name),
-      instantiatedFrom_(instantiatedFrom),
-      subs_(std::move(subs)),
-      linkage_(linkage) {
+    : Type(tag), id_(id), name_(name), instantiatedFrom_(instantiatedFrom),
+      subs_(std::move(subs)), linkage_(linkage) {
 
     // check instantiated only from same type of object
-    CHPL_ASSERT(instantiatedFrom_ == nullptr || instantiatedFrom_->tag() == tag);
+    CHPL_ASSERT(instantiatedFrom_ == nullptr ||
+                instantiatedFrom_->tag() == tag);
 
     // check instantiatedFrom_ is a root
     CHPL_ASSERT(instantiatedFrom_ == nullptr ||
-           instantiatedFrom_->instantiatedFrom_ == nullptr);
+                instantiatedFrom_->instantiatedFrom_ == nullptr);
 
     // check that subs is consistent with instantiatedFrom, except in the
     // case of class types which can be generic with empty subs due to
@@ -129,11 +129,9 @@ class CompositeType : public Type {
   }
 
   bool compositeTypeContentsMatchInner(const CompositeType* other) const {
-    return id_ == other->id_ &&
-           name_ == other->name_ &&
+    return id_ == other->id_ && name_ == other->name_ &&
            instantiatedFrom_ == other->instantiatedFrom_ &&
-           subs_ == other->subs_ &&
-           linkage_ == other->linkage_;
+           subs_ == other->subs_ && linkage_ == other->linkage_;
   }
 
   void compositeTypeMarkUniqueStringsInner(Context* context) const {
@@ -186,7 +184,7 @@ class CompositeType : public Type {
   const CompositeType* instantiatedFromCompositeType() const {
     // at present, only expecting a single level of instantiated-from.
     CHPL_ASSERT(instantiatedFrom_ == nullptr ||
-           instantiatedFrom_->instantiatedFrom_ == nullptr);
+                instantiatedFrom_->instantiatedFrom_ == nullptr);
     return instantiatedFrom_;
   }
 
@@ -210,9 +208,7 @@ class CompositeType : public Type {
   }
 
   /** Returns the substitutions map */
-  const SubstitutionsMap& substitutions() const {
-    return subs_;
-  }
+  const SubstitutionsMap& substitutions() const { return subs_; }
 
   /** Returns the substitutions sorted by key ID */
   SortedSubstitutions sortedSubstitutions() const;
@@ -221,8 +217,7 @@ class CompositeType : public Type {
       or an empty QualifiedType if no substitution was found. */
   types::QualifiedType substitution(ID declId) const {
     auto it = subs_.find(declId);
-    if (it != subs_.end())
-      return it->second;
+    if (it != subs_.end()) return it->second;
 
     return types::QualifiedType();
   }
@@ -246,19 +241,22 @@ class CompositeType : public Type {
   static const RecordType* getDistributionType(Context* context);
 
   /** Get the record _owned implementing owned */
-  static const RecordType* getOwnedRecordType(Context* context, const BasicClassType* bct,
-                                              const ClassTypeDecorator& copyNilabilityFrom);
+  static const RecordType*
+  getOwnedRecordType(Context* context,
+                     const BasicClassType* bct,
+                     const ClassTypeDecorator& copyNilabilityFrom);
 
   /** Get the record _shared implementing shared */
-  static const RecordType* getSharedRecordType(Context* context, const BasicClassType* bct,
-                                               const ClassTypeDecorator& copyNilabilityFrom);
+  static const RecordType*
+  getSharedRecordType(Context* context,
+                      const BasicClassType* bct,
+                      const ClassTypeDecorator& copyNilabilityFrom);
 
   /** Get the sync type (_syncvar record) */
   static const RecordType* getSyncType(Context* context);
 
   /* Get the Error type */
   static const ClassType* getErrorType(Context* context);
-
 };
 
 size_t hashSubstitutionsMap(const CompositeType::SubstitutionsMap& subs);
@@ -267,12 +265,10 @@ void stringifySubstitutionsMap(std::ostream& streamOut,
                                StringifyKind stringKind,
                                const CompositeType::SubstitutionsMap& subs);
 
-
 } // end namespace types
 
-
 // for CompositeType::SubstitutionsMap
-template<> struct stringify<types::CompositeType::SubstitutionsMap> {
+template <> struct stringify<types::CompositeType::SubstitutionsMap> {
   void operator()(std::ostream& streamOut,
                   StringifyKind stringKind,
                   const types::CompositeType::SubstitutionsMap& subs) const {
@@ -281,19 +277,16 @@ template<> struct stringify<types::CompositeType::SubstitutionsMap> {
   }
 };
 
-
 } // end namespace chpl
-
 
 namespace std {
 
-template<> struct hash<chpl::types::CompositeType::SubstitutionsMap>
-{
-  size_t operator()(const chpl::types::CompositeType::SubstitutionsMap& x) const {
+template <> struct hash<chpl::types::CompositeType::SubstitutionsMap> {
+  size_t
+  operator()(const chpl::types::CompositeType::SubstitutionsMap& x) const {
     return hashSubstitutionsMap(x);
   }
 };
-
 
 } // end namespace std
 

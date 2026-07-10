@@ -25,24 +25,18 @@
 namespace chpl {
 namespace types {
 
-
 /**
   This class represents the void type.
  */
 class VoidType final : public Type {
  private:
-  VoidType() : Type(typetags::VoidType) { }
+  VoidType() : Type(typetags::VoidType) {}
 
-  bool contentsMatchInner(const Type* other) const override {
-    return true;
-  }
+  bool contentsMatchInner(const Type* other) const override { return true; }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
-  Genericity genericity() const override {
-    return CONCRETE;
-  }
+  Genericity genericity() const override { return CONCRETE; }
 
   static const owned<VoidType>& getVoidType(Context* context);
 
@@ -53,7 +47,6 @@ class VoidType final : public Type {
 
   void stringify(std::ostream& ss, StringifyKind stringKind) const override;
 };
-
 
 } // end namespace uast
 } // end namespace chpl

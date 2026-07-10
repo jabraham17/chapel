@@ -26,7 +26,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a union declaration. For example:
 
@@ -43,10 +42,12 @@ namespace uast {
   The union itself (myUnion) is represented by a Union AST node.
  */
 class Union final : public AggregateDecl {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  Union(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
+  Union(AstList children,
+        int attributeGroupChildNum,
+        Decl::Visibility vis,
         Decl::Linkage linkage,
         int linkageNameChildNum,
         UniqueString name,
@@ -54,7 +55,8 @@ class Union final : public AggregateDecl {
         int numInheritExprs,
         int elementsChildNum,
         int numElements)
-    : AggregateDecl(asttags::Union, std::move(children),
+    : AggregateDecl(asttags::Union,
+                    std::move(children),
                     attributeGroupChildNum,
                     vis,
                     linkage,
@@ -73,11 +75,11 @@ class Union final : public AggregateDecl {
     aggregateDeclSerializeInner(ser);
   }
 
-  explicit Union(Deserializer& des) : AggregateDecl(asttags::Union, des) { }
+  explicit Union(Deserializer& des) : AggregateDecl(asttags::Union, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Union* lhs = this;
-    const Union* rhs = (const Union*) other;
+    const Union* rhs = (const Union*)other;
     return lhs->aggregateDeclContentsMatchInner(rhs);
   }
 
@@ -88,7 +90,8 @@ class Union final : public AggregateDecl {
  public:
   ~Union() override = default;
 
-  static owned<Union> build(Builder* builder, Location loc,
+  static owned<Union> build(Builder* builder,
+                            Location loc,
                             owned<AttributeGroup> attributeGroup,
                             Decl::Visibility vis,
                             Decl::Linkage linkage,
@@ -97,7 +100,6 @@ class Union final : public AggregateDecl {
                             AstList interfaceExprs,
                             AstList contents);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

@@ -27,7 +27,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents an 'as' expression. As expressions are used within
   use clauses to rename a symbol in the current scope. For example:
@@ -41,21 +40,19 @@ namespace uast {
   \endrst
  */
 class As final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  As(AstList children) : AstNode(asttags::As, std::move(children)) { }
+  As(AstList children) : AstNode(asttags::As, std::move(children)) {}
 
-  void serializeInner(Serializer& ser) const override { }
+  void serializeInner(Serializer& ser) const override {}
 
-  explicit As(Deserializer& des) : AstNode(asttags::As, des) { }
+  explicit As(Deserializer& des) : AstNode(asttags::As, des) {}
 
   // No need to match 'symbolChildNum_' or 'renameChildNum_', they are const.
-  bool contentsMatchInner(const AstNode* other) const override {
-    return true;
-  }
+  bool contentsMatchInner(const AstNode* other) const override { return true; }
 
-  void markUniqueStringsInner(Context* context) const override { }
+  void markUniqueStringsInner(Context* context) const override {}
 
   std::string dumpChildLabelInner(int i) const override;
 
@@ -69,7 +66,8 @@ class As final : public AstNode {
   /**
     Create and return an as expression.
   */
-  static owned<As> build(Builder* builder, Location loc,
+  static owned<As> build(Builder* builder,
+                         Location loc,
                          owned<AstNode> symbol,
                          owned<AstNode> rename);
 
@@ -89,7 +87,6 @@ class As final : public AstNode {
     return ret;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

@@ -28,7 +28,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a call to a primitive
   (which only appears in low-level code).
@@ -43,37 +42,34 @@ namespace uast {
 
  */
 class PrimCall final : public Call {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   // which primitive
   PrimitiveTag prim_;
 
   PrimCall(AstList children, PrimitiveTag prim)
-    : Call(asttags::PrimCall, std::move(children),
+    : Call(asttags::PrimCall,
+           std::move(children),
            /* hasCalledExpression */ false),
-      prim_(prim) {
-  }
+      prim_(prim) {}
 
   void serializeInner(Serializer& ser) const override {
     callSerializeInner(ser);
     ser.write(prim_);
   }
 
-  explicit PrimCall(Deserializer& des)
-    : Call(asttags::PrimCall, des) {
+  explicit PrimCall(Deserializer& des) : Call(asttags::PrimCall, des) {
     prim_ = des.read<PrimitiveTag>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const PrimCall* lhs = this;
-    const PrimCall* rhs = (const PrimCall*) other;
+    const PrimCall* rhs = (const PrimCall*)other;
 
-    if (lhs->prim_ != rhs->prim_)
-      return false;
+    if (lhs->prim_ != rhs->prim_) return false;
 
-    if (!lhs->callContentsMatchInner(rhs))
-      return false;
+    if (!lhs->callContentsMatchInner(rhs)) return false;
 
     return true;
   }
@@ -85,15 +81,12 @@ class PrimCall final : public Call {
 
  public:
   ~PrimCall() override = default;
-  static owned<PrimCall> build(Builder* builder,
-                               Location loc,
-                               PrimitiveTag prim,
-                               AstList actuals);
+  static owned<PrimCall>
+  build(Builder* builder, Location loc, PrimitiveTag prim, AstList actuals);
 
   /** Returns the enum value of the primitive called */
   PrimitiveTag prim() const { return prim_; }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

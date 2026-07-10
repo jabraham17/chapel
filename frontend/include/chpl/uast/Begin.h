@@ -29,7 +29,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a begin statement. For example:
 
@@ -46,38 +45,38 @@ namespace uast {
 
  */
 class Begin final : public SimpleBlockLike {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   int8_t withClauseChildNum_;
 
-  Begin(AstList children, int8_t withClauseChildNum, BlockStyle blockStyle,
+  Begin(AstList children,
+        int8_t withClauseChildNum,
+        BlockStyle blockStyle,
         int bodyChildNum,
         int numBodyStmts)
-    : SimpleBlockLike(asttags::Begin, std::move(children), blockStyle,
+    : SimpleBlockLike(asttags::Begin,
+                      std::move(children),
+                      blockStyle,
                       bodyChildNum,
                       numBodyStmts),
-      withClauseChildNum_(withClauseChildNum) {
-  }
+      withClauseChildNum_(withClauseChildNum) {}
 
   void serializeInner(Serializer& ser) const override {
     ser.write(withClauseChildNum_);
   }
 
-  explicit Begin(Deserializer& des)
-    : SimpleBlockLike(asttags::Begin, des) {
+  explicit Begin(Deserializer& des) : SimpleBlockLike(asttags::Begin, des) {
     withClauseChildNum_ = des.read<int8_t>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Begin* lhs = this;
-    const Begin* rhs = (const Begin*) other;
+    const Begin* rhs = (const Begin*)other;
 
-    if (lhs->withClauseChildNum_ != rhs->withClauseChildNum_)
-      return false;
+    if (lhs->withClauseChildNum_ != rhs->withClauseChildNum_) return false;
 
-    if (!lhs->simpleBlockLikeContentsMatchInner(rhs))
-      return false;
+    if (!lhs->simpleBlockLikeContentsMatchInner(rhs)) return false;
 
     return true;
   }
@@ -89,11 +88,11 @@ class Begin final : public SimpleBlockLike {
   std::string dumpChildLabelInner(int i) const override;
 
  public:
-
   /**
     Create and return a begin statement.
   */
-  static owned<Begin> build(Builder* builder, Location loc,
+  static owned<Begin> build(Builder* builder,
+                            Location loc,
                             owned<WithClause> withClause,
                             BlockStyle blockStyle,
                             AstList stmts);
@@ -109,7 +108,6 @@ class Begin final : public SimpleBlockLike {
     return (const WithClause*)ret;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

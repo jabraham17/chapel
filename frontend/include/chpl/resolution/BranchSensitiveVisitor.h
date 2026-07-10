@@ -54,7 +54,9 @@ struct ControlFlowInfo {
   ControlFlowInfo() = default;
 
   /* have we hit a statement that would prevent further execution of a block? */
-  bool isDoneExecuting() const { return returns_ || loopBreaks_ || loopContinues_ || fatalError_; }
+  bool isDoneExecuting() const {
+    return returns_ || loopBreaks_ || loopContinues_ || fatalError_;
+  }
   bool returnsOrThrows() const { return returns_ || throws_; }
   bool throws() const { return throws_; }
   bool breaks() const { return loopBreaks_ != nullptr; }
@@ -66,18 +68,32 @@ struct ControlFlowInfo {
   // to treat the code as if it continues. If we already stopped executing,
   // further changes to control flow are not recorded.
 
-  void markReturn() { if (!isDoneExecuting()) returns_ = true; }
-  void markThrow() { if (!isDoneExecuting()) throws_ = true; }
-  void markBreak(const uast::Loop* markWith) { if (!isDoneExecuting()) loopBreaks_ = markWith; }
-  void markContinue(const uast::Loop* markWith) { if (!isDoneExecuting()) loopContinues_ = markWith; }
-  void markFatalError() { if (!isDoneExecuting()) fatalError_ = true; }
+  void markReturn() {
+    if (!isDoneExecuting()) returns_ = true;
+  }
+  void markThrow() {
+    if (!isDoneExecuting()) throws_ = true;
+  }
+  void markBreak(const uast::Loop* markWith) {
+    if (!isDoneExecuting()) loopBreaks_ = markWith;
+  }
+  void markContinue(const uast::Loop* markWith) {
+    if (!isDoneExecuting()) loopContinues_ = markWith;
+  }
+  void markFatalError() {
+    if (!isDoneExecuting()) fatalError_ = true;
+  }
 
   // resetting break and continue is useful for when we are handling 'param' for loops.
   // If we hit a continue, we might want to move on to the next iteration of
   // resolving the body, but if we hit a return, we should stop.
 
-  void resetBreak(const uast::Loop* clearing) {  if (loopBreaks_ == clearing) loopBreaks_ = nullptr; }
-  void resetContinue(const uast::Loop* clearing) {  if (loopContinues_ == clearing) loopContinues_ = nullptr; }
+  void resetBreak(const uast::Loop* clearing) {
+    if (loopBreaks_ == clearing) loopBreaks_ = nullptr;
+  }
+  void resetContinue(const uast::Loop* clearing) {
+    if (loopContinues_ == clearing) loopContinues_ = nullptr;
+  }
 
   /* mutably combine control flow information from two branches (e.g., then/else) */
   ControlFlowInfo& operator&=(const ControlFlowInfo& other) {
@@ -103,7 +119,6 @@ struct ControlFlowInfo {
 
     return *this;
   }
-
 
   /* immutably combine control flow information from two branches (e.g., then/else) */
   ControlFlowInfo operator&(const ControlFlowInfo& other) {
@@ -162,8 +177,7 @@ struct ControlFlowInfo {
   included here to avoid adding unnecessary overhead to other visitors.
 */
 
-template <typename Self>
-struct BaseFrame {
+template <typename Self> struct BaseFrame {
   // the ast node corresponding to this frame
   const uast::AstNode* scopeAst = nullptr;
 
@@ -188,9 +202,7 @@ struct BaseFrame {
   BaseFrame(const uast::AstNode* ast) : scopeAst(ast) {}
 
   /* have we hit a statement that would prevent further execution of this block? */
-  bool isDoneExecuting() {
-    return controlFlowInfo.isDoneExecuting();
-  }
+  bool isDoneExecuting() { return controlFlowInfo.isDoneExecuting(); }
 };
 
 /* Since you can't instantiate a template like BaseFrame with itself
@@ -245,7 +257,8 @@ struct DefaultFrame : public BaseFrame<DefaultFrame> {
   concretely for ResolvedVisitor-based analyses, which have a mutually recursive
   'traverse' function.
 */
-template <typename Frame /* : BaseFrame */, typename ExtraData = std::variant<std::monostate>>
+template <typename Frame /* : BaseFrame */,
+          typename ExtraData = std::variant<std::monostate>>
 struct BranchSensitiveVisitor {
  public:
   std::vector<owned<Frame>> scopeStack;
@@ -283,7 +296,7 @@ struct BranchSensitiveVisitor {
   bool saveSubFrame(const uast::AstNode* ast, Frame*& outParentFrame) {
     CHPL_ASSERT(!scopeStack.empty());
     size_t n = scopeStack.size();
-    auto& curFrame = scopeStack[n-1];
+    auto& curFrame = scopeStack[n - 1];
     CHPL_ASSERT(curFrame->scopeAst == ast);
     if (n < 2) return false;
 
@@ -291,8 +304,8 @@ struct BranchSensitiveVisitor {
     // that is within a Conditional? or a Catch clause?
     // If so, save the frame in the subBlocks, to
     // be handled when processing condFrame.
-    outParentFrame = scopeStack[n-2].get();
-    for (auto & subBlock : outParentFrame->subFrames) {
+    outParentFrame = scopeStack[n - 2].get();
+    for (auto& subBlock : outParentFrame->subFrames) {
       if (std::get<const uast::AstNode*>(subBlock) == ast) {
         std::get<owned<Frame>>(subBlock).swap(curFrame);
         return true;
@@ -304,7 +317,8 @@ struct BranchSensitiveVisitor {
 
   /** Incorporate the control flow information from a child statement into
       the parent frame's control flow information. */
-  void sequenceWithParentFrame(Frame* parentFrame, const ControlFlowInfo& append) {
+  void sequenceWithParentFrame(Frame* parentFrame,
+                               const ControlFlowInfo& append) {
     // 'break' and 'continue' are scoped to the loop that they're in.
     // a loop that has 'continue' in its body does not itself continue
     // its parent loop.
@@ -332,7 +346,8 @@ struct BranchSensitiveVisitor {
     auto thenFrame = currentThenFrame();
     auto elseFrame = currentElseFrame();
     if (thenFrame && elseFrame) {
-      parentFrame->controlFlowInfo.sequence(thenFrame->controlFlowInfo & elseFrame->controlFlowInfo);
+      parentFrame->controlFlowInfo.sequence(thenFrame->controlFlowInfo &
+                                            elseFrame->controlFlowInfo);
     }
     if (thenFrame && thenFrame->knownPath) {
       parentFrame->controlFlowInfo.sequence(thenFrame->controlFlowInfo);
@@ -357,7 +372,7 @@ struct BranchSensitiveVisitor {
     bool inited = false;
     ControlFlowInfo accumulatedControlFlowInfo;
 
-    for(int i = 0; i < s->numWhenStmts(); i++) {
+    for (int i = 0; i < s->numWhenStmts(); i++) {
       auto whenFrame = currentWhenFrame(i);
       if (!whenFrame) continue;
 
@@ -368,7 +383,7 @@ struct BranchSensitiveVisitor {
         accumulatedControlFlowInfo &= whenFrame->controlFlowInfo;
       }
 
-      if (whenFrame->knownPath) {  // this is known to be the taken path
+      if (whenFrame->knownPath) { // this is known to be the taken path
         sequenceWithParentFrame(parentFrame, whenFrame->controlFlowInfo);
         break;
       }
@@ -380,7 +395,6 @@ struct BranchSensitiveVisitor {
   }
 
  public:
-
   /** Return the current frame. This should always be safe to call
       from one of the handle* methods. */
   Frame* currentFrame() {
@@ -393,7 +407,7 @@ struct BranchSensitiveVisitor {
     Frame* parent = nullptr;
     size_t n = scopeStack.size();
     if (n >= 2) {
-      parent = scopeStack[n-2].get();
+      parent = scopeStack[n - 2].get();
     }
     return parent;
   }
@@ -442,7 +456,7 @@ struct BranchSensitiveVisitor {
     auto frame = currentFrame();
     CHPL_ASSERT(frame->scopeAst->isTry());
     int ret = frame->scopeAst->toTry()->numHandlers();
-    CHPL_ASSERT((size_t) (ret + 1) == frame->subFrames.size());
+    CHPL_ASSERT((size_t)(ret + 1) == frame->subFrames.size());
     return ret;
   }
 
@@ -465,7 +479,7 @@ struct BranchSensitiveVisitor {
   Frame* currentCatchFrame(int i) {
     auto frame = currentFrame();
     CHPL_ASSERT(frame->scopeAst->isTry());
-    CHPL_ASSERT(0 <= i && (size_t) (i + 1) < frame->subFrames.size());
+    CHPL_ASSERT(0 <= i && (size_t)(i + 1) < frame->subFrames.size());
     auto& ret = std::get<owned<Frame>>(frame->subFrames[i + 1]);
     CHPL_ASSERT(ret.get());
     return ret.get();
@@ -487,7 +501,7 @@ struct BranchSensitiveVisitor {
   Frame* currentWhenFrame(int i) {
     auto frame = currentFrame();
     CHPL_ASSERT(frame->scopeAst->isSelect());
-    CHPL_ASSERT(0 <= i && (size_t) i < frame->subFrames.size());
+    CHPL_ASSERT(0 <= i && (size_t)i < frame->subFrames.size());
     auto& ret = std::get<owned<Frame>>(frame->subFrames[i]);
     return ret.get();
   }
@@ -562,8 +576,8 @@ struct BranchSensitiveVisitor {
     if (saveSubFrame(ast, parentFrame)) {
       // frame will be processed with parent block
       CHPL_ASSERT(parentFrame->scopeAst->isConditional() ||
-          parentFrame->scopeAst->isTry() ||
-          parentFrame->scopeAst->isSelect());
+                  parentFrame->scopeAst->isTry() ||
+                  parentFrame->scopeAst->isSelect());
       return;
     }
 
@@ -571,13 +585,15 @@ struct BranchSensitiveVisitor {
 
     switch (ast->tag()) {
       case uast::asttags::AstTag::Conditional:
-        reconcileFrames(parentFrame, ast->toConditional()); break;
+        reconcileFrames(parentFrame, ast->toConditional());
+        break;
       case uast::asttags::AstTag::Try:
-        reconcileFrames(parentFrame, ast->toTry()); break;
+        reconcileFrames(parentFrame, ast->toTry());
+        break;
       case uast::asttags::AstTag::Select:
-        reconcileFrames(parentFrame, ast->toSelect()); break;
-      default:
-        reconcileFrames(parentFrame, ast);
+        reconcileFrames(parentFrame, ast->toSelect());
+        break;
+      default: reconcileFrames(parentFrame, ast);
     }
   }
 
@@ -596,14 +612,20 @@ struct BranchSensitiveVisitor {
 
   /** Overriden by subclasses to determine the value of a when case expression.
       This is used for evaluating short-circuited / 'param' known (or not) When statements. */
-  virtual const types::Param* determineWhenCaseValue(const uast::AstNode* ast, ExtraData extraData) = 0;
+  virtual const types::Param* determineWhenCaseValue(const uast::AstNode* ast,
+                                                     ExtraData extraData) = 0;
 
   /** Overriden by subclasses to determine the value of an if condition.
       This is used for evaluating short-circuited / 'param known' (or not) Conditional statements. */
-  virtual const types::Param* determineIfValue(const uast::AstNode* ast, ExtraData extraData) = 0;
+  virtual const types::Param* determineIfValue(const uast::AstNode* ast,
+                                               ExtraData extraData) = 0;
 
-  bool isParamTrue(const types::Param* param) { return param && param->isNonZero(); }
-  bool isParamFalse(const types::Param* param) { return param && param->isZero(); }
+  bool isParamTrue(const types::Param* param) {
+    return param && param->isNonZero();
+  }
+  bool isParamFalse(const types::Param* param) {
+    return param && param->isZero();
+  }
 
   /** Overriden by subclasses to traverse a node using their visitor startegy.
       This is used for entering bodies of 'param'-known branches. */
@@ -616,12 +638,12 @@ struct BranchSensitiveVisitor {
     // have we encountered a when without param-decided conditions?
     bool anyWhenNonParam = false;
 
-    for(int i = 0; i < sel->numWhenStmts(); i++) {
+    for (int i = 0; i < sel->numWhenStmts(); i++) {
       auto whenAst = sel->whenStmt(i);
 
       bool anyCaseParamTrue = false;
       bool allCaseParamFalse = !whenAst->isOtherwise();
-      for(auto caseExpr : whenAst->caseExprs()) {
+      for (auto caseExpr : whenAst->caseExprs()) {
         auto param = determineWhenCaseValue(caseExpr, extraData);
         anyCaseParamTrue |= isParamTrue(param);
         allCaseParamFalse &= isParamFalse(param);
@@ -649,7 +671,8 @@ struct BranchSensitiveVisitor {
     }
     return false;
   }
-  bool branchSensitivelyTraverse(const uast::Conditional* cond, ExtraData extraData) {
+  bool branchSensitivelyTraverse(const uast::Conditional* cond,
+                                 ExtraData extraData) {
     auto param = determineIfValue(cond->condition(), extraData);
     if (isParamTrue(param)) {
       // Don't need to process the false branch.
@@ -670,7 +693,7 @@ struct BranchSensitiveVisitor {
   }
 };
 
-}  // namespace resolution
-}  // namespace chpl
+} // namespace resolution
+} // namespace chpl
 
 #endif

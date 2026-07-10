@@ -56,7 +56,6 @@ computeElidedCopies(Context* context,
                     const std::set<ID>& allSplitInitedVars,
                     types::QualifiedType fnYieldedType);
 
-
 } // end namespace resolution
 } // end namespace chpl
 

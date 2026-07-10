@@ -36,14 +36,14 @@ template <typename C> class Iterable {
   typename C::const_iterator end_;
 
  public:
-  Iterable(const C &c) : begin_(c.cbegin()), end_(c.cend()) {}
+  Iterable(const C& c) : begin_(c.cbegin()), end_(c.cend()) {}
 
   typename C::const_iterator begin() const { return begin_; }
   typename C::const_iterator end() const { return end_; }
 };
 
 /// \cond DO_NOT_DOCUMENT
-namespace detail{
+namespace detail {
 
 //
 // Both ExpandingIteratorWrapper and UptoNullptrIteratorWrapper are to ease the
@@ -52,8 +52,7 @@ namespace detail{
 // In both cases, the Wrapper part is the begin()+end() pair and the
 // inner struct is the actual iterator.
 
-template<typename Container>
-struct ExpandingIteratorWrapper {
+template <typename Container> struct ExpandingIteratorWrapper {
   // ExpandingIterator keeps a reference to the container and an index, so that
   // dereferencing is always by index.
   struct ExpandingIterator {
@@ -64,7 +63,7 @@ struct ExpandingIteratorWrapper {
     using reference = typename Container::reference;
 
     ExpandingIterator(Container& container, ssize_t i)
-        : container_(container), i_(i) {}
+      : container_(container), i_(i) {}
 
     reference operator*() const { return container_[i_]; }
     pointer operator->() { return &container_[i_]; }
@@ -109,14 +108,13 @@ struct ExpandingIteratorWrapper {
     if (container_.size() == 0) return end();
     return ExpandingIterator(container_, 0);
   }
-  ExpandingIterator end() {return ExpandingIterator(container_, -1);}
+  ExpandingIterator end() { return ExpandingIterator(container_, -1); }
 
  private:
   Container& container_;
 };
 
-template<typename Container>
-struct UptoNullptrIteratorWrapper {
+template <typename Container> struct UptoNullptrIteratorWrapper {
 
   struct UptoNullptrIterator {
     using iterator_category = std::forward_iterator_tag;
@@ -164,7 +162,8 @@ struct UptoNullptrIteratorWrapper {
     iterator end_;
   };
 
-  UptoNullptrIteratorWrapper(const Container& container) : container_(container) {}
+  UptoNullptrIteratorWrapper(const Container& container)
+    : container_(container) {}
 
   UptoNullptrIterator begin() {
     auto begin = container_.begin();
@@ -173,17 +172,21 @@ struct UptoNullptrIteratorWrapper {
     if (begin != end && *begin == nullptr) return this->end();
     return UptoNullptrIterator(begin, end);
   }
-  UptoNullptrIterator end() {return UptoNullptrIterator(container_.end(), container_.end());}
+  UptoNullptrIterator end() {
+    return UptoNullptrIterator(container_.end(), container_.end());
+  }
 
  private:
   const Container& container_;
 };
 
-template <typename N>
-struct is_vector { static const int value = 0; };
+template <typename N> struct is_vector {
+  static const int value = 0;
+};
 
-template <typename N, typename A>
-struct is_vector<std::vector<N, A>> { static const int value = 1; };
+template <typename N, typename A> struct is_vector<std::vector<N, A>> {
+  static const int value = 1;
+};
 
 }; // end namespace detail
 
@@ -200,11 +203,13 @@ template <typename Container> auto expandingIterator(Container& container) {
 // create an uptoNullptrIterator range which visits all elements of a vector up
 // to the first nullptr
 // container has to be over a pointer type
-template <typename Container> auto uptoNullptrIterator(const Container& container) {
+template <typename Container>
+auto uptoNullptrIterator(const Container& container) {
   static_assert(detail::is_vector<Container>::value,
                 "uptoNullptrIterator should only be used on std::vector today");
-  static_assert(std::is_pointer<typename Container::value_type>::value,
-                "uptoNullptrIterator should only be used on container of pointers");
+  static_assert(
+    std::is_pointer<typename Container::value_type>::value,
+    "uptoNullptrIterator should only be used on container of pointers");
   return detail::UptoNullptrIteratorWrapper<Container>(container);
 }
 /// \endcond DO_NOT_DOCUMENT

@@ -25,7 +25,6 @@
 namespace chpl {
 namespace types {
 
-
 /**
   This class represents a primitive numeric type (e.g. `bool`, `real(32)`)
   that can have a width.
@@ -36,21 +35,17 @@ class PrimitiveType : public Type {
   int bitwidth_;
 
   PrimitiveType(typetags::TypeTag tag, int bitwidth)
-    : Type(tag), bitwidth_(bitwidth) {
-  }
+    : Type(tag), bitwidth_(bitwidth) {}
 
   bool primitiveTypeContentsMatchInner(const PrimitiveType* other) const {
     const PrimitiveType* lhs = this;
-    const PrimitiveType* rhs = (const PrimitiveType*) other;
+    const PrimitiveType* rhs = (const PrimitiveType*)other;
     return lhs->bitwidth_ == rhs->bitwidth_;
   }
 
-  void primitiveTypeMarkUniqueStringsInner(Context* context) const {
-  }
+  void primitiveTypeMarkUniqueStringsInner(Context* context) const {}
 
-  Genericity genericity() const override {
-    return CONCRETE;
-  }
+  Genericity genericity() const override { return CONCRETE; }
 
  public:
   ~PrimitiveType() = default;
@@ -84,7 +79,6 @@ class PrimitiveType : public Type {
   static const PrimitiveType*
   getWithNameAndWidth(Context* context, UniqueString name, int bitwidth);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

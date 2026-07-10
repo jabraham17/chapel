@@ -53,10 +53,12 @@ using ChplEnvMap = std::unordered_map<std::string, std::string>;
  */
 llvm::ErrorOr<ChplEnvMap>
 getChplEnv(const std::map<std::string, const char*>& varMap,
-           const char* chplHome, std::string* printchplenvOutput = nullptr);
+           const char* chplHome,
+           std::string* printchplenvOutput = nullptr);
 llvm::ErrorOr<ChplEnvMap>
 getChplEnv(const std::unordered_map<std::string, std::string>& varMap,
-           const char* chplHome, std::string* printchplenvOutput = nullptr);
+           const char* chplHome,
+           std::string* printchplenvOutput = nullptr);
 
 /*
   Check if a given path might be CHPL_HOME based on it containing
@@ -71,9 +73,11 @@ bool isMaybeChplHome(std::string path);
   to be installed, whether we got the value of CHPL_HOME from the environment var,
   and a possible diagnostic message if the function needs to report an issue.
 */
-std::error_code findChplHome(const char* argv0, void* mainAddr,
+std::error_code findChplHome(const char* argv0,
+                             void* mainAddr,
                              std::string& chplHomeOut,
-                             bool& installed, bool& fromEnv,
+                             bool& installed,
+                             bool& fromEnv,
                              std::string& diagnosticMessage);
 
 } // namespace chpl

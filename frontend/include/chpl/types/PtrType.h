@@ -31,9 +31,10 @@ class PtrType : public Type {
   const PtrType* instantiatedFrom_;
   const Type* eltType_;
 
-  PtrType(typetags::TypeTag tag, const PtrType* instantiatedFrom,
+  PtrType(typetags::TypeTag tag,
+          const PtrType* instantiatedFrom,
           const Type* eltType)
-      : Type(tag), instantiatedFrom_(instantiatedFrom), eltType_(eltType) {
+    : Type(tag), instantiatedFrom_(instantiatedFrom), eltType_(eltType) {
     // not an instantiation -> eltType_ should be empty
     CHPL_ASSERT(instantiatedFrom_ != nullptr || eltType_ == nullptr);
     // is an instantiation -> eltType should not be empty
@@ -61,17 +62,14 @@ class PtrType : public Type {
  public:
   virtual const ID& id(Context* context) const = 0;
 
-  const Type* eltType() const {
-    return eltType_;
-  }
+  const Type* eltType() const { return eltType_; }
 
   bool isVoidPtr() const {
     if (eltType_ == nullptr) return false;
     return eltType_->isVoidType();
   }
 
-  bool isInstantiationOf(Context* context,
-                         const PtrType* genericType) const;
+  bool isInstantiationOf(Context* context, const PtrType* genericType) const;
 };
 
 } // end namespace types

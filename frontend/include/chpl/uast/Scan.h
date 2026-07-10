@@ -27,7 +27,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a scan expression. For example:
 
@@ -41,14 +40,13 @@ namespace uast {
   The scan expression is '+ scan A'.
 */
 class Scan final : public Call {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   static const int opChildNum_ = 0;
   static const int iterandChildNum_ = 1;
 
-  Scan(AstList children)
-    : Call(asttags::Scan, std::move(children), false) {
+  Scan(AstList children) : Call(asttags::Scan, std::move(children), false) {
     CHPL_ASSERT(numChildren() == 2);
   }
 
@@ -56,8 +54,7 @@ class Scan final : public Call {
     callSerializeInner(ser);
   }
 
-  explicit Scan(Deserializer& des)
-    : Call(asttags::Scan, des) { }
+  explicit Scan(Deserializer& des) : Call(asttags::Scan, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Scan* rhs = other->toScan();
@@ -76,25 +73,21 @@ class Scan final : public Call {
   /**
     Create and return a scan.
   */
-  static owned<Scan> build(Builder* builder, Location loc,
+  static owned<Scan> build(Builder* builder,
+                           Location loc,
                            owned<AstNode> op,
                            owned<AstNode> iterand);
 
   /**
     Returns the scan op expression, e.g., `+` in the expression `+ scan A`.
   */
-  const AstNode* op() const {
-    return this->child(opChildNum_);
-  }
+  const AstNode* op() const { return this->child(opChildNum_); }
 
   /**
     Returns the iterand of the scan, e.g., 'A' in the expression `+ scan A`.
   */
-  const AstNode* iterand() const {
-    return this->child(iterandChildNum_);
-  }
+  const AstNode* iterand() const { return this->child(iterandChildNum_); }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

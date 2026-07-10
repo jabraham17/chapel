@@ -27,7 +27,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents an include statement. For example:
 
@@ -45,7 +44,7 @@ namespace uast {
   visible within the module Foo.
 */
 class Include final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   Decl::Visibility visibility_;
@@ -53,10 +52,8 @@ class Include final : public AstNode {
   UniqueString name_;
 
   Include(Decl::Visibility visibility, bool isPrototype, UniqueString name)
-    : AstNode(asttags::Include),
-      visibility_(visibility),
-      isPrototype_(isPrototype),
-      name_(name) {
+    : AstNode(asttags::Include), visibility_(visibility),
+      isPrototype_(isPrototype), name_(name) {
     CHPL_ASSERT(!name_.isEmpty());
   }
 
@@ -66,8 +63,7 @@ class Include final : public AstNode {
     ser.write(name_);
   }
 
-  explicit Include(Deserializer& des)
-    : AstNode(asttags::Include, des) {
+  explicit Include(Deserializer& des) : AstNode(asttags::Include, des) {
     visibility_ = des.read<Decl::Visibility>();
     isPrototype_ = des.read<bool>();
     name_ = des.read<UniqueString>();
@@ -77,8 +73,7 @@ class Include final : public AstNode {
     const Include* lhs = this;
     const Include* rhs = other->toInclude();
     return lhs->visibility_ == rhs->visibility_ &&
-      lhs->isPrototype_ == rhs->isPrototype_ &&
-      lhs->name_ == rhs->name_;
+           lhs->isPrototype_ == rhs->isPrototype_ && lhs->name_ == rhs->name_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -88,37 +83,31 @@ class Include final : public AstNode {
   void dumpFieldsInner(const DumpSettings& s) const override;
 
  public:
-
   /**
     Create and return an include statement.
   */
-  static owned<Include> build(Builder* builder, Location loc,
+  static owned<Include> build(Builder* builder,
+                              Location loc,
                               Decl::Visibility visibility,
                               bool isPrototype,
-                              UniqueString name, Location nameLoc);
+                              UniqueString name,
+                              Location nameLoc);
 
   /**
     Return the visibility of this include statement.
   */
-  Decl::Visibility visibility() const {
-    return visibility_;
-  }
+  Decl::Visibility visibility() const { return visibility_; }
 
   /**
     Returns 'true' if this include statement is for a prototype module.
   */
-  bool isPrototype() const {
-    return isPrototype_;
-  }
+  bool isPrototype() const { return isPrototype_; }
 
   /**
     Return the name of the module included by this include statement.
   */
-  UniqueString name() const {
-    return name_;
-  }
+  UniqueString name() const { return name_; }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

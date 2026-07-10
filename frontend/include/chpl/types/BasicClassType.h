@@ -27,7 +27,6 @@
 namespace chpl {
 namespace types {
 
-
 /**
   This class represents an class type (e.g. `class C`)
   without considering decorators.
@@ -36,23 +35,26 @@ class BasicClassType final : public ManageableType {
  private:
   const BasicClassType* parentType_ = nullptr;
 
-  BasicClassType(ID id, UniqueString name,
+  BasicClassType(ID id,
+                 UniqueString name,
                  const BasicClassType* parentType,
                  const BasicClassType* instantiatedFrom,
                  SubstitutionsMap subs,
                  CompositeType::Linkage linkage)
-    : ManageableType(typetags::BasicClassType, id, name,
-                     instantiatedFrom, std::move(subs),
+    : ManageableType(typetags::BasicClassType,
+                     id,
+                     name,
+                     instantiatedFrom,
+                     std::move(subs),
                      linkage),
-      parentType_(parentType)
-  {
+      parentType_(parentType) {
     // all classes should have a parent type, except for object
     // which doesn't.
     CHPL_ASSERT(parentType_ || name == USTR("RootClass"));
   }
 
   bool contentsMatchInner(const Type* other) const override {
-    const BasicClassType* rhs = (const BasicClassType*) other;
+    const BasicClassType* rhs = (const BasicClassType*)other;
     return compositeTypeContentsMatchInner(rhs) &&
            parentType_ == rhs->parentType_;
   }
@@ -62,21 +64,23 @@ class BasicClassType final : public ManageableType {
   }
 
   static const owned<BasicClassType>&
-  getBasicClassType(Context* context, ID id, UniqueString name,
+  getBasicClassType(Context* context,
+                    ID id,
+                    UniqueString name,
                     const BasicClassType* parentType,
                     const BasicClassType* instantiatedFrom,
                     SubstitutionsMap subs,
                     CompositeType::Linkage linkage);
 
  public:
-
   ~BasicClassType() = default;
 
-  static const BasicClassType*
-  get(Context* context, ID id, UniqueString name,
-      const BasicClassType* parentType,
-      const BasicClassType* instantiatedFrom,
-      CompositeType::SubstitutionsMap subs);
+  static const BasicClassType* get(Context* context,
+                                   ID id,
+                                   UniqueString name,
+                                   const BasicClassType* parentType,
+                                   const BasicClassType* instantiatedFrom,
+                                   CompositeType::SubstitutionsMap subs);
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
@@ -85,10 +89,13 @@ class BasicClassType final : public ManageableType {
       return this;
     }
 
-    return get(context, id(), name(),
-               Type::substitute(context, parentType_, subs),
-               Type::substitute(context, (const BasicClassType*) instantiatedFrom_, subs),
-               resolution::substituteInMap(context, subs_, subs));
+    return get(
+      context,
+      id(),
+      name(),
+      Type::substitute(context, parentType_, subs),
+      Type::substitute(context, (const BasicClassType*)instantiatedFrom_, subs),
+      resolution::substituteInMap(context, subs_, subs));
   }
 
   static const BasicClassType* getRootClassType(Context* context);
@@ -96,14 +103,10 @@ class BasicClassType final : public ManageableType {
   static const BasicClassType* getReduceScanOpType(Context* context);
 
   /** Return the parent class type, or nullptr if this is the 'object' type. */
-  const BasicClassType* parentClassType() const {
-    return parentType_;
-  }
+  const BasicClassType* parentClassType() const { return parentType_; }
 
   /** Return true if this type is the 'object' type. */
-  bool isRootClass() const {
-    return parentType_ == nullptr;
-  }
+  bool isRootClass() const { return parentType_ == nullptr; }
 
   /** Returns true if this class type is a subclass of the passed
       parent class type or an instantiation of a passed generic
@@ -127,14 +130,11 @@ class BasicClassType final : public ManageableType {
   const BasicClassType* instantiatedFrom() const {
     const CompositeType* ret = instantiatedFromCompositeType();
     CHPL_ASSERT(ret == nullptr || ret->tag() == typetags::BasicClassType);
-    return (const BasicClassType*) ret;
+    return (const BasicClassType*)ret;
   }
-
 };
 
-
 } // end namespace types
-
 
 } // end namespace chpl
 

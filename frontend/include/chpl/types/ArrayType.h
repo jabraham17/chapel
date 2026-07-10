@@ -36,18 +36,19 @@ class ArrayType final : public CompositeType {
   // - Array literals
 
   // Will compute domainType and eltType from 'subs'
-  ArrayType(ID id, UniqueString name,
+  ArrayType(ID id,
+            UniqueString name,
             const ArrayType* instantiatedFrom,
             SubstitutionsMap subs)
-    : CompositeType(typetags::ArrayType, id, name,
-                    instantiatedFrom, std::move(subs),
-                    uast::Decl::DEFAULT_LINKAGE)
-  {
-  }
-
+    : CompositeType(typetags::ArrayType,
+                    id,
+                    name,
+                    instantiatedFrom,
+                    std::move(subs),
+                    uast::Decl::DEFAULT_LINKAGE) {}
 
   bool contentsMatchInner(const Type* other) const override {
-    const ArrayType* rhs = (const ArrayType*) other;
+    const ArrayType* rhs = (const ArrayType*)other;
     return compositeTypeContentsMatchInner(rhs);
   }
 
@@ -56,7 +57,9 @@ class ArrayType final : public CompositeType {
   }
 
   static const owned<ArrayType>&
-  getArrayTypeQuery(Context* context, ID id, UniqueString name,
+  getArrayTypeQuery(Context* context,
+                    ID id,
+                    UniqueString name,
                     const ArrayType* instantiatedFrom,
                     SubstitutionsMap subs);
 
@@ -64,7 +67,6 @@ class ArrayType final : public CompositeType {
   static const ID eltTypeId;
 
  public:
-
   /** Return the generic array type */
   static const ArrayType* getGenericArrayType(Context* context);
 
@@ -75,16 +77,20 @@ class ArrayType final : public CompositeType {
 
   /* construct an array type whose element type / domain type might be constrained,
      but the array is still generic. */
-  static const ArrayType* getUninstancedArrayType(Context* context,
-                                                  const QualifiedType& domainType,
-                                                  const QualifiedType& eltType);
+  static const ArrayType*
+  getUninstancedArrayType(Context* context,
+                          const QualifiedType& domainType,
+                          const QualifiedType& eltType);
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
-    return getArrayTypeQuery(context,
-                             id_, name_,
-                             Type::substitute(context, instantiatedFrom_->toArrayType(), subs),
-                             resolution::substituteInMap(context, subs_, subs)).get();
+    return getArrayTypeQuery(
+             context,
+             id_,
+             name_,
+             Type::substitute(context, instantiatedFrom_->toArrayType(), subs),
+             resolution::substituteInMap(context, subs_, subs))
+      .get();
   }
 
   QualifiedType domainType() const {
@@ -119,9 +125,7 @@ class ArrayType final : public CompositeType {
 
   virtual void stringify(std::ostream& ss,
                          chpl::StringifyKind stringKind) const override;
-
 };
-
 
 } // end namespace types
 

@@ -26,7 +26,6 @@
 namespace chpl {
 namespace types {
 
-
 /**
   This class represents the generic `class` typeclass. It inherits from
   ManageableType so that it can be used with decorators and managers.
@@ -39,11 +38,10 @@ class AnyClassType final : public ManageableType {
                      /* name */ USTR("class"),
                      /* instantiatedFrom */ nullptr,
                      /* subs */ SubstitutionsMap(),
-                     uast::Decl::DEFAULT_LINKAGE) {
-  }
+                     uast::Decl::DEFAULT_LINKAGE) {}
 
   bool contentsMatchInner(const Type* other) const override {
-    const AnyClassType* rhs = (const AnyClassType*) other;
+    const AnyClassType* rhs = (const AnyClassType*)other;
     return compositeTypeContentsMatchInner(rhs);
   }
 
@@ -52,18 +50,16 @@ class AnyClassType final : public ManageableType {
   }
 
   static const owned<AnyClassType>& getAnyClassType(Context* context);
+
  public:
   ~AnyClassType() = default;
 
   static const AnyClassType* get(Context* context);
 
-  Type::Genericity genericity() const override {
-    return GENERIC;
-  }
+  Type::Genericity genericity() const override { return GENERIC; }
 };
 
 } // end namespace types
-
 
 } // end namespace chpl
 

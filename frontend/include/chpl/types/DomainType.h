@@ -45,36 +45,30 @@ TODO: Should _domain store type and param fields directly for 'idxType', etc.?
  */
 class DomainType final : public CompositeType {
  public:
-   enum Kind {
-     Rectangular,
-     Associative,
-     Sparse,
-     Subdomain,
-     Unknown
-   };
-   static const char* kindToString(Kind k);
+  enum Kind { Rectangular, Associative, Sparse, Subdomain, Unknown };
+  static const char* kindToString(Kind k);
 
  private:
   // TODO: distributions
   Kind kind_;
 
   // Will compute idxType, rank, and strides from 'subs'
-  DomainType(ID id, UniqueString name,
+  DomainType(ID id,
+             UniqueString name,
              const DomainType* instantiatedFrom,
              SubstitutionsMap subs,
              Kind kind)
-    : CompositeType(typetags::DomainType, id, name,
-                    instantiatedFrom, std::move(subs),
+    : CompositeType(typetags::DomainType,
+                    id,
+                    name,
+                    instantiatedFrom,
+                    std::move(subs),
                     uast::Decl::DEFAULT_LINKAGE),
-      kind_(kind)
-  {
-  }
-
+      kind_(kind) {}
 
   bool contentsMatchInner(const Type* other) const override {
-    const DomainType* rhs = (const DomainType*) other;
-    return kind_ == rhs->kind_ &&
-           compositeTypeContentsMatchInner(rhs);
+    const DomainType* rhs = (const DomainType*)other;
+    return kind_ == rhs->kind_ && compositeTypeContentsMatchInner(rhs);
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -82,10 +76,12 @@ class DomainType final : public CompositeType {
   }
 
   static const owned<DomainType>&
-  getDomainType(Context* context, ID id, UniqueString name,
-               const DomainType* instantiatedFrom,
-               SubstitutionsMap subs,
-               Kind kind = Kind::Unknown);
+  getDomainType(Context* context,
+                ID id,
+                UniqueString name,
+                const DomainType* instantiatedFrom,
+                SubstitutionsMap subs,
+                Kind kind = Kind::Unknown);
 
   static const ID rankId;
   static const ID rectangularIdxTypeId;
@@ -95,7 +91,6 @@ class DomainType final : public CompositeType {
   static const ID parentDomainId;
 
  public:
-
   /** Return the generic domain type */
   static const DomainType* getGenericDomainType(Context* context);
 
@@ -124,26 +119,26 @@ class DomainType final : public CompositeType {
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
-    return getDomainType(context, id(), name(),
-                         Type::substitute(context, (const DomainType*) instantiatedFrom_, subs),
+    return getDomainType(context,
+                         id(),
+                         name(),
+                         Type::substitute(
+                           context, (const DomainType*)instantiatedFrom_, subs),
                          resolution::substituteInMap(context, subs_, subs),
-                         kind_).get();
+                         kind_)
+      .get();
   }
 
   /** Get the default distribution type */
   static const QualifiedType& getDefaultDistType(Context* context);
 
-  Kind kind() const {
-    return kind_;
-  }
+  Kind kind() const { return kind_; }
 
   bool isSubdomain() const {
     return kind_ == Kind::Subdomain || kind_ == Kind::Sparse;
   }
 
-  bool isSparse() const {
-    return kind_ == Kind::Sparse;
-  }
+  bool isSparse() const { return kind_ == Kind::Sparse; }
 
   const DomainType* parentDomain() const {
     CHPL_ASSERT(isSubdomain());
@@ -211,21 +206,17 @@ class DomainType final : public CompositeType {
 
   virtual void stringify(std::ostream& ss,
                          chpl::StringifyKind stringKind) const override;
-
 };
-
 
 } // end namespace types
 
 /// \cond DO_NOT_DOCUMENT
-template<> struct stringify<chpl::types::DomainType::Kind> {
+template <> struct stringify<chpl::types::DomainType::Kind> {
   void operator()(std::ostream& streamOut,
                   chpl::StringifyKind stringKind,
                   const chpl::types::DomainType::Kind& stringMe) const {
-#define SWITCH_KIND(T) \
-    case types::T: \
-      streamOut << "T"; \
-      break;
+#define SWITCH_KIND(T)                    \
+  case types::T: streamOut << "T"; break;
 
     switch (stringMe) {
       SWITCH_KIND(DomainType::Kind::Unknown);
@@ -240,11 +231,11 @@ template<> struct stringify<chpl::types::DomainType::Kind> {
 } // end namespace chpl
 
 namespace std {
-  template <> struct hash<chpl::types::DomainType::Kind> {
-    size_t operator()(const chpl::types::DomainType::Kind& kind) const {
-      return (size_t) kind;
-    }
-  };
+template <> struct hash<chpl::types::DomainType::Kind> {
+  size_t operator()(const chpl::types::DomainType::Kind& kind) const {
+    return (size_t)kind;
+  }
+};
 } // end namespace std
 
 #endif

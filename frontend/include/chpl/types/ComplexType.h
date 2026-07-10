@@ -25,30 +25,26 @@
 namespace chpl {
 namespace types {
 
-
 /**
   This class represents a complex type, e.g. `complex` or `complex(64)`.
  */
 class ComplexType final : public PrimitiveType {
  private:
-  ComplexType(int bitwidth)
-    : PrimitiveType(typetags::ComplexType, bitwidth)
-  { }
+  ComplexType(int bitwidth) : PrimitiveType(typetags::ComplexType, bitwidth) {}
 
   bool contentsMatchInner(const Type* other) const override {
-    return primitiveTypeContentsMatchInner((PrimitiveType*) other);
+    return primitiveTypeContentsMatchInner((PrimitiveType*)other);
   }
 
   void markUniqueStringsInner(Context* context) const override {
     primitiveTypeMarkUniqueStringsInner(context);
   }
 
-  static const owned<ComplexType>& getComplexType(Context* context, int bitwidth);
+  static const owned<ComplexType>& getComplexType(Context* context,
+                                                  int bitwidth);
 
   /** what is stored in bitwidth_ for the default 'complex' ? */
-  static int defaultBitwidth() {
-    return 128;
-  }
+  static int defaultBitwidth() { return 128; }
 
  public:
   ~ComplexType() = default;
@@ -57,15 +53,11 @@ class ComplexType final : public PrimitiveType {
 
   /** Returns the bit width of this complex (64 or 128 bits,
       including both components */
-  int bitwidth() const override {
-    return bitwidth_;
-  }
+  int bitwidth() const override { return bitwidth_; }
 
   /** Returns the bit width of a single component of this complex
       (which is half of bitwidth() ) */
-  int componentBitwidth() const {
-    return bitwidth_ / 2;
-  }
+  int componentBitwidth() const { return bitwidth_ / 2; }
 
   bool isDefaultWidth() const override {
     return bitwidth_ == defaultBitwidth();
@@ -73,17 +65,14 @@ class ComplexType final : public PrimitiveType {
 
   const char* c_str() const override {
     switch (bitwidth_) {
-      case 64:
-        return "complex(64)";
-      case 128:
-        return "complex(128)";
+      case 64: return "complex(64)";
+      case 128: return "complex(128)";
       default:
         CHPL_ASSERT(false && "complex bit width case not handled");
         return "complex(<unknown>)";
     }
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

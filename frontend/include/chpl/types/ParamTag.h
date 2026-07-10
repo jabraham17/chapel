@@ -24,35 +24,31 @@ namespace chpl {
 namespace types {
 namespace paramtags {
 
-
 /**
 
   This enum is used to identify which union elements a Param stores
  */
 enum ParamTag {
-  // define the enum using macros and param-classes-list.h
-  /// \cond DO_NOT_DOCUMENT
-  #define PARAM_NODE(NAME, VALTYPE) NAME ,
-  /// \endcond
-  // Apply the above macros to param-classes-list.h
-  #include "chpl/types/param-classes-list.h"
-  // clear the macros
-  #undef PARAM_NODE
-};
-
-// define is___ for regular nodes
-// (not yet for abstract parent classes)
+// define the enum using macros and param-classes-list.h
 /// \cond DO_NOT_DOCUMENT
-#define PARAM_NODE(NAME, VALTYPE) \
-  static inline bool is##NAME(ParamTag tag) { \
-    return tag == NAME; \
-  }
+#define PARAM_NODE(NAME, VALTYPE) NAME,
 /// \endcond
 // Apply the above macros to param-classes-list.h
 #include "chpl/types/param-classes-list.h"
 // clear the macros
 #undef PARAM_NODE
+};
 
+// define is___ for regular nodes
+// (not yet for abstract parent classes)
+/// \cond DO_NOT_DOCUMENT
+#define PARAM_NODE(NAME, VALTYPE)                                   \
+  static inline bool is##NAME(ParamTag tag) { return tag == NAME; }
+/// \endcond
+// Apply the above macros to param-classes-list.h
+#include "chpl/types/param-classes-list.h"
+// clear the macros
+#undef PARAM_NODE
 
 } // end namespace paramtags
 

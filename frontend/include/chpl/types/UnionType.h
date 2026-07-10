@@ -26,44 +26,52 @@
 namespace chpl {
 namespace types {
 
-
 /**
   This class represents a union type, e.g., if we have `union U`,
   then `U` refers to a UnionType.
  */
 class UnionType final : public CompositeType {
  private:
-  UnionType(ID id, UniqueString name,
+  UnionType(ID id,
+            UniqueString name,
             const UnionType* instantiatedFrom,
             SubstitutionsMap subs,
             CompositeType::Linkage linkage)
-    : CompositeType(typetags::UnionType, id, name,
-                    instantiatedFrom, std::move(subs),
-                    linkage)
-  { }
+    : CompositeType(typetags::UnionType,
+                    id,
+                    name,
+                    instantiatedFrom,
+                    std::move(subs),
+                    linkage) {}
 
   bool contentsMatchInner(const Type* other) const override {
-    return compositeTypeContentsMatchInner((const CompositeType*) other);
+    return compositeTypeContentsMatchInner((const CompositeType*)other);
   }
 
   void markUniqueStringsInner(Context* context) const override {
     compositeTypeMarkUniqueStringsInner(context);
   }
 
-  static const owned<UnionType>&
-  getUnionType(Context* context, ID id, UniqueString name,
-               const UnionType* instantiatedFrom,
-               SubstitutionsMap subs,
-               CompositeType::Linkage linkage);
+  static const owned<UnionType>& getUnionType(Context* context,
+                                              ID id,
+                                              UniqueString name,
+                                              const UnionType* instantiatedFrom,
+                                              SubstitutionsMap subs,
+                                              CompositeType::Linkage linkage);
+
  public:
-  static const UnionType* get(Context* context, ID id, UniqueString name,
+  static const UnionType* get(Context* context,
+                              ID id,
+                              UniqueString name,
                               const UnionType* instantiatedFrom,
                               CompositeType::SubstitutionsMap subs);
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
-    return get(context, id_, name_,
-               Type::substitute(context, (UnionType*) instantiatedFrom_, subs),
+    return get(context,
+               id_,
+               name_,
+               Type::substitute(context, (UnionType*)instantiatedFrom_, subs),
                resolution::substituteInMap(context, subs_, subs));
   }
 
@@ -78,13 +86,11 @@ class UnionType final : public CompositeType {
   const UnionType* instantiatedFrom() const {
     const CompositeType* ret = instantiatedFromCompositeType();
     CHPL_ASSERT(ret == nullptr || ret->tag() == typetags::UnionType);
-    return (const UnionType*) ret;
+    return (const UnionType*)ret;
   }
 };
 
-
 } // end namespace uast
-
 
 } // end namespace chpl
 

@@ -64,13 +64,14 @@ class Parser final {
    Parse a file at a particular path.
   */
   uast::BuilderResult parseFile(const char* path,
-                                ParserStats* parseStats=nullptr);
+                                ParserStats* parseStats = nullptr);
   /**
    Parse source code in a string.
    'path' is only used for certain errors.
   */
-  uast::BuilderResult parseString(const char* path, const char* str,
-                                  ParserStats* parseStats=nullptr);
+  uast::BuilderResult parseString(const char* path,
+                                  const char* str,
+                                  ParserStats* parseStats = nullptr);
 };
 
 } // end namespace parsing

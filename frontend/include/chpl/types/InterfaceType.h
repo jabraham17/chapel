@@ -59,19 +59,16 @@ class InterfaceType final : public Type {
 
   // check that the substitutions are valid for the given interface.
   // executed from an assertion, so does not haev an impact in release mode.
-  static bool validateSubstitutions(Context* context,
-                                    const ID& id,
-                                    SubstitutionsMap& subs);
+  static bool
+  validateSubstitutions(Context* context, const ID& id, SubstitutionsMap& subs);
 
   InterfaceType(ID id, UniqueString name, SubstitutionsMap subs)
     : Type(typetags::InterfaceType), id_(std::move(id)), name_(std::move(name)),
       subs_(std::move(subs)) {}
 
   bool contentsMatchInner(const Type* other) const override {
-    auto rhs = (const InterfaceType*) other;
-    return id_ == rhs->id_ &&
-           name_ == rhs->name_ &&
-           subs_ == rhs->subs_;
+    auto rhs = (const InterfaceType*)other;
+    return id_ == rhs->id_ && name_ == rhs->name_ && subs_ == rhs->subs_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -81,21 +78,16 @@ class InterfaceType final : public Type {
   }
 
   // computed from substitutions, c.f. CompositeType
-  Genericity genericity() const override {
-    return MAYBE_GENERIC;
-  }
+  Genericity genericity() const override { return MAYBE_GENERIC; }
 
-  static owned<InterfaceType> const&
-  getInterfaceType(Context* context,
-                   ID id,
-                   UniqueString name,
-                   SubstitutionsMap subs);
+  static owned<InterfaceType> const& getInterfaceType(Context* context,
+                                                      ID id,
+                                                      UniqueString name,
+                                                      SubstitutionsMap subs);
 
  public:
-  static const InterfaceType* get(Context* context,
-                                  ID id,
-                                  UniqueString name,
-                                  SubstitutionsMap subs);
+  static const InterfaceType*
+  get(Context* context, ID id, UniqueString name, SubstitutionsMap subs);
 
   static const InterfaceType* getContextManagerType(Context* context);
 
@@ -115,7 +107,8 @@ class InterfaceType final : public Type {
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
-    return get(context, id_, name_, resolution::substituteInMap(context, subs_, subs));
+    return get(
+      context, id_, name_, resolution::substituteInMap(context, subs_, subs));
   }
 
   /* Get the ID of the interface. */

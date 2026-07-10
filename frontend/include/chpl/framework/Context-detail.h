@@ -95,19 +95,19 @@ struct QueryTimingStat {
 
 // forward declare some types
 class QueryMapResultBase;
-template<typename ResultType, typename... ArgTs> class QueryMapResult;
+template <typename ResultType, typename... ArgTs> class QueryMapResult;
 class QueryMapBase;
-template<typename ResultType, typename... ArgTs> class QueryMap;
+template <typename ResultType, typename... ArgTs> class QueryMap;
 class QueryTracerBase;
-template<typename ResultType, typename... ArgTs> class QueryTracer;
+template <typename ResultType, typename... ArgTs> class QueryTracer;
 
-template<typename TUP, size_t... I>
-static inline bool queryArgsEqualsImpl(const TUP& lhs, const TUP& rhs, std::index_sequence<I...>)
-{
+template <typename TUP, size_t... I>
+static inline bool
+queryArgsEqualsImpl(const TUP& lhs, const TUP& rhs, std::index_sequence<I...>) {
   // Lambda wrapper to std::equal_to
   auto eq = [](const auto& x, const auto& y) {
     std::equal_to<std::decay_t<decltype(x)>> equal_to;
-    return equal_to(x,y);
+    return equal_to(x, y);
   };
 
   // TODO: C++17 fold expression
@@ -122,29 +122,28 @@ static inline bool queryArgsEqualsImpl(const TUP& lhs, const TUP& rhs, std::inde
   // The dummy variable is optimized away, as it is unused.
   bool ret = true;
   auto dummy = {(ret = ret && eq(std::get<I>(lhs), std::get<I>(rhs)))...};
-  (void) dummy; // avoid unused variable warning
+  (void)dummy; // avoid unused variable warning
   return ret;
 }
 
-template<typename... Ts>
-bool queryArgsEquals(const std::tuple<Ts...>& lhs, const std::tuple<Ts...>& rhs)
-{
+template <typename... Ts>
+bool queryArgsEquals(const std::tuple<Ts...>& lhs,
+                     const std::tuple<Ts...>& rhs) {
   return queryArgsEqualsImpl(lhs, rhs, std::index_sequence_for<Ts...>{});
 }
-static inline bool queryArgsEquals(const std::tuple<>& lhs, const std::tuple<>& rhs)
-{
+static inline bool queryArgsEquals(const std::tuple<>& lhs,
+                                   const std::tuple<>& rhs) {
   return true;
 }
 
-
-template<typename ResultType, typename... ArgTs>
+template <typename ResultType, typename... ArgTs>
 struct QueryMapArgTupleHash final {
   size_t operator()(const QueryMapResult<ResultType, ArgTs...>& r) const {
     return chpl::hash(r.tupleOfArgs);
   }
 };
 
-template<typename ResultType, typename... ArgTs>
+template <typename ResultType, typename... ArgTs>
 struct QueryMapArgTupleEqual final {
   bool operator()(const QueryMapResult<ResultType, ArgTs...>& lhs,
                   const QueryMapResult<ResultType, ArgTs...>& rhs) const {
@@ -155,22 +154,20 @@ struct QueryMapArgTupleEqual final {
 // define a way to debug-print out a tuple
 void queryArgsPrintSep(std::ostream& s);
 
-template<typename T>
+template <typename T>
 static void queryArgsPrintOne(std::ostream& s, const T& v) {
   stringify<T> tString;
   tString(s, chpl::StringifyKind::DEBUG_SUMMARY, v);
 }
 
-
-template<typename TUP, size_t... I>
+template <typename TUP, size_t... I>
 static inline void queryArgsPrintImpl(std::ostream& s,
                                       const TUP& tuple,
                                       std::index_sequence<I...>) {
   // lambda to optionally print separator, then print element
   auto print = [](std::ostream& s, bool printsep, const auto& elem) {
-      if(printsep)
-        queryArgsPrintSep(s);
-      queryArgsPrintOne(s, elem);
+    if (printsep) queryArgsPrintSep(s);
+    queryArgsPrintOne(s, elem);
   };
 
   // TODO: C++17 comma fold expression
@@ -180,24 +177,21 @@ static inline void queryArgsPrintImpl(std::ostream& s,
   // This prints the elements in order, with a separator in-between.
   // The comma (, 0) is used to initialize a dummy initializer_list.
   // The compiler optimizes away the dummy variable and list of 0s.
-  auto dummy = { (print(s, I != 0, std::get<I>(tuple)), 0) ... };
-  (void) dummy; // avoid unused variable warning
+  auto dummy = {(print(s, I != 0, std::get<I>(tuple)), 0)...};
+  (void)dummy; // avoid unused variable warning
 }
 
-template<typename... Ts>
+template <typename... Ts>
 void queryArgsPrint(std::ostream& s, const std::tuple<Ts...>& tuple) {
   queryArgsPrintImpl(s, tuple, std::index_sequence_for<Ts...>{});
 }
-static inline void queryArgsPrint(std::ostream& s, const std::tuple<>& tuple) {
-}
-
+static inline void queryArgsPrint(std::ostream& s, const std::tuple<>& tuple) {}
 
 // taken from https://codereview.stackexchange.com/questions/193420/apply-a-function-to-each-element-of-a-tuple-map-a-tuple
 // when the queryArgsToStringsImpl is dropped we can remove these too
 template <class F, typename Tuple, size_t... Is>
 auto applyToEachImpl(Tuple t, F f, std::index_sequence<Is...>) {
-  return std::make_tuple(f(std::get<Is>(t) )...
-  );
+  return std::make_tuple(f(std::get<Is>(t))...);
 }
 
 template <class F, typename... Args>
@@ -205,7 +199,7 @@ auto applyToEach(F f, const std::tuple<Args...>& t) {
   return applyToEachImpl(t, f, std::make_index_sequence<sizeof...(Args)>{});
 }
 
-template<typename TUP, size_t... I>
+template <typename TUP, size_t... I>
 static inline const auto queryArgsToStringsImpl(const TUP& tuple,
                                                 std::index_sequence<I...>) {
   // lambda to convert
@@ -219,7 +213,7 @@ static inline const auto queryArgsToStringsImpl(const TUP& tuple,
   return applyToEach(convert, tuple);
 }
 
-template<typename... Ts>
+template <typename... Ts>
 auto queryArgsToStrings(const std::tuple<Ts...>& tuple) {
   return queryArgsToStringsImpl(tuple, std::index_sequence_for<Ts...>{});
   // TODO: Should be able to replace the Impl with the code below, but it
@@ -238,9 +232,8 @@ struct QueryDependency {
   const QueryMapResultBase* query;
   bool errorCollectionRoot;
 
-  QueryDependency(const QueryMapResultBase* query,
-                  bool errorCollectionRoot) :
-    query(query), errorCollectionRoot(errorCollectionRoot) {}
+  QueryDependency(const QueryMapResultBase* query, bool errorCollectionRoot)
+    : query(query), errorCollectionRoot(errorCollectionRoot) {}
 };
 
 using QueryDependencyVec = std::vector<QueryDependency>;
@@ -248,7 +241,6 @@ using QueryErrorVec = std::vector<owned<ErrorBase>>;
 
 class QueryMapResultBase {
  public:
-
   // lastChecked indicates when the query result has last been checked
   // to be up-to-date by checking its dependencies. When running a query,
   // it has these meanings:
@@ -292,7 +284,7 @@ class QueryMapResultBase {
   // errors --- if any --- were shown to the user for this query result only)
   //
   // Bit 0 tracks if errors occurred, bit 1 tracks warnings.
-  mutable unsigned int errorsPresentInSelfOrDependencies:2;
+  mutable unsigned int errorsPresentInSelfOrDependencies : 2;
   // Errors emitted when re-computing a query can refer to memory and data
   // that's temporarily allocated while running the computation. Then, if the
   // output of the query is the same as before, that temporary data can
@@ -318,14 +310,15 @@ class QueryMapResultBase {
 
   QueryMapBase* parentQueryMap;
 
-  QueryMapResultBase(RevisionNumber lastChecked,
-                     RevisionNumber lastChanged,
-                     bool beingTestedForReuse,
-                     bool externallySet,
-                     bool emittedErrors,
-                     size_t oldResultForErrorContents,
-                     llvm::SmallPtrSet<const QueryMapResultBase*, 2> recursionErrors,
-                     QueryMapBase* parentQueryMap);
+  QueryMapResultBase(
+    RevisionNumber lastChecked,
+    RevisionNumber lastChanged,
+    bool beingTestedForReuse,
+    bool externallySet,
+    bool emittedErrors,
+    size_t oldResultForErrorContents,
+    llvm::SmallPtrSet<const QueryMapResultBase*, 2> recursionErrors,
+    QueryMapBase* parentQueryMap);
   virtual ~QueryMapResultBase() = 0; // this is an abstract base class
   virtual void recompute(Context* context) const = 0;
   virtual void markUniqueStringsInResult(Context* context) const = 0;
@@ -333,7 +326,7 @@ class QueryMapResultBase {
   optional<TraceElement> tryTrace() const;
 };
 
-template<typename ResultType, typename... ArgTs>
+template <typename ResultType, typename... ArgTs>
 class QueryMapResult final : public QueryMapResultBase {
  public:
   std::tuple<ArgTs...> tupleOfArgs;
@@ -345,25 +338,25 @@ class QueryMapResult final : public QueryMapResultBase {
   QueryMapResult(QueryMap<ResultType, ArgTs...>* parentQueryMap,
                  std::tuple<ArgTs...> tupleOfArgs)
     : QueryMapResultBase(-1, -1, false, false, false, -1, {}, parentQueryMap),
-      tupleOfArgs(std::move(tupleOfArgs)),
-      result() {
-  }
-  QueryMapResult(RevisionNumber lastChecked,
-                 RevisionNumber lastChanged,
-                 bool beingTestedForReuse,
-                 bool emittedErrors,
-                 size_t oldResultForErrorContents,
-                 llvm::SmallPtrSet<const QueryMapResultBase*, 2> recursionErrors,
-                 QueryMap<ResultType, ArgTs...>* parentQueryMap,
-                 std::tuple<ArgTs...> tupleOfArgs,
-                 ResultType result)
-    : QueryMapResultBase(lastChecked, lastChanged, beingTestedForReuse,
+      tupleOfArgs(std::move(tupleOfArgs)), result() {}
+  QueryMapResult(
+    RevisionNumber lastChecked,
+    RevisionNumber lastChanged,
+    bool beingTestedForReuse,
+    bool emittedErrors,
+    size_t oldResultForErrorContents,
+    llvm::SmallPtrSet<const QueryMapResultBase*, 2> recursionErrors,
+    QueryMap<ResultType, ArgTs...>* parentQueryMap,
+    std::tuple<ArgTs...> tupleOfArgs,
+    ResultType result)
+    : QueryMapResultBase(lastChecked,
+                         lastChanged,
+                         beingTestedForReuse,
                          emittedErrors,
                          oldResultForErrorContents,
-                         std::move(recursionErrors), parentQueryMap),
-      tupleOfArgs(std::move(tupleOfArgs)),
-      result(std::move(result)) {
-  }
+                         std::move(recursionErrors),
+                         parentQueryMap),
+      tupleOfArgs(std::move(tupleOfArgs)), result(std::move(result)) {}
   void recompute(Context* context) const override;
   void markUniqueStringsInResult(Context* context) const override;
 };
@@ -374,30 +367,28 @@ class QueryTracerBase {
   virtual TraceElement traceElementFrom(const QueryMapResultBase*) const = 0;
 };
 
-template<typename ResultType,
-         typename... ArgTs>
+template <typename ResultType, typename... ArgTs>
 class QueryTracer : public QueryTracerBase {
  private:
-   std::function<TraceElement(const std::tuple<ArgTs...>&)> traceElementFrom_;
+  std::function<TraceElement(const std::tuple<ArgTs...>&)> traceElementFrom_;
 
  public:
   ~QueryTracer() = default;
 
   template <typename F>
   QueryTracer(F&& traceElementFrom)
-    : traceElementFrom_(std::move(traceElementFrom)) {
-  }
+    : traceElementFrom_(std::move(traceElementFrom)) {}
   TraceElement traceElementFrom(const QueryMapResultBase* r) const override {
-    auto specR = (const QueryMapResult<ResultType, ArgTs...>*) r;
+    auto specR = (const QueryMapResult<ResultType, ArgTs...>*)r;
     return traceElementFrom_(specR->tupleOfArgs);
   }
 };
 
 class QueryMapBase {
  public:
-   const char* queryName;
-   bool isInputQuery;
-   owned<QueryTracerBase> tracer;
+  const char* queryName;
+  bool isInputQuery;
+  owned<QueryTracerBase> tracer;
 
   struct QueryStats {
     // NOTE: `system` here refers to what the query system is doing
@@ -415,22 +406,21 @@ class QueryMapBase {
     // Other per-query timings can be added here as needed
   } timings;
 
-   QueryMapBase(const char* queryName, bool isInputQuery)
-     : queryName(queryName), isInputQuery(isInputQuery) {
-   }
-   virtual ~QueryMapBase() = 0; // this is an abstract base class
-   virtual void clearOldResults(RevisionNumber currentRevisionNumber) = 0;
+  QueryMapBase(const char* queryName, bool isInputQuery)
+    : queryName(queryName), isInputQuery(isInputQuery) {}
+  virtual ~QueryMapBase() = 0; // this is an abstract base class
+  virtual void clearOldResults(RevisionNumber currentRevisionNumber) = 0;
 };
 
-template<typename ResultType,
-         typename... ArgTs>
+template <typename ResultType, typename... ArgTs>
 class QueryMap final : public QueryMapBase {
  public:
   using TheResultType = QueryMapResult<ResultType, ArgTs...>;
-  using MapType = std::unordered_set<TheResultType,
-                                     QueryMapArgTupleHash<ResultType, ArgTs...>,
-                                     QueryMapArgTupleEqual<ResultType, ArgTs...>>;
-  using QueryFunctionType = const ResultType& (*)(Context* context, ArgTs...);
+  using MapType =
+    std::unordered_set<TheResultType,
+                       QueryMapArgTupleHash<ResultType, ArgTs...>,
+                       QueryMapArgTupleEqual<ResultType, ArgTs...>>;
+  using QueryFunctionType = const ResultType& (*)(Context * context, ArgTs...);
 
   // the main map (which is actually a set since the result needs to
   // store the key (i.e. the args) in order to be recomputable
@@ -441,11 +431,11 @@ class QueryMap final : public QueryMapBase {
   // the function to recompute the query.
   QueryFunctionType queryFunction;
 
-  QueryMap(const char* queryName, bool isInputQuery, QueryFunctionType queryFunction)
-     : QueryMapBase(queryName, isInputQuery),
-       map(), oldResults(),
-       queryFunction(queryFunction) {
-  }
+  QueryMap(const char* queryName,
+           bool isInputQuery,
+           QueryFunctionType queryFunction)
+    : QueryMapBase(queryName, isInputQuery), map(), oldResults(),
+      queryFunction(queryFunction) {}
   ~QueryMap() = default;
 
   void clearOldResults(RevisionNumber currentRevisionNumber) override {
@@ -462,7 +452,8 @@ class QueryMap final : public QueryMapBase {
         // if we're keeping around old data for the sake of error messages,
         // save it here.
         if (result.oldResultForErrorContents >= 0) {
-          keptOldResults.push_back(std::move(oldResults[result.oldResultForErrorContents]));
+          keptOldResults.push_back(
+            std::move(oldResults[result.oldResultForErrorContents]));
           result.oldResultForErrorContents = keptOldResults.size() - 1;
         }
 
@@ -476,15 +467,14 @@ class QueryMap final : public QueryMapBase {
     std::swap(keptOldResults, oldResults);
   }
 
-  template <typename F>
-  inline void registerTracer(F&& fn) {
+  template <typename F> inline void registerTracer(F&& fn) {
     if (this->tracer.get() != nullptr) {
       // We already have a tracer; do nothing.
       return;
     }
 
     this->tracer = toOwned<QueryTracerBase>(
-        new QueryTracer<ResultType, ArgTs...>(std::forward<F>(fn)));
+      new QueryTracer<ResultType, ArgTs...>(std::forward<F>(fn)));
   }
 };
 
@@ -492,13 +482,12 @@ class QueryMap final : public QueryMapBase {
 // constructor.
 // `onExit` is called with a reference to the object itself so that `elapsed()`
 // can be conditionally called. This avoids us needing to store an enabled flag
-template<typename F, typename Clock=QueryTimingClock>
+template <typename F, typename Clock = QueryTimingClock>
 struct QueryTimingStopwatch {
   F onExit_;
   typename Clock::time_point start_;
 
-  QueryTimingStopwatch(bool enabled, F onExit)
-      : onExit_(std::move(onExit)) {
+  QueryTimingStopwatch(bool enabled, F onExit) : onExit_(std::move(onExit)) {
     if (enabled) {
       start_ = Clock::now();
     }
@@ -518,14 +507,13 @@ struct QueryTimingStopwatch {
 };
 
 // Helper function to sort out the templates over lambda's
-template <typename F> QueryTimingStopwatch<F>
-makeQueryTimingStopwatch(bool enabled, F onExit) {
+template <typename F>
+QueryTimingStopwatch<F> makeQueryTimingStopwatch(bool enabled, F onExit) {
   return QueryTimingStopwatch<F>(enabled, std::move(onExit));
 }
 
-inline auto
-makePlainQueryTimingStopwatch(bool enabled) {
-  return makeQueryTimingStopwatch(enabled, [](auto& arg){(void)arg;});
+inline auto makePlainQueryTimingStopwatch(bool enabled) {
+  return makeQueryTimingStopwatch(enabled, [](auto& arg) { (void)arg; });
 }
 
 } // end namespace querydetail

@@ -28,7 +28,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents an on statement. For example:
 
@@ -43,24 +42,26 @@ namespace uast {
 
  */
 class On final : public SimpleBlockLike {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   static const int8_t destChildNum_ = 0;
 
-  On(AstList children, BlockStyle blockStyle, int bodyChildNum,
+  On(AstList children,
+     BlockStyle blockStyle,
+     int bodyChildNum,
      int numBodyStmts)
-    : SimpleBlockLike(asttags::On, std::move(children), blockStyle,
+    : SimpleBlockLike(asttags::On,
+                      std::move(children),
+                      blockStyle,
                       bodyChildNum,
-                      numBodyStmts) {
-  }
+                      numBodyStmts) {}
 
   void serializeInner(Serializer& ser) const override {
     simpleBlockLikeSerializeInner(ser);
   }
 
-  explicit On(Deserializer& des)
-    : SimpleBlockLike(asttags::On, des) { }
+  explicit On(Deserializer& des) : SimpleBlockLike(asttags::On, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     return simpleBlockLikeContentsMatchInner(other);
@@ -73,11 +74,11 @@ class On final : public SimpleBlockLike {
   std::string dumpChildLabelInner(int i) const override;
 
  public:
-
   /**
     Create and return an on statement.
   */
-  static owned<On> build(Builder* builder, Location loc,
+  static owned<On> build(Builder* builder,
+                         Location loc,
                          owned<AstNode> destination,
                          BlockStyle blockStyle,
                          AstList stmts);
@@ -90,7 +91,6 @@ class On final : public SimpleBlockLike {
     return ret;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

@@ -27,7 +27,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents an extern block. For example:
 
@@ -46,23 +45,19 @@ namespace uast {
 
  */
 class ExternBlock final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   std::string code_;
 
   ExternBlock(std::string code)
-    : AstNode(asttags::ExternBlock),
-      code_(std::move(code)) {
+    : AstNode(asttags::ExternBlock), code_(std::move(code)) {
     CHPL_ASSERT(numChildren() == 0);
   }
 
-  void serializeInner(Serializer& ser) const override {
-    ser.write(code_);
-  }
+  void serializeInner(Serializer& ser) const override { ser.write(code_); }
 
-  explicit ExternBlock(Deserializer& des)
-    : AstNode(asttags::ExternBlock, des) {
+  explicit ExternBlock(Deserializer& des) : AstNode(asttags::ExternBlock, des) {
     code_ = des.read<std::string>();
   }
 
@@ -71,8 +66,7 @@ class ExternBlock final : public AstNode {
     return this->code_ == rhs->code_;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
  public:
   ~ExternBlock() override = default;
@@ -80,14 +74,11 @@ class ExternBlock final : public AstNode {
   /**
     Create and return an ExternBlock with the given C code.
   */
-  static owned<ExternBlock> build(Builder* builder, Location loc,
-                                  std::string code);
+  static owned<ExternBlock>
+  build(Builder* builder, Location loc, std::string code);
 
-  const std::string& code() const {
-    return code_;
-  }
+  const std::string& code() const { return code_; }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

@@ -54,8 +54,7 @@ class IdOrLocation {
   const Location& location() const { return location_; }
 
   bool operator==(const IdOrLocation& other) const {
-    return id_ == other.id_ &&
-           location_ == other.location_;
+    return id_ == other.id_ && location_ == other.location_;
   }
 
   void mark(Context* context) const {
@@ -72,12 +71,7 @@ class IdOrLocation {
  */
 class ErrorMessage final : public IdOrLocation {
  public:
-  enum Kind {
-    NOTE,
-    WARNING,
-    SYNTAX,
-    ERROR
-  };
+  enum Kind { NOTE, WARNING, SYNTAX, ERROR };
 
  private:
   Kind kind_;
@@ -110,10 +104,8 @@ class ErrorMessage final : public IdOrLocation {
   Kind kind() const { return kind_; }
 
   inline bool operator==(const ErrorMessage& other) const {
-    return IdOrLocation::operator==(other) &&
-           kind_ == other.kind_ &&
-           message_ == other.message_ &&
-           details_ == other.details_;
+    return IdOrLocation::operator==(other) && kind_ == other.kind_ &&
+           message_ == other.message_ && details_ == other.details_;
   }
   inline bool operator!=(const ErrorMessage& other) const {
     return !(*this == other);

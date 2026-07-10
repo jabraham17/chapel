@@ -26,24 +26,23 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a zip expression.
 */
 class Zip final : public Call {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   Zip(AstList children)
-    : Call(asttags::Zip, std::move(children),
-           /*hasCalledExpression*/ false) {
-  }
+    : Call(asttags::Zip,
+           std::move(children),
+           /*hasCalledExpression*/ false) {}
 
   void serializeInner(Serializer& ser) const override {
     callSerializeInner(ser);
   }
 
-  explicit Zip(Deserializer& des) : Call(asttags::Zip, des) { }
+  explicit Zip(Deserializer& des) : Call(asttags::Zip, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     return callContentsMatchInner(other->toCall());
@@ -61,7 +60,6 @@ class Zip final : public Call {
   */
   static owned<Zip> build(Builder* builder, Location loc, AstList actuals);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

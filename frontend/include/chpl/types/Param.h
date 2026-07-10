@@ -30,7 +30,6 @@
 namespace chpl {
 namespace types {
 
-
 // forward declare the various Param subclasses
 // using macros and param-classes-list.h
 /// \cond DO_NOT_DOCUMENT
@@ -53,9 +52,7 @@ class Param {
   struct ComplexDouble {
     double re;
     double im;
-    ComplexDouble(double re, double im)
-      : re(re), im(im)
-    { }
+    ComplexDouble(double re, double im) : re(re), im(im) {}
     explicit operator bool() const { // supporting isNonZero / isZero
       return this->re != 0 || this->im != 0;
     }
@@ -65,43 +62,29 @@ class Param {
     bool operator!=(const ComplexDouble& other) const {
       return !(*this == other);
     }
-    size_t hash() const {
-      return chpl::hash(re, im);
-    }
+    size_t hash() const { return chpl::hash(re, im); }
   };
   struct NoneValue {
     explicit operator bool() const { // supporting isNonZero / isZero
       return false;
     }
-    bool operator==(const NoneValue& other) const {
-      return true;
-    }
-    bool operator!=(const NoneValue& other) const {
-      return false;
-    }
-    size_t hash() const {
-      return 0;
-    }
+    bool operator==(const NoneValue& other) const { return true; }
+    bool operator!=(const NoneValue& other) const { return false; }
+    size_t hash() const { return 0; }
   };
   struct EnumValue {
     ID id;
     std::string str;
 
-    EnumValue(ID id, std::string str)
-      : id(id), str(str)
-    { }
+    EnumValue(ID id, std::string str) : id(id), str(str) {}
     explicit operator bool() const { // supporting isNonZero / isZero
-      return true; // TODO: is this correct?
+      return true;                   // TODO: is this correct?
     }
     bool operator==(const EnumValue& other) const {
       return this->id == other.id && this->str == other.str;
     }
-    bool operator!=(const EnumValue& other) const {
-      return !(*this == other);
-    }
-    size_t hash() const {
-      return chpl::hash(id, str);
-    }
+    bool operator!=(const EnumValue& other) const { return !(*this == other); }
+    size_t hash() const { return chpl::hash(id, str); }
   };
 
  private:
@@ -124,11 +107,9 @@ class Param {
   virtual void markUniqueStringsInner(Context* context) const = 0;
 
   // helper functions to mark a value
-  static void markValue(Context* context, UniqueString v) {
-    v.mark(context);
-  }
+  static void markValue(Context* context, UniqueString v) { v.mark(context); }
   // do nothing for non-UniqueString values
-  template<typename T> static void markValue(Context* context, T v) { }
+  template <typename T> static void markValue(Context* context, T v) {}
 
   // helper function to convert a value to a string
   static std::string valueToString(UniqueString v) {
@@ -137,22 +118,14 @@ class Param {
   static std::string valueToString(ComplexDouble v) {
     return std::to_string(v.re) + "+" + std::to_string(v.im) + "i";
   }
-  static std::string valueToString(NoneValue v) {
-    return "none";
-  }
-  static std::string valueToString(EnumValue v) {
-    return v.str;
-  }
-  static std::string valueToString(bool v) {
-    return v ? "true" : "false";
-  }
-  template<typename T> static std::string valueToString(T v) {
+  static std::string valueToString(NoneValue v) { return "none"; }
+  static std::string valueToString(EnumValue v) { return v.str; }
+  static std::string valueToString(bool v) { return v ? "true" : "false"; }
+  template <typename T> static std::string valueToString(T v) {
     return std::to_string(v);
   }
 
-  Param(ParamTag tag)
-    : tag_(tag) {
-  }
+  Param(ParamTag tag) : tag_(tag) {}
 
  public:
   virtual ~Param() = 0; // this is an abstract base class
@@ -162,32 +135,24 @@ class Param {
   /**
     Returns the tag indicating which Param subclass this is.
    */
-  ParamTag tag() const {
-    return tag_;
-  }
+  ParamTag tag() const { return tag_; }
 
   bool operator==(const Param& other) const {
-    (void)tag_;  // quiet nextLinter
+    (void)tag_; // quiet nextLinter
     return completeMatch(&other);
   }
-  bool operator!=(const Param& other) const {
-    return !(*this == other);
-  }
-  template<typename T>
-  static bool update(owned<T>& keep, owned<T>& addin) {
+  bool operator!=(const Param& other) const { return !(*this == other); }
+  template <typename T> static bool update(owned<T>& keep, owned<T>& addin) {
     return defaultUpdateOwned(keep, addin);
   }
-  void mark(Context* context) const {
-    return markUniqueStringsInner(context);
-  }
+  void mark(Context* context) const { return markUniqueStringsInner(context); }
 
   bool completeMatch(const Param* other) const;
 
   static bool isParamOpFoldable(chpl::uast::PrimitiveTag op);
 
-  static bool castAllowed(Context* context,
-                          const QualifiedType& a,
-                          const QualifiedType& b);
+  static bool
+  castAllowed(Context* context, const QualifiedType& a, const QualifiedType& b);
 
   static QualifiedType fold(Context* context,
                             const chpl::uast::AstNode* astForErr,
@@ -207,39 +172,35 @@ class Param {
   static uint64_t hexStr2uint64(const char* str, size_t len, std::string& err);
   static double str2double(const char* str, size_t len, std::string& err);
 
-  // define is__ methods for the various Param subclasses
-  // using macros and param-classes-list.h
-  /// \cond DO_NOT_DOCUMENT
-  #define PARAM_IS(NAME) \
-    bool is##NAME() const { \
-      return paramtags::is##NAME(this->tag_); \
-    }
-  #define PARAM_NODE(NAME, VALTYPE) PARAM_IS(NAME)
-  /// \endcond
-  // Apply the above macros to param-classes-list.h
-  #include "chpl/types/param-classes-list.h"
-  // clear the macros
-  #undef PARAM_NODE
-  #undef PARAM_IS
+// define is__ methods for the various Param subclasses
+// using macros and param-classes-list.h
+/// \cond DO_NOT_DOCUMENT
+#define PARAM_IS(NAME)                                              \
+  bool is##NAME() const { return paramtags::is##NAME(this->tag_); }
+#define PARAM_NODE(NAME, VALTYPE) PARAM_IS(NAME)
+/// \endcond
+// Apply the above macros to param-classes-list.h
+#include "chpl/types/param-classes-list.h"
+// clear the macros
+#undef PARAM_NODE
+#undef PARAM_IS
 
-  // define to__ methods for the various Param subclasses
-  // using macros and param-classes-list.h
-  // Note: these offer equivalent functionality to C++ dynamic_cast<DstType*>
-  /// \cond DO_NOT_DOCUMENT
-  #define PARAM_TO(NAME) \
-    const NAME * to##NAME() const { \
-      return this->is##NAME() ? (const NAME *)this : nullptr; \
-    } \
-    NAME * to##NAME() { \
-      return this->is##NAME() ? (NAME *)this : nullptr; \
-    }
-  #define PARAM_NODE(NAME, VALTYPE) PARAM_TO(NAME)
-  /// \endcond
-  // Apply the above macros to param-classes-list.h
-  #include "chpl/types/param-classes-list.h"
-  // clear the macros
-  #undef PARAM_NODE
-  #undef PARAM_TO
+// define to__ methods for the various Param subclasses
+// using macros and param-classes-list.h
+// Note: these offer equivalent functionality to C++ dynamic_cast<DstType*>
+/// \cond DO_NOT_DOCUMENT
+#define PARAM_TO(NAME)                                                  \
+  const NAME* to##NAME() const {                                        \
+    return this->is##NAME() ? (const NAME*)this : nullptr;              \
+  }                                                                     \
+  NAME* to##NAME() { return this->is##NAME() ? (NAME*)this : nullptr; }
+#define PARAM_NODE(NAME, VALTYPE) PARAM_TO(NAME)
+/// \endcond
+// Apply the above macros to param-classes-list.h
+#include "chpl/types/param-classes-list.h"
+// clear the macros
+#undef PARAM_NODE
+#undef PARAM_TO
 
   // returns 'true' if the param is nonzero / true
   virtual bool isNonZero() const = 0;
@@ -255,44 +216,40 @@ class Param {
 
 // define the subclasses using macros and param-classes-list.h
 /// \cond DO_NOT_DOCUMENT
-#define PARAM_NODE(NAME, VALTYPE) \
-  class NAME : public Param { \
-   public: \
-    using ValueType = VALTYPE; \
-   private: \
-    VALTYPE value_; \
-    explicit NAME(VALTYPE value) : Param(paramtags::NAME), value_(value) { } \
-    static const owned<NAME>& get##NAME(Context* context, VALTYPE value); \
-    bool contentsMatchInner(const Param* other) const override { \
-      const NAME* lhs = this; \
-      const NAME* rhs = (const NAME*) other; \
-      return lhs->value_ == rhs->value_; \
-    } \
-    void markUniqueStringsInner(Context* context) const override { \
-      Param::markValue(context, value_); \
-    } \
-   public: \
-    ~NAME() = default; \
-    static const NAME* get(Context* context, VALTYPE value) { \
-      return get##NAME(context, value).get(); \
-    } \
-    VALTYPE value() const { \
-      return value_; \
-    } \
-    bool isNonZero() const override { \
-      return !!value_; \
-    } \
-    bool isZero() const override { \
-      return !value_; \
-    } \
-    void serialize(Serializer& ser) const override { \
-      Param::serialize(ser); \
-      ser.write(value_); \
-    } \
-    static const NAME* deserialize(Deserializer& des) { \
-      VALTYPE val = des.read<VALTYPE>(); \
-      return NAME::get(des.context(), val); \
-    } \
+#define PARAM_NODE(NAME, VALTYPE)                                           \
+  class NAME : public Param {                                               \
+   public:                                                                  \
+    using ValueType = VALTYPE;                                              \
+                                                                            \
+   private:                                                                 \
+    VALTYPE value_;                                                         \
+    explicit NAME(VALTYPE value) : Param(paramtags::NAME), value_(value) {} \
+    static const owned<NAME>& get##NAME(Context* context, VALTYPE value);   \
+    bool contentsMatchInner(const Param* other) const override {            \
+      const NAME* lhs = this;                                               \
+      const NAME* rhs = (const NAME*)other;                                 \
+      return lhs->value_ == rhs->value_;                                    \
+    }                                                                       \
+    void markUniqueStringsInner(Context* context) const override {          \
+      Param::markValue(context, value_);                                    \
+    }                                                                       \
+                                                                            \
+   public:                                                                  \
+    ~NAME() = default;                                                      \
+    static const NAME* get(Context* context, VALTYPE value) {               \
+      return get##NAME(context, value).get();                               \
+    }                                                                       \
+    VALTYPE value() const { return value_; }                                \
+    bool isNonZero() const override { return !!value_; }                    \
+    bool isZero() const override { return !value_; }                        \
+    void serialize(Serializer& ser) const override {                        \
+      Param::serialize(ser);                                                \
+      ser.write(value_);                                                    \
+    }                                                                       \
+    static const NAME* deserialize(Deserializer& des) {                     \
+      VALTYPE val = des.read<VALTYPE>();                                    \
+      return NAME::get(des.context(), val);                                 \
+    }                                                                       \
   };
 /// \endcond
 
@@ -302,10 +259,9 @@ class Param {
 // clear the macros
 #undef PARAM_NODE
 
-
 } // end namespace types
 /// \cond DO_NOT_DOCUMENT
-template<> struct stringify<chpl::types::Param::ComplexDouble> {
+template <> struct stringify<chpl::types::Param::ComplexDouble> {
   void operator()(std::ostream& streamOut,
                   chpl::StringifyKind stringKind,
                   const chpl::types::Param::ComplexDouble& stringMe) const {
@@ -313,7 +269,7 @@ template<> struct stringify<chpl::types::Param::ComplexDouble> {
   }
 };
 
-template<> struct stringify<chpl::types::Param::NoneValue> {
+template <> struct stringify<chpl::types::Param::NoneValue> {
   void operator()(std::ostream& streamOut,
                   chpl::StringifyKind stringKind,
                   const chpl::types::Param::NoneValue& stringMe) const {
@@ -321,7 +277,7 @@ template<> struct stringify<chpl::types::Param::NoneValue> {
   }
 };
 
-template<> struct stringify<chpl::types::Param::EnumValue> {
+template <> struct stringify<chpl::types::Param::EnumValue> {
   void operator()(std::ostream& streamOut,
                   chpl::StringifyKind stringKind,
                   const chpl::types::Param::EnumValue& stringMe) const {
@@ -334,14 +290,14 @@ template<> struct stringify<chpl::types::Param::EnumValue> {
   }
 };
 
-template<> struct serialize<types::Param::ComplexDouble> {
+template <> struct serialize<types::Param::ComplexDouble> {
   void operator()(Serializer& ser, types::Param::ComplexDouble val) const {
     ser.write(val.re);
     ser.write(val.im);
   }
 };
 
-template<> struct deserialize<types::Param::ComplexDouble> {
+template <> struct deserialize<types::Param::ComplexDouble> {
   types::Param::ComplexDouble operator()(Deserializer& des) {
     double re = des.read<double>();
     double im = des.read<double>();
@@ -349,26 +305,26 @@ template<> struct deserialize<types::Param::ComplexDouble> {
   }
 };
 
-template<> struct serialize<types::Param::NoneValue> {
+template <> struct serialize<types::Param::NoneValue> {
   void operator()(Serializer& ser, types::Param::NoneValue val) const {
     // noop
   }
 };
 
-template<> struct deserialize<types::Param::NoneValue> {
+template <> struct deserialize<types::Param::NoneValue> {
   types::Param::NoneValue operator()(Deserializer& des) {
     return types::Param::NoneValue();
   }
 };
 
-template<> struct serialize<types::Param::EnumValue> {
+template <> struct serialize<types::Param::EnumValue> {
   void operator()(Serializer& ser, types::Param::EnumValue val) const {
     ser.write(val.id);
     ser.write(val.str);
   }
 };
 
-template<> struct deserialize<types::Param::EnumValue> {
+template <> struct deserialize<types::Param::EnumValue> {
   types::Param::EnumValue operator()(Deserializer& des) {
     auto id = des.read<ID>();
     auto str = des.read<std::string>();
@@ -382,21 +338,21 @@ template<> struct deserialize<types::Param::EnumValue> {
 // TODO: is there a reasonable way to define std::less on Param*?
 // Comparing pointers would lead to some nondeterministic ordering.
 namespace std {
-  template<> struct hash<chpl::types::Param::ComplexDouble> {
-    size_t operator()(const chpl::types::Param::ComplexDouble key) const {
-      return key.hash();
-    }
-  };
-  template<> struct hash<chpl::types::Param::NoneValue> {
-    size_t operator()(const chpl::types::Param::NoneValue key) const {
-      return key.hash();
-    }
-  };
-  template<> struct hash<chpl::types::Param::EnumValue> {
-    size_t operator()(const chpl::types::Param::EnumValue key) const {
-      return key.hash();
-    }
-  };
+template <> struct hash<chpl::types::Param::ComplexDouble> {
+  size_t operator()(const chpl::types::Param::ComplexDouble key) const {
+    return key.hash();
+  }
+};
+template <> struct hash<chpl::types::Param::NoneValue> {
+  size_t operator()(const chpl::types::Param::NoneValue key) const {
+    return key.hash();
+  }
+};
+template <> struct hash<chpl::types::Param::EnumValue> {
+  size_t operator()(const chpl::types::Param::EnumValue key) const {
+    return key.hash();
+  }
+};
 } // end namespace std
 
 #endif

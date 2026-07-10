@@ -48,14 +48,11 @@ class ImplementationPoint {
   // The ID of the implementation statement
   ID id_;
 
-  ImplementationPoint(const types::InterfaceType* interface,
-                      ID id)
+  ImplementationPoint(const types::InterfaceType* interface, ID id)
     : interface_(interface), id_(id) {}
 
-  static owned<ImplementationPoint> const&
-  getImplementationPoint(Context* context,
-                         const types::InterfaceType* interface,
-                         ID id);
+  static owned<ImplementationPoint> const& getImplementationPoint(
+    Context* context, const types::InterfaceType* interface, ID id);
 
  public:
   static const ImplementationPoint*
@@ -66,8 +63,7 @@ class ImplementationPoint {
     return defaultUpdateOwned(lhs, rhs);
   }
   bool operator==(const ImplementationPoint& other) const {
-    return interface_ == other.interface_ &&
-           id_ == other.id_;
+    return interface_ == other.interface_ && id_ == other.id_;
   }
   bool operator!=(const ImplementationPoint& other) const {
     return !(*this == other);
@@ -106,7 +102,6 @@ class ImplementationWitness {
   using OverloadMap = std::unordered_map<ID, MostSpecificCandidates>;
 
  private:
-
   ConstraintMap associatedConstraints_;
   AssociatedTypeMap associatedTypes_;
   FunctionMap requiredFns_;
@@ -133,13 +128,12 @@ class ImplementationWitness {
                            bool allGenerated);
 
  public:
-  static ImplementationWitness*
-  get(Context* context,
-      ConstraintMap associatedConstraints,
-      AssociatedTypeMap associatedTypes,
-      FunctionMap requiredFns,
-      OverloadMap returnIntentOverloads,
-      bool allGenerated);
+  static ImplementationWitness* get(Context* context,
+                                    ConstraintMap associatedConstraints,
+                                    AssociatedTypeMap associatedTypes,
+                                    FunctionMap requiredFns,
+                                    OverloadMap returnIntentOverloads,
+                                    bool allGenerated);
 
   static bool update(owned<ImplementationWitness>& lhs,
                      owned<ImplementationWitness>& rhs) {
@@ -158,8 +152,10 @@ class ImplementationWitness {
   void mark(Context* context) const {
     chpl::mark<decltype(associatedTypes_)>{}(context, associatedTypes_);
     chpl::mark<decltype(requiredFns_)>{}(context, requiredFns_);
-    chpl::mark<decltype(associatedConstraints_)>{}(context, associatedConstraints_);
-    chpl::mark<decltype(returnIntentOverloads_)>{}(context, returnIntentOverloads_);
+    chpl::mark<decltype(associatedConstraints_)>{}(context,
+                                                   associatedConstraints_);
+    chpl::mark<decltype(returnIntentOverloads_)>{}(context,
+                                                   returnIntentOverloads_);
   }
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
@@ -169,14 +165,10 @@ class ImplementationWitness {
   }
 
   /** Get the associated types. */
-  const AssociatedTypeMap& associatedTypes() const {
-    return associatedTypes_;
-  }
+  const AssociatedTypeMap& associatedTypes() const { return associatedTypes_; }
 
   /** Get the required functions. */
-  const FunctionMap& requiredFns() const {
-    return requiredFns_;
-  }
+  const FunctionMap& requiredFns() const { return requiredFns_; }
 
   /** Get the return intent overloads. */
   const OverloadMap& returnIntentOverloads() const {
@@ -184,31 +176,32 @@ class ImplementationWitness {
   }
 
   /** Get whether all of the associated types and functions are generated. */
-  bool allGenerated() const {
-    return allGenerated_;
-  }
+  bool allGenerated() const { return allGenerated_; }
 };
 
 } // end namespace resolution
 } // end namespace chpl
 
-
 namespace std {
 
-template<> struct hash<chpl::resolution::ImplementationWitness::ConstraintMap> {
-  size_t operator()(const chpl::resolution::ImplementationWitness::ConstraintMap& key) const {
+template <>
+struct hash<chpl::resolution::ImplementationWitness::ConstraintMap> {
+  size_t operator()(
+    const chpl::resolution::ImplementationWitness::ConstraintMap& key) const {
     return chpl::hashUnorderedMap(key);
   }
 };
 
-template<> struct hash<chpl::resolution::ImplementationWitness::FunctionMap> {
-  size_t operator()(const chpl::resolution::ImplementationWitness::FunctionMap& key) const {
+template <> struct hash<chpl::resolution::ImplementationWitness::FunctionMap> {
+  size_t operator()(
+    const chpl::resolution::ImplementationWitness::FunctionMap& key) const {
     return chpl::hashUnorderedMap(key);
   }
 };
 
-template<> struct hash<chpl::resolution::ImplementationWitness::OverloadMap> {
-  size_t operator()(const chpl::resolution::ImplementationWitness::OverloadMap& key) const {
+template <> struct hash<chpl::resolution::ImplementationWitness::OverloadMap> {
+  size_t operator()(
+    const chpl::resolution::ImplementationWitness::OverloadMap& key) const {
     return chpl::hashUnorderedMap(key);
   }
 };

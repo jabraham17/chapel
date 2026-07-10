@@ -25,7 +25,6 @@
 namespace chpl {
 namespace types {
 
-
 /**
   This class represents a builtin type that only needs a name to
   be used by resolution.
@@ -41,19 +40,14 @@ namespace types {
  */
 class BuiltinType : public Type {
  protected:
-  BuiltinType(TypeTag tag)
-    : Type(tag) {
-  }
+  BuiltinType(TypeTag tag) : Type(tag) {}
 
-  bool contentsMatchInner(const Type* other) const override {
-    return true;
-  }
+  bool contentsMatchInner(const Type* other) const override { return true; }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
   Genericity genericity() const override {
-    if ((int) tag() >= (int) typetags::AnyComplexType)
+    if ((int)tag() >= (int)typetags::AnyComplexType)
       return GENERIC;
     else
       return CONCRETE;
@@ -62,15 +56,17 @@ class BuiltinType : public Type {
  public:
   ~BuiltinType() = default;
 
-  static void gatherBuiltins(Context* context,
-                             std::unordered_map<UniqueString,const Type*>& map);
+  static void
+  gatherBuiltins(Context* context,
+                 std::unordered_map<UniqueString, const Type*>& map);
 
   /**
     Returns a C string for the name of this BuiltinType.
    */
   const char* c_str() const;
 
-  virtual void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const override;
+  virtual void stringify(std::ostream& ss,
+                         chpl::StringifyKind stringKind) const override;
 };
 
 // define the subclasses using macros and BuiltinTypeList.h
@@ -79,16 +75,17 @@ class BuiltinType : public Type {
 #define TYPE_BEGIN_SUBCLASSES(NAME)
 #define TYPE_END_SUBCLASSES(NAME)
 
-#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) \
-  class NAME final : public BuiltinType { \
-   private: \
-    NAME() : BuiltinType(typetags::NAME) { } \
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR)             \
+  class NAME final : public BuiltinType {                  \
+   private:                                                \
+    NAME() : BuiltinType(typetags::NAME) {}                \
     static const owned<NAME>& get##NAME(Context* context); \
-   public: \
-    ~NAME() = default; \
-    static const NAME* get(Context* context) { \
-      return get##NAME(context).get(); \
-    } \
+                                                           \
+   public:                                                 \
+    ~NAME() = default;                                     \
+    static const NAME* get(Context* context) {             \
+      return get##NAME(context).get();                     \
+    }                                                      \
   };
 /// \endcond
 
@@ -100,7 +97,6 @@ class BuiltinType : public Type {
 #undef TYPE_BEGIN_SUBCLASSES
 #undef TYPE_END_SUBCLASSES
 #undef BUILTIN_TYPE_NODE
-
 
 } // end namespace uast
 } // end namespace chpl

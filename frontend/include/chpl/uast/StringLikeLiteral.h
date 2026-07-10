@@ -26,44 +26,34 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This is an abstract parent class for string/bytes/c-string literals.
  */
 class StringLikeLiteral : public Literal {
- friend class AstNode;
+  friend class AstNode;
 
  public:
-  enum QuoteStyle {
-    SINGLE,
-    DOUBLE,
-    TRIPLE_SINGLE,
-    TRIPLE_DOUBLE
-  };
+  enum QuoteStyle { SINGLE, DOUBLE, TRIPLE_SINGLE, TRIPLE_DOUBLE };
 
  protected:
   QuoteStyle quotes_;
 
   StringLikeLiteral(AstTag tag, const types::Param* value, QuoteStyle quotes)
-    : Literal(tag, value),
-      quotes_(quotes)
-  { }
+    : Literal(tag, value), quotes_(quotes) {}
 
   void stringLikeLiteralSerializeInner(Serializer& ser) const {
     literalSerializeInner(ser);
     ser.write(quotes_);
   }
 
-  StringLikeLiteral(AstTag tag, Deserializer& des)
-    : Literal(tag, des) {
+  StringLikeLiteral(AstTag tag, Deserializer& des) : Literal(tag, des) {
     quotes_ = des.read<QuoteStyle>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const StringLikeLiteral* lhs = this;
-    const StringLikeLiteral* rhs = (const StringLikeLiteral*) other;
-    return lhs->literalContentsMatchInner(rhs) &&
-           lhs->quotes_ == rhs->quotes_;
+    const StringLikeLiteral* rhs = (const StringLikeLiteral*)other;
+    return lhs->literalContentsMatchInner(rhs) && lhs->quotes_ == rhs->quotes_;
   }
   void markUniqueStringsInner(Context* context) const override {
     literalMarkUniqueStringsInner(context);
@@ -80,7 +70,7 @@ class StringLikeLiteral : public Literal {
    */
   UniqueString value() const {
     CHPL_ASSERT(value_->isStringParam());
-    const types::StringParam* p = (const types::StringParam*) value_;
+    const types::StringParam* p = (const types::StringParam*)value_;
     return p->value();
   }
 
@@ -95,7 +85,6 @@ class StringLikeLiteral : public Literal {
    */
   static const char* quoteStyleToString(QuoteStyle q);
 };
-
 
 } // end namespace uast
 

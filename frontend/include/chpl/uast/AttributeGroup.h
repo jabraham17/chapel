@@ -38,7 +38,7 @@ namespace uast {
   use only) are both examples of attributes.
 */
 class AttributeGroup final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   std::set<PragmaTag> pragmas_;
@@ -64,17 +64,13 @@ class AttributeGroup final : public AstNode {
                  UniqueString parenfulDeprecationMessage,
                  UniqueString firstEdition,
                  UniqueString lastEdition)
-    : AstNode(asttags::AttributeGroup),
-      pragmas_(std::move(pragmas)),
-      isDeprecated_(isDeprecated),
-      isUnstable_(isUnstable),
-      isParenfulDeprecated_(isParenfulDeprecated),
-      hasEdition_(hasEdition),
+    : AstNode(asttags::AttributeGroup), pragmas_(std::move(pragmas)),
+      isDeprecated_(isDeprecated), isUnstable_(isUnstable),
+      isParenfulDeprecated_(isParenfulDeprecated), hasEdition_(hasEdition),
       deprecationMessage_(deprecationMessage),
       unstableMessage_(unstableMessage),
       parenfulDeprecationMessage_(parenfulDeprecationMessage),
-      firstEdition_(firstEdition),
-      lastEdition_(lastEdition) {
+      firstEdition_(firstEdition), lastEdition_(lastEdition) {
     if (!deprecationMessage_.isEmpty()) {
       CHPL_ASSERT(isDeprecated_);
     }
@@ -104,16 +100,12 @@ class AttributeGroup final : public AstNode {
                  UniqueString lastEdition,
                  AstList attributes)
     : AstNode(asttags::AttributeGroup, std::move(attributes)),
-      pragmas_(std::move(pragmas)),
-      isDeprecated_(isDeprecated),
-      isUnstable_(isUnstable),
-      isParenfulDeprecated_(isParenfulDeprecated),
-      hasEdition_(hasEdition),
-      deprecationMessage_(deprecationMessage),
+      pragmas_(std::move(pragmas)), isDeprecated_(isDeprecated),
+      isUnstable_(isUnstable), isParenfulDeprecated_(isParenfulDeprecated),
+      hasEdition_(hasEdition), deprecationMessage_(deprecationMessage),
       unstableMessage_(unstableMessage),
       parenfulDeprecationMessage_(parenfulDeprecationMessage),
-      firstEdition_(firstEdition),
-      lastEdition_(lastEdition) {
+      firstEdition_(firstEdition), lastEdition_(lastEdition) {
     if (!deprecationMessage_.isEmpty()) {
       CHPL_ASSERT(isDeprecated_);
     }
@@ -167,7 +159,8 @@ class AttributeGroup final : public AstNode {
            this->hasEdition_ == rhs->hasEdition_ &&
            this->deprecationMessage_ == rhs->deprecationMessage_ &&
            this->unstableMessage_ == rhs->unstableMessage_ &&
-           this->parenfulDeprecationMessage_ == rhs->parenfulDeprecationMessage_ &&
+           this->parenfulDeprecationMessage_ ==
+             rhs->parenfulDeprecationMessage_ &&
            this->firstEdition_ == rhs->firstEdition_ &&
            this->lastEdition_ == rhs->lastEdition_;
   }
@@ -185,7 +178,8 @@ class AttributeGroup final : public AstNode {
  public:
   ~AttributeGroup() override = default;
 
-  static owned<AttributeGroup> build(Builder* builder, Location loc,
+  static owned<AttributeGroup> build(Builder* builder,
+                                     Location loc,
                                      std::set<PragmaTag> pragmas,
                                      bool isDeprecated,
                                      bool isUnstable,
@@ -197,7 +191,8 @@ class AttributeGroup final : public AstNode {
                                      UniqueString firstEdition,
                                      UniqueString lastEdition);
 
-  static owned<AttributeGroup> build(Builder* builder, Location loc,
+  static owned<AttributeGroup> build(Builder* builder,
+                                     Location loc,
                                      std::set<PragmaTag> pragmas,
                                      bool isDeprecated,
                                      bool isUnstable,
@@ -231,9 +226,7 @@ class AttributeGroup final : public AstNode {
   /**
     Iterate over the pragmas stored in this attributes.
   */
-  PragmaIterable pragmas() const {
-    return PragmaIterable(pragmas_);
-  }
+  PragmaIterable pragmas() const { return PragmaIterable(pragmas_); }
 
   /*
     returns the attribute with the given name, or nullptr if it is not found.
@@ -257,47 +250,35 @@ class AttributeGroup final : public AstNode {
     Returns true if the declaration associated with this attributeGroup is
     deprecated.
   */
-  bool isDeprecated() const {
-    return isDeprecated_;
-  }
+  bool isDeprecated() const { return isDeprecated_; }
 
   /**
     Returns true if the declaration associated with this attribute is
     unstable.
   */
-  bool isUnstable() const {
-    return isUnstable_;
-  }
+  bool isUnstable() const { return isUnstable_; }
 
   /**
     Returns true if the declaration associated with this attributeGroup
     has a parenful form that's deprecated in favor of a parenless form.
   */
-  bool isParenfulDeprecated() const {
-    return isParenfulDeprecated_;
-  }
+  bool isParenfulDeprecated() const { return isParenfulDeprecated_; }
 
   /**
     Returns true if the declaration associated with this attribute has an
     associated edition
   */
-  bool hasEdition() const {
-    return hasEdition_;
-  }
+  bool hasEdition() const { return hasEdition_; }
 
   /**
     Returns a deprecation message, or the empty string if it is not set.
   */
-  UniqueString deprecationMessage() const {
-    return deprecationMessage_;
-  }
+  UniqueString deprecationMessage() const { return deprecationMessage_; }
 
   /**
     Returns an unstable message, or the empty string if it is not set.
   */
-  UniqueString unstableMessage() const {
-    return unstableMessage_;
-  }
+  UniqueString unstableMessage() const { return unstableMessage_; }
 
   /**
     Returns a deprecation message, or the empty string if it is not set.
@@ -310,27 +291,19 @@ class AttributeGroup final : public AstNode {
     Returns the first edition associated with this declaration, or the empty
     string if it is not set.
   */
-  UniqueString firstEdition() const {
-    return firstEdition_;
-  }
+  UniqueString firstEdition() const { return firstEdition_; }
 
   /**
     Returns the last edition associated with this declaration, or the empty
     string if it is not set.
   */
-  UniqueString lastEdition() const {
-    return lastEdition_;
-  }
+  UniqueString lastEdition() const { return lastEdition_; }
 
   /**
     Returns the number of attributes in this group.
   */
-  int numAttributes() const {
-    return numChildren();
-  }
-
+  int numAttributes() const { return numChildren(); }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

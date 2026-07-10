@@ -29,7 +29,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents an interface.
 
@@ -46,7 +45,7 @@ namespace uast {
   The interface body contains one required function named '=='.
 */
 class Interface final : public NamedDecl {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   int interfaceFormalsChildNum_;
@@ -56,7 +55,8 @@ class Interface final : public NamedDecl {
                      // isn't the body always the last thing here?
   bool isFormalListExplicit_;
 
-  Interface(AstList children, int attributeGroupChildNum,
+  Interface(AstList children,
+            int attributeGroupChildNum,
             Visibility visibility,
             UniqueString name,
             int interfaceFormalsChildNum,
@@ -64,17 +64,16 @@ class Interface final : public NamedDecl {
             int bodyChildNum,
             int numBodyStmts,
             bool isFormalListExplicit)
-      : NamedDecl(asttags::Interface, std::move(children),
-                  attributeGroupChildNum,
-                  visibility,
-                  Decl::DEFAULT_LINKAGE,
-                  /*linkageNameChildNum*/ AstNode::NO_CHILD,
-                  name),
-        interfaceFormalsChildNum_(interfaceFormalsChildNum),
-        numInterfaceFormals_(numInterfaceFormals),
-        bodyChildNum_(bodyChildNum),
-        numBodyStmts_(numBodyStmts),
-        isFormalListExplicit_(isFormalListExplicit) {
+    : NamedDecl(asttags::Interface,
+                std::move(children),
+                attributeGroupChildNum,
+                visibility,
+                Decl::DEFAULT_LINKAGE,
+                /*linkageNameChildNum*/ AstNode::NO_CHILD,
+                name),
+      interfaceFormalsChildNum_(interfaceFormalsChildNum),
+      numInterfaceFormals_(numInterfaceFormals), bodyChildNum_(bodyChildNum),
+      numBodyStmts_(numBodyStmts), isFormalListExplicit_(isFormalListExplicit) {
     // TODO: Some assertions here...
   }
 
@@ -87,24 +86,23 @@ class Interface final : public NamedDecl {
     ser.write(isFormalListExplicit_);
   }
 
-  explicit Interface(Deserializer& des)
-    : NamedDecl(asttags::Interface, des) {
-      interfaceFormalsChildNum_ = des.readVInt();
-      numInterfaceFormals_ = des.readVInt();
-      bodyChildNum_ = des.readVInt();
-      numBodyStmts_ = des.readVInt();
-      isFormalListExplicit_ = des.read<bool>();
-    }
+  explicit Interface(Deserializer& des) : NamedDecl(asttags::Interface, des) {
+    interfaceFormalsChildNum_ = des.readVInt();
+    numInterfaceFormals_ = des.readVInt();
+    bodyChildNum_ = des.readVInt();
+    numBodyStmts_ = des.readVInt();
+    isFormalListExplicit_ = des.read<bool>();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Interface* lhs = this;
-    const Interface* rhs = (const Interface*) other;
+    const Interface* rhs = (const Interface*)other;
     return lhs->namedDeclContentsMatchInner(rhs) &&
-      lhs->interfaceFormalsChildNum_ == rhs->interfaceFormalsChildNum_ &&
-      lhs->numInterfaceFormals_ == rhs->numInterfaceFormals_ &&
-      lhs->bodyChildNum_ == rhs->bodyChildNum_ &&
-      lhs->numBodyStmts_ == rhs->numBodyStmts_ &&
-      lhs->isFormalListExplicit_ == rhs->isFormalListExplicit_;
+           lhs->interfaceFormalsChildNum_ == rhs->interfaceFormalsChildNum_ &&
+           lhs->numInterfaceFormals_ == rhs->numInterfaceFormals_ &&
+           lhs->bodyChildNum_ == rhs->bodyChildNum_ &&
+           lhs->numBodyStmts_ == rhs->numBodyStmts_ &&
+           lhs->isFormalListExplicit_ == rhs->isFormalListExplicit_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -133,9 +131,7 @@ class Interface final : public NamedDecl {
 
     The formal list '(T)' is present, so this method returns 'true'.
   */
-  bool isFormalListExplicit() const {
-    return isFormalListExplicit_;
-  }
+  bool isFormalListExplicit() const { return isFormalListExplicit_; }
 
   /**
     Iterate over the formals in the formal list.
@@ -160,9 +156,7 @@ class Interface final : public NamedDecl {
 
     This method would return '1'.
   */
-  int numFormals() const {
-    return numInterfaceFormals_;
-  }
+  int numFormals() const { return numInterfaceFormals_; }
 
   /**
     Return the i'th interface formal.
@@ -186,9 +180,7 @@ class Interface final : public NamedDecl {
   /**
     Return the number of statements in the body of this interface.
   */
-  int numStmts() const {
-    return numBodyStmts_;
-  }
+  int numStmts() const { return numBodyStmts_; }
 
   /**
     Get the i'th statement in the body of this interface.
@@ -200,7 +192,8 @@ class Interface final : public NamedDecl {
     return ret;
   }
 
-  static owned<Interface> build(Builder* builder, Location loc,
+  static owned<Interface> build(Builder* builder,
+                                Location loc,
                                 owned<AttributeGroup> attributeGroup,
                                 Decl::Visibility visibility,
                                 UniqueString name,
@@ -208,7 +201,6 @@ class Interface final : public NamedDecl {
                                 AstList formals,
                                 AstList body);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

@@ -29,7 +29,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a forwarding statement. Forwarding allows a record
   or class to specify that certain method calls will be forwarded to a
@@ -55,16 +54,18 @@ namespace uast {
 */
 
 class ForwardingDecl final : public Decl {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  ForwardingDecl(AstList children, Decl::Visibility visibility,
+  ForwardingDecl(AstList children,
+                 Decl::Visibility visibility,
                  int attributeGroupChildNum)
-    : Decl(asttags::ForwardingDecl, std::move(children), attributeGroupChildNum,
-                visibility,
-                Decl::DEFAULT_LINKAGE,
-                /*linkageNameChildNum*/ NO_CHILD
-                ) {
+    : Decl(asttags::ForwardingDecl,
+           std::move(children),
+           attributeGroupChildNum,
+           visibility,
+           Decl::DEFAULT_LINKAGE,
+           /*linkageNameChildNum*/ NO_CHILD) {
 
     CHPL_ASSERT(children_.size() >= 0 && children_.size() <= 2);
   }
@@ -74,12 +75,11 @@ class ForwardingDecl final : public Decl {
   }
 
   explicit ForwardingDecl(Deserializer& des)
-    : Decl(asttags::ForwardingDecl, des) {
-  }
+    : Decl(asttags::ForwardingDecl, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
-    const ForwardingDecl* lhs = (const ForwardingDecl*) this;
-    const ForwardingDecl* rhs = (const ForwardingDecl*) other;
+    const ForwardingDecl* lhs = (const ForwardingDecl*)this;
+    const ForwardingDecl* rhs = (const ForwardingDecl*)other;
     return lhs->declContentsMatchInner(rhs);
   }
 
@@ -87,19 +87,18 @@ class ForwardingDecl final : public Decl {
     declMarkUniqueStringsInner(context);
   }
 
-  int exprChildNum() const {
-    return this->attributeGroupChildNum() + 1;
-  }
+  int exprChildNum() const { return this->attributeGroupChildNum() + 1; }
 
  public:
   ~ForwardingDecl() override = default;
 
-
-  static owned<ForwardingDecl> build(Builder* builder, Location loc,
+  static owned<ForwardingDecl> build(Builder* builder,
+                                     Location loc,
                                      owned<AttributeGroup> attributeGroup,
                                      owned<AstNode> expr);
 
-  static owned<ForwardingDecl> build(Builder* builder, Location loc,
+  static owned<ForwardingDecl> build(Builder* builder,
+                                     Location loc,
                                      owned<AttributeGroup> attributeGroup,
                                      owned<AstNode> expr,
                                      Decl::Visibility visibility);
@@ -116,7 +115,6 @@ class ForwardingDecl final : public Decl {
     }
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

@@ -26,7 +26,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a class declaration. For example:
 
@@ -43,16 +42,19 @@ namespace uast {
   The class itself (MyClass) is represented by a Class AST node.
  */
 class Class final : public AggregateDecl {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  Class(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
+  Class(AstList children,
+        int attributeGroupChildNum,
+        Decl::Visibility vis,
         UniqueString name,
         int parentClassChildNum,
         int numParentClasses,
         int elementsChildNum,
         int numElements)
-    : AggregateDecl(asttags::Class, std::move(children),
+    : AggregateDecl(asttags::Class,
+                    std::move(children),
                     attributeGroupChildNum,
                     vis,
                     Decl::DEFAULT_LINKAGE,
@@ -67,12 +69,11 @@ class Class final : public AggregateDecl {
     aggregateDeclSerializeInner(ser);
   }
 
-  explicit Class(Deserializer& des)
-    : AggregateDecl(asttags::Class, des) { }
+  explicit Class(Deserializer& des) : AggregateDecl(asttags::Class, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Class* lhs = this;
-    const Class* rhs = (const Class*) other;
+    const Class* rhs = (const Class*)other;
     return lhs->aggregateDeclContentsMatchInner(rhs);
   }
 
@@ -85,14 +86,14 @@ class Class final : public AggregateDecl {
  public:
   ~Class() override = default;
 
-  static owned<Class> build(Builder* builder, Location loc,
+  static owned<Class> build(Builder* builder,
+                            Location loc,
                             owned<AttributeGroup> attributeGroup,
                             Decl::Visibility vis,
                             UniqueString name,
                             AstList inheritExprs,
                             AstList contents);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

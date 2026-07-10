@@ -29,7 +29,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents an 'implements' statement or expression.
 
@@ -46,7 +45,7 @@ namespace uast {
   interface 'Foo(A, B)'.
 */
 class Implements final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   int8_t typeIdentChildNum_;
@@ -58,16 +57,15 @@ class Implements final : public AstNode {
   /* Compute the position of the interface expression. */
   int8_t interfaceExprChildNum() const {
     auto ret = typeIdentChildNum_ == AstNode::NO_CHILD
-      ? interfaceExprNoTypeChildNum_
-      : typeIdentChildNum_ + 1;
+                 ? interfaceExprNoTypeChildNum_
+                 : typeIdentChildNum_ + 1;
     return ret;
   }
 
-  Implements(AstList children, int8_t typeIdentChildNum,
-             bool isExpressionLevel)
-      : AstNode(asttags::Implements, std::move(children)),
-        typeIdentChildNum_(typeIdentChildNum),
-        isExpressionLevel_(isExpressionLevel) {
+  Implements(AstList children, int8_t typeIdentChildNum, bool isExpressionLevel)
+    : AstNode(asttags::Implements, std::move(children)),
+      typeIdentChildNum_(typeIdentChildNum),
+      isExpressionLevel_(isExpressionLevel) {
     if (typeIdentChildNum_ != AstNode::NO_CHILD) {
       CHPL_ASSERT(children_.size() == 2);
       CHPL_ASSERT(child(typeIdentChildNum_)->isIdentifier());
@@ -76,8 +74,7 @@ class Implements final : public AstNode {
     }
 
     CHPL_ASSERT(interfaceExpr());
-    CHPL_ASSERT(interfaceExpr()->isIdentifier() ||
-           interfaceExpr()->isFnCall());
+    CHPL_ASSERT(interfaceExpr()->isIdentifier() || interfaceExpr()->isFnCall());
   }
 
   void serializeInner(Serializer& ser) const override {
@@ -85,15 +82,14 @@ class Implements final : public AstNode {
     ser.write(isExpressionLevel_);
   }
 
-  explicit Implements(Deserializer& des)
-    : AstNode(asttags::Implements, des) {
-      typeIdentChildNum_ = des.read<int8_t>();
-      isExpressionLevel_ = des.read<bool>();
+  explicit Implements(Deserializer& des) : AstNode(asttags::Implements, des) {
+    typeIdentChildNum_ = des.read<int8_t>();
+    isExpressionLevel_ = des.read<bool>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Implements* lhs = this;
-    const Implements* rhs = (const Implements*) other;
+    const Implements* rhs = (const Implements*)other;
     return lhs->typeIdentChildNum_ == rhs->typeIdentChildNum_ &&
            lhs->isExpressionLevel_ == rhs->isExpressionLevel_;
   }
@@ -131,9 +127,7 @@ class Implements final : public AstNode {
   /**
     Returns true if this implements statement is at an expression level.
   */
-  bool isExpressionLevel() const {
-    return isExpressionLevel_;
-  }
+  bool isExpressionLevel() const { return isExpressionLevel_; }
 
   /**
     Returns the name of the interface this is implementing.
@@ -176,12 +170,12 @@ class Implements final : public AstNode {
     return ret;
   }
 
-  static owned<Implements> build(Builder* builder, Location loc,
+  static owned<Implements> build(Builder* builder,
+                                 Location loc,
                                  owned<Identifier> typeIdent,
                                  owned<AstNode> interfaceExpr,
                                  bool isExpressionLevel);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

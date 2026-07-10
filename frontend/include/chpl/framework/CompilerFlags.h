@@ -26,7 +26,6 @@
 
 namespace chpl {
 
-
 /**
   This class represents a collection of compiler flags. Not every flag
   present in an invocation of 'chpl --help' will be present here. This
@@ -34,12 +33,12 @@ namespace chpl {
   boolean flags the compiler may need to check.
 */
 class CompilerFlags final {
-public:
+ public:
   enum Name {
     UNKNOWN,
     WARN_UNSTABLE,
     WARN_UNSTABLE_INTERNAL,
-    WARN_UNSTABLE_STANDARD,   // warn in all bundled modules except internal
+    WARN_UNSTABLE_STANDARD, // warn in all bundled modules except internal
     WARN_ARRAY_OF_RANGE,
     WARN_UNKNOWN_TOOL_SPACED_ATTRS,
     PERMIT_UNHANDLED_MODULE_ERRORS,
@@ -47,18 +46,20 @@ public:
     NUM_FLAGS
   };
 
-private:
+ private:
   std::set<CompilerFlags::Name> active_;
 
-public:
-
+ public:
   CompilerFlags() = default;
 
   /**
     Set a compiler flag.
   */
   inline void set(CompilerFlags::Name flag, bool val) {
-    if (val) active_.insert(flag); else active_.erase(flag);
+    if (val)
+      active_.insert(flag);
+    else
+      active_.erase(flag);
   }
 
   /**
@@ -76,9 +77,7 @@ public:
     return !(*this == other);
   }
 
-  void swap(CompilerFlags& other) {
-    std::swap(active_, other.active_);
-  }
+  void swap(CompilerFlags& other) { std::swap(active_, other.active_); }
 
   static bool update(CompilerFlags& keep, CompilerFlags& addin) {
     return defaultUpdate(keep, addin);
@@ -86,24 +85,20 @@ public:
 
   void mark(Context* context) const {}
 
-  size_t hash() const {
-    return chpl::hash(active_);
-  }
+  size_t hash() const { return chpl::hash(active_); }
 };
 /// \cond DO_NOT_DOCUMENT
 
 /// \endcond
 
-
 } // end namespace chpl
 
 namespace std {
-  template<> struct hash<chpl::CompilerFlags::Name> {
-    inline size_t operator()(const chpl::CompilerFlags::Name& k) const{
-      return (size_t) k;
-    }
-  };
+template <> struct hash<chpl::CompilerFlags::Name> {
+  inline size_t operator()(const chpl::CompilerFlags::Name& k) const {
+    return (size_t)k;
+  }
+};
 } // end namespace std
-
 
 #endif

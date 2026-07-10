@@ -45,21 +45,21 @@
 #endif
 
 namespace llvm {
-  class LLVMContext;
+class LLVMContext;
 }
 
 namespace chpl {
-  class Context;
+class Context;
 
-  class ErrorBase;
-  class IdOrLocation;
+class ErrorBase;
+class IdOrLocation;
 
 namespace uast {
-  class AstNode;
+class AstNode;
 }
 
 namespace resolution {
-  class TypedFnSignature;
+class TypedFnSignature;
 }
 
 /**
@@ -80,7 +80,6 @@ implement queries and how the query framework functions.
  */
 class Context {
  public:
-
   /**
     This ErrorHandler class is used by the context to report errors.
     It can be subclassed to override its behavior. The default
@@ -177,8 +176,7 @@ class Context {
     bool ranWithoutErrors() const;
   };
 
-  template <typename T, typename Base>
-  class RunResult : public Base {
+  template <typename T, typename Base> class RunResult : public Base {
    private:
     T result_;
 
@@ -195,12 +193,14 @@ class Context {
 
     ErrorCollectionEntry(std::vector<owned<ErrorBase>>* storeInto,
                          bool* noteErrorOccurredInto,
-                         const querydetail::QueryMapResultBase* collectingQuery) :
-      storeInto_(storeInto), noteErrorOccurredInto_(noteErrorOccurredInto),
-      collectingQuery_(collectingQuery) {}
+                         const querydetail::QueryMapResultBase* collectingQuery)
+      : storeInto_(storeInto), noteErrorOccurredInto_(noteErrorOccurredInto),
+        collectingQuery_(collectingQuery) {}
 
-    void storeErrorsFromHelp(const querydetail::QueryMapResultBase* result,
-                            std::unordered_set<const querydetail::QueryMapResultBase*>& visited);
+    void storeErrorsFromHelp(
+      const querydetail::QueryMapResultBase* result,
+      std::unordered_set<const querydetail::QueryMapResultBase*>& visited);
+
    public:
     /**
       When a parent query starts tracking errors, the tracking entry contains
@@ -230,7 +230,9 @@ class Context {
     static ErrorCollectionEntry
     createForRecomputing(const querydetail::QueryMapResultBase*);
 
-    const querydetail::QueryMapResultBase* collectingQuery() const { return collectingQuery_; }
+    const querydetail::QueryMapResultBase* collectingQuery() const {
+      return collectingQuery_;
+    }
 
     void storeError(owned<ErrorBase> toStore) const;
 
@@ -238,23 +240,21 @@ class Context {
   };
 
   class RecomputeMarker {
-   friend class Context;
+    friend class Context;
 
    private:
     Context* context_;
     bool oldValue_;
 
-    RecomputeMarker(Context* context, bool isRecomputing) :
-      context_(context), oldValue_(isRecomputing) {
-        if (context) std::swap(context_->isRecomputing, oldValue_);
+    RecomputeMarker(Context* context, bool isRecomputing)
+      : context_(context), oldValue_(isRecomputing) {
+      if (context) std::swap(context_->isRecomputing, oldValue_);
     }
 
    public:
     RecomputeMarker() : RecomputeMarker(nullptr, false) {}
 
-    RecomputeMarker(RecomputeMarker&& other) {
-      *this = std::move(other);
-    }
+    RecomputeMarker(RecomputeMarker&& other) { *this = std::move(other); }
 
     RecomputeMarker& operator=(RecomputeMarker&& other) {
       this->context_ = other.context_;
@@ -270,13 +270,9 @@ class Context {
       context_ = nullptr;
     }
 
-    bool isCleared() {
-      return context_ == nullptr;
-    }
+    bool isCleared() { return context_ == nullptr; }
 
-    ~RecomputeMarker() {
-      restore();
-    }
+    ~RecomputeMarker() { restore(); }
   };
 
   RecomputeMarker markRecomputing(bool isRecomputing) {
@@ -284,7 +280,6 @@ class Context {
   }
 
  private:
-
   // The implementation of the default error handler.
   class DefaultErrorHandler : public Context::ErrorHandler {
    public:
@@ -301,8 +296,8 @@ class Context {
   Configuration config_;
 
   // The current error handler.
-  owned<ErrorHandler> handler_
-    = toOwned<ErrorHandler>(new DefaultErrorHandler());
+  owned<ErrorHandler> handler_ =
+    toOwned<ErrorHandler>(new DefaultErrorHandler());
 
   // State for printchplenv data
   bool computedChplEnv = false;
@@ -312,7 +307,10 @@ class Context {
   bool detailedErrors = true;
 
   // map that supports uniqueCString / UniqueString
-  using UniqueStringsTableType = std::unordered_set<chpl::detail::StringAndLength, chpl::detail::UniqueStrHash, chpl::detail::UniqueStrEqual>;
+  using UniqueStringsTableType =
+    std::unordered_set<chpl::detail::StringAndLength,
+                       chpl::detail::UniqueStrHash,
+                       chpl::detail::UniqueStrEqual>;
   UniqueStringsTableType uniqueStringsTable;
 
   // Map from a query function pointer to appropriate QueryMap object.
@@ -371,8 +369,8 @@ class Context {
   std::vector<ErrorCollectionEntry> errorCollectionStack;
 
   // list of query names to ignore when tracing
-  std::vector<std::string>
-  queryTraceIgnoreQueries = {"idToTagQuery", "idToParentId"};
+  std::vector<std::string> queryTraceIgnoreQueries = {"idToTagQuery",
+                                                      "idToParentId"};
 
   // list of colors to use for open/close braces depending on query depth
   std::vector<TermColorName> queryDepthColor = {BLUE, BRIGHT_YELLOW, MAGENTA};
@@ -421,11 +419,9 @@ class Context {
     }
   }
 
-
   char* setupStringMetadata(char* buf, size_t len);
-  const char* getOrCreateUniqueStringWithAllocation(char* buf,
-                                                    const char* str,
-                                                    size_t len);
+  const char*
+  getOrCreateUniqueStringWithAllocation(char* buf, const char* str, size_t len);
   const char* getOrCreateUniqueString(const char* str, size_t len);
 
   bool shouldMarkUnownedPointer(const void* ptr);
@@ -436,11 +432,11 @@ class Context {
 
   // saves the dependency in the parent query, which is assumed
   // to be at queryStack.back().
-  void saveDependencyInParent(const querydetail::QueryMapResultBase* resultEntry);
+  void
+  saveDependencyInParent(const querydetail::QueryMapResultBase* resultEntry);
   void endQueryHandleDependency(const querydetail::QueryMapResultBase* result);
 
-  template<typename ResultType,
-           typename... ArgTs>
+  template <typename ResultType, typename... ArgTs>
   querydetail::QueryMap<ResultType, ArgTs...>*
   getMap(const ResultType& (*queryFunction)(Context* context, ArgTs...),
          const std::tuple<ArgTs...>& tupleOfArgs,
@@ -450,46 +446,40 @@ class Context {
   // if the result is present in the map, getResult returns it.
   // if not, it adds a new default-constructed result to the map
   // which will have lastChecked and lastChanged set to -1.
-  template<typename ResultType,
-           typename... ArgTs>
+  template <typename ResultType, typename... ArgTs>
   const querydetail::QueryMapResult<ResultType, ArgTs...>*
   getResult(querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
             const std::tuple<ArgTs...>& tupleOfArgs);
 
   void emitErrorForRecursiveQuery(const querydetail::QueryMapResultBase* r);
 
-  template<typename ResultType,
-           typename... ArgTs>
+  template <typename ResultType, typename... ArgTs>
   const querydetail::QueryMapResult<ResultType, ArgTs...>*
   updateResultForQueryMapR(
-      querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
-      const querydetail::QueryMapResult<ResultType, ArgTs...>* r,
-      const std::tuple<ArgTs...>& tupleOfArgs,
-      ResultType result,
-      bool forSetter,
-      bool markExternallySet);
+    querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
+    const querydetail::QueryMapResult<ResultType, ArgTs...>* r,
+    const std::tuple<ArgTs...>& tupleOfArgs,
+    ResultType result,
+    bool forSetter,
+    bool markExternallySet);
 
-  template<typename ResultType,
-           typename... ArgTs>
+  template <typename ResultType, typename... ArgTs>
   const querydetail::QueryMapResult<ResultType, ArgTs...>*
-  updateResultForQueryMap(
-      querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
-      const std::tuple<ArgTs...>& tupleOfArgs,
-      ResultType result,
-      bool forSetter,
-      bool markExternallySet);
+  updateResultForQueryMap(querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
+                          const std::tuple<ArgTs...>& tupleOfArgs,
+                          ResultType result,
+                          bool forSetter,
+                          bool markExternallySet);
 
-  template<typename ResultType,
-           typename... ArgTs>
-  const querydetail::QueryMapResult<ResultType, ArgTs...>*
-  updateResultForQuery(
-       const ResultType& (*queryFunction)(Context* context, ArgTs...),
-       const std::tuple<ArgTs...>& tupleOfArgs,
-       ResultType result,
-       const char* traceQueryName,
-       bool isInputQuery,
-       bool forSetter,
-       bool markExternallySet);
+  template <typename ResultType, typename... ArgTs>
+  const querydetail::QueryMapResult<ResultType, ArgTs...>* updateResultForQuery(
+    const ResultType& (*queryFunction)(Context* context, ArgTs...),
+    const std::tuple<ArgTs...>& tupleOfArgs,
+    ResultType result,
+    const char* traceQueryName,
+    bool isInputQuery,
+    bool forSetter,
+    bool markExternallySet);
 
   void recomputeIfNeeded(const querydetail::QueryMapResultBase* resultEntry);
   void updateForReuse(const querydetail::QueryMapResultBase* resultEntry);
@@ -497,18 +487,18 @@ class Context {
   // Checks to see if the current result exists and can be reused.
   // This can run queries that it depended on in the previous revision again
   // and it can update the query's lastChecked value.
-  bool queryCanUseSavedResult(
-            const void* queryFunction,
-            const querydetail::QueryMapResultBase* resultEntry);
+  bool
+  queryCanUseSavedResult(const void* queryFunction,
+                         const querydetail::QueryMapResultBase* resultEntry);
 
   // In addition to the steps in queryCanUseSavedResult, if the result
   // cannot be reused, adds the query to the stack of currently executing
   // queries
   bool queryCanUseSavedResultAndPushIfNot(
-            const void* queryFunction,
-            const querydetail::QueryMapResultBase* resultEntry);
+    const void* queryFunction,
+    const querydetail::QueryMapResultBase* resultEntry);
 
-  void doNotCollectUniqueCString(const char *s);
+  void doNotCollectUniqueCString(const char* s);
 
   void gatherRecursionTrace(const querydetail::QueryMapResultBase* root,
                             const querydetail::QueryMapResultBase* result,
@@ -537,8 +527,8 @@ class Context {
   auto runAndHandleErrors(F&& f) -> RunResult<decltype(f(this)), ResultBase> {
     RunResult<decltype(f(this)), ResultBase> result;
     auto collectionRoot = queryStack.empty() ? nullptr : queryStack.back();
-    errorCollectionStack.push_back(
-        ErrorCollectionEntry::createForTrackingQuery(&result.value(), collectionRoot));
+    errorCollectionStack.push_back(ErrorCollectionEntry::createForTrackingQuery(
+      &result.value(), collectionRoot));
     result.result() = f(this);
     errorCollectionStack.pop_back();
     return result;
@@ -617,8 +607,8 @@ class Context {
   */
   owned<ErrorHandler> installErrorHandler(owned<ErrorHandler> substitute) {
     auto ret = substitute.get()
-        ? std::move(substitute)
-        : toOwned<ErrorHandler>(new DefaultErrorHandler());
+                 ? std::move(substitute)
+                 : toOwned<ErrorHandler>(new DefaultErrorHandler());
     std::swap(this->handler_, ret);
     return ret;
   }
@@ -626,9 +616,7 @@ class Context {
   /**
     Get a mutable pointer to the currently installed error handler.
   */
-  ErrorHandler* errorHandler() {
-    return this->handler_.get();
-  }
+  ErrorHandler* errorHandler() { return this->handler_.get(); }
 
   /**
     Execute a function or lambda using the context, and track whether or not
@@ -636,12 +624,14 @@ class Context {
     not shown to the user.
    */
   template <typename F>
-  auto runAndCaptureErrors(F&& f) -> RunResult<decltype(f(this)), CapturingRunResultBase> {
+  auto runAndCaptureErrors(F&& f)
+    -> RunResult<decltype(f(this)), CapturingRunResultBase> {
     return runAndHandleErrors<F, CapturingRunResultBase>(std::forward<F>(f));
   }
 
   template <typename F>
-  auto runAndDetectErrors(F&& f) -> RunResult<decltype(f(this)), ObservingRunResultBase> {
+  auto runAndDetectErrors(F&& f)
+    -> RunResult<decltype(f(this)), ObservingRunResultBase> {
     return runAndHandleErrors<F, ObservingRunResultBase>(std::forward<F>(f));
   }
 
@@ -673,15 +663,24 @@ class Context {
     Get or create a unique string by concatenating up to 9 strings
     with lengths.
    */
-  const char* uniqueCStringConcatLen(const char* s1, size_t len1,
-                                     const char* s2, size_t len2,
-                                     const char* s3 = nullptr, size_t len3 = 0,
-                                     const char* s4 = nullptr, size_t len4 = 0,
-                                     const char* s5 = nullptr, size_t len5 = 0,
-                                     const char* s6 = nullptr, size_t len6 = 0,
-                                     const char* s7 = nullptr, size_t len7 = 0,
-                                     const char* s8 = nullptr, size_t len8 = 0,
-                                     const char* s9 = nullptr, size_t len9 = 0);
+  const char* uniqueCStringConcatLen(const char* s1,
+                                     size_t len1,
+                                     const char* s2,
+                                     size_t len2,
+                                     const char* s3 = nullptr,
+                                     size_t len3 = 0,
+                                     const char* s4 = nullptr,
+                                     size_t len4 = 0,
+                                     const char* s5 = nullptr,
+                                     size_t len5 = 0,
+                                     const char* s6 = nullptr,
+                                     size_t len6 = 0,
+                                     const char* s7 = nullptr,
+                                     size_t len7 = 0,
+                                     const char* s8 = nullptr,
+                                     size_t len8 = 0,
+                                     const char* s9 = nullptr,
+                                     size_t len9 = 0);
   /**
     Get or create a unique string by concatenating up to 9 strings.
    */
@@ -694,8 +693,6 @@ class Context {
                                   const char* s7 = nullptr,
                                   const char* s8 = nullptr,
                                   const char* s9 = nullptr);
-
-
 
   /**
    When the context is configured to run with garbage collection
@@ -723,27 +720,25 @@ class Context {
    so markOwnedPointer should have been called on them if
    they have been reused.
    */
-  template<typename T>
-  void markUnownedPointer(const T* ptr) {
-    #ifndef NDEBUG
-      if (shouldMarkUnownedPointer(ptr)) {
-        // run mark on the pointer contents while checking
-        // all unique strings are already marked
-        auto saveCheckStringsAlreadyMarked = checkStringsAlreadyMarked;
-        checkStringsAlreadyMarked = true;
-        ptr->mark(this);
-        // restore the previous setting for checkStringsAlreadyMarked
-        checkStringsAlreadyMarked = saveCheckStringsAlreadyMarked;
-      }
-    #endif
+  template <typename T> void markUnownedPointer(const T* ptr) {
+#ifndef NDEBUG
+    if (shouldMarkUnownedPointer(ptr)) {
+      // run mark on the pointer contents while checking
+      // all unique strings are already marked
+      auto saveCheckStringsAlreadyMarked = checkStringsAlreadyMarked;
+      checkStringsAlreadyMarked = true;
+      ptr->mark(this);
+      // restore the previous setting for checkStringsAlreadyMarked
+      checkStringsAlreadyMarked = saveCheckStringsAlreadyMarked;
+    }
+#endif
   }
 
   /**
    This function can be called by a mark method to mark UniqueStrings
    within an owned pointer.
    */
-  template<typename T>
-  void markOwnedPointer(const T* ptr) {
+  template <typename T> void markOwnedPointer(const T* ptr) {
     if (shouldMarkOwnedPointer(ptr)) {
       // run mark on the object
       ptr->mark(this);
@@ -756,8 +751,7 @@ class Context {
 
    This overload just calls markOwnedPointer.
    */
-  template<typename T>
-  void markPointer(const owned<T>& ptr) {
+  template <typename T> void markPointer(const owned<T>& ptr) {
     markOwnedPointer(ptr.get());
   }
 
@@ -767,11 +761,9 @@ class Context {
 
    This overload just calls markUnownedPointer.
    */
-  template<typename T>
-  void markPointer(const T* ptr) {
+  template <typename T> void markPointer(const T* ptr) {
     markUnownedPointer(ptr);
   }
-
 
   /**
     Return 'true' if the filePathForId was found
@@ -844,16 +836,12 @@ class Context {
   /**
     Returns the current revision number
   */
-  int currentRevision() const {
-    return int(currentRevisionNumber);
-  }
+  int currentRevision() const { return int(currentRevisionNumber); }
 
   /**
     Returns the number of query bodies executed in this revision.
    */
-  int numQueriesRunThisRevision() const {
-    return numQueriesRunThisRevision_;
-  }
+  int numQueriesRunThisRevision() const { return numQueriesRunThisRevision_; }
 
   /**
     This function runs garbage collection. It will collect UniqueStrings
@@ -879,12 +867,12 @@ class Context {
     This version takes in a Location and a printf-style format string.
    */
   void error(Location loc, const char* fmt, ...)
-  #ifndef DOXYGEN
+#ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
-    __attribute__ ((format (printf, 3, 4)))
-  #endif
-  ;
+    __attribute__((format(printf, 3, 4)))
+#endif
+    ;
 
   /**
     Note an error for the currently running query.
@@ -893,12 +881,12 @@ class Context {
     The ID is used to compute a Location using parsing::locateId.
    */
   void error(ID id, const char* fmt, ...)
-  #ifndef DOXYGEN
+#ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
-    __attribute__ ((format (printf, 3, 4)))
-  #endif
-  ;
+    __attribute__((format(printf, 3, 4)))
+#endif
+    ;
 
   /**
     Note an error for the currently running query.
@@ -906,13 +894,12 @@ class Context {
     This version takes in an IdOrLocation and a printf-style format string.
    */
   void error(const IdOrLocation& loc, const char* fmt, ...)
-  #ifndef DOXYGEN
+#ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
-    __attribute__ ((format (printf, 3, 4)))
-  #endif
-  ;
-
+    __attribute__((format(printf, 3, 4)))
+#endif
+    ;
 
   /**
     Note an error for the currently running query.
@@ -921,12 +908,12 @@ class Context {
     The AST node is used to compute a Location by using a parsing::locateAst.
    */
   void error(const uast::AstNode* ast, const char* fmt, ...)
-  #ifndef DOXYGEN
+#ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
-    __attribute__ ((format (printf, 3, 4)))
-  #endif
-  ;
+    __attribute__((format(printf, 3, 4)))
+#endif
+    ;
 
   /**
     Note an error for the currently running query.
@@ -938,13 +925,14 @@ class Context {
    */
   void error(const resolution::TypedFnSignature* inFn,
              const uast::AstNode* ast,
-             const char* fmt, ...)
-  #ifndef DOXYGEN
+             const char* fmt,
+             ...)
+#ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
-    __attribute__ ((format (printf, 4, 5)))
-  #endif
-  ;
+    __attribute__((format(printf, 4, 5)))
+#endif
+    ;
 
   /**
     Note an warning for the currently running query.
@@ -952,12 +940,12 @@ class Context {
     This version takes in a Location and a printf-style format string.
    */
   void warning(Location loc, const char* fmt, ...)
-  #ifndef DOXYGEN
+#ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
-    __attribute__ ((format (printf, 3, 4)))
-  #endif
-  ;
+    __attribute__((format(printf, 3, 4)))
+#endif
+    ;
 
   /**
     Note an warning for the currently running query.
@@ -966,12 +954,12 @@ class Context {
     The ID is used to compute a Location using parsing::locateId.
    */
   void warning(ID id, const char* fmt, ...)
-  #ifndef DOXYGEN
+#ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
-    __attribute__ ((format (printf, 3, 4)))
-  #endif
-  ;
+    __attribute__((format(printf, 3, 4)))
+#endif
+    ;
 
   /**
     Note an error for the currently running query.
@@ -979,12 +967,12 @@ class Context {
     This version takes in an IdOrLocation and a printf-style format string.
    */
   void warning(const IdOrLocation& loc, const char* fmt, ...)
-  #ifndef DOXYGEN
+#ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
-    __attribute__ ((format (printf, 3, 4)))
-  #endif
-  ;
+    __attribute__((format(printf, 3, 4)))
+#endif
+    ;
 
   /**
     Note an warning for the currently running query.
@@ -993,12 +981,12 @@ class Context {
     The AST node is used to compute a Location by using a parsing::locateAst.
    */
   void warning(const uast::AstNode* ast, const char* fmt, ...)
-  #ifndef DOXYGEN
+#ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
-    __attribute__ ((format (printf, 3, 4)))
-  #endif
-  ;
+    __attribute__((format(printf, 3, 4)))
+#endif
+    ;
 
   /**
     Sets the enableDebugTrace flag. This was needed because the context
@@ -1015,9 +1003,7 @@ class Context {
   /** Enables/disables timing each query execution.
       This does not output anything to stdout / a file / etc.
       To see the results, call queryTimingReport. */
-  void setQueryTimingFlag(bool enable) {
-    enableQueryTiming = enable;
-  }
+  void setQueryTimingFlag(bool enable) { enableQueryTiming = enable; }
 
   /** Begin query timing trace, sending the trace to outname */
   void beginQueryTimingTrace(const std::string& outname);
@@ -1039,11 +1025,10 @@ class Context {
 
     This is intended only as a debugging aid.
    */
-  template<typename ResultType,
-           typename... ArgTs>
-  QueryStatus queryStatus(
-         const ResultType& (*queryFunction)(Context* context, ArgTs...),
-         const std::tuple<ArgTs...>& tupleOfArgs);
+  template <typename ResultType, typename... ArgTs>
+  QueryStatus queryStatus(const ResultType& (*queryFunction)(Context* context,
+                                                             ArgTs...),
+                          const std::tuple<ArgTs...>& tupleOfArgs);
 
   /**
     Returns 'true' if the system already has a result for the passed query
@@ -1051,31 +1036,27 @@ class Context {
     queries - e.g. one reading a file that can both have the contents
     set and can also read the data from the filesystem.
    */
-  template<typename ResultType,
-           typename... ArgTs>
-  bool
-  hasCurrentResultForQuery(
-       const ResultType& (*queryFunction)(Context* context, ArgTs...),
-       const std::tuple<ArgTs...>& tupleOfArgs);
+  template <typename ResultType, typename... ArgTs>
+  bool hasCurrentResultForQuery(
+    const ResultType& (*queryFunction)(Context* context, ArgTs...),
+    const std::tuple<ArgTs...>& tupleOfArgs);
 
   /**
     Returns 'true' if the query in question is currently running.
     This can be useful for avoiding recursion in certain cases.
    */
-  template<typename ResultType,
-           typename... ArgTs>
-  bool
-  isQueryRunning(
-       const ResultType& (*queryFunction)(Context* context, ArgTs...),
-       const std::tuple<ArgTs...>& tupleOfArgs);
+  template <typename ResultType, typename... ArgTs>
+  bool isQueryRunning(const ResultType& (*queryFunction)(Context* context,
+                                                         ArgTs...),
+                      const std::tuple<ArgTs...>& tupleOfArgs);
 
-  template<typename ResultType,
-           typename... ArgTs>
+  template <typename ResultType, typename... ArgTs>
   const typename querydetail::QueryMap<ResultType, ArgTs...>::MapType*
-  querySavedResults(
-       const ResultType& (*queryFunction)(Context* context, ArgTs...));
+  querySavedResults(const ResultType& (*queryFunction)(Context* context,
+                                                       ArgTs...));
 
-  bool isResultUpToDate(const querydetail::QueryMapResultBase& resultEntry) const {
+  bool
+  isResultUpToDate(const querydetail::QueryMapResultBase& resultEntry) const {
     return resultEntry.lastChanged == this->currentRevisionNumber;
   }
 
@@ -1083,57 +1064,49 @@ class Context {
   // and should not be called directly
 
   /// \cond DO_NOT_DOCUMENT
-  template<typename... ArgTs>
+  template <typename... ArgTs>
   void queryBeginTrace(const char* traceQueryName,
                        const std::tuple<ArgTs...>& tupleOfArg);
 
-  template<typename ResultType,
-           typename... ArgTs>
-  querydetail::QueryMap<ResultType, ArgTs...>*
-  queryBeginGetMap(
-       const ResultType& (*queryFunction)(Context* context, ArgTs...),
-       const std::tuple<ArgTs...>& tupleOfArgs,
-       const char* traceQueryName,
-       bool isInputQuery);
+  template <typename ResultType, typename... ArgTs>
+  querydetail::QueryMap<ResultType, ArgTs...>* queryBeginGetMap(
+    const ResultType& (*queryFunction)(Context* context, ArgTs...),
+    const std::tuple<ArgTs...>& tupleOfArgs,
+    const char* traceQueryName,
+    bool isInputQuery);
 
-  template<typename ResultType,
-           typename... ArgTs>
+  template <typename ResultType, typename... ArgTs>
   const querydetail::QueryMapResult<ResultType, ArgTs...>*
   queryBeginGetResult(querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
                       const std::tuple<ArgTs...>& tupleOfArgs);
 
+  template <typename ResultType, typename... ArgTs>
+  bool queryUseSaved(const ResultType& (*queryFunction)(Context* context,
+                                                        ArgTs...),
+                     const querydetail::QueryMapResult<ResultType, ArgTs...>* r,
+                     const char* traceQueryName);
 
-  template<typename ResultType,
-           typename... ArgTs>
-  bool queryUseSaved(
-         const ResultType& (*queryFunction)(Context* context, ArgTs...),
-         const querydetail::QueryMapResult<ResultType, ArgTs...>* r,
-         const char* traceQueryName);
-
-  template<typename ResultType, typename... ArgTs>
+  template <typename ResultType, typename... ArgTs>
   const ResultType&
   queryGetSaved(const querydetail::QueryMapResult<ResultType, ArgTs...>* r);
 
-  template<typename ResultType,
-           typename... ArgTs>
-  const ResultType& queryEnd(
-      const ResultType& (*queryFunction)(Context* context, ArgTs...),
-      querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
-      const querydetail::QueryMapResult<ResultType, ArgTs...>* r,
-      const std::tuple<ArgTs...>& tupleOfArgs,
-      ResultType result,
-      const char* traceQueryName);
+  template <typename ResultType, typename... ArgTs>
+  const ResultType&
+  queryEnd(const ResultType& (*queryFunction)(Context* context, ArgTs...),
+           querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
+           const querydetail::QueryMapResult<ResultType, ArgTs...>* r,
+           const std::tuple<ArgTs...>& tupleOfArgs,
+           ResultType result,
+           const char* traceQueryName);
 
-  template<typename ResultType,
-           typename... ArgTs>
+  template <typename ResultType, typename... ArgTs>
   void querySetterUpdateResult(
-      const ResultType& (*queryFunction)(Context* context, ArgTs...),
-      const std::tuple<ArgTs...>& tupleOfArgs,
-      ResultType result,
-      const char* traceQueryName,
-      bool isInputQuery,
-      bool markExternallySet);
-
+    const ResultType& (*queryFunction)(Context* context, ArgTs...),
+    const std::tuple<ArgTs...>& tupleOfArgs,
+    ResultType result,
+    const char* traceQueryName,
+    bool isInputQuery,
+    bool markExternallySet);
 
   /**
      Output a timing report of the cumulative time each query spent
@@ -1145,8 +1118,7 @@ class Context {
                             const std::string& args,
                             querydetail::QueryTimingDuration elapsed);
 
-  template<typename... ArgTs>
-  struct ReportOnExit {
+  template <typename... ArgTs> struct ReportOnExit {
     using Stopwatch = querydetail::QueryTimingStopwatch<ReportOnExit>;
     Context* context = nullptr;
     querydetail::QueryMapBase* base = nullptr;
@@ -1155,14 +1127,15 @@ class Context {
     size_t depth = 0;
     bool enableQueryTimingTrace = false;
 
-    explicit ReportOnExit(Context *ctx = nullptr,
-                          querydetail::QueryMapBase *base_ = nullptr,
-                          const std::tuple<ArgTs...> *tup = nullptr,
-                          bool enableQueryTiming_ = false, size_t dep = 0,
+    explicit ReportOnExit(Context* ctx = nullptr,
+                          querydetail::QueryMapBase* base_ = nullptr,
+                          const std::tuple<ArgTs...>* tup = nullptr,
+                          bool enableQueryTiming_ = false,
+                          size_t dep = 0,
                           bool enableQueryTimingTrace_ = false)
-        : context(ctx), base(base_), tupleOfArgs(tup),
-          enableQueryTiming(enableQueryTiming_), depth(dep),
-          enableQueryTimingTrace(enableQueryTimingTrace_) {}
+      : context(ctx), base(base_), tupleOfArgs(tup),
+        enableQueryTiming(enableQueryTiming_), depth(dep),
+        enableQueryTimingTrace(enableQueryTimingTrace_) {}
 
     ReportOnExit(const ReportOnExit& rhs) = delete;
     ReportOnExit(ReportOnExit&& rhs) = default;
@@ -1188,18 +1161,19 @@ class Context {
   // timing if we are enabled. And then on scope exit we conditionally stop the
   // timing and add it to the total or log it.
   // Semi-public method because we only expect it to be used in the macro
-  template<typename... ArgTs>
+  template <typename... ArgTs>
   auto makeQueryTimingStopwatch(querydetail::QueryMapBase* base,
-                           const std::tuple<ArgTs...>& tupleOfArgs) {
-    ReportOnExit<ArgTs...> s {
-      this, base, &tupleOfArgs, enableQueryTiming, queryStack.size(),
-      enableQueryTimingTrace
-    };
+                                const std::tuple<ArgTs...>& tupleOfArgs) {
+    ReportOnExit<ArgTs...> s{this,
+                             base,
+                             &tupleOfArgs,
+                             enableQueryTiming,
+                             queryStack.size(),
+                             enableQueryTimingTrace};
     return querydetail::makeQueryTimingStopwatch(s.enabled(), std::move(s));
   }
   /// \endcond
 };
-
 
 } // end namespace chpl
 

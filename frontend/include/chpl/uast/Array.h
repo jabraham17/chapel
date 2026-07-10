@@ -28,7 +28,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents an array expression. For example:
 
@@ -43,17 +42,14 @@ namespace uast {
   An array expression will never contain comments.
  */
 class Array final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  bool trailingComma_,
-       associative_,
-       isMultiDim_;
+  bool trailingComma_, associative_, isMultiDim_;
 
   Array(AstList children, bool trailingComma, bool associative)
-      : AstNode(asttags::Array, std::move(children)),
-        trailingComma_(trailingComma),
-        associative_(associative) {
+    : AstNode(asttags::Array, std::move(children)),
+      trailingComma_(trailingComma), associative_(associative) {
     isMultiDim_ = this->numExprs() > 0 && this->expr(0)->isArrayRow();
     CHPL_ASSERT(!(isMultiDim_ && associative_));
   }
@@ -64,8 +60,7 @@ class Array final : public AstNode {
     ser.write(isMultiDim_);
   }
 
-  explicit Array(Deserializer& des)
-    : AstNode(asttags::Array, des) {
+  explicit Array(Deserializer& des) : AstNode(asttags::Array, des) {
     trailingComma_ = des.read<bool>();
     associative_ = des.read<bool>();
     isMultiDim_ = des.read<bool>();
@@ -78,8 +73,7 @@ class Array final : public AstNode {
            this->isMultiDim_ == rhs->isMultiDim_;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
   void dumpInner(const DumpSettings& s) const;
 
@@ -89,9 +83,11 @@ class Array final : public AstNode {
   /**
    Create and return an Array expression.
    */
-  static owned<Array> build(Builder* builder, Location loc,
-                            AstList exprs, bool trailingComma=false,
-                            bool associative=false);
+  static owned<Array> build(Builder* builder,
+                            Location loc,
+                            AstList exprs,
+                            bool trailingComma = false,
+                            bool associative = false);
 
   bool hasTrailingComma() const { return this->trailingComma_; }
   bool isAssociative() const { return this->associative_; }
@@ -106,9 +102,7 @@ class Array final : public AstNode {
   /**
     Return the number of expressions in this array.
   */
-  int numExprs() const {
-    return this->numChildren();
-  }
+  int numExprs() const { return this->numChildren(); }
 
   /**
     Return the i'th expression in this array.
@@ -121,9 +115,7 @@ class Array final : public AstNode {
   /**
     Return whether this is a multi-dimensional array.
   */
-  bool isMultiDim() const {
-    return this->isMultiDim_;
-  }
+  bool isMultiDim() const { return this->isMultiDim_; }
 
   /**
    * Return the shape of this multi-dim array, as a list of dimension lengths.
@@ -133,7 +125,7 @@ class Array final : public AstNode {
     std::vector<int> ret;
     ret.emplace_back(this->numExprs());
     auto cur = this->expr(0);
-    while(cur->toArrayRow()) {
+    while (cur->toArrayRow()) {
       ret.emplace_back(cur->toArrayRow()->numExprs());
       cur = cur->toArrayRow()->expr(0);
     }
@@ -243,7 +235,7 @@ class Array final : public AstNode {
 
     FlatteningArrayIteratorPair(FlatteningArrayIterator begin,
                                 FlatteningArrayIterator end)
-        : begin_(begin), end_(end) {}
+      : begin_(begin), end_(end) {}
     ~FlatteningArrayIteratorPair() = default;
 
     FlatteningArrayIterator begin() const { return begin_; }
@@ -259,7 +251,6 @@ class Array final : public AstNode {
                                        FlatteningArrayIterator::end(this));
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

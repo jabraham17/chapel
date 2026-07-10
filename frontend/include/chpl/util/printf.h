@@ -26,16 +26,18 @@
 // docs generator has trouble with the attribute applied to 'build'
 // so the above ifndef works around the issue.
 #ifndef DOXYGEN
-#define DYNO_ATTR_PRINTF_FORMAT(fmt__, rest__)\
-    __attribute__ ((format (printf, fmt__, rest__)))
+#define DYNO_ATTR_PRINTF_FORMAT(fmt__, rest__)   \
+  __attribute__((format(printf, fmt__, rest__)))
 #else
 #define DYNO_ATTR_PRINTF_FORMAT(fmt__, rest__)
 #endif
 
 namespace chpl {
 
-std::string vprintToString(const char* format, ...) DYNO_ATTR_PRINTF_FORMAT(1, 2);
-std::string vprintToString(const char* format, va_list vl) DYNO_ATTR_PRINTF_FORMAT(1, 0);
+std::string vprintToString(const char* format, ...)
+  DYNO_ATTR_PRINTF_FORMAT(1, 2);
+std::string vprintToString(const char* format, va_list vl)
+  DYNO_ATTR_PRINTF_FORMAT(1, 0);
 
 } // end namespace chpl
 

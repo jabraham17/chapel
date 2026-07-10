@@ -24,38 +24,35 @@ namespace chpl {
 namespace types {
 namespace typetags {
 
-
 /**
 
   This enum is used to identify which ASTType subclass a node is.
  */
 enum TypeTag {
-  // define the enum for all of the non-virtual Type nodes
-  // using macros and type-classes-list.h
-  /// \cond DO_NOT_DOCUMENT
-  #define TYPE_NODE(NAME) NAME ,
-  #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) NAME ,
-  #define TYPE_BEGIN_SUBCLASSES(NAME) START_##NAME ,
-  #define TYPE_END_SUBCLASSES(NAME) END_##NAME ,
-  /// \endcond
-  // Apply the above macros to type-classes-list.h
-  #include "chpl/types/type-classes-list.h"
-  // clear the macros
-  #undef TYPE_NODE
-  #undef BUILTIN_TYPE_NODE
-  #undef TYPE_BEGIN_SUBCLASSES
-  #undef TYPE_END_SUBCLASSES
+// define the enum for all of the non-virtual Type nodes
+// using macros and type-classes-list.h
+/// \cond DO_NOT_DOCUMENT
+#define TYPE_NODE(NAME)                        NAME,
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) NAME,
+#define TYPE_BEGIN_SUBCLASSES(NAME)            START_##NAME,
+#define TYPE_END_SUBCLASSES(NAME)              END_##NAME,
+/// \endcond
+// Apply the above macros to type-classes-list.h
+#include "chpl/types/type-classes-list.h"
+// clear the macros
+#undef TYPE_NODE
+#undef BUILTIN_TYPE_NODE
+#undef TYPE_BEGIN_SUBCLASSES
+#undef TYPE_END_SUBCLASSES
   NUM_TYPE_TAGS
 };
 
 // define is___ for regular nodes
 // (not yet for abstract parent classes)
 /// \cond DO_NOT_DOCUMENT
-#define IS_TYPE(NAME) \
-  static inline bool is##NAME(TypeTag tag) { \
-    return tag == NAME; \
-  }
-#define TYPE_NODE(NAME) IS_TYPE(NAME)
+#define IS_TYPE(NAME)                                              \
+  static inline bool is##NAME(TypeTag tag) { return tag == NAME; }
+#define TYPE_NODE(NAME)                        IS_TYPE(NAME)
 #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) IS_TYPE(NAME)
 #define TYPE_BEGIN_SUBCLASSES(NAME)
 #define TYPE_END_SUBCLASSES(NAME)
@@ -71,8 +68,8 @@ enum TypeTag {
 
 // define is___ for abstract parent classes
 /// \cond DO_NOT_DOCUMENT
-#define IS_BASE_CLASS_TYPE(NAME) \
-  static inline bool is##NAME(TypeTag tag) { \
+#define IS_BASE_CLASS_TYPE(NAME)                   \
+  static inline bool is##NAME(TypeTag tag) {       \
     return START_##NAME < tag && tag < END_##NAME; \
   }
 #define TYPE_NODE(NAME)
@@ -90,7 +87,6 @@ enum TypeTag {
 #undef IS_BASE_CLASS_TYPE
 
 const char* tagToString(TypeTag tag);
-
 
 } // end namespace typetags
 

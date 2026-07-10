@@ -25,18 +25,15 @@
 namespace chpl {
 namespace types {
 
-
 /**
   This class represents a real type, e.g. `real` or `real(32)`.
  */
 class RealType final : public PrimitiveType {
  private:
-  RealType(int bitwidth)
-    : PrimitiveType(typetags::RealType, bitwidth)
-  { }
+  RealType(int bitwidth) : PrimitiveType(typetags::RealType, bitwidth) {}
 
   bool contentsMatchInner(const Type* other) const override {
-    return primitiveTypeContentsMatchInner((PrimitiveType*) other);
+    return primitiveTypeContentsMatchInner((PrimitiveType*)other);
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -46,18 +43,14 @@ class RealType final : public PrimitiveType {
   static const owned<RealType>& getRealType(Context* context, int bitwidth);
 
   /** what is stored in bitwidth_ for the default 'real' ? */
-  static int defaultBitwidth() {
-    return 64;
-  }
+  static int defaultBitwidth() { return 64; }
 
  public:
   ~RealType() = default;
 
   static const RealType* get(Context* context, int bitwidth);
 
-  int bitwidth() const override {
-    return bitwidth_;
-  }
+  int bitwidth() const override { return bitwidth_; }
 
   bool isDefaultWidth() const override {
     return bitwidth_ == defaultBitwidth();
@@ -65,17 +58,14 @@ class RealType final : public PrimitiveType {
 
   const char* c_str() const override {
     switch (bitwidth_) {
-      case 32:
-        return "real(32)";
-      case 64:
-          return "real(64)";
+      case 32: return "real(32)";
+      case 64: return "real(64)";
       default:
         CHPL_ASSERT(false && "real bit width case not handled");
         return "real(<unknown>)";
     }
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

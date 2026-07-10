@@ -26,11 +26,10 @@ namespace chpl {
 namespace uast {
 namespace primtags {
 
-
 /** An enum containing the various PrimOp values e.g. PRIM_MOVE. */
 enum PrimitiveTag {
-#define PRIMITIVE_G(NAME, str) PRIM_ ## NAME ,
-#define PRIMITIVE_R(NAME, str) PRIM_ ## NAME ,
+#define PRIMITIVE_G(NAME, str) PRIM_##NAME,
+#define PRIMITIVE_R(NAME, str) PRIM_##NAME,
 #include "chpl/uast/prim-ops-list.h"
   NUM_KNOWN_PRIMS
 #undef PRIMITIVE_G
@@ -55,11 +54,11 @@ DECLARE_SERDE_ENUM(uast::PrimitiveTag, uint16_t);
 } // end namespace chpl
 
 namespace std {
-  template <> struct hash<chpl::uast::PrimitiveTag> {
-    size_t operator()(const chpl::uast::PrimitiveTag& tag) const {
-      return (size_t) tag;
-    }
-  };
+template <> struct hash<chpl::uast::PrimitiveTag> {
+  size_t operator()(const chpl::uast::PrimitiveTag& tag) const {
+    return (size_t)tag;
+  }
+};
 } // end namespace std
 
 #endif

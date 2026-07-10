@@ -30,7 +30,6 @@
 namespace chpl {
 namespace uast {
 
-
 class Builder;
 
 /**
@@ -40,35 +39,31 @@ class Builder;
   are at a statement level will be represented with this type.
  */
 class Comment final : public AstNode {
- friend class AstNode;
- friend class Builder;
+  friend class AstNode;
+  friend class Builder;
 
  private:
   std::string comment_;
   CommentID commentId_;
 
-  Comment(std::string s)
-    : AstNode(asttags::Comment), comment_(std::move(s)) {
-  }
+  Comment(std::string s) : AstNode(asttags::Comment), comment_(std::move(s)) {}
 
   void serializeInner(Serializer& ser) const override {
     ser.write(comment_);
     ser.write(commentId_); // TODO: don't serialize comment IDs
   }
 
-  explicit Comment(Deserializer& des)
-    : AstNode(asttags::Comment, des) {
+  explicit Comment(Deserializer& des) : AstNode(asttags::Comment, des) {
     comment_ = des.read<std::string>();
     commentId_ = des.read<CommentID>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Comment* lhs = this;
-    const Comment* rhs = (const Comment*) other;
-    return lhs->comment_ == rhs->comment_ ;
+    const Comment* rhs = (const Comment*)other;
+    return lhs->comment_ == rhs->comment_;
   }
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
   void dumpFieldsInner(const DumpSettings& s) const override;
 
@@ -97,10 +92,7 @@ class Comment final : public AstNode {
   /**
      Set the comment's ID
    */
-  void setCommentId(int index) {
-    commentId_ = CommentID(index);
-  }
-
+  void setCommentId(int index) { commentId_ = CommentID(index); }
 };
 
 /**
@@ -108,8 +100,7 @@ class Comment final : public AstNode {
  The iterator hides the ownership (it always returns a pointer e.g. AstNode*)
  and casts elements to a particular type.
  */
-template<typename CastToType>
-class AstListNoCommentsIterator {
+template <typename CastToType> class AstListNoCommentsIterator {
  public:
   using iterator_category = std::bidirectional_iterator_tag;
   using value_type = const CastToType*;
@@ -138,12 +129,13 @@ class AstListNoCommentsIterator {
   }
   ~AstListNoCommentsIterator() = default;
 
-  AstListNoCommentsIterator<CastToType>& operator=(const AstListNoCommentsIterator<CastToType>& it) = default;
+  AstListNoCommentsIterator<CastToType>&
+  operator=(const AstListNoCommentsIterator<CastToType>& it) = default;
 
   // needs to be support == and !=
   bool operator==(const AstListNoCommentsIterator<CastToType> rhs) const {
     (void)begin; // quiet linter
-    (void)end; // quiet linter
+    (void)end;   // quiet linter
     return this->it == rhs.it;
   }
   bool operator!=(const AstListNoCommentsIterator<CastToType> rhs) const {
@@ -152,10 +144,10 @@ class AstListNoCommentsIterator {
 
   // needs to support * and ->
   const CastToType* operator*() const {
-    return (const CastToType*) this->it->get();
+    return (const CastToType*)this->it->get();
   }
   const CastToType* operator->() const {
-    return (const CastToType*) this->it->get();
+    return (const CastToType*)this->it->get();
   }
 
   // needs to support preincrement and postincrement
@@ -205,25 +197,18 @@ class AstListNoCommentsIterator {
   // must be swappable but that should work with the default impl
 };
 
-template<typename CastToType>
-struct AstListNoCommentsIteratorPair {
+template <typename CastToType> struct AstListNoCommentsIteratorPair {
   AstListNoCommentsIterator<CastToType> begin_;
   AstListNoCommentsIterator<CastToType> end_;
 
   AstListNoCommentsIteratorPair(AstList::const_iterator begin,
                                 AstList::const_iterator end)
-    : begin_(begin, end), end_(end, end) {
-  }
+    : begin_(begin, end), end_(end, end) {}
   ~AstListNoCommentsIteratorPair() = default;
 
-  AstListNoCommentsIterator<CastToType> begin() const {
-    return begin_;
-  }
-  AstListNoCommentsIterator<CastToType> end() const {
-    return end_;
-  }
+  AstListNoCommentsIterator<CastToType> begin() const { return begin_; }
+  AstListNoCommentsIterator<CastToType> end() const { return end_; }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

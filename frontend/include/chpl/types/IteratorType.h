@@ -40,18 +40,13 @@ class IteratorType : public Type {
     return poiScope_ == other->poiScope_;
   }
 
-  IteratorType(typetags::TypeTag tag,
-               const resolution::PoiScope* poiScope)
+  IteratorType(typetags::TypeTag tag, const resolution::PoiScope* poiScope)
     : Type(tag), poiScope_(poiScope) {}
 
-  Genericity genericity() const override {
-    return CONCRETE;
-  }
+  Genericity genericity() const override { return CONCRETE; }
 
  public:
-  const resolution::PoiScope* poiScope() const {
-    return poiScope_;
-  }
+  const resolution::PoiScope* poiScope() const { return poiScope_; }
 };
 
 } // end namespace types

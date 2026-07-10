@@ -23,7 +23,7 @@
 #include "chpl/types/Type.h"
 #include "chpl/types/QualifiedType.h"
 
-namespace chpl{
+namespace chpl {
 namespace types {
 
 class EnumType final : public Type {
@@ -34,8 +34,7 @@ class EnumType final : public Type {
   bool isConcrete_ = false;
 
   EnumType(ID id, UniqueString name, bool isAbstract, bool isConcrete)
-    : Type(typetags::EnumType), id_(id), name_(name),
-      isAbstract_(isAbstract),
+    : Type(typetags::EnumType), id_(id), name_(name), isAbstract_(isAbstract),
       isConcrete_(isConcrete) {}
 
   static const owned<EnumType>&
@@ -43,7 +42,7 @@ class EnumType final : public Type {
 
  protected:
   bool contentsMatchInner(const Type* other) const override {
-    auto otherEnum = (const EnumType*) other;
+    auto otherEnum = (const EnumType*)other;
     return id_ == otherEnum->id_ && name_ == otherEnum->name_ &&
            isAbstract_ == otherEnum->isAbstract_ &&
            isConcrete_ == otherEnum->isConcrete_;
@@ -54,9 +53,7 @@ class EnumType final : public Type {
     name_.mark(context);
   }
 
-  Genericity genericity() const override {
-    return Genericity::CONCRETE;
-  }
+  Genericity genericity() const override { return Genericity::CONCRETE; }
 
  public:
   /** Get an enum type for an ID. */
@@ -99,9 +96,7 @@ class EnumType final : public Type {
 
   /** An enum type is semi-concrete if some of its constants, but not the
       first constant, have an initializer part defined. */
-  inline bool isSemiConcrete() const {
-    return !isAbstract() && !isConcrete();
-  }
+  inline bool isSemiConcrete() const { return !isAbstract() && !isConcrete(); }
 };
 
 } // end namespace types

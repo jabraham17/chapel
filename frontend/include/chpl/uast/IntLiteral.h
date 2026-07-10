@@ -26,7 +26,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a signed integer literal.
   All integer literals that are not too big are signed integer literals,
@@ -35,20 +34,18 @@ namespace uast {
   by applying the unary `-` operator.
  */
 class IntLiteral final : public NumericLiteral<int64_t, types::IntParam> {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   IntLiteral(const types::IntParam* value, UniqueString text)
-    : NumericLiteral(asttags::IntLiteral, value, text)
-  { }
+    : NumericLiteral(asttags::IntLiteral, value, text) {}
 
   void serializeInner(Serializer& ser) const override {
     numericLiteralSerializeInner(ser);
   }
 
   explicit IntLiteral(Deserializer& des)
-    : NumericLiteral(asttags::IntLiteral, des)
-  { }
+    : NumericLiteral(asttags::IntLiteral, des) {}
 
   // contentsMatchInner / markUniqueStringsInner are in NumericLiteral
   // and would need to be defined here if any fields are added.
@@ -56,10 +53,9 @@ class IntLiteral final : public NumericLiteral<int64_t, types::IntParam> {
  public:
   ~IntLiteral() override = default;
 
-  static owned<IntLiteral> build(Builder* builder, Location loc,
-                                 int64_t value, UniqueString text);
+  static owned<IntLiteral>
+  build(Builder* builder, Location loc, int64_t value, UniqueString text);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

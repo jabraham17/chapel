@@ -31,23 +31,22 @@
 namespace chpl {
 namespace libraries {
 
-
 // magic numbers
 // file magic number is <7F>LIBCHPL
-static const uint64_t FILE_HEADER_MAGIC =      0x4c50484342494c7f;
-static const uint64_t MODULE_SECTION_MAGIC =   0x4d4dd01e5ec14d4d;
-static const uint64_t SYMBOL_TABLE_MAGIC =     0x4d59531e5ec110e0;
-static const uint64_t UAST_SECTION_MAGIC =     0x5453411e5ec110e0;
-static const uint32_t LONG_STRINGS_TABLE_MAGIC =       0x52545301;
+static const uint64_t FILE_HEADER_MAGIC = 0x4c50484342494c7f;
+static const uint64_t MODULE_SECTION_MAGIC = 0x4d4dd01e5ec14d4d;
+static const uint64_t SYMBOL_TABLE_MAGIC = 0x4d59531e5ec110e0;
+static const uint64_t UAST_SECTION_MAGIC = 0x5453411e5ec110e0;
+static const uint32_t LONG_STRINGS_TABLE_MAGIC = 0x52545301;
 static const uint64_t LOCATION_SECTION_MAGIC = 0x434F4C075ec110e0;
 static const uint64_t GEN_CODE_SECTION_MAGIC = 0x4e4547075ec110e0;
 
 // current file format version numbers
-static const uint32_t FORMAT_VERSION_MAJOR =  0;
-static const uint32_t FORMAT_VERSION_MINOR =  1;
+static const uint32_t FORMAT_VERSION_MAJOR = 0;
+static const uint32_t FORMAT_VERSION_MINOR = 1;
 
 // number of bytes in a file hash -- currently using SHA-256
-static const int HASH_SIZE = 256/8;
+static const int HASH_SIZE = 256 / 8;
 
 // maximum number of of various elements; more than this many
 // will result in an error. Purpose is to keep the processing
@@ -72,7 +71,7 @@ struct FileHeader {
 
 struct Region {
   uint64_t start; // start offset, maybe relative
-  uint64_t end; // end offset; so length = end-start
+  uint64_t end;   // end offset; so length = end-start
 };
 
 static inline Region makeRegion(uint64_t startOffset, uint64_t endOffset) {
@@ -139,8 +138,6 @@ struct GenCodeSectionHeader {
   uint64_t len;
   // followed by the LLVM IR bc data
 };
-
-
 
 } // end namespace libraries
 } // end namespace chpl

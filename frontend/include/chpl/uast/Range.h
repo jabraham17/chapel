@@ -26,7 +26,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a range expression. For example:
 
@@ -40,24 +39,21 @@ namespace uast {
 
  */
 class Range final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  public:
-  enum OpKind {
-    DEFAULT,
-    OPEN_HIGH
-  };
+  enum OpKind { DEFAULT, OPEN_HIGH };
 
  private:
   OpKind opKind_;
   int8_t lowerBoundChildNum_;
   int8_t upperBoundChildNum_;
 
-  Range(AstList children, OpKind opKind,
+  Range(AstList children,
+        OpKind opKind,
         int8_t lowerBoundChildNum,
         int8_t upperBoundChildNum)
-    : AstNode(asttags::Range, std::move(children)),
-      opKind_(opKind),
+    : AstNode(asttags::Range, std::move(children)), opKind_(opKind),
       lowerBoundChildNum_(lowerBoundChildNum),
       upperBoundChildNum_(upperBoundChildNum) {
     if (opKind_ == OPEN_HIGH) {
@@ -71,8 +67,7 @@ class Range final : public AstNode {
     ser.write(upperBoundChildNum_);
   }
 
-  explicit Range(Deserializer& des)
-    : AstNode(asttags::Range, des) {
+  explicit Range(Deserializer& des) : AstNode(asttags::Range, des) {
     opKind_ = des.read<OpKind>();
     lowerBoundChildNum_ = des.read<int8_t>();
     upperBoundChildNum_ = des.read<int8_t>();
@@ -81,12 +76,11 @@ class Range final : public AstNode {
   bool contentsMatchInner(const AstNode* other) const override {
     const Range* rhs = other->toRange();
     return this->opKind_ == rhs->opKind_ &&
-      this->lowerBoundChildNum_ == rhs->lowerBoundChildNum_ &&
-      this->upperBoundChildNum_ == rhs->upperBoundChildNum_;
+           this->lowerBoundChildNum_ == rhs->lowerBoundChildNum_ &&
+           this->upperBoundChildNum_ == rhs->upperBoundChildNum_;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
   void dumpFieldsInner(const DumpSettings& s) const override;
   std::string dumpChildLabelInner(int i) const override;
@@ -97,7 +91,8 @@ class Range final : public AstNode {
   /**
     Create and return a range expression.
   */
-  static owned<Range> build(Builder* builder, Location loc,
+  static owned<Range> build(Builder* builder,
+                            Location loc,
                             OpKind opKind,
                             owned<AstNode> lowerBound,
                             owned<AstNode> upperBound);
@@ -105,9 +100,7 @@ class Range final : public AstNode {
   /**
     Returns the operator kind used to construct this range.
   */
-  OpKind opKind() const {
-    return this->opKind_;
-  }
+  OpKind opKind() const { return this->opKind_; }
 
   /**
     Returns the lower bound of this range, or nullptr if there is none.
@@ -132,7 +125,6 @@ class Range final : public AstNode {
     */
   static const char* opKindToString(OpKind kind);
 };
-
 
 } // end namespace uast
 

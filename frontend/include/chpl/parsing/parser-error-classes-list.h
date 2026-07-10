@@ -40,7 +40,9 @@ PARSER_ERROR_CLASS(BisonUnknownError, std::string, std::string)
 // other parser errors
 PARSER_SYNTAX_CLASS(CannotAttachPragmas, const uast::AstNode*)
 PARSER_SYNTAX_CLASS(CommentEOF, Location, Location)
-PARSER_SYNTAX_CLASS(ExceptOnlyInvalidExpr, Location, uast::VisibilityClause::LimitationKind)
+PARSER_SYNTAX_CLASS(ExceptOnlyInvalidExpr,
+                    Location,
+                    uast::VisibilityClause::LimitationKind)
 PARSER_SYNTAX_CLASS(ExternUnclosedPair, std::string)
 PARSER_SYNTAX_CLASS(InvalidIndexExpr)
 PARSER_SYNTAX_CLASS(InvalidNewForm, const uast::AstNode*)
@@ -61,15 +63,27 @@ PARSER_SYNTAX_CLASS(ParseSyntax, std::string)
 /* begin post-parse-checks errors */
 POSTPARSE_ERROR_CLASS(CantApplyPrivate, std::string)
 POSTPARSE_ERROR_CLASS(WhenAfterOtherwise, const uast::When*, const uast::When*)
-ERROR_CLASS(DisallowedControlFlow, const uast::AstNode*, const uast::AstNode*, const uast::AstNode*)
+ERROR_CLASS(DisallowedControlFlow,
+            const uast::AstNode*,
+            const uast::AstNode*,
+            const uast::AstNode*)
 ERROR_CLASS(InvalidReturns, const uast::Return*, const uast::Return*)
 ERROR_CLASS(IllegalUseImport, const uast::AstNode*, const uast::AstNode*)
 ERROR_CLASS(InvalidThrowaway, const uast::AstNode*, const uast::AstNode*)
 ERROR_CLASS(InvalidGpuAttribute, const uast::AstNode*, const uast::Attribute*)
-ERROR_CLASS(InvalidImplementsIdent, const uast::Implements*, const uast::Identifier*)
-ERROR_CLASS(InvalidParenfulDeprecation, const uast::AttributeGroup*, const uast::AstNode*)
-POSTPARSE_ERROR_CLASS(MultipleManagementStrategies, const uast::New::Management, const uast::New::Management)
-ERROR_CLASS(NonAssociativeComparison, const uast::OpCall*, std::vector<const uast::OpCall*>, std::vector<const uast::AstNode*>)
+ERROR_CLASS(InvalidImplementsIdent,
+            const uast::Implements*,
+            const uast::Identifier*)
+ERROR_CLASS(InvalidParenfulDeprecation,
+            const uast::AttributeGroup*,
+            const uast::AstNode*)
+POSTPARSE_ERROR_CLASS(MultipleManagementStrategies,
+                      const uast::New::Management,
+                      const uast::New::Management)
+ERROR_CLASS(NonAssociativeComparison,
+            const uast::OpCall*,
+            std::vector<const uast::OpCall*>,
+            std::vector<const uast::AstNode*>)
 POSTPARSE_ERROR_CLASS(PostParseErr, std::string)
 POSTPARSE_WARNING_CLASS(PostParseWarn, std::string)
 ERROR_CLASS(UnsupportedAsIdent, const uast::As*, const uast::AstNode*)
@@ -77,7 +91,11 @@ ERROR_CLASS(UnsupportedAsIdent, const uast::As*, const uast::AstNode*)
 
 // errors to do with finding the main module / command line invocation
 WARNING_CLASS(AmbiguousSourceFile, IdOrLocation, std::string, std::string, bool)
-ERROR_CLASS(AmbiguousMain, IdOrLocation, std::vector<const uast::Function*>, std::vector<ID>, std::vector<UniqueString>)
+ERROR_CLASS(AmbiguousMain,
+            IdOrLocation,
+            std::vector<const uast::Function*>,
+            std::vector<ID>,
+            std::vector<UniqueString>)
 ERROR_CLASS(AmbiguousMainModule, IdOrLocation, std::vector<const uast::Module*>)
 ERROR_CLASS(UnknownMainModule, IdOrLocation, UniqueString)
 WARNING_CLASS(ImplicitModuleSameName, const uast::Module*)

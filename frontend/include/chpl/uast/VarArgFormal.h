@@ -28,7 +28,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a varargs formal.
 
@@ -44,16 +43,19 @@ namespace uast {
   the number of which is denoted by the TypeQuery `?k`.
 */
 class VarArgFormal final : public VarLikeDecl {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   int countChildNum_;
 
-  VarArgFormal(AstList children, int attributeGroupChildNum, UniqueString name,
+  VarArgFormal(AstList children,
+               int attributeGroupChildNum,
+               UniqueString name,
                Formal::Intent intent,
                int8_t typeExpressionChildNum,
                int8_t countChildNum)
-    : VarLikeDecl(asttags::VarArgFormal, std::move(children),
+    : VarLikeDecl(asttags::VarArgFormal,
+                  std::move(children),
                   attributeGroupChildNum,
                   Decl::DEFAULT_VISIBILITY,
                   Decl::DEFAULT_LINKAGE,
@@ -63,8 +65,7 @@ class VarArgFormal final : public VarLikeDecl {
                   (Qualifier)((int)intent),
                   typeExpressionChildNum,
                   /*initExpressionChildNum*/ NO_CHILD),
-      countChildNum_(countChildNum) {
-  }
+      countChildNum_(countChildNum) {}
 
   void serializeInner(Serializer& ser) const override {
     varLikeDeclSerializeInner(ser);
@@ -78,9 +79,9 @@ class VarArgFormal final : public VarLikeDecl {
 
   bool contentsMatchInner(const AstNode* other) const override {
     const VarArgFormal* lhs = this;
-    const VarArgFormal* rhs = (const VarArgFormal*) other;
+    const VarArgFormal* rhs = (const VarArgFormal*)other;
     return lhs->varLikeDeclContentsMatchInner(rhs) &&
-      lhs->countChildNum_ == rhs->countChildNum_;
+           lhs->countChildNum_ == rhs->countChildNum_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -92,7 +93,8 @@ class VarArgFormal final : public VarLikeDecl {
  public:
   ~VarArgFormal() override = default;
 
-  static owned<VarArgFormal> build(Builder* builder, Location loc,
+  static owned<VarArgFormal> build(Builder* builder,
+                                   Location loc,
                                    owned<AttributeGroup> attributeGroup,
                                    UniqueString name,
                                    Formal::Intent intent,
@@ -103,9 +105,7 @@ class VarArgFormal final : public VarLikeDecl {
     Returns the intent of the varargs formal, e.g. in
     `proc f(ref x: int ...?k)`, the formal `x` has intent `ref`.
   */
-  Formal::Intent intent() const {
-    return (Formal::Intent)((int)storageKind());
-  }
+  Formal::Intent intent() const { return (Formal::Intent)((int)storageKind()); }
 
   /**
     Returns the count expression of the varargs formal, e.g. in
@@ -120,7 +120,6 @@ class VarArgFormal final : public VarLikeDecl {
     return ret;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

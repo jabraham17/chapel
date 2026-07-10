@@ -40,7 +40,7 @@ namespace uast {
   \endrst
 */
 class Init : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   int8_t targetChildNum_;
@@ -55,8 +55,7 @@ class Init : public AstNode {
     ser.write(targetChildNum_);
   }
 
-  explicit Init(Deserializer& des)
-   : AstNode(asttags::Init, des) {
+  explicit Init(Deserializer& des) : AstNode(asttags::Init, des) {
     targetChildNum_ = des.read<int8_t>();
   }
 
@@ -64,24 +63,21 @@ class Init : public AstNode {
     const Init* lhs = this;
     const Init* rhs = other->toInit();
 
-    if (lhs->targetChildNum_ != rhs->targetChildNum_)
-      return false;
+    if (lhs->targetChildNum_ != rhs->targetChildNum_) return false;
 
     return true;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
   std::string dumpChildLabelInner(int i) const override;
 
  public:
-
   /**
     Create and return an 'init' statement.
   */
-  static owned<Init> build(Builder* builder, Location loc,
-                            owned<Identifier> target);
+  static owned<Init>
+  build(Builder* builder, Location loc, owned<Identifier> target);
 
   /**
     Returns the target of this 'init' expression. This should always
@@ -94,7 +90,6 @@ class Init : public AstNode {
     return (const Identifier*)ret;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

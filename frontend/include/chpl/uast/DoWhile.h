@@ -27,7 +27,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a do-while loop. For example:
 
@@ -45,16 +44,18 @@ namespace uast {
 
  */
 class DoWhile final : public Loop {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   int conditionChildNum_;
 
-  DoWhile(AstList children, BlockStyle blockStyle,
+  DoWhile(AstList children,
+          BlockStyle blockStyle,
           int loopBodyChildNum,
           int conditionChildNum,
           int attributeGroupChildNum)
-    : Loop(asttags::DoWhile, std::move(children),
+    : Loop(asttags::DoWhile,
+           std::move(children),
            blockStyle,
            loopBodyChildNum,
            attributeGroupChildNum),
@@ -67,20 +68,17 @@ class DoWhile final : public Loop {
     ser.writeVInt(conditionChildNum_);
   }
 
-  explicit DoWhile(Deserializer& des)
-    : Loop(asttags::DoWhile, des) {
-      conditionChildNum_ = des.readVInt();
+  explicit DoWhile(Deserializer& des) : Loop(asttags::DoWhile, des) {
+    conditionChildNum_ = des.readVInt();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const DoWhile* lhs = this;
-    const DoWhile* rhs = (const DoWhile*) other;
+    const DoWhile* rhs = (const DoWhile*)other;
 
-    if (lhs->conditionChildNum_ != rhs->conditionChildNum_)
-      return false;
+    if (lhs->conditionChildNum_ != rhs->conditionChildNum_) return false;
 
-    if (!lhs->loopContentsMatchInner(rhs))
-      return false;
+    if (!lhs->loopContentsMatchInner(rhs)) return false;
 
     return true;
   }
@@ -97,12 +95,12 @@ class DoWhile final : public Loop {
   /**
     Create and return a do-while loop.
   */
-  static owned<DoWhile> build(Builder* builder, Location loc,
+  static owned<DoWhile> build(Builder* builder,
+                              Location loc,
                               BlockStyle blockStyle,
                               owned<Block> body,
                               owned<AstNode> condition,
                               owned<AttributeGroup> attributeGroup = nullptr);
-
 
   /**
     Return the condition of this do-while loop.
@@ -112,7 +110,6 @@ class DoWhile final : public Loop {
     return ret;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

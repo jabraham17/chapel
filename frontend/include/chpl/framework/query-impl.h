@@ -98,8 +98,7 @@ namespace chpl {
 
 using namespace chpl::querydetail;
 
-
-template<typename ResultType, typename... ArgTs, size_t... Is>
+template <typename ResultType, typename... ArgTs, size_t... Is>
 static void helpRecompute(Context* context,
                           QueryMap<ResultType, ArgTs...>* queryMap,
                           const std::tuple<ArgTs...>& t,
@@ -109,46 +108,43 @@ static void helpRecompute(Context* context,
   queryMap->queryFunction(context, std::get<Is>(t)...);
 }
 
-template<typename ResultType, typename... ArgTs>
-void
-QueryMapResult<ResultType,ArgTs...>::recompute(Context* context) const {
+template <typename ResultType, typename... ArgTs>
+void QueryMapResult<ResultType, ArgTs...>::recompute(Context* context) const {
   QueryMap<ResultType, ArgTs...>* queryMap =
-    (QueryMap<ResultType, ArgTs...>*) this->parentQueryMap;
+    (QueryMap<ResultType, ArgTs...>*)this->parentQueryMap;
 
   const std::tuple<ArgTs...>& args = this->tupleOfArgs;
-  helpRecompute(context, queryMap, args, std::index_sequence_for<ArgTs...> {});
+  helpRecompute(context, queryMap, args, std::index_sequence_for<ArgTs...>{});
 }
 
-template<typename ResultType, typename... ArgTs>
-void
-QueryMapResult<ResultType,ArgTs...>::markUniqueStringsInResult(Context* context) const {
+template <typename ResultType, typename... ArgTs>
+void QueryMapResult<ResultType, ArgTs...>::markUniqueStringsInResult(
+  Context* context) const {
   chpl::mark<ResultType> marker;
   marker(context, this->result);
 }
 
-template<typename... ArgTs>
+template <typename... ArgTs>
 void Context::queryBeginTrace(const char* traceQueryName,
                               const std::tuple<ArgTs...>& tupleOfArg) {
 
-  if ((breakSet || enableDebugTrace)
-      && std::find(queryTraceIgnoreQueries.begin(),
-                   queryTraceIgnoreQueries.end(),
-                   traceQueryName) == queryTraceIgnoreQueries.end()) {
+  if ((breakSet || enableDebugTrace) &&
+      std::find(queryTraceIgnoreQueries.begin(),
+                queryTraceIgnoreQueries.end(),
+                traceQueryName) == queryTraceIgnoreQueries.end()) {
     auto args = queryArgsToStrings(tupleOfArg);
     size_t queryAndArgsHash = hash_combine(hash(traceQueryName), hash(args));
     if (enableDebugTrace) {
       queryTraceDepth++;
       // QUERY BEGIN
       setQueryDepthColor(queryTraceDepth, std::cout);
-      std::cout << queryTraceDepth
-                << " { ";
+      std::cout << queryTraceDepth << " { ";
       clearTerminalColor(std::cout);
       std::cout << traceQueryName << " (";
       queryArgsPrint(std::cout, tupleOfArg);
       std::cout << ") ";
       setTerminalColor(CYAN, std::cout);
-      std::cout <<"hash: 0x"
-                << std::hex << queryAndArgsHash;
+      std::cout << "hash: 0x" << std::hex << queryAndArgsHash;
       clearTerminalColor(std::cout);
       std::cout << std::endl;
     }
@@ -158,15 +154,14 @@ void Context::queryBeginTrace(const char* traceQueryName,
   }
 }
 
-template<typename ResultType,
-         typename... ArgTs>
+template <typename ResultType, typename... ArgTs>
 QueryMap<ResultType, ArgTs...>*
 Context::getMap(const ResultType& (*queryFunc)(Context* context, ArgTs...),
                 const std::tuple<ArgTs...>& tupleOfArgs,
                 const char* traceQueryName,
                 bool isInputQuery) {
 
-  const void* queryFuncV = (const void*) queryFunc;
+  const void* queryFuncV = (const void*)queryFunc;
 
   // Look up the map entry for this query
   auto search = this->queryDB.find(queryFuncV);
@@ -181,23 +176,19 @@ Context::getMap(const ResultType& (*queryFunc)(Context* context, ArgTs...),
   // and add it to the map
   auto res =
     this->queryDB.try_emplace(queryFuncV,
-                     toOwned(new QueryMap<ResultType, ArgTs...>(traceQueryName,
-                                                                isInputQuery,
-                                                                queryFunc)));
+                              toOwned(new QueryMap<ResultType, ArgTs...>(
+                                traceQueryName, isInputQuery, queryFunc)));
   // and return a pointer to the newly inserted map
   QueryMapBase* newBase = res.first->second.get();
   return (QueryMap<ResultType, ArgTs...>*)newBase;
 }
 
-
-template<typename ResultType,
-         typename... ArgTs>
-QueryMap<ResultType, ArgTs...>*
-Context::queryBeginGetMap(
-    const ResultType& (*queryFunc)(Context* context, ArgTs...),
-    const std::tuple<ArgTs...>& tupleOfArgs,
-    const char* traceQueryName,
-    bool isInputQuery) {
+template <typename ResultType, typename... ArgTs>
+QueryMap<ResultType, ArgTs...>* Context::queryBeginGetMap(
+  const ResultType& (*queryFunc)(Context* context, ArgTs...),
+  const std::tuple<ArgTs...>& tupleOfArgs,
+  const char* traceQueryName,
+  bool isInputQuery) {
 
 #if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
   auto stopwatch = makePlainQueryTimingStopwatch(enableQueryTiming);
@@ -214,8 +205,7 @@ Context::queryBeginGetMap(
   return ret;
 }
 
-template<typename ResultType,
-         typename... ArgTs>
+template <typename ResultType, typename... ArgTs>
 const QueryMapResult<ResultType, ArgTs...>*
 Context::getResult(QueryMap<ResultType, ArgTs...>* queryMap,
                    const std::tuple<ArgTs...>& tupleOfArgs) {
@@ -234,8 +224,7 @@ Context::getResult(QueryMap<ResultType, ArgTs...>* queryMap,
   }
 
   if (newElementWasAdded == false &&
-      (savedElement->lastChecked == -1 ||
-       savedElement->beingTestedForReuse)) {
+      (savedElement->lastChecked == -1 || savedElement->beingTestedForReuse)) {
     // A recursion error was encountered. We will try to gracefully handle
     // this error by adding it to the set of recursion errors on this
     // result.
@@ -244,15 +233,18 @@ Context::getResult(QueryMap<ResultType, ArgTs...>* queryMap,
     // be the default value of its type (e.g., pointer-returning queries
     // return nullptr, class C queries return C()).
     savedElement->recursionErrors.insert(savedElement);
-    updateResultForQueryMapR(queryMap, savedElement, tupleOfArgs, ResultType(),
-                             /* forSetter */ false, /* markExternallySet */ false);
+    updateResultForQueryMapR(queryMap,
+                             savedElement,
+                             tupleOfArgs,
+                             ResultType(),
+                             /* forSetter */ false,
+                             /* markExternallySet */ false);
   }
 
   return savedElement;
 }
 
-template<typename ResultType,
-         typename... ArgTs>
+template <typename ResultType, typename... ArgTs>
 const QueryMapResult<ResultType, ArgTs...>*
 Context::queryBeginGetResult(QueryMap<ResultType, ArgTs...>* queryMap,
                              const std::tuple<ArgTs...>& tupleOfArgs) {
@@ -272,14 +264,12 @@ Context::queryBeginGetResult(QueryMap<ResultType, ArgTs...>* queryMap,
   return ret;
 }
 
-template<typename ResultType,
-         typename... ArgTs>
-bool
-Context::queryUseSaved(
-       const ResultType& (*queryFunction)(Context* context, ArgTs...),
-       const QueryMapResult<ResultType, ArgTs...>* r,
-       const char* traceQueryName) {
-  const void* queryFuncV = (const void*) queryFunction;
+template <typename ResultType, typename... ArgTs>
+bool Context::queryUseSaved(const ResultType& (*queryFunction)(Context* context,
+                                                               ArgTs...),
+                            const QueryMapResult<ResultType, ArgTs...>* r,
+                            const char* traceQueryName) {
+  const void* queryFuncV = (const void*)queryFunction;
   bool useSaved = queryCanUseSavedResultAndPushIfNot(queryFuncV, r);
 
   if (enableDebugTrace) {
@@ -295,7 +285,7 @@ Context::queryUseSaved(
   return useSaved;
 }
 
-template<typename ResultType, typename... ArgTs>
+template <typename ResultType, typename... ArgTs>
 const ResultType&
 Context::queryGetSaved(const QueryMapResult<ResultType, ArgTs...>* r) {
   this->saveDependencyInParent(r);
@@ -310,13 +300,12 @@ Context::queryGetSaved(const QueryMapResult<ResultType, ArgTs...>* r) {
   return r->result;
 }
 
-template<typename ResultType,
-        typename... ArgTs>
+template <typename ResultType, typename... ArgTs>
 Context::QueryStatus Context::queryStatus(
-             const ResultType& (*queryFunction)(Context* context, ArgTs...),
-             const std::tuple<ArgTs...>& tupleOfArgs) {
+  const ResultType& (*queryFunction)(Context* context, ArgTs...),
+  const std::tuple<ArgTs...>& tupleOfArgs) {
   // Look up the map entry for this query name
-  const void* queryFuncV = (const void*) queryFunction;
+  const void* queryFuncV = (const void*)queryFunction;
   // Look up the map entry for this query
   auto search = this->queryDB.find(queryFuncV);
   if (search == this->queryDB.end()) {
@@ -341,22 +330,24 @@ Context::QueryStatus Context::queryStatus(
   }
 }
 
-template<typename ResultType,
-         typename... ArgTs>
-const ResultType&
-Context::queryEnd(
-              const ResultType& (*queryFunction)(Context* context, ArgTs...),
-              QueryMap<ResultType, ArgTs...>* queryMap,
-              const QueryMapResult<ResultType, ArgTs...>* r,
-              const std::tuple<ArgTs...>& tupleOfArgs,
-              ResultType result,
-              const char* traceQueryName) {
+template <typename ResultType, typename... ArgTs>
+const ResultType& Context::queryEnd(
+  const ResultType& (*queryFunction)(Context* context, ArgTs...),
+  QueryMap<ResultType, ArgTs...>* queryMap,
+  const QueryMapResult<ResultType, ArgTs...>* r,
+  const std::tuple<ArgTs...>& tupleOfArgs,
+  ResultType result,
+  const char* traceQueryName) {
   // must be in a query to be running one!
   CHPL_ASSERT(queryStack.size() > 0);
 
   const QueryMapResult<ResultType, ArgTs...>* ret =
-    this->updateResultForQueryMapR(queryMap, r, tupleOfArgs,
-                                   std::move(result), /* forSetter */ false, /* markExternallySet */ false);
+    this->updateResultForQueryMapR(queryMap,
+                                   r,
+                                   tupleOfArgs,
+                                   std::move(result),
+                                   /* forSetter */ false,
+                                   /* markExternallySet */ false);
 
   if (r->recursionErrors.count(r) != 0) {
     // This query had the opportunity to handle its own recursion, but didn't.
@@ -364,16 +355,15 @@ Context::queryEnd(
     emitErrorForRecursiveQuery(r);
   }
 
-  if (enableDebugTrace
-      && std::find(queryTraceIgnoreQueries.begin(),
-                   queryTraceIgnoreQueries.end(),
-                   traceQueryName) == queryTraceIgnoreQueries.end()) {
+  if (enableDebugTrace &&
+      std::find(queryTraceIgnoreQueries.begin(),
+                queryTraceIgnoreQueries.end(),
+                traceQueryName) == queryTraceIgnoreQueries.end()) {
     // QUERY END
     setQueryDepthColor(queryTraceDepth, std::cout);
     std::cout << queryTraceDepth;
     clearTerminalColor(std::cout);
-    std::cout << "   " << traceQueryName
-              << " ";
+    std::cout << "   " << traceQueryName << " ";
     if (ret->lastChanged == this->currentRevisionNumber) {
       setTerminalColor(YELLOW, std::cout);
       std::cout << "UPDATED";
@@ -397,8 +387,7 @@ Context::queryEnd(
   return ret->result;
 }
 
-template<typename ResultType,
-         typename... ArgTs>
+template <typename ResultType, typename... ArgTs>
 const QueryMapResult<ResultType, ArgTs...>*
 Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
                                   const QueryMapResult<ResultType, ArgTs...>* r,
@@ -435,7 +424,7 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
     // we don't want to return a garbage pointer from a recursion-causing
     // query.
 
-    ResultType dummyValue {};
+    ResultType dummyValue{};
     chpl::update<ResultType> combiner;
     changed = combiner(r->result, dummyValue);
   }
@@ -457,7 +446,7 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
   //
   // This initially came up with uast AstNode pointers that were nested
   // within the uAST.
-  if(this->currentRevisionNumber == this->lastPrepareToGCRevisionNumber) {
+  if (this->currentRevisionNumber == this->lastPrepareToGCRevisionNumber) {
     // Maybe this is a good idea, but maybe not. Make sure query results
     // are marked after being recomputed.
     // Maybe we can avoid doing this if assertions are off.
@@ -478,7 +467,7 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
   } else if (!r->errors.empty()) {
     r->oldResultForErrorContents = queryMap->oldResults.size();
     queryMap->oldResults.push_back(std::move(result));
-  } else if (changed==false) {
+  } else if (changed == false) {
     // no need to save old result
   } else {
     queryMap->oldResults.push_back(std::move(result));
@@ -487,13 +476,12 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
   r->emittedErrors = errorCollectionStack.empty();
   r->lastChecked = currentRevision;
   if (changed || initialResult) {
-    r->lastChanged  = currentRevision;
+    r->lastChanged = currentRevision;
   }
   return r;
 }
 
-template<typename ResultType,
-         typename... ArgTs>
+template <typename ResultType, typename... ArgTs>
 const QueryMapResult<ResultType, ArgTs...>*
 Context::updateResultForQueryMap(QueryMap<ResultType, ArgTs...>* queryMap,
                                  const std::tuple<ArgTs...>& tupleOfArgs,
@@ -501,43 +489,39 @@ Context::updateResultForQueryMap(QueryMap<ResultType, ArgTs...>* queryMap,
                                  bool forSetter,
                                  bool markExternallySet) {
   // Look up the current entry
-  const QueryMapResult<ResultType, ArgTs...>* r
-    = getResult(queryMap, tupleOfArgs);
+  const QueryMapResult<ResultType, ArgTs...>* r =
+    getResult(queryMap, tupleOfArgs);
 
   // Run the version of the function accepting the map and result entry
-  return updateResultForQueryMapR(queryMap, r, tupleOfArgs,
-                                  std::move(result), forSetter, markExternallySet);
+  return updateResultForQueryMapR(
+    queryMap, r, tupleOfArgs, std::move(result), forSetter, markExternallySet);
 }
 
-template<typename ResultType,
-         typename... ArgTs>
-const QueryMapResult<ResultType, ArgTs...>*
-Context::updateResultForQuery(
-                const ResultType& (*queryFunction)(Context* context, ArgTs...),
-                const std::tuple<ArgTs...>& tupleOfArgs,
-                ResultType result,
-                const char* traceQueryName,
-                bool isInputQuery,
-                bool forSetter,
-                bool markExternallySet) {
+template <typename ResultType, typename... ArgTs>
+const QueryMapResult<ResultType, ArgTs...>* Context::updateResultForQuery(
+  const ResultType& (*queryFunction)(Context* context, ArgTs...),
+  const std::tuple<ArgTs...>& tupleOfArgs,
+  ResultType result,
+  const char* traceQueryName,
+  bool isInputQuery,
+  bool forSetter,
+  bool markExternallySet) {
   // Look up the map entry for this query name
   QueryMap<ResultType, ArgTs...>* queryMap =
     getMap(queryFunction, tupleOfArgs, traceQueryName, isInputQuery);
 
   // Run the version of the function accepting the map
-  return updateResultForQueryMap(queryMap, tupleOfArgs,
-                                 std::move(result), forSetter, markExternallySet);
+  return updateResultForQueryMap(
+    queryMap, tupleOfArgs, std::move(result), forSetter, markExternallySet);
 }
 
-template<typename ResultType,
-         typename... ArgTs>
-bool
-Context::hasCurrentResultForQuery(
-     const ResultType& (*queryFunction)(Context* context, ArgTs...),
-     const std::tuple<ArgTs...>& tupleOfArgs) {
+template <typename ResultType, typename... ArgTs>
+bool Context::hasCurrentResultForQuery(
+  const ResultType& (*queryFunction)(Context* context, ArgTs...),
+  const std::tuple<ArgTs...>& tupleOfArgs) {
 
   // Look up the map entry for this query name
-  const void* queryFuncV = (const void*) queryFunction;
+  const void* queryFuncV = (const void*)queryFunction;
   // Look up the map entry for this query
   auto search = this->queryDB.find(queryFuncV);
   if (search == this->queryDB.end()) {
@@ -556,14 +540,12 @@ Context::hasCurrentResultForQuery(
   return queryCanUseSavedResult(queryFuncV, &(*search2));
 }
 
-template<typename ResultType,
-         typename... ArgTs>
-bool
-Context::isQueryRunning(
-     const ResultType& (*queryFunction)(Context* context, ArgTs...),
-     const std::tuple<ArgTs...>& tupleOfArgs) {
+template <typename ResultType, typename... ArgTs>
+bool Context::isQueryRunning(
+  const ResultType& (*queryFunction)(Context* context, ArgTs...),
+  const std::tuple<ArgTs...>& tupleOfArgs) {
   // Look up the map entry for this query name
-  const void* queryFuncV = (const void*) queryFunction;
+  const void* queryFuncV = (const void*)queryFunction;
   // Look up the map entry for this query
   auto search = this->queryDB.find(queryFuncV);
   if (search == this->queryDB.end()) {
@@ -582,64 +564,62 @@ Context::isQueryRunning(
   return search2->lastChecked == -1 || search2->beingTestedForReuse;
 }
 
-template<typename ResultType,
-         typename... ArgTs>
+template <typename ResultType, typename... ArgTs>
 const typename QueryMap<ResultType, ArgTs...>::MapType*
-Context::querySavedResults(
-     const ResultType& (*queryFunction)(Context* context, ArgTs...)) {
-  const void* queryFuncV = (const void*) queryFunction;
+Context::querySavedResults(const ResultType& (*queryFunction)(Context* context,
+                                                              ArgTs...)) {
+  const void* queryFuncV = (const void*)queryFunction;
   // Look up the map entry for this query
   auto search = this->queryDB.find(queryFuncV);
   if (search == this->queryDB.end()) {
     return nullptr;
   }
 
-  return &((QueryMap<ResultType, ArgTs...>*) search->second.get())->map;
+  return &((QueryMap<ResultType, ArgTs...>*)search->second.get())->map;
 }
 
-
-template<typename ResultType,
-         typename... ArgTs>
-void
-Context::querySetterUpdateResult(
-    const ResultType& (*queryFunction)(Context* context, ArgTs...),
-    const std::tuple<ArgTs...>& tupleOfArgs,
-    ResultType result,
-    const char* traceQueryName,
-    bool isInputQuery,
-    bool markExternallySet) {
-  updateResultForQuery(queryFunction, tupleOfArgs, std::move(result),
-                       traceQueryName, isInputQuery, /* forSetter */ true, markExternallySet);
+template <typename ResultType, typename... ArgTs>
+void Context::querySetterUpdateResult(
+  const ResultType& (*queryFunction)(Context* context, ArgTs...),
+  const std::tuple<ArgTs...>& tupleOfArgs,
+  ResultType result,
+  const char* traceQueryName,
+  bool isInputQuery,
+  bool markExternallySet) {
+  updateResultForQuery(queryFunction,
+                       tupleOfArgs,
+                       std::move(result),
+                       traceQueryName,
+                       isInputQuery,
+                       /* forSetter */ true,
+                       markExternallySet);
 }
 
 } // end namespace chpl
 
-#define QUERY_BEGIN_INNER(isInput, func, funcName, context, ...) \
-  auto* BEGIN_QUERY_FUNCTION = func; \
-  Context* BEGIN_QUERY_CONTEXT = context; \
-  const char* BEGIN_QUERY_FUNC_NAME = (funcName); \
-  auto BEGIN_QUERY_ARGS = std::make_tuple(__VA_ARGS__); \
-  auto BEGIN_QUERY_MAP = context->queryBeginGetMap(BEGIN_QUERY_FUNCTION, \
-                                                   BEGIN_QUERY_ARGS, \
-                                                   BEGIN_QUERY_FUNC_NAME, \
-                                                   isInput); \
-  auto BEGIN_QUERY_FOUND = context->queryBeginGetResult(BEGIN_QUERY_MAP, \
-                                                        BEGIN_QUERY_ARGS); \
+#define QUERY_BEGIN_INNER(isInput, func, funcName, context, ...)             \
+  auto* BEGIN_QUERY_FUNCTION = func;                                         \
+  Context* BEGIN_QUERY_CONTEXT = context;                                    \
+  const char* BEGIN_QUERY_FUNC_NAME = (funcName);                            \
+  auto BEGIN_QUERY_ARGS = std::make_tuple(__VA_ARGS__);                      \
+  auto BEGIN_QUERY_MAP = context->queryBeginGetMap(                          \
+    BEGIN_QUERY_FUNCTION, BEGIN_QUERY_ARGS, BEGIN_QUERY_FUNC_NAME, isInput); \
+  auto BEGIN_QUERY_FOUND =                                                   \
+    context->queryBeginGetResult(BEGIN_QUERY_MAP, BEGIN_QUERY_ARGS);
 
-#define QUERY_USE_SAVED() \
-  (BEGIN_QUERY_CONTEXT->queryUseSaved(BEGIN_QUERY_FUNCTION, \
-                                      BEGIN_QUERY_FOUND, \
-                                      BEGIN_QUERY_FUNC_NAME))
+#define QUERY_USE_SAVED()                                            \
+  (BEGIN_QUERY_CONTEXT->queryUseSaved(                               \
+    BEGIN_QUERY_FUNCTION, BEGIN_QUERY_FOUND, BEGIN_QUERY_FUNC_NAME))
 
-#define QUERY_GET_SAVED() \
+#define QUERY_GET_SAVED()                                 \
   (BEGIN_QUERY_CONTEXT->queryGetSaved(BEGIN_QUERY_FOUND))
 
 #if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
 
-#define QUERY_BEGIN_TIMING(context__) \
-  context__->queryBeginTrace(BEGIN_QUERY_FUNC_NAME, BEGIN_QUERY_ARGS); \
-  auto QUERY_STOPWATCH = context__->makeQueryTimingStopwatch(BEGIN_QUERY_MAP, \
-                                                             BEGIN_QUERY_ARGS);
+#define QUERY_BEGIN_TIMING(context__)                                       \
+  context__->queryBeginTrace(BEGIN_QUERY_FUNC_NAME, BEGIN_QUERY_ARGS);      \
+  auto QUERY_STOPWATCH =                                                    \
+    context__->makeQueryTimingStopwatch(BEGIN_QUERY_MAP, BEGIN_QUERY_ARGS);
 
 #else
 
@@ -655,39 +635,39 @@ Context::querySetterUpdateResult(
   Pass the name of the enclosing function as func, context is the
   class Context, and then pass any arguments to the query.
  */
-#define QUERY_BEGIN(func, context, ...) \
-  QUERY_BEGIN_INNER(false, func, #func, context, __VA_ARGS__); \
-  if (QUERY_USE_SAVED()) { \
-    return QUERY_GET_SAVED(); \
-  } \
+#define QUERY_BEGIN(func, context, ...)                              \
+  QUERY_BEGIN_INNER(false, func, #func, context, __VA_ARGS__);       \
+  if (QUERY_USE_SAVED()) {                                           \
+    return QUERY_GET_SAVED();                                        \
+  }                                                                  \
   auto QUERY_RECOMPUTATION_MARKER = context->markRecomputing(false); \
   QUERY_BEGIN_TIMING(context);
 
-#define QUERY_REGISTER_TRACER(tracerBody) \
-  BEGIN_QUERY_MAP->registerTracer([](const decltype(BEGIN_QUERY_ARGS)& args) { \
-    tracerBody; \
-  });
+#define QUERY_REGISTER_TRACER(tracerBody)                        \
+  BEGIN_QUERY_MAP->registerTracer(                               \
+    [](const decltype(BEGIN_QUERY_ARGS)& args) { tracerBody; });
 
 /**
   QUERY_BEGIN_INPUT is like QUERY_BEGIN but should be used
   for input queries.
  */
-#define QUERY_BEGIN_INPUT(func, context, ...) \
-  QUERY_BEGIN_INNER(true, func, #func, context, __VA_ARGS__) \
-  if (QUERY_USE_SAVED()) { \
-    return QUERY_GET_SAVED(); \
-  } \
+#define QUERY_BEGIN_INPUT(func, context, ...)                        \
+  QUERY_BEGIN_INNER(true, func, #func, context, __VA_ARGS__)         \
+  if (QUERY_USE_SAVED()) {                                           \
+    return QUERY_GET_SAVED();                                        \
+  }                                                                  \
   auto QUERY_RECOMPUTATION_MARKER = context->markRecomputing(false); \
   QUERY_BEGIN_TIMING(context);
 
-#define QUERY_BEGIN_EXTERNALLY_SET(func, context, ...) \
-  QUERY_BEGIN_INNER(false, func, #func, context, __VA_ARGS__); \
-  BEGIN_QUERY_FOUND->externallySet = true; \
-  if (QUERY_USE_SAVED()) { \
-    return QUERY_GET_SAVED(); \
-  } \
-  CHPL_ASSERT(false && "query configured to be only set by other queries is being computed on its own"); \
-  auto QUERY_RECOMPUTATION_MARKER = context->markRecomputing(false); \
+#define QUERY_BEGIN_EXTERNALLY_SET(func, context, ...)                        \
+  QUERY_BEGIN_INNER(false, func, #func, context, __VA_ARGS__);                \
+  BEGIN_QUERY_FOUND->externallySet = true;                                    \
+  if (QUERY_USE_SAVED()) {                                                    \
+    return QUERY_GET_SAVED();                                                 \
+  }                                                                           \
+  CHPL_ASSERT(false && "query configured to be only set by other queries is " \
+                       "being computed on its own");                          \
+  auto QUERY_RECOMPUTATION_MARKER = context->markRecomputing(false);          \
   QUERY_BEGIN_TIMING(context);
 
 /**
@@ -701,15 +681,15 @@ Context::querySetterUpdateResult(
   Runs chpl::update to update the result stored in the map with the passed one.
   Updates the query's last updated and last computed revisions as needed.
  */
-#define QUERY_END(result) \
+#define QUERY_END(result)                                                                  \
   /* Recomputation marker isn't out of scope yet, but we want queryEnd to get old state */ \
-  (QUERY_RECOMPUTATION_MARKER.restore(), \
-  /* must not use BEGIN_QUERY_SEARCH1 (iterator could be invalidated) */ \
-   BEGIN_QUERY_CONTEXT->queryEnd(BEGIN_QUERY_FUNCTION, \
-                                 BEGIN_QUERY_MAP, \
-                                 BEGIN_QUERY_FOUND, \
-                                 BEGIN_QUERY_ARGS, \
-                                 std::move(result), \
+  (QUERY_RECOMPUTATION_MARKER                                                              \
+     .restore(), /* must not use BEGIN_QUERY_SEARCH1 (iterator could be invalidated) */    \
+   BEGIN_QUERY_CONTEXT->queryEnd(BEGIN_QUERY_FUNCTION,                                     \
+                                 BEGIN_QUERY_MAP,                                          \
+                                 BEGIN_QUERY_FOUND,                                        \
+                                 BEGIN_QUERY_ARGS,                                         \
+                                 std::move(result),                                        \
                                  BEGIN_QUERY_FUNC_NAME))
 
 /**
@@ -732,24 +712,20 @@ Context::querySetterUpdateResult(
   use the QUERY_STORE_RESULT macro, which sets certain flags to avoid
   running into these issues (but could result in redunant recomputations).
  */
-#define QUERY_UNSAFE_STORE_RESULT(func, context, result, ...) \
-  context->querySetterUpdateResult(func, \
+#define QUERY_UNSAFE_STORE_RESULT(func, context, result, ...)    \
+  context->querySetterUpdateResult(func,                         \
                                    std::make_tuple(__VA_ARGS__), \
-                                   std::move(result), \
-                                   #func, \
-                                   false, \
+                                   std::move(result),            \
+                                   #func,                        \
+                                   false,                        \
                                    false)
 
 /**
   Safe version of QUERY_UNSAFE_STORE_RESULT. See its documentation above.
  */
-#define QUERY_STORE_RESULT(func, context, result, ...) \
-  context->querySetterUpdateResult(func, \
-                                   std::make_tuple(__VA_ARGS__), \
-                                   std::move(result), \
-                                   #func, \
-                                   false, \
-                                   true)
+#define QUERY_STORE_RESULT(func, context, result, ...)                         \
+  context->querySetterUpdateResult(                                            \
+    func, std::make_tuple(__VA_ARGS__), std::move(result), #func, false, true)
 
 /**
   Use QUERY_STORE_INPUT_RESULT to implement a setter for an input query.
@@ -764,13 +740,9 @@ Context::querySetterUpdateResult(
   If called multiple times within the same revision, only the first
   stored result in that revision will be saved.
  */
-#define QUERY_STORE_INPUT_RESULT(func, context, result, ...) \
-  context->querySetterUpdateResult(func, \
-                                   std::make_tuple(__VA_ARGS__), \
-                                   std::move(result), \
-                                   #func, \
-                                   true, \
-                                   false)
+#define QUERY_STORE_INPUT_RESULT(func, context, result, ...)                   \
+  context->querySetterUpdateResult(                                            \
+    func, std::make_tuple(__VA_ARGS__), std::move(result), #func, true, false)
 
 /// \endcond
 

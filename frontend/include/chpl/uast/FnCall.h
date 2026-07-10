@@ -27,7 +27,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a call to a function.
 
@@ -49,7 +48,7 @@ namespace uast {
 
  */
 class FnCall : public Call {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   // For each actual (matching Call's actuals), what are the names?
@@ -58,12 +57,12 @@ class FnCall : public Call {
   std::vector<UniqueString> actualNames_;
   bool callUsedSquareBrackets_;
 
-  FnCall(AstList children, std::vector<UniqueString> actualNames,
+  FnCall(AstList children,
+         std::vector<UniqueString> actualNames,
          bool callUsedSquareBrackets)
     : Call(asttags::FnCall, std::move(children), /* hasCalledExpression */ 1),
       actualNames_(std::move(actualNames)),
-      callUsedSquareBrackets_(callUsedSquareBrackets) {
-  }
+      callUsedSquareBrackets_(callUsedSquareBrackets) {}
 
   void serializeInner(Serializer& ser) const override {
     callSerializeInner(ser);
@@ -71,27 +70,24 @@ class FnCall : public Call {
     ser.write(callUsedSquareBrackets_);
   }
 
-  explicit FnCall(Deserializer& des)
-    : Call(asttags::FnCall, des) {
+  explicit FnCall(Deserializer& des) : Call(asttags::FnCall, des) {
     actualNames_ = des.read<std::vector<UniqueString>>();
     callUsedSquareBrackets_ = des.read<bool>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const FnCall* lhs = this;
-    const FnCall* rhs = (const FnCall*) other;
+    const FnCall* rhs = (const FnCall*)other;
 
-    if (!lhs->callContentsMatchInner(rhs))
-      return false;
+    if (!lhs->callContentsMatchInner(rhs)) return false;
 
     if (lhs->callUsedSquareBrackets_ != rhs->callUsedSquareBrackets_ ||
         lhs->actualNames_.size() != rhs->actualNames_.size())
       return false;
 
-    int nActualNames = (int) lhs->actualNames_.size();
+    int nActualNames = (int)lhs->actualNames_.size();
     for (int i = 0; i < nActualNames; i++) {
-      if (lhs->actualNames_[i] != rhs->actualNames_[i])
-        return false;
+      if (lhs->actualNames_[i] != rhs->actualNames_[i]) return false;
     }
 
     return true;
@@ -125,27 +121,22 @@ class FnCall : public Call {
   /** Returns whether actual i is named as with 'f(a=3)'
       where the actual is 3 and the name is 'a'. */
   bool isNamedActual(int i) const {
-    if (i < 0 || i >= (int) actualNames_.size())
-      return false;
+    if (i < 0 || i >= (int)actualNames_.size()) return false;
 
     return !actualNames_[i].isEmpty();
   }
 
   /** Returns the name of the actual, if used; otherwise the empty string */
   UniqueString actualName(int i) const {
-    if (actualNames_.size() == 0)
-      return UniqueString();
+    if (actualNames_.size() == 0) return UniqueString();
 
     return actualNames_[i];
   }
 
   /** Returns true if the call used square brackets e.g. f[1];
       the alternative is parentheses e.g. f(1). */
-  bool callUsedSquareBrackets() const {
-    return callUsedSquareBrackets_;
-  }
+  bool callUsedSquareBrackets() const { return callUsedSquareBrackets_; }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

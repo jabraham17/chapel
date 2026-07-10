@@ -46,33 +46,28 @@ namespace uast {
 
  */
 class Dot final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   // which field
   UniqueString fieldName_;
 
   Dot(AstList children, UniqueString fieldName)
-    : AstNode(asttags::Dot, std::move(children)),
-      fieldName_(fieldName) {
+    : AstNode(asttags::Dot, std::move(children)), fieldName_(fieldName) {
     CHPL_ASSERT(children_.size() == 1);
   }
 
-  void serializeInner(Serializer& ser) const override {
-    ser.write(fieldName_);
-  }
+  void serializeInner(Serializer& ser) const override { ser.write(fieldName_); }
 
-  explicit Dot(Deserializer& des)
-    : AstNode(asttags::Dot, des) {
+  explicit Dot(Deserializer& des) : AstNode(asttags::Dot, des) {
     fieldName_ = des.read<UniqueString>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Dot* lhs = this;
-    const Dot* rhs = (const Dot*) other;
+    const Dot* rhs = (const Dot*)other;
 
-    if (lhs->fieldName_ != rhs->fieldName_)
-      return false;
+    if (lhs->fieldName_ != rhs->fieldName_) return false;
 
     return true;
   }
@@ -95,11 +90,8 @@ class Dot final : public AstNode {
     return ast;
   }
   /** Returns the name of the field or method accessed by the Dot expression */
-  UniqueString field() const {
-    return fieldName_;
-  }
+  UniqueString field() const { return fieldName_; }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

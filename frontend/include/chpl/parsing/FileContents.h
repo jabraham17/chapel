@@ -44,14 +44,12 @@ class FileContents {
 
  public:
   /** Construct a FileContents containing empty text and no error */
-  FileContents()
-    : text_(), error_() { }
+  FileContents() : text_(), error_() {}
   /** Construct a FileContents containing the passed text and no error */
-  FileContents(std::string text)
-    : text_(std::move(text)), error_() { }
+  FileContents(std::string text) : text_(std::move(text)), error_() {}
   /** Construct a FileContents containing the passed text and error */
   FileContents(std::string text, const ErrorBase* error)
-    : text_(std::move(text)), error_(error) { }
+    : text_(std::move(text)), error_(error) {}
 
   /** Return a reference to the contents of this file */
   const std::string& text() const { return text_; }
@@ -60,12 +58,9 @@ class FileContents {
   const ErrorBase* error() const { return error_; }
 
   bool operator==(const FileContents& other) const {
-    return text_ == other.text_ &&
-           error_ == other.error_;
+    return text_ == other.text_ && error_ == other.error_;
   }
-  bool operator!=(const FileContents& other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const FileContents& other) const { return !(*this == other); }
   void swap(FileContents& other) {
     text_.swap(other.text_);
     std::swap(error_, other.error_);
@@ -76,12 +71,10 @@ class FileContents {
   void mark(Context* context) const;
 };
 
-
 } // end namespace parsing
 
 /// \cond DO_NOT_DOCUMENT
 /// \endcond
-
 
 } // end namespace chpl
 #endif

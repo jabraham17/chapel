@@ -37,7 +37,7 @@ class Context;
 class Location;
 
 namespace libraries {
-  class LibraryFile;
+class LibraryFile;
 }
 
 namespace uast {
@@ -60,9 +60,9 @@ class Builder final {
 
  private:
   // stores symbol path and repeat number (>0 for syms with same name)
-  using pathVecT = std::vector<std::pair<UniqueString,int>>;
+  using pathVecT = std::vector<std::pair<UniqueString, int>>;
   // maps the name to the repeat number
-  using declaredHereT = std::unordered_map<UniqueString,int>;
+  using declaredHereT = std::unordered_map<UniqueString, int>;
   // maps from a uAST pointer to a location
   using AstLocMap = std::unordered_map<const AstNode*, Location>;
 
@@ -80,40 +80,41 @@ class Builder final {
   bool isGenerated_;
   optional<int> topLevelRepeatOffset_;
 
-  // These map AST to additional locations while the builder is building.
-  // This is an equivalent to notedLocations for the additional locations.
-  // The key type is just 'AstNode' so that we can use generic functions.
-  #define LOCATION_MAP(ast__, location__) \
-    AstLocMap CHPL_AST_LOC_MAP(ast__, location__);
-  #include "all-location-maps.h"
-  #undef LOCATION_MAP
+// These map AST to additional locations while the builder is building.
+// This is an equivalent to notedLocations for the additional locations.
+// The key type is just 'AstNode' so that we can use generic functions.
+#define LOCATION_MAP(ast__, location__)          \
+  AstLocMap CHPL_AST_LOC_MAP(ast__, location__);
+#include "all-location-maps.h"
+#undef LOCATION_MAP
 
   SymbolTableVec symbolTableVec_;
 
-  Builder(Context* context, UniqueString filePath,
+  Builder(Context* context,
+          UniqueString filePath,
           UniqueString startingSymbolPath,
           const libraries::LibraryFile* lib,
           bool isGenerated = false,
           optional<int> topLevelRepeatOffset = chpl::empty)
-    : context_(context),
-      startingSymbolPath_(startingSymbolPath),
-      br(filePath, lib),
-      isGenerated_(isGenerated),
-      topLevelRepeatOffset_(topLevelRepeatOffset)
-  {
-  }
+    : context_(context), startingSymbolPath_(startingSymbolPath),
+      br(filePath, lib), isGenerated_(isGenerated),
+      topLevelRepeatOffset_(topLevelRepeatOffset) {}
 
   void createImplicitModuleIfNeeded();
   UniqueString getNameForDecl(const AstNode* ast);
   int getRepeatCount(declaredHereT& duplicates, UniqueString declName);
   void assignIDs();
-  void doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
-                   int& commentIndex, pathVecT& pathVec,
+  void doAssignIDs(AstNode* ast,
+                   UniqueString symbolPath,
+                   int& i,
+                   int& commentIndex,
+                   pathVecT& pathVec,
                    declaredHereT& duplicates);
 
   void noteAdditionalLocation(AstLocMap& m, AstNode* ast, Location loc);
   void tryNoteAdditionalLocation(AstLocMap& m, AstNode* ast, Location loc);
-  void copyAdditionalLocation(AstLocMap& m, const AstNode* from, const AstNode* to);
+  void
+  copyAdditionalLocation(AstLocMap& m, const AstNode* from, const AstNode* to);
   void deleteAdditionalLocation(AstLocMap& m, const AstNode* ast);
 
   bool isGenerated() { return isGenerated_; }
@@ -131,16 +132,17 @@ class Builder final {
                                                 const char* filepath,
                                                 UniqueString parentSymbolPath);
 
-  static owned<Builder> createForGeneratedCode(Context* context,
-                                               ID generatedFrom,
-                                               optional<int> overloadOffset = chpl::empty);
+  static owned<Builder>
+  createForGeneratedCode(Context* context,
+                         ID generatedFrom,
+                         optional<int> overloadOffset = chpl::empty);
 
   /** Construct a Builder for use when reading uAST from a library file. */
-  static owned<Builder> createForLibraryFileModule(
-                                          Context* context,
-                                          UniqueString filePath,
-                                          UniqueString parentSymbolPath,
-                                          const libraries::LibraryFile* lib);
+  static owned<Builder>
+  createForLibraryFileModule(Context* context,
+                             UniqueString filePath,
+                             UniqueString parentSymbolPath,
+                             const libraries::LibraryFile* lib);
 
   Context* context() const { return context_; }
 
@@ -155,16 +157,16 @@ class Builder final {
    */
   void noteLocation(AstNode* ast, Location loc);
 
-  /** Note additional locations that are associated with an AST node.
+/** Note additional locations that are associated with an AST node.
       Pairs an AST node (e.g., 'Dot') with a location.
       For a list of all locations see "./all-location-maps.h". */
-  #define LOCATION_MAP(ast__, location__) \
-    void note##location__##Location(ast__* ast, Location loc); \
-    void tryNote##location__##Location(ast__* ast, Location loc); \
-    void copy##location__##Location(const ast__* from, const ast__* to); \
-    void delete##location__##Location(const ast__* ast);
-  #include "all-location-maps.h"
-  #undef LOCATION_MAP
+#define LOCATION_MAP(ast__, location__)                                \
+  void note##location__##Location(ast__* ast, Location loc);           \
+  void tryNote##location__##Location(ast__* ast, Location loc);        \
+  void copy##location__##Location(const ast__* from, const ast__* to); \
+  void delete##location__##Location(const ast__* ast);
+#include "all-location-maps.h"
+#undef LOCATION_MAP
 
   /** Delete all the locations stored for the current AST. This is useful if the
       AST is being deallocated, which means future uses of this pointer
@@ -203,14 +205,11 @@ class Builder final {
   // Use this in the parser to get a mutable view of a node's children so
   // that the node can be modified in place. Later we can also add a method
   // such as 'swapChildren' if we need it.
-  AstList& mutableRefToChildren(AstNode* ast) {
-    return ast->children_;
-  }
+  AstList& mutableRefToChildren(AstNode* ast) { return ast->children_; }
 
   void addOrReplaceInitExpr(Variable* var, owned<AstNode> ie) {
     var->setInitExprForConfig(std::move(ie));
   }
-
 
   // Use this to take the children of an AST node. The AST node is marked
   // as owned because it is consumed.
@@ -227,30 +226,33 @@ class Builder final {
   Location getLocation(const AstNode* ast);
 
   // check for the existence of new config values (from the command line) for this var
-  void lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec, std::string& name, std::string& value);
+  void lookupConfigSettingsForVar(Variable* var,
+                                  pathVecT& pathVec,
+                                  std::string& name,
+                                  std::string& value);
 
   // update the initExpr of a config with values passed from the command line
-  AstNode* updateConfig(Variable* var, std::string configName, std::string configVal);
+  AstNode*
+  updateConfig(Variable* var, std::string configName, std::string configVal);
 
   // recursively note the location of a nodes children as the location of the parent
   // used when updating a config with a new initExpr
   void noteChildrenLocations(AstNode* ast, Location loc);
 
   // used to check if a config assignment was used in a previous assignment
-  void checkConfigPreviouslyUsed(const Variable* var, std::string& configNameUsed);
+  void checkConfigPreviouslyUsed(const Variable* var,
+                                 std::string& configNameUsed);
 
   // build a dummy input string and parse it, extracting the initExpr and returning it
-  owned <AstNode> parseDummyNodeForInitExpr(Variable* var, std::string value);
+  owned<AstNode> parseDummyNodeForInitExpr(Variable* var, std::string value);
 
   // check that all the configs passed from the command line were consumed
   static bool checkAllConfigVarsAssigned(Context* context);
 
   /// \endcond
-
 };
 
 } // end namespace uast
 } // end namespace chpl
-
 
 #endif

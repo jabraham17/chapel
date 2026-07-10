@@ -29,7 +29,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a reduction.
 
@@ -63,15 +62,16 @@ namespace uast {
 
 */
 class Reduce final : public Call {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   static const int opChildNum_ = 0;
   static const int iterandExprChildNum_ = 1;
 
   Reduce(AstList children)
-      : Call(asttags::Reduce, std::move(children),
-             /*hasCalledExpression*/ false) {
+    : Call(asttags::Reduce,
+           std::move(children),
+           /*hasCalledExpression*/ false) {
     CHPL_ASSERT(numChildren() == 2);
   }
 
@@ -79,7 +79,7 @@ class Reduce final : public Call {
     callSerializeInner(ser);
   }
 
-  explicit Reduce(Deserializer& des) : Call(asttags::Reduce, des) { }
+  explicit Reduce(Deserializer& des) : Call(asttags::Reduce, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Reduce* rhs = other->toReduce();
@@ -107,19 +107,14 @@ class Reduce final : public Call {
     Returns the reduce op expression, e.g. `minmax(int)` in the expression
     `minmax(int) reduce sum`.
   */
-  const AstNode* op() const {
-    return this->child(opChildNum_);
-  }
+  const AstNode* op() const { return this->child(opChildNum_); }
 
   /**
     Returns the iterand of the reduction, e,g., `sum` in the expression
     `minmax(int) reduce sum`.
   */
-  const AstNode* iterand() const {
-    return this->child(iterandExprChildNum_);
-  }
+  const AstNode* iterand() const { return this->child(iterandExprChildNum_); }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

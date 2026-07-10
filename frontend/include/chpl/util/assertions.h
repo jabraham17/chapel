@@ -20,7 +20,6 @@
 #ifndef CHPL_UTIL_ASSERTIONS_H
 #define CHPL_UTIL_ASSERTIONS_H
 
-
 namespace chpl {
 
 /*
@@ -28,11 +27,16 @@ namespace chpl {
   --no-devel is passed, and also to not halt when an assertion fails if
   --ignore-errors was passed at runtime (of chpl, not the chapel runtime)
 */
-void assertion(bool expr, const char* filename, const char* func, int lineno,
+void assertion(bool expr,
+               const char* filename,
+               const char* func,
+               int lineno,
                const char* exprText);
 
 /// \cond DO_NOT_DOCUMENT
-void chpl_unimpl(const char* filename, const char* func, int lineno,
+void chpl_unimpl(const char* filename,
+                 const char* func,
+                 int lineno,
                  const char* msg);
 /// \endcond DO_NOT_DOCUMENT
 
@@ -42,25 +46,27 @@ void chpl_unimpl(const char* filename, const char* func, int lineno,
 #ifdef NDEBUG
 // release mode
 #define CHPL_ASSERT(expr__) \
-  do { \
-    if constexpr (false) { \
-      auto res = expr__; \
-      (void) res; \
-    } \
+  do {                      \
+    if constexpr (false) {  \
+      auto res = expr__;    \
+      (void)res;            \
+    }                       \
   } while (0)
 
-#define CHPL_UNIMPL(msg__) do {} while (0)
+#define CHPL_UNIMPL(msg__) \
+  do {                     \
+  } while (0)
 
 #else
 // debug mode
-#define CHPL_ASSERT(expr__) \
-  do { \
+#define CHPL_ASSERT(expr__)                                             \
+  do {                                                                  \
     chpl::assertion(expr__, __FILE__, __FUNCTION__, __LINE__, #expr__); \
   } while (0)
 
 /// \cond DO_NOT_DOCUMENT
-#define CHPL_UNIMPL(msg__) \
-  do { \
+#define CHPL_UNIMPL(msg__)                                      \
+  do {                                                          \
     chpl::chpl_unimpl(__FILE__, __FUNCTION__, __LINE__, msg__); \
   } while (0)
 /// \endcond DO_NOT_DOCUMENT
@@ -97,8 +103,6 @@ bool assertionsAreFatal();
 */
 bool unimplementedWarningsAreOn();
 
-
 } // namespace chpl
-
 
 #endif // CHPL_UTIL_ASSERTIONS_H

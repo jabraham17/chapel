@@ -27,7 +27,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a visibility clause. Visibility clauses make up the
   contents of Use and Import statements. For example:
@@ -44,10 +43,9 @@ namespace uast {
   \endrst
  */
 class VisibilityClause final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  public:
-
   /**
     These values represent the kind of limitations possessed by a visibility
     clause. Visibility clauses within use statements may have limitations of
@@ -59,12 +57,7 @@ class VisibilityClause final : public AstNode {
     clause should have one or more limitations. If the kind is 'ONLY', then
     it may have zero or more limitations.
   */
-  enum LimitationKind {
-    BRACES,
-    EXCEPT,
-    ONLY,
-    NONE
-  };
+  enum LimitationKind { BRACES, EXCEPT, ONLY, NONE };
 
  private:
   // These always exist and their position never changes.
@@ -74,11 +67,11 @@ class VisibilityClause final : public AstNode {
   LimitationKind limitationKind_;
   int numLimitations_;
 
-  VisibilityClause(AstList children,  LimitationKind limitationKind,
+  VisibilityClause(AstList children,
+                   LimitationKind limitationKind,
                    int numLimitations)
     : AstNode(asttags::VisibilityClause, std::move(children)),
-      limitationKind_(limitationKind),
-      numLimitations_(numLimitations) {
+      limitationKind_(limitationKind), numLimitations_(numLimitations) {
 
     switch (limitationKind_) {
       case BRACES:
@@ -103,11 +96,10 @@ class VisibilityClause final : public AstNode {
   bool contentsMatchInner(const AstNode* other) const override {
     const VisibilityClause* rhs = other->toVisibilityClause();
     return this->limitationKind_ == rhs->limitationKind_ &&
-      this->numLimitations_ == rhs->numLimitations_;
+           this->numLimitations_ == rhs->numLimitations_;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
   void dumpFieldsInner(const DumpSettings& s) const override;
   std::string dumpChildLabelInner(int i) const override;
@@ -118,13 +110,14 @@ class VisibilityClause final : public AstNode {
   /**
     Create and return a visibility clause.
   */
-  static owned<VisibilityClause> build(Builder* builder, Location loc,
-                                       owned<AstNode> symbol);
+  static owned<VisibilityClause>
+  build(Builder* builder, Location loc, owned<AstNode> symbol);
 
   /**
     Create and return a visibility clause.
   */
-  static owned<VisibilityClause> build(Builder* builder, Location loc,
+  static owned<VisibilityClause> build(Builder* builder,
+                                       Location loc,
                                        owned<AstNode> symbol,
                                        LimitationKind limitationKind,
                                        AstList limitations);
@@ -142,17 +135,15 @@ class VisibilityClause final : public AstNode {
   /**
     Return the kind of limitations contained by this visibility clause.
   */
-  LimitationKind limitationKind() const {
-    return limitationKind_;
-  }
+  LimitationKind limitationKind() const { return limitationKind_; }
 
   /**
     Return a way to iterate over the limitations of this visibility clause.
   */
   AstListIteratorPair<AstNode> limitations() const {
     auto begin = (numLimitations() > 0)
-        ? children_.begin() + limitationChildNum_
-        : children_.end();
+                   ? children_.begin() + limitationChildNum_
+                   : children_.end();
     auto end = begin + numLimitations_;
     return AstListIteratorPair<AstNode>(begin, end);
   }
@@ -160,9 +151,7 @@ class VisibilityClause final : public AstNode {
   /**
     Return the number of limitations contained in this visibility clause.
   */
-  int numLimitations() const {
-    return this->numLimitations_;
-  }
+  int numLimitations() const { return this->numLimitations_; }
 
   /**
     Return the i'th limitation of this visibility clause. If the limitation
@@ -172,7 +161,7 @@ class VisibilityClause final : public AstNode {
   */
   const AstNode* limitation(int i) const {
     CHPL_ASSERT(i >= 0 && i < numLimitations_);
-    const AstNode* ast = this->child(limitationChildNum_+i);
+    const AstNode* ast = this->child(limitationChildNum_ + i);
     return ast;
   }
 
@@ -182,14 +171,13 @@ class VisibilityClause final : public AstNode {
   static const char* limitationKindToString(LimitationKind kind);
 };
 
-
 } // end namespace uast
 
 /// \cond DO_NOT_DOCUMENT
 
-template <>
-struct stringify<uast::VisibilityClause::LimitationKind> {
-  void operator()(std::ostream& streamOut, StringifyKind stringKind,
+template <> struct stringify<uast::VisibilityClause::LimitationKind> {
+  void operator()(std::ostream& streamOut,
+                  StringifyKind stringKind,
                   uast::VisibilityClause::LimitationKind limitationKind) const {
     switch (limitationKind) {
       case uast::VisibilityClause::LimitationKind::BRACES:
@@ -204,14 +192,12 @@ struct stringify<uast::VisibilityClause::LimitationKind> {
       case uast::VisibilityClause::LimitationKind::NONE:
         streamOut << "none";
         break;
-      default:
-        CHPL_ASSERT(false && "should not reach this point");
+      default: CHPL_ASSERT(false && "should not reach this point");
     }
   }
 };
 
-template <>
-struct mark<uast::VisibilityClause::LimitationKind> {
+template <> struct mark<uast::VisibilityClause::LimitationKind> {
   void operator()(Context* context, uast::VisibilityClause::LimitationKind t) {
     // No need to mark enums
   }
@@ -223,15 +209,13 @@ DECLARE_SERDE_ENUM(uast::VisibilityClause::LimitationKind, uint8_t);
 
 } // end namespace chpl
 
-
 namespace std {
 
 /// \cond DO_NOT_DOCUMENT
 
-template <>
-struct hash<chpl::uast::VisibilityClause::LimitationKind> {
-  size_t operator()(
-      const chpl::uast::VisibilityClause::LimitationKind& key) const {
+template <> struct hash<chpl::uast::VisibilityClause::LimitationKind> {
+  size_t
+  operator()(const chpl::uast::VisibilityClause::LimitationKind& key) const {
     return (size_t)key;
   }
 };

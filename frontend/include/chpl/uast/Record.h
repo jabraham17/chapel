@@ -26,7 +26,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a record declaration. For example:
 
@@ -43,10 +42,12 @@ namespace uast {
   The record itself (myRecord) is represented by a Record AST node.
  */
 class Record final : public AggregateDecl {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  Record(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
+  Record(AstList children,
+         int attributeGroupChildNum,
+         Decl::Visibility vis,
          Decl::Linkage linkage,
          int linkageNameChildNum,
          UniqueString name,
@@ -54,7 +55,8 @@ class Record final : public AggregateDecl {
          int numInheritExprs,
          int elementsChildNum,
          int numElements)
-    : AggregateDecl(asttags::Record, std::move(children),
+    : AggregateDecl(asttags::Record,
+                    std::move(children),
                     attributeGroupChildNum,
                     vis,
                     linkage,
@@ -69,11 +71,11 @@ class Record final : public AggregateDecl {
     aggregateDeclSerializeInner(ser);
   }
 
-  explicit Record(Deserializer& des) : AggregateDecl(asttags::Record, des) { }
+  explicit Record(Deserializer& des) : AggregateDecl(asttags::Record, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Record* lhs = this;
-    const Record* rhs = (const Record*) other;
+    const Record* rhs = (const Record*)other;
     return lhs->aggregateDeclContentsMatchInner(rhs);
   }
 
@@ -86,7 +88,8 @@ class Record final : public AggregateDecl {
  public:
   ~Record() override = default;
 
-  static owned<Record> build(Builder* builder, Location loc,
+  static owned<Record> build(Builder* builder,
+                             Location loc,
                              owned<AttributeGroup> attributeGroup,
                              Decl::Visibility vis,
                              Decl::Linkage linkage,
@@ -95,7 +98,6 @@ class Record final : public AggregateDecl {
                              AstList inheritExprs,
                              AstList contents);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

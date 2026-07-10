@@ -20,15 +20,14 @@
 #ifndef CHPL_UAST_ATTRIBUTE_H
 #define CHPL_UAST_ATTRIBUTE_H
 
-
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/StringLiteral.h"
 
 namespace chpl {
 namespace uast {
 
-class Attribute final: public AstNode {
- friend class AstNode;
+class Attribute final : public AstNode {
+  friend class AstNode;
 
  private:
   // the attribute name - deprecated or unstable or chpldoc.nodoc, for example
@@ -36,13 +35,12 @@ class Attribute final: public AstNode {
   int numActuals_; // number of child actuals
   std::vector<UniqueString> actualNames_;
 
-  Attribute(UniqueString name, int numActuals, AstList actuals,
+  Attribute(UniqueString name,
+            int numActuals,
+            AstList actuals,
             std::vector<UniqueString> actualNames)
-    : AstNode(asttags::Attribute, std::move(actuals)),
-      name_(name),
-      numActuals_(numActuals),
-      actualNames_(std::move(actualNames)) {
-  }
+    : AstNode(asttags::Attribute, std::move(actuals)), name_(name),
+      numActuals_(numActuals), actualNames_(std::move(actualNames)) {}
 
   void serializeInner(Serializer& ser) const override {
     ser.write(name_);
@@ -58,15 +56,14 @@ class Attribute final: public AstNode {
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Attribute* lhs = this;
-    const Attribute* rhs = (const Attribute*) other;
+    const Attribute* rhs = (const Attribute*)other;
     if (lhs->actualNames_.size() != rhs->actualNames_.size() ||
         lhs->name_ != rhs->name_ || lhs->numActuals_ != rhs->numActuals_) {
-        return false;
+      return false;
     }
-    int nActualNames = (int) lhs->actualNames_.size();
+    int nActualNames = (int)lhs->actualNames_.size();
     for (int i = 0; i < nActualNames; i++) {
-      if (lhs->actualNames_[i] != rhs->actualNames_[i])
-        return false;
+      if (lhs->actualNames_[i] != rhs->actualNames_[i]) return false;
     }
     return true;
   }
@@ -80,21 +77,19 @@ class Attribute final: public AstNode {
 
   void dumpFieldsInner(const DumpSettings& s) const override;
 
-public:
+ public:
   ~Attribute() override = default;
 
-  static owned<Attribute> build(Builder* builder, Location loc,
+  static owned<Attribute> build(Builder* builder,
+                                Location loc,
                                 UniqueString name,
                                 AstList actuals,
                                 std::vector<UniqueString> actualNames);
 
-
   /**
     returns the name of the attribute without the toolspace
   */
-  UniqueString name() const {
-    return name_;
-  }
+  UniqueString name() const { return name_; }
 
   /**
    Returns an iterable expression over the actuals of an attribute.
@@ -106,9 +101,7 @@ public:
   /*
     Returns the number of actuals of an attribute.
   */
-  int numActuals() const {
-    return numActuals_;
-  }
+  int numActuals() const { return numActuals_; }
 
   /*
     Returns the i'th actual of an attribute.
@@ -129,7 +122,8 @@ public:
     } else {
       const StringLiteral* str = actual(0)->toStringLiteral();
       if (str == nullptr) {
-        ctx->error(this, "Attribute %s takes only a string argument", name_.c_str());
+        ctx->error(
+          this, "Attribute %s takes only a string argument", name_.c_str());
       } else {
         return str->value();
       }
@@ -140,33 +134,26 @@ public:
   /** Returns whether actual i is named as with 'f(a=3)'
       where the actual is 3 and the name is 'a'. */
   bool isNamedActual(int i) const {
-    if (i < 0 || i >= (int) actualNames_.size())
-      return false;
+    if (i < 0 || i >= (int)actualNames_.size()) return false;
 
     return !actualNames_[i].isEmpty();
   }
 
   /** Returns the name of the actual, if used; otherwise the empty string */
   UniqueString actualName(int i) const {
-    if (actualNames_.size() == 0)
-      return UniqueString();
+    if (actualNames_.size() == 0) return UniqueString();
 
     return actualNames_[i];
   }
-
 
   /*
     Returns the full name of an attribute including its toolspace, if any.
     ex: "deprecated" or "chpldoc.nodoc", etc.
   */
-  const std::string fullyQualifiedAttributeName() const {
-    return name_.str();
-  }
+  const std::string fullyQualifiedAttributeName() const { return name_.str(); }
 }; // end Attribute
 
-
 } // end namespace uast
-
 
 } // end namespace chpl
 

@@ -28,7 +28,6 @@
 
 namespace chpl {
 
-
 class Context;
 
 /**
@@ -38,17 +37,14 @@ class Context;
  */
 class Bitmap {
   std::vector<bool> bits_;
+
  public:
   /** Construct a Bitmap storing no bits */
-  Bitmap() : bits_() { }
+  Bitmap() : bits_() {}
   /** Resizes this Bitmap to store n bits */
-  void resize(size_t n) {
-    bits_.resize(n);
-  }
+  void resize(size_t n) { bits_.resize(n); }
   /** Returns the number of bits stored in this Bitmap */
-  size_t size() const {
-    return bits_.size();
-  }
+  size_t size() const { return bits_.size(); }
   /** Returns the value of bit index i */
   bool operator[](size_t i) const {
     CHPL_ASSERT(0 <= i && i < bits_.size());
@@ -60,27 +56,18 @@ class Bitmap {
     bits_[i] = value;
   }
 
-  bool operator==(const Bitmap& other) const {
-    return bits_ == other.bits_;
-  }
-  bool operator!=(const Bitmap& other) const {
-    return !(*this == other);
-  }
-  bool operator<(const Bitmap& other) const {
-    return bits_ < other.bits_;
-  }
-  void swap(Bitmap& other) {
-    bits_.swap(other.bits_);
-  }
+  bool operator==(const Bitmap& other) const { return bits_ == other.bits_; }
+  bool operator!=(const Bitmap& other) const { return !(*this == other); }
+  bool operator<(const Bitmap& other) const { return bits_ < other.bits_; }
+  void swap(Bitmap& other) { bits_.swap(other.bits_); }
   static bool update(Bitmap& keep, Bitmap& addin) {
-    if (keep == addin)
-      return false;
+    if (keep == addin) return false;
 
     keep.swap(addin);
     return true;
   }
   void mark(Context* context) const {
-    (void) bits_; // nothing to mark here
+    (void)bits_; // nothing to mark here
   }
 
   // defined in the .cpp file to avoid ambiguity in template instantiation
@@ -89,21 +76,15 @@ class Bitmap {
   void stringify(std::ostream& s, StringifyKind stringKind) const;
 };
 
-
 } // end namespace chpl
-
 
 namespace std {
 
-
 // These std::hash functions are here b/c the hash functions
 // above can't have partial template specialization.
-template<> struct hash<chpl::Bitmap> {
-  size_t operator()(const chpl::Bitmap& bitmap) const {
-    return bitmap.hash();
-  }
+template <> struct hash<chpl::Bitmap> {
+  size_t operator()(const chpl::Bitmap& bitmap) const { return bitmap.hash(); }
 };
-
 
 } // end namespace std
 

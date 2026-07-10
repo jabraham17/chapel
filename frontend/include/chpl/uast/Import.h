@@ -28,7 +28,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents an import statement. For example:
 
@@ -44,31 +43,29 @@ namespace uast {
   and 'Bar as A'.
 */
 class Import final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   Decl::Visibility visibility_;
 
   Import(AstList children, Decl::Visibility visibility)
-    : AstNode(asttags::Import, std::move(children)),
-      visibility_(visibility) {
+    : AstNode(asttags::Import, std::move(children)), visibility_(visibility) {
     CHPL_ASSERT(numChildren() >= 1);
 
-    #ifndef NDEBUG
-      for (auto vc : visibilityClauses()) {
-        bool acceptable = vc->limitationKind() == VisibilityClause::NONE ||
-                          vc->limitationKind() == VisibilityClause::BRACES;
-        CHPL_ASSERT(acceptable);
-      }
-    #endif
+#ifndef NDEBUG
+    for (auto vc : visibilityClauses()) {
+      bool acceptable = vc->limitationKind() == VisibilityClause::NONE ||
+                        vc->limitationKind() == VisibilityClause::BRACES;
+      CHPL_ASSERT(acceptable);
+    }
+#endif
   }
 
   void serializeInner(Serializer& ser) const override {
     ser.write(visibility_);
   }
 
-  explicit Import(Deserializer& des)
-    : AstNode(asttags::Import, des) {
+  explicit Import(Deserializer& des) : AstNode(asttags::Import, des) {
     visibility_ = des.read<Decl::Visibility>();
   }
 
@@ -77,24 +74,21 @@ class Import final : public AstNode {
     return this->visibility_ == rhs->visibility_;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
  public:
-
   /**
     Create and return an import statement.
   */
-  static owned<Import> build(Builder* builder, Location loc,
+  static owned<Import> build(Builder* builder,
+                             Location loc,
                              Decl::Visibility visibility,
                              AstList visibilityClauses);
 
   /**
     Return the visibility of this import statement.
   */
-  Decl::Visibility visibility() const {
-    return visibility_;
-  }
+  Decl::Visibility visibility() const { return visibility_; }
 
   /**
     Return a way to iterate over the visibility clauses.
@@ -107,9 +101,7 @@ class Import final : public AstNode {
   /**
     Return the number of visibility clauses in this import statement.
   */
-  int numVisibilityClauses() const {
-    return this->numChildren();
-  }
+  int numVisibilityClauses() const { return this->numChildren(); }
 
   /**
     Return the i'th visibility clause in this import statement.
@@ -120,7 +112,6 @@ class Import final : public AstNode {
     return (const VisibilityClause*)ret;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

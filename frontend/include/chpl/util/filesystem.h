@@ -34,7 +34,6 @@
 
 namespace chpl {
 
-
 /**
   Reads the contents of a file into a string.
   If something failed, returns false and sets errorOut.
@@ -73,7 +72,6 @@ std::error_code ensureDirExists(const llvm::Twine& dirname);
  */
 bool isPathWriteable(const llvm::Twine& path);
 
-
 /**
  * creates a directory in the temp location for the system
  * with the pattern "[TMP]/[dirPrefix]-[username].deleteme-XXXXXX/"
@@ -109,8 +107,7 @@ std::error_code currentWorkingDir(std::string& path_out);
  * makeParents - if true, creates parent directories if they don't exist
  * returns - std::error_code
  */
-std::error_code makeDir(const llvm::Twine& dirpath, bool makeParents=false);
-
+std::error_code makeDir(const llvm::Twine& dirpath, bool makeParents = false);
 
 /*
   Try to get the path of the executable. We rely on llvm implementation,
@@ -118,7 +115,6 @@ std::error_code makeDir(const llvm::Twine& dirpath, bool makeParents=false);
   https://llvm.org/doxygen/namespacellvm_1_1sys_1_1fs.html#a057a733b2dfa2f0531ceb335cf3b1d03
 */
 std::string getExecutablePath(const char* argv0, void* MainExecAddr);
-
 
 /**
   Compare two paths to see if they point to the same filesystem object.
@@ -191,6 +187,5 @@ std::error_code moveFile(const llvm::Twine& srcPath,
                          const llvm::Twine& dstPath);
 
 } // end namespace chpl
-
 
 #endif

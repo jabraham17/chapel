@@ -26,26 +26,23 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a floating point literal that is not imaginary.
   That is, it is a "real" number. Examples include ``0.0``, and `3e24`.
  */
 class RealLiteral final : public NumericLiteral<double, types::RealParam> {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   RealLiteral(const types::RealParam* value, UniqueString text)
-    : NumericLiteral(asttags::RealLiteral, value, text)
-  { }
+    : NumericLiteral(asttags::RealLiteral, value, text) {}
 
   void serializeInner(Serializer& ser) const override {
     numericLiteralSerializeInner(ser);
   }
 
   explicit RealLiteral(Deserializer& des)
-    : NumericLiteral(asttags::RealLiteral, des)
-  { }
+    : NumericLiteral(asttags::RealLiteral, des) {}
 
   // contentsMatchInner / markUniqueStringsInner are in NumericLiteral
   // and would need to be defined here if any fields are added.
@@ -53,10 +50,9 @@ class RealLiteral final : public NumericLiteral<double, types::RealParam> {
  public:
   ~RealLiteral() override = default;
 
-  static owned<RealLiteral> build(Builder* builder, Location loc,
-                                  double value, UniqueString text);
+  static owned<RealLiteral>
+  build(Builder* builder, Location loc, double value, UniqueString text);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

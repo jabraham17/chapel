@@ -27,7 +27,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a while loop. For example:
 
@@ -45,17 +44,21 @@ namespace uast {
 
  */
 class While final : public Loop {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   int8_t conditionChildNum_;
 
-  While(AstList children, int8_t conditionChildNum,
+  While(AstList children,
+        int8_t conditionChildNum,
         BlockStyle blockStyle,
         int loopBodyChildNum,
         int attributeGroupChildNum)
-    : Loop(asttags::While, std::move(children), blockStyle,
-           loopBodyChildNum, attributeGroupChildNum),
+    : Loop(asttags::While,
+           std::move(children),
+           blockStyle,
+           loopBodyChildNum,
+           attributeGroupChildNum),
       conditionChildNum_(conditionChildNum) {
     CHPL_ASSERT(condition());
   }
@@ -65,20 +68,17 @@ class While final : public Loop {
     ser.write(conditionChildNum_);
   }
 
-  explicit While(Deserializer& des)
-    : Loop(asttags::While, des) {
+  explicit While(Deserializer& des) : Loop(asttags::While, des) {
     conditionChildNum_ = des.read<int8_t>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const While* lhs = this;
-    const While* rhs = (const While*) other;
+    const While* rhs = (const While*)other;
 
-    if (lhs->conditionChildNum_ != rhs->conditionChildNum_)
-      return false;
+    if (lhs->conditionChildNum_ != rhs->conditionChildNum_) return false;
 
-    if (!lhs->loopContentsMatchInner(rhs))
-      return false;
+    if (!lhs->loopContentsMatchInner(rhs)) return false;
 
     return true;
   }
@@ -95,12 +95,12 @@ class While final : public Loop {
   /**
     Create and return a while loop.
   */
-  static owned<While> build(Builder* builder, Location loc,
+  static owned<While> build(Builder* builder,
+                            Location loc,
                             owned<AstNode> condition,
                             BlockStyle blockStyle,
                             owned<Block> stmts,
                             owned<AttributeGroup> attributeGroup = nullptr);
-
 
   /**
     Return the condition of this while loop.
@@ -110,7 +110,6 @@ class While final : public Loop {
     return ret;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

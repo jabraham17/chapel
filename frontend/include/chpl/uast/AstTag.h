@@ -28,27 +28,26 @@ namespace chpl {
 namespace uast {
 namespace asttags {
 
-
 /**
 
   This enum is used to identify which AST class a node is.
  */
 enum AstTag {
-  // define the enum for all of the non-virtual AST nodes
-  // using macros and uast-classes-list.h
-  /// \cond DO_NOT_DOCUMENT
-  #define AST_NODE(NAME) NAME ,
-  #define AST_LEAF(NAME) NAME ,
-  #define AST_BEGIN_SUBCLASSES(NAME) START_##NAME ,
-  #define AST_END_SUBCLASSES(NAME) END_##NAME ,
-  /// \endcond
-  // Apply the above macros to uast-classes-list.h
-  #include "chpl/uast/uast-classes-list.h"
-  // clear the macros
-  #undef AST_NODE
-  #undef AST_LEAF
-  #undef AST_BEGIN_SUBCLASSES
-  #undef AST_END_SUBCLASSES
+// define the enum for all of the non-virtual AST nodes
+// using macros and uast-classes-list.h
+/// \cond DO_NOT_DOCUMENT
+#define AST_NODE(NAME)             NAME,
+#define AST_LEAF(NAME)             NAME,
+#define AST_BEGIN_SUBCLASSES(NAME) START_##NAME,
+#define AST_END_SUBCLASSES(NAME)   END_##NAME,
+/// \endcond
+// Apply the above macros to uast-classes-list.h
+#include "chpl/uast/uast-classes-list.h"
+// clear the macros
+#undef AST_NODE
+#undef AST_LEAF
+#undef AST_BEGIN_SUBCLASSES
+#undef AST_END_SUBCLASSES
   NUM_AST_TAGS,
   AST_TAG_UNKNOWN
 };
@@ -56,10 +55,8 @@ enum AstTag {
 // define is___ for leaf and regular nodes
 // (not yet for abstract parent classes)
 /// \cond DO_NOT_DOCUMENT
-#define IS_AST(NAME) \
-  static inline bool is##NAME(AstTag tag) { \
-    return tag == NAME; \
-  }
+#define IS_AST(NAME)                                              \
+  static inline bool is##NAME(AstTag tag) { return tag == NAME; }
 #define AST_NODE(NAME) IS_AST(NAME)
 #define AST_LEAF(NAME) IS_AST(NAME)
 #define AST_BEGIN_SUBCLASSES(NAME)
@@ -76,8 +73,8 @@ enum AstTag {
 
 // define is___ for abstract parent classes
 /// \cond DO_NOT_DOCUMENT
-#define IS_BASE_CLASS_AST(NAME) \
-  static inline bool is##NAME(AstTag tag) { \
+#define IS_BASE_CLASS_AST(NAME)                    \
+  static inline bool is##NAME(AstTag tag) {        \
     return START_##NAME < tag && tag < END_##NAME; \
   }
 #define AST_NODE(NAME)
@@ -96,7 +93,6 @@ enum AstTag {
 
 const char* tagToString(AstTag tag);
 
-
 } // end namespace asttags
 
 // Enable AstTag to be used as chpl::uast::AstTag
@@ -107,21 +103,21 @@ using chpl::uast::asttags::AstTag;
 } // end namespace uast
 
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<uast::AstTag> {
-  bool operator()(uast::AstTag& keep,
-                  uast::AstTag& addin) const {
+template <> struct update<uast::AstTag> {
+  bool operator()(uast::AstTag& keep, uast::AstTag& addin) const {
     return defaultUpdateBasic(keep, addin);
   }
 };
 
-template<> struct mark<uast::AstTag> {
+template <> struct mark<uast::AstTag> {
   void operator()(Context* context, const uast::AstTag& keep) const {
     // nothing to do for enum
   }
 };
 
-template<> struct stringify<uast::AstTag> {
-  void operator()(std::ostream& streamOut, StringifyKind stringKind,
+template <> struct stringify<uast::AstTag> {
+  void operator()(std::ostream& streamOut,
+                  StringifyKind stringKind,
                   uast::AstTag tag) const {
     streamOut << tagToString(tag);
   }
@@ -131,21 +127,14 @@ DECLARE_SERDE_ENUM(uast::AstTag, uint8_t);
 
 /// \endcond
 
-
 } // end namespace chpl
 
 namespace std {
 
-
-template<> struct hash<chpl::uast::AstTag>
-{
-  size_t operator()(const chpl::uast::AstTag& key) const {
-    return key;
-  }
+template <> struct hash<chpl::uast::AstTag> {
+  size_t operator()(const chpl::uast::AstTag& key) const { return key; }
 };
 
-
 } // end namespace std
-
 
 #endif

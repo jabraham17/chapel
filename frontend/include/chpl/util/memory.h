@@ -37,13 +37,12 @@ namespace chpl {
  It allows for easy migration in the event that we switch
  underlying optional types.
  */
-template<typename T>
+template <typename T>
 #if LLVM_VERSION_MAJOR >= 16
 using optional = std::optional<T>;
 #else
 using optional = llvm::Optional<T>;
 #endif
-
 
 /**
   This is the "empty" value for the above optional<T> type.
@@ -58,14 +57,12 @@ static const auto empty = llvm::None;
  owned<T> is just a synonym for 'std::unique_ptr<T>'.
  It is shorter and uses the Chapel term for it.
  */
-template<typename T>
-using owned = std::unique_ptr<T>;
+template <typename T> using owned = std::unique_ptr<T>;
 
 /**
  give a raw pointer to an owned<T> to manage it.
  */
-template<typename T>
-static inline owned<T> toOwned(T* takeFrom) {
+template <typename T> static inline owned<T> toOwned(T* takeFrom) {
   return owned<T>(takeFrom);
 }
 
@@ -73,14 +70,12 @@ static inline owned<T> toOwned(T* takeFrom) {
  shared<T> is just a synonym for 'std::shared_ptr<T>'.
  It is shorter and uses the Chapel term for it.
  */
-template<typename T>
-using shared = std::shared_ptr<T>;
+template <typename T> using shared = std::shared_ptr<T>;
 
 /**
  give a raw pointer to a shared<T> to manage it.
  */
-template<typename T>
-static inline shared<T> toShared(T* takeFrom) {
+template <typename T> static inline shared<T> toShared(T* takeFrom) {
   return shared<T>(takeFrom);
 }
 
@@ -93,9 +88,8 @@ static inline shared<T> toShared(T* takeFrom) {
 // This could alternatively be implemented in terms of the macro test
 //   #if __BYTE_ORDER == __LITTLE_ENDIAN
 // but that is less portable.
-inline bool little_endian()
-{
-  unsigned endian  =  1;
+inline bool little_endian() {
+  unsigned endian = 1;
   static_assert(sizeof(endian) > 1,
                 "endian must be more than one byte in size");
   return *(unsigned char*)(&endian) != 0;

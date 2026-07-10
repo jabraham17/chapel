@@ -28,7 +28,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a tuple variable declaration
 
@@ -52,23 +51,23 @@ namespace uast {
 
  */
 class TupleDecl final : public Decl {
- friend class AstNode;
+  friend class AstNode;
 
  public:
   enum IntentOrKind {
-    DEFAULT_INTENT = (int) Qualifier::DEFAULT_INTENT,
-    CONST_INTENT   = (int) Qualifier::CONST_INTENT,
-    VAR            = (int) Qualifier::VAR,
-    CONST_VAR      = (int) Qualifier::CONST_VAR,
-    CONST_REF      = (int) Qualifier::CONST_REF,
-    REF            = (int) Qualifier::REF,
-    IN             = (int) Qualifier::IN,
-    CONST_IN       = (int) Qualifier::CONST_IN,
-    OUT            = (int) Qualifier::OUT,
-    INOUT          = (int) Qualifier::INOUT,
-    INDEX          = (int) Qualifier::INDEX,
-    PARAM          = (int) Qualifier::PARAM,
-    TYPE           = (int) Qualifier::TYPE
+    DEFAULT_INTENT = (int)Qualifier::DEFAULT_INTENT,
+    CONST_INTENT = (int)Qualifier::CONST_INTENT,
+    VAR = (int)Qualifier::VAR,
+    CONST_VAR = (int)Qualifier::CONST_VAR,
+    CONST_REF = (int)Qualifier::CONST_REF,
+    REF = (int)Qualifier::REF,
+    IN = (int)Qualifier::IN,
+    CONST_IN = (int)Qualifier::CONST_IN,
+    OUT = (int)Qualifier::OUT,
+    INOUT = (int)Qualifier::INOUT,
+    INDEX = (int)Qualifier::INDEX,
+    PARAM = (int)Qualifier::PARAM,
+    TYPE = (int)Qualifier::TYPE
   };
 
  private:
@@ -78,18 +77,21 @@ class TupleDecl final : public Decl {
   int initExpressionChildNum_;
   bool isTupleDeclFormal_;
 
-  TupleDecl(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
+  TupleDecl(AstList children,
+            int attributeGroupChildNum,
+            Decl::Visibility vis,
             Decl::Linkage linkage,
             IntentOrKind intentOrKind,
             int numElements,
             int typeExpressionChildNum,
             int initExpressionChildNum)
-    : Decl(asttags::TupleDecl, std::move(children), attributeGroupChildNum,
+    : Decl(asttags::TupleDecl,
+           std::move(children),
+           attributeGroupChildNum,
            vis,
            linkage,
            /*linkageNameChildNum*/ NO_CHILD),
-      intentOrKind_(intentOrKind),
-      numElements_(numElements),
+      intentOrKind_(intentOrKind), numElements_(numElements),
       typeExpressionChildNum_(typeExpressionChildNum),
       initExpressionChildNum_(initExpressionChildNum) {
 
@@ -113,8 +115,7 @@ class TupleDecl final : public Decl {
     ser.write(isTupleDeclFormal_);
   }
 
-  explicit TupleDecl(Deserializer& des)
-    : Decl(asttags::TupleDecl, des) {
+  explicit TupleDecl(Deserializer& des) : Decl(asttags::TupleDecl, des) {
     intentOrKind_ = des.read<IntentOrKind>();
     numElements_ = des.readVInt();
     typeExpressionChildNum_ = des.readVInt();
@@ -126,7 +127,7 @@ class TupleDecl final : public Decl {
 
   bool contentsMatchInner(const AstNode* other) const override {
     const TupleDecl* lhs = this;
-    const TupleDecl* rhs = (const TupleDecl*) other;
+    const TupleDecl* rhs = (const TupleDecl*)other;
     return lhs->declContentsMatchInner(rhs) &&
            lhs->intentOrKind_ == rhs->intentOrKind_ &&
            lhs->numElements_ == rhs->numElements_ &&
@@ -142,14 +143,13 @@ class TupleDecl final : public Decl {
   void dumpFieldsInner(const DumpSettings& s) const override;
   std::string dumpChildLabelInner(int i) const override;
 
-  int declChildNum() const {
-    return attributeGroup() ? 1 : 0;
-  }
+  int declChildNum() const { return attributeGroup() ? 1 : 0; }
 
  public:
   ~TupleDecl() override = default;
 
-  static owned<TupleDecl> build(Builder* builder, Location loc,
+  static owned<TupleDecl> build(Builder* builder,
+                                Location loc,
                                 owned<AttributeGroup> attributeGroup,
                                 Decl::Visibility vis,
                                 Decl::Linkage linkage,
@@ -168,9 +168,8 @@ class TupleDecl final : public Decl {
     (which are each Variables or TupleDecls).
    */
   AstListIteratorPair<Decl> decls() const {
-    auto begin = numDecls()
-        ? children_.begin()
-        : children_.end() - declChildNum();
+    auto begin =
+      numDecls() ? children_.begin() : children_.end() - declChildNum();
     auto end = begin + numDecls();
     return AstListIteratorPair<Decl>(begin, end);
   }
@@ -178,9 +177,7 @@ class TupleDecl final : public Decl {
   /**
    Return the number of Decls contained within this TupleDecl.
    */
-  int numDecls() const {
-    return numElements_;
-  }
+  int numDecls() const { return numElements_; }
   /**
    Return the i'th contained Decl.
    */
@@ -226,17 +223,12 @@ class TupleDecl final : public Decl {
   /**
     Returns 'true' if this TupleDecl is a formal in a procedure.
    */
-  const bool isTupleDeclFormal() const {
-    return isTupleDeclFormal_;
-  }
+  const bool isTupleDeclFormal() const { return isTupleDeclFormal_; }
 };
-
 
 } // end namespace uast
 
-
 DECLARE_SERDE_ENUM(uast::TupleDecl::IntentOrKind, uint8_t);
-
 
 } // end namespace chpl
 

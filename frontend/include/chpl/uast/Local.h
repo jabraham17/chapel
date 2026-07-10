@@ -28,7 +28,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a local statement. For example:
 
@@ -49,39 +48,39 @@ namespace uast {
 
  */
 class Local final : public SimpleBlockLike {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   int8_t condChildNum_;
 
-  Local(AstList children, int8_t condChildNum, BlockStyle blockStyle,
+  Local(AstList children,
+        int8_t condChildNum,
+        BlockStyle blockStyle,
         int bodyChildNum,
         int numBodyStmts)
-    : SimpleBlockLike(asttags::Local, std::move(children), blockStyle,
+    : SimpleBlockLike(asttags::Local,
+                      std::move(children),
+                      blockStyle,
                       bodyChildNum,
                       numBodyStmts),
-      condChildNum_(condChildNum) {
-  }
+      condChildNum_(condChildNum) {}
 
   void serializeInner(Serializer& ser) const override {
     simpleBlockLikeSerializeInner(ser);
     ser.write(condChildNum_);
   }
 
-  explicit Local(Deserializer& des)
-    : SimpleBlockLike(asttags::Local, des) {
+  explicit Local(Deserializer& des) : SimpleBlockLike(asttags::Local, des) {
     condChildNum_ = des.read<int8_t>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Local* lhs = this;
-    const Local* rhs = (const Local*) other;
+    const Local* rhs = (const Local*)other;
 
-    if (lhs->condChildNum_ != rhs->condChildNum_)
-      return false;
+    if (lhs->condChildNum_ != rhs->condChildNum_) return false;
 
-    if (!lhs->simpleBlockLikeContentsMatchInner(rhs))
-      return false;
+    if (!lhs->simpleBlockLikeContentsMatchInner(rhs)) return false;
 
     return true;
   }
@@ -93,20 +92,18 @@ class Local final : public SimpleBlockLike {
   std::string dumpChildLabelInner(int i) const override;
 
  public:
-
   /**
     Create and return a local statement containing the passed statements.
   */
-  static owned<Local> build(Builder* builder, Location loc,
-                            BlockStyle blockStyle,
-                            AstList stmts);
-
+  static owned<Local>
+  build(Builder* builder, Location loc, BlockStyle blockStyle, AstList stmts);
 
   /**
     Create and return a local statement with the given condition and
     containing the passed statements.
   */
-  static owned<Local> build(Builder* builder, Location loc,
+  static owned<Local> build(Builder* builder,
+                            Location loc,
                             owned<AstNode> condition,
                             BlockStyle blockStyle,
                             AstList stmts);
@@ -119,7 +116,6 @@ class Local final : public SimpleBlockLike {
     return condChildNum_ < 0 ? nullptr : child(condChildNum_);
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

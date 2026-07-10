@@ -28,7 +28,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a use statement. For example:
 
@@ -44,29 +43,28 @@ namespace uast {
   'Bar as A'.
 */
 class Use final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   Decl::Visibility visibility_;
 
   Use(AstList children, Decl::Visibility visibility)
-    : AstNode(asttags::Use, std::move(children)),
-      visibility_(visibility) {
+    : AstNode(asttags::Use, std::move(children)), visibility_(visibility) {
     CHPL_ASSERT(numChildren() >= 1);
 
-    #ifndef NDEBUG
-      if (numVisibilityClauses() == 1) {
-        auto vc = visibilityClause(0);
-        bool acceptable = vc->limitationKind() == VisibilityClause::NONE ||
-                          vc->limitationKind() == VisibilityClause::EXCEPT ||
-                          vc->limitationKind() == VisibilityClause::ONLY;
-        CHPL_ASSERT(acceptable);
-      } else {
-        for (auto vc : visibilityClauses()) {
-          CHPL_ASSERT(vc->limitationKind() == VisibilityClause::NONE);
-        }
+#ifndef NDEBUG
+    if (numVisibilityClauses() == 1) {
+      auto vc = visibilityClause(0);
+      bool acceptable = vc->limitationKind() == VisibilityClause::NONE ||
+                        vc->limitationKind() == VisibilityClause::EXCEPT ||
+                        vc->limitationKind() == VisibilityClause::ONLY;
+      CHPL_ASSERT(acceptable);
+    } else {
+      for (auto vc : visibilityClauses()) {
+        CHPL_ASSERT(vc->limitationKind() == VisibilityClause::NONE);
       }
-    #endif
+    }
+#endif
   }
 
   void serializeInner(Serializer& ser) const override {
@@ -82,26 +80,23 @@ class Use final : public AstNode {
     return this->visibility_ == rhs->visibility_;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
   void dumpFieldsInner(const DumpSettings& s) const override;
 
  public:
-
   /**
     Create and return a use statement.
   */
-  static owned<Use> build(Builder* builder, Location loc,
+  static owned<Use> build(Builder* builder,
+                          Location loc,
                           Decl::Visibility visibility,
                           AstList visibilityClauses);
 
   /**
     Return the visibility of this use statement.
   */
-  Decl::Visibility visibility() const {
-    return visibility_;
-  }
+  Decl::Visibility visibility() const { return visibility_; }
 
   /**
     Return a way to iterate over the visibility clauses.
@@ -114,9 +109,7 @@ class Use final : public AstNode {
   /**
     Return the number of visibility clauses in this use statement.
   */
-  int numVisibilityClauses() const {
-    return this->numChildren();
-  }
+  int numVisibilityClauses() const { return this->numChildren(); }
 
   /**
     Return the i'th visibility clause in this use statement.
@@ -127,7 +120,6 @@ class Use final : public AstNode {
     return (const VisibilityClause*)ret;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

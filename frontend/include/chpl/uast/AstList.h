@@ -31,7 +31,6 @@ class Context;
 
 namespace uast {
 
-
 /**
   AstList is just a list that owns some AST nodes.
  */
@@ -75,8 +74,7 @@ void markAstList(Context* context, const AstList& keep);
  The iterator hides the ownership (it always returns a pointer e.g. AstNode*)
  and casts elements to a particular type.
  */
-template<typename CastToType>
-class AstListIterator {
+template <typename CastToType> class AstListIterator {
  public:
   using iterator_category = std::random_access_iterator_tag;
   using value_type = const CastToType*;
@@ -91,10 +89,11 @@ class AstListIterator {
   // needs to be default-constructible, copy-constructible,
   // copy-assignable and destructible
   AstListIterator() = default;
-  explicit AstListIterator(AstList::const_iterator it) : it(it) { }
+  explicit AstListIterator(AstList::const_iterator it) : it(it) {}
   ~AstListIterator() = default;
 
-  AstListIterator<CastToType>& operator=(const AstListIterator<CastToType>& it) = default;
+  AstListIterator<CastToType>&
+  operator=(const AstListIterator<CastToType>& it) = default;
 
   // needs to be support == and !=
   bool operator==(const AstListIterator<CastToType> rhs) const {
@@ -106,10 +105,10 @@ class AstListIterator {
 
   // needs to support * and ->
   const CastToType* operator*() const {
-    return (const CastToType*) this->it->get();
+    return (const CastToType*)this->it->get();
   }
   const CastToType* operator->() const {
-    return (const CastToType*) this->it->get();
+    return (const CastToType*)this->it->get();
   }
 
   // needs to support preincrement and postincrement
@@ -171,33 +170,26 @@ class AstListIterator {
 
   // support the [] operator
   const CastToType* operator[](const int rhs) {
-    return (const CastToType*) this->it[rhs];
+    return (const CastToType*)this->it[rhs];
   }
 
   // must be swappable but that should work with the default impl
 };
 
-template<typename CastToType>
-struct AstListIteratorPair {
+template <typename CastToType> struct AstListIteratorPair {
   AstListIterator<CastToType> begin_;
   AstListIterator<CastToType> end_;
 
   AstListIteratorPair(AstList::const_iterator begin,
                       AstList::const_iterator end)
-    : begin_(begin), end_(end) {
-  }
+    : begin_(begin), end_(end) {}
   ~AstListIteratorPair() = default;
 
-  AstListIterator<CastToType> begin() const {
-    return begin_;
-  }
-  AstListIterator<CastToType> end() const {
-    return end_;
-  }
+  AstListIterator<CastToType> begin() const { return begin_; }
+  AstListIterator<CastToType> end() const { return end_; }
 };
 
 // Note: AstList serializer and deserializer are declared in AstNode.h
-
 
 } // end namespace uast
 } // end namespace chpl

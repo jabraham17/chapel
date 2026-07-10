@@ -26,27 +26,24 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents an unsigned integer literal.
   It is only used for integers too large to fit into `int64_t`.
   Such integer literals have type `uint`.
  */
 class UintLiteral final : public NumericLiteral<uint64_t, types::UintParam> {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   UintLiteral(const types::UintParam* value, UniqueString text)
-    : NumericLiteral(asttags::UintLiteral, value, text)
-  { }
+    : NumericLiteral(asttags::UintLiteral, value, text) {}
 
   void serializeInner(Serializer& ser) const override {
     numericLiteralSerializeInner(ser);
   }
 
   explicit UintLiteral(Deserializer& des)
-    : NumericLiteral(asttags::UintLiteral, des)
-  { }
+    : NumericLiteral(asttags::UintLiteral, des) {}
 
   // contentsMatchInner / markUniqueStringsInner are in NumericLiteral
   // and would need to be defined here if any fields are added.
@@ -54,10 +51,9 @@ class UintLiteral final : public NumericLiteral<uint64_t, types::UintParam> {
  public:
   ~UintLiteral() override = default;
 
-  static owned<UintLiteral> build(Builder* builder, Location loc,
-                                  uint64_t value, UniqueString text);
+  static owned<UintLiteral>
+  build(Builder* builder, Location loc, uint64_t value, UniqueString text);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

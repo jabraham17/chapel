@@ -26,27 +26,24 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a string literal, for example `"hello"`
   and `''' string contents here '''`.
  */
 class StringLiteral final : public StringLikeLiteral {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   StringLiteral(const types::StringParam* value,
                 StringLikeLiteral::QuoteStyle quotes)
-    : StringLikeLiteral(asttags::StringLiteral, value, quotes)
-  { }
+    : StringLikeLiteral(asttags::StringLiteral, value, quotes) {}
 
   void serializeInner(Serializer& ser) const override {
     stringLikeLiteralSerializeInner(ser);
   }
 
   explicit StringLiteral(Deserializer& des)
-    : StringLikeLiteral(asttags::StringLiteral, des)
-  { }
+    : StringLikeLiteral(asttags::StringLiteral, des) {}
 
   // contentsMatchInner / markUniqueStringsInner are in StringLikeLiteral
   // and would need to be defined here if any fields are added.
@@ -54,11 +51,11 @@ class StringLiteral final : public StringLikeLiteral {
  public:
   ~StringLiteral() override = default;
 
-  static owned<StringLiteral> build(Builder* builder, Location loc,
+  static owned<StringLiteral> build(Builder* builder,
+                                    Location loc,
                                     const std::string& value,
                                     StringLikeLiteral::QuoteStyle quotes);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

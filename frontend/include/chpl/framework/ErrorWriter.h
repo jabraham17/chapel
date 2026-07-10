@@ -45,13 +45,11 @@ namespace errordetail {
   This class is used because error messages don't get access to
   the context themselves, and thus can't locate IDs themselves.
  */
-template <typename T>
-struct LocationOnly {
+template <typename T> struct LocationOnly {
   T t; /* The thing whose location to compute */
 };
 
-template <typename T>
-struct JustOneLine {
+template <typename T> struct JustOneLine {
   T t; /* The thing whose location to compute */
 };
 
@@ -62,9 +60,7 @@ inline Location locate(Context* context, const ID& id) {
 inline Location locate(Context* context, const uast::AstNode* node) {
   return locate(context, node->id());
 }
-inline Location locate(Context* context, const Location& loc) {
-  return loc;
-}
+inline Location locate(Context* context, const Location& loc) { return loc; }
 inline Location locate(Context* context, const IdOrLocation& idOrLoc) {
   return idOrLoc.computeLocation(context);
 }
@@ -72,8 +68,10 @@ template <typename T>
 inline Location locate(Context* context, const JustOneLine<T>& jl) {
   auto loc = locate(context, jl.t);
   return Location(loc.path(),
-                  loc.firstLine(), loc.firstColumn(),
-                  loc.firstLine(), loc.firstColumn());
+                  loc.firstLine(),
+                  loc.firstColumn(),
+                  loc.firstLine(),
+                  loc.firstColumn());
 }
 
 /// \cond DO_NOT_DOCUMENT
@@ -81,59 +79,53 @@ inline Location locate(Context* context, const JustOneLine<T>& jl) {
   Wrapper class for any piece of data with a location that, when converted
   to a string, results in a printing the data's file and line number.
  */
-template <typename T>
-struct AsFileName {
+template <typename T> struct AsFileName {
   T t; /* The thing to locate */
 
-  Location location(Context* context) const {
-    return locate(context, t);
-  }
+  Location location(Context* context) const { return locate(context, t); }
 };
 
 /**
   Template to be partially specialized to provide custom to-string output
   specific to the ErrorWriter. Uses stringify by default.
  */
-template <typename T>
-struct Writer {
+template <typename T> struct Writer {
   void operator()(Context* context, std::ostream& oss, const T& t) {
     stringify<T> str;
     str(oss, CHPL_SYNTAX, t);
   }
 };
 
-template <>
-struct Writer<const char*> {
+template <> struct Writer<const char*> {
   void operator()(Context* context, std::ostream& oss, const char* t) {
     oss << t;
   }
 };
 
-template <>
-struct Writer<std::string> {
+template <> struct Writer<std::string> {
   void operator()(Context* context, std::ostream& oss, const std::string& t) {
     oss << t;
   }
 };
 
-template <>
-struct Writer<UniqueString> {
+template <> struct Writer<UniqueString> {
   void operator()(Context* context, std::ostream& oss, UniqueString us) {
     oss << us.c_str();
   }
 };
 
-template <typename T>
-struct Writer<errordetail::AsFileName<T>> {
-  void operator()(Context* context, std::ostream& oss, const errordetail::AsFileName<T>& e) {
+template <typename T> struct Writer<errordetail::AsFileName<T>> {
+  void operator()(Context* context,
+                  std::ostream& oss,
+                  const errordetail::AsFileName<T>& e) {
     auto loc = e.location(context);
     oss << loc.path().c_str() << ":" << loc.firstLine();
   }
 };
 
-template <>
-struct Writer<const types::Type*> {
-  void operator()(Context* context, std::ostream& oss, const types::Type* type) {
+template <> struct Writer<const types::Type*> {
+  void
+  operator()(Context* context, std::ostream& oss, const types::Type* type) {
     if (!type || type->isUnknownType()) {
       oss << "unknown type";
     } else {
@@ -143,17 +135,18 @@ struct Writer<const types::Type*> {
   }
 };
 
-template <>
-struct Writer<const types::Param*> {
-  void operator()(Context* context, std::ostream& oss, const types::Param* param) {
+template <> struct Writer<const types::Param*> {
+  void
+  operator()(Context* context, std::ostream& oss, const types::Param* param) {
     stringify<const types::Param*> str;
     str(oss, CHPL_SYNTAX, param);
   }
 };
 
-template <>
-struct Writer<types::QualifiedType> {
-  void operator()(Context* context, std::ostream& oss, const types::QualifiedType& qt) {
+template <> struct Writer<types::QualifiedType> {
+  void operator()(Context* context,
+                  std::ostream& oss,
+                  const types::QualifiedType& qt) {
     if (!qt.hasTypePtr()) {
       oss << "a value of unknown type";
     } else if (qt.kind() == types::QualifiedType::TYPE) {
@@ -178,25 +171,22 @@ struct Writer<types::QualifiedType> {
 /**
   Helper function to create an AsFileName class.
  */
-template <typename T>
-errordetail::AsFileName<T> fileNameOf(T t) {
-  return errordetail::AsFileName<T> { std::move(t) };
+template <typename T> errordetail::AsFileName<T> fileNameOf(T t) {
+  return errordetail::AsFileName<T>{std::move(t)};
 }
 
 /**
   Helper function to create a LocationOnly class.
  */
-template <typename T>
-errordetail::LocationOnly<T> locationOnly(T t) {
-  return errordetail::LocationOnly<T> { std::move(t) };
+template <typename T> errordetail::LocationOnly<T> locationOnly(T t) {
+  return errordetail::LocationOnly<T>{std::move(t)};
 }
 
 /**
   Helper function to create a JustOneLine class.
 */
-template <typename T>
-errordetail::JustOneLine<T> justOneLine(T t) {
-  return errordetail::JustOneLine<T> { std::move(t) };
+template <typename T> errordetail::JustOneLine<T> justOneLine(T t) {
+  return errordetail::JustOneLine<T>{std::move(t)};
 }
 
 /**
@@ -215,13 +205,14 @@ errordetail::JustOneLine<T> justOneLine(T t) {
  */
 class ErrorWriterBase {
  public:
-   /** The style of error reporting that the ErrorWriterBase should produce. */
+  /** The style of error reporting that the ErrorWriterBase should produce. */
   enum OutputFormat {
     /** Specify that all information about the error should be printed. */
     DETAILED,
     /** Specify that only key parts of the error should be printed. */
     BRIEF,
   };
+
  protected:
   Context* context_; // note: this can sometimes be null
   OutputFormat outputFormat_;
@@ -239,10 +230,19 @@ class ErrorWriterBase {
     The location given to this function and its overloads is considered
     the error's main location.
    */
-  virtual void writeHeading(ErrorBase::Kind kind, ErrorType type, IdOrLocation idOrLoc, const std::string& message) = 0;
-  void writeHeading(ErrorBase::Kind kind, ErrorType type, const uast::AstNode* ast, const std::string& message);
+  virtual void writeHeading(ErrorBase::Kind kind,
+                            ErrorType type,
+                            IdOrLocation idOrLoc,
+                            const std::string& message) = 0;
+  void writeHeading(ErrorBase::Kind kind,
+                    ErrorType type,
+                    const uast::AstNode* ast,
+                    const std::string& message);
   template <typename T>
-  void writeHeading(ErrorBase::Kind kind, ErrorType type, errordetail::LocationOnly<T> t, const std::string& message) {
+  void writeHeading(ErrorBase::Kind kind,
+                    ErrorType type,
+                    errordetail::LocationOnly<T> t,
+                    const std::string& message) {
     writeHeading(kind, type, errordetail::locate(context_, t.t), message);
   }
 
@@ -274,18 +274,20 @@ class ErrorWriterBase {
   virtual void writeCode(const Location& place,
                          const std::vector<Location>& toHighlight = {}) = 0;
 
-  template <typename ... Ts>
-  std::string toString(Ts ... ts) {
+  template <typename... Ts> std::string toString(Ts... ts) {
     std::ostringstream oss;
     auto write = [&](auto t) {
       errordetail::Writer<decltype(t)> writer;
       writer(context_, oss, t);
     };
 
-    auto dummy = { (write(ts), 0)..., };
-    (void) dummy;
+    auto dummy = {
+      (write(ts), 0)...,
+    };
+    (void)dummy;
     return oss.str();
   }
+
  public:
   /**
     Write the error heading, possibly with some color and text decoration.
@@ -295,8 +297,9 @@ class ErrorWriterBase {
     The variable arguments given to this function are automatically converted
     to strings.
    */
-  template <typename LocationType, typename ... Ts>
-  void heading(ErrorBase::Kind kind, ErrorType type, LocationType loc, Ts ... ts) {
+  template <typename LocationType, typename... Ts>
+  void
+  heading(ErrorBase::Kind kind, ErrorType type, LocationType loc, Ts... ts) {
     auto str = toString(std::forward<Ts>(ts)...);
     tweakErrorString(str);
     writeHeading(kind, type, loc, str);
@@ -306,8 +309,11 @@ class ErrorWriterBase {
     Same as ErrorWriter::heading, but doesn't tweak the resulting error message
     to remove punctuation.
    */
-  template <typename LocationType, typename ... Ts>
-  void headingVerbatim(ErrorBase::Kind kind, ErrorType type, LocationType loc, Ts ... ts) {
+  template <typename LocationType, typename... Ts>
+  void headingVerbatim(ErrorBase::Kind kind,
+                       ErrorType type,
+                       LocationType loc,
+                       Ts... ts) {
     writeHeading(kind, type, loc, toString(std::forward<Ts>(ts)...));
   }
 
@@ -318,8 +324,7 @@ class ErrorWriterBase {
     The variable arguments given to this function are automatically converted
     to strings.
    */
-  template <typename ... Ts>
-  void message(Ts ... ts) {
+  template <typename... Ts> void message(Ts... ts) {
     writeMessage(toString(std::forward<Ts>(ts)...));
   }
 
@@ -332,8 +337,8 @@ class ErrorWriterBase {
     The variable arguments given to this function are automatically converted
     to strings.
    */
-  template <typename LocationType, typename ... Ts>
-  void note(LocationType loc, Ts ... ts) {
+  template <typename LocationType, typename... Ts>
+  void note(LocationType loc, Ts... ts) {
     auto str = toString(std::forward<Ts>(ts)...);
     tweakErrorString(str);
     writeNote(loc, str);
@@ -343,8 +348,11 @@ class ErrorWriterBase {
     Same as ErrorWriter::note, but doesn't tweak the resulting error message
     to remove punctuation.
    */
-  template <typename LocationType, typename ... Ts>
-  void noteVerbatim(ErrorBase::Kind kind, ErrorType type, LocationType loc, Ts ... ts) {
+  template <typename LocationType, typename... Ts>
+  void noteVerbatim(ErrorBase::Kind kind,
+                    ErrorType type,
+                    LocationType loc,
+                    Ts... ts) {
     writeNote(kind, type, loc, toString(std::forward<Ts>(ts)...));
   }
 
@@ -360,9 +368,10 @@ class ErrorWriterBase {
   void code(const LocPlace& place,
             const std::vector<LocHighlight>& toHighlight = {}) {
     std::vector<Location> ids(toHighlight.size());
-    std::transform(toHighlight.cbegin(), toHighlight.cend(), ids.begin(), [&](auto node) {
-      return errordetail::locate(context_, node);
-    });
+    std::transform(
+      toHighlight.cbegin(), toHighlight.cend(), ids.begin(), [&](auto node) {
+        return errordetail::locate(context_, node);
+      });
     writeCode(errordetail::locate(context_, place), ids);
   }
 
@@ -371,9 +380,8 @@ class ErrorWriterBase {
     definitions may be fairly length (e.g., a variable with a multi-line
     initializer), this will only print the first line of the definition.
    */
-  template <typename LocPlace>
-  void codeForDef(const LocPlace& place) {
-    code<LocPlace>(justOneLine(place), { place });
+  template <typename LocPlace> void codeForDef(const LocPlace& place) {
+    code<LocPlace>(justOneLine(place), {place});
   }
 
   /**
@@ -383,8 +391,7 @@ class ErrorWriterBase {
     is being printed. We don't want to dump all the fields / methods
     as part of the error.
    */
-  template <typename LocPlace>
-  void codeForLocation(const LocPlace& place) {
+  template <typename LocPlace> void codeForLocation(const LocPlace& place) {
     code<LocPlace>(justOneLine(place));
   }
 };
@@ -411,23 +418,28 @@ class ErrorWriter : public ErrorWriterBase {
 
   void setColor(TermColorName color);
 
-  void writeHeading(ErrorBase::Kind kind, ErrorType type, IdOrLocation idOrLoc,
+  void writeHeading(ErrorBase::Kind kind,
+                    ErrorType type,
+                    IdOrLocation idOrLoc,
                     const std::string& message) override;
   void writeMessage(const std::string& message) override {
     if (outputFormat_ == DETAILED) {
       // In detailed mode, the body is indented.
-      oss_  << "  ";
+      oss_ << "  ";
       oss_ << message << std::endl;
     }
   }
   void writeNote(IdOrLocation idOrLoc, const std::string& message) override;
   void writeCode(const Location& place,
                  const std::vector<Location>& toHighlight = {}) override;
+
  public:
-  ErrorWriter(Context* context, std::ostream& oss,
-              ErrorWriterBase::OutputFormat outputFormat, bool useColor) :
-    ErrorWriterBase(context, outputFormat), oss_(oss),
-    outputFormat_(outputFormat), useColor_(useColor) {}
+  ErrorWriter(Context* context,
+              std::ostream& oss,
+              ErrorWriterBase::OutputFormat outputFormat,
+              bool useColor)
+    : ErrorWriterBase(context, outputFormat), oss_(oss),
+      outputFormat_(outputFormat), useColor_(useColor) {}
 
   void writeNewline();
 };
@@ -452,8 +464,10 @@ class CompatibilityWriter : public ErrorWriterBase {
   CompatibilityWriter(Context* context)
     : ErrorWriterBase(context, OutputFormat::BRIEF) {}
 
-  void writeHeading(ErrorBase::Kind kind, ErrorType type,
-                    IdOrLocation idOrLoc, const std::string& message) override {
+  void writeHeading(ErrorBase::Kind kind,
+                    ErrorType type,
+                    IdOrLocation idOrLoc,
+                    const std::string& message) override {
     // We may not have a context e.g. if we are just figuring out the error
     // message text. Trust that `computedLoc_` is not important for that.
     if (context_) this->computedLoc_ = errordetail::locate(context_, idOrLoc);
@@ -513,9 +527,10 @@ class CompatibilityWriter : public ErrorWriterBase {
     This only works after ErrorBase::write was invoked with this
     CompatibilityWriter.
    */
-  const std::vector<ErrorCodeSnippet>& codeSnippets() const { return codeSnippets_; }
+  const std::vector<ErrorCodeSnippet>& codeSnippets() const {
+    return codeSnippets_;
+  }
 };
-
 
 } // end namespace chpl
 

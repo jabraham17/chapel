@@ -26,7 +26,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents an element in an enum. For example,
   a, b, c in the below are EnumElements.
@@ -40,12 +39,12 @@ namespace uast {
 
  */
 class EnumElement final : public NamedDecl {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  EnumElement(AstList children, int attributeGroupChildNum,
-              UniqueString name)
-    : NamedDecl(asttags::EnumElement, std::move(children),
+  EnumElement(AstList children, int attributeGroupChildNum, UniqueString name)
+    : NamedDecl(asttags::EnumElement,
+                std::move(children),
                 attributeGroupChildNum,
                 Decl::DEFAULT_VISIBILITY,
                 Decl::DEFAULT_LINKAGE,
@@ -60,11 +59,11 @@ class EnumElement final : public NamedDecl {
   }
 
   explicit EnumElement(Deserializer& des)
-    : NamedDecl(asttags::EnumElement, des) { }
+    : NamedDecl(asttags::EnumElement, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
-    const EnumElement* lhs = (const EnumElement*) this;
-    const EnumElement* rhs = (const EnumElement*) other;
+    const EnumElement* lhs = (const EnumElement*)this;
+    const EnumElement* rhs = (const EnumElement*)other;
     return lhs->namedDeclContentsMatchInner(rhs);
   }
 
@@ -82,12 +81,14 @@ class EnumElement final : public NamedDecl {
  public:
   ~EnumElement() override = default;
 
-  static owned<EnumElement> build(Builder* builder, Location loc,
+  static owned<EnumElement> build(Builder* builder,
+                                  Location loc,
                                   owned<AttributeGroup> attributeGroup,
                                   UniqueString name,
                                   owned<AstNode> initExpression);
 
-  static owned<EnumElement> build(Builder* builder, Location loc,
+  static owned<EnumElement> build(Builder* builder,
+                                  Location loc,
                                   owned<AttributeGroup> attributeGroup,
                                   UniqueString name);
 
@@ -98,7 +99,7 @@ class EnumElement final : public NamedDecl {
   const AstNode* initExpression() const {
     // need to handle the case when an attribute exists but an initExpression does not
     // in this case children_.size() is > 0, but initExpression should still be nullptr
-    if (initExpressionChildNum() >= (int) children_.size()) {
+    if (initExpressionChildNum() >= (int)children_.size()) {
       // either there are no children, or there's only an attribute
       CHPL_ASSERT(children_.size() == 0 || this->child(0)->isAttributeGroup());
       return nullptr;
@@ -112,7 +113,6 @@ class EnumElement final : public NamedDecl {
     }
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

@@ -27,7 +27,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a dimension of a multi-dimensional array. For example,
   this Chapel code is an array with two array rows:
@@ -44,27 +43,19 @@ namespace uast {
   An array row expression will never contain comments.
  */
 class ArrayRow final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-
   ArrayRow(AstList children)
-    : AstNode(asttags::ArrayRow, std::move(children)) {
-  }
+    : AstNode(asttags::ArrayRow, std::move(children)) {}
 
-  void serializeInner(Serializer& ser) const override {
-  }
+  void serializeInner(Serializer& ser) const override {}
 
-  explicit ArrayRow(Deserializer& des)
-    : AstNode(asttags::ArrayRow, des) {
-  }
+  explicit ArrayRow(Deserializer& des) : AstNode(asttags::ArrayRow, des) {}
 
-  bool contentsMatchInner(const AstNode* other) const override {
-    return true;
-  }
+  bool contentsMatchInner(const AstNode* other) const override { return true; }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
  public:
   ~ArrayRow() override = default;
@@ -84,9 +75,7 @@ class ArrayRow final : public AstNode {
   /**
     Return the number of expressions in this array row.
   */
-  int numExprs() const {
-    return this->numChildren();
-  }
+  int numExprs() const { return this->numChildren(); }
 
   /**
     Return the i'th expression in this array row.
@@ -96,7 +85,6 @@ class ArrayRow final : public AstNode {
     return ast;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

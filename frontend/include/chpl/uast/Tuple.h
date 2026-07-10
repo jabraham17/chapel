@@ -27,7 +27,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a tuple literal. For example:
 
@@ -40,12 +39,13 @@ namespace uast {
   \endrst
 */
 class Tuple final : public Call {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   // TODO: Record trailing comma?
   Tuple(AstList children)
-    : Call(asttags::Tuple, std::move(children),
+    : Call(asttags::Tuple,
+           std::move(children),
            /*hasCalledExpression*/ false) {
     CHPL_ASSERT(numChildren() >= 1);
   }
@@ -54,7 +54,7 @@ class Tuple final : public Call {
     callSerializeInner(ser);
   }
 
-  explicit Tuple(Deserializer& des) : Call(asttags::Tuple, des) { }
+  explicit Tuple(Deserializer& des) : Call(asttags::Tuple, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     return this->callContentsMatchInner(other->toCall());
@@ -70,11 +70,8 @@ class Tuple final : public Call {
   /**
     Create and return a tuple.
   */
-  static owned<Tuple> build(Builder* builder,
-                            Location loc,
-                            AstList exprs);
+  static owned<Tuple> build(Builder* builder, Location loc, AstList exprs);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

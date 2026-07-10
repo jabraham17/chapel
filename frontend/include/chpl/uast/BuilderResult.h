@@ -55,25 +55,20 @@
   CHPL_AST_LOC_MAP_INNER(ast__, location__)
 
 namespace llvm {
-  template<> struct DenseMapInfo<chpl::ID> {
-    static bool isEqual(const chpl::ID& lhs, const chpl::ID& rhs) {
-      return lhs == rhs;
-    }
+template <> struct DenseMapInfo<chpl::ID> {
+  static bool isEqual(const chpl::ID& lhs, const chpl::ID& rhs) {
+    return lhs == rhs;
+  }
 
-    static size_t getHashValue(const chpl::ID& id) {
-      return chpl::hash(id);
-    }
+  static size_t getHashValue(const chpl::ID& id) { return chpl::hash(id); }
 
-    static const chpl::ID getEmptyKey() {
-      return chpl::ID(USTR("<empty>"));
-    }
+  static const chpl::ID getEmptyKey() { return chpl::ID(USTR("<empty>")); }
 
-    static const chpl::ID getTombstoneKey() {
-      return chpl::ID(USTR("<tombstone>"));
-    }
-  };
+  static const chpl::ID getTombstoneKey() {
+    return chpl::ID(USTR("<tombstone>"));
+  }
+};
 }
-
 
 namespace chpl {
 
@@ -81,20 +76,19 @@ class Context;
 class Location;
 
 namespace libraries {
-  class LibraryFile;
+class LibraryFile;
 }
 
 namespace uast {
-  class BuilderResult;
+class BuilderResult;
 }
 
 namespace parsing {
-  // forward declare for use in friend declaration
-  const uast::BuilderResult& parseFile(Context* context, UniqueString path);
+// forward declare for use in friend declaration
+const uast::BuilderResult& parseFile(Context* context, UniqueString path);
 }
 
 namespace uast {
-
 
 /**
   This type records the result of building some AST.
@@ -107,10 +101,9 @@ class BuilderResult final {
   // (for use with library files, primarily)
   enum struct LocationMapTag {
     BaseMap = 0,
-    #define LOCATION_MAP(ast__, location__) \
-      location__,
-    #include "chpl/uast/all-location-maps.h"
-    #undef LOCATION_MAP
+#define LOCATION_MAP(ast__, location__) location__,
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
   };
 
  private:
@@ -126,13 +119,13 @@ class BuilderResult final {
   // Goes from ID to Location, applies to all AST nodes except Comment
   llvm::DenseMap<ID, Location> idToLocation_;
 
-  // Expand maps for locations of things that are not captured by AST.
-  // The key is the ID of the relevant AST, and value is the location
-  // of interest.
-  #define LOCATION_MAP(ast__, location__) \
-    llvm::DenseMap<ID, Location> CHPL_ID_LOC_MAP(ast__, location__);
-  #include "all-location-maps.h"
-  #undef LOCATION_MAP
+// Expand maps for locations of things that are not captured by AST.
+// The key is the ID of the relevant AST, and value is the location
+// of interest.
+#define LOCATION_MAP(ast__, location__)                            \
+  llvm::DenseMap<ID, Location> CHPL_ID_LOC_MAP(ast__, location__);
+#include "all-location-maps.h"
+#undef LOCATION_MAP
 
   // Goes from Comment ID to Location (for comments, specifically)
   std::vector<Location> commentIdToLocation_;
@@ -140,7 +133,7 @@ class BuilderResult final {
   const libraries::LibraryFile* libraryFile_ = nullptr;
   // maps from ID to module number and symbol table entry number
   // but only for modules & symbols stored in the symbol table
-  llvm::DenseMap<ID, std::pair<int,int>> libraryFileSymbols_;
+  llvm::DenseMap<ID, std::pair<int, int>> libraryFileSymbols_;
 
   // For use with library files.
   // Returns the module index & symbol index for the symbol
@@ -167,18 +160,14 @@ class BuilderResult final {
                 const libraries::LibraryFile* lib = nullptr);
 
   /** Return the file path this result refers to */
-  UniqueString filePath() const {
-    return filePath_;
-  }
+  UniqueString filePath() const { return filePath_; }
 
   /** return the number of top-level expressions */
-  int numTopLevelExpressions() const {
-    return topLevelExpressions_.size();
-  }
+  int numTopLevelExpressions() const { return topLevelExpressions_.size(); }
 
   /** return the i'th top-level expression */
   const AstNode* topLevelExpression(int i) const {
-    CHPL_ASSERT(0 <= i && (size_t) i < topLevelExpressions_.size());
+    CHPL_ASSERT(0 <= i && (size_t)i < topLevelExpressions_.size());
     return topLevelExpressions_[i].get();
   }
 
@@ -210,23 +199,24 @@ class BuilderResult final {
       checked.
       An empty Location will be returned if the Comment couldn't be found
   */
-  Location commentToLocation(const Comment *comment) const;
+  Location commentToLocation(const Comment* comment) const;
   /** Find the ID for a parent given an ID.
       Returns the empty ID if none is found */
   ID idToParentId(ID id) const;
 
-  /** Find an additional location given ID input. Returns an empty location
+/** Find an additional location given ID input. Returns an empty location
       pointing to 'path' if none was found. */
-  #define LOCATION_MAP(ast__, location__) \
-    Location idTo##location__##Location(Context* context, ID id, UniqueString path) const;
-  #include "all-location-maps.h"
-  #undef LOCATION_MAP
+#define LOCATION_MAP(ast__, location__)                \
+  Location idTo##location__##Location(                 \
+    Context* context, ID id, UniqueString path) const;
+#include "all-location-maps.h"
+#undef LOCATION_MAP
 
   /** Returns 'true' if this BuilderResult is using a LibraryFile and
       the passed ID represents a symbol table symbol in the LibraryFile */
   bool isSymbolTableSymbol(ID id) const;
 
-  BuilderResult(BuilderResult&&) = default; // move-constructable
+  BuilderResult(BuilderResult&&) = default;     // move-constructable
   BuilderResult(const BuilderResult&) = delete; // not copy-constructable
   BuilderResult& operator=(const BuilderResult&) = delete; // not assignable
 
@@ -241,12 +231,8 @@ class BuilderResult final {
   bool equals(const BuilderResult& other) const;
 };
 
-
 } // end namespace uast
 
-
-
 } // end namespace chpl
-
 
 #endif

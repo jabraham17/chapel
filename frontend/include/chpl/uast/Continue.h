@@ -40,7 +40,7 @@ namespace uast {
   \endrst
 */
 class Continue : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   int8_t targetChildNum_;
@@ -55,8 +55,7 @@ class Continue : public AstNode {
     ser.write(targetChildNum_);
   }
 
-  explicit Continue(Deserializer& des)
-    : AstNode(asttags::Continue, des) {
+  explicit Continue(Deserializer& des) : AstNode(asttags::Continue, des) {
     targetChildNum_ = des.read<int8_t>();
   }
 
@@ -64,24 +63,21 @@ class Continue : public AstNode {
     const Continue* lhs = this;
     const Continue* rhs = other->toContinue();
 
-    if (lhs->targetChildNum_ != rhs->targetChildNum_)
-      return false;
+    if (lhs->targetChildNum_ != rhs->targetChildNum_) return false;
 
     return true;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
   std::string dumpChildLabelInner(int i) const override;
 
  public:
-
   /**
     Create and return a continue statement.
   */
-  static owned<Continue> build(Builder* builder, Location loc,
-                               owned<Identifier> target);
+  static owned<Continue>
+  build(Builder* builder, Location loc, owned<Identifier> target);
 
   /**
     Returns the target of this continue statement, or nullptr if there
@@ -94,7 +90,6 @@ class Continue : public AstNode {
     return (const Identifier*)ret;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

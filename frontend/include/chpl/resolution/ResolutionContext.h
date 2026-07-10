@@ -92,22 +92,21 @@ class ResolutionContext {
   };
 
   // This class is used to implement a cache for stored results.
-  template <typename T>
-  class StoredResult final : public StoredResultBase {
+  template <typename T> class StoredResult final : public StoredResultBase {
     T t_;
+
    public:
     StoredResult(T&& t) : t_(std::move(t)) {}
     virtual ~StoredResult() = default;
     virtual void* get() override { return &t_; }
     virtual size_t hash() const override { return chpl::hash(t_); }
     virtual bool operator==(const StoredResultBase& rhs) const override {
-      auto rptr = ((const StoredResult<T>*) &rhs);
+      auto rptr = ((const StoredResult<T>*)&rhs);
       return this->t_ == rptr->t_;
     }
   };
 
  public:
-
   /** This class represents a single 'frame' for a symbol. It is currently
       a thin wrapper around the internal 'Resolver' type. Generally, a
       frame is pushed every time specific resolvers are created, and popped
@@ -135,17 +134,16 @@ class ResolutionContext {
 
     Frame() = default;
     Frame(Resolver* rv, Kind kind, int64_t index)
-      : rv_(rv), index_(index), kind_(kind) {
-    }
+      : rv_(rv), index_(index), kind_(kind) {}
     Frame(const ResolvedFunction* rf, int64_t index)
-      : rf_(rf), index_(index), kind_(FUNCTION) {
-    }
-    Frame(const types::InterfaceType* ift, const ImplementationWitness* witness, int64_t index)
-      : ift_(ift), witness_(witness), index_(index), kind_(INTERFACE) {
-    }
+      : rf_(rf), index_(index), kind_(FUNCTION) {}
+    Frame(const types::InterfaceType* ift,
+          const ImplementationWitness* witness,
+          int64_t index)
+      : ift_(ift), witness_(witness), index_(index), kind_(INTERFACE) {}
 
    public:
-   ~Frame() = default;
+    ~Frame() = default;
     Frame(const Frame& rhs) = delete;
     Frame(Frame&& rhs) = default;
     Frame& operator=(Frame&& rhs) = default;
@@ -168,11 +166,11 @@ class ResolutionContext {
     bool isEmpty() { return !rv() && !rf(); }
     const ID& id() const;
     const TypedFnSignature* signature() const;
-    const types::QualifiedType typeForContainedId(ResolutionContext* rc, const ID& id) const;
+    const types::QualifiedType typeForContainedId(ResolutionContext* rc,
+                                                  const ID& id) const;
     bool isUnstable() const;
 
-    template <typename T>
-    const T& cache(T t) {
+    template <typename T> const T& cache(T t) {
       auto v = toOwned(new StoredResult<T>(std::move(t)));
       auto it = cachedResults_.insert(std::move(v)).first;
       StoredResultBase* base = it->get();
@@ -191,7 +189,8 @@ class ResolutionContext {
   Frame baseFrame_;
 
   const Frame* pushFrame(const ResolvedFunction* rf);
-  const Frame* pushFrame(const types::InterfaceType* t, const ImplementationWitness* witness);
+  const Frame* pushFrame(const types::InterfaceType* t,
+                         const ImplementationWitness* witness);
   const Frame* pushFrame(Resolver* rv, Frame::Kind kind);
   void popFrame(const ResolvedFunction* rf);
   void popFrame(Resolver* rv);
@@ -203,8 +202,7 @@ class ResolutionContext {
     return frames_.empty() ? baseFrame_ : frames_.back();
   }
 
-  template <typename F>
-  Frame* findFrameMatchingMutable(F predicate) {
+  template <typename F> Frame* findFrameMatchingMutable(F predicate) {
     for (auto f = lastFrameMutable(); f; f = f->parent(this)) {
       if (f && predicate(*f)) return f;
     }
@@ -218,7 +216,7 @@ class ResolutionContext {
   explicit ResolutionContext(Context* context) : context_(context) {}
   ResolutionContext(const ResolutionContext& rhs) = delete;
   ResolutionContext(ResolutionContext&& rhs) = default;
- ~ResolutionContext() = default;
+  ~ResolutionContext() = default;
 
   /** Get the underlying compiler context. */
   Context* context() const { return context_; }
@@ -241,8 +239,7 @@ class ResolutionContext {
   const Frame& baseFrame() const { return baseFrame_; }
 
   /** Find the first stack frame matching a predicate in LIFO order. */
-  template <typename F>
-  const Frame* findFrameMatching(F predicate) const {
+  template <typename F> const Frame* findFrameMatching(F predicate) const {
     for (auto f = lastFrame(); f; f = f->parent(this)) {
       if (f && predicate(*f)) return f;
     }
@@ -251,9 +248,8 @@ class ResolutionContext {
 
   /** Find the first stack frame containing _or_ matching an id. */
   const Frame* findFrameWithId(const ID& id) const {
-    return findFrameMatching([&](auto& f) {
-      return f.id() == id || f.id().contains(id);
-    });
+    return findFrameMatching(
+      [&](auto& f) { return f.id() == id || f.id().contains(id); });
   }
 
   /** Determine if the global query cache stored in the 'Context*' can
@@ -262,29 +258,26 @@ class ResolutionContext {
 
       If not, then consider 't'. In general, if 't' is a type that
       refers to a nested function, conservatively return 'false'. */
-  template <typename T>
-  bool canUseGlobalCacheConsidering(const T& t) const {
+  template <typename T> bool canUseGlobalCacheConsidering(const T& t) const {
     if (!isUnstable()) return true;
     return ResolutionContext::canUseGlobalCache(context_, t);
   }
-  template <typename T>
-  bool canUseGlobalCacheConsidering(const T* t) const {
+  template <typename T> bool canUseGlobalCacheConsidering(const T* t) const {
     if (!isUnstable()) return true;
     return ResolutionContext::canUseGlobalCache(context_, t);
   }
   template <typename... Ts>
   bool canUseGlobalCacheConsidering(const std::tuple<Ts...>& ts) {
-    return std::apply([=](auto&... x) {
-      return (canUseGlobalCacheConsidering(x) && ...);
-    }, ts);
+    return std::apply(
+      [=](auto&... x) { return (canUseGlobalCacheConsidering(x) && ...); }, ts);
   }
 
   // This overload takes at least two items to differentiate itself from
   // the single argument overloads above (it is possible for the parameter
   // pack to be empty).
   template <typename T1, typename T2, typename... Ts>
-  bool canUseGlobalCacheConsidering(const T1& t1, const T2& t2,
-                                    const Ts& ...ts) {
+  bool
+  canUseGlobalCacheConsidering(const T1& t1, const T2& t2, const Ts&... ts) {
     if (isEmpty() || !isUnstable()) return true;
     auto tup = std::forward_as_tuple(t1, t2, ts...);
     return canUseGlobalCacheConsidering(tup);
@@ -308,19 +301,17 @@ class ResolutionContext {
   }
   template <typename T>
   static bool canUseGlobalCache(Context* context, const std::vector<T>& v) {
-    for (auto& x : v) if (!canUseGlobalCache(context, x)) return false;
+    for (auto& x : v)
+      if (!canUseGlobalCache(context, x)) return false;
     return true;
   }
 
   // Concrete overloads for types commonly encountered in resolution queries.
-  static bool
-  canUseGlobalCache(Context* context, const UntypedFnSignature& t);
-  static bool
-  canUseGlobalCache(Context* context, const TypedFnSignature& t);
-  static bool
-  canUseGlobalCache(Context* context, const ID& t);
-  static bool
-  canUseGlobalCache(Context* context, const MatchingIdsWithName& ids);
+  static bool canUseGlobalCache(Context* context, const UntypedFnSignature& t);
+  static bool canUseGlobalCache(Context* context, const TypedFnSignature& t);
+  static bool canUseGlobalCache(Context* context, const ID& t);
+  static bool canUseGlobalCache(Context* context,
+                                const MatchingIdsWithName& ids);
 
   //
   // Forward declare nested structs that are used to implement query classes.
@@ -333,17 +324,14 @@ class ResolutionContext {
   template <auto F, typename InvokeRet, typename... InvokeArgs>
   class GlobalQuery;
 
-  template <auto F, typename InvokeArgsTuple>
-  struct CanUseGlobalCache;
+  template <auto F, typename InvokeArgsTuple> struct CanUseGlobalCache;
 
   template <auto F, typename RetByVal, typename InvokeArgsTuple>
   struct UnstableCache;
 
-  template <auto F, typename InvokeArgsTuple>
-  struct GlobalComputeSetup;
+  template <auto F, typename InvokeArgsTuple> struct GlobalComputeSetup;
 
-  template <auto F, typename InvokeRet, typename... InvokeArgs>
-  class Query;
+  template <auto F, typename InvokeRet, typename... InvokeArgs> class Query;
 
   /** Called to construct an instance of a 'ResolutionContext::Query'.
       These implement the 'CHPL_RESOLUTION_QUERY...' family of
@@ -391,18 +379,17 @@ class ResolutionContext::GlobalQuery {
   using Ret = InvokeRet;
   using RetNoRef = typename std::remove_reference<Ret>::type;
   using RetByVal = typename std::remove_const<RetNoRef>::type;
-  template <typename T>
-  using Value = std::decay_t<T>;
+  template <typename T> using Value = std::decay_t<T>;
   using InvokeArgsTuple = std::tuple<InvokeArgs...>;
   using ArgsByValueTuple = std::tuple<Value<InvokeArgs>...>;
   using Wrapper = GlobalQueryWrapper<F, RetByVal, Value<InvokeArgs>...>;
   using TraceFn = std::function<TraceElement(const ArgsByValueTuple&)>;
 
-  #if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
-    static constexpr bool STOPWATCH_IS_ACTIVE = true;
-  #else
-    static constexpr bool STOPWATCH_IS_ACTIVE = false;
-  #endif
+#if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
+  static constexpr bool STOPWATCH_IS_ACTIVE = true;
+#else
+  static constexpr bool STOPWATCH_IS_ACTIVE = false;
+#endif
 
  private:
   // Exposing the implementation details of 'QUERY_BEGIN', 'QUERY_END'.
@@ -439,10 +426,9 @@ class ResolutionContext::GlobalQuery {
 
  public:
   GlobalQuery(Context* context, const char* name, InvokeArgs&&... args)
-        : context_(context),
-          name_(name),
-          args_({std::forward<InvokeArgs>(args)...}),
-          stopwatch_(context_->makeQueryTimingStopwatch(nullptr, ap_)) {
+    : context_(context), name_(name),
+      args_({std::forward<InvokeArgs>(args)...}),
+      stopwatch_(context_->makeQueryTimingStopwatch(nullptr, ap_)) {
     CHPL_ASSERT(context_ != nullptr);
   }
 
@@ -489,9 +475,8 @@ class ResolutionContext::GlobalQuery {
     recomputeMarker_.restore();
 
     // Pass in the result and indicate the query has ended.
-    auto& ret = context_->queryEnd(QUERY, beginMap_, beginRet_, ap_,
-                                   std::move(x),
-                                   name_);
+    auto& ret =
+      context_->queryEnd(QUERY, beginMap_, beginRet_, ap_, std::move(x), name_);
     beginMap_ = nullptr;
     beginRet_ = nullptr;
 
@@ -499,15 +484,15 @@ class ResolutionContext::GlobalQuery {
   }
 
   void inactiveStore(RetByVal x) {
-    context_->querySetterUpdateResult(QUERY, ap_, std::move(x),
+    context_->querySetterUpdateResult(QUERY,
+                                      ap_,
+                                      std::move(x),
                                       name_,
                                       isInput_,
                                       /* markExternallySet */ false);
   }
 
-  bool isRunning() {
-    return context_->isQueryRunning(QUERY, ap_);
-  }
+  bool isRunning() { return context_->isQueryRunning(QUERY, ap_); }
 
   bool hasCurrentResult() {
     return context_->hasCurrentResultForQuery(QUERY, ap_);
@@ -525,17 +510,16 @@ struct ResolutionContext::GlobalComputeSetup {
     return false;
   }
   /** Called before the query returns, only if 'enter' returned 'true'. */
-  void leave(ResolutionContext* rc, const InvokeArgsTuple& args) {
-  }
+  void leave(ResolutionContext* rc, const InvokeArgsTuple& args) {}
 };
 
 template <auto F, typename InvokeArgsTuple>
 struct ResolutionContext::CanUseGlobalCache {
   /** Consider 'args' and determine if the global query cache can be used. */
   bool operator()(ResolutionContext* rc, const InvokeArgsTuple& args) {
-    return std::apply([&](auto... xs) {
-      return rc->canUseGlobalCacheConsidering(xs...);
-    }, args);
+    return std::apply(
+      [&](auto... xs) { return rc->canUseGlobalCacheConsidering(xs...); },
+      args);
   }
 };
 
@@ -547,10 +531,10 @@ struct ResolutionContext::UnstableCache {
   /** If the 'ResolutionContext' is unstable and the global query cache
       cannot be used, determine if a value stored in stack frames can be
       reused for the given input. By default, no lookup occurs. */
-  const RetByVal*
-  fetchOrNull(ResolutionContext* rc, const InvokeArgsTuple& args) {
-    (void) rc;
-    (void) args;
+  const RetByVal* fetchOrNull(ResolutionContext* rc,
+                              const InvokeArgsTuple& args) {
+    (void)rc;
+    (void)args;
     return nullptr;
   }
 
@@ -591,7 +575,7 @@ class ResolutionContext::Query {
 
  public:
   Query(ResolutionContext* rc, const char* name, InvokeArgs&&... args)
-      : rc_(rc), global_(rc->context(), name, args... ) {
+    : rc_(rc), global_(rc->context(), name, args...) {
     CHPL_ASSERT(rc_ && context());
     canUseGlobalCache_ = CanUseGlobalCacheT{}(rc, global_.args());
   }
@@ -628,9 +612,7 @@ class ResolutionContext::Query {
     }
   }
 
-  bool isGlobalQueryRunning() {
-    return global_.isRunning();
-  }
+  bool isGlobalQueryRunning() { return global_.isRunning(); }
 
   void inactiveStore(RetByVal x) {
     if (canUseGlobalCache()) {
@@ -663,7 +645,7 @@ ResolutionContext createDummyRC(Context* context);
     instead. The lifetime of temporarily cached values is the lifetime of
     the associated 'ResolutionContext::Frame'.
 */
-#define CHPL_RESOLUTION_QUERY_BEGIN(fn__, rc__, ...) \
+#define CHPL_RESOLUTION_QUERY_BEGIN(fn__, rc__, ...)                 \
   auto rcquery__ = rc__->createQueryClass<fn__>(#fn__, __VA_ARGS__); \
   if (auto ptr__ = rcquery__.begin()) return *ptr__;
 
@@ -676,21 +658,21 @@ ResolutionContext createDummyRC(Context* context);
 #define CHPL_RESOLUTION_REF_TO_CURRENT_QUERY_HANDLE() (rcquery__)
 
 /** Use this to store a result for any 'CHPL_RESOLUTION_QUERY...' query. */
-#define CHPL_RESOLUTION_QUERY_UNSAFE_STORE_RESULT(fn__, rc__, x__, ...) do { \
-    auto rcq__ = rc__->createQueryClass<fn__>(#fn__, __VA_ARGS__); \
-    rcq__.inactiveStore(std::move(x__)); \
+#define CHPL_RESOLUTION_QUERY_UNSAFE_STORE_RESULT(fn__, rc__, x__, ...) \
+  do {                                                                  \
+    auto rcq__ = rc__->createQueryClass<fn__>(#fn__, __VA_ARGS__);      \
+    rcq__.inactiveStore(std::move(x__));                                \
   } while (0)
 
 /** Check if the global part of a 'CHPL_RESOLUTION_QUERY...' is running. */
-#define CHPL_RESOLUTION_IS_GLOBAL_QUERY_RUNNING(fn__, rc__, ...) ([&]() { \
+#define CHPL_RESOLUTION_IS_GLOBAL_QUERY_RUNNING(fn__, rc__, ...)   \
+  ([&]() {                                                         \
     auto rcq__ = rc__->createQueryClass<fn__>(#fn__, __VA_ARGS__); \
-    return rcq__.isGlobalQueryRunning(); \
+    return rcq__.isGlobalQueryRunning();                           \
   }())
 
-#define CHPL_RESOLUTION_QUERY_REGISTER_TRACER(tracerBody) \
-  rcquery__.registerTracer([](auto& args) { \
-      tracerBody; \
-  });
+#define CHPL_RESOLUTION_QUERY_REGISTER_TRACER(tracerBody)   \
+  rcquery__.registerTracer([](auto& args) { tracerBody; });
 
 } // end namespace resolution
 } // end namespace chpl

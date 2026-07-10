@@ -27,20 +27,21 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This abstract class represents any sort of variable-like declaration.
   This includes things like fields, formals, or variables.
  */
 class VarLikeDecl : public NamedDecl {
- friend class AstNode;
+  friend class AstNode;
 
  protected:
   Qualifier storageKind_;
   int8_t typeExpressionChildNum_;
   int8_t initExpressionChildNum_;
 
-  VarLikeDecl(AstTag tag, AstList children, int attributeGroupChildNum,
+  VarLikeDecl(AstTag tag,
+              AstList children,
+              int attributeGroupChildNum,
               Decl::Visibility vis,
               Decl::Linkage linkage,
               int linkageNameChildNum,
@@ -48,7 +49,10 @@ class VarLikeDecl : public NamedDecl {
               Qualifier storageKind,
               int8_t typeExpressionChildNum,
               int8_t initExpressionChildNum)
-    : NamedDecl(tag, std::move(children), attributeGroupChildNum, vis,
+    : NamedDecl(tag,
+                std::move(children),
+                attributeGroupChildNum,
+                vis,
                 linkage,
                 linkageNameChildNum,
                 name),
@@ -73,8 +77,7 @@ class VarLikeDecl : public NamedDecl {
     ser.write(initExpressionChildNum_);
   }
 
-  VarLikeDecl(AstTag tag, Deserializer& des)
-    : NamedDecl(tag, des) {
+  VarLikeDecl(AstTag tag, Deserializer& des) : NamedDecl(tag, des) {
     storageKind_ = des.read<Qualifier>();
     typeExpressionChildNum_ = des.read<int8_t>();
     initExpressionChildNum_ = des.read<int8_t>();
@@ -82,7 +85,7 @@ class VarLikeDecl : public NamedDecl {
 
   bool varLikeDeclContentsMatchInner(const AstNode* other) const {
     const VarLikeDecl* lhs = this;
-    const VarLikeDecl* rhs = (const VarLikeDecl*) other;
+    const VarLikeDecl* rhs = (const VarLikeDecl*)other;
     return lhs->namedDeclContentsMatchInner(rhs) &&
            lhs->storageKind_ == rhs->storageKind_ &&
            lhs->typeExpressionChildNum_ == rhs->typeExpressionChildNum_ &&
@@ -104,9 +107,7 @@ class VarLikeDecl : public NamedDecl {
     Subclasses have more specific functions that return the
     subset appropriate for that subclass.
    */
-  Qualifier storageKind() const {
-    return storageKind_;
-  }
+  Qualifier storageKind() const { return storageKind_; }
 
   /**
     Returns the type expression used in this VarLikeDecl's declaration, or
@@ -134,7 +135,6 @@ class VarLikeDecl : public NamedDecl {
     }
   }
 };
-
 
 } // end namespace uast
 

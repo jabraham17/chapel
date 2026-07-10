@@ -29,7 +29,6 @@
 namespace chpl {
 namespace types {
 
-
 /** This class stores a class type decorator that describes a memory
     management strategy.
 
@@ -41,18 +40,18 @@ class ClassTypeDecorator final {
   enum ClassTypeDecoratorEnum {
     // When updating, make sure that these numbers work with the masks below
     // (last two bits are 0=generic nilable / 1=non-nilable / 2=nilable)
-    BORROWED          = 0,
-    BORROWED_NONNIL   = 1,
-    BORROWED_NILABLE  = 2,
-    UNMANAGED         = 4,
-    UNMANAGED_NONNIL  = 5,
+    BORROWED = 0,
+    BORROWED_NONNIL = 1,
+    BORROWED_NILABLE = 2,
+    UNMANAGED = 4,
+    UNMANAGED_NONNIL = 5,
     UNMANAGED_NILABLE = 6,
-    MANAGED           = 8, // owned/shared/etc
-    MANAGED_NONNIL    = 9,
-    MANAGED_NILABLE   = 10,
-    GENERIC           = 12,
-    GENERIC_NONNIL    = 13,
-    GENERIC_NILABLE   = 14,
+    MANAGED = 8, // owned/shared/etc
+    MANAGED_NONNIL = 9,
+    MANAGED_NILABLE = 10,
+    GENERIC = 12,
+    GENERIC_NONNIL = 13,
+    GENERIC_NILABLE = 14,
   };
 
   /// \cond DO_NOT_DOCUMENT
@@ -63,24 +62,22 @@ class ClassTypeDecorator final {
   };
   /// \endcond
 
-
   /** Given an integer i with 0 <= i < NUM_DECORATORS
       returns a decorator with that number. This can be used to
       iterate over the possible decorators. */
-  static
-  ClassTypeDecoratorEnum getIthDecorator(int i) {
+  static ClassTypeDecoratorEnum getIthDecorator(int i) {
     CHPL_ASSERT(0 <= i && i < NUM_DECORATORS);
     switch (i) {
-      case 0:  return BORROWED;
-      case 1:  return BORROWED_NONNIL;
-      case 2:  return BORROWED_NILABLE;
-      case 3:  return UNMANAGED;
-      case 4:  return UNMANAGED_NONNIL;
-      case 5:  return UNMANAGED_NILABLE;
-      case 6:  return MANAGED;
-      case 7:  return MANAGED_NONNIL;
-      case 8:  return MANAGED_NILABLE;
-      case 9:  return GENERIC;
+      case 0: return BORROWED;
+      case 1: return BORROWED_NONNIL;
+      case 2: return BORROWED_NILABLE;
+      case 3: return UNMANAGED;
+      case 4: return UNMANAGED_NONNIL;
+      case 5: return UNMANAGED_NILABLE;
+      case 6: return MANAGED;
+      case 7: return MANAGED_NONNIL;
+      case 8: return MANAGED_NILABLE;
+      case 9: return GENERIC;
       case 10: return GENERIC_NONNIL;
       case 11: return GENERIC_NILABLE;
     }
@@ -88,23 +85,22 @@ class ClassTypeDecorator final {
     return BORROWED_NONNIL;
   }
   static const char* decoratorToString(ClassTypeDecoratorEnum d);
-  static
-  ClassTypeDecoratorEnum removeNilableFromDecorator(ClassTypeDecoratorEnum d) {
+  static ClassTypeDecoratorEnum
+  removeNilableFromDecorator(ClassTypeDecoratorEnum d) {
     int tmp = d;
     tmp &= MANAGEMENT_MASK;
-    return (ClassTypeDecoratorEnum) tmp;
+    return (ClassTypeDecoratorEnum)tmp;
   }
-  static
-  ClassTypeDecoratorEnum addNonNilToDecorator(ClassTypeDecoratorEnum d) {
+  static ClassTypeDecoratorEnum addNonNilToDecorator(ClassTypeDecoratorEnum d) {
     int tmp = removeNilableFromDecorator(d);
     tmp |= 1;
-    return (ClassTypeDecoratorEnum) tmp;
+    return (ClassTypeDecoratorEnum)tmp;
   }
-  static
-  ClassTypeDecoratorEnum addNilableToDecorator(ClassTypeDecoratorEnum d) {
+  static ClassTypeDecoratorEnum
+  addNilableToDecorator(ClassTypeDecoratorEnum d) {
     int tmp = removeNilableFromDecorator(d);
     tmp |= 2;
-    return (ClassTypeDecoratorEnum) tmp;
+    return (ClassTypeDecoratorEnum)tmp;
   }
   static bool isDecoratorUnknownNilability(ClassTypeDecoratorEnum d) {
     return (d & NILABILITY_MASK) == 0;
@@ -139,7 +135,7 @@ class ClassTypeDecorator final {
   ClassTypeDecoratorEnum val_;
 
  public:
-  explicit ClassTypeDecorator(ClassTypeDecoratorEnum val) : val_(val) { }
+  explicit ClassTypeDecorator(ClassTypeDecoratorEnum val) : val_(val) {}
   ~ClassTypeDecorator() = default;
 
   /** Returns the ClassTypeDecoratorEnum value */
@@ -161,7 +157,7 @@ class ClassTypeDecorator final {
   /** Returns a decorator based on this one but with borrowed management
       (preserving nilability) */
   ClassTypeDecorator toBorrowed() const {
-    int val = (int) val_;
+    int val = (int)val_;
     int tmp = BORROWED | (val & NILABILITY_MASK);
     return ClassTypeDecorator((ClassTypeDecoratorEnum)tmp);
   }
@@ -171,28 +167,18 @@ class ClassTypeDecorator final {
     return isDecoratorUnknownNilability(val_);
   }
   /** Returns true if this decorator is non-nilable */
-  bool isNonNilable() const {
-    return isDecoratorNonNilable(val_);
-  }
+  bool isNonNilable() const { return isDecoratorNonNilable(val_); }
   /** Returns true if this decorator is nilable */
-  bool isNilable() const {
-    return isDecoratorNilable(val_);
-  }
+  bool isNilable() const { return isDecoratorNilable(val_); }
   /** Returns true if this decorator represents a borrowed type
       (e.g. borrowed C) */
-  bool isBorrowed() const {
-    return isDecoratorBorrowed(val_);
-  }
+  bool isBorrowed() const { return isDecoratorBorrowed(val_); }
   /** Returns true if this decorator represents a unmanaged type
       (e.g. unmanaged C) */
-  bool isUnmanaged() const {
-    return isDecoratorUnmanaged(val_);
-  }
+  bool isUnmanaged() const { return isDecoratorUnmanaged(val_); }
   /** Returns true if this decorator represents a managed type
       (e.g. owned or shared) */
-  bool isManaged() const {
-    return isDecoratorManaged(val_);
-  }
+  bool isManaged() const { return isDecoratorManaged(val_); }
   /** Returns true if this decorator has unknown management */
   bool isUnknownManagement() const {
     return isDecoratorUnknownManagement(val_);
@@ -213,21 +199,14 @@ class ClassTypeDecorator final {
   bool operator==(ClassTypeDecorator other) const {
     return this->val_ == other.val_;
   }
-  bool operator!=(ClassTypeDecorator other) const {
-    return !(*this == other);
-  }
-  size_t hash() const {
-    return (unsigned) val_;
-  }
-  void swap(ClassTypeDecorator other) {
-    std::swap(this->val_, other.val_);
-  }
+  bool operator!=(ClassTypeDecorator other) const { return !(*this == other); }
+  size_t hash() const { return (unsigned)val_; }
+  void swap(ClassTypeDecorator other) { std::swap(this->val_, other.val_); }
 };
-
 
 } // end namespace uast
 /// \cond DO_NOT_DOCUMENT
-template<> struct stringify<chpl::types::ClassTypeDecorator> {
+template <> struct stringify<chpl::types::ClassTypeDecorator> {
   void operator()(std::ostream& streamOut,
                   chpl::StringifyKind stringKind,
                   const chpl::types::ClassTypeDecorator& stringMe) const {
@@ -239,8 +218,7 @@ template<> struct stringify<chpl::types::ClassTypeDecorator> {
 
 namespace std {
 
-template<> struct hash<chpl::types::ClassTypeDecorator>
-{
+template <> struct hash<chpl::types::ClassTypeDecorator> {
   size_t operator()(const chpl::types::ClassTypeDecorator& key) const {
     return key.hash();
   }

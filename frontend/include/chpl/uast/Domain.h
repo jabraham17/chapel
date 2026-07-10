@@ -26,7 +26,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a domain expression. For example:
 
@@ -41,7 +40,7 @@ namespace uast {
   A domain expression will never contain comments.
  */
 class Domain final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   bool usedCurlyBraces_;
@@ -49,25 +48,22 @@ class Domain final : public AstNode {
   // TODO: Record if initializer list has trailing comma?
   Domain(AstList children, bool usedCurlyBraces)
     : AstNode(asttags::Domain, std::move(children)),
-      usedCurlyBraces_(usedCurlyBraces) {
-  }
+      usedCurlyBraces_(usedCurlyBraces) {}
 
   void serializeInner(Serializer& ser) const override {
     ser.write(usedCurlyBraces_);
   }
 
-  explicit Domain(Deserializer& des)
-    : AstNode(asttags::Domain, des) {
+  explicit Domain(Deserializer& des) : AstNode(asttags::Domain, des) {
     usedCurlyBraces_ = des.read<bool>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
-    const Domain* rhs = (const Domain*) other;
+    const Domain* rhs = (const Domain*)other;
     return this->usedCurlyBraces_ == rhs->usedCurlyBraces_;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
  public:
   ~Domain() override = default;
@@ -75,24 +71,20 @@ class Domain final : public AstNode {
   /**
    Create and return a Domain expression.
    */
-  static owned<Domain> build(Builder* builder, Location loc,
-                             bool usedCurlyBraces,
-                             AstList exprs);
+  static owned<Domain>
+  build(Builder* builder, Location loc, bool usedCurlyBraces, AstList exprs);
 
   /**
     Return a way to iterate over the expressions of this domain.
   */
   AstListIteratorPair<AstNode> exprs() const {
-    return AstListIteratorPair<AstNode>(children_.begin(),
-                                           children_.end());
+    return AstListIteratorPair<AstNode>(children_.begin(), children_.end());
   }
 
   /**
     Return the number of expressions in this domain.
   */
-  int numExprs() const {
-    return this->numChildren();
-  }
+  int numExprs() const { return this->numChildren(); }
 
   /**
     Return the i'th expression in this domain.
@@ -105,11 +97,8 @@ class Domain final : public AstNode {
   /**
     Return 'true' if this domain was constructed with curly braces.
   */
-  bool usedCurlyBraces() const {
-    return usedCurlyBraces_;
-  }
+  bool usedCurlyBraces() const { return usedCurlyBraces_; }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

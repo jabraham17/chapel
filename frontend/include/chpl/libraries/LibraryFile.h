@@ -35,13 +35,13 @@
 
 // forward declare LLVM Support Library dependencies
 namespace llvm {
-  class Module;
+class Module;
 
-  namespace sys {
-    namespace fs {
-      class mapped_file_region;
-    }
-  }
+namespace sys {
+namespace fs {
+class mapped_file_region;
+}
+}
 }
 
 namespace chpl {
@@ -49,7 +49,7 @@ namespace chpl {
 class Context;
 class Deserializer;
 namespace uast {
-  class Module;
+class Module;
 }
 namespace libraries {
 class LibraryFile;
@@ -59,7 +59,8 @@ class LibraryFile;
       * register deserialized AstNodes for symbol table objects
  */
 class LibraryFileDeserializationHelper {
- friend class LibraryFile;
+  friend class LibraryFile;
+
  private:
   // key: module-section-relative offset for the serialized uast for
   //      a symbol table symbol
@@ -81,7 +82,7 @@ class LibraryFileDeserializationHelper {
   // This will be computed during the deserialization process.
   std::unordered_map<const uast::AstNode*, int> astToSymIdx;
 
-  LibraryFileDeserializationHelper() { }
+  LibraryFileDeserializationHelper() {}
 
  public:
   /**
@@ -106,7 +107,8 @@ class LibraryFile {
      Helper object to represent a loaded Symbol Table from a module section.
    */
   class ModuleSection {
-   friend class LibraryFile;
+    friend class LibraryFile;
+
    private:
     struct SymbolInfo {
       // relative to the respective sections
@@ -119,8 +121,7 @@ class LibraryFile {
         return symbolEntryOffset == other.symbolEntryOffset &&
                astOffset == other.astOffset &&
                locationOffset == other.locationOffset &&
-               symbolPath == other.symbolPath &&
-               cnames == other.cnames;
+               symbolPath == other.symbolPath && cnames == other.cnames;
       }
       bool operator!=(const SymbolInfo& other) const {
         return !(*this == other);
@@ -161,7 +162,8 @@ class LibraryFile {
     const unsigned char* llvmIrData = nullptr;
     size_t llvmIrDataLen = 0;
 
-    ModuleSection() { }
+    ModuleSection() {}
+
    public:
     bool operator==(const ModuleSection& other) const {
       return symbols == other.symbols &&
@@ -198,10 +200,10 @@ class LibraryFile {
     using MapType = std::unordered_map<const uast::AstNode*, Location>;
 
     MapType astToLocation;
-    #define LOCATION_MAP(ast__, location__) \
-      MapType CHPL_ID_LOC_MAP(ast__, location__);
-    #include "chpl/uast/all-location-maps.h"
-    #undef LOCATION_MAP
+#define LOCATION_MAP(ast__, location__)       \
+  MapType CHPL_ID_LOC_MAP(ast__, location__);
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
 
     void clear();
     const MapType* getLocationMap(int tag) const;
@@ -211,7 +213,6 @@ class LibraryFile {
     static bool update(LocationMaps& keep, LocationMaps& addin);
     void mark(Context* context) const;
   };
-
 
  private:
   struct ModuleInfo {
@@ -236,7 +237,7 @@ class LibraryFile {
   // maps from the moduleSymPath to the index in 'modules' above
   std::map<UniqueString, size_t> moduleSymPathToIdx;
 
-  LibraryFile() { }
+  LibraryFile() {}
 
   void invalidFileError(Context* context) const;
 
@@ -261,10 +262,8 @@ class LibraryFile {
 
   // reads the module metadata (including the symbol table)
   // returns nullptr if something went wrong
-  static const owned<ModuleSection>&
-  loadModuleSectionQuery(Context* context,
-                         const LibraryFile* f,
-                         int moduleIndex);
+  static const owned<ModuleSection>& loadModuleSectionQuery(
+    Context* context, const LibraryFile* f, int moduleIndex);
 
   // returns nullptr if something went wrong
   const ModuleSection* loadModuleSection(Context* context,
@@ -302,26 +301,24 @@ class LibraryFile {
   // symbol represented by the location group.
   // returns 'true' if everything is OK, 'false' if there were errors.
 
-  bool
-  readLocationGroup(Context* context,
-                    LocationMaps& maps,
-                    Deserializer& des,
-                    const uast::AstNode* symbolTableSymbolAst,
-                    const std::vector<UniqueString>& paths,
-                    const uast::BuilderResult& br) const;
+  bool readLocationGroup(Context* context,
+                         LocationMaps& maps,
+                         Deserializer& des,
+                         const uast::AstNode* symbolTableSymbolAst,
+                         const std::vector<UniqueString>& paths,
+                         const uast::BuilderResult& br) const;
 
   // populate 'map' with Locations by reading serialized Location entries.
   // 'cur' needs to be the corresponding uAST for the node whose location
   // is currently being determined.
   // returns 'true' if everything is OK, 'false' if there were errors.
-  bool
-  readLocationEntries(Context* context,
-                      LocationMaps& maps,
-                      Deserializer& des,
-                      const uast::AstNode* cur,
-                      UniqueString path,
-                      const uast::BuilderResult& br,
-                      int& lastEntryLastLine) const;
+  bool readLocationEntries(Context* context,
+                           LocationMaps& maps,
+                           Deserializer& des,
+                           const uast::AstNode* cur,
+                           UniqueString path,
+                           const uast::BuilderResult& br,
+                           int& lastEntryLastLine) const;
 
   // loads the locations, returns 'true' if it is OK
   bool doLoadLocations(Context* context,
@@ -346,9 +343,7 @@ class LibraryFile {
   ~LibraryFile();
 
   bool operator==(const LibraryFile& other) const;
-  bool operator!=(const LibraryFile& other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const LibraryFile& other) const { return !(*this == other); }
   size_t hash();
   void mark(Context* context) const;
   static bool update(owned<LibraryFile>& keep, owned<LibraryFile>& addin);
@@ -418,7 +413,6 @@ class LibraryFile {
                                         UniqueString moduleSymPath) const;
 #endif
 };
-
 
 } // end namespace libraries
 } // end namespace chpl

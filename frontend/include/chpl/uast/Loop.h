@@ -28,25 +28,26 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This abstract class represents some sort of loop.
  */
-class Loop: public AstNode {
- friend class AstNode;
+class Loop : public AstNode {
+  friend class AstNode;
 
  protected:
   BlockStyle blockStyle_;
   int loopBodyChildNum_;
 
-  Loop(asttags::AstTag tag, AstList children, BlockStyle blockStyle,
-       int loopBodyChildNum, int attributeGroupChildNum)
+  Loop(asttags::AstTag tag,
+       AstList children,
+       BlockStyle blockStyle,
+       int loopBodyChildNum,
+       int attributeGroupChildNum)
     : AstNode(tag, std::move(children), attributeGroupChildNum),
-      blockStyle_(blockStyle),
-      loopBodyChildNum_(loopBodyChildNum) {
+      blockStyle_(blockStyle), loopBodyChildNum_(loopBodyChildNum) {
 
     CHPL_ASSERT(0 <= loopBodyChildNum_ &&
-           loopBodyChildNum_ < (int) children_.size());
+                loopBodyChildNum_ < (int)children_.size());
     CHPL_ASSERT(children_[loopBodyChildNum_]->isBlock());
   }
 
@@ -55,8 +56,7 @@ class Loop: public AstNode {
     ser.writeVInt(loopBodyChildNum_);
   }
 
-  Loop(AstTag tag, Deserializer& des)
-    : AstNode(tag, des) {
+  Loop(AstTag tag, Deserializer& des) : AstNode(tag, des) {
     blockStyle_ = des.read<BlockStyle>();
     loopBodyChildNum_ = des.readVInt();
   }
@@ -65,17 +65,14 @@ class Loop: public AstNode {
     const Loop* lhs = this;
     const Loop* rhs = other;
 
-    if (lhs->loopBodyChildNum_ != rhs->loopBodyChildNum_)
-      return false;
+    if (lhs->loopBodyChildNum_ != rhs->loopBodyChildNum_) return false;
 
-    if (lhs->blockStyle_ != rhs->blockStyle_)
-      return false;
+    if (lhs->blockStyle_ != rhs->blockStyle_) return false;
 
     return true;
   }
 
-  void loopMarkUniqueStringsInner(Context* context) const {
-  }
+  void loopMarkUniqueStringsInner(Context* context) const {}
 
   virtual std::string dumpChildLabelInner(int i) const override;
 
@@ -87,38 +84,29 @@ class Loop: public AstNode {
   */
   const Block* body() const {
     auto ret = child(loopBodyChildNum_);
-    return (const Block*) ret;
+    return (const Block*)ret;
   }
 
   /**
     Return a way to iterate over the statements of this loop.
    */
-  AstListIteratorPair<AstNode> stmts() const {
-    return body()->stmts();
-  }
+  AstListIteratorPair<AstNode> stmts() const { return body()->stmts(); }
 
   /**
    Return the number of statements in the loop.
    */
-  int numStmts() const {
-    return body()->numStmts();
-  }
+  int numStmts() const { return body()->numStmts(); }
 
   /**
    Return the i'th statement in the loop.
    */
-  const AstNode* stmt(int i) const {
-    return body()->stmt(i);
-  }
+  const AstNode* stmt(int i) const { return body()->stmt(i); }
 
   /**
     Returns the block style of the current loop.
   */
-  BlockStyle blockStyle() const {
-    return blockStyle_;
-  }
+  BlockStyle blockStyle() const { return blockStyle_; }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

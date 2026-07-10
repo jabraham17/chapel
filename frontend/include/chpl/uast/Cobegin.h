@@ -29,7 +29,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a cobegin statement. For example:
 
@@ -46,23 +45,23 @@ namespace uast {
 
  */
 class Cobegin final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   int8_t withClauseChildNum_;
   int bodyChildNum_;
   int numTaskBodies_;
 
-  Cobegin(AstList children, int8_t withClauseChildNum, int bodyChildNum,
+  Cobegin(AstList children,
+          int8_t withClauseChildNum,
+          int bodyChildNum,
           int numTaskBodies)
     : AstNode(asttags::Cobegin, std::move(children)),
-      withClauseChildNum_(withClauseChildNum),
-      bodyChildNum_(bodyChildNum),
-      numTaskBodies_(numTaskBodies) {
-  }
+      withClauseChildNum_(withClauseChildNum), bodyChildNum_(bodyChildNum),
+      numTaskBodies_(numTaskBodies) {}
 
   void serializeInner(Serializer& ser) const override {
-    ser.write(withClauseChildNum_ );
+    ser.write(withClauseChildNum_);
     ser.writeVInt(bodyChildNum_);
     ser.writeVInt(numTaskBodies_);
   }
@@ -75,31 +74,27 @@ class Cobegin final : public AstNode {
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Cobegin* lhs = this;
-    const Cobegin* rhs = (const Cobegin*) other;
+    const Cobegin* rhs = (const Cobegin*)other;
 
-    if (lhs->withClauseChildNum_ != rhs->withClauseChildNum_)
-      return false;
+    if (lhs->withClauseChildNum_ != rhs->withClauseChildNum_) return false;
 
-    if (lhs->bodyChildNum_ != rhs->bodyChildNum_)
-      return false;
+    if (lhs->bodyChildNum_ != rhs->bodyChildNum_) return false;
 
-    if (lhs->numTaskBodies_ != rhs->numTaskBodies_)
-      return false;
+    if (lhs->numTaskBodies_ != rhs->numTaskBodies_) return false;
 
     return true;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
   std::string dumpChildLabelInner(int i) const override;
 
  public:
-
   /**
     Create and return a cobegin statement.
   */
-  static owned<Cobegin> build(Builder* builder, Location loc,
+  static owned<Cobegin> build(Builder* builder,
+                              Location loc,
                               owned<WithClause> withClause,
                               AstList taskBodies);
 
@@ -126,9 +121,7 @@ class Cobegin final : public AstNode {
   /**
     Return the number of task bodies in this.
   */
-  int numTaskBodies() const {
-    return this->numTaskBodies_;
-  }
+  int numTaskBodies() const { return this->numTaskBodies_; }
 
   /**
     Return the i'th task body in this.
@@ -139,7 +132,6 @@ class Cobegin final : public AstNode {
     return ast;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

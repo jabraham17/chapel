@@ -28,7 +28,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a variable. For example:
 
@@ -49,26 +48,28 @@ namespace uast {
   each of a-f are Variables.
  */
 class Variable final : public VarLikeDecl {
- friend class AstNode;
- friend class Builder;
+  friend class AstNode;
+  friend class Builder;
 
  public:
   enum Kind {
     // Use Qualifier here for consistent enum values.
-    VAR         = (int) Qualifier::VAR,
-    CONST       = (int) Qualifier::CONST_VAR,
-    CONST_REF   = (int) Qualifier::CONST_REF,
-    REF         = (int) Qualifier::REF,
-    PARAM       = (int) Qualifier::PARAM,
-    TYPE        = (int) Qualifier::TYPE,
-    INDEX       = (int) Qualifier::INDEX
+    VAR = (int)Qualifier::VAR,
+    CONST = (int)Qualifier::CONST_VAR,
+    CONST_REF = (int)Qualifier::CONST_REF,
+    REF = (int)Qualifier::REF,
+    PARAM = (int)Qualifier::PARAM,
+    TYPE = (int)Qualifier::TYPE,
+    INDEX = (int)Qualifier::INDEX
   };
 
  private:
   bool isConfig_;
   bool isField_;
 
-  Variable(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
+  Variable(AstList children,
+           int attributeGroupChildNum,
+           Decl::Visibility vis,
            Decl::Linkage linkage,
            int linkageNameChildNum,
            UniqueString name,
@@ -77,18 +78,17 @@ class Variable final : public VarLikeDecl {
            bool isField,
            int8_t typeExpressionChildNum,
            int8_t initExpressionChildNum)
-      : VarLikeDecl(asttags::Variable, std::move(children),
-                    attributeGroupChildNum,
-                    vis,
-                    linkage,
-                    linkageNameChildNum,
-                    name,
-                    (Qualifier)((int)kind),
-                    typeExpressionChildNum,
-                    initExpressionChildNum),
-        isConfig_(isConfig),
-        isField_(isField) {
-  }
+    : VarLikeDecl(asttags::Variable,
+                  std::move(children),
+                  attributeGroupChildNum,
+                  vis,
+                  linkage,
+                  linkageNameChildNum,
+                  name,
+                  (Qualifier)((int)kind),
+                  typeExpressionChildNum,
+                  initExpressionChildNum),
+      isConfig_(isConfig), isField_(isField) {}
 
   void serializeInner(Serializer& ser) const override {
     varLikeDeclSerializeInner(ser);
@@ -96,17 +96,15 @@ class Variable final : public VarLikeDecl {
     ser.write(isField_);
   }
 
-  explicit Variable(Deserializer& des)
-    : VarLikeDecl(asttags::Variable, des) {
+  explicit Variable(Deserializer& des) : VarLikeDecl(asttags::Variable, des) {
     isConfig_ = des.read<bool>();
     isField_ = des.read<bool>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Variable* lhs = this;
-    const Variable* rhs = (const Variable*) other;
-    return lhs->isConfig_ == rhs->isConfig_ &&
-           lhs->isField_ == rhs->isField_ &&
+    const Variable* rhs = (const Variable*)other;
+    return lhs->isConfig_ == rhs->isConfig_ && lhs->isField_ == rhs->isField_ &&
            lhs->varLikeDeclContentsMatchInner(rhs);
   }
   void markUniqueStringsInner(Context* context) const override {
@@ -121,11 +119,12 @@ class Variable final : public VarLikeDecl {
    */
   void setInitExprForConfig(owned<AstNode> ie);
 
-
  public:
   ~Variable() override = default;
 
-  static owned<Variable> build(Builder* builder, Location loc, Location nameLoc,
+  static owned<Variable> build(Builder* builder,
+                               Location loc,
+                               Location nameLoc,
                                owned<AttributeGroup> attributeGroup,
                                Decl::Visibility vis,
                                Decl::Linkage linkage,
@@ -140,7 +139,7 @@ class Variable final : public VarLikeDecl {
   /**
     Returns the kind of the variable (`var` / `const` / `param` etc).
    */
-  Kind kind() const { return (Kind)((int) storageKind()); }
+  Kind kind() const { return (Kind)((int)storageKind()); }
 
   /**
     Returns true if this variable is a config variable.
@@ -152,7 +151,6 @@ class Variable final : public VarLikeDecl {
   */
   bool isField() const { return this->isField_; }
 };
-
 
 } // end namespace uast
 

@@ -29,25 +29,22 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a when statement. When statements make up the body
   of the select statement.
  */
 class When final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   // The position of this never changes.
   static const int8_t caseExprChildNum_ = 0;
   const int numCaseExprs_;
   const BlockStyle blockStyle_;
-  
+
   When(AstList children, int numCaseExprs, BlockStyle blockStyle)
-    : AstNode(asttags::When, std::move(children)),
-      numCaseExprs_(numCaseExprs),
-      blockStyle_(blockStyle) {
-  }
+    : AstNode(asttags::When, std::move(children)), numCaseExprs_(numCaseExprs),
+      blockStyle_(blockStyle) {}
 
   void serializeInner(Serializer& ser) const override {
     ser.writeVInt(numCaseExprs_);
@@ -55,29 +52,26 @@ class When final : public AstNode {
   }
 
   explicit When(Deserializer& des)
-    : AstNode(asttags::When, des),
-      numCaseExprs_(des.readVInt()),
+    : AstNode(asttags::When, des), numCaseExprs_(des.readVInt()),
       blockStyle_(des.read<BlockStyle>()) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     const When* rhs = other->toWhen();
-    return this->numCaseExprs_ == rhs->numCaseExprs_ && 
+    return this->numCaseExprs_ == rhs->numCaseExprs_ &&
            this->blockStyle_ == rhs->blockStyle_;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-    
-  }
-  
+  void markUniqueStringsInner(Context* context) const override {}
+
   void dumpFieldsInner(const DumpSettings& s) const override;
 
  public:
-
   /**
     Create and return a when statement. If 'caseExprs' is empty then
     'isOtherwise()' will evaluate to true.
   */
-  static owned<When> build(Builder* builder, Location loc,
+  static owned<When> build(Builder* builder,
+                           Location loc,
                            AstList caseExprs,
                            BlockStyle blockStyle,
                            AstList stmts);
@@ -85,17 +79,13 @@ class When final : public AstNode {
   /**
     Returns the number of case expressions in this when statement.
   */
-  int numCaseExprs() const {
-    return numCaseExprs_;
-  }
+  int numCaseExprs() const { return numCaseExprs_; }
 
   /**
    Returns the block style of this when statement.
   */
-  BlockStyle blockStyle() const {
-    return blockStyle_;
-  }
-  
+  BlockStyle blockStyle() const { return blockStyle_; }
+
   /**
     Returns the i'th case of this when statement.
   */
@@ -126,11 +116,8 @@ class When final : public AstNode {
   /**
     Returns true if this when statement uses the otherwise keyword.
   */
-  bool isOtherwise() const {
-    return numCaseExprs_ == 0;
-  }
+  bool isOtherwise() const { return numCaseExprs_ == 0; }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

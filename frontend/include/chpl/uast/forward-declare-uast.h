@@ -23,13 +23,12 @@
 namespace chpl {
 namespace uast {
 
-
 // forward declare the various AST types
 // using macros and uast-classes-list.h
 /// \cond DO_NOT_DOCUMENT
-#define AST_DECL(NAME) class NAME;
-#define AST_NODE(NAME) AST_DECL(NAME)
-#define AST_LEAF(NAME) AST_DECL(NAME)
+#define AST_DECL(NAME)             class NAME;
+#define AST_NODE(NAME)             AST_DECL(NAME)
+#define AST_LEAF(NAME)             AST_DECL(NAME)
 #define AST_BEGIN_SUBCLASSES(NAME) AST_DECL(NAME)
 #define AST_END_SUBCLASSES(NAME)
 /// \endcond
@@ -45,7 +44,6 @@ namespace uast {
 // forward declare other classes
 class AstNode;
 class Builder;
-
 
 } // end namespace uast
 } // end namespace chpl

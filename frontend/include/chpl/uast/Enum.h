@@ -27,7 +27,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents an enum declaration. For example:
 
@@ -43,41 +42,43 @@ namespace uast {
   (for a, b, c in the example).
  */
 class Enum final : public TypeDecl {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  Enum(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
+  Enum(AstList children,
+       int attributeGroupChildNum,
+       Decl::Visibility vis,
        UniqueString name)
-    : TypeDecl(asttags::Enum, std::move(children), attributeGroupChildNum,
+    : TypeDecl(asttags::Enum,
+               std::move(children),
+               attributeGroupChildNum,
                vis,
                Decl::DEFAULT_LINKAGE,
                /*linkageNameChildNum*/ NO_CHILD,
                name) {
 
-    #ifndef NDEBUG
-      for (auto ast : declOrComments()) {
-        CHPL_ASSERT(ast->isEnumElement() || ast->isComment());
-      }
+#ifndef NDEBUG
+    for (auto ast : declOrComments()) {
+      CHPL_ASSERT(ast->isEnumElement() || ast->isComment());
+    }
 
-      if (attributeGroup()) {
-        CHPL_ASSERT(declOrCommentChildNum() > 0);
-      }
-    #endif
+    if (attributeGroup()) {
+      CHPL_ASSERT(declOrCommentChildNum() > 0);
+    }
+#endif
   }
 
   void serializeInner(Serializer& ser) const override {
     typeDeclSerializeInner(ser);
   }
 
-  explicit Enum(Deserializer& des) : TypeDecl(asttags::Enum, des) { }
+  explicit Enum(Deserializer& des) : TypeDecl(asttags::Enum, des) {}
 
-  int declOrCommentChildNum() const {
-    return attributeGroup() ? 1 : 0;
-  }
+  int declOrCommentChildNum() const { return attributeGroup() ? 1 : 0; }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Enum* lhs = this;
-    const Enum* rhs = (const Enum*) other;
+    const Enum* rhs = (const Enum*)other;
     return lhs->typeDeclContentsMatchInner(rhs);
   }
 
@@ -88,7 +89,8 @@ class Enum final : public TypeDecl {
  public:
   ~Enum() override = default;
 
-  static owned<Enum> build(Builder* builder, Location loc,
+  static owned<Enum> build(Builder* builder,
+                           Location loc,
                            owned<AttributeGroup> attributeGroup,
                            Decl::Visibility vis,
                            UniqueString name,
@@ -99,8 +101,8 @@ class Enum final : public TypeDecl {
    */
   AstListIteratorPair<AstNode> declOrComments() const {
     auto begin = declOrCommentChildNum() >= 0
-          ? children_.begin() + declOrCommentChildNum()
-          : children_.end();
+                   ? children_.begin() + declOrCommentChildNum()
+                   : children_.end();
     auto end = begin + numDeclOrComments();
     return AstListIteratorPair<AstNode>(begin, end);
   }
@@ -126,8 +128,8 @@ class Enum final : public TypeDecl {
    */
   AstListNoCommentsIteratorPair<EnumElement> enumElements() const {
     auto begin = declOrCommentChildNum() >= 0
-          ? children_.begin() + declOrCommentChildNum()
-          : children_.end();
+                   ? children_.begin() + declOrCommentChildNum()
+                   : children_.end();
     auto end = begin + numDeclOrComments();
     return AstListNoCommentsIteratorPair<EnumElement>(begin, end);
   }
@@ -138,13 +140,12 @@ class Enum final : public TypeDecl {
   int numElements() const {
     int numElts = 0;
     for (auto elt : this->enumElements()) {
-      (void) elt;
+      (void)elt;
       numElts++;
     }
     return numElts;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

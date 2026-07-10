@@ -26,7 +26,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a yield statement. For example:
 
@@ -42,25 +41,23 @@ namespace uast {
 
  */
 class Yield final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  Yield(AstList children)
-    : AstNode(asttags::Yield, std::move(children)) {
+  Yield(AstList children) : AstNode(asttags::Yield, std::move(children)) {
     CHPL_ASSERT(children_.size() == 1);
   }
 
-  void serializeInner(Serializer& ser) const override { }
+  void serializeInner(Serializer& ser) const override {}
 
-  explicit Yield(Deserializer& des) : AstNode(asttags::Yield, des) { }
+  explicit Yield(Deserializer& des) : AstNode(asttags::Yield, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     // The 'valueChildNum_' is const and does not need to be compared.
     return true;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
   // Value always exists, and its position is always the same.
   static const int8_t valueChildNum_ = 0;
@@ -71,8 +68,8 @@ class Yield final : public AstNode {
   /**
     Create and return a yield statement. The value formal cannot be nullptr.
   */
-  static owned<Yield> build(Builder* builder, Location loc,
-                            owned<AstNode> value);
+  static owned<Yield>
+  build(Builder* builder, Location loc, owned<AstNode> value);
 
   /**
     Returns the value of this yield statement.
@@ -83,7 +80,6 @@ class Yield final : public AstNode {
     return ret;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

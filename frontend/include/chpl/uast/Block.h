@@ -27,16 +27,16 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a { } block.
  */
 class Block final : public SimpleBlockLike {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   Block(AstList stmts, int bodyChildNum, int numBodyStmts)
-    : SimpleBlockLike(asttags::Block, std::move(stmts),
+    : SimpleBlockLike(asttags::Block,
+                      std::move(stmts),
                       BlockStyle::EXPLICIT,
                       bodyChildNum,
                       numBodyStmts) {
@@ -48,7 +48,7 @@ class Block final : public SimpleBlockLike {
     simpleBlockLikeSerializeInner(ser);
   }
 
-  explicit Block(Deserializer& des) : SimpleBlockLike(asttags::Block, des) { }
+  explicit Block(Deserializer& des) : SimpleBlockLike(asttags::Block, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     return simpleBlockLikeContentsMatchInner(other);
@@ -66,7 +66,6 @@ class Block final : public SimpleBlockLike {
    */
   static owned<Block> build(Builder* builder, Location loc, AstList stmts);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

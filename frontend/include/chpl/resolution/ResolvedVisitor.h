@@ -55,8 +55,7 @@ static bool resolvedVisitorEnterFor(ResolvedVisitorImpl& v,
   // TODO: Should there be some kind of function the UserVisitor can
   // implement to observe a new iteration of the loop body?
   for (const auto& loopBody : resolvedLoop->loopBodies()) {
-    ResolvedVisitorImpl loopVis(v.rc(), loop,
-                                v.userVisitor(), loopBody);
+    ResolvedVisitorImpl loopVis(v.rc(), loop, v.userVisitor(), loopBody);
 
     for (const AstNode* child : loop->children()) {
       // Written to visit "all but the iterand" in case we add more
@@ -74,61 +73,57 @@ template <typename ResolvedVisitorImpl>
 static bool resolvedVisitorEnterAst(ResolvedVisitorImpl& v,
                                     const uast::AstNode* ast) {
   switch (ast->tag()) {
-    #define CASE_LEAF(NAME) \
-      case asttags::NAME: \
-      { \
-        const NAME* casted = (const NAME*) ast; \
-        v.userVisitor().enter(casted, v); \
-        CHPL_ASSERT(ast->numChildren() == 0); \
-        v.userVisitor().exit(casted, v); \
-        break; \
-      }
+#define CASE_LEAF(NAME)                    \
+  case asttags::NAME: {                    \
+    const NAME* casted = (const NAME*)ast; \
+    v.userVisitor().enter(casted, v);      \
+    CHPL_ASSERT(ast->numChildren() == 0);  \
+    v.userVisitor().exit(casted, v);       \
+    break;                                 \
+  }
 
-    #define CASE_NODE(NAME) \
-      case asttags::NAME: \
-      { \
-        const NAME* casted = (const NAME*) ast; \
-        bool goInToIt = v.userVisitor().enter(casted, v); \
-        if (goInToIt) { \
-          for (const AstNode* child : ast->children()) { \
-            child->traverse(v); \
-          } \
-        } \
-        v.userVisitor().exit(casted, v); \
-        break; \
-      }
+#define CASE_NODE(NAME)                               \
+  case asttags::NAME: {                               \
+    const NAME* casted = (const NAME*)ast;            \
+    bool goInToIt = v.userVisitor().enter(casted, v); \
+    if (goInToIt) {                                   \
+      for (const AstNode* child : ast->children()) {  \
+        child->traverse(v);                           \
+      }                                               \
+    }                                                 \
+    v.userVisitor().exit(casted, v);                  \
+    break;                                            \
+  }
 
-    #define CASE_OTHER(NAME) \
-      case asttags::NAME: \
-      { \
-        CHPL_ASSERT(false && "this code should never be run"); \
-        break; \
-      }
+#define CASE_OTHER(NAME)                                   \
+  case asttags::NAME: {                                    \
+    CHPL_ASSERT(false && "this code should never be run"); \
+    break;                                                 \
+  }
 
-    #define AST_NODE(NAME) CASE_NODE(NAME)
-    #define AST_LEAF(NAME) CASE_LEAF(NAME)
-    #define AST_BEGIN_SUBCLASSES(NAME) CASE_OTHER(START_##NAME)
-    #define AST_END_SUBCLASSES(NAME) CASE_OTHER(END_##NAME)
+#define AST_NODE(NAME)             CASE_NODE(NAME)
+#define AST_LEAF(NAME)             CASE_LEAF(NAME)
+#define AST_BEGIN_SUBCLASSES(NAME) CASE_OTHER(START_##NAME)
+#define AST_END_SUBCLASSES(NAME)   CASE_OTHER(END_##NAME)
 
-    // Apply the above macros to uast-classes-list.h
-    // to fill in the cases
-    #include "chpl/uast/uast-classes-list.h"
+// Apply the above macros to uast-classes-list.h
+// to fill in the cases
+#include "chpl/uast/uast-classes-list.h"
     // and also for NUM_AST_TAGS
     CASE_OTHER(NUM_AST_TAGS)
     CASE_OTHER(AST_TAG_UNKNOWN)
 
-    // clear the macros
-    #undef AST_NODE
-    #undef AST_LEAF
-    #undef AST_BEGIN_SUBCLASSES
-    #undef AST_END_SUBCLASSES
-    #undef CASE_LEAF
-    #undef CASE_NODE
-    #undef CASE_OTHER
+// clear the macros
+#undef AST_NODE
+#undef AST_LEAF
+#undef AST_BEGIN_SUBCLASSES
+#undef AST_END_SUBCLASSES
+#undef CASE_LEAF
+#undef CASE_NODE
+#undef CASE_OTHER
   }
 
   return false;
-
 }
 
 static inline const uast::Loop*
@@ -141,7 +136,6 @@ getBreakOrContinueTarget(Context* context,
   CHPL_ASSERT(loop);
   return loop;
 }
-
 
 /**
   This class enables visiting resolved uAST nodes.
@@ -170,8 +164,7 @@ getBreakOrContinueTarget(Context* context,
     symbol->traverse(rv);
 
   */
-template <typename UV>
-class ResolvedVisitor {
+template <typename UV> class ResolvedVisitor {
   using UserVisitorType = UV;
   ResolutionContext* rc_ = nullptr;
   const uast::AstNode* ast_ = nullptr;
@@ -180,36 +173,25 @@ class ResolvedVisitor {
   // the resolution results for the contained AstNodes
   const ResolutionResultByPostorderID& byPostorder_;
 
-public:
+ public:
   ResolvedVisitor(ResolutionContext* rc,
-           const uast::AstNode* ast,
-           UV& userVisitor,
-           const ResolutionResultByPostorderID& byPostorder)
-    : rc_(rc),
-      ast_(ast),
-      userVisitor_(userVisitor),
-      byPostorder_(byPostorder) {
+                  const uast::AstNode* ast,
+                  UV& userVisitor,
+                  const ResolutionResultByPostorderID& byPostorder)
+    : rc_(rc), ast_(ast), userVisitor_(userVisitor), byPostorder_(byPostorder) {
   }
 
   /** Return the ResolutionContext used by this ResolvedVisitor */
   ResolutionContext* rc() const { return rc_; }
 
   /** Return the context used by this ResolvedVisitor */
-  Context* context() const {
-    return rc_->context();
-  }
+  Context* context() const { return rc_->context(); }
   /** Return the uAST node being visited by this ResolvedVisitor */
-  const uast::AstNode* ast() const {
-    return ast_;
-  }
+  const uast::AstNode* ast() const { return ast_; }
   /** Return the user visitor that this ResolvedVisitor invokes */
-  UV& userVisitor() {
-    return userVisitor_;
-  }
+  UV& userVisitor() { return userVisitor_; }
   /** Return the user visitor that this ResolvedVisitor invokes */
-  const UV& userVisitor() const {
-    return userVisitor_;
-  }
+  const UV& userVisitor() const { return userVisitor_; }
   /** Return the current ResolutionResultByPostorderID which can be used to
       gather type information */
   const ResolutionResultByPostorderID& byPostorder() const {
@@ -231,9 +213,7 @@ public:
   }
   /** Returns if the ResolutionResultByPostorderID has a result for
       a particular ID */
-  bool hasId(const ID& id) const {
-    return byPostorder_.hasId(id);
-  }
+  bool hasId(const ID& id) const { return byPostorder_.hasId(id); }
   /** Return the ResolvedExpression for a particular ID */
   const ResolvedExpression& byId(const ID& id) const {
     return byPostorder_.byId(id);
@@ -259,22 +239,19 @@ public:
   bool enter(const uast::For* loop) {
     return resolvedVisitorEnterFor(*this, loop);
   }
-  void exit(const uast::For* loop) {
-    userVisitor_.exit(loop, *this);
-  }
+  void exit(const uast::For* loop) { userVisitor_.exit(loop, *this); }
 
   // if none of the above is called, fall back on this one
   bool enter(const uast::AstNode* ast) {
     return resolvedVisitorEnterAst(*this, ast);
   }
-  void exit(const uast::AstNode* ast) { };
+  void exit(const uast::AstNode* ast) {};
 };
 
 /** Similar to ResolvedVisitor but this one works with a mutable
     ResolutionResultByPostorderID.
  */
-template <typename UV>
-class MutatingResolvedVisitor {
+template <typename UV> class MutatingResolvedVisitor {
   using UserVisitorType = UV;
   ResolutionContext* rc_ = nullptr;
   const uast::AstNode* ast_ = nullptr;
@@ -283,41 +260,31 @@ class MutatingResolvedVisitor {
   // the resolution results for the contained AstNodes
   ResolutionResultByPostorderID& byPostorder_;
 
-public:
+ public:
   MutatingResolvedVisitor(ResolutionContext* rc,
                           const uast::AstNode* ast,
                           UV& userVisitor,
                           const ResolutionResultByPostorderID& byPostorder)
-    : rc_(rc),
-      ast_(ast),
-      userVisitor_(userVisitor),
-      byPostorder_(const_cast<ResolutionResultByPostorderID&>(byPostorder)) {
-  }
+    : rc_(rc), ast_(ast), userVisitor_(userVisitor),
+      byPostorder_(const_cast<ResolutionResultByPostorderID&>(byPostorder)) {}
 
   /** Return the ResolutionContext used by this ResolvedVisitor */
   ResolutionContext* rc() const { return rc_; }
 
   /** Return the context used by this ResolvedVisitor */
   Context* context() const {
-    return rc_->context();;
+    return rc_->context();
+    ;
   }
   /** Return the uAST node being visited by this ResolvedVisitor */
-  const uast::AstNode* ast() const {
-    return ast_;
-  }
+  const uast::AstNode* ast() const { return ast_; }
   /** Return the user visitor that this ResolvedVisitor invokes */
-  UV& userVisitor() {
-    return userVisitor_;
-  }
+  UV& userVisitor() { return userVisitor_; }
   /** Return the user visitor that this ResolvedVisitor invokes */
-  const UV& userVisitor() const {
-    return userVisitor_;
-  }
+  const UV& userVisitor() const { return userVisitor_; }
   /** Return the current ResolutionResultByPostorderID which can be used to
       gather type information */
-  ResolutionResultByPostorderID& byPostorder() const {
-    return byPostorder_;
-  }
+  ResolutionResultByPostorderID& byPostorder() const { return byPostorder_; }
   /** Returns if the ResolutionResultByPostorderID has a result for
       a particular uAST node */
   bool hasAst(const uast::AstNode* ast) const {
@@ -329,13 +296,9 @@ public:
   }
   /** Returns if the ResolutionResultByPostorderID has a result for
       a particular ID */
-  bool hasId(const ID& id) const {
-    return byPostorder_.hasId(id);
-  }
+  bool hasId(const ID& id) const { return byPostorder_.hasId(id); }
   /** Return the ResolvedExpression for a particular ID */
-  ResolvedExpression& byId(const ID& id) const {
-    return byPostorder_.byId(id);
-  }
+  ResolvedExpression& byId(const ID& id) const { return byPostorder_.byId(id); }
 
   /** Given a Break or Continue statement, returns its target. */
   const uast::Loop* getBreakOrContinueTarget(const uast::AstNode* ast) const {
@@ -358,18 +321,14 @@ public:
     return resolvedVisitorEnterFor(*this, loop);
   }
 
-  void exit(const uast::For* loop) {
-    userVisitor_.exit(loop, *this);
-  }
+  void exit(const uast::For* loop) { userVisitor_.exit(loop, *this); }
 
   // if none of the above is called, fall back on this one
   bool enter(const uast::AstNode* ast) {
     return resolvedVisitorEnterAst(*this, ast);
   }
-  void exit(const uast::AstNode* ast) { };
+  void exit(const uast::AstNode* ast) {};
 };
-
-
 
 } // end namespace resolution
 

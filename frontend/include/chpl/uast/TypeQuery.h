@@ -27,7 +27,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a type query.
 
@@ -49,7 +48,7 @@ namespace uast {
   rather than a TypeQuery.
  */
 class TypeQuery final : public NamedDecl {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   TypeQuery(UniqueString name)
@@ -61,11 +60,11 @@ class TypeQuery final : public NamedDecl {
     namedDeclSerializeInner(ser);
   }
 
-  explicit TypeQuery(Deserializer& des) : NamedDecl(asttags::TypeQuery, des) { }
+  explicit TypeQuery(Deserializer& des) : NamedDecl(asttags::TypeQuery, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     const TypeQuery* lhs = this;
-    const TypeQuery* rhs = (const TypeQuery*) other;
+    const TypeQuery* rhs = (const TypeQuery*)other;
     return lhs->namedDeclContentsMatchInner(rhs);
   }
 
@@ -76,10 +75,9 @@ class TypeQuery final : public NamedDecl {
  public:
   ~TypeQuery() override = default;
 
-  static owned<TypeQuery> build(Builder* builder, Location loc,
-                                UniqueString name);
+  static owned<TypeQuery>
+  build(Builder* builder, Location loc, UniqueString name);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

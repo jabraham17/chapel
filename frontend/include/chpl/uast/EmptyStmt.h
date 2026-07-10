@@ -42,27 +42,23 @@ namespace uast {
  */
 
 class EmptyStmt final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  EmptyStmt()
-    : AstNode(asttags::EmptyStmt) {
-    CHPL_ASSERT(numChildren() == 0);
-  }
+  EmptyStmt() : AstNode(asttags::EmptyStmt) { CHPL_ASSERT(numChildren() == 0); }
 
-  void serializeInner(Serializer& ser) const override { }
+  void serializeInner(Serializer& ser) const override {}
 
-  explicit EmptyStmt(Deserializer& des)
-    : AstNode(asttags::EmptyStmt, des) { }
+  explicit EmptyStmt(Deserializer& des) : AstNode(asttags::EmptyStmt, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     const EmptyStmt* rhs = other->toEmptyStmt();
     return rhs != nullptr;
   }
 
-  void markUniqueStringsInner(Context* context) const override { }
+  void markUniqueStringsInner(Context* context) const override {}
 
-public:
+ public:
   ~EmptyStmt() override = default;
 
   /**
@@ -70,7 +66,6 @@ public:
   */
   static owned<EmptyStmt> build(Builder* builder, Location loc);
 }; // end EmptyStmt
-
 
 } // end uast
 } // end chpl

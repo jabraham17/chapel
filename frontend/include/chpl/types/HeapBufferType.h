@@ -29,7 +29,7 @@ namespace types {
 class HeapBufferType final : public PtrType {
  private:
   HeapBufferType(const HeapBufferType* instantiatedFrom, const Type* eltType)
-      : PtrType(typetags::HeapBufferType, instantiatedFrom, eltType) {}
+    : PtrType(typetags::HeapBufferType, instantiatedFrom, eltType) {}
 
   bool contentsMatchInner(const Type* other) const override {
     auto rhs = (HeapBufferType*)other;
@@ -39,18 +39,17 @@ class HeapBufferType final : public PtrType {
 
   void markUniqueStringsInner(Context* context) const override {}
 
-  static const owned<HeapBufferType>& getHeapBufferType(
-      Context* context, const HeapBufferType* instantiatedFrom,
-      const Type* eltType);
+  static const owned<HeapBufferType>&
+  getHeapBufferType(Context* context,
+                    const HeapBufferType* instantiatedFrom,
+                    const Type* eltType);
 
  public:
   static const HeapBufferType* get(Context* context);
   static const HeapBufferType* get(Context* context, const Type* eltType);
   static const ID& getId(Context* context);
 
-  const ID& id(Context* context) const override {
-    return getId(context);
-  }
+  const ID& id(Context* context) const override { return getId(context); }
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {

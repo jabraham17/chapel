@@ -26,7 +26,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a delete statement. For example:
 
@@ -40,46 +39,36 @@ namespace uast {
   \endrst
 */
 class Delete final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  Delete(AstList children)
-    : AstNode(asttags::Delete, std::move(children)) {
-  }
+  Delete(AstList children) : AstNode(asttags::Delete, std::move(children)) {}
 
-  void serializeInner(Serializer& ser) const override { }
+  void serializeInner(Serializer& ser) const override {}
 
-  explicit Delete(Deserializer& des) : AstNode(asttags::Delete, des) { }
+  explicit Delete(Deserializer& des) : AstNode(asttags::Delete, des) {}
 
-  bool contentsMatchInner(const AstNode* other) const override {
-    return true;
-  }
+  bool contentsMatchInner(const AstNode* other) const override { return true; }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
  public:
-
   /**
     Create and return a delete statement.
   */
-  static owned<Delete> build(Builder* builder, Location loc,
-                             AstList exprs);
+  static owned<Delete> build(Builder* builder, Location loc, AstList exprs);
 
   /**
     Return a way to iterate over the expressions of this delete statement.
   */
   AstListIteratorPair<AstNode> exprs() const {
-    return AstListIteratorPair<AstNode>(children_.begin(),
-                                           children_.end());
+    return AstListIteratorPair<AstNode>(children_.begin(), children_.end());
   }
 
   /**
     Return the number of expressions in this delete statement.
   */
-  int numExprs() const {
-    return this->numChildren();
-  }
+  int numExprs() const { return this->numChildren(); }
 
   /**
     Return the i'th expression in this delete statement.
@@ -89,7 +78,6 @@ class Delete final : public AstNode {
     return ast;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

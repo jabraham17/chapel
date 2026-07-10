@@ -28,7 +28,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a catch block. For example:
 
@@ -45,20 +44,20 @@ namespace uast {
 
  */
 class Catch final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   int8_t errorChildNum_;
   int8_t bodyChildNum_;
   bool hasParensAroundError_;
 
-  Catch(AstList children, int8_t errorChildNum, int8_t bodyChildNum,
+  Catch(AstList children,
+        int8_t errorChildNum,
+        int8_t bodyChildNum,
         bool hasParensAroundError)
     : AstNode(asttags::Catch, std::move(children)),
-      errorChildNum_(errorChildNum),
-      bodyChildNum_(bodyChildNum),
-      hasParensAroundError_(hasParensAroundError) {
-  }
+      errorChildNum_(errorChildNum), bodyChildNum_(bodyChildNum),
+      hasParensAroundError_(hasParensAroundError) {}
 
   void serializeInner(Serializer& ser) const override {
     ser.write(errorChildNum_);
@@ -66,8 +65,7 @@ class Catch final : public AstNode {
     ser.write(hasParensAroundError_);
   }
 
-  explicit Catch(Deserializer& des)
-    : AstNode(asttags::Catch, des) {
+  explicit Catch(Deserializer& des) : AstNode(asttags::Catch, des) {
     errorChildNum_ = des.read<int8_t>();
     bodyChildNum_ = des.read<int8_t>();
     hasParensAroundError_ = des.read<bool>();
@@ -80,8 +78,7 @@ class Catch final : public AstNode {
            this->hasParensAroundError_ == rhs->hasParensAroundError_;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
   std::string dumpChildLabelInner(int i) const override;
 
@@ -91,7 +88,8 @@ class Catch final : public AstNode {
   /**
     Create and return a catch.
   */
-  static owned<Catch> build(Builder* builder, Location loc,
+  static owned<Catch> build(Builder* builder,
+                            Location loc,
                             owned<Variable> error,
                             owned<Block> body,
                             bool hasParensAroundError);
@@ -118,33 +116,24 @@ class Catch final : public AstNode {
   /**
     Iterate over the statements contained in the body of this catch.
   */
-  AstListIteratorPair<AstNode> stmts() const {
-    return this->body()->stmts();
-  }
+  AstListIteratorPair<AstNode> stmts() const { return this->body()->stmts(); }
 
   /**
     Return the number of statements contained in the body of this catch.
   */
-  int numStmts() const {
-    return this->body()->numStmts();
-  }
+  int numStmts() const { return this->body()->numStmts(); }
 
   /**
     Return the i'th statement contained in the body of this catch.
   */
-  const AstNode* stmt(int i) const {
-    return this->body()->stmt(i);
-  }
+  const AstNode* stmt(int i) const { return this->body()->stmt(i); }
 
   /**
     Return true if the error of this catch block has parens arounds its
     declaration.
   */
-  bool hasParensAroundError() const {
-    return hasParensAroundError_;
-  }
+  bool hasParensAroundError() const { return hasParensAroundError_; }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

@@ -27,7 +27,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a select statement. For example:
 
@@ -45,7 +44,7 @@ namespace uast {
 
  */
 class Select final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   // The position of these never change.
@@ -56,8 +55,7 @@ class Select final : public AstNode {
 
   Select(AstList children, int numWhenStmts)
     : AstNode(asttags::Select, std::move(children)),
-      numWhenStmts_(numWhenStmts) {
-  }
+      numWhenStmts_(numWhenStmts) {}
 
   void serializeInner(Serializer& ser) const override {
     ser.writeVInt(numWhenStmts_);
@@ -72,19 +70,16 @@ class Select final : public AstNode {
     return this->numWhenStmts_ == rhs->numWhenStmts_;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
   std::string dumpChildLabelInner(int i) const override;
 
  public:
-
   /**
     Create and return a select statement.
   */
-  static owned<Select> build(Builder* builder, Location loc,
-                             owned<AstNode> expr,
-                             AstList whenStmts);
+  static owned<Select>
+  build(Builder* builder, Location loc, owned<AstNode> expr, AstList whenStmts);
 
   /**
     Returns the expression of this select statement.
@@ -97,9 +92,7 @@ class Select final : public AstNode {
   /**
     Returns the number of when statements in this select statement.
   */
-  int numWhenStmts() const {
-    return numWhenStmts_;
-  }
+  int numWhenStmts() const { return numWhenStmts_; }
 
   /**
     Return the i'th when statement in this select statement.
@@ -115,18 +108,16 @@ class Select final : public AstNode {
     Iterate over the when statements in this select statement.
   */
   AstListIteratorPair<When> whenStmts() const {
-    auto begin = numWhenStmts_ > 0
-        ? children_.begin() + whenStmtStartChildNum_
-        : children_.end();
+    auto begin = numWhenStmts_ > 0 ? children_.begin() + whenStmtStartChildNum_
+                                   : children_.end();
     auto end = begin + numWhenStmts_;
     return AstListIteratorPair<When>(begin, end);
   }
 
   bool hasOtherwise() const {
-    return whenStmt(numWhenStmts()-1)->isOtherwise();
+    return whenStmt(numWhenStmts() - 1)->isOtherwise();
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

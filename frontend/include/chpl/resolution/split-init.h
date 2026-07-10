@@ -28,7 +28,6 @@
 namespace chpl {
 namespace resolution {
 
-
 /* Computes the set of variable IDs which will use split init
    when being initialized. This is not a query. It may raise
    errors within the currently running query. */
@@ -36,7 +35,6 @@ std::set<ID>
 computeSplitInits(Context* context,
                   const uast::AstNode* symbol,
                   const ResolutionResultByPostorderID& byPostorder);
-
 
 } // end namespace resolution
 } // end namespace chpl

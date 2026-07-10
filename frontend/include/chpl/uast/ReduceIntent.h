@@ -27,7 +27,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a reduce intent.
 
@@ -50,18 +49,19 @@ namespace uast {
 
 */
 class ReduceIntent final : public NamedDecl {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   static const int opChildNum_ = 0;
 
   ReduceIntent(AstList children, UniqueString name)
-      : NamedDecl(asttags::ReduceIntent, std::move(children),
-                  /* attributeGroupChildNum= */ AstNode::NO_CHILD,
-                  Decl::DEFAULT_VISIBILITY,
-                  Decl::DEFAULT_LINKAGE,
-                  /*linkageNameChildNum=*/ AstNode::NO_CHILD,
-                  name) {
+    : NamedDecl(asttags::ReduceIntent,
+                std::move(children),
+                /* attributeGroupChildNum= */ AstNode::NO_CHILD,
+                Decl::DEFAULT_VISIBILITY,
+                Decl::DEFAULT_LINKAGE,
+                /*linkageNameChildNum=*/AstNode::NO_CHILD,
+                name) {
     CHPL_ASSERT(numChildren() == 1);
   }
 
@@ -70,8 +70,7 @@ class ReduceIntent final : public NamedDecl {
   }
 
   explicit ReduceIntent(Deserializer& des)
-    : NamedDecl(asttags::ReduceIntent, des) {
-  }
+    : NamedDecl(asttags::ReduceIntent, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     const ReduceIntent* rhs = other->toReduceIntent();
@@ -90,20 +89,15 @@ class ReduceIntent final : public NamedDecl {
   /**
     Create and return a reduction.
   */
-  static owned<ReduceIntent> build(Builder* builder,
-                                   Location loc,
-                                   owned<AstNode> op,
-                                   UniqueString name);
+  static owned<ReduceIntent>
+  build(Builder* builder, Location loc, owned<AstNode> op, UniqueString name);
 
   /**
     Returns the reduce op expression, e.g. `minmax(int)` in the expression
     `minmax(int) reduce sum`.
   */
-  const AstNode* op() const {
-    return this->child(opChildNum_);
-  }
+  const AstNode* op() const { return this->child(opChildNum_); }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

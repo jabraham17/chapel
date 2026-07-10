@@ -15,8 +15,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */       
-            
+ */
+
 #ifndef CHPL_FRAMEWORK_CHECK_BUILD_H
 #define CHPL_FRAMEWORK_CHECK_BUILD_H
 
@@ -34,18 +34,16 @@ is a problem.
 
 // should not be necessary to call this directly, but any calls
 // to it should pass no arguments
-bool validateCompiledCorrectly(
-      int headersHaveLlvm=
+bool validateCompiledCorrectly(int headersHaveLlvm =
 #ifdef HAVE_LLVM
-        1,
+                                 1,
 #else
-        0,
+                                 0,
 #endif
-       int headersLlvmMajor=LLVM_VERSION_MAJOR
-      );
+                               int headersLlvmMajor = LLVM_VERSION_MAJOR);
 
 // Initialize a global by running validateCompiledCorrectly()
 // so that it is run automatically if this header file is included.
-static bool compiledCorrectly=validateCompiledCorrectly();
+static bool compiledCorrectly = validateCompiledCorrectly();
 
 #endif

@@ -32,15 +32,14 @@
 namespace chpl {
 
 namespace resolution {
-  class ResolutionContext;
+class ResolutionContext;
 }
 
 namespace uast {
-  class Decl;
+class Decl;
 }
 
 namespace types {
-
 
 // forward declare the various Type subclasses
 // using macros and type-classes-list.h
@@ -57,14 +56,11 @@ using PlaceholderMap = std::unordered_map<ID, const Type*>;
 
 namespace detail {
 
-template <typename T>
-const T* typeToConst(const Type* type) = delete;
+template <typename T> const T* typeToConst(const Type* type) = delete;
 
-template <typename T>
-T* typeTo(Type* type) = delete;
+template <typename T> T* typeTo(Type* type) = delete;
 
-template <typename T>
-bool typeIs(const Type* type) = delete;
+template <typename T> bool typeIs(const Type* type) = delete;
 
 } // end namespace detail
 
@@ -125,9 +121,7 @@ class Type {
   virtual Genericity genericity() const = 0;
 
  protected:
-  Type(TypeTag tag)
-    : tag_(tag) {
-  }
+  Type(TypeTag tag) : tag_(tag) {}
 
  public:
   virtual ~Type() = 0; // this is an abstract base class
@@ -135,27 +129,21 @@ class Type {
   /**
     Returns the tag indicating which Type subclass this is.
    */
-  TypeTag tag() const {
-    return tag_;
-  }
+  TypeTag tag() const { return tag_; }
 
   bool operator==(const Type& other) const {
-    (void)tag_;  // quiet nextLinter
+    (void)tag_; // quiet nextLinter
     return completeMatch(&other);
   }
-  bool operator!=(const Type& other) const {
-    return !(*this == other);
-  }
-  template<typename T>
-  static bool update(owned<T>& keep, owned<T>& addin) {
+  bool operator!=(const Type& other) const { return !(*this == other); }
+  template <typename T> static bool update(owned<T>& keep, owned<T>& addin) {
     return defaultUpdateOwned(keep, addin);
   }
-  void mark(Context* context) const {
-    return markUniqueStringsInner(context);
-  }
+  void mark(Context* context) const { return markUniqueStringsInner(context); }
 
-  static void gatherBuiltins(Context* context,
-                             std::unordered_map<UniqueString,const Type*>& map);
+  static void
+  gatherBuiltins(Context* context,
+                 std::unordered_map<UniqueString, const Type*>& map);
 
   bool completeMatch(const Type* other) const;
 
@@ -184,26 +172,24 @@ class Type {
     return cast;
   }
 
-  virtual void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+  virtual void stringify(std::ostream& ss,
+                         chpl::StringifyKind stringKind) const;
 
   /** Check if this type is particular subclass. The call someType->is<IntType>()
       returns whether or not someType is an IntType.
    */
-  template <typename TargetType>
-  bool is() const {
+  template <typename TargetType> bool is() const {
     return detail::typeIs<TargetType>(this);
   }
 
-  // define is__ methods for the various Type subclasses
-  // using macros and type-classes-list.h
-  /// \cond DO_NOT_DOCUMENT
-  #define TYPE_NODE(NAME) \
-    bool is##NAME() const { \
-      return typetags::is##NAME(this->tag_); \
-    }
-  /// \endcond
-  // Apply the above macros to type-classes-list.h
-  #include "chpl/types/type-classes-list-adapter.h"
+// define is__ methods for the various Type subclasses
+// using macros and type-classes-list.h
+/// \cond DO_NOT_DOCUMENT
+#define TYPE_NODE(NAME)                                            \
+  bool is##NAME() const { return typetags::is##NAME(this->tag_); }
+/// \endcond
+// Apply the above macros to type-classes-list.h
+#include "chpl/types/type-classes-list-adapter.h"
 
   // Additional helper functions
   // Don't name these queries 'isAny...'.
@@ -215,7 +201,9 @@ class Type {
 
   /** returns true if this represents the c_array type. If it does, sets
       outEltType and outSize to the element type and size of the c_array. */
-  bool isCArrayType(Context* context, const Type*& outEltType, const IntParam*& outSize) const;
+  bool isCArrayType(Context* context,
+                    const Type*& outEltType,
+                    const IntParam*& outSize) const;
 
   /** returns true if this represents the _owned builtin record */
   bool isOwnedRecordType() const;
@@ -240,22 +228,17 @@ class Type {
     return isStringType() || isBytesType() || isCStringType();
   }
   /** returns true if it's an int or uint type of any width */
-  bool isIntegralType() const {
-    return isIntType() || isUintType();
-  }
+  bool isIntegralType() const { return isIntType() || isUintType(); }
   /** returns true if it's a numeric type of any width; that includes
       int, uint, real, imag, complex */
   bool isNumericType() const {
-    return isIntType() || isUintType() ||
-           isRealType() || isImagType() ||
+    return isIntType() || isUintType() || isRealType() || isImagType() ||
            isComplexType();
   }
 
   /** returns true if it's a numeric type or bool type
       of any width */
-  bool isNumericOrBoolType() const {
-    return isNumericType() || isBoolType();
-  }
+  bool isNumericOrBoolType() const { return isNumericType() || isBoolType(); }
 
   /** returns true for a type that is a kind of pointer */
   bool isPointerLikeType() const {
@@ -286,30 +269,26 @@ class Type {
       returns nullptr if someType is not an IntType, and cast to IntType
       if it is.
    */
-  template <typename TargetType>
-  const TargetType* to() const {
+  template <typename TargetType> const TargetType* to() const {
     return detail::typeToConst<TargetType>(this);
   }
 
-  template <typename TargetType>
-  TargetType* to() {
+  template <typename TargetType> TargetType* to() {
     return detail::typeTo<TargetType>(this);
   }
 
-  // define to__ methods for the various Type subclasses
-  // using macros and type-classes-list.h
-  // Note: these offer equivalent functionality to C++ dynamic_cast<DstType*>
-  /// \cond DO_NOT_DOCUMENT
-  #define TYPE_NODE(NAME) \
-    const NAME * to##NAME() const { \
-      return this->is##NAME() ? (const NAME *)this : nullptr; \
-    } \
-    NAME * to##NAME() { \
-      return this->is##NAME() ? (NAME *)this : nullptr; \
-    }
-  /// \endcond
-  // Apply the above macros to type-classes-list.h
-  #include "chpl/types/type-classes-list-adapter.h"
+// define to__ methods for the various Type subclasses
+// using macros and type-classes-list.h
+// Note: these offer equivalent functionality to C++ dynamic_cast<DstType*>
+/// \cond DO_NOT_DOCUMENT
+#define TYPE_NODE(NAME)                                                 \
+  const NAME* to##NAME() const {                                        \
+    return this->is##NAME() ? (const NAME*)this : nullptr;              \
+  }                                                                     \
+  NAME* to##NAME() { return this->is##NAME() ? (NAME*)this : nullptr; }
+/// \endcond
+// Apply the above macros to type-classes-list.h
+#include "chpl/types/type-classes-list-adapter.h"
 
   /** Given a type 't', determine if 't' is "plain-old-data" (POD).
 
@@ -336,24 +315,24 @@ class Type {
   */
   static bool isPod(chpl::resolution::ResolutionContext* rc, const Type* t);
 
-  static bool isDefaultInitializable(chpl::resolution::ResolutionContext* rc, const Type* t);
+  static bool isDefaultInitializable(chpl::resolution::ResolutionContext* rc,
+                                     const Type* t);
 
   static bool needsInitDeinitCall(const Type* t);
 
   /// \cond DO_NOT_DOCUMENT
   // Define a struct to do tag-driven dynamic dispatch over types.
-  template <typename ReturnType, typename Visitor>
-  struct Dispatcher {
+  template <typename ReturnType, typename Visitor> struct Dispatcher {
     static ReturnType doDispatch(const Type* t, Visitor& v) {
       switch (t->tag()) {
-        #define TYPE_NODE(NAME) \
-          case chpl::types::typetags::NAME: { \
-            return v.visit((const chpl::types::NAME*) t); \
-          }
-        // Do nothing, visitor should provide overloads for parent classes.
-        #define TYPE_BEGIN_SUBCLASSES(NAME)
-        // Apply the above macros to type-classes-list.h
-        #include "chpl/types/type-classes-list-adapter.h"
+#define TYPE_NODE(NAME)                          \
+  case chpl::types::typetags::NAME: {            \
+    return v.visit((const chpl::types::NAME*)t); \
+  }
+// Do nothing, visitor should provide overloads for parent classes.
+#define TYPE_BEGIN_SUBCLASSES(NAME)
+// Apply the above macros to type-classes-list.h
+#include "chpl/types/type-classes-list-adapter.h"
 
         default: break;
       }
@@ -362,19 +341,18 @@ class Type {
       return ReturnType();
     }
   };
-  template <typename Visitor>
-  struct Dispatcher<void, Visitor> {
+  template <typename Visitor> struct Dispatcher<void, Visitor> {
     static void doDispatch(const Type* t, Visitor& v) {
       switch (t->tag()) {
-        #define TYPE_NODE(NAME) \
-          case chpl::types::typetags::NAME: { \
-            v.visit((const chpl::types::NAME*) t); \
-            return; \
-          }
-        // Do nothing, visitor should provide overloads for parent classes.
-        #define TYPE_BEGIN_SUBCLASSES(NAME)
-        // Apply the above macros to type-classes-list.h
-        #include "chpl/types/type-classes-list-adapter.h"
+#define TYPE_NODE(NAME)                   \
+  case chpl::types::typetags::NAME: {     \
+    v.visit((const chpl::types::NAME*)t); \
+    return;                               \
+  }
+// Do nothing, visitor should provide overloads for parent classes.
+#define TYPE_BEGIN_SUBCLASSES(NAME)
+// Apply the above macros to type-classes-list.h
+#include "chpl/types/type-classes-list-adapter.h"
 
         default: break;
       }
@@ -385,7 +363,6 @@ class Type {
   /// \endcond DO_NOT_DOCUMENT
 
  public:
-
   /**
      The dispatch function supports calling a method according to the tag
      (aka runtime type) of a type node.
@@ -418,36 +395,41 @@ class Type {
 namespace detail {
 
 template <> inline bool typeIs<Type>(const Type* type) { return true; }
-template <> inline const Type* typeToConst<Type>(const Type* type) { return type; }
+template <> inline const Type* typeToConst<Type>(const Type* type) {
+  return type;
+}
 template <> inline Type* typeTo<Type>(Type* type) { return type; }
 
-
 /// \cond DO_NOT_DOCUMENT
-#define TYPE_NODE(NAME) \
-  template <> inline bool typeIs<NAME>(const Type* type) { return type->is##NAME(); } \
-  template <> inline const NAME * typeToConst<NAME>(const Type* type) { return type->to##NAME(); } \
-  template <> inline NAME * typeTo<NAME>(Type* type) { return type->to##NAME(); } \
+#define TYPE_NODE(NAME)                                                \
+  template <> inline bool typeIs<NAME>(const Type* type) {             \
+    return type->is##NAME();                                           \
+  }                                                                    \
+  template <> inline const NAME* typeToConst<NAME>(const Type* type) { \
+    return type->to##NAME();                                           \
+  }                                                                    \
+  template <> inline NAME* typeTo<NAME>(Type * type) {                 \
+    return type->to##NAME();                                           \
+  }                                                                    \
 /// \endcond
 // Apply the above macros to type-classes-list.h
 #include "chpl/types/type-classes-list-adapter.h"
 
 } // end namespace detail
 
-
 } // end namespace types
 
 /// \cond DO_NOT_DOCUMENT
 
-template<> struct update<types::Type::Genericity> {
+template <> struct update<types::Type::Genericity> {
   bool operator()(types::Type::Genericity& keep,
                   types::Type::Genericity& addin) const {
     return defaultUpdateBasic(keep, addin);
   }
 };
 
-template<> struct mark<types::Type::Genericity> {
-  void operator()(Context* context,
-                  const types::Type::Genericity& keep) const {
+template <> struct mark<types::Type::Genericity> {
+  void operator()(Context* context, const types::Type::Genericity& keep) const {
     // nothing to do for enum
   }
 };
@@ -460,11 +442,11 @@ template<> struct mark<types::Type::Genericity> {
 // Comparing pointers would lead to some nondeterministic ordering.
 
 namespace std {
-  template<> struct hash<chpl::types::PlaceholderMap> {
-    inline size_t operator()(const chpl::types::PlaceholderMap& k) const{
-      return chpl::hashUnorderedMap(k);
-    }
-  };
+template <> struct hash<chpl::types::PlaceholderMap> {
+  inline size_t operator()(const chpl::types::PlaceholderMap& k) const {
+    return chpl::hashUnorderedMap(k);
+  }
+};
 }
 
 #endif

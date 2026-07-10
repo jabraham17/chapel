@@ -27,7 +27,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a reference to a symbol by name.
   E.g. in
@@ -40,29 +39,25 @@ namespace uast {
   \endrst
  */
 class Identifier final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
   UniqueString name_;
 
-  Identifier(UniqueString name)
-    : AstNode(asttags::Identifier), name_(name) {
+  Identifier(UniqueString name) : AstNode(asttags::Identifier), name_(name) {
 
     CHPL_ASSERT(!name.isEmpty());
   }
 
-  void serializeInner(Serializer& ser) const override {
-    ser.write(name_);
-  }
+  void serializeInner(Serializer& ser) const override { ser.write(name_); }
 
-  explicit Identifier(Deserializer& des)
-    : AstNode(asttags::Identifier, des) {
+  explicit Identifier(Deserializer& des) : AstNode(asttags::Identifier, des) {
     name_ = des.read<UniqueString>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Identifier* lhs = this;
-    const Identifier* rhs = (const Identifier*) other;
+    const Identifier* rhs = (const Identifier*)other;
     return lhs->name_ == rhs->name_;
   }
   void markUniqueStringsInner(Context* context) const override {
@@ -73,7 +68,8 @@ class Identifier final : public AstNode {
 
  public:
   ~Identifier() override = default;
-  static owned<Identifier> build(Builder* builder, Location loc, UniqueString name);
+  static owned<Identifier>
+  build(Builder* builder, Location loc, UniqueString name);
   UniqueString name() const { return name_; }
 };
 
@@ -81,7 +77,6 @@ class Identifier final : public AstNode {
  * Returns true if 'node' is an Identifier with the name "?"
  */
 bool isQuestionMark(const AstNode* node);
-
 
 } // end namespace uast
 } // end namespace chpl

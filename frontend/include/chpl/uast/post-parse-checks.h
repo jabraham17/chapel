@@ -31,9 +31,9 @@ namespace uast {
   the contents of the file at path. This is not itself a query, and thus
   errors are reported to the calling query.
   */
-void
-checkBuilderResult(Context* context, UniqueString path,
-                   const BuilderResult& result);
+void checkBuilderResult(Context* context,
+                        UniqueString path,
+                        const BuilderResult& result);
 
 } // end namespace uast
 } // end namespace chpl

@@ -28,7 +28,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a foreach loop. For example:
 
@@ -45,32 +44,32 @@ namespace uast {
 
  */
 class Foreach final : public IndexableLoop {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  Foreach(AstList children, int8_t indexChildNum,
+  Foreach(AstList children,
+          int8_t indexChildNum,
           int8_t iterandChildNum,
           int8_t withClauseChildNum,
           BlockStyle blockStyle,
           int loopBodyChildNum,
           bool isExpressionLevel,
           int attributeGroupChildNum)
-    : IndexableLoop(asttags::Foreach, std::move(children),
+    : IndexableLoop(asttags::Foreach,
+                    std::move(children),
                     indexChildNum,
                     iterandChildNum,
                     withClauseChildNum,
                     blockStyle,
                     loopBodyChildNum,
                     isExpressionLevel,
-                    attributeGroupChildNum) {
-
-  }
+                    attributeGroupChildNum) {}
 
   void serializeInner(Serializer& ser) const override {
     indexableLoopSerializeInner(ser);
   }
 
-  explicit Foreach(Deserializer& des) : IndexableLoop(asttags::Foreach, des) { }
+  explicit Foreach(Deserializer& des) : IndexableLoop(asttags::Foreach, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     return indexableLoopContentsMatchInner(other->toIndexableLoop());
@@ -86,7 +85,8 @@ class Foreach final : public IndexableLoop {
   /**
     Create and return a foreach loop.
   */
-  static owned<Foreach> build(Builder* builder, Location loc,
+  static owned<Foreach> build(Builder* builder,
+                              Location loc,
                               owned<Decl> index,
                               owned<AstNode> iterand,
                               owned<WithClause> withClause,
@@ -95,7 +95,6 @@ class Foreach final : public IndexableLoop {
                               bool isExpressionLevel,
                               owned<AttributeGroup> attributeGroup = nullptr);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

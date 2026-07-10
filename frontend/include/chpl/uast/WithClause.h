@@ -26,7 +26,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a with clause. For example:
 
@@ -44,46 +43,36 @@ namespace uast {
   task variable named 'x'.
 */
 class WithClause final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  WithClause(AstList exprs)
-    : AstNode(asttags::WithClause, std::move(exprs)) {
-  }
+  WithClause(AstList exprs) : AstNode(asttags::WithClause, std::move(exprs)) {}
 
-  void serializeInner(Serializer& ser) const override { }
+  void serializeInner(Serializer& ser) const override {}
 
-  explicit WithClause(Deserializer& des) : AstNode(asttags::WithClause, des) { }
+  explicit WithClause(Deserializer& des) : AstNode(asttags::WithClause, des) {}
 
-  bool contentsMatchInner(const AstNode* other) const override {
-    return true;
-  }
+  bool contentsMatchInner(const AstNode* other) const override { return true; }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
  public:
-
   /**
     Create and return a with clause.
   */
-  static owned<WithClause> build(Builder* builder, Location loc,
-                                 AstList exprs);
+  static owned<WithClause> build(Builder* builder, Location loc, AstList exprs);
 
   /**
     Return a way to iterate over the expressions of this with clause.
   */
   AstListIteratorPair<AstNode> exprs() const {
-    return AstListIteratorPair<AstNode>(children_.begin(),
-                                           children_.end());
+    return AstListIteratorPair<AstNode>(children_.begin(), children_.end());
   }
 
   /**
     Return the number of expressions in this with clause.
   */
-  int numExprs() const {
-    return this->numChildren();
-  }
+  int numExprs() const { return this->numChildren(); }
 
   /**
     Return the i'th expression in this with clause.
@@ -93,7 +82,6 @@ class WithClause final : public AstNode {
     return ast;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

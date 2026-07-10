@@ -23,9 +23,7 @@
 
 #include <string>
 
-namespace chpl
-{
-
+namespace chpl {
 
 // once we are on C++20, we can just use string::starts_with
 /** Returns true if the string 's' starts with 'prefix'. */
@@ -43,14 +41,10 @@ std::string replacePrefix(const std::string& s,
                           const std::string& replacement);
 
 /** Returns true if the character is an initial byte in a UTF-8 sequence. */
-static inline bool isInitialUTF8Byte(unsigned char c)
-{
+static inline bool isInitialUTF8Byte(unsigned char c) {
   return (c & 0xc0) != 0x80;
 }
 
-
-
 } // namespace chpl
-
 
 #endif // CHPL_UTIL_STRING_UTILS_H

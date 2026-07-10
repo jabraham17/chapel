@@ -36,16 +36,12 @@ class CommentID {
 
  public:
   CommentID() = default;
-  CommentID(int index) : index_(index) {
-    CHPL_ASSERT(index >= 0);
-  }
+  CommentID(int index) : index_(index) { CHPL_ASSERT(index >= 0); }
 
   /** Return the index of the comment id */
   int index() const { return index_; }
 
-  void serialize(Serializer& ser) const {
-    ser.writeVInt(index_);
-  }
+  void serialize(Serializer& ser) const { ser.writeVInt(index_); }
 
   static CommentID deserialize(Deserializer& des) {
     int val = des.readVInt();

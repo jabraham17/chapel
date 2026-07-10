@@ -26,24 +26,26 @@
 namespace chpl {
 namespace types {
 
-
 /**
   This class represents a record type, e.g., if we have `record R`,
   then `R` refers to a RecordType.
  */
 class RecordType final : public CompositeType {
  private:
-  RecordType(ID id, UniqueString name,
+  RecordType(ID id,
+             UniqueString name,
              const RecordType* instantiatedFrom,
              SubstitutionsMap subs,
              CompositeType::Linkage linkage)
-    : CompositeType(typetags::RecordType, id, name,
-                    instantiatedFrom, std::move(subs),
-                    linkage)
-  { }
+    : CompositeType(typetags::RecordType,
+                    id,
+                    name,
+                    instantiatedFrom,
+                    std::move(subs),
+                    linkage) {}
 
   bool contentsMatchInner(const Type* other) const override {
-    return compositeTypeContentsMatchInner((const CompositeType*) other);
+    return compositeTypeContentsMatchInner((const CompositeType*)other);
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -51,25 +53,30 @@ class RecordType final : public CompositeType {
   }
 
   static const owned<RecordType>&
-  getRecordType(Context* context, ID id, UniqueString name,
+  getRecordType(Context* context,
+                ID id,
+                UniqueString name,
                 const RecordType* instantiatedFrom,
                 SubstitutionsMap subs,
                 CompositeType::Linkage linkage);
 
  public:
-
   /** Get a record type for an ID, possibly instantiated with substitutions */
-  static const RecordType* get(Context* context, ID id, UniqueString name,
+  static const RecordType* get(Context* context,
+                               ID id,
+                               UniqueString name,
                                const RecordType* instantiatedFrom,
                                CompositeType::SubstitutionsMap subs);
 
   const Type* substitute(Context* context,
                          const PlaceholderMap& subs) const override {
-    return get(context, id(), name(),
-               Type::substitute(context, (const RecordType*) instantiatedFrom_, subs),
-               resolution::substituteInMap(context, subs_, subs));
+    return get(
+      context,
+      id(),
+      name(),
+      Type::substitute(context, (const RecordType*)instantiatedFrom_, subs),
+      resolution::substituteInMap(context, subs_, subs));
   }
-
 
   ~RecordType() = default;
 
@@ -82,14 +89,11 @@ class RecordType final : public CompositeType {
   const RecordType* instantiatedFrom() const {
     const CompositeType* ret = instantiatedFromCompositeType();
     CHPL_ASSERT(ret == nullptr || ret->tag() == typetags::RecordType);
-    return (const RecordType*) ret;
+    return (const RecordType*)ret;
   }
-
 };
 
-
 } // end namespace uast
-
 
 } // end namespace chpl
 

@@ -61,10 +61,9 @@ class TemporaryFileResult final {
          [context->tmpDir()]/[prefix][stuff][suffix]
       Clients should not be sensitive to what 'stuff' consists of,
       but in needs to be present in order to unique-ify such files.
-   */ 
-  static owned<TemporaryFileResult> create(Context* context,
-                                           llvm::StringRef prefix,
-                                           llvm::StringRef suffix);
+   */
+  static owned<TemporaryFileResult>
+  create(Context* context, llvm::StringRef prefix, llvm::StringRef suffix);
 
   /** When a TemporaryFileResult is destroyed, the file is deleted,
       if it exists. */
@@ -85,7 +84,7 @@ class TemporaryFileResult final {
   }
   static bool update(owned<TemporaryFileResult>& keep,
                      owned<TemporaryFileResult>& addin);
-  void mark(Context* context) const { }
+  void mark(Context* context) const {}
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
@@ -93,7 +92,6 @@ class TemporaryFileResult final {
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
 };
-
 
 } // end namespace chpl
 #endif

@@ -27,15 +27,14 @@
 
 namespace chpl {
 namespace uast {
-  class AstNode;
+class AstNode;
 }
 namespace types {
-  class QualifiedType;
-  class ClassType;
-  class TupleType;
+class QualifiedType;
+class ClassType;
+class TupleType;
 }
 namespace resolution {
-
 
 class CanPassResult {
  public:
@@ -72,10 +71,12 @@ class CanPassResult {
   bool promotes_ = false;
   ConversionKind conversionKind_ = NONE;
 
-  CanPassResult(optional<PassingFailureReason> failReason, bool instantiates,
-                bool promotes, ConversionKind kind)
+  CanPassResult(optional<PassingFailureReason> failReason,
+                bool instantiates,
+                bool promotes,
+                ConversionKind kind)
     : failReason_(failReason), instantiates_(instantiates), promotes_(promotes),
-      conversionKind_(kind) { }
+      conversionKind_(kind) {}
 
   // these builders make it easier to implement canPass
   static CanPassResult fail(PassingFailureReason reason) {
@@ -104,15 +105,13 @@ class CanPassResult {
 
   static CanPassResult ensureSubtypeConversionInstantiates(CanPassResult r);
 
-  static bool
-  canConvertNumeric(Context* context,
-                    const types::Type* actualT,
-                    const types::Type* formalT);
+  static bool canConvertNumeric(Context* context,
+                                const types::Type* actualT,
+                                const types::Type* formalT);
 
-  static bool
-  canConvertCPtr(Context* context,
-                 const types::Type* actualT,
-                 const types::Type* formalT);
+  static bool canConvertCPtr(Context* context,
+                             const types::Type* actualT,
+                             const types::Type* formalT);
 
   static bool canConvertParamNarrowing(Context* context,
                                        const types::QualifiedType& actualType,
@@ -123,8 +122,8 @@ class CanPassResult {
                                          types::ClassTypeDecorator formal);
 
   static CanPassResult canPassSubtypeNonBorrowing(Context* context,
-                                      const types::Type* actualT,
-                                      const types::Type* formalT);
+                                                  const types::Type* actualT,
+                                                  const types::Type* formalT);
 
   static CanPassResult canPassSubtypeOrBorrowing(Context* context,
                                                  const types::Type* actualT,
@@ -147,14 +146,14 @@ class CanPassResult {
                                       const types::QualifiedType& formalType);
 
  public:
-  CanPassResult() { }
+  CanPassResult() {}
   ~CanPassResult() = default;
 
   /** Returns true if the argument is passable */
   bool passes() const { return !failReason_; }
 
   PassingFailureReason reason() const {
-    CHPL_ASSERT((bool) failReason_);
+    CHPL_ASSERT((bool)failReason_);
     return *failReason_;
   }
 
@@ -187,7 +186,6 @@ class CanPassResult {
   static CanPassResult canPass(Context* context,
                                const types::QualifiedType& actualType,
                                const types::QualifiedType& formalType);
-
 };
 
 /**
@@ -200,15 +198,15 @@ class CanPassResult {
   Sets mightBeClass to its record equivalent if the conversion is possible,
   and returns true. Otherwise returns false.
  */
-bool
-tryConvertClassTypeIntoManagerRecordIfNeeded(Context* context,
-                                             const types::Type* const& mightBeManagerRecord,
-                                             const types::Type*& mightBeClass);
+bool tryConvertClassTypeIntoManagerRecordIfNeeded(
+  Context* context,
+  const types::Type* const& mightBeManagerRecord,
+  const types::Type*& mightBeClass);
 
-bool
-tryConvertClassTypeOutOfManagerRecordIfNeeded(Context* context,
-                                              const types::Type*& mightBeManagerRecord,
-                                              const types::Type* const& mightBeClass);
+bool tryConvertClassTypeOutOfManagerRecordIfNeeded(
+  Context* context,
+  const types::Type*& mightBeManagerRecord,
+  const types::Type* const& mightBeClass);
 
 /**
   Given an argument with QualifiedType actualType,
@@ -218,17 +216,16 @@ tryConvertClassTypeOutOfManagerRecordIfNeeded(Context* context,
   that the compiler should try instantiating. Once instantiation occurs,
   the compiler may figure out that the argument cannot be passed.
  */
-static inline
-CanPassResult canPass(Context* context,
-                      const types::QualifiedType& actualType,
-                      const types::QualifiedType& formalType) {
+static inline CanPassResult canPass(Context* context,
+                                    const types::QualifiedType& actualType,
+                                    const types::QualifiedType& formalType) {
   return CanPassResult::canPass(context, actualType, formalType);
 }
 
-static inline
-CanPassResult canPassScalar(Context* context,
-                            const types::QualifiedType& actualType,
-                            const types::QualifiedType& formalType) {
+static inline CanPassResult
+canPassScalar(Context* context,
+              const types::QualifiedType& actualType,
+              const types::QualifiedType& formalType) {
   return CanPassResult::canPassScalar(context, actualType, formalType);
 }
 
@@ -256,6 +253,7 @@ bool canInstantiateSubstitutions(Context* context,
 class KindProperties {
  public:
   using Kind = types::QualifiedType::Kind;
+
  private:
   bool isConst = false;
   bool isRef = false;
@@ -265,10 +263,9 @@ class KindProperties {
 
   KindProperties() {}
 
-  KindProperties(bool isConst, bool isRef, bool isType,
-                 bool isParam)
-    : isConst(isConst), isRef(isRef), isType(isType),
-      isParam(isParam), isValid(true) {}
+  KindProperties(bool isConst, bool isRef, bool isType, bool isParam)
+    : isConst(isConst), isRef(isRef), isType(isType), isParam(isParam),
+      isValid(true) {}
 
  private:
   void invalidate();
@@ -354,7 +351,6 @@ commonType(Context* context,
            KindRequirement requiredKind = KindRequirement());
 // QualifiedType fully qualified here to prevent "reference target not found"
 // in Doxygen.
-
 
 } // end namespace resolution
 } // end namespace chpl

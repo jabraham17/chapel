@@ -25,44 +25,36 @@
 
 namespace chpl {
 
-
 /**
   This class represents a source location.
  */
 class Location final {
   UniqueString path_;
-  int firstLine_   = -1;
+  int firstLine_ = -1;
   int firstColumn_ = -1;
-  int lastLine_    = -1;
-  int lastColumn_  = -1;
+  int lastLine_ = -1;
+  int lastColumn_ = -1;
 
-public:
+ public:
   Location() = default;
 
-  explicit
-  Location(UniqueString path,
-           int firstLine=-1, int firstColumn=-1,
-           int lastLine=-1, int lastColumn=-1)
-    : path_(std::move(path)),
-      firstLine_(firstLine), firstColumn_(firstColumn),
-      lastLine_(lastLine), lastColumn_(lastColumn) {
-  }
-  explicit
-  Location(UniqueString path,
-           std::tuple<int, int> start,
-           std::tuple<int, int> end)
-    : path_(path),
-      firstLine_(std::get<0>(start)), firstColumn_(std::get<1>(start)),
-      lastLine_(std::get<0>(end)), lastColumn_(std::get<1>(end)) {
-  }
+  explicit Location(UniqueString path,
+                    int firstLine = -1,
+                    int firstColumn = -1,
+                    int lastLine = -1,
+                    int lastColumn = -1)
+    : path_(std::move(path)), firstLine_(firstLine), firstColumn_(firstColumn),
+      lastLine_(lastLine), lastColumn_(lastColumn) {}
+  explicit Location(UniqueString path,
+                    std::tuple<int, int> start,
+                    std::tuple<int, int> end)
+    : path_(path), firstLine_(std::get<0>(start)),
+      firstColumn_(std::get<1>(start)), lastLine_(std::get<0>(end)),
+      lastColumn_(std::get<1>(end)) {}
 
-  bool isEmpty() const {
-    return path_.isEmpty();
-  }
+  bool isEmpty() const { return path_.isEmpty(); }
 
-  inline explicit operator bool() const {
-    return !isEmpty();
-  }
+  inline explicit operator bool() const { return !isEmpty(); }
 
   inline bool isValid() const {
     return !isEmpty() && firstLine_ >= 1 && firstColumn_ >= 1 &&
@@ -84,13 +76,15 @@ public:
   }
 
   static Location spanned(const Location& loc1, const Location& loc2) {
-    return Location(loc1.path_, loc1.firstLine_, loc1.firstColumn_,
-                    loc2.lastLine_, loc2.lastColumn_);
+    return Location(loc1.path_,
+                    loc1.firstLine_,
+                    loc1.firstColumn_,
+                    loc2.lastLine_,
+                    loc2.lastColumn_);
   }
 
   inline bool operator==(const Location& other) const {
-    return this->path_ == other.path_ &&
-           this->firstLine_ == other.firstLine_ &&
+    return this->path_ == other.path_ && this->firstLine_ == other.firstLine_ &&
            this->firstColumn_ == other.firstColumn_ &&
            this->lastLine_ == other.lastLine_ &&
            this->lastColumn_ == other.lastColumn_;
@@ -108,9 +102,7 @@ public:
     std::swap(lastColumn_, other.lastColumn_);
   }
   static bool update(Location& keep, Location& addin);
-  void mark(Context* context) const {
-    this->path_.mark(context);
-  }
+  void mark(Context* context) const { this->path_.mark(context); }
 
   size_t hash() const {
     return chpl::hash(path_, firstLine_, firstColumn_, lastLine_, lastColumn_);
@@ -123,8 +115,7 @@ public:
     if (this->isEmpty() || loc.isEmpty()) return false;
     if (this->path() != loc.path()) return false;
     return firstLine() <= loc.firstLine() &&
-           firstColumn() <= loc.firstColumn() &&
-           lastLine() >= loc.lastLine() &&
+           firstColumn() <= loc.firstColumn() && lastLine() >= loc.lastLine() &&
            lastColumn() >= loc.lastColumn();
   }
 
@@ -161,15 +152,12 @@ public:
 
 /// \endcond
 
-
 } // end namespace chpl
 
 namespace std {
-  template<> struct hash<chpl::Location> {
-    size_t operator()(const chpl::Location& key) const {
-      return key.hash();
-    }
-  };
+template <> struct hash<chpl::Location> {
+  size_t operator()(const chpl::Location& key) const { return key.hash(); }
+};
 } // end namespace std
 
 #endif

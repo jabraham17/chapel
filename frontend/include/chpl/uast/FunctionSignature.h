@@ -29,7 +29,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a function signature. For example:
 
@@ -44,7 +43,7 @@ namespace uast {
   that takes two ints and returns an int.
 */
 class FunctionSignature final : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  public:
   using ReturnIntent = Function::ReturnIntent;
@@ -60,32 +59,28 @@ class FunctionSignature final : public AstNode {
   bool throws_;
   bool isParenless_;
 
-  FunctionSignature(AstList children, Kind kind,
+  FunctionSignature(AstList children,
+                    Kind kind,
                     ReturnIntent returnIntent,
                     bool throws,
                     bool isParenless,
                     int formalsChildNum,
                     int thisFormalChildNum,
                     int numFormals,
-                    int returnTypeChildNum) :
-      AstNode(asttags::FunctionSignature, std::move(children)),
-      kind_(kind),
-      returnIntent_(returnIntent),
-      formalsChildNum_(formalsChildNum),
-      thisFormalChildNum_(thisFormalChildNum),
-      numFormals_(numFormals),
-      returnTypeChildNum_(returnTypeChildNum),
-      throws_(throws),
+                    int returnTypeChildNum)
+    : AstNode(asttags::FunctionSignature, std::move(children)), kind_(kind),
+      returnIntent_(returnIntent), formalsChildNum_(formalsChildNum),
+      thisFormalChildNum_(thisFormalChildNum), numFormals_(numFormals),
+      returnTypeChildNum_(returnTypeChildNum), throws_(throws),
       isParenless_(isParenless) {
 
     CHPL_ASSERT(NO_CHILD <= formalsChildNum_ &&
-                 formalsChildNum_ < (ssize_t)children_.size());
+                formalsChildNum_ < (ssize_t)children_.size());
     CHPL_ASSERT(NO_CHILD <= thisFormalChildNum_ &&
-                 thisFormalChildNum_ < (ssize_t)children_.size());
-    CHPL_ASSERT(0 <= numFormals_ &&
-                numFormals_ <= (ssize_t)children_.size());
+                thisFormalChildNum_ < (ssize_t)children_.size());
+    CHPL_ASSERT(0 <= numFormals_ && numFormals_ <= (ssize_t)children_.size());
     CHPL_ASSERT(NO_CHILD <= returnTypeChildNum_ &&
-                 returnTypeChildNum_ < (ssize_t)children_.size());
+                returnTypeChildNum_ < (ssize_t)children_.size());
   }
 
   void serializeInner(Serializer& ser) const override {
@@ -101,19 +96,19 @@ class FunctionSignature final : public AstNode {
 
   explicit FunctionSignature(Deserializer& des)
     : AstNode(asttags::FunctionSignature, des) {
-      kind_ = des.read<Kind>();
-      returnIntent_ = des.read<ReturnIntent>();
-      formalsChildNum_ = des.readVInt();
-      thisFormalChildNum_ = des.readVInt();
-      numFormals_= des.readVInt();
-      returnTypeChildNum_ = des.readVInt();
-      throws_ = des.read<bool>();
-      isParenless_ = des.read<bool>();
-    }
+    kind_ = des.read<Kind>();
+    returnIntent_ = des.read<ReturnIntent>();
+    formalsChildNum_ = des.readVInt();
+    thisFormalChildNum_ = des.readVInt();
+    numFormals_ = des.readVInt();
+    returnTypeChildNum_ = des.readVInt();
+    throws_ = des.read<bool>();
+    isParenless_ = des.read<bool>();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     auto lhs = this;
-    auto rhs = (const FunctionSignature*) other;
+    auto rhs = (const FunctionSignature*)other;
     return lhs->kind_ == rhs->kind_ &&
            lhs->returnIntent_ == rhs->returnIntent_ &&
            lhs->throws_ == rhs->throws_ &&
@@ -124,7 +119,7 @@ class FunctionSignature final : public AstNode {
            lhs->returnTypeChildNum_ == rhs->returnTypeChildNum_;
   }
 
-  void markUniqueStringsInner(Context* context) const override { }
+  void markUniqueStringsInner(Context* context) const override {}
 
   void dumpFieldsInner(const DumpSettings& s) const override;
   std::string dumpChildLabelInner(int i) const override;
@@ -132,7 +127,8 @@ class FunctionSignature final : public AstNode {
  public:
   ~FunctionSignature() override = default;
 
-  static owned<FunctionSignature> build(Builder* builder, Location loc,
+  static owned<FunctionSignature> build(Builder* builder,
+                                        Location loc,
                                         Kind kind,
                                         owned<Formal> receiver,
                                         ReturnIntent returnIntent,
@@ -165,7 +161,7 @@ class FunctionSignature final : public AstNode {
   const Decl* formal(int i) const {
     CHPL_ASSERT(0 <= i && i < numFormals_);
     auto ret = this->child(formalsChildNum_ + i);
-    return (const Decl*) ret;
+    return (const Decl*)ret;
   }
 
   /**
@@ -176,7 +172,7 @@ class FunctionSignature final : public AstNode {
     if (thisFormalChildNum_ == NO_CHILD) return nullptr;
     auto ret = this->child(thisFormalChildNum_);
     CHPL_ASSERT(ret->isFormal());
-    return (const Formal*) ret;
+    return (const Formal*)ret;
   }
 
   /**
@@ -188,7 +184,6 @@ class FunctionSignature final : public AstNode {
     return ret;
   }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

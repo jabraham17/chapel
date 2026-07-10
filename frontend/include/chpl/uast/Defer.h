@@ -27,7 +27,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This class represents a defer block. For example:
 
@@ -48,12 +47,16 @@ namespace uast {
   This code will write 'bar' after 'foo' due to use of the defer block.
  */
 class Defer final : public SimpleBlockLike {
- friend class AstNode;
+  friend class AstNode;
 
  private:
-  Defer(AstList stmts, BlockStyle blockStyle, int bodyChildNum,
+  Defer(AstList stmts,
+        BlockStyle blockStyle,
+        int bodyChildNum,
         int numBodyStmts)
-    : SimpleBlockLike(asttags::Defer, std::move(stmts), blockStyle,
+    : SimpleBlockLike(asttags::Defer,
+                      std::move(stmts),
+                      blockStyle,
                       bodyChildNum,
                       numBodyStmts) {
     CHPL_ASSERT(bodyChildNum_ >= 0);
@@ -63,7 +66,7 @@ class Defer final : public SimpleBlockLike {
     simpleBlockLikeSerializeInner(ser);
   }
 
-  explicit Defer(Deserializer& des) : SimpleBlockLike(asttags::Defer, des) { }
+  explicit Defer(Deserializer& des) : SimpleBlockLike(asttags::Defer, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     return simpleBlockLikeContentsMatchInner(other);
@@ -79,11 +82,9 @@ class Defer final : public SimpleBlockLike {
   /**
    Create and return a Defer containing the passed stmts.
    */
-  static owned<Defer> build(Builder* builder, Location loc,
-                            BlockStyle blockStyle,
-                            AstList stmts);
+  static owned<Defer>
+  build(Builder* builder, Location loc, BlockStyle blockStyle, AstList stmts);
 };
-
 
 } // end namespace uast
 } // end namespace chpl

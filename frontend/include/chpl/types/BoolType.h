@@ -25,18 +25,15 @@
 namespace chpl {
 namespace types {
 
-
 /**
   This class represents the `bool` type.
  */
 class BoolType final : public PrimitiveType {
  private:
-  BoolType()
-    : PrimitiveType(typetags::BoolType, 0)
-  { }
+  BoolType() : PrimitiveType(typetags::BoolType, 0) {}
 
   bool contentsMatchInner(const Type* other) const override {
-    return primitiveTypeContentsMatchInner((PrimitiveType*) other);
+    return primitiveTypeContentsMatchInner((PrimitiveType*)other);
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -46,9 +43,7 @@ class BoolType final : public PrimitiveType {
   static const owned<BoolType>& getBoolType(Context* context);
 
   /** what is stored in bitwidth_ for the default 'bool' ? */
-  static int defaultBitwidth() {
-    return 0;
-  }
+  static int defaultBitwidth() { return 0; }
 
  public:
   ~BoolType() = default;
@@ -59,15 +54,10 @@ class BoolType final : public PrimitiveType {
     return 8; // Chapel doesn't guarantee this bitwidth, so this seems fragile...
   }
 
-  bool isDefaultWidth() const override {
-    return true;
-  }
+  bool isDefaultWidth() const override { return true; }
 
-  const char* c_str() const override {
-    return "bool";
-  }
+  const char* c_str() const override { return "bool"; }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

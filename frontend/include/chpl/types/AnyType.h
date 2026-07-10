@@ -25,24 +25,18 @@
 namespace chpl {
 namespace types {
 
-
 /**
   This class represents a generic type that can instantiate to any type.
  */
 class AnyType final : public Type {
  private:
-  AnyType() : Type(typetags::AnyType) { }
+  AnyType() : Type(typetags::AnyType) {}
 
-  bool contentsMatchInner(const Type* other) const override {
-    return true;
-  }
+  bool contentsMatchInner(const Type* other) const override { return true; }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override {}
 
-  Genericity genericity() const override {
-    return GENERIC;
-  }
+  Genericity genericity() const override { return GENERIC; }
 
   static const owned<AnyType>& getAnyType(Context* context);
 
@@ -53,7 +47,6 @@ class AnyType final : public Type {
 
   void stringify(std::ostream& ss, StringifyKind stringKind) const override;
 };
-
 
 } // end namespace uast
 } // end namespace chpl

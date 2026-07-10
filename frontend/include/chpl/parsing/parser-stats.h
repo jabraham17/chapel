@@ -30,7 +30,7 @@ namespace parsing {
 */
 struct ParserStats {
 
- /// \cond DO_NOT_DOCUMENT
+  /// \cond DO_NOT_DOCUMENT
   bool countTokens;
   bool printTokens;
   static const int HIST_SIZE = 4096;
@@ -82,7 +82,7 @@ struct ParserStats {
   void countSingleLineComment(const char* comment);
 
   void countMultiLineComment(const char* comment);
-/// \endcond
+  /// \endcond
   ParserStats();
   ParserStats(bool printTokens);
 };
@@ -90,6 +90,5 @@ struct ParserStats {
 } // end namespace parsing
 
 } // end namespace chpl
-
 
 #endif

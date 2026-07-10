@@ -26,26 +26,22 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   This is an abstract base class for literals.
   Literals are fixed values in the source code, like 1, 30.24, and "x".
  */
 class Literal : public AstNode {
- friend class AstNode;
+  friend class AstNode;
 
  protected:
   const types::Param* value_ = nullptr;
 
-  Literal(AstTag tag, const types::Param* value)
-    : AstNode(tag), value_(value) {
+  Literal(AstTag tag, const types::Param* value) : AstNode(tag), value_(value) {
 
     CHPL_ASSERT(value_ != nullptr);
   }
 
-  void literalSerializeInner(Serializer& ser) const {
-    value_->serialize(ser);
-  }
+  void literalSerializeInner(Serializer& ser) const { value_->serialize(ser); }
 
   Literal(AstTag tag, Deserializer& des)
     : AstNode(tag, des), value_(types::Param::deserialize(des)) {
@@ -65,11 +61,8 @@ class Literal : public AstNode {
   /**
     Returns the value stored in this Literal as a types::Param.
    */
-  const types::Param* param() const {
-    return value_;
-  }
+  const types::Param* param() const { return value_; }
 };
-
 
 } // end namespace uast
 } // end namespace chpl

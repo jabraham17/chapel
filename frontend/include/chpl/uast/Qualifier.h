@@ -26,7 +26,6 @@
 namespace chpl {
 namespace uast {
 
-
 /**
   A centralized list containing all intent and storage specifiers.
 */
@@ -142,7 +141,6 @@ bool isInQualifier(Qualifier kind);
 /** Returns a string describing a Qualifier */
 const char* qualifierToString(Qualifier intent);
 
-
 } // end namespace uast
 
 DECLARE_SERDE_ENUM(uast::Qualifier, uint8_t);
@@ -151,10 +149,9 @@ DECLARE_SERDE_ENUM(uast::Qualifier, uint8_t);
 
 namespace std {
 
-template<> struct hash<chpl::uast::Qualifier>
-{
+template <> struct hash<chpl::uast::Qualifier> {
   size_t operator()(const chpl::uast::Qualifier& key) const {
-    return (size_t) key;
+    return (size_t)key;
   }
 };
 
