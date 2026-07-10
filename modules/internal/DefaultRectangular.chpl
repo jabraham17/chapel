@@ -1648,8 +1648,8 @@ module DefaultRectangular {
       // optimized iteration method if users are concerned about range
       // overflow.
 
-      const first  = info.getDataIndex(viewRange.low);
-      const second = info.getDataIndex(chpl__intToIdx(viewRange.idxType, chpl__idxToInt(viewRange.low)+1));
+      const first  = info.getDataIndex(viewRange.low):viewRange.idxType;
+      const second = info.getDataIndex(chpl__intToIdx(viewRange.idxType, chpl__idxToInt(viewRange.low)+1)):viewRange.idxType;
       const step   = (second-first);
       const last   = first + (viewRange.size:step.type-1) * step;
       foreach i in chpl_direct_pos_stride_range_iter(first, last, step)
@@ -1660,9 +1660,9 @@ module DefaultRectangular {
       type vdIntIdxType = chpl__idxTypeToIntIdxType(viewRange.idxType);
       const stride = viewRange.stride: vdIntIdxType,
             start  = viewRange.first,
-            second = info.getDataIndex(chpl__intToIdx(viewRange.idxType, viewRange.firstAsInt + stride));
+            second = info.getDataIndex(chpl__intToIdx(viewRange.idxType, viewRange.firstAsInt + stride)):vdIntIdxType;
 
-      var   first  = info.getDataIndex(start);
+      var   first  = info.getDataIndex(start):vdIntIdxType;
       const step   = (second-first).safeCast(int);
       var   last   = first + (viewRange.sizeAs(int)-1) * step;
 
