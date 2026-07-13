@@ -52,6 +52,11 @@ else
   # this is probably overcautious
   COMPOPTS="$COMPOPTS --fast --no-specialize"
 fi
+chpl_sanitize=$($MASON_CHPL_HOME/util/chplenv/chpl_sanitizers.py --exe)
+if [ "$chpl_sanitize" == "undefined" ]; then
+  # with ubsan, we need to disable licm to avoid false positives
+  COMPOPTS="$COMPOPTS --no-loop-invariant-code-motion"
+fi
 ALL_COMPOPTS="$PRE_COMPOPTS $COMPOPTS $POST_COMPOPTS"
 
 COMMAND="$CHPL_COMPILER $ALL_COMPOPTS Mason.chpl -o $outputFile"

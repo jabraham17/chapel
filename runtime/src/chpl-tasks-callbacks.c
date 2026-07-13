@@ -106,7 +106,7 @@ int chpl_task_uninstall_callback(chpl_task_cb_event_kind_t event_kind,
 void chpl_task_do_callbacks_internal(chpl_task_cb_event_kind_t event_kind,
                                      chpl_fn_int_t fid,
                                      int32_t filename,
-                                     int lineno,
+                                     int32_t lineno,
                                      uint64_t id,
                                      int is_executeOn) {
   struct cb_info* cbp;

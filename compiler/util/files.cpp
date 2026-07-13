@@ -737,17 +737,16 @@ void genIncludeCommandLineHeaders(FILE* outfile) {
 
 static std::string genMakefileEnvCache() {
   std::string result;
-  std::map<std::string, const char*>::iterator env;
 
-  for (env = envMap.begin(); env != envMap.end(); ++env) {
-    const std::string& key = env->first;
+  for (const auto& env: envMap) {
+    const std::string& key = env.first;
     const char* oldPrefix = "CHPL_";
     const char* newPrefix = "CHPL_MAKE_";
     INT_ASSERT(key.substr(0, strlen(oldPrefix)) == oldPrefix);
     std::string keySuffix = key.substr(strlen(oldPrefix), std::string::npos);
     std::string chpl_make_key = newPrefix + keySuffix;
     result += chpl_make_key + "=";
-    result += std::string(env->second);
+    result += std::string(env.second);
     result += "|";
   }
 

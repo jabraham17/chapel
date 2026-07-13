@@ -3422,7 +3422,7 @@ static void issue_out_of_mem_regions_warning(void)
 }
 
 void* chpl_comm_impl_regMemAlloc(size_t size,
-                                 chpl_mem_descInt_t desc, int ln, int32_t fn)
+                                 chpl_mem_descInt_t desc, int32_t ln, int32_t fn)
 {
   int mr_i;
   mem_region_t* mr;
@@ -3595,7 +3595,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
 
 void* chpl_comm_impl_regMemRealloc(void* p, size_t oldSize, size_t newSize,
                                    chpl_mem_descInt_t desc,
-                                   int ln, int32_t fn)
+                                   int32_t ln, int32_t fn)
 {
   //
   // If the old allocation isn't separately registered then we just
@@ -5109,7 +5109,7 @@ void consume_all_outstanding_cq_events(int cdi)
 
 
 void chpl_comm_put(void* addr, c_nodeid_t locale, void* raddr,
-                   size_t size, int32_t commID, int ln, int32_t fn)
+                   size_t size, int32_t commID, int32_t ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_put(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -5599,7 +5599,7 @@ void do_nic_amo_nf_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
 void chpl_comm_getput_unordered(c_nodeid_t dst_locale, void* dst_addr,
                                 c_nodeid_t src_locale, void* src_addr,
                                 size_t size, int32_t commID,
-                                int ln, int32_t fn)
+                                int32_t ln, int32_t fn)
 {
   assert(dst_addr != NULL);
   assert(src_addr != NULL);
@@ -5635,7 +5635,7 @@ void chpl_comm_getput_unordered(c_nodeid_t dst_locale, void* dst_addr,
 }
 
 void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
-                             size_t size, int32_t commID, int ln, int32_t fn)
+                             size_t size, int32_t commID, int32_t ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_get_unordered(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -5665,7 +5665,7 @@ void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
 }
 
 void chpl_comm_put_unordered(void* addr, c_nodeid_t locale, void* raddr,
-                             size_t size, int32_t commID, int ln, int32_t fn)
+                             size_t size, int32_t commID, int32_t ln, int32_t fn)
 
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_put_unordered(%p, %d, %p, %zd)",
@@ -5701,7 +5701,7 @@ void chpl_comm_getput_unordered_task_fence(void) {
 
 
 void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
-                   size_t size, int32_t commID, int ln, int32_t fn)
+                   size_t size, int32_t commID, int32_t ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_get(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -6121,7 +6121,7 @@ void chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides,
                         int32_t dstlocale,
                         void* srcaddr_arg, size_t* srcstrides,
                         size_t* count, int32_t stridelevels, size_t elemSize,
-                        int32_t commID, int ln, int32_t fn)
+                        int32_t commID, int32_t ln, int32_t fn)
 {
   PERFSTATS_INC(put_strd_cnt);
   put_strd_common(dstaddr_arg, dststrides,
@@ -6137,7 +6137,7 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
                         int32_t srclocale,
                         void* srcaddr_arg, size_t* srcstrides,
                         size_t* count, int32_t stridelevels, size_t elemSize,
-                        int32_t commID, int ln, int32_t fn)
+                        int32_t commID, int32_t ln, int32_t fn)
 {
   PERFSTATS_INC(get_strd_cnt);
   get_strd_common(dstaddr_arg, dststrides,
@@ -6154,7 +6154,7 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
 //
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
                                        void* raddr, size_t size,
-                                       int32_t commID, int ln, int32_t fn)
+                                       int32_t commID, int32_t ln, int32_t fn)
 {
 
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_get_nb(%p, %d, %p, %zd)",
@@ -6167,7 +6167,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
 
 chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t locale,
                                        void* raddr, size_t size,
-                                       int32_t commID, int ln, int32_t fn)
+                                       int32_t commID, int32_t ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_put_nb(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -6286,7 +6286,7 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
                                        int32_t loc,                     \
                                        void* obj,                       \
                                        chpl_memory_order order,         \
-                                       int ln, int32_t fn)              \
+                                       int32_t ln, int32_t fn)              \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
@@ -6331,7 +6331,7 @@ DEFINE_CHPL_COMM_ATOMIC_WRITE(real64, put_64, int_least64_t)
                                        int32_t loc,                     \
                                        void* obj,                       \
                                        chpl_memory_order order,              \
-                                       int ln, int32_t fn)              \
+                                       int32_t ln, int32_t fn)              \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           mem_region_t* local_mr;                                       \
@@ -6380,7 +6380,7 @@ DEFINE_CHPL_COMM_ATOMIC_READ(real64, get_64, int_least64_t)
                                         void* obj,                      \
                                         void* res,                      \
                                         chpl_memory_order order,             \
-                                        int ln, int32_t fn)             \
+                                        int32_t ln, int32_t fn)             \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
@@ -6428,7 +6428,7 @@ DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, swap_64, int_least64_t)
                                            chpl_bool32* res,            \
                                            chpl_memory_order succ,           \
                                            chpl_memory_order fail,           \
-                                           int ln, int32_t fn)          \
+                                           int32_t ln, int32_t fn)          \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
@@ -6481,7 +6481,7 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cswap_64, int_least64_t)
                                           int32_t loc,                  \
                                           void* obj,                    \
                                           chpl_memory_order order,           \
-                                          int ln, int32_t fn)           \
+                                          int32_t ln, int32_t fn)           \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
@@ -6507,7 +6507,7 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cswap_64, int_least64_t)
         void chpl_comm_atomic_##_o##_unordered_##_f(void* opnd,         \
                                                int32_t loc,             \
                                                void* obj,               \
-                                               int ln, int32_t fn)      \
+                                               int32_t ln, int32_t fn)      \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
@@ -6535,7 +6535,7 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cswap_64, int_least64_t)
                                                 void* obj,              \
                                                 void* res,              \
                                                 chpl_memory_order order,     \
-                                                int ln, int32_t fn)     \
+                                                int32_t ln, int32_t fn)     \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
@@ -6597,7 +6597,7 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
                                        int32_t loc,                     \
                                        void* obj,                       \
                                        chpl_memory_order order,              \
-                                       int ln, int32_t fn)              \
+                                       int32_t ln, int32_t fn)              \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
@@ -6623,7 +6623,7 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
         void chpl_comm_atomic_add_unordered_##_f(void* opnd,            \
                                             int32_t loc,                \
                                             void* obj,                  \
-                                            int ln, int32_t fn)         \
+                                            int32_t ln, int32_t fn)         \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
@@ -6651,7 +6651,7 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
                                              void* obj,                 \
                                              void* res,                 \
                                              chpl_memory_order order,        \
-                                             int ln, int32_t fn)        \
+                                             int32_t ln, int32_t fn)        \
         {                                                               \
           mem_region_t* remote_mr;                                      \
           DBG_P_LP(DBGF_IFACE|DBGF_AMO,                                 \
@@ -6691,7 +6691,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, _real64)
                                        int32_t loc,                     \
                                        void* obj,                       \
                                        chpl_memory_order order,              \
-                                       int ln, int32_t fn)              \
+                                       int32_t ln, int32_t fn)              \
         {                                                               \
           _t nopnd = _negate(*(_t*) opnd);                              \
                                                                         \
@@ -6707,7 +6707,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, _real64)
         void chpl_comm_atomic_sub_unordered_##_f(void* opnd,            \
                                             int32_t loc,                \
                                             void* obj,                  \
-                                            int ln, int32_t fn)         \
+                                            int32_t ln, int32_t fn)         \
         {                                                               \
           _t nopnd = _negate(*(_t*) opnd);                              \
                                                                         \
@@ -6725,7 +6725,7 @@ DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, _real64)
                                              void* obj,                 \
                                              void* res,                 \
                                              chpl_memory_order order,        \
-                                             int ln, int32_t fn)        \
+                                             int32_t ln, int32_t fn)        \
         {                                                               \
           _t nopnd = _negate(*(_t*) opnd);                              \
                                                                         \
@@ -6959,7 +6959,7 @@ void chpl_rt_comm_execute_on_impl(chpl_rt_prginfo* prg, c_nodeid_t locale,
                                   chpl_fn_int_t fid,
                                   chpl_comm_on_bundle_t* arg,
                                   size_t arg_size,
-                                  int ln,
+                                  int32_t ln,
                                   int32_t fn) {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on(%d:%d, ftable[%d](%p, %zd))",
@@ -6976,7 +6976,7 @@ void chpl_rt_comm_execute_on_nb_impl(chpl_rt_prginfo* prg, c_nodeid_t locale,
                                      chpl_fn_int_t fid,
                                      chpl_comm_on_bundle_t* arg,
                                      size_t arg_size,
-                                     int ln,
+                                     int32_t ln,
                                      int32_t fn) {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on_nb(%d:%d, ftable[%d](%p, %zd))",
@@ -6993,7 +6993,7 @@ void chpl_rt_comm_execute_on_fast_impl(chpl_rt_prginfo* prg, c_nodeid_t locale,
                                        chpl_fn_int_t fid,
                                        chpl_comm_on_bundle_t* arg,
                                        size_t arg_size,
-                                       int ln,
+                                       int32_t ln,
                                        int32_t fn) {
   DBG_P_LP(DBGF_IFACE|DBGF_RF,
            "IFACE chpl_comm_execute_on_fast(%d:%d, ftable[%d](%p, %zd))",

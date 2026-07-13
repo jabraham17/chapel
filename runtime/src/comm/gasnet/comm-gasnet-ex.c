@@ -629,7 +629,7 @@ static gex_AM_Entry_t ftable[] = {
 //
 chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
                                        size_t size, int32_t commID,
-                                       int ln, int32_t fn)
+                                       int32_t ln, int32_t fn)
 {
   gex_Event_t ret;
   int remote_in_segment;
@@ -667,7 +667,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
 
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
                                        size_t size, int32_t commID,
-                                       int ln, int32_t fn)
+                                       int32_t ln, int32_t fn)
 {
   gex_Event_t ret;
   int remote_in_segment;
@@ -1376,7 +1376,7 @@ void chpl_comm_exit(int all, int status) {
 }
 
 void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                    size_t size, int32_t commID, int ln, int32_t fn) {
+                    size_t size, int32_t commID, int32_t ln, int32_t fn) {
   int remote_in_segment;
 
   if (chpl_nodeID == node) {
@@ -1452,7 +1452,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 ////GASNET - define GASNET_E_ PUTGET always REMOTE
 ////GASNET - look at GASNET tools at top of README.tools has atomic counters
 void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
-                    size_t size, int32_t commID, int ln, int32_t fn) {
+                    size_t size, int32_t commID, int32_t ln, int32_t fn) {
   int remote_in_segment;
 
   if (chpl_nodeID == node) {
@@ -1575,7 +1575,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_id,
                          void* srcaddr, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t commID,
-                         int ln, int32_t fn) {
+                         int32_t ln, int32_t fn) {
   int i;
   const size_t strlvls = (size_t)stridelevels;
   // Avoid 0-length VLA when stridelevels is 0 (contiguous transfer), gasnet
@@ -1618,7 +1618,7 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
 void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_id,
                          void* srcaddr, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t commID,
-                         int ln, int32_t fn) {
+                         int32_t ln, int32_t fn) {
   int i;
   const size_t strlvls = (size_t)stridelevels;
   // Avoid 0-length VLA when stridelevels is 0 (contiguous transfer), gasnet
@@ -1661,7 +1661,7 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
 void chpl_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
                                 c_nodeid_t srcnode, void* srcaddr,
                                 size_t size, int32_t commID,
-                                int ln, int32_t fn) {
+                                int32_t ln, int32_t fn) {
   assert(dstaddr != NULL);
   assert(srcaddr != NULL);
 
@@ -1694,12 +1694,12 @@ void chpl_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
 }
 
 void chpl_comm_get_unordered(void* addr, c_nodeid_t node, void* raddr,
-                             size_t size, int32_t commID, int ln, int32_t fn) {
+                             size_t size, int32_t commID, int32_t ln, int32_t fn) {
   chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
 }
 
 void chpl_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
-                             size_t size, int32_t commID, int ln, int32_t fn) {
+                             size_t size, int32_t commID, int32_t ln, int32_t fn) {
   chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
 }
 
@@ -1834,7 +1834,7 @@ void chpl_rt_comm_execute_on_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
                                   chpl_fn_int_t fid,
                                   chpl_comm_on_bundle_t *arg,
                                   size_t arg_size,
-                                  int ln,
+                                  int32_t ln,
                                   int32_t fn) {
   if (chpl_nodeID == node) {
     assert(0);
@@ -1850,7 +1850,7 @@ void chpl_rt_comm_execute_on_nb_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
                                      chpl_fn_int_t fid,
                                      chpl_comm_on_bundle_t *arg,
                                      size_t arg_size,
-                                     int ln,
+                                     int32_t ln,
                                      int32_t fn) {
   if (chpl_nodeID == node) {
     assert(0); // locale model code should prevent this...
@@ -1867,7 +1867,7 @@ void chpl_rt_comm_execute_on_fast_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
                                        chpl_fn_int_t fid,
                                        chpl_comm_on_bundle_t *arg,
                                        size_t arg_size,
-                                       int ln,
+                                       int32_t ln,
                                        int32_t fn) {
   if (chpl_nodeID == node) {
     assert(0);

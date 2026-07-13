@@ -4223,7 +4223,7 @@ void chpl_rt_comm_execute_on_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
                                   chpl_fn_int_t fid,
                                   chpl_comm_on_bundle_t *arg,
                                   size_t argSize,
-                                  int ln,
+                                  int32_t ln,
                                   int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%d, %d, %d, %p, %zd)", __func__,
@@ -4239,7 +4239,7 @@ void chpl_rt_comm_execute_on_nb_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
                                      chpl_fn_int_t fid,
                                      chpl_comm_on_bundle_t *arg,
                                      size_t argSize,
-                                     int ln,
+                                     int32_t ln,
                                      int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%d, %d, %d, %p, %zd)", __func__,
@@ -4255,7 +4255,7 @@ void chpl_rt_comm_execute_on_fast_impl(chpl_rt_prginfo* prg, c_nodeid_t node,
                                        chpl_fn_int_t fid,
                                        chpl_comm_on_bundle_t *arg,
                                        size_t argSize,
-                                       int ln,
+                                       int32_t ln,
                                        int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%d, %d, %d, %p, %zd)", __func__,
@@ -5534,7 +5534,7 @@ void nb_handle_destroy(nb_handle_t h) {
  */
 static inline
 chpl_bool put_prologue(void* addr, c_nodeid_t node, void* raddr, size_t size,
-                       int32_t commID, int ln, int32_t fn) {
+                       int32_t commID, int32_t ln, int32_t fn) {
 
   retireDelayedAmDone(false /*taskIsEnding*/);
 
@@ -5579,7 +5579,7 @@ chpl_bool put_prologue(void* addr, c_nodeid_t node, void* raddr, size_t size,
  */
 chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t node,
                                        void* raddr, size_t size,
-                                       int32_t commID, int ln, int32_t fn) {
+                                       int32_t commID, int32_t ln, int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%p, %d, %p, %zd, %d)", __func__,
              addr, (int) node, raddr, size, (int) commID);
@@ -5600,7 +5600,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t node,
  */
 static inline
 chpl_bool get_prologue(void* addr, c_nodeid_t node, void* raddr, size_t size,
-                       int32_t commID, int ln, int32_t fn) {
+                       int32_t commID, int32_t ln, int32_t fn) {
 
   retireDelayedAmDone(false /*taskIsEnding*/);
 
@@ -5633,7 +5633,7 @@ chpl_bool get_prologue(void* addr, c_nodeid_t node, void* raddr, size_t size,
 
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node,
                                        void* raddr, size_t size,
-                                       int32_t commID, int ln, int32_t fn) {
+                                       int32_t commID, int32_t ln, int32_t fn) {
   nb_handle_t handle = NULL;
   if (get_prologue(addr, node, raddr, size, commID, ln, fn)) {
     handle = ofi_get_nb(handle, addr, node, raddr, size);
@@ -5772,7 +5772,7 @@ void chpl_comm_free_nb_handle(chpl_comm_nb_handle_t h) {
 }
 
 void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                   size_t size, int32_t commID, int ln, int32_t fn) {
+                   size_t size, int32_t commID, int32_t ln, int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%p, %d, %p, %zd, %d)", __func__,
              addr, (int) node, raddr, size, (int) commID);
@@ -5784,7 +5784,7 @@ void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 }
 
 void chpl_comm_get(void* addr, int32_t node, void* raddr,
-                   size_t size, int32_t commID, int ln, int32_t fn) {
+                   size_t size, int32_t commID, int32_t ln, int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%p, %d, %p, %zd, %d)", __func__,
              addr, (int) node, raddr, size, (int) commID);
@@ -5800,7 +5800,7 @@ void chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides,
                         c_nodeid_t dstnode,
                         void* srcaddr_arg, size_t* srcstrides,
                         size_t* count, int32_t stridelevels, size_t elemSize,
-                        int32_t commID, int ln, int32_t fn) {
+                        int32_t commID, int32_t ln, int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%p, %p, %d, %p, %p, %p, %d, %zd, %d)", __func__,
              dstaddr_arg, dststrides, (int) dstnode, srcaddr_arg, srcstrides,
@@ -5819,7 +5819,7 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
                         c_nodeid_t srcnode,
                         void* srcaddr_arg, size_t* srcstrides, size_t* count,
                         int32_t stridelevels, size_t elemSize,
-                        int32_t commID, int ln, int32_t fn) {
+                        int32_t commID, int32_t ln, int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%p, %p, %d, %p, %p, %p, %d, %zd, %d)", __func__,
              dstaddr_arg, dststrides, (int) srcnode, srcaddr_arg, srcstrides,
@@ -5837,7 +5837,7 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
 void chpl_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
                                 c_nodeid_t srcnode, void* srcaddr,
                                 size_t size, int32_t commID,
-                                int ln, int32_t fn) {
+                                int32_t ln, int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%d, %p, %d, %p, %zd, %d)", __func__,
              (int) dstnode, dstaddr, (int) srcnode, srcaddr, size,
@@ -5877,7 +5877,7 @@ void chpl_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
 
 
 void chpl_comm_get_unordered(void* addr, c_nodeid_t node, void* raddr,
-                             size_t size, int32_t commID, int ln, int32_t fn) {
+                             size_t size, int32_t commID, int32_t ln, int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%p, %d, %p, %zd, %d)", __func__,
              addr, (int) node, raddr, size, (int) commID);
@@ -5915,7 +5915,7 @@ void chpl_comm_get_unordered(void* addr, c_nodeid_t node, void* raddr,
 
 
 void chpl_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
-                             size_t size, int32_t commID, int ln, int32_t fn) {
+                             size_t size, int32_t commID, int32_t ln, int32_t fn) {
   DBG_PRINTF(DBG_IFACE,
              "%s(%p, %d, %p, %zd, %d)", __func__,
              addr, (int) node, raddr, size, (int) commID);
@@ -7644,7 +7644,7 @@ static void doAMO(c_nodeid_t, void*, const void*, const void*, void*,
 #define DEFN_CHPL_COMM_ATOMIC_WRITE(fnType, ofiType, Type)              \
   void chpl_comm_atomic_write_##fnType                                  \
          (void* desired, c_nodeid_t node, void* object,                 \
-          chpl_memory_order order, int ln, int32_t fn) {                     \
+          chpl_memory_order order, int32_t ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO_WRITE,                                     \
                "%s(%p, %d, %p, %d, %s)", __func__,                      \
                desired, (int) node, object,                             \
@@ -7673,7 +7673,7 @@ DEFN_CHPL_COMM_ATOMIC_WRITE(real64, FI_DOUBLE, _real64)
 #define DEFN_CHPL_COMM_ATOMIC_READ(fnType, ofiType, Type)               \
   void chpl_comm_atomic_read_##fnType                                   \
          (void* result, c_nodeid_t node, void* object,                  \
-          chpl_memory_order order, int ln, int32_t fn) {                     \
+          chpl_memory_order order, int32_t ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO_READ,                                      \
                "%s(%p, %d, %p, %d, %s)", __func__,                      \
                result, (int) node, object,                              \
@@ -7699,7 +7699,7 @@ DEFN_CHPL_COMM_ATOMIC_READ(real64, FI_DOUBLE, _real64)
 #define DEFN_CHPL_COMM_ATOMIC_XCHG(fnType, ofiType, Type)               \
   void chpl_comm_atomic_xchg_##fnType                                   \
          (void* desired, c_nodeid_t node, void* object, void* result,   \
-          chpl_memory_order order, int ln, int32_t fn) {                     \
+          chpl_memory_order order, int32_t ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(%p, %d, %p, %p, %d, %s)", __func__,                  \
                desired, (int) node, object, result,                     \
@@ -7725,7 +7725,7 @@ DEFN_CHPL_COMM_ATOMIC_XCHG(real64, FI_DOUBLE, _real64)
   void chpl_comm_atomic_cmpxchg_##fnType                                \
          (void* expected, void* desired, c_nodeid_t node, void* object, \
           chpl_bool32* result, chpl_memory_order succ, chpl_memory_order fail,    \
-          int ln, int32_t fn) {                                         \
+          int32_t ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(%p, %p, %d, %p, %p, %d, %s)", __func__,              \
                expected, desired, (int) node, object, result,           \
@@ -7755,7 +7755,7 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, _real64)
 #define DEFN_IFACE_AMO_SIMPLE_OP(fnOp, ofiOp, fnType, ofiType, Type)    \
   void chpl_comm_atomic_##fnOp##_##fnType                               \
          (void* opnd, c_nodeid_t node, void* object,                    \
-          chpl_memory_order order, int ln, int32_t fn) {                     \
+          chpl_memory_order order, int32_t ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %d, %s)", __func__,                    \
                DBG_VAL(opnd, ofiType), (int) node,                      \
@@ -7768,7 +7768,7 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, _real64)
                                                                         \
   void chpl_comm_atomic_##fnOp##_unordered_##fnType                     \
          (void* opnd, c_nodeid_t node, void* object,                    \
-          int ln, int32_t fn) {                                         \
+          int32_t ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %d, %s)", __func__,                    \
                DBG_VAL(opnd, ofiType), (int) node,                      \
@@ -7781,7 +7781,7 @@ DEFN_CHPL_COMM_ATOMIC_CMPXCHG(real64, FI_DOUBLE, _real64)
                                                                         \
   void chpl_comm_atomic_fetch_##fnOp##_##fnType                         \
          (void* opnd, c_nodeid_t node, void* object, void* result,      \
-          chpl_memory_order order, int ln, int32_t fn) {                     \
+          chpl_memory_order order, int32_t ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %p, %d, %s)", __func__,                \
                DBG_VAL(opnd, ofiType), (int) node,                      \
@@ -7855,7 +7855,7 @@ DEFN_IFACE_AMO_SIMPLE_OP(max, FI_MAX, real64, FI_DOUBLE, _real64)
 #define DEFN_IFACE_AMO_SUB(fnType, ofiType, Type, negate)               \
   void chpl_comm_atomic_sub_##fnType                                    \
          (void* opnd, c_nodeid_t node, void* object,                    \
-          chpl_memory_order order, int ln, int32_t fn) {                     \
+          chpl_memory_order order, int32_t ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %d, %s)", __func__,                    \
                DBG_VAL(opnd, ofiType), (int) node, object,              \
@@ -7869,7 +7869,7 @@ DEFN_IFACE_AMO_SIMPLE_OP(max, FI_MAX, real64, FI_DOUBLE, _real64)
                                                                         \
   void chpl_comm_atomic_sub_unordered_##fnType                          \
          (void* opnd, c_nodeid_t node, void* object,                    \
-          int ln, int32_t fn) {                                         \
+          int32_t ln, int32_t fn) {                                         \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %d, %s)", __func__,                    \
                DBG_VAL(opnd, ofiType), (int) node, object,              \
@@ -7883,7 +7883,7 @@ DEFN_IFACE_AMO_SIMPLE_OP(max, FI_MAX, real64, FI_DOUBLE, _real64)
                                                                         \
   void chpl_comm_atomic_fetch_sub_##fnType                              \
          (void* opnd, c_nodeid_t node, void* object, void* result,      \
-          chpl_memory_order order, int ln, int32_t fn) {                     \
+          chpl_memory_order order, int32_t ln, int32_t fn) {                     \
     DBG_PRINTF(DBG_IFACE_AMO,                                           \
                "%s(<%s>, %d, %p, %p, %d, %s)", __func__,                \
                DBG_VAL(opnd, ofiType), (int) node, object,              \

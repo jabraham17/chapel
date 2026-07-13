@@ -295,6 +295,28 @@ module AutoMath {
      `false` otherwise. */
   inline proc isFinite(x: real(32)): bool do return chpl_macro_float_isfinite(x):bool;
 
+  /* Returns `true` if the argument `x` is a representation of a finite value;
+     `false` otherwise. */
+  @edition(first="preview")
+  inline proc isFinite(x: imag(64)): bool do return isFinite(x:real(64));
+
+  /* Returns `true` if the argument `x` is a representation of a finite value;
+     `false` otherwise. */
+  @edition(first="preview")
+  inline proc isFinite(x: imag(32)): bool do return isFinite(x:real(32));
+
+  /* Returns `true` if the argument `x` is a representation of a finite value;
+     `false` otherwise. */
+  @edition(last="2.0")
+  @unstable("isFinite is unstable pending review and will be stabilized in a future edition")
+  inline proc isFinite(x: imag(64)): bool do return isFinite(x:real(64));
+
+  /* Returns `true` if the argument `x` is a representation of a finite value;
+     `false` otherwise. */
+  @edition(last="2.0")
+  @unstable("isFinite is unstable pending review and will be stabilized in a future edition")
+  inline proc isFinite(x: imag(32)): bool do return isFinite(x:real(32));
+
   /* Returns `true` if the argument `x` is a representation of *infinity*;
      `false` otherwise. */
   inline proc isInf(x: real(64)): bool do return chpl_macro_double_isinf(x):bool;
@@ -303,6 +325,28 @@ module AutoMath {
      `false` otherwise. */
   inline proc isInf(x: real(32)): bool do return chpl_macro_float_isinf(x):bool;
 
+  /* Returns `true` if the argument `x` is a representation of *infinity*;
+     `false` otherwise. */
+  @edition(first="preview")
+  inline proc isInf(x: imag(64)): bool do return isInf(x:real(64));
+
+  /* Returns `true` if the argument `x` is a representation of *infinity*;
+     `false` otherwise. */
+  @edition(first="preview")
+  inline proc isInf(x: imag(32)): bool do return isInf(x:real(32));
+
+  /* Returns `true` if the argument `x` is a representation of *infinity*;
+     `false` otherwise. */
+  @edition(last="2.0")
+  @unstable("isInf is unstable pending review and will be stabilized in a future edition")
+  inline proc isInf(x: imag(64)): bool do return isInf(x:real(64));
+
+  /* Returns `true` if the argument `x` is a representation of *infinity*;
+     `false` otherwise. */
+  @edition(last="2.0")
+  @unstable("isInf is unstable pending review and will be stabilized in a future edition")
+  inline proc isInf(x: imag(32)): bool do return isInf(x:real(32));
+
   /* Returns `true` if the argument `x` does not represent a valid number;
      `false` otherwise. */
   inline proc isNan(x: real(64)): bool do return chpl_macro_double_isnan(x):bool;
@@ -310,6 +354,28 @@ module AutoMath {
   /* Returns `true` if the argument `x` does not represent a valid number;
      `false` otherwise. */
   inline proc isNan(x: real(32)): bool do return chpl_macro_float_isnan(x):bool;
+
+  /* Returns `true` if the argument `x` does not represent a valid number;
+     `false` otherwise. */
+  @edition(first="preview")
+  inline proc isNan(x: imag(64)): bool do return isNan(x:real(64));
+
+  /* Returns `true` if the argument `x` does not represent a valid number;
+     `false` otherwise. */
+  @edition(first="preview")
+  inline proc isNan(x: imag(32)): bool do return isNan(x:real(32));
+
+  /* Returns `true` if the argument `x` does not represent a valid number;
+     `false` otherwise. */
+  @edition(last="2.0")
+  @unstable("isNan is unstable pending review and will be stabilized in a future edition")
+  inline proc isNan(x: imag(64)): bool do return isNan(x:real(64));
+
+  /* Returns `true` if the argument `x` does not represent a valid number;
+     `false` otherwise. */
+  @edition(last="2.0")
+  @unstable("isNan is unstable pending review and will be stabilized in a future edition")
+  inline proc isNan(x: imag(32)): bool do return isNan(x:real(32));
 
   //
   // min and max
@@ -339,6 +405,11 @@ module AutoMath {
   inline proc max(x: real(64), y: real(64)) do return if (x > y) || isNan(x) then x else y;
 
   @chpldoc.nodoc
+  inline proc max(x: imag(32), y: imag(32)) do return if (x > y) || isNan(x) then x else y;
+  @chpldoc.nodoc
+  inline proc max(x: imag(64), y: imag(64)) do return if (x > y) || isNan(x) then x else y;
+
+  @chpldoc.nodoc
   inline proc max(x: int(8), y: uint(8)) do return if x > y then x : uint(8) else y;
   @chpldoc.nodoc
   inline proc max(x: int(16), y: uint(16)) do return if x > y then x : uint(16) else y;
@@ -362,6 +433,11 @@ module AutoMath {
     compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
   }
 
+  pragma "last resort"
+  @chpldoc.nodoc
+  proc max(x, y) where isComplexType(x.type) || isComplexType(y.type) do
+    compilerError("min() and max() are not supported for complex arguments");
+
   /* Returns the maximum value of two arguments using the ``>`` operator
      for comparison.
      If one of the arguments is :proc:`Math.nan`, the result is also nan.
@@ -384,6 +460,12 @@ module AutoMath {
     where !(isComplex(x) || isComplex(y)) {
     return if x > y then x else y;
   }
+
+  // pragma "last resort"
+  @chpldoc.nodoc
+  inline proc max(param x: numeric, param y: numeric) param
+    where isComplex(x) || isComplex(y) do
+    compilerError("min() and max() are not supported for complex arguments");
 
   @chpldoc.nodoc
   inline proc min(x: int(8), y: int(8)) do return if x < y then x else y;
@@ -409,6 +491,11 @@ module AutoMath {
   inline proc min(x: real(64), y: real(64)) do return if (x < y) || isNan(x) then x else y;
 
   @chpldoc.nodoc
+  inline proc min(x: imag(32), y: imag(32)) do return if (x < y) || isNan(x) then x else y;
+  @chpldoc.nodoc
+  inline proc min(x: imag(64), y: imag(64)) do return if (x < y) || isNan(x) then x else y;
+
+  @chpldoc.nodoc
   inline proc min(x: int(8), y: uint(8)) do return if x < y then x else y : int(8);
   @chpldoc.nodoc
   inline proc min(x: int(16), y: uint(16)) do return if x < y then x else y : int(16);
@@ -431,6 +518,11 @@ module AutoMath {
   proc min(x, y) where isAtomicType(x.type) || isAtomicType(y.type) {
     compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
   }
+
+  pragma "last resort"
+  @chpldoc.nodoc
+  proc min(x, y) where isComplexType(x.type) || isComplexType(y.type) do
+    compilerError("min() and max() are not supported for complex arguments");
 
 
   /* Returns the minimum value of two arguments using the ``<`` operator
@@ -456,6 +548,12 @@ module AutoMath {
     where !(isComplex(x) || isComplex(y)) {
     return if x < y then x else y;
   }
+
+  // pragma "last resort"
+  @chpldoc.nodoc
+  inline proc min(param x: numeric, param y: numeric) param
+    where isComplex(x) || isComplex(y) do
+    compilerError("min() and max() are not supported for complex arguments");
 
   /* Computes the mod operator on the two arguments, defined as
      ``mod(x,y) = x - y * floor(x / y)``.

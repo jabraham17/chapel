@@ -1661,13 +1661,13 @@ done:
 }
 
 static
-void chk_err_fn(const char* file, int lineno, const char* what) {
+void chk_err_fn(const char* file, int32_t lineno, const char* what) {
   chpl_internal_error_v("%s:%d: !(%s)", file, lineno, what);
 }
 
 
 static
-void chk_err_errno_fn(const char* file, int lineno, const char* what) {
+void chk_err_errno_fn(const char* file, int32_t lineno, const char* what) {
   chpl_internal_error_v("%s:%d: !(%s): %s", file, lineno, what,
                         strerror(errno));
 }
