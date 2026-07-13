@@ -708,7 +708,6 @@ static Expr* postFoldPrimop(CallExpr* call) {
     FOLD_CALL2(P_prim_rsh);
 
   } else if (call->isPrimitive(PRIM_IMMEDIATE_EXPRESSION_TYPE) == true) {
-
     SymExpr* lhs = toSymExpr(call->get(1));
     SymExpr* op = toSymExpr(call->get(2));
     SymExpr* rhs = toSymExpr(call->get(3));
@@ -736,6 +735,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     determine_constant_type(gContext, primTag, lhsImm, rhsImm, &res);
     retval = new SymExpr(new_ImmediateSymbol(&res)->type->symbol);
     call->replace(retval);
+
   } else if (call->isPrimitive(PRIM_REQUIRE) == true) {
     Expr*       arg = call->argList.only();
     const char* str = NULL;
