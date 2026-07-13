@@ -4140,7 +4140,7 @@ index 9b607b7c291..9fd33151906 100644
 -genericArrayAsTupleSize.chpl:3: note: other candidates are:
 -$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   *(a: int(16), b: int(16))
 -$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   *(a: int(32), b: int(32))
--note: and 58 other candidates, use --print-all-candidates to see them
+-note: and 68 other candidates, use --print-all-candidates to see them
 +genericArrayAsTupleSize.chpl:3: error: unable to resolve call to '*': no matching candidates
 +$CHPL_HOME/modules/internal/ChapelTuple.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/internal/ChapelTuple.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
