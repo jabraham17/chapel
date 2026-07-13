@@ -816,6 +816,7 @@ VarSymbol *new_ComplexSymbol(const char *n, long double r, long double i,
 
 VarSymbol *new_CommIDSymbol(int64_t b);
 
+Type* immediate_type(Immediate *imm);
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
 
 // Get an Immediate stored in a VarSymbol or an EnumSymbol.

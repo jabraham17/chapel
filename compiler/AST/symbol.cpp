@@ -1977,8 +1977,7 @@ VarSymbol* new_CommIDSymbol(int64_t b) {
   return s;
 }
 
-static Type*
-immediate_type(Immediate *imm) {
+Type* immediate_type(Immediate *imm) {
   switch (imm->const_kind) {
     case CONST_KIND_STRING: {
       if (imm->string_kind == STRING_KIND_STRING) {

@@ -733,7 +733,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
     Immediate res;
     determine_constant_type(gContext, primTag, lhsImm, rhsImm, &res);
-    retval = new SymExpr(new_ImmediateSymbol(&res)->type->symbol);
+    retval = new SymExpr(immediate_type(&res)->symbol);
     call->replace(retval);
 
   } else if (call->isPrimitive(PRIM_REQUIRE) == true) {
