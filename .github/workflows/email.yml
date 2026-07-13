@@ -34,6 +34,7 @@ jobs:
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
         with:
           fetch-depth: 0
+          allow-unsafe-pr-checkout: true
       # this step will (1) get the merge log for the merge_commit_sha and save it to the git  actions EN for later use in the email body.
       # (2) Get the files changed on the merge commit using the git log --name-status command.
       - name: Get merge log
