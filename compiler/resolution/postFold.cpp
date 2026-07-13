@@ -706,7 +706,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
   } else if (call->isPrimitive(PRIM_RSH) == true) {
     FOLD_CALL2(P_prim_rsh);
-  
+
   } else if (call->isPrimitive(PRIM_IMMEDIATE_EXPRESSION_TYPE) == true) {
 
     SymExpr* lhs = toSymExpr(call->get(1));
