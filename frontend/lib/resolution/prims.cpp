@@ -2039,6 +2039,20 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
       type = primTypeof(context, prim, ci);
       break;
 
+    case PRIM_IMMEDIATE_EXPRESSION_TYPE:
+    // TODO: this is not really correct, the type of this is actually dependenat
+    // on the operator used and the types of the operands
+    // counterexamples
+    //   int && int -> bool
+    //   int(32) * int(64) -> int(64)
+    // but this is good enough to prevent regressions in dyno.
+    // In the future, this should be fixed
+      if (ci.numActuals() > 0) {
+        type = QualifiedType(QualifiedType::TYPE,
+                             ci.actual(0).type().type());
+      }
+      break;
+
     case PRIM_SCALAR_PROMOTION_TYPE:
       type = primPromotionType(context, ci);
       break;
@@ -2113,7 +2127,6 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_THUNK_RESULT:
     case PRIM_FORCE_THUNK:
     case PRIM_THUNK_RESULT_TYPE:
-    case PRIM_IMMEDIATE_EXPRESSION_TYPE:
       CHPL_UNIMPL("misc primitives");
       break;
 
