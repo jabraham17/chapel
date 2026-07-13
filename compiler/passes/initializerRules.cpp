@@ -576,7 +576,17 @@ static InitNormalize preNormalize(AggregateType* at,
           checkLocalPhaseOneErrors(state, field, callExpr);
           stmt = state.fieldInitFromInitStmt(field, callExpr);
           if (at->isUnion()) {
-            state.completePhase1(callExpr);
+            // Having initialized a union field, we're done with phase 1
+            CallExpr* ce = toCallExpr(stmt);
+            if (ce && getInitDoneStyle(ce) != NULL) {
+              // If the next statement is `init this;`, the code has
+              // indicated this already, so do nothing, as it will
+              // advance us past phase 1 when we process it
+            } else {
+              // otherwise, have the field initialization
+              // automatically cause phase 1 to be considered complete
+              state.completePhase1(callExpr);
+            }
           }
         } else if (state.isFieldImplicitlyInitialized(field) == true) {
           USR_FATAL_CONT(stmt,
