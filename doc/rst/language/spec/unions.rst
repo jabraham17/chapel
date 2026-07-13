@@ -167,7 +167,7 @@ Default Initialization
 ~~~~~~~~~~~~~~~~~~~~~~
 
 As with records, when a union is declared with no explicit
-initialization, `init`` will be called with no arguments, invoking its
+initialization, ``init`` will be called with no arguments, invoking its
 default initializer.  The compiler-generated default initializer for a
 union is defined to set up the union such that none of its fields are
 active.  A user may define their own zero-argument initializer to get
@@ -180,8 +180,8 @@ Compiler-Generated Initializers
 If no user-defined primary or secondary initializers are declared, the
 compiler creates the aforementioned zero-argument initializer as well
 as an initializer per field that accepts an ``in`` argument with the
-field's name and whose type matches that of the field.  Thus, a union
-like the following:
+field's name and whose type matches the field's.  Thus, a union like
+the following:
 
    .. code-block:: chapel
 
@@ -191,14 +191,14 @@ like the following:
         var z: int;
       }
 
-would result in compiler-generated initializers per field as follows:
+would result in the following compiler-generated initializers:
 
    .. code-block:: chapel
 
       proc u.init() {
         init this;
       }
-                   
+
       proc u.init(in x: real) {
         this.x = x;
       }
@@ -245,7 +245,7 @@ follows:
 .. index::
    single: user-defined initializers; unions
    single: unions; user-defined initializers
-.. _User_Defined_Initializers:
+.. _User_Defined_Union_Initializers:
 
 User-Defined Initializers
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -253,8 +253,8 @@ User-Defined Initializers
 User-defined initializers for unions are similar to those of classes
 and records in that initial assignments to fields are interpreted as
 initializations rather than assignments.  However, they differ since
-only one field must be initialized for the union to be considered to
-be initialized as a whole.
+only one field must be initialized for the union to be considered
+initialized as a whole.
 
 Thus, where a class or record initializer implicitly or explicitly
 initializes every field in the type after which subsequent assignments
@@ -262,7 +262,7 @@ are treated as initialization, in a union only the first assignment
 along any control flow path is treated as initialization, and all
 subsequent ones are assignments.  For that reason, it is only
 important that branches of a conditional are consistent in whether or
-not they initialize _any_ field of a union; there is no need to
+not they initialize *any* field of a union; there is no need to
 initialize similar fields along each branch as with records and
 classes.
 
@@ -290,13 +290,12 @@ a simple union type:
 
           // Note that this a silly default initializer; since only
           // one field can be active, the body could simply be 'this.y = 3;'
-          // since the assignment to `y` invalidates the `x` field being
-          // active
+          // since the assignment to 'y' invalidates the 'x' field being active
         }
 
         proc init(initY: bool, val: int) {
           // an initializer that initializes one of y or z
-          
+
           if initY then
             this.y = val;  // initialize the 'y' field
           else
@@ -304,8 +303,8 @@ a simple union type:
         }
 
         proc init(msg: string) {
-          init this;      // causes no field to be active
-          writeln(msg, this);  // prints '()' since no field is active
+          init this;           // initializes union with no active field
+          writeln(msg, this);  // prints '()' for 'this' since no field is active
         }
       }
 
@@ -369,7 +368,7 @@ types, a compiler error is generated.
 
 These default comparisons consider two union values to be equal if (a)
 both unions have the same active field and (b) the respective values
-of this field are considered equal using `==`.  Otherwise they are
+of this field are considered equal using ``==``.  Otherwise they are
 considered not equal.
 
 
