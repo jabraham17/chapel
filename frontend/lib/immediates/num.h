@@ -387,8 +387,9 @@ int fprint_imm(FILE *fp, const Immediate &imm, bool showType = false);
 int snprint_imm(char *s, size_t max, const Immediate &imm);
 void coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to);
 void fold_result(Immediate *imm1, Immediate *imm2, Immediate *imm);
-void determine_constant_type(chpl::Context* context, int op,
-                              Immediate *im1, Immediate *im2, Immediate *imm);
+std::pair<Immediate, Immediate> determine_constant_type(
+  chpl::Context* context, int op,
+  Immediate *im1, Immediate *im2, Immediate *imm);
 void fold_constant(chpl::Context* context, int op,
                    Immediate *im1, Immediate *im2, Immediate *imm);
 ImmString istrFromUserBool(chpl::Context* context, bool b);

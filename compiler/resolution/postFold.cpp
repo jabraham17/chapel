@@ -732,7 +732,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     INT_ASSERT(lhsImm && rhsImm);
 
     Immediate res;
-    determine_constant_type(gContext, primTag, lhsImm, rhsImm, &res);
+    std::ignore = determine_constant_type(gContext, primTag, lhsImm, rhsImm, &res);
     retval = new SymExpr(immediate_type(&res)->symbol);
     call->replace(retval);
 

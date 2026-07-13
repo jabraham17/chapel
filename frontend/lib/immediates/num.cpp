@@ -1091,8 +1091,10 @@ fold_result(Immediate *im1, Immediate *im2, Immediate *imm) {
   }
 }
 
-void determine_constant_type(chpl::Context* context, int op,
-              Immediate *aim1, Immediate *aim2, Immediate *imm) {
+std::pair<Immediate, Immediate> determine_constant_type(
+  chpl::Context* context, int op,
+  Immediate *aim1, Immediate *aim2, Immediate *imm
+) {
   Immediate im1(*aim1), im2, coerce;
   if (aim2)
     im2 = *aim2;
@@ -1182,18 +1184,14 @@ void determine_constant_type(chpl::Context* context, int op,
       im2 = coerce;
     }
   }
+  return std::make_pair(im1, im2);
 }
 
 void
 fold_constant(chpl::Context* context, int op,
               Immediate *aim1, Immediate *aim2, Immediate *imm) {
 
-  determine_constant_type(context, op, aim1, aim2, imm);
-
-  Immediate im1(*aim1), im2, coerce;
-  if (aim2)
-    im2 = *aim2;
-  
+  auto [im1, im2] = determine_constant_type(context, op, aim1, aim2, imm);
 
   switch (op) {
     default: CHPL_ASSERT(false && "fold constant op not supported"); break;
