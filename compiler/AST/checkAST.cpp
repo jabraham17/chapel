@@ -206,7 +206,6 @@ void checkPrimitives()
      case PRIM_OR:
      case PRIM_XOR:
      case PRIM_POW:
-     case PRIM_IMMEDIATE_EXPRESSION_TYPE:
      case PRIM_ASSIGN:
      case PRIM_SET_REFERENCE:
      case PRIM_ADD_ASSIGN:
