@@ -3192,18 +3192,18 @@ private proc isBCPindex(type t) param do
   // The "actual" counted range iter. Turn the bounds of a low bounded counted
   // range into the bounds of a fully bounded non-strided range. `low..#count`
   // becomes `low..(low + (count - 1))`. Needs to check for negative counts,
-  // and for zero counts iterates over a degenerate `low..low-1`.
-  iter chpl_direct_counted_range_iter_helper(low, count) {
+  // fo
+  iter chpl_direct_counted_range_iter_helper(low, count): low.type {
+    if count == 0 then
+      return; // degenerate range, nothing to iterate over
+
     if boundsChecking && isIntType(count.type) && count < 0 then
       HaltWrappers.boundsCheckHalt("With a negative count, the range must have a last index.");
 
     pragma "no user debug info"
     const start = low;
-    // The cast to uint in the 'then' clause avoids avoids a C compile-time
-    // warnings when 'low' is min(int)
     pragma "no user debug info"
-    const end = if count == 0 then (low:uint - 1):low.type
-                              else (low + (count:low.type - 1)):low.type;
+    const end = (low + (count:low.type - 1)):low.type;
 
     for i in chpl_direct_param_stride_range_iter(start, end, 1) do yield i;
   }
