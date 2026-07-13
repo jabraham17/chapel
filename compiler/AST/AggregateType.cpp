@@ -2287,25 +2287,6 @@ static void finalizeInitFn(AggregateType* agg, FnSymbol* fn) {
 }
 
 
-// Refactored from use cases below to avoid duplicated code
-static void  handleLoopExprInits(DefExpr* defPoint, VarSymbol* field) {
-  // TODO: We should really do this somewhere else, and let this
-  // method focus on the initializer and not modify the type's fields.
-  if (LoopExpr* fe = toLoopExpr(defPoint->init)) {
-    if (field->isType() == false) {
-      if (defPoint->exprType == NULL) {
-        CallExpr* copy = new CallExpr(astr_initCopy);
-        defPoint->init->replace(copy);
-
-        Symbol *definedConst = defPoint->sym->hasFlag(FLAG_CONST) ?
-          gTrue : gFalse;
-        copy->insertAtTail(fe);
-        copy->insertAtTail(definedConst);
-      }
-    }
-  }
-}
-
 
 void AggregateType::buildDefaultInitializer() {
   if (builtDefaultInit == false &&
@@ -2368,8 +2349,6 @@ void AggregateType::buildDefaultInitializer() {
 
             if (field->hasFlag(FLAG_UNSAFE))
               arg->addFlag(FLAG_UNSAFE);
-
-            handleLoopExprInits(defPoint, field);
 
             if (defPoint->exprType == NULL) {
               USR_FATAL(field, "currently, union fields must have a declared type");
@@ -2552,7 +2531,21 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
         if (field->hasFlag(FLAG_UNSAFE))
           arg->addFlag(FLAG_UNSAFE);
 
-        handleLoopExprInits(defPoint, field);
+        // TODO: We should really do this somewhere else, and let this
+        // method focus on the initializer and not modify the type's fields.
+        if (LoopExpr* fe = toLoopExpr(defPoint->init)) {
+          if (field->isType() == false) {
+            if (defPoint->exprType == NULL) {
+              CallExpr* copy = new CallExpr(astr_initCopy);
+              defPoint->init->replace(copy);
+
+              Symbol *definedConst = defPoint->sym->hasFlag(FLAG_CONST) ?
+                                     gTrue : gFalse;
+              copy->insertAtTail(fe);
+              copy->insertAtTail(definedConst);
+            }
+          }
+        }
 
         //
         // A generic field.  Could be type/param/variable
