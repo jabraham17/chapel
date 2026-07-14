@@ -56,13 +56,12 @@
 #ifndef CHPL_SAT_SADD
   #define CHPL_SAT_SADD(__res, __x, __y, __stype, __utype, __smax) \
   do { \
-    __utype __ux  = (__utype)__x;
-    __utype __uy  = (__utype)__y;
-    __utype __ures = __ux + __uy;
-    __utype __sat = (__ux >> (sizeof(__stype)*8-1)) + (__utype)__smax;
-    __utype __overflow = (__ures ^ __ux) & (__ures ^ __uy);
-    __utype __max = (__utype)0 - (__overflow >> (sizeof(__stype)*8-1));
-    __res = (__stype)((__ures & ~__max) | (__sat & __max));
-  } \
-  while (0)
+    __utype __ux  = (__utype)__x; \
+    __utype __uy  = (__utype)__y; \
+    __utype __ures = __ux + __uy; \
+    __utype __sat = (__ux >> (sizeof(__stype)*8-1)) + (__utype)__smax; \
+    __utype __overflow = (__ures ^ __ux) & (__ures ^ __uy); \
+    __utype __max = (__utype)0 - (__overflow >> (sizeof(__stype)*8-1)); \
+    __res = (__stype)((__ures & ~__max) | (__sat & __max)); \
+  } while (0)
 #endif
