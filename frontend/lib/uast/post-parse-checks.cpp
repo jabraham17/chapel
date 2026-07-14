@@ -2103,20 +2103,18 @@ void Visitor::checkUnionElements(const Union* node) {
       const Variable* last = NULL;
       for (auto child : multivar->decls()) {
         if (const Variable* var = child->toVariable()) {
-          if (!checkUnionElement(var, first, false)) {
-            // don't bother generating an error per variable in a multi-decl
-            last = NULL;
-            //            break;
-          } else {
+          if (checkUnionElement(var, first, false)) {
             last = var;
+          } else {
+            last = NULL;
           }
         }
         first = false;
       }
       // The loop above will skip past cases where type and init are
-      // both NULL since we can't tell whether they're just inheriting
-      // the following field's values or not.  This checks the last
-      // declaration to make sure
+      // both NULL since we can't tell whether they're about to
+      // inherit the following field's values or not.  This re-checks
+      // the last declaration to make sure.
       if (last) {
         checkUnionElement(last, first, true);
       }
