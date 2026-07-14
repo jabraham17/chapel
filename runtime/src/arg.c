@@ -119,7 +119,7 @@ static void parseDashEArgs(int* argc, char* argv[]) {
   const int32_t filename = CHPL_FILE_IDX_COMMAND_LINE_ARG;
 
   for (int i = 1; i < *argc; i++) {
-    int lineno = i;
+    int32_t lineno = i;
     const char* currentArg = argv[i];
 
     if (currentArg[0] == '-' && currentArg[1] == 'E') {
@@ -381,7 +381,7 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
 
   for (i = 1; i < *argc; i++) {
     const int32_t filename = CHPL_FILE_IDX_COMMAND_LINE_ARG;
-    int lineno = i + (origargc - *argc);
+    int32_t lineno = i + (origargc - *argc);
     int argLength = 0;
     const char* currentArg = argv[i];
     argLength = strlen(currentArg);

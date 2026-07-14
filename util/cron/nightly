@@ -602,8 +602,26 @@ if ($build == 1) {
 
   # Build mason
   if ($mason_build == 1) {
-    print "Making mason\n";
-    mysystem("cd $chplhomedir && $make -j$num_procs mason", "making mason", $exitOnError);
+    print "Making $make_vars_opt mason\n";
+    mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt mason", "making mason", $exitOnError);
+  } else {
+    # if not building mason, just clone the mason deps so certain mason unit tests
+    # that run without building mason can still run without needing to
+    # download dependencies themselves (which they do for paratest)
+    # we only do this in two cases to avoid excessive network requests
+    # * if testdirs is empty, then we're testing everything in
+    #   $CHPL_HOME/test, which includes mason tests so we need the mason deps
+    # * if testdirs is not empty but does contain mason, then mason will be
+    #   tested and we need the mason deps
+    # no matter what, if performance testing is being done, we don't need to
+    # clone the mason deps
+    if (($testdirs eq "" || $testdirs =~ /mason/) &&
+        ($performance == 0 || $compperformance == 0)) {
+      print "Cloning mason dependencies\n";
+      mysystem("cd $chplhomedir && $make -j$num_procs mason-deps", "cloning mason dependencies", $exitOnError);
+    } else {
+      print "Skipping cloning mason dependencies since mason is not being tested\n";
+    }
   }
 
   # Build the protobuf Chapel plugin

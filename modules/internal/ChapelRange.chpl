@@ -35,15 +35,9 @@ module ChapelRange {
   @chpldoc.nodoc
   config param useOptimizedRangeIterators = true;
 
-  /* Compile with ``-snewRangeLiteralType`` to switch to using the new rule
-     for determining the idxType of a range literal with param integral bounds
-     and to turn off the deprecation warning for using the old rule.
-
-     The new rule defines such idxType to be the type produced by adding
-     the two bounds. I.e.,``(low..high).idxType`` is ``(low+high).type``
-     when ``low`` and ``high`` are integral params. */
+  @deprecated("newRangeLiteralType has been deprecated and is now the default. This config param will be removed in a future release.")
   @chpldoc.nodoc
-  config param newRangeLiteralType = false;
+  config param newRangeLiteralType = true;
 
   private param unalignedMark = -1;
 
@@ -354,39 +348,9 @@ module ChapelRange {
   //
 
   private
-  proc computeParamRangeIndexType_Old(param low, param high) type {
-    // if either type is int, and the int value fits in the other type,
-    // return the other type
-    if low.type == int &&
-       min(high.type) <= low && low <= max(high.type) {
-      return high.type;
-    } else if high.type == int &&
-              min(low.type) <= high && high <= max(low.type) {
-      return low.type;
-    } else {
-      // otherwise, use the type that '+' would produce.
-      return (low+high).type;
-    }
-  }
-  private
   proc computeParamRangeIndexType(param low, param high) type {
-    if newRangeLiteralType {
-      // The idxType of 'low..high' is the type that '+' would produce.
-      return (low+high).type;
-    }
-    type newRule = (low+high).type;
-    type oldRule = computeParamRangeIndexType_Old(low, high);
-    if newRule == oldRule then
-      return newRule;
-    compilerWarning("the idxType of this range literal ",
-                    low:string, "..", high:string,
-                    " with the low bound of the type ", low.type:string,
-                    " and the high bound of the type ", high.type:string,
-                    " is currently ", oldRule:string,
-          ". In a future release it will be switched to ", newRule:string,
-          ". To switch to this new typing and turn off this warning,",
-          " compile with -snewRangeLiteralType.");
-    return oldRule;
+    // The idxType of 'low..high' is the type that '+' would produce.
+    return (low+high).type;
   }
   proc chpl_isValidRangeIdxType(type t) param {
     return isIntegralType(t) || isEnumType(t) || isBoolType(t);
@@ -3228,7 +3192,7 @@ private proc isBCPindex(type t) param do
   // The "actual" counted range iter. Turn the bounds of a low bounded counted
   // range into the bounds of a fully bounded non-strided range. `low..#count`
   // becomes `low..(low + (count - 1))`. Needs to check for negative counts,
-  // and for zero counts iterates over a degenerate `1..0`.
+  // and for zero counts iterates over a degenerate `low..low-1`.
   iter chpl_direct_counted_range_iter_helper(low, count) {
     if boundsChecking && isIntType(count.type) && count < 0 then
       HaltWrappers.boundsCheckHalt("With a negative count, the range must have a last index.");

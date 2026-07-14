@@ -41,6 +41,7 @@
 #include "qio_plugin_api.h"
 
 #include "chpl-error.h"
+#include "chpl-rt-math.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -2024,7 +2025,8 @@ qioerr _buffered_get_memory_file_lock_held(qio_channel_t* ch, int64_t amt, int w
 
 
   start = qbuffer_end_offset(&ch->buf);
-  end = start + amt;
+  CHPL_SAT_SADD(end, start, amt, int64_t, uint64_t, INT64_MAX);
+
 
   // do not exceed end_pos.
   if( end > ch->end_pos ) {
@@ -3467,7 +3469,7 @@ qioerr _qio_channel_put_bytes_unlocked(qio_channel_t* ch, qbytes_t* bytes, int64
   {
     int64_t start, end;
     start = _right_mark_start(ch);
-    end = start + len_bytes;
+    CHPL_SAT_SADD(end, start, len_bytes, int64_t, uint64_t, INT64_MAX);
     if( end > ch->end_pos ) {
       end = ch->end_pos;
     }

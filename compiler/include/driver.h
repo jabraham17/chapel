@@ -314,6 +314,8 @@ extern char stopAfterPass[128];
 // code generation strings
 extern const char* compileCommandFilename;
 extern const char* compileCommand;
+extern const char* compileEnvsFilename;
+extern std::string compileEnvs;
 extern char compileVersion[64];
 
 // This is where the list of all supported editions goes

@@ -29,7 +29,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
     - name: make check
       run: |
         ./util/buildRelease/smokeTest chpl
@@ -42,7 +42,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
     - name: make frontend-docs
       run: |
         make frontend-docs
@@ -66,7 +66,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
     - name: make mason
       # Use a quickstart config to keep it from running to long
       # While there, run a make check in that config for more coverage
@@ -81,7 +81,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
     - name: run dyno linters
       run: |
         CHPL_HOME=$PWD CHPL_HOST_COMPILER=clang make run-dyno-linters
@@ -94,7 +94,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
     - name: make test-dyno-with-asserts
       # 'make modules' so the ChapelSysCTypes module is available
       run: |
@@ -119,7 +119,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
     - name: set llvm_none make check
       run: |
        CHPL_LLVM=none ./util/buildRelease/smokeTest chpl
@@ -132,12 +132,12 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         fetch-depth: 100000
-    - name: Set ownership
+    - name: set git repo safe directory
       run: |
-        chown -R $(id -u):$(id -g) $PWD
+        git config --global --add safe.directory $PWD
     - name: find bad runtime calls
       run: |
         ./util/devel/lookForBadRTCalls
@@ -164,7 +164,7 @@ jobs:
       - name: count PR commits
         run: echo "PR_NUM_COMMITS=$(( ${{ github.event.pull_request.commits }} + 2 ))" >> "${GITHUB_ENV}"
       - name: checkout commits on PR branch
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: ${{ env.PR_NUM_COMMITS }}
       - name: check commits for large files
@@ -259,7 +259,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # 2.0.0
         with:
@@ -269,7 +269,7 @@ jobs:
   check-format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
         with:
           options: "--check --verbose --line-length 80 --extend-exclude '^/(third-party|test)/'"
@@ -288,7 +288,7 @@ jobs:
         password: ${{ secrets.github_token }}
       options: --user 1001
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
     - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
       id: changes
       with:
@@ -347,6 +347,78 @@ jobs:
 
           start_test test/release/examples
 
+  release-tarball-smoke-test:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - name: set git repo safe directory
+      run: |
+        git config --global --add safe.directory $PWD
+    - name: create release tarball
+      run: |
+        export CHPL_TEST_RELEASE_NORECURSE=1
+        ./util/cron/test-release.bash
+    - name: upload release tarball as artifact
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        path: ./tar/chapel-test.tar.gz
+        archive: false
+
+  chapel-code-smoke-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        config: [gasnet, none]
+        exclude:
+          - os: macos-latest
+            config: gasnet
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: print config info
+        run: |
+          echo "${{ matrix.os }}"
+          echo "${{ matrix.config }}"
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: install deps
+        run: |
+          if [[ "${{ matrix.os }}" == "macos"* ]] ; then
+            brew install llvm
+          else
+            sudo apt install \
+              clang \
+              libclang-dev \
+              libclang-cpp-dev \
+              libedit-dev \
+              llvm \
+              llvm-dev
+          fi
+      - name: setup env and run ./util/buildRelease/smokeTest
+        run: |
+          set -ex
+
+          source ./util/cron/common.bash
+
+          if [[ "${{ matrix.os }}" == "macos"* ]] ; then
+            source ./util/cron/common-darwin.bash
+          fi
+
+          if [[ "${{ matrix.config }}" == "gasnet" ]] ; then
+            source ./util/cron/common-gasnet.bash
+            # Silence warnings about not using ibv despite ibv hardware presence
+            export GASNET_QUIET=yes
+          fi
+
+          export NIGHTLY_TEST_SETTINGS=true
+          export CHPL_SMOKE_SKIP_MAKE_MASON=true
+
+          ./util/buildRelease/smokeTest
+
   # This job exists to have a single check for which failure means merging
   # should be blocked, for GH required status checks purposes.
   # It runs (and fails) if any of the jobs listed in its `needs` ran and
@@ -372,6 +444,8 @@ jobs:
       - check-format
       - test_chpl_language_server
       - gcc-version-tests
+      - release-tarball-smoke-test
+      - chapel-code-smoke-test
     steps:
       - name: Fail
         run: |

@@ -81,6 +81,17 @@ MAIN_LAUNCHER_SRCS = \
 RUNTIME_MALLOC_SRCS = \
 	chpl-mem-replace-malloc.c
 
+STATIC_RUNTIME_ONLY_SRCS = \
+	chplrt-static-build-marker.c
+
+SHARED_RUNTIME_ONLY_SRCS = \
+	chplrt-shared-build-marker.c
+
+STATIC_RUNTIME_ONLY_OBJS = \
+	$(STATIC_RUNTIME_ONLY_SRCS:%.c=$(COMMON_OBJDIR)/%.o)
+
+SHARED_RUNTIME_ONLY_OBJS = \
+	$(SHARED_RUNTIME_ONLY_SRCS:%.c=$(COMMON_OBJDIR)/%.o)
 
 COMMON_OBJS = \
 	$(COMMON_SRCS:%.c=$(COMMON_OBJDIR)/%.o)

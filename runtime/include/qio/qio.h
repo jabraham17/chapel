@@ -850,8 +850,12 @@ qioerr qio_channel_read(const int threadsafe, qio_channel_t* restrict ch, void* 
     }
   }
 
-  // Is there room in our fast path buffer?
-  if( qio_space_in_ptr_diff(len, ch->cached_end, ch->cached_cur) ) {
+
+  if (len == 0) {
+    *amt_read = 0;
+    err = 0;
+  } else if (qio_space_in_ptr_diff(len, ch->cached_end, ch->cached_cur)) {
+    // Is there room in our fast path buffer?
     qio_memcpy( ptr, ch->cached_cur, len );
     ch->cached_cur = qio_ptr_add(ch->cached_cur, len);
     *amt_read = len;

@@ -156,7 +156,6 @@ snprint_imm(char *str, size_t max, const Immediate &imm) {
       res = snprintf(str, max, fmt, imm.v_string.c_str());
       break;
     }
-    default: CHPL_ASSERT(false && "Unhandled case in switch statement");
   }
   return res;
 }
@@ -375,7 +374,6 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
             default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
-        default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
       }
 
 #define COMPUTE_INT_POW(type, b, e)                      \
@@ -499,10 +497,65 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
               }                                                         \
           }                                                             \
           break;                                                        \
-      case NUM_KIND_IMAG: case NUM_KIND_COMPLEX:                        \
-          CHPL_ASSERT(false && "Cannot fold ** on floating point values"); \
+        case NUM_KIND_COMPLEX:                                          \
+          switch (imm->num_index) {                                     \
+            case COMPLEX_SIZE_64:                                       \
+              {                                                         \
+                imm->v_complex64 = complexPow64(im1.v_complex64, im2.v_complex64); \
+                break;                                                  \
+              }                                                         \
+            case COMPLEX_SIZE_128:                                      \
+              {                                                         \
+                imm->v_complex128 = complexPow128(im1.v_complex128, im2.v_complex128); \
+                break;                                                  \
+              }                                                         \
+          }                                                             \
+          break;                                                        \
+        case NUM_KIND_IMAG:                                             \
+          CHPL_ASSERT(false && "Cannot fold ** on imaginary values");   \
           break; \
-      default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
+      }
+
+#define DO_FOLDDIV()                                                    \
+      switch (imm->const_kind) {                                        \
+        case NUM_KIND_COMPLEX:                                          \
+          switch (imm->num_index) {                                     \
+            case COMPLEX_SIZE_64:                                       \
+              {                                                         \
+                imm->v_complex64 = complexDiv64(im1.v_complex64, im2.v_complex64); \
+                break;                                                  \
+              }                                                         \
+            case COMPLEX_SIZE_128:                                      \
+              {                                                         \
+                imm->v_complex128 = complexDiv128(im1.v_complex128, im2.v_complex128); \
+                break;                                                  \
+              }                                                         \
+          }                                                             \
+          break;                                                        \
+        default:                                                        \
+          DO_FOLD(/, false, false);                                     \
+          break;                                                        \
+      }
+
+#define DO_FOLDMUL()                                                    \
+      switch (imm->const_kind) {                                        \
+        case NUM_KIND_COMPLEX:                                          \
+          switch (imm->num_index) {                                     \
+            case COMPLEX_SIZE_64:                                       \
+              {                                                         \
+                imm->v_complex64 = complexMul64(im1.v_complex64, im2.v_complex64); \
+                break;                                                  \
+              }                                                         \
+            case COMPLEX_SIZE_128:                                      \
+              {                                                         \
+                imm->v_complex128 = complexMul128(im1.v_complex128, im2.v_complex128); \
+                break;                                                  \
+              }                                                         \
+          }                                                             \
+          break;                                                        \
+        default:                                                        \
+          DO_FOLD(*, false, false);                                     \
+          break;                                                        \
       }
 
 static void doFoldSqrt(chpl::Context* context,
@@ -560,7 +613,6 @@ static void doFoldSqrt(chpl::Context* context,
         default: CHPL_ASSERT(false && "Unhandled case in switch statement");
       }
       break;
-    default: CHPL_ASSERT(false && "Unhandled case in switch statement");
   }
 }
 
@@ -629,7 +681,6 @@ static void doFoldAbs(chpl::Context* context,
         default: CHPL_ASSERT(false && "Unhandled case in switch statement");
       }
       break;
-    default: CHPL_ASSERT(false && "Unhandled case in switch statement");
   }
 }
 
@@ -648,7 +699,6 @@ static void doFoldGetReal(chpl::Context* context,
         default: CHPL_ASSERT(false && "Unhandled case in switch statement");
       }
       break;
-    default: CHPL_ASSERT(false && "Unhandled case in switch statement");
   }
 }
 
@@ -667,7 +717,27 @@ static void doFoldGetImag(chpl::Context* context,
         default: CHPL_ASSERT(false && "Unhandled case in switch statement");
       }
       break;
-    default: CHPL_ASSERT(false && "Unhandled case in switch statement");
+  }
+}
+
+static void doFoldBuildComplex(chpl::Context* context,
+                               Immediate &im1, /* input */
+                               Immediate &im2, /* input */
+                               Immediate *imm  /* output */) {
+  switch (imm->const_kind) {
+    case NUM_KIND_COMPLEX:
+      switch (imm->num_index) {
+        case COMPLEX_SIZE_64:
+          imm->v_complex64.r = im1.v_float32;
+          imm->v_complex64.i = im2.v_float32;
+          break;
+        case COMPLEX_SIZE_128:
+          imm->v_complex128.r = im1.v_float64;
+          imm->v_complex128.i = im2.v_float64;
+          break;
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement");
+      }
+      break;
   }
 }
 
@@ -733,7 +803,6 @@ static void doFoldGetImag(chpl::Context* context,
             default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
-        default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
       }
 
 #define DO_FOLDI(_op) \
@@ -773,7 +842,6 @@ static void doFoldGetImag(chpl::Context* context,
         } \
         case NUM_KIND_REAL: case NUM_KIND_IMAG: case NUM_KIND_COMPLEX: \
           CHPL_ASSERT(false && "Unhandled case in switch statement"); \
-        default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
       }
 
 #define DO_FOLD1(_op) \
@@ -833,7 +901,6 @@ static void doFoldGetImag(chpl::Context* context,
             default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
-        default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
       }
 
 #define DO_FOLD1I(_op) \
@@ -874,7 +941,6 @@ static void doFoldGetImag(chpl::Context* context,
         case NUM_KIND_REAL: case NUM_KIND_IMAG: case NUM_KIND_COMPLEX: \
           CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           break; \
-        default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
       }
 
 static int
@@ -1026,7 +1092,7 @@ fold_result(Immediate *im1, Immediate *im2, Immediate *imm) {
 }
 
 void
-fold_constant(chpl::Context* context, chpl::uast::primtags::PrimitiveTag op,
+fold_constant(chpl::Context* context, int op,
               Immediate *aim1, Immediate *aim2, Immediate *imm) {
 
   Immediate im1(*aim1), im2, coerce;
@@ -1095,6 +1161,20 @@ fold_constant(chpl::Context* context, chpl::uast::primtags::PrimitiveTag op,
         imm->num_index = im1.num_index;
       }
       break;
+    case P_prim_build_complex:
+      if ((im1.const_kind == NUM_KIND_REAL || im1.const_kind == NUM_KIND_IMAG) &&
+          (im2.const_kind == NUM_KIND_REAL || im2.const_kind == NUM_KIND_IMAG)) {
+        imm->const_kind = NUM_KIND_COMPLEX;
+        if (im1.num_index == FLOAT_SIZE_32 && im2.num_index == FLOAT_SIZE_32)
+          imm->num_index = COMPLEX_SIZE_64;
+        else if (im1.num_index == FLOAT_SIZE_64 && im2.num_index == FLOAT_SIZE_64)
+          imm->num_index = COMPLEX_SIZE_128;
+        else
+          CHPL_ASSERT(false && "build_complex numeric kind not supported");
+      } else {
+        CHPL_ASSERT(false && "build_complex numeric kind not supported");
+      }
+      break;
   }
   if (coerce.const_kind) {
     coerce_immediate(context, &im1, &coerce);
@@ -1106,8 +1186,8 @@ fold_constant(chpl::Context* context, chpl::uast::primtags::PrimitiveTag op,
   }
   switch (op) {
     default: CHPL_ASSERT(false && "fold constant op not supported"); break;
-    case P_prim_mult: DO_FOLD(*, false, false); break;
-    case P_prim_div: DO_FOLD(/, false, false); break;
+    case P_prim_mult: DO_FOLDMUL(); break;
+    case P_prim_div: DO_FOLDDIV(); break;
     case P_prim_mod: DO_FOLDI(%); break;
     case P_prim_add: DO_FOLD(+, true, false); break;
     case P_prim_subtract: DO_FOLD(-, false, true); break;
@@ -1146,6 +1226,10 @@ fold_constant(chpl::Context* context, chpl::uast::primtags::PrimitiveTag op,
     }
     case P_prim_get_real: {
       doFoldGetReal(context, im1, imm);
+      break;
+    }
+    case P_prim_build_complex: {
+      doFoldBuildComplex(context, im1, im2, imm);
       break;
     }
   }
