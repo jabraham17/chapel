@@ -167,6 +167,7 @@ struct Visitor {
   void checkForwardingInNonRecordOrClass(const ForwardingDecl* node);
   void checkMainFunctions(const Function* node);
   void checkUnionElements(const Union* node);
+  bool checkUnionElement(const Variable* var, bool first, bool last);
 
   /*
   TODO
@@ -2095,18 +2096,54 @@ void Visitor::checkMainFunctions(const Function* fn) {
 
 void Visitor::checkUnionElements(const Union* node) {
   for (auto decl : node->decls()) {
-    if (auto var = decl->toVariable()) {
-      if (var->kind() != Variable::VAR) {
-        error(var, "union fields must be 'var'");
-      } else if (!var->typeExpression()) {
-        error(var, "union fields must have an explicit type");
-      } else if (var->initExpression()) {
-        error(var, "union fields cannot have initializers");
+    if (const Variable* var = decl->toVariable()) {
+      checkUnionElement(var, true, true);
+    } else if (auto multivar = decl->toMultiDecl()) {
+      bool first = true;
+      const Variable* last = NULL;
+      for (auto child : multivar->decls()) {
+        if (const Variable* var = child->toVariable()) {
+          if (!checkUnionElement(var, first, false)) {
+            // don't bother generating an error per variable in a multi-decl
+            last = NULL;
+            //            break;
+          } else {
+            last = var;
+          }
+        }
+        first = false;
+      }
+      // The loop above will skip past cases where type and init are
+      // both NULL since we can't tell whether they're just inheriting
+      // the following field's values or not.  This checks the last
+      // declaration to make sure
+      if (last) {
+        checkUnionElement(last, first, true);
       }
     }
   }
 }
 
+// returns 'true' if OK, 'false' if there's a (known) problem
+//
+// if 'last' is false, we won't generate an error for init+type==NULL
+// cases, since it could be inheriting one that follows...
+  
+bool Visitor::checkUnionElement(const Variable* var, bool first, bool last) {
+  bool retval = false;
+
+  if (var->kind() != Variable::VAR && first) {
+    error(var, "union fields must be 'var'");
+  } else if (var->initExpression()) {
+    error(var, "union fields cannot have initializers");
+  } else if (!var->typeExpression() && last) {
+    error(var, "union fields must have an explicit type");
+  } else {
+    retval = true;
+  }
+  return retval;
+}
+  
 void Visitor::visit(const Module* node){
   checkImplicitModuleSameName(node);
   checkModuleNotInModule(node);
