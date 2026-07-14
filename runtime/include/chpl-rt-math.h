@@ -36,14 +36,14 @@
   the fall back is OK.
 */
 #ifdef __has_builtin
-  #if __has_builtin (__builtin_elementwise_add_sat)
+  #if __has_builtin (__builtin_elementwise_add_sat) && !defined(CHPL_RT_MATH_NO_BUILTIN_SAT)
     #define CHPL_SAT_SADD(__res, __x, __y, __stype, __utype, __smax) \
       do { \
         __res = __builtin_elementwise_add_sat(__x, __y); \
       } while (0)
   #endif
   #ifndef CHPL_SAT_SADD
-      #if __has_builtin (__builtin_add_overflow)
+      #if __has_builtin (__builtin_add_overflow) && !defined(CHPL_RT_MATH_NO_BUILTIN_OVERFLOW)
         #define CHPL_SAT_SADD(__res, __x, __y, __stype, __utype, __smax) \
           do { \
             if (__builtin_add_overflow(__x, __y, &__res)) { \
