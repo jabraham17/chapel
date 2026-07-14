@@ -3,8 +3,8 @@ union U {
   var s: string;
   proc init() {
     writeln("initializing");
-    init this;
-    x = 7;
+    init this;  // default init
+    x = 7;      // then assign to 'x'
     writeln("x is ", x);
   }
 }

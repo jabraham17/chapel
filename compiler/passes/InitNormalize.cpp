@@ -233,7 +233,7 @@ bool InitNormalize::inOnInForall() const {
 void InitNormalize::completePhase1(CallExpr* initStmt) {
   bool isUnion = toAggregateType(mFn->_this->type)->isUnion();
 
-  if        (isThisInit(initStmt)  == true || isUnion) {
+  if (isThisInit(initStmt)  == true || isUnion) {
     mCurrField = NULL;
 
   } else if (isSuperInit(initStmt) == true) {

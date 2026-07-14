@@ -288,9 +288,10 @@ a simple union type:
           this.x = 1.2;  // initializes the 'x' field
           this.y = 3;    // assigns the 'y' field
 
-          // Note that this a silly default initializer; since only
-          // one field can be active, the body could simply be 'this.y = 3;'
-          // since the assignment to 'y' invalidates the 'x' field being active
+          // Note that this default initializer does pointless work.
+          // Since only one field can be active, the assignment to 'y'
+          // overrides the initialization of 'x', so the body could
+          // simply be 'this.y = 3;' to get the same behavior.
         }
 
         proc init(initY: bool, val: int) {

@@ -2334,7 +2334,7 @@ void AggregateType::buildDefaultInitializer() {
           if (!field) {
             INT_FATAL("unexpected: fieldDefExpr can't be made a VarSymbol");
           }
-          assert(!field->hasFlag(FLAG_SUPER_CLASS));
+          INT_ASSERT(!field->hasFlag(FLAG_SUPER_CLASS));
 
           DefExpr* defPoint = field->defPoint;
           const char* name = field->name;
