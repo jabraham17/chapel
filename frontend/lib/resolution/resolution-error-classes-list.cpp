@@ -843,7 +843,6 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
         formalName = "'" + buildTupleDeclName(formalDecl->toTupleDecl()) + "'";
       }
       bool actualPrinted = false;
-      const uast::VarLikeDecl* offendingActual = actualDecls.at(printCount);
       if (candidate.formalReason() == resolution::FAIL_VARARG_TQ_MISMATCH) {
         // a single vararg formal with a type query (like `x: ?t`) was used
         // to pass actuals of different types. Collect all applicable types.
@@ -882,9 +881,9 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
         auto actualName = "'" + actualExpr->toIdentifier()->name().str() + "'";
 
         if (explainedSplitInitsForActuals.insert(candidate.actualIdx()).second) {
-          wr.note(offendingActual->id(), "The actual ", actualName,
+          wr.note(actualExpr->id(), "The actual ", actualName,
                      " expects to be split-initialized because it is declared with a generic type and no initialization expression here:");
-          wr.codeForDef(offendingActual);
+          wr.codeForDef(actualExpr);
           wr.note(actualExpr, "The call to '", ci.name() ,"' occurs before any valid initialization points:");
           wr.code(actualExpr, { actualExpr });
           actualPrinted = true;
