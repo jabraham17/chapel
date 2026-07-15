@@ -145,12 +145,6 @@ if [ $LINT -eq 1 ]; then
     # done with lint checks
 fi
 
-# Source common.bash, which sets up a bunch of environment variables that are
-# required for nightly testing.
-if [ "$GITHUB_ACTIONS" != "true" ]; then
-  source $CHPL_HOME/util/cron/common.bash
-fi
-
 # mason currently requires CHPL_COMM=none -- https://github.com/chapel-lang/chapel/issues/12626
 COMM=`$CHPL_HOME/util/chplenv/chpl_comm.py`
 if [ "$COMM" != "none" ]; then
