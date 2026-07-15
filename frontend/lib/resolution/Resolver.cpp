@@ -3283,7 +3283,9 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
 
     if (auto lhsTuple = op->lhs()->toTuple()) {
       auto rhsQt = byPostorder.byAst(op->rhs()).type();
-      if (auto rhsTupleType = rhsQt.type()->toTupleType()) {
+      if (!rhsQt.isType()) {
+        // TODO: if its not a tuple, its probably should be an error?
+      } else if (auto rhsTupleType = rhsQt.type()->toTupleType()) {
         if (lhsTuple->numActuals() != rhsTupleType->numElements()) {
           byPostorder.byAst(call).setType(RESOLVER_TYPE_ERROR(
               *this, TupleDeclAssignMismatchedElems, op, rhsTupleType));
