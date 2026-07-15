@@ -34,9 +34,19 @@
   __builtin_elementwise_add_sat is a clang extension, use that if available.
   Its more efficent to use __builtin_add_overflow (gcc/clang) but if not available
   the fall back is OK.
+
+  Note: on clang before 21, __builtin_elementwise_add_sat applied the usual
+  integer promotions to scalar arguments, so for types narrower than 'int'
+  (e.g. int8_t/int16_t) the saturating add was computed at 'int' width and then
+  truncated back, which silently wraps instead of saturating (e.g. int8_t
+  127 + 1 yields -128 instead of 127). This was fixed by LLVM PR #119423
+  ("Restrict the use of scalar types in vector builtins"), which first shipped
+  in clang 21. Only use the builtin on clang >= 21; older clang falls through to
+  the promotion-safe __builtin_add_overflow branch below.
 */
 #ifdef __has_builtin
-  #if __has_builtin (__builtin_elementwise_add_sat) && !defined(CHPL_RT_MATH_NO_BUILTIN_SAT)
+  #if __has_builtin (__builtin_elementwise_add_sat) && !defined(CHPL_RT_MATH_NO_BUILTIN_SAT) && \
+      defined(__clang_major__) && __clang_major__ >= 21
     #define CHPL_SAT_SADD(__res, __x, __y, __stype, __utype, __smax) \
       do { \
         __res = __builtin_elementwise_add_sat(__x, __y); \
