@@ -135,9 +135,6 @@ jobs:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         fetch-depth: 100000
-    - name: set git repo safe directory
-      run: |
-        git config --global --add safe.directory $PWD
     - name: find bad runtime calls
       run: |
         ./util/devel/lookForBadRTCalls
@@ -286,7 +283,6 @@ jobs:
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
-      options: --user 1001
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
     - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
@@ -310,9 +306,6 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-    - name: set git repo safe directory
-      run: |
-        git config --global --add safe.directory $PWD
     - name: create release tarball
       run: |
         export CHPL_TEST_RELEASE_NORECURSE=1
