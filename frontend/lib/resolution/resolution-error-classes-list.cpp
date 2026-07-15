@@ -803,12 +803,14 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
       auto badPass = fa.byFormalIdx(candidate.formalIdx());
       auto formalDecl = badPass.formal();
       const uast::AstNode* actualExpr = nullptr;
+      const uast::VarLikeDecl* offendingActualDecl = nullptr;
       bool badSplitInit = false;
 
       // Can be -1 if the candidate is a method which we tried because
       // of a freestanding call 'foo()' in a method context.
       if (candidate.actualIdx() != -1) {
         actualExpr = getActual(candidate.actualIdx());
+        offendingActualDecl = actualDecls.at(printCount);
 
         // at this time, 'getActual' may not be total. In particular, it might
         // return nullptr for the call receiver, since it's relatively
@@ -881,9 +883,11 @@ static void printRejectedCandidates(ErrorWriterBase& wr,
         auto actualName = "'" + actualExpr->toIdentifier()->name().str() + "'";
 
         if (explainedSplitInitsForActuals.insert(candidate.actualIdx()).second) {
-          wr.note(actualExpr->id(), "The actual ", actualName,
-                     " expects to be split-initialized because it is declared with a generic type and no initialization expression here:");
-          wr.codeForDef(actualExpr);
+          if (offendingActualDecl) {
+            wr.note(offendingActualDecl->id(), "The actual ", actualName,
+                      " expects to be split-initialized because it is declared with a generic type and no initialization expression here:");
+            wr.codeForDef(offendingActualDecl);
+          }
           wr.note(actualExpr, "The call to '", ci.name() ,"' occurs before any valid initialization points:");
           wr.code(actualExpr, { actualExpr });
           actualPrinted = true;
