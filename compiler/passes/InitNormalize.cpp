@@ -1150,18 +1150,31 @@ Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
     }
   }
 
-  Expr* initExpr = initStmt->get(2)->remove();
-  retval         = initStmt->next;
-
-  // Unions must initialize the active field ID in addition to the field itself
   if (isUnion) {
+    // since we're initializing, rather than assigning, a union field,
+    // we need to manually set the active field ID
+    //
     initStmt->insertBefore(new CallExpr(PRIM_SET_UNION_ID,
                                         mFn->_this,
                                         new CallExpr(PRIM_FIELD_NAME_TO_NUM,
                                                      at->symbol,
                                                      new_CStringSymbol(field->sym->name))));
 
+    // if the next statement isn't an `init this;`, implicitly insert
+    // one since initializing one union field is sufficient for the
+    // union to be initialized
+    //
+    CallExpr* ce = toCallExpr(initStmt->next);
+    if (!ce || !isInitDone(ce)) {
+      initStmt->insertAfter(new CallExpr(new CallExpr(".",
+                                                      mFn->_this,
+                                                      new_CStringSymbol("chpl__initThisType"))));
+    }
   }
+
+  Expr* initExpr = initStmt->get(2)->remove();
+  retval         = initStmt->next;
+
   initializeField(initStmt, field, initExpr);
   initStmt->remove();
 

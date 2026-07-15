@@ -723,11 +723,7 @@ bool ErrorHandlingVisitor::enterCondStmt(CondStmt* node) {
 
       // Handling during normalize should ensure that both branches result in
       // the same final state
-      // These used to be an assertion here that checked that; however, for
-      // unions the assertion could fail because the assignment of one field
-      // causes the union to be in phase 2; yet the logic to determine that
-      // is not reproduced here, and it seems like too much work to require
-      // that.
+      INT_ASSERT(thenState->currPhase() == elseState->currPhase());
       thenState->merge(*elseState);
       delete elseState;
     }
