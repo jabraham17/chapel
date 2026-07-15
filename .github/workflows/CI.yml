@@ -419,6 +419,7 @@ jobs:
       - test_chpl_language_server
       - release-tarball-smoke-test
       - chapel-code-smoke-test
+      - test-homebrew
     steps:
       - name: Fail
         run: |
