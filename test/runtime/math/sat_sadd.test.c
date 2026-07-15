@@ -11,8 +11,8 @@
     stype _res; \
     CHPL_SAT_SADD(_res, (stype)(x), (stype)(y), stype, utype, smax); \
     if (_res != (stype)(expected)) { \
-      printf("SADD failed: %lld + %lld = %lld, expected %lld\n", \
-             (long long)(x), (long long)(y), (long long)_res, (long long)(expected)); \
+      printf("SADD on %s failed: %lld + %lld = %lld, expected %lld\n", \
+              #stype, (long long)(x), (long long)(y), (long long)_res, (long long)(expected)); \
     } \
   } while (0)
 
