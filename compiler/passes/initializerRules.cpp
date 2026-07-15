@@ -573,13 +573,8 @@ static InitNormalize preNormalize(AggregateType* at,
             stmt = stmt->next;
           }
         } else if (state.isFieldInitialized(field) == false) {
-          if (at->isUnion()) {
-            // Don't try to initialize union fields if not initialized
-            stmt = stmt->next;
-          } else {
-            checkLocalPhaseOneErrors(state, field, callExpr);
-            stmt = state.fieldInitFromInitStmt(field, callExpr);
-          }
+          checkLocalPhaseOneErrors(state, field, callExpr);
+          stmt = state.fieldInitFromInitStmt(field, callExpr);
         } else if (state.isFieldImplicitlyInitialized(field) == true) {
           USR_FATAL_CONT(stmt,
                          "Field \"%s\" initialized out of order",
@@ -649,7 +644,7 @@ static InitNormalize preNormalize(AggregateType* at,
                                                   cond->thenStmt,
                                                   InitNormalize(cond, state));
 
-        if (state.isPhase2() == false) {
+        if (state.isPhase2() == false && !at->isUnion()) {
           if (stateThen.isPhase2() == true) {
             if (phaseThen == InitNormalize::cPhase0) {
               USR_FATAL(cond,
@@ -689,9 +684,15 @@ static InitNormalize preNormalize(AggregateType* at,
         if (state.isPhase2() == false) {
           // Only one branch contained an init
           if (stateThen.isPhase2() != stateElse.isPhase2()) {
-            USR_FATAL(cond,
-                      "Both arms of a conditional must use 'this.init()' "
-                      "or 'init this' in phase 1");
+            if (at->isUnion()) {
+              USR_FATAL(cond,
+                        "All branches of a conditional in a union initializer "
+                        "must initialize a field if any do");
+            } else {
+              USR_FATAL(cond,
+                        "Both arms of a conditional must use 'this.init()' "
+                        "or 'init this' in phase 1");
+            }
 
           } else if (stateThen.currField() != stateElse.currField()) {
             unifyConditionalBranchLastField(at, cond, &stateThen, &stateElse);

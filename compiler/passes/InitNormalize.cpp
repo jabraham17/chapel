@@ -231,7 +231,9 @@ bool InitNormalize::inOnInForall() const {
 ************************************** | *************************************/
 
 void InitNormalize::completePhase1(CallExpr* initStmt) {
-  if        (isThisInit(initStmt)  == true) {
+  bool isUnion = toAggregateType(mFn->_this->type)->isUnion();
+
+  if (isThisInit(initStmt)  == true || isUnion) {
     mCurrField = NULL;
 
   } else if (isSuperInit(initStmt) == true) {
@@ -261,6 +263,11 @@ void InitNormalize::completePhase0(CallExpr* initStmt) {
 }
 
 void InitNormalize::initializeFieldsAtTail(BlockStmt* block, DefExpr* endField) {
+  AggregateType* at = toAggregateType(mFn->_this->type);
+  if (at->isUnion()) {
+    INT_FATAL("initializeFieldsAtTail() unexpectedly called on a union type");
+  }
+
   if (mCurrField != NULL && mCurrField != endField) {
     Expr* noop = new CallExpr(PRIM_NOOP);
 
@@ -274,6 +281,11 @@ void InitNormalize::initializeFieldsAtTail(BlockStmt* block, DefExpr* endField) 
 
 void InitNormalize::initializeFieldsBefore(Expr* insertBefore,
                                            DefExpr* endField) {
+  AggregateType* at = toAggregateType(mFn->_this->type);
+  if (at->isUnion()) {
+    INT_FATAL("initializeFieldsBefore() unexpectedly called on a union type");
+  }
+
   while (mCurrField != NULL && mCurrField != endField) {
     DefExpr* field = mCurrField;
 
@@ -1004,9 +1016,18 @@ void ProcessThisUses::visitSymExpr(SymExpr* node) {
   } else if (DefExpr* local = state->type()->toLocalField(node)) {
     field = local;
     if (state->isFieldInitialized(field) == false) {
-      USR_FATAL_CONT(node,
-                     "field \"%s\" used before it is initialized",
-                     field->sym->name);
+      AggregateType* at = toAggregateType(state->theFn()->_this->type);
+
+      // Why skip unions here?  We get false positives from 'var x, y:
+      // int;' cases because y is defined in terms of `x.type` where
+      // `x` is not, and need not, be initialized.  Open Q: Will
+      // skipping unions here sweep any actually important cases under
+      // the rug?
+      if (!at->isUnion()) {
+        USR_FATAL_CONT(node,
+                       "field \"%s\" used before it is initialized",
+                       field->sym->name);
+      }
     }
   } else if (DefExpr* super = state->type()->toSuperField(node)) {
     field = super;
@@ -1115,8 +1136,10 @@ void InitNormalize::processThisUses(Expr* expr) const {
 Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
                                            CallExpr* initStmt) {
   Expr* retval = NULL;
+  AggregateType* at = toAggregateType(mFn->_this->type);
+  bool isUnion = at->isUnion();
 
-  if (field != mCurrField) {
+  if (field != mCurrField && !isUnion) {
     INT_ASSERT(isFieldReinitialized(field) == false);
 
     while (field != mCurrField) {
@@ -1124,6 +1147,28 @@ Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
       mImplicitFields.insert(mCurrField);
 
       mCurrField = toDefExpr(mCurrField->next);
+    }
+  }
+
+  if (isUnion) {
+    // since we're initializing, rather than assigning, a union field,
+    // we need to manually set the active field ID
+    //
+    initStmt->insertBefore(new CallExpr(PRIM_SET_UNION_ID,
+                                        mFn->_this,
+                                        new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                                                     at->symbol,
+                                                     new_CStringSymbol(field->sym->name))));
+
+    // if the next statement isn't an `init this;`, implicitly insert
+    // one since initializing one union field is sufficient for the
+    // union to be initialized
+    //
+    CallExpr* ce = toCallExpr(initStmt->next);
+    if (!ce || !isInitDone(ce)) {
+      initStmt->insertAfter(new CallExpr(new CallExpr(".",
+                                                      mFn->_this,
+                                                      new_CStringSymbol("chpl__initThisType"))));
     }
   }
 

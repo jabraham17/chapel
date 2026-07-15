@@ -236,7 +236,7 @@ Record Initialization
 
 When default initializing a record (see :ref:`Variable_Lifetimes`), an
 ``init`` method on the record will be called. For a concrete record,
-``init`` wil be called with no arguments. For an instantiated generic
+``init`` will be called with no arguments. For an instantiated generic
 record, the ``type`` and ``param`` arguments are passed by name.
 
 The compiler-generated default initializer for a record is defined in the

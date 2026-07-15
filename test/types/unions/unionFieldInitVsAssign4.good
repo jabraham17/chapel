@@ -1,0 +1,12 @@
+In u.init
+In init
+After r2
+In init
+In init
+In assign
+After r3
+In init
+In init
+In assign
+Before return
+(r1 = (x = 45))
