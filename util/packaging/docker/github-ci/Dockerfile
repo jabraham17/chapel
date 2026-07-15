@@ -43,4 +43,4 @@ RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     update-locale LANG=en_US.UTF-8
 
 # Work around GitHub Actions git "dubious ownership" error
-RUN git config --global --add safe.directory "*"
+RUN git config --system --add safe.directory "*"

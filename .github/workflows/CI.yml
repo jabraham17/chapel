@@ -366,6 +366,26 @@ jobs:
 
           ./util/buildRelease/smokeTest
 
+  test-homebrew:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: print config info
+        run: |
+          echo "${{ matrix.os }}"
+          echo "${{ matrix.config }}"
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: run homebrew testing
+        run: |
+          if [[ "${{ matrix.os }}" == "macos"* ]] ; then
+            ./util/cron/test-homebrew.bash
+          else
+            ./util/cron/test-homebrew-linux.bash
+          fi
+
   # This job exists to have a single check for which failure means merging
   # should be blocked, for GH required status checks purposes.
   # It runs (and fails) if any of the jobs listed in its `needs` ran and
@@ -392,6 +412,7 @@ jobs:
       - test_chpl_language_server
       - release-tarball-smoke-test
       - chapel-code-smoke-test
+      - test-homebrew
     steps:
       - name: Fail
         run: |
