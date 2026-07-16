@@ -424,8 +424,7 @@ include ``imag(32)`` and ``imag(64)``.
    need to manually track which floating point values are ``real`` vs.
    ``imag``, nor do they need to promote everything to a ``complex`` value with
    a zero component. This avoids numeric instabilities, maintains more precise
-   type information, and permits optimized implementations of many operations
-   that are known to result in only a real or imaginary value.
+   type information, and permits optimized implementations of many operations.
 
    For example, adding a ``real`` to an ``imag`` value can simply construct a
    ``complex`` value, whereas promoting them both to ``complex`` values first
