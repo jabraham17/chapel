@@ -418,13 +418,21 @@ include ``imag(32)`` and ``imag(64)``.
 
    *Rationale*.
 
-   The imaginary type is included as a distinct type from real and complex
-   types for a number of reasons. Primarily, it allows for direct, efficent
-   computation between real or imaginary values. Developers do not need to
-   manually track what floating point values are real vs. imaginary, nor do
-   they need to promote everything to a complex value with a zero component.
-   This avoids numeric instabilities and allows for optimizing certain
-   operations that are known to result in only a real or imaginary value.
+   The imaginary type is included as a distinct type from ``real`` and
+   ``complex`` types for a number of reasons. Primarily, it allows for direct,
+   efficent computation between ``real`` or ``imag`` values. Developers do not
+   need to manually track which floating point values are ``real`` vs.
+   ``imag``, nor do they need to promote everything to a ``complex`` value with
+   a zero component. This avoids numeric instabilities, maintains more precise
+   type information, and permits optimized implementations of many operations
+   that are known to result in only a real or imaginary value.
+
+   For example, adding a ``real`` to an ``imag`` value can simply construct a
+   ``complex`` value, whereas promoting them both to ``complex`` values first
+   requires constructing two ``complex`` values and then two degenerate
+   floating point operations (adding a zero component to each). The pure ``real
+   + imag`` operation requires less work and less potential to introduce
+   rounding errors.
 
 Imaginary literals can be created by appending ``i`` to a numeric
 literal; for example, ``0.6i``. Such literals have type ``imag``.
