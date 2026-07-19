@@ -3160,9 +3160,10 @@ void AggregateType::discoverParentAndCheck(Expr* storesName,
 }
 
 void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
-  bool isInit = (strcmp(fn->name, "init")   == 0);
+  bool isInit = (strcmp(fn->name, "init") == 0);
+  bool isInitEquals = (strcmp(fn->name, "init=") == 0);
 
-  if (isInit) {
+  if (isInit || isInitEquals) {
     AggregateType* ct = toAggregateType(t->type);
 
     if (ct == NULL) {
@@ -3182,7 +3183,7 @@ void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
                                     new_IntSymbol(-1)));
     }
 
-    if (ct->hasUserDefinedInit == false) {
+    if (isInit && ct->hasUserDefinedInit == false) {
       // We hadn't previously seen an initializer definition.
       // Update the field on the type appropriately.
       if (fn->hasFlag(FLAG_METHOD_PRIMARY) == true ||
