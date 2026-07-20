@@ -32,6 +32,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     python3-dev \
     python3-pip \
     python3-venv \
+    time \
     tzdata \
     && rm -rf /var/lib/apt/lists/*
 
