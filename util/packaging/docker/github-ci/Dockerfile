@@ -11,6 +11,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     clang-19 \
     cmake \
     cscope \
+    curl \
     doxygen \
     g++ \
     gcc \

@@ -34,6 +34,24 @@ jobs:
       run: |
         ./util/buildRelease/smokeTest chpl
 
+  make_chplvis:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - name: install fluid and libfltk-dev
+      run: |
+        apt update && apt install -y \
+          fluid \
+          libfltk-dev
+    - name: make chplvis
+      run: |
+        bash -c 'source ./util/setchplenv.bash && make chplvis'
+
   make_doc:
     runs-on: ubuntu-latest
     container:
@@ -218,6 +236,19 @@ jobs:
             fi
           fi
 
+  check-release-files:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - name: run check-release-files
+      run: |
+        ./util/buildRelease/check-release-files.bash
+
   publish-docs:
     if: github.event_name == 'push' && github.repository == 'chapel-lang/chapel'
     runs-on: ubuntu-latest
@@ -296,6 +327,52 @@ jobs:
       if: steps.changes.outputs.cls_sources == 'true'
       run: |
         make test-chpl-language-server -j`util/buildRelease/chpl-make-cpu_count`
+
+  gcc-version-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        gcc_version: [9, 10, 11, 12, 13, 14, 15, 16]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install GCC
+        uses: egor-tensin/setup-gcc@a2861a8b8538f49cf2850980acccf6b05a1b2ae4 # v2
+        with:
+          version: ${{ matrix.gcc_version }}
+      - name: Check desired GCC version is default
+        run: |
+          set -exuo pipefail
+
+          gcc_version=$(gcc -dumpversion)
+          gcc_major_version=$(cut -d. -f1 <<< "$gcc_version")
+          if [ "$gcc_major_version" != "${{ matrix.gcc_version }}" ]; then
+            echo "Wrong gcc version"
+            echo "Expected Version: ${{ matrix.gcc_version }} Actual Version: $gcc_major_version"
+            exit 2
+          fi
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Compile Chapel and run example tests
+        run: |
+          source util/setchplenv.bash
+
+          # Use CHPL_LLVM=none to avoid using a system LLVM potentially linked
+          # with a different and incompatible version of GCC
+          export CHPL_LLVM=none
+          export CHPL_LLVM_SUPPORT=bundled
+          unset CHPL_LLVM_CONFIG
+
+          # Set environment variables to nudge cmake towards desired GCC
+          export CHPL_CMAKE_USE_CC_CXX=1
+          export CC=$(which gcc)
+          export CXX=$(which g++)
+
+          export CHPL_LAUNCHER=none
+
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j$num_procs
+          make test-venv
+
+          start_test test/release/examples
 
   release-tarball-smoke-test:
     runs-on: ubuntu-latest
@@ -386,7 +463,7 @@ jobs:
             ./util/cron/test-homebrew-linux.bash
           fi
 
-  check-release-files:
+  test-c2chapel:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
@@ -395,9 +472,9 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-    - name: run check-release-files
+    - name: run test-c2chapel.bash
       run: |
-        ./util/buildRelease/check-release-files.bash
+        ./util/cron/test-c2chapel.bash
 
   # This job exists to have a single check for which failure means merging
   # should be blocked, for GH required status checks purposes.
@@ -412,6 +489,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - make_check
+      - make_chplvis
       - make_doc
       - make_mason
       - check_dyno_linters
@@ -419,14 +497,16 @@ jobs:
       - make_check_llvm_none
       - check_annotations_rt_calls
       - check_large_files
+      - check-release-files
       - publish-docs
       - run-shellcheck
       - check-format
       - test_chpl_language_server
+      - gcc-version-tests
       - release-tarball-smoke-test
       - chapel-code-smoke-test
       - test-homebrew
-      - check-release-files
+      - test-c2chapel
     steps:
       - name: Fail
         run: |
