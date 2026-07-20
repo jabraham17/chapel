@@ -297,6 +297,52 @@ jobs:
       run: |
         make test-chpl-language-server -j`util/buildRelease/chpl-make-cpu_count`
 
+  gcc-version-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        gcc_version: [9, 10, 11, 12, 13, 14, 15, 16]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install GCC
+        uses: egor-tensin/setup-gcc@a2861a8b8538f49cf2850980acccf6b05a1b2ae4 # v2
+        with:
+          version: ${{ matrix.gcc_version }}
+      - name: Check desired GCC version is default
+        run: |
+          set -exuo pipefail
+
+          gcc_version=$(gcc -dumpversion)
+          gcc_major_version=$(cut -d. -f1 <<< "$gcc_version")
+          if [ "$gcc_major_version" != "${{ matrix.gcc_version }}" ]; then
+            echo "Wrong gcc version"
+            echo "Expected Version: ${{ matrix.gcc_version }} Actual Version: $gcc_major_version"
+            exit 2
+          fi
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Compile Chapel and run example tests
+        run: |
+          source util/setchplenv.bash
+
+          # Use CHPL_LLVM=none to avoid using a system LLVM potentially linked
+          # with a different and incompatible version of GCC
+          export CHPL_LLVM=none
+          export CHPL_LLVM_SUPPORT=bundled
+          unset CHPL_LLVM_CONFIG
+
+          # Set environment variables to nudge cmake towards desired GCC
+          export CHPL_CMAKE_USE_CC_CXX=1
+          export CC=$(which gcc)
+          export CXX=$(which g++)
+
+          export CHPL_LAUNCHER=none
+
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j$num_procs
+          make test-venv
+
+          start_test test/release/examples
+
   release-tarball-smoke-test:
     runs-on: ubuntu-latest
     container:
@@ -410,6 +456,7 @@ jobs:
       - run-shellcheck
       - check-format
       - test_chpl_language_server
+      - gcc-version-tests
       - release-tarball-smoke-test
       - chapel-code-smoke-test
       - test-homebrew
