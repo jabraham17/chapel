@@ -43,6 +43,11 @@ jobs:
         password: ${{ secrets.github_token }}
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - name: install fluid and libfltk-dev
+      run: |
+        sudo apt install \
+          fluid \
+          libfltk-dev
     - name: make chplvis
       run: |
         source ./util/setchplenv.bash
