@@ -1176,7 +1176,6 @@ bool InitResolver::handleUseOfField(const AstNode* node) {
   if (!isSuperField && isFieldInitialized(id)) return false;
 
   auto state = fieldStateFromId(id);
-  if (!state) return false;
   bool isValidPreInitMention = false;
 
   if (isDescendingIntoAssignment_ && isSuperField == false)
