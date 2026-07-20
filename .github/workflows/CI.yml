@@ -50,7 +50,7 @@ jobs:
           libfltk-dev
     - name: make chplvis
       run: |
-        source ./util/setchplenv.bash
+        . ./util/setchplenv.bash
         make chplvis
 
   make_doc:
