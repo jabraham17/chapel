@@ -426,6 +426,7 @@ jobs:
       - release-tarball-smoke-test
       - chapel-code-smoke-test
       - test-homebrew
+      - test-c2chapel
     steps:
       - name: Fail
         run: |
