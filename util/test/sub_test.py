@@ -1550,14 +1550,7 @@ def main():
         "perfdir": perfdir if perftest else None,
     }
 
-    # Optionally run the tests in this directory in parallel. This is opt-in
-    # via CHPL_PARALLEL_SUB_TEST because not all tests in a directory are
-    # guaranteed to be independent of one another.
-    if parallel_sub_test_workers() > 1:
-        run_tests_in_parallel(testsrc, common_test_args)
-    else:
-        for testname in testsrc:
-            run_test(dict(common_test_args, testname=testname))
+    run_tests(testsrc, common_test_args)
 
     sys.exit(0)
 
@@ -1583,10 +1576,7 @@ def parallel_sub_test_workers():
     return workers if workers > 1 else 1
 
 
-def run_tests_in_parallel(testsrc, common_test_args):
-    """Run the tests in ``testsrc`` concurrently. Each test's output is
-    captured separately and written out in test order once it completes, so
-    the combined log is not interleaved."""
+def run_tests(testsrc, common_test_args):
     num_workers = parallel_sub_test_workers()
 
     test_args_list = [
