@@ -177,11 +177,8 @@ def run_tests(tests):
             "[Warning: --parallel-sub_test runs multiple tests within a directory concurrently and requires --allow-unsafe-parallel due to shared directory state - it will be ignored]"
         )
 
-    if files_parallel:
-        test_files_parallel(files)
-    else:
-        for test in files:
-            test_file(test)
+    file_workers = args.parallel if files_parallel else 1
+    test_files(files, file_workers)
 
     os.environ["CHPL_TEST_FUTURES"] = str(args.futures_mode)
     os.environ["CHPL_TEST_NOTESTS"] = "0"
@@ -240,48 +237,7 @@ def finish():
 # MAIN ROUTINES AND TESTING
 
 
-def test_file(test):
-    path_to_test = os.path.relpath(test)
-    test_name = os.path.basename(test)
-
-    with cd(os.path.dirname(test)):  # cd into dir, and cd out later
-        # clean executables, etc
-        logger.write()
-        logger.write("[Cleaning file {0}]".format(test))
-        # clean and run test
-        clean(test_name)
-
-        error = 0
-        if not args.clean_only:
-            if args.performance or not args.gen_graphs:
-                error = run_sub_test(test)
-
-            # check for errors:
-            if error != 0:
-                logger.write(
-                    "[Error running sub_test (code {1}) for {0}]".format(
-                        path_to_test, error
-                    )
-                )
-
-            if args.progress:
-                sys.stderr.write("[done]\n")
-
-            del os.environ["CHPL_ONETEST"]
-
-            if args.gen_graphs:
-                generate_graphs(test)
-
-
-def test_files_parallel(files):
-    """Run individual test files concurrently.
-
-    Cleaning is done serially first (it mutates the filesystem), then
-    sub_test is run for each file concurrently. Output from each file is
-    written to the log as a contiguous block as each run completes, so that
-    concurrent runs do not interleave.
-    """
-    # clean each file serially first
+def test_files(files, num_workers):
     for test in files:
         test_name = os.path.basename(test)
         with cd(os.path.dirname(test)):
@@ -289,45 +245,15 @@ def test_files_parallel(files):
             logger.write("[Cleaning file {0}]".format(test))
             clean(test_name)
 
-    num_workers = min(args.parallel, len(files))
-    logger.write()
-    logger.write(
-        "[Running sub_test on {0} files using {1} parallel workers]".format(
-            len(files), num_workers
-        )
-    )
+    if args.clean_only:
+        return
 
-    with concurrent.futures.ThreadPoolExecutor(
-        max_workers=num_workers
-    ) as executor:
-        # Submit all work up front (so it runs concurrently), but iterate the
-        # futures in submission order so the combined log is deterministic
-        # regardless of completion order. Each result is still written as a
-        # contiguous block, so concurrent runs do not interleave.
-        futures = [
-            (test, executor.submit(run_sub_test_file_capture, test))
-            for test in files
-        ]
-        for test, future in futures:
-            path_to_test = os.path.relpath(test)
-            logger.write()
-            try:
-                _, status, output = future.result()
-            except Exception as e:
-                logger.write(
-                    "[Error running sub_test for {0}: {1}]".format(
-                        path_to_test, e
-                    )
-                )
-                continue
-            logger.write(output)
-            if status != 0:
-                logger.write(
-                    "[Error running sub_test (code {1}) for {0}]".format(
-                        path_to_test, status
-                    )
-                )
-            logger.flush()
+    if not args.gen_graphs:
+        run_sub_tests_for_files(files, num_workers)
+    else:
+        for test in files:
+            with cd(os.path.dirname(test)):
+                generate_graphs(test)
 
 
 def test_directory(test, test_type):
@@ -505,14 +431,7 @@ def test_directory(test, test_type):
                             parallel_dirs.append((dir, root))
                         else:
                             # run all tests in dir
-                            error = run_sub_test()
-                            # check for errors:
-                            if not error == 0:
-                                logger.write(
-                                    "[Error running sub_test (code {1}) in {0}]".format(
-                                        root, error
-                                    )
-                                )
+                            run_sub_tests_for_directories([(dir, root)], 1)
 
             # let user know no tests were found
             else:
@@ -525,7 +444,7 @@ def test_directory(test, test_type):
 
     # run any deferred directories concurrently
     if parallel_mode and parallel_dirs:
-        run_sub_tests_parallel(parallel_dirs)
+        run_sub_tests_for_directories(parallel_dirs, args.parallel)
 
 
 def summarize():
@@ -639,62 +558,41 @@ def clean(test=False):
         logger.write("[Error: sub_clean error]")
 
 
-def run_sub_test(test=False):
-    date_str = time.strftime("%a %b %d %H:%M:%S %Z %Y")
-    os.environ["CHPL_TEST_UTIL_DIR"] = util_dir
-
-    # --parallel-sub_test makes sub_test run multiple tests within a single
-    # directory concurrently. That is unsafe because tests in the same
-    # directory may share state (CLEANFILES, generated executables, prediff
-    # side effects). When running sub_test on a single file (CHPL_ONETEST is
-    # set), only one test runs so there is no concurrency and it is always
-    # safe; otherwise require --allow-unsafe-parallel to opt in.
-    if args.parallel_sub_test > 1 and (test or args.allow_unsafe_parallel):
-        os.environ["CHPL_PARALLEL_SUB_TEST"] = str(args.parallel_sub_test)
-    else:
-        os.environ.pop("CHPL_PARALLEL_SUB_TEST", None)
-
-    # run test
-    logger.write()
-    if test:  # single test
-        logger.write("[Working on file {0}]".format(os.path.relpath(test)))
-        os.environ["CHPL_ONETEST"] = os.path.basename(test)
-
-    if os.access("sub_test", os.X_OK):
-        sub_test = os.path.abspath("sub_test")
-    else:
-        sub_test = os.path.join(util_dir, "test", "sub_test")
-
-    if args.progress and test:
-        sys.stderr.write("Testing {0} ... \n".format(test))
-
-    logger.write("[Starting {0} {1}]".format(sub_test, date_str))
-    status = run_and_log([sub_test, compiler])
-    return status
-
-
-def run_sub_test_capture(test_dir_path):
-    """Run sub_test in 'test_dir_path', capturing its combined output.
-
-    Unlike run_sub_test, this does not change the global working directory
-    or stream output live, so it is safe to call from multiple threads. It
-    returns a (test_dir_path, status, output) tuple. The caller is
-    responsible for writing 'output' to the log as a contiguous block so
-    that concurrent runs do not interleave their output.
-    """
-    date_str = time.strftime("%a %b %d %H:%M:%S %Z %Y")
-
+def sub_test_path(test_dir_path):
     local_sub_test = os.path.join(test_dir_path, "sub_test")
     if os.access(local_sub_test, os.X_OK):
-        sub_test = os.path.abspath(local_sub_test)
+        return os.path.abspath(local_sub_test)
+    return os.path.join(util_dir, "test", "sub_test")
+
+
+def sub_test_environment(test_dir_path, test=None):
+    env = os.environ.copy()
+    env["CHPL_TEST_UTIL_DIR"] = util_dir
+    env["PWD"] = test_dir_path
+
+    if test:
+        env["CHPL_ONETEST"] = os.path.basename(test)
     else:
-        sub_test = os.path.join(util_dir, "test", "sub_test")
+        env.pop("CHPL_ONETEST", None)
+
+    if args.parallel_sub_test > 1 and (test or args.allow_unsafe_parallel):
+        env["CHPL_PARALLEL_SUB_TEST"] = str(args.parallel_sub_test)
+    else:
+        env.pop("CHPL_PARALLEL_SUB_TEST", None)
+
+    return env
+
+
+def invoke_sub_test(test_dir_path, test=None):
+    date_str = time.strftime("%a %b %d %H:%M:%S %Z %Y")
+    sub_test = sub_test_path(test_dir_path)
 
     output = "[Starting {0} {1}]\n".format(sub_test, date_str)
     try:
         p = subprocess.Popen(
             [sub_test, compiler],
             cwd=test_dir_path,
+            env=sub_test_environment(test_dir_path, test),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             encoding="utf-8",
@@ -702,109 +600,86 @@ def run_sub_test_capture(test_dir_path):
         out, _ = p.communicate()
         status = p.returncode
     except Exception as e:
-        return (
-            test_dir_path,
-            1,
-            output + "[Error: sub_test failed: {0}]".format(e),
-        )
+        return (1, output + "[Error invoking sub_test: {0}]".format(e))
     output += out
-    return (test_dir_path, status, output)
+    return (status, output)
 
 
-def run_sub_test_file_capture(test):
-    """Run sub_test for a single test file, capturing its combined output.
-
-    Thread-safe variant of run_sub_test(test): it does not change the global
-    working directory or mutate os.environ. Instead, CHPL_ONETEST is passed
-    via a per-process environment and sub_test is run with cwd set to the
-    test's directory. Returns a (test, status, output) tuple.
-    """
-    date_str = time.strftime("%a %b %d %H:%M:%S %Z %Y")
-    test_dir_path = os.path.dirname(test)
-
-    local_sub_test = os.path.join(test_dir_path, "sub_test")
-    if os.access(local_sub_test, os.X_OK):
-        sub_test = os.path.abspath(local_sub_test)
-    else:
-        sub_test = os.path.join(util_dir, "test", "sub_test")
-
-    env = os.environ.copy()
-    env["CHPL_TEST_UTIL_DIR"] = util_dir
-    env["CHPL_ONETEST"] = os.path.basename(test)
-
-    output = "[Working on file {0}]\n".format(os.path.relpath(test))
-    output += "[Starting {0} {1}]\n".format(sub_test, date_str)
-    try:
-        p = subprocess.Popen(
-            [sub_test, compiler],
-            cwd=test_dir_path,
-            env=env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            encoding="utf-8",
-        )
-        out, _ = p.communicate()
-        status = p.returncode
-    except Exception as e:
-        return (test, 1, output + "[Error: sub_test failed: {0}]".format(e))
-
-    output += out
-    return (test, status, output)
-
-
-def run_sub_tests_parallel(work):
-    """Run sub_test concurrently across multiple directories.
-
-    'work' is a list of (dir, root) tuples. Output from each directory is
-    written to the log as a contiguous block as each run completes, so that
-    concurrent runs do not interleave.
-    """
-    num_workers = min(args.parallel, len(work))
-    os.environ["CHPL_TEST_UTIL_DIR"] = util_dir
-    # Running multiple tests within a directory concurrently is unsafe due to
-    # shared directory state, so only enable it when --allow-unsafe-parallel
-    # was given.
-    if args.parallel_sub_test > 1 and args.allow_unsafe_parallel:
-        os.environ["CHPL_PARALLEL_SUB_TEST"] = str(args.parallel_sub_test)
-    else:
-        os.environ.pop("CHPL_PARALLEL_SUB_TEST", None)
-
-    logger.write()
-    logger.write(
-        "[Running sub_test on {0} directories using {1} parallel workers]".format(
-            len(work), num_workers
-        )
-    )
-
-    with concurrent.futures.ThreadPoolExecutor(
-        max_workers=num_workers
-    ) as executor:
-        # Submit all work up front (so it runs concurrently), but iterate the
-        # futures in submission order so the combined log is deterministic
-        # regardless of completion order. Each result is still written as a
-        # contiguous block, so concurrent runs do not interleave.
+def invoke_sub_tests(work, num_workers):
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
         futures = [
-            (root, executor.submit(run_sub_test_capture, dir))
-            for (dir, root) in work
+            (
+                item,
+                executor.submit(invoke_sub_test, test_dir_path, test),
+            )
+            for item, test_dir_path, test in work
         ]
-        for root, future in futures:
-            logger.write()
+        for item, future in futures:
+            status, output = future.result()
+            yield (item, status, output)
+
+
+def run_sub_tests_for_files(files, num_workers):
+    if not files:
+        return
+
+    if num_workers > 1:
+        logger.write()
+        logger.write(
+            "[Running sub_test on {0} files using {1} parallel workers]".format(
+                len(files), num_workers
+            )
+        )
+
+    if args.progress:
+        for test in files:
+            sys.stderr.write("Testing {0} ... \n".format(test))
+
+    work = [(test, os.path.dirname(test), test) for test in files]
+    for test, status, output in invoke_sub_tests(work, num_workers):
+        path_to_test = os.path.relpath(test)
+        logger.write()
+        logger.write("[Working on file {0}]".format(path_to_test))
+        logger.write(output)
+        if status != 0:
+            logger.write(
+                "[Error running sub_test (code {1}) for {0}]".format(
+                    path_to_test, status
+                )
+            )
+        logger.flush()
+
+        if args.progress:
+            sys.stderr.write("[done]\n")
+
+
+def run_sub_tests_for_directories(directories, num_workers):
+    if not directories:
+        return
+
+    if num_workers > 1:
+        logger.write()
+        logger.write(
+            "[Running sub_test on {0} directories using {1} parallel workers]".format(
+                len(directories), num_workers
+            )
+        )
+
+    work = [
+        ((test_dir_path, root), test_dir_path, None)
+        for test_dir_path, root in directories
+    ]
+    for item, status, output in invoke_sub_tests(work, num_workers):
+        _, root = item
+        logger.write()
+        if num_workers > 1:
             logger.write("[Working on directory {0}]".format(root))
-            try:
-                _, status, output = future.result()
-            except Exception as e:
-                logger.write(
-                    "[Error running sub_test in {0}: {1}]".format(root, e)
-                )
-                continue
-            logger.write(output)
-            if not status == 0:
-                logger.write(
-                    "[Error running sub_test (code {1}) in {0}]".format(
-                        root, status
-                    )
-                )
-            logger.flush()
+        logger.write(output)
+        if status != 0:
+            logger.write(
+                "[Error running sub_test (code {1}) in {0}]".format(root, status)
+            )
+        logger.flush()
 
 
 def generate_graphs(test=False):
