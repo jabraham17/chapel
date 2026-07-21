@@ -400,7 +400,9 @@ def test_directory(test, test_type):
                 if os.path.isfile(skip_file_name):
                     try:
                         prune_if = process_skipif_output(
-                            run_command([test_env, skip_file_name]).strip()
+                            subprocess.check_output(
+                                [test_env, skip_file_name], encoding="utf-8"
+                            ).strip()
                         )
                         # check output and skip if true
                         if prune_if == "1" or prune_if == "True":
@@ -422,7 +424,9 @@ def test_directory(test, test_type):
                     try:
                         logger.write("[Checking SKIPIF]")
                         skip_test = process_skipif_output(
-                            run_command([test_env, "SKIPIF"]).strip()
+                            subprocess.check_output(
+                                [test_env, "SKIPIF"], encoding="utf-8"
+                            ).strip()
                         )
                         # check output and skip if true
                         if skip_test == "1" or skip_test == "True":
@@ -693,6 +697,7 @@ def run_sub_test_capture(test_dir_path):
             cwd=test_dir_path,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            encoding="utf-8",
         )
         out, _ = p.communicate()
         status = p.returncode
@@ -702,9 +707,6 @@ def run_sub_test_capture(test_dir_path):
             1,
             output + "[Error: sub_test failed: {0}]".format(e),
         )
-
-    if sys.version_info[0] >= 3 and not isinstance(out, str):
-        out = str(out, "utf-8")
     output += out
     return (test_dir_path, status, output)
 
@@ -739,14 +741,13 @@ def run_sub_test_file_capture(test):
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            encoding="utf-8",
         )
         out, _ = p.communicate()
         status = p.returncode
     except Exception as e:
         return (test, 1, output + "[Error: sub_test failed: {0}]".format(e))
 
-    if sys.version_info[0] >= 3 and not isinstance(out, str):
-        out = str(out, "utf-8")
     output += out
     return (test, status, output)
 
@@ -862,7 +863,7 @@ def compiler_performance():
     # combine smaller .dat files
     try:
         logger.write("[Combining dat files now]")
-        out = run_command(
+        out = subprocess.check_output(
             [
                 combine_comp_perf,
                 "--tempDatDir",
@@ -871,7 +872,8 @@ def compiler_performance():
                 str(elapsed),
                 "--outDir",
                 comp_perf_dir,
-            ]
+            ],
+            encoding="utf-8",
         )
         logger.write(out)
         logger.write("[Success combining compiler performance dat files]")
@@ -1249,14 +1251,18 @@ def set_up_general():
         logger.write("[valgrind: ON]")
         try:
             # get first line of output
-            binary = run_command(["which", "valgrind"]).split("\n")[0]
+            binary = subprocess.check_output(
+                ["which", "valgrind"], encoding="utf-8"
+            ).split("\n")[0]
         except:
             logger.write("[Error: Could not find valgrind.]")
             finish()
 
         # get first line of output
         try:
-            version = run_command(["valgrind", "--version"]).split("\n")[0]
+            version = subprocess.check_output(
+                ["valgrind", "--version"], encoding="utf-8"
+            ).split("\n")[0]
         except:
             pass
         logger.write("[valgrind binary: {0}]".format(binary))
@@ -1470,14 +1476,15 @@ def set_up_performance_testing_B():
         )
         try:
             cmd = os.path.join(util_dir, "test", "computePerfStats")
-            out = run_command(
+            out = subprocess.check_output(
                 [
                     cmd,
                     sha_dat_file_name,
                     dat_dir,
                     sha_pef_keys_name,
                     sha_out_name,
-                ]
+                ],
+                encoding="utf-8",
             )
             logger.write(out)
         except:
@@ -1670,8 +1677,9 @@ def print_chapel_environment():
     logger.write()
     logger.write("### Chapel Environment ###")
     try:
-        out = run_command(
-            [os.path.join(util_dir, "printchplenv"), "--all", "--no-tidy"]
+        out = subprocess.check_output(
+            [os.path.join(util_dir, "printchplenv"), "--all", "--no-tidy"],
+            encoding="utf-8",
         )
         logger.write(out)
     except:
@@ -1685,7 +1693,9 @@ def print_chapel_environment():
 # Execute 'cmd' and return its exit code.
 # Print its output to the console in real-time and log it too.
 def run_and_log(cmd):
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    p = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding="utf-8"
+    )
     printout(p.stdout)
     p.wait()
     return p.returncode
@@ -1726,7 +1736,7 @@ def jUnit():
     ]
 
     try:
-        run_command(cmd + junit_args)
+        subprocess.check_output(cmd + junit_args)
     except:
         print("[ERROR generating jUnit XML report]")
 
@@ -2316,23 +2326,6 @@ class CommandError(Exception):
         )
 
 
-def run_command(cmd, stderr=None):
-    """
-    check_output like wrapper, but we're still committed to 2.6 so can't rely
-    on check_output
-    """
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=stderr)
-    output, _ = process.communicate()
-    retcode = process.poll()
-    if retcode:
-        raise CommandError(retcode, cmd, output)
-
-    if sys.version_info[0] >= 3 and not isinstance(output, str):
-        output = str(output, "utf-8")
-
-    return output
-
-
 def process_skipif_output(output):
     lines = output.splitlines()
     if len(lines) == 0:
@@ -2345,8 +2338,8 @@ def process_skipif_output(output):
 
 def run_git_command(command):
     try:
-        output = run_command(
-            ["git"] + command, stderr=subprocess.STDOUT
+        output = subprocess.check_output(
+            ["git"] + command, stderr=subprocess.STDOUT, encoding="utf-8"
         ).strip()
     except:
         output = None
@@ -2358,8 +2351,6 @@ def printout(so):
         line = so.readline()
         if not line:
             break
-        if sys.version_info[0] >= 3 and not isinstance(line, str):
-            line = str(line, "utf-8")
         logger.write(line)  # strip default newline
         logger.flush()
 
