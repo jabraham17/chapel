@@ -389,7 +389,9 @@ jobs:
           util
     - name: list branches
       run: |
+        set -x
         git ls-remote origin
+        git branch
     - name: set vars to make tarball from correct branch
       run: |
         {
