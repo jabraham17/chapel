@@ -387,6 +387,9 @@ jobs:
       with:
         sparse-checkout: |
           util
+    - name: list branches
+      run: |
+        git ls-remote origin
     - name: set vars to make tarball from correct branch
       run: |
         {
