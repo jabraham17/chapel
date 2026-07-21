@@ -152,7 +152,7 @@ jobs:
     steps:
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
-        fetch-depth: 100000
+        fetch-depth: 0 # check_annotations.py uses git history
     - name: find bad runtime calls
       run: |
         ./util/devel/lookForBadRTCalls
