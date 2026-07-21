@@ -390,7 +390,7 @@ jobs:
     - name: set vars to make tarball from correct branch
       run: |
         {
-          echo "CHPL_HOME_REPOSITORY=${{ github.repositoryUrl }}"
+          echo "CHPL_HOME_REPOSITORY=${{ github.server_url }}/${{ github.repository }}"
           echo "CHPL_GEN_RELEASE_BRANCH=${{ github.sha }}"
         } >> "$GITHUB_ENV"
     - name: create release tarball
