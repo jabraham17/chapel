@@ -389,14 +389,11 @@ jobs:
           util
     - name: list branches
       run: |
-        set -x
-        git ls-remote origin
         git branch
     - name: set vars to make tarball from correct branch
       run: |
         {
           echo "CHPL_HOME_REPOSITORY=$PWD"
-          echo "CHPL_GEN_RELEASE_BRANCH=${{ github.ref }}"
           echo "CHPL_GEN_RELEASE_COMMIT=${{ github.sha }}"
         } >> "$GITHUB_ENV"
     - name: create release tarball
