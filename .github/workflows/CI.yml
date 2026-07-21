@@ -397,6 +397,7 @@ jobs:
         {
           echo "CHPL_HOME_REPOSITORY=$PWD"
           echo "CHPL_GEN_RELEASE_BRANCH=${{ github.ref }}"
+          echo "CHPL_GEN_RELEASE_COMMIT=${{ github.sha }}"
         } >> "$GITHUB_ENV"
     - name: create release tarball
       run: |
