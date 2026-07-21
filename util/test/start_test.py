@@ -606,7 +606,9 @@ def invoke_sub_test(test_dir_path, test=None):
 
 
 def invoke_sub_tests(work, num_workers):
-    with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=num_workers
+    ) as executor:
         futures = [
             (
                 item,
@@ -646,7 +648,9 @@ def run_sub_tests_for_files(files, num_workers):
         logger.flush()
 
         if args.progress:
-            sys.stderr.write("[done testing {0}]\n".format(os.path.dirname(test)))
+            sys.stderr.write(
+                "[done testing {0}]\n".format(os.path.dirname(test))
+            )
 
 
 def run_sub_tests_for_directories(directories, num_workers):
@@ -673,7 +677,9 @@ def run_sub_tests_for_directories(directories, num_workers):
         logger.write(output)
         if status != 0:
             logger.write(
-                "[Error running sub_test (code {1}) in {0}]".format(root, status)
+                "[Error running sub_test (code {1}) in {0}]".format(
+                    root, status
+                )
             )
         logger.flush()
 
