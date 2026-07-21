@@ -153,11 +153,14 @@ def run_tests(tests):
         os.environ["CHPL_TEST_NOTESTS"] = "1"
 
     # Individual test files are normally run serially. They may be run in
-    # parallel only when BOTH --parallel and --allow-unsafe-parallel are
-    # given. This is "unsafe" because individually-specified files may share
-    # a directory (and thus shared state, e.g. CLEANFILES, generated
-    # executables, or prediff side effects) that serial per-file execution
-    # avoids but parallel execution does not.
+    # parallel only when BOTH --parallel and --allow-unsafe-parallel are given.
+    # This is "unsafe" because individually-specified files may share a
+    # directory and thus shared state (e.g. writing to the same local file,
+    # custom CLEANFILES, or prediff/skipif/precomp/etc side effects), which can
+    # cause suprious failures.
+    #
+    # out of caution, we only run in parallel in the "normal" run state, e.g.,
+    # no parallel performance testing or graph generation
     files_parallel = (
         not args.clean_only
         and not args.performance
@@ -168,14 +171,10 @@ def run_tests(tests):
     )
 
     if args.parallel > 1 and not args.allow_unsafe_parallel and files:
-        logger.write(
-            "[Warning: --parallel only applies to directories - to test files in parallel also pass --allow-unsafe-parallel]"
+        print(
+            "[Error: --parallel only applies to directories - to test files in parallel also pass --allow-unsafe-parallel]"
         )
-
-    if args.parallel_sub_test > 1 and not args.allow_unsafe_parallel and dirs:
-        logger.write(
-            "[Warning: --parallel-sub_test runs multiple tests within a directory concurrently and requires --allow-unsafe-parallel due to shared directory state - it will be ignored]"
-        )
+        sys.exit(1)
 
     file_workers = args.parallel if files_parallel else 1
     test_files(files, file_workers)
@@ -192,6 +191,12 @@ def run_tests(tests):
             testruns = ["graph"]
         else:
             testruns = ["run"]
+
+    if args.parallel_sub_test > 1 and not args.allow_unsafe_parallel and dirs:
+        print(
+            "[Error: --parallel-sub_test runs multiple tests within a directory concurrently and requires --allow-unsafe-parallel]"
+        )
+        sys.exit(1)
 
     for tests in dirs:
         for t in testruns:
@@ -259,10 +264,8 @@ def test_files(files, num_workers):
 def test_directory(test, test_type):
     logger.write("[Working from directory {0}]".format(test))
 
-    # When --parallel > 1 is given, defer sub_test invocations and run them
-    # concurrently across directories. Parallelization is only applied to
-    # normal "run" passes (not performance, graph-generation, or clean-only
-    # passes, where serial execution is required for correctness).
+    # in parallel mode, defer sub_test to run them concurrently.
+    # only defer and run in parallel mode when running normal tests
     parallel_mode = (
         not args.clean_only and args.parallel > 1 and test_type == "run"
     )
@@ -403,11 +406,7 @@ def test_directory(test, test_type):
                     os.path.join(dir, "sub_test"), os.X_OK
                 )
 
-            # A PRETEST may generate test files (potentially for descendant
-            # directories) and a local sub_test is a custom harness; both can
-            # have side effects that descendant directories depend on.
             has_pretest = "PRETEST" in files
-
             # check a lot of stuff before continuing
             if are_tests or run_local_sub_test:
                 # cd to dir for clean and run, saving current location
@@ -416,21 +415,17 @@ def test_directory(test, test_type):
                     clean()
 
                     if not args.clean_only:
-                        # Defer ordinary directories so they can run
-                        # concurrently below. Run directories that may set up
-                        # state for descendants (PRETEST or a local sub_test)
-                        # inline, in traversal order, so parent-before-child
-                        # ordering is preserved.
+                        # in parallel mode: defer running directories so they
+                        # can run concurrently. directories with PRETEST or
+                        # custom sub_test should not be defered (they may
+                        # generate new tests).
                         if (
                             parallel_mode
                             and not has_pretest
                             and not run_local_sub_test
                         ):
-                            # defer running sub_test so it can be run
-                            # concurrently with other directories below
                             parallel_dirs.append((dir, root))
                         else:
-                            # run all tests in dir
                             run_sub_tests_for_directories([(dir, root)], 1)
 
             # let user know no tests were found
@@ -565,10 +560,9 @@ def sub_test_path(test_dir_path):
     return os.path.join(util_dir, "test", "sub_test")
 
 
-def sub_test_environment(test_dir_path, test=None):
+def sub_test_environment(test=None):
     env = os.environ.copy()
     env["CHPL_TEST_UTIL_DIR"] = util_dir
-    env["PWD"] = test_dir_path
 
     if test:
         env["CHPL_ONETEST"] = os.path.basename(test)
@@ -584,15 +578,21 @@ def sub_test_environment(test_dir_path, test=None):
 
 
 def invoke_sub_test(test_dir_path, test=None):
+    """
+    NOTE: This function should involve no global state and may be invoked concurrently!
+    """
     date_str = time.strftime("%a %b %d %H:%M:%S %Z %Y")
     sub_test = sub_test_path(test_dir_path)
 
     output = "[Starting {0} {1}]\n".format(sub_test, date_str)
+    if args.progress and test:
+        sys.stderr.write("Testing {0} ... \n".format(test))
+
     try:
         p = subprocess.Popen(
             [sub_test, compiler],
             cwd=test_dir_path,
-            env=sub_test_environment(test_dir_path, test),
+            env=sub_test_environment(test),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             encoding="utf-8",
@@ -631,10 +631,6 @@ def run_sub_tests_for_files(files, num_workers):
             )
         )
 
-    if args.progress:
-        for test in files:
-            sys.stderr.write("Testing {0} ... \n".format(test))
-
     work = [(test, os.path.dirname(test), test) for test in files]
     for test, status, output in invoke_sub_tests(work, num_workers):
         path_to_test = os.path.relpath(test)
@@ -650,7 +646,7 @@ def run_sub_tests_for_files(files, num_workers):
         logger.flush()
 
         if args.progress:
-            sys.stderr.write("[done]\n")
+            sys.stderr.write("[done testing {0}]\n".format(os.path.dirname(test)))
 
 
 def run_sub_tests_for_directories(directories, num_workers):
@@ -1623,15 +1619,10 @@ def jUnit():
 
 def positive_int(value):
     """argparse type for an integer >= 1."""
-    try:
-        ivalue = int(value)
-    except (TypeError, ValueError):
-        raise argparse.ArgumentTypeError(
-            "invalid int value: {0!r}".format(value)
-        )
+    ivalue = int(value)
     if ivalue < 1:
         raise argparse.ArgumentTypeError(
-            "value must be a positive integer (>= 1), got {0}".format(ivalue)
+            "value must be a positive integer, got {0}".format(ivalue)
         )
     return ivalue
 
@@ -2073,7 +2064,7 @@ def parser_setup():
         type=positive_int,
         default=1,
         dest="parallel",
-        metavar="<N>",
+        metavar="[N]",
         help="run sub_test concurrently across N directories",
     )
     # allow --parallel to also parallelize individually-specified files
@@ -2092,7 +2083,7 @@ def parser_setup():
         type=positive_int,
         default=1,
         dest="parallel_sub_test",
-        metavar="<N>",
+        metavar="[N]",
         help="allow sub_test to run N tests concurrently within a single "
         "directory (requires --allow-unsafe-parallel due to shared directory "
         "state)",
