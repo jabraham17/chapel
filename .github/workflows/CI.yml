@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   pull_request:
 
+permissions:
+  contents: read
+  packages: read
 
 env:
   NIGHTLY_TEST_SETTINGS: true
@@ -26,10 +29,28 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
     - name: make check
       run: |
         ./util/buildRelease/smokeTest chpl
+
+  make_chplvis:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - name: install fluid and libfltk-dev
+      run: |
+        apt update && apt install -y \
+          fluid \
+          libfltk-dev
+    - name: make chplvis
+      run: |
+        bash -c 'source ./util/setchplenv.bash && make chplvis'
 
   make_doc:
     runs-on: ubuntu-latest
@@ -39,7 +60,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
     - name: make frontend-docs
       run: |
         make frontend-docs
@@ -63,7 +84,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
     - name: make mason
       # Use a quickstart config to keep it from running to long
       # While there, run a make check in that config for more coverage
@@ -78,7 +99,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
     - name: run dyno linters
       run: |
         CHPL_HOME=$PWD CHPL_HOST_COMPILER=clang make run-dyno-linters
@@ -91,7 +112,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
     - name: make test-dyno-with-asserts
       # 'make modules' so the ChapelSysCTypes module is available
       run: |
@@ -116,10 +137,11 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
     - name: set llvm_none make check
       run: |
        CHPL_LLVM=none ./util/buildRelease/smokeTest chpl
+
   check_annotations_rt_calls:
     runs-on: ubuntu-latest
     container:
@@ -128,12 +150,9 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         fetch-depth: 100000
-    - name: Set ownership
-      run: |
-        chown -R $(id -u):$(id -g) $PWD
     - name: find bad runtime calls
       run: |
         ./util/devel/lookForBadRTCalls
@@ -150,14 +169,17 @@ jobs:
     - name: smokeTest lint
       run: |
         ./util/buildRelease/smokeTest lint
+
   check_large_files:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    env:
+      IGNORE_LABEL: "large files ok"
     steps:
       - name: count PR commits
         run: echo "PR_NUM_COMMITS=$(( ${{ github.event.pull_request.commits }} + 2 ))" >> "${GITHUB_ENV}"
       - name: checkout commits on PR branch
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: ${{ env.PR_NUM_COMMITS }}
       - name: check commits for large files
@@ -174,6 +196,7 @@ jobs:
           # Loop backward through commits added in the PR, starting from the
           # latest.
           commitIdx=0
+          errorCount=0
           for commit in $(git rev-list $baseSHA..$headSHA)
           do
             echo "Checking commit: $commit"
@@ -192,7 +215,7 @@ jobs:
 
               if [ "$file_size_kb" -ge "$FILE_SIZE_LIMIT_KB" ]; then
                 echo "Error: ${file} is too large (size ${file_size_kb}KB, limit ${FILE_SIZE_LIMIT_KB}KB). Introduced in commit: $commit"
-                exit 1
+                errorCount=$((errorCount+1))
               fi
             done <<< "$newFiles"
 
@@ -203,6 +226,28 @@ jobs:
               break
             fi
           done
+
+          if [ "$errorCount" -gt 0 ]; then
+            if [ ${{ contains(github.event.*.labels.*.name, env.IGNORE_LABEL) }} = "true" ]; then
+              echo "Ignoring errors due to '${{ env.IGNORE_LABEL }}' label presence"
+            else
+              echo "If you want to ignore errors for this PR, add the label '${{ env.IGNORE_LABEL }}', then close and reopen the PR"
+              exit 1
+            fi
+          fi
+
+  check-release-files:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - name: run check-release-files
+      run: |
+        ./util/buildRelease/check-release-files.bash
 
   publish-docs:
     if: github.event_name == 'push' && github.repository == 'chapel-lang/chapel'
@@ -237,3 +282,233 @@ jobs:
             rsync -avz --cvs-exclude --delete --relative . ${{ secrets.WEBSITE_USER }}@${{ secrets.WEBSITE_URL }}:${{ secrets.WEBSITE_PATH }}
             rm ~/.ssh/id_rsa
             rm ~/.ssh/known_hosts
+
+  run-shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # 2.0.0
+        with:
+          severity: error
+          ignore_paths: ./test/* ./third-party/*
+
+  check-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
+        with:
+          options: "--check --verbose --line-length 80 --extend-exclude '^/(third-party|test)/'"
+          src: "."
+      - uses: psf/black@87928e6d6761a4a6d22250e1fee5601b3998086e # 26.5.1
+        with:
+          options: "--check --verbose --line-length 80 --extend-exclude '(install|build)/'"
+          src: "third-party/chpl-venv"
+
+  test_chpl_language_server:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
+      id: changes
+      with:
+        filters: |
+          cls_sources:
+            - 'tools/chapel-py/**'
+            - 'tools/chpl-language-server/**'
+    - name: test chpl-language-server
+      if: steps.changes.outputs.cls_sources == 'true'
+      run: |
+        make test-chpl-language-server -j`util/buildRelease/chpl-make-cpu_count`
+
+  gcc-version-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        gcc_version: [9, 10, 11, 12, 13, 14, 15, 16]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install GCC
+        uses: egor-tensin/setup-gcc@a2861a8b8538f49cf2850980acccf6b05a1b2ae4 # v2
+        with:
+          version: ${{ matrix.gcc_version }}
+      - name: Check desired GCC version is default
+        run: |
+          set -exuo pipefail
+
+          gcc_version=$(gcc -dumpversion)
+          gcc_major_version=$(cut -d. -f1 <<< "$gcc_version")
+          if [ "$gcc_major_version" != "${{ matrix.gcc_version }}" ]; then
+            echo "Wrong gcc version"
+            echo "Expected Version: ${{ matrix.gcc_version }} Actual Version: $gcc_major_version"
+            exit 2
+          fi
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Compile Chapel and run example tests
+        run: |
+          source util/setchplenv.bash
+
+          # Use CHPL_LLVM=none to avoid using a system LLVM potentially linked
+          # with a different and incompatible version of GCC
+          export CHPL_LLVM=none
+          export CHPL_LLVM_SUPPORT=bundled
+          unset CHPL_LLVM_CONFIG
+
+          # Set environment variables to nudge cmake towards desired GCC
+          export CHPL_CMAKE_USE_CC_CXX=1
+          export CC=$(which gcc)
+          export CXX=$(which g++)
+
+          export CHPL_LAUNCHER=none
+
+          num_procs=$(./util/buildRelease/chpl-make-cpu_count)
+          make -j$num_procs
+          make test-venv
+
+          start_test test/release/examples
+
+  release-tarball-smoke-test:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - name: create release tarball
+      run: |
+        export CHPL_TEST_RELEASE_NORECURSE=1
+        ./util/cron/test-release.bash
+    - name: upload release tarball as artifact
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        path: ./tar/chapel-test.tar.gz
+        archive: false
+
+  chapel-code-smoke-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        config: [gasnet, none]
+        exclude:
+          - os: macos-latest
+            config: gasnet
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: print config info
+        run: |
+          echo "${{ matrix.os }}"
+          echo "${{ matrix.config }}"
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: install deps
+        run: |
+          if [[ "${{ matrix.os }}" == "macos"* ]] ; then
+            brew install llvm
+          else
+            sudo apt install \
+              clang \
+              libclang-dev \
+              libclang-cpp-dev \
+              libedit-dev \
+              llvm \
+              llvm-dev
+          fi
+      - name: setup env and run ./util/buildRelease/smokeTest
+        run: |
+          set -ex
+
+          source ./util/cron/common.bash
+
+          if [[ "${{ matrix.os }}" == "macos"* ]] ; then
+            source ./util/cron/common-darwin.bash
+          fi
+
+          if [[ "${{ matrix.config }}" == "gasnet" ]] ; then
+            source ./util/cron/common-gasnet.bash
+            # Silence warnings about not using ibv despite ibv hardware presence
+            export GASNET_QUIET=yes
+          fi
+
+          export NIGHTLY_TEST_SETTINGS=true
+          export CHPL_SMOKE_SKIP_MAKE_MASON=true
+
+          ./util/buildRelease/smokeTest
+
+  test-homebrew:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: print config info
+        run: |
+          echo "${{ matrix.os }}"
+          echo "${{ matrix.config }}"
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: run homebrew testing
+        run: |
+          if [[ "${{ matrix.os }}" == "macos"* ]] ; then
+            ./util/cron/test-homebrew.bash
+          else
+            ./util/cron/test-homebrew-linux.bash
+          fi
+
+  test-c2chapel:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - name: run test-c2chapel.bash
+      run: |
+        ./util/cron/test-c2chapel.bash
+
+  # This job exists to have a single check for which failure means merging
+  # should be blocked, for GH required status checks purposes.
+  # It runs (and fails) if any of the jobs listed in its `needs` ran and
+  # failed; otherwise, it will be skipped, which GH considers acceptable for a
+  # 'required' check.
+  # When adding a new job which we would like to block PR merging, add it to
+  # the `needs` list below. Note that if a dependent job is _skipped_, it will
+  # not trigger failure of this job.
+  checks-alert-failure:
+    if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
+    runs-on: ubuntu-latest
+    needs:
+      - make_check
+      - make_chplvis
+      - make_doc
+      - make_mason
+      - check_dyno_linters
+      - check_compiler_dyno_tests
+      - make_check_llvm_none
+      - check_annotations_rt_calls
+      - check_large_files
+      - check-release-files
+      - publish-docs
+      - run-shellcheck
+      - check-format
+      - test_chpl_language_server
+      - gcc-version-tests
+      - release-tarball-smoke-test
+      - chapel-code-smoke-test
+      - test-homebrew
+      - test-c2chapel
+    steps:
+      - name: Fail
+        run: |
+          echo "A required status check has failed"
+          exit 1

@@ -27,7 +27,7 @@ def llvm_versions():
     # Which major release - only need one number for that with current
     # llvm (since LLVM 4.0).
     # These will be tried in order.
-    min_version = 14
+    min_version = 15
     max_version = 22
     versions = tuple(str(i) for i in range(max_version, min_version - 1, -1))
     return versions
@@ -279,6 +279,13 @@ def check_llvm_packages(llvm_config):
 def find_system_llvm_config():
     llvm_config = overrides.get("CHPL_LLVM_CONFIG", "none")
     if llvm_config != "none":
+        _, config_err = check_llvm_config(llvm_config)
+        if config_err:
+            error(
+                "Problem with llvm-config at {0} -- {1}".format(
+                    llvm_config, config_err
+                )
+            )
         return llvm_config
 
     llvm_config = chpl_gpu.get_llvm_override()
@@ -376,6 +383,16 @@ def get_llvm_config():
     elif llvm_config == "none":
         if llvm_val == "system" or llvm_support_val == "system":
             llvm_config = find_system_llvm_config()
+
+    else:
+        # check that the provided llvm-config is valid
+        _, config_err = check_llvm_config(llvm_config)
+        if config_err:
+            error(
+                "Problem with llvm-config at {0} -- {1}".format(
+                    llvm_config, config_err
+                )
+            )
 
     return llvm_config
 
@@ -1517,6 +1534,7 @@ def compute_host_link_settings():
         "-lclangAST",
         "-lclangLex",
         "-lclangBasic",
+        "-lclangSupport",
     ]
 
     llvm_components = [
@@ -1531,14 +1549,11 @@ def compute_host_link_settings():
         "coverage",
         "coroutines",
         "lto",
+        "windowsdriver",
     ]
 
     if llvm_val == "system" or llvm_val == "bundled":
         llvm_version = get_llvm_version()
-        # Starting with clang 15, clang needs additional libraries
-        if int(llvm_version) >= 15:
-            clang_static_libs.append("-lclangSupport")
-            llvm_components.append("windowsdriver")
         # Starting with clang 16, clang needs additional libraries
         if int(llvm_version) >= 16:
             llvm_components.append("frontendhlsl")

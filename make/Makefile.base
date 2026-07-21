@@ -28,6 +28,8 @@ include $(CHPL_MAKE_HOME)/make/Makefile.isTrue
 
 MAKEFLAGS = --no-print-directory
 
+# issue #29014: Ensure nested make invocations use a compatible make:
+export CHPL_MAKE := $(MAKE)
 
 #
 # Don't let CONFIG_SITE mess up our third-party/ builds.

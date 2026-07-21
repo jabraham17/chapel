@@ -41,6 +41,7 @@
 #include "wellknown.h"
 
 #ifdef HAVE_LLVM
+#include "llvm/IR/InlineAsm.h"
 #include "llvm/IR/Module.h"
 #include "llvmTracker.h"
 #include "llvmUtil.h"
@@ -507,18 +508,6 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
 
       llvm::Value* addrVal = raddr.val;
 
-#ifdef HAVE_LLVM_TYPED_POINTERS
-      if (!isOpaquePointer(adr->getType())) {
-        // cast address if needed. This is necessary for building a wide
-        // NULL pointer since NULL is actually an i8*.
-        llvm::Type* addrType = adr->getType()->getPointerElementType();
-        if (raddr.val->getType() != addrType) {
-          addrVal = convertValueToType(addrVal, addrType);
-        }
-      }
-      INT_ASSERT(addrVal);
-#endif
-
       llvm::StoreInst* st1 = info->irBuilder->CreateStore(addrVal, adr);
       llvm::StoreInst* st2 = info->irBuilder->CreateStore(locale.val, loc);
       trackLLVMValue(st1);
@@ -537,17 +526,7 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
                                    addrType);
     INT_ASSERT(fn);
 
-    llvm::Type* locAddrType = nullptr;
-
-    if (isOpaquePointer(addrType)) {
-      locAddrType = getPointerType(gContext->llvmContext());
-    } else {
-#ifdef HAVE_LLVM_TYPED_POINTERS
-      locAddrType =
-        getPointerType(addrType->getPointerElementType());
-#endif
-    }
-    INT_ASSERT(locAddrType);
+    llvm::Type* locAddrType = getPointerType(gContext->llvmContext());
 
     // Null pointers require us to possibly cast to the pointer type
     // we are supposed to have since null has type void*.
@@ -719,6 +698,36 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
                           ptr.noalias,
                           !ptr.mustPointOutsideOrderIndependentLoop);
 }
+
+// in some cases, we really really want pointers to stay flat pointers and not
+// be inferred to a global address space (this seems to happen mainly with the
+// AMD GPU backend). The primary use case for this is array data pointers,
+// which are obtained from the array descriptor. Its not actually safe for the
+// backend to infer that these pointers are global, since they are obtained
+// from a descriptor and the backend may assume that different descriptors
+// cannot alias. This function is used to launder such pointers through an
+// identity inline assembly barrier, which prevents the backend from inferring
+// the address space. I don't know if this is the best way to do this, but it
+// does seem to work
+static llvm::Value* codegenGpuKeepPointerFlat(llvm::Value* val) {
+  if (!gCodegenGPU) return val;
+  if (getGpuCodegenType() != GpuCodegenType::GPU_CG_AMD_HIP) return val;
+
+  llvm::PointerType* ptrTy = llvm::dyn_cast<llvm::PointerType>(val->getType());
+  if (ptrTy == NULL || ptrTy->getAddressSpace() != 0) return val;
+
+  GenInfo* info = gGenInfo;
+  llvm::Type* argTypes[] = { val->getType() };
+  llvm::FunctionType* asmTy =
+      llvm::FunctionType::get(val->getType(), argTypes, /*isVarArg=*/false);
+  llvm::InlineAsm* identity =
+      llvm::InlineAsm::get(asmTy, /*AsmString=*/"", /*Constraints=*/"=v,0",
+                           /*hasSideEffects=*/false);
+  llvm::CallInst* ret = info->irBuilder->CreateCall(identity, { val });
+  trackLLVMValue(ret);
+  return ret;
+}
+
 // Create an LLVM load instruction possibly adding
 // appropriate metadata based upon the Chapel type of ptr.
 static
@@ -1524,6 +1533,15 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
     }
   } else {
 #ifdef HAVE_LLVM
+    // For accesses into array data (_ddata), keep the base data pointer in the
+    // flat (generic) address space so that the AMD GPU backend's
+    // InferAddressSpaces pass does not promote it to the global address space.
+    // See codegenGpuKeepPointerFlat for why that promotion is unsafe for
+    // descriptor-chased array pointers.
+    if (baseValType->symbol->hasFlag(FLAG_DATA_CLASS)) {
+      base.val = codegenGpuKeepPointerFlat(base.val);
+    }
+
     unsigned AS = base.val->getType()->getPointerAddressSpace();
 
     // in LLVM, arrays are not pointers and cannot be used in
@@ -3161,14 +3179,6 @@ static GenRet codegenCallExprInner(GenRet function,
       trackLLVMValue(c);
     } else {
       INT_ASSERT(fnType != nullptr);
-
-    #ifdef HAVE_LLVM_TYPED_POINTERS
-      // If we are using typed pointers, the pointer type must match the
-      // call type or else instruction verification will fail. If using
-      // opaque pointers, it is fine if the call pointer type is 'void*'.
-      auto fnPtrType = getPointerType(fnType);
-      val = info->irBuilder->CreateBitCast(val, fnPtrType);
-    #endif
 
       c = info->irBuilder->CreateCall(fnType, val, llArgs);
       trackLLVMValue(c);
@@ -5122,7 +5132,7 @@ DEFINE_PRIM(UNORDERED_ASSIGN) {
     // chpl_gen_comm_get_unordered(void *dst,
     //   c_nodeid_t src_locale, void* src_raddr,
     //   size_t size, int32_t commID,
-    //   int ln, int32_t fn);
+    //   int32_t ln, int32_t fn);
 
     dst = codegenValuePtr(dst);
     if (dstRef)
@@ -5140,7 +5150,7 @@ DEFINE_PRIM(UNORDERED_ASSIGN) {
     // chpl_gen_comm_put_unordered(void *src,
     //   c_nodeid_t dst_locale, void* dst_raddr,
     //   size_t size, int32_t commID,
-    //   int ln, int32_t fn);
+    //   int32_t ln, int32_t fn);
 
     src = codegenValuePtr(src);
     if (srcRef)
@@ -5159,7 +5169,7 @@ DEFINE_PRIM(UNORDERED_ASSIGN) {
     //   c_nodeid_t dst_locale, void* dst_raddr,
     //   c_nodeid_t src_locale, void* src_raddr,
     //   size_t size, int32_t commID,
-    //   int ln, int32_t fn);
+    //   int32_t ln, int32_t fn);
     codegenCall("chpl_gen_comm_getput_unordered",
                 codegenRnode(dst),
                 codegenRaddr(dst),

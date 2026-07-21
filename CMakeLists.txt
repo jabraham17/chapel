@@ -352,17 +352,6 @@ if ((CHPL_HOME STREQUAL CMAKE_BINARY_DIR) OR
   message(FATAL_ERROR "It won't work to run cmake from the Chapel source directory. Please run 'rm CMakeCache.txt' and then cd to a different directory before running cmake.")
 endif()
 
-# TODO: This is a hack to get past the safe directory failure from git
-# when running in github CI. It looks like this same command is executed
-# as part of the github workflow, but I'm not sure why it doesn't seem
-# to be taking effect when cmake calls the python script to generate
-# the git-version file.
-if (DEFINED ENV{GITHUB_ACTIONS})
-  if($ENV{GITHUB_ACTIONS} STREQUAL "true")
-    message(STATUS "Running in GitHub Actions - set safe.directory")
-    execute_process(COMMAND git config --global --add safe.directory ${CHPL_HOME})
-  endif()
-endif()
 set(CHPL_CMAKE_PYTHON $ENV{CHPL_MAKE_PYTHON})
 message(STATUS "Using Python: ${CHPL_CMAKE_PYTHON}")
 # message(DEBUG "${CHPL_HOST_BUNDLED_LINK_ARGS} ${CHPL_HOST_SYSTEM_LINK_ARGS}")

@@ -30,10 +30,11 @@ jobs:
               echo "FILES_CHANGED=$(echo '$PR_LINK/files' )" >> $GITHUB_ENV
 
       - name: checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
         with:
           fetch-depth: 0
+          allow-unsafe-pr-checkout: true
       # this step will (1) get the merge log for the merge_commit_sha and save it to the git  actions EN for later use in the email body.
       # (2) Get the files changed on the merge commit using the git log --name-status command.
       - name: Get merge log
@@ -58,7 +59,7 @@ jobs:
               echo 'EOF' >> $GITHUB_ENV
 
       - name: Send mail
-        uses: dawidd6/action-send-mail@42942bc2f8fba4e611b459a018967a6a7c78c68c # v17
+        uses: dawidd6/action-send-mail@94de994a9f6fffee200243214e17002e2920bb59 # v18
         with:
            # Required mail server address if not connection_url:
            server_address: ${{ secrets.SMTP_PROVIDER}}

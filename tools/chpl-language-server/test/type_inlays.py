@@ -240,7 +240,6 @@ async def test_type_inlays_range(client: LanguageClient):
 
 
 @pytest.mark.asyncio
-@pytest.mark.xfail
 async def test_type_inlays_arrays(client: LanguageClient):
     """
     Ensure that type inlays are shown for arrays
@@ -253,8 +252,8 @@ async def test_type_inlays_arrays(client: LanguageClient):
            """
 
     inlays = [
-        (pos((0, 5)), "[0..2] int(64)"),
-        (pos((2, 5)), "[1..10] real(64)"),
+        (pos((0, 5)), "[domain(1, int(64), strideKind.one)] int(64)"),
+        (pos((2, 5)), "[domain(1, int(64), strideKind.one)] real(64)"),
     ]
 
     async with source_file(client, file) as doc:
@@ -514,10 +513,11 @@ async def test_type_inlay_type_variable(client: LanguageClient):
             type t = bar(int);
            """
 
-    y_inlay = (pos((1, 6)), "int(64)")
+    formal_inlay = (pos((0, 15)), "int(64)")
+    var_inlay = (pos((1, 6)), "int(64)")
     async with source_file(client, file) as doc:
         await check_type_inlay_hints(
-            client, doc, rng((0, 0), endpos(file)), [y_inlay]
+            client, doc, rng((0, 0), endpos(file)), [formal_inlay, var_inlay]
         )
 
 
@@ -539,6 +539,35 @@ async def test_common_inlays(client: LanguageClient):
            """
 
     inlays = [
+        (pos((3, 10)), "string"),
+        (pos((4, 10)), "(string, string)"),
+    ]
+    async with source_file(client, file) as doc:
+        await check_type_inlay_hints(
+            client, doc, rng((0, 0), endpos(file)), inlays
+        )
+
+
+@pytest.mark.asyncio
+async def test_common_inlays_single_instantiation(client: LanguageClient):
+    """
+    Ensure that type inlays are shown properly for type variables
+    """
+
+    file = """
+            proc foo(x) {
+              var y = x;
+              var z = (x, x);
+              var xStr = x : string;
+              var zStr = z : (string, string);
+            }
+            foo(42);
+           """
+
+    inlays = [
+        (pos((0, 10)), "int(64)"),
+        (pos((1, 7)), "int(64)"),
+        (pos((2, 7)), "(int(64), int(64))"),
         (pos((3, 10)), "string"),
         (pos((4, 10)), "(string, string)"),
     ]

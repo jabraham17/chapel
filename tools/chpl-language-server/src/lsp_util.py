@@ -695,6 +695,9 @@ class ContextContainer:
             self.std_module_root, self.module_paths, self.file_paths
         )
 
+    def revision(self) -> int:
+        return self.context.current_revision()
+
     def register_signature(self, sig: chapel.TypedSignature) -> str:
         """
         The language server can't send over typed signatures directly for

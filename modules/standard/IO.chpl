@@ -8111,7 +8111,7 @@ private proc readStringImpl(ch: fileReader, ref out_var: string, len: int(64)) :
         // make sure to at least request 16 bytes
         if requestSz < n + 16 then requestSz = n + 16;
         // but don't ever ask for more bytes than maxBytes + 5
-        if maxBytes < max(c_ssize_t) && requestSz > maxBytes + 5 then
+        if maxBytes < max(c_ssize_t) - 4 && requestSz > maxBytes + 5 then
           requestSz = maxBytes + 5;
         (buff, buffSz) = bufferEnsureSize(buff, buffSz, requestSz);
         assert(n + 5 < buffSz);

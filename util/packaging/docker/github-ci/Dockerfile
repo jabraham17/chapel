@@ -11,6 +11,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     clang-19 \
     cmake \
     cscope \
+    curl \
     doxygen \
     g++ \
     gcc \
@@ -18,6 +19,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     libclang-19-dev \
     libclang-cpp19-dev \
     libedit-dev \
+    libprotoc-dev \
     llvm-19 \
     llvm-19-dev \
     llvm-19-tools \
@@ -31,6 +33,7 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
     python3-dev \
     python3-pip \
     python3-venv \
+    time \
     tzdata \
     && rm -rf /var/lib/apt/lists/*
 
@@ -40,3 +43,6 @@ RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     echo 'LANG="en_US.UTF-8"'>/etc/default/locale && \
     dpkg-reconfigure --frontend=noninteractive locales && \
     update-locale LANG=en_US.UTF-8
+
+# Work around GitHub Actions git "dubious ownership" error
+RUN git config --system --add safe.directory "*"

@@ -105,18 +105,18 @@ E_CONSTANT_RT(chpl_ftableSize, int64_t)
 /** MODULE-CODE: ChapelLocale.chpl
     Call to increment the task running count.
 */
-E_CALLBACK_RT(chpl_taskRunningCntInc, void, int64_t _ln, int32_t _fn)
+E_CALLBACK_RT(chpl_taskRunningCntInc, void, int32_t _ln, int32_t _fn)
 
 /** MODULE-CODE: ChapelLocale.chpl
     Call to decrement the task running count. Seemingly only invoked
     by the compiler at codegen time (see 'gChplDecRunningTask').
 */
-E_CALLBACK_RT(chpl_taskRunningCntDec, void, int64_t _ln, int32_t _fn)
+E_CALLBACK_RT(chpl_taskRunningCntDec, void, int32_t _ln, int32_t _fn)
 
 /** MODULE-CODE: ChapelLocale.chpl
     Call to reset the task running count.
 */
-E_CALLBACK_RT(chpl_taskRunningCntReset, void, int64_t _ln, int32_t _fn)
+E_CALLBACK_RT(chpl_taskRunningCntReset, void, int32_t _ln, int32_t _fn)
 
 /** CODE-GENERATED
     Function which constructs the config variable table.
@@ -132,17 +132,17 @@ E_CALLBACK_RT(chpl__initStringLiterals, void, void)
     Module initializer which sets initialization flags to false.
     TODO: Why? Won't zero-initialization set these to false?
 */
-E_CALLBACK_RT(chpl__init_preInit, void, int64_t _ln, int32_t _fn)
+E_CALLBACK_RT(chpl__init_preInit, void, int32_t _ln, int32_t _fn)
 
 /** CODE-GENERATED
     Module initializer for the 'PrintModuleInitOrder' module.
 */
-E_CALLBACK_RT(chpl__init_PrintModuleInitOrder, void, int64_t _ln, int32_t _fn)
+E_CALLBACK_RT(chpl__init_PrintModuleInitOrder, void, int32_t _ln, int32_t _fn)
 
 /** CODE-GENERATED
     Module initializer for the 'ChapelStandard' module.
 */
-E_CALLBACK_RT(chpl__init_ChapelStandard, void, int64_t _ln, int32_t _fn)
+E_CALLBACK_RT(chpl__init_ChapelStandard, void, int32_t _ln, int32_t _fn)
 
 /** CODE-GENERATED
     Main entrypoint for this program.

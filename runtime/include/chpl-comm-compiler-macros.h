@@ -59,8 +59,9 @@ static ___always_inline int chpl_rt_is_cache_enabled_fast(void) {
 
 static ___always_inline
 void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
-                       size_t size, int32_t commID, int ln, int32_t fn)
+                       size_t size, int32_t commID, int32_t ln, int32_t fn)
 {
+  if (size == 0) return;
   if (chpl_nodeID == node) {
     memmove(addr, raddr, size);
 #ifdef HAS_CHPL_CACHE_FNS
@@ -75,7 +76,7 @@ void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
 static inline
 void chpl_gen_comm_get_from_subloc(void *addr, c_nodeid_t src_node,
                                    c_sublocid_t src_subloc, void* raddr,
-                                   size_t size, int32_t commID, int ln,
+                                   size_t size, int32_t commID, int32_t ln,
                                    int32_t fn)
 {
   c_sublocid_t dst_subloc = chpl_task_getRequestedSubloc();
@@ -97,7 +98,7 @@ void chpl_gen_comm_get_from_subloc(void *addr, c_nodeid_t src_node,
 
 static inline
 void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
-                            size_t size, int32_t commID, int ln, int32_t fn)
+                            size_t size, int32_t commID, int32_t ln, int32_t fn)
 {
   const size_t MAX_BYTES_LOCAL_PREFETCH = 1024;
   size_t offset;
@@ -123,8 +124,9 @@ void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
 
 static ___always_inline
 void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                       size_t size, int32_t commID, int ln, int32_t fn)
+                       size_t size, int32_t commID, int32_t ln, int32_t fn)
 {
+  if (size == 0) return;
   if (chpl_nodeID == node) {
     memmove(raddr, addr, size);
 #ifdef HAS_CHPL_CACHE_FNS
@@ -140,7 +142,7 @@ static inline
 void chpl_gen_comm_put_to_subloc(void* addr,
                                  c_nodeid_t dst_node, c_sublocid_t dst_subloc,
                                  void* raddr, size_t size, int32_t commID,
-                                 int ln, int32_t fn)
+                                 int32_t ln, int32_t fn)
 {
 
   c_sublocid_t src_subloc = chpl_task_getRequestedSubloc();
@@ -163,7 +165,7 @@ void chpl_gen_comm_put_to_subloc(void* addr,
 static inline
 void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, c_sublocid_t src_subloc, void *raddr,
                        void *srcstr, void *count, int32_t strlevels,
-                       size_t elemSize, int32_t commID, int ln, int32_t fn)
+                       size_t elemSize, int32_t commID, int32_t ln, int32_t fn)
 {
 #ifdef HAS_GPU_LOCALE
   c_sublocid_t dst_subloc = chpl_task_getRequestedSubloc();
@@ -188,7 +190,7 @@ void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, c_subloci
 static inline
 void chpl_gen_comm_put_strd(void *addr, void *dststr, c_nodeid_t node, c_sublocid_t dst_subloc, void *raddr,
                        void *srcstr, void *count, int32_t strlevels,
-                       size_t elemSize, int32_t commID, int ln, int32_t fn)
+                       size_t elemSize, int32_t commID, int32_t ln, int32_t fn)
 {
 #ifdef HAS_GPU_LOCALE
   c_sublocid_t src_subloc = chpl_task_getRequestedSubloc();
@@ -213,7 +215,7 @@ void chpl_gen_comm_put_strd(void *addr, void *dststr, c_nodeid_t node, c_subloci
 
 static inline
 void chpl_gen_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
-                                 size_t size, int32_t commID, int ln, int32_t fn)
+                                 size_t size, int32_t commID, int32_t ln, int32_t fn)
 {
   if (0) {
 #ifdef HAS_CHPL_CACHE_FNS
@@ -227,7 +229,7 @@ void chpl_gen_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
 
 static inline
 void chpl_gen_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
-                                 size_t size, int32_t commID, int ln, int32_t fn)
+                                 size_t size, int32_t commID, int32_t ln, int32_t fn)
 {
   if (0) {
 #ifdef HAS_CHPL_CACHE_FNS
@@ -243,7 +245,7 @@ static inline
 void chpl_gen_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
                                     c_nodeid_t srcnode, void* srcaddr,
                                     size_t size, int32_t commID,
-                                    int ln, int32_t fn)
+                                    int32_t ln, int32_t fn)
 {
   if (0) {
 #ifdef HAS_CHPL_CACHE_FNS

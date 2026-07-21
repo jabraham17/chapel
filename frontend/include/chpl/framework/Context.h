@@ -842,6 +842,13 @@ class Context {
   void advanceToNextRevision(bool prepareToGC);
 
   /**
+    Returns the current revision number
+  */
+  int currentRevision() const {
+    return int(currentRevisionNumber);
+  }
+
+  /**
     Returns the number of query bodies executed in this revision.
    */
   int numQueriesRunThisRevision() const {

@@ -1073,6 +1073,26 @@ primComplexGetComponent(Context* context, const CallInfo& ci) {
   return ret;
 }
 
+/* for complex primitives */
+static QualifiedType
+primBuildComplex(Context* context, const CallInfo& ci) {
+  QualifiedType ret = QualifiedType();
+
+  if (ci.numActuals() != 2) return ret;
+
+  auto actual0R = ci.actual(0).type().type()->toRealType();
+  auto actual1R = ci.actual(1).type().type()->toRealType();
+  auto actual0I = ci.actual(0).type().type()->toImagType();
+  auto actual1I = ci.actual(1).type().type()->toImagType();
+  auto actual0BW = actual0R ? actual0R->bitwidth() : (actual0I ? actual0I->bitwidth() : 0);
+  auto actual1BW = actual1R ? actual1R->bitwidth() : (actual1I ? actual1I->bitwidth() : 0);
+  if (actual0BW != 0 && actual1BW != 0 && actual0BW == actual1BW) {
+    int BW = actual0BW * 2;
+    ret = QualifiedType(QualifiedType::REF, ComplexType::get(context, BW));
+  }
+  return ret;
+}
+
 /* for abs */
 static QualifiedType
 primAbsGetType(Context* context, const CallInfo& ci) {
@@ -1925,6 +1945,10 @@ CallResolutionResult resolvePrimCall(ResolutionContext* rc,
     case PRIM_GET_IMAG:
       // TODO: get the real/imag component from a param complex
       type = primComplexGetComponent(context, ci);
+      break;
+    /* primitives to build complex numbers */
+    case PRIM_BUILD_COMPLEX:
+      type = primBuildComplex(context, ci);
       break;
     /* other math primitives */
     case PRIM_ABS:

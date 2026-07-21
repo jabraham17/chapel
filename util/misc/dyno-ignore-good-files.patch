@@ -100,7 +100,7 @@ index 353bc711b9b..f50eef42c56 100644
 -dflt-ctor-generic-uninit-field-const-err-1.chpl:4: note: it is missing a value for formal 'in c'
 +dflt-ctor-generic-uninit-field-const-err-1.chpl:7: error: unable to resolve call to 'init': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:362: note: the following candidate didn't match
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:274: note: the following candidate didn't match
 +dflt-ctor-generic-uninit-field-const-err-1.chpl:7: note: omitting 20 more candidates that didn't match
 diff --git a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-param-err-1.good b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-param-err-1.good
 index b006744280f..0150ee9236e 100644
@@ -115,7 +115,7 @@ index b006744280f..0150ee9236e 100644
 -dflt-ctor-generic-uninit-field-param-err-1.chpl:3: note:   A.init(param p, reader, deserializer)
 +dflt-ctor-generic-uninit-field-param-err-1.chpl:7: error: unable to resolve call to 'init': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:362: note: the following candidate didn't match
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:274: note: the following candidate didn't match
 +dflt-ctor-generic-uninit-field-param-err-1.chpl:7: note: omitting 20 more candidates that didn't match
 diff --git a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-type-err-1.good b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-type-err-1.good
 index e771412e0ba..12891cd4238 100644
@@ -130,7 +130,7 @@ index e771412e0ba..12891cd4238 100644
 -dflt-ctor-generic-uninit-field-type-err-1.chpl:3: note:   A.init(type t, reader, deserializer)
 +dflt-ctor-generic-uninit-field-type-err-1.chpl:7: error: unable to resolve call to 'init': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:362: note: the following candidate didn't match
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:274: note: the following candidate didn't match
 +dflt-ctor-generic-uninit-field-type-err-1.chpl:7: note: omitting 20 more candidates that didn't match
 diff --git a/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-var-err-1.good b/test/classes/initializers/compilerGenerated/dflt-ctor-generic-uninit-field-var-err-1.good
 index 1e4db802fe4..2f8d2559cf2 100644
@@ -143,7 +143,7 @@ index 1e4db802fe4..2f8d2559cf2 100644
 -dflt-ctor-generic-uninit-field-var-err-1.chpl:4: note: it is missing a value for formal 'in v'
 +dflt-ctor-generic-uninit-field-var-err-1.chpl:7: error: unable to resolve call to 'init': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:362: note: the following candidate didn't match
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:274: note: the following candidate didn't match
 +dflt-ctor-generic-uninit-field-var-err-1.chpl:7: note: omitting 20 more candidates that didn't match
 diff --git a/test/classes/initializers/compilerGenerated/generics/issue-16508-default-ok.good b/test/classes/initializers/compilerGenerated/generics/issue-16508-default-ok.good
 index e010eb041e0..a06343ef4fd 100644
@@ -167,7 +167,7 @@ index c4be8f5b2ff..9e59e334bac 100644
 -withParamTypeNoDefNoArgsInCall.chpl:1: note:   Foo.init(param p: bool, reader, deserializer)
 +withParamTypeNoDefNoArgsInCall.chpl:5: error: unable to resolve call to 'init': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:362: note: the following candidate didn't match
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:274: note: the following candidate didn't match
 +withParamTypeNoDefNoArgsInCall.chpl:5: note: omitting 20 more candidates that didn't match
 diff --git a/test/classes/initializers/compilerGenerated/inherits_initializer_bad.good b/test/classes/initializers/compilerGenerated/inherits_initializer_bad.good
 index fe576424976..24d7cb22f0e 100644
@@ -398,7 +398,7 @@ index 2ad89df7ff9..3c003e78e5e 100644
 +badDependence2.chpl:2: error: unable to resolve call to '*': no matching candidates
 +$CHPL_HOME/modules/internal/ChapelTuple.chpl:758: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/internal/ChapelTuple.chpl:750: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+badDependence2.chpl:2: note: omitting 59 more candidates that didn't match
++badDependence2.chpl:2: note: omitting 69 more candidates that didn't match
 diff --git a/test/classes/initializers/generics/phase1/enumFieldNoUseBad.good b/test/classes/initializers/generics/phase1/enumFieldNoUseBad.good
 index a5ef234d971..ceb39fb24fa 100644
 --- a/test/classes/initializers/generics/phase1/enumFieldNoUseBad.good
@@ -1695,8 +1695,8 @@ index 3199c922469..178c1d52b4a 100644
 +++ b/test/types/range/cast-assign-init/casts-4.good
 @@ -1 +1,2 @@
 -casts-4.chpl:8: error: 'tryCast' to a range type with idxType=bool is not currently supported
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1633: In method 'tryCast':
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1636: error: 'tryCast' to a range type with idxType=bool is not currently supported
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1597: In method 'tryCast':
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1600: error: 'tryCast' to a range type with idxType=bool is not currently supported
 diff --git a/test/types/range/cast-assign-init/illegal-inits.0-1.good b/test/types/range/cast-assign-init/illegal-inits.0-1.good
 index 97131c3613d..99cc4dcd851 100644
 --- a/test/types/range/cast-assign-init/illegal-inits.0-1.good
@@ -1843,8 +1843,8 @@ index 0ea07ea9f8d..2b245380207 100644
 +++ b/test/types/range/deitz/test_int8_range_big_stride.good
 @@ -1 +1,2 @@
 -test_int8_range_big_stride.chpl:1: error: the step argument of the 'by' operator is too large and cannot be represented within the range's stride type int(64)
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:2357: In function 'by':
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:2358: error: the step argument of the 'by' operator is too large and cannot be represented within the range's stride type int(64)
++$CHPL_HOME/modules/internal/ChapelRange.chpl:2321: In function 'by':
++$CHPL_HOME/modules/internal/ChapelRange.chpl:2322: error: the step argument of the 'by' operator is too large and cannot be represented within the range's stride type int(64)
 diff --git a/test/types/range/deitz/test_range_iterate_error.good b/test/types/range/deitz/test_range_iterate_error.good
 index c5070275cc1..8e9e9a29105 100644
 --- a/test/types/range/deitz/test_range_iterate_error.good
@@ -1881,32 +1881,32 @@ index 7cf95ac0130..10e61332dcd 100644
 +++ b/test/types/range/diten/rangecastbounds.bounded.good
 @@ -1 +1,2 @@
 -rangecastbounds.chpl:24: error: cannot cast range from boundKind.low to boundKind.both
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1666: In function ':':
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1668: error: cannot cast range from boundKind.low to boundKind.both
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1630: In function ':':
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1632: error: cannot cast range from boundKind.low to boundKind.both
 diff --git a/test/types/range/diten/rangecastbounds.high.good b/test/types/range/diten/rangecastbounds.high.good
 index 5a6251e78b6..954b3d40275 100644
 --- a/test/types/range/diten/rangecastbounds.high.good
 +++ b/test/types/range/diten/rangecastbounds.high.good
 @@ -1 +1,2 @@
 -rangecastbounds.chpl:18: error: cannot cast range from boundKind.both to boundKind.high
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1666: In function ':':
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1668: error: cannot cast range from boundKind.both to boundKind.high
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1630: In function ':':
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1632: error: cannot cast range from boundKind.both to boundKind.high
 diff --git a/test/types/range/diten/rangecastbounds.low.good b/test/types/range/diten/rangecastbounds.low.good
 index aa322fe91ed..b20a0e7029b 100644
 --- a/test/types/range/diten/rangecastbounds.low.good
 +++ b/test/types/range/diten/rangecastbounds.low.good
 @@ -1 +1,2 @@
 -rangecastbounds.chpl:15: error: cannot cast range from boundKind.both to boundKind.low
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1666: In function ':':
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1668: error: cannot cast range from boundKind.both to boundKind.low
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1630: In function ':':
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1632: error: cannot cast range from boundKind.both to boundKind.low
 diff --git a/test/types/range/diten/rangecastbounds.unbounded.good b/test/types/range/diten/rangecastbounds.unbounded.good
 index 0e3cdafc66f..eb0c4dd49ca 100644
 --- a/test/types/range/diten/rangecastbounds.unbounded.good
 +++ b/test/types/range/diten/rangecastbounds.unbounded.good
 @@ -1 +1,2 @@
 -rangecastbounds.chpl:21: error: cannot cast range from boundKind.both to boundKind.neither
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1666: In function ':':
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1668: error: cannot cast range from boundKind.both to boundKind.neither
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1630: In function ':':
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1632: error: cannot cast range from boundKind.both to boundKind.neither
 diff --git a/test/types/range/elliot/badRangeLiterals/badCountedLowBoundedRange.good b/test/types/range/elliot/badRangeLiterals/badCountedLowBoundedRange.good
 index efa1a94fdd1..e1ac1c558c5 100644
 --- a/test/types/range/elliot/badRangeLiterals/badCountedLowBoundedRange.good
@@ -1921,16 +1921,16 @@ index 2b96d691ebb..e5fc6b3763b 100644
 @@ -1,2 +1,10 @@
 -castEnumRange2.chpl:4: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
 -castEnumRange2.chpl:4: error: cannot cast abstract enum type 'color' to 'int(64)'
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1698: In function ':':
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1701: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1708: error: unable to resolve call to ':': no matching candidates
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1662: In function ':':
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1665: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1672: error: unable to resolve call to ':': no matching candidates
 +$CHPL_HOME/modules/internal/ChapelArrayViewElision.chpl:352: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/internal/ChapelTaskID.chpl:39: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1708: note: omitting 124 more candidates that didn't match
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1711: error: unable to resolve call to ':': no matching candidates
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1672: note: omitting 124 more candidates that didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1675: error: unable to resolve call to ':': no matching candidates
 +$CHPL_HOME/modules/internal/ChapelArrayViewElision.chpl:352: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/internal/ChapelTaskID.chpl:39: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:1711: note: omitting 124 more candidates that didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:1675: note: omitting 124 more candidates that didn't match
 diff --git a/test/types/range/enum/singleValEnum-errors-offset.good b/test/types/range/enum/singleValEnum-errors-offset.good
 index 5cb8abe10d0..f27bed16399 100644
 --- a/test/types/range/enum/singleValEnum-errors-offset.good
@@ -1979,22 +1979,22 @@ index b6cfc59548d..6765d8b28c0 100644
 --- a/test/types/range/lydia/badRange-string-stride.good
 +++ b/test/types/range/lydia/badRange-string-stride.good
 @@ -1,2 +1,19 @@
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:2300: In function 'chpl_range_check_stride':
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:2301: error: can't apply 'by' using step of a non-integral type string
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:2276: In function 'chpl_need_to_check_step':
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:2279: error: unable to resolve call to 'numBits': no matching candidates
++$CHPL_HOME/modules/internal/ChapelRange.chpl:2264: In function 'chpl_range_check_stride':
++$CHPL_HOME/modules/internal/ChapelRange.chpl:2265: error: can't apply 'by' using step of a non-integral type string
++$CHPL_HOME/modules/internal/ChapelRange.chpl:2240: In function 'chpl_need_to_check_step':
++$CHPL_HOME/modules/internal/ChapelRange.chpl:2243: error: unable to resolve call to 'numBits': no matching candidates
 +$CHPL_HOME/modules/standard/Types.chpl:804: note: the following candidate didn't match because the 'where' clause evaluated to 'false'
 +$CHPL_HOME/modules/standard/Types.chpl:802: note: the following candidate didn't match because the 'where' clause evaluated to 'false'
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:2279: note: omitting 13 more candidates that didn't match
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:2279: error: cannot return it with provided return intent
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:2300: In function 'chpl_range_check_stride':
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:2308: error: Cannot establish type for call expression
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:2357: In function 'by':
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:2358: error: the step argument of the 'by' operator is too large and cannot be represented within the range's stride type int(64)
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:2369: error: unable to resolve call to 'chpl_strideProduct': no matching candidates
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:805: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:802: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:2369: note: omitting 1 more candidates that didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:2243: note: omitting 13 more candidates that didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:2243: error: cannot return it with provided return intent
++$CHPL_HOME/modules/internal/ChapelRange.chpl:2264: In function 'chpl_range_check_stride':
++$CHPL_HOME/modules/internal/ChapelRange.chpl:2272: error: Cannot establish type for call expression
++$CHPL_HOME/modules/internal/ChapelRange.chpl:2321: In function 'by':
++$CHPL_HOME/modules/internal/ChapelRange.chpl:2322: error: the step argument of the 'by' operator is too large and cannot be represented within the range's stride type int(64)
++$CHPL_HOME/modules/internal/ChapelRange.chpl:2333: error: unable to resolve call to 'chpl_strideProduct': no matching candidates
++$CHPL_HOME/modules/internal/ChapelRange.chpl:769: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/internal/ChapelRange.chpl:766: note: the following candidate didn't match because an actual couldn't be passed to a formal
++$CHPL_HOME/modules/internal/ChapelRange.chpl:2333: note: omitting 1 more candidates that didn't match
  badRange-string-stride.chpl:1: In function 'main':
 -badRange-string-stride.chpl:2: error: Range stride must be an int
 +badRange-string-stride.chpl:2: error: Cannot establish type for call expression
@@ -4140,11 +4140,11 @@ index 9b607b7c291..9fd33151906 100644
 -genericArrayAsTupleSize.chpl:3: note: other candidates are:
 -$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   *(a: int(16), b: int(16))
 -$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   *(a: int(32), b: int(32))
--note: and 58 other candidates, use --print-all-candidates to see them
+-note: and 68 other candidates, use --print-all-candidates to see them
 +genericArrayAsTupleSize.chpl:3: error: unable to resolve call to '*': no matching candidates
 +$CHPL_HOME/modules/internal/ChapelTuple.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
 +$CHPL_HOME/modules/internal/ChapelTuple.chpl:nnnn: note: the following candidate didn't match because an actual couldn't be passed to a formal
-+genericArrayAsTupleSize.chpl:3: note: omitting 59 more candidates that didn't match
++genericArrayAsTupleSize.chpl:3: note: omitting 69 more candidates that didn't match
 diff --git a/test/types/tuple/errors/indexHetTuple.good b/test/types/tuple/errors/indexHetTuple.good
 index cc1699cb7ee..d22f447a1ab 100644
 --- a/test/types/tuple/errors/indexHetTuple.good
@@ -4567,7 +4567,7 @@ index e58ce80a69a..a67bda7d1cc 100644
 -test_infer_class1.chpl:1: note:   C.init(type t, reader, deserializer)
 +test_infer_class1.chpl:6: error: unable to resolve call to 'init': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:362: note: the following candidate didn't match
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:274: note: the following candidate didn't match
 +test_infer_class1.chpl:6: note: omitting 20 more candidates that didn't match
 diff --git a/test/types/type_variables/deitz/part7/test_infer_class2.good b/test/types/type_variables/deitz/part7/test_infer_class2.good
 index 2599a263216..6e9f3d0876e 100644
@@ -4582,7 +4582,7 @@ index 2599a263216..6e9f3d0876e 100644
 -test_infer_class2.chpl:1: note:   C.init(type t, reader, deserializer)
 +test_infer_class2.chpl:6: error: unable to resolve call to 'init': no matching candidates
 +$CHPL_HOME/modules/standard/ChapelIO.chpl:362: note: the following candidate didn't match
-+$CHPL_HOME/modules/internal/ChapelRange.chpl:280: note: the following candidate didn't match
++$CHPL_HOME/modules/internal/ChapelRange.chpl:274: note: the following candidate didn't match
 +test_infer_class2.chpl:6: note: omitting 20 more candidates that didn't match
 diff --git a/test/types/type_variables/deitz/test_query_expression_error.good b/test/types/type_variables/deitz/test_query_expression_error.good
 index 4439f7096e7..98023830a22 100644

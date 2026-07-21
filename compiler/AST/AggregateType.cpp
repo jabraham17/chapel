@@ -2241,26 +2241,59 @@ bool AggregateType::isFieldInThisClass(const char* name) const {
   return retval;
 }
 
+// start building a compiler-generated init method; after this, its
+// arguments and body should be defined
+//
+static FnSymbol* startBuildingInitFn(AggregateType* agg) {
+  FnSymbol*  fn    = new FnSymbol("init");
+  ArgSymbol* _mt   = new ArgSymbol(INTENT_BLANK, "_mt",  dtMethodToken);
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", agg);
+
+  fn->cname = fn->name;
+  fn->_this = _this;
+
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
+  fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+
+  _this->addFlag(FLAG_ARG_THIS);
+
+  fn->insertFormalAtTail(_mt);
+  fn->insertFormalAtTail(_this);
+
+  return fn;
+}
+
+// wrap up the building of a compiler-generated init method once its
+// arguments and body have been defined
+//
+static void finalizeInitFn(AggregateType* agg, FnSymbol* fn) {
+  DefExpr* def = new DefExpr(fn);
+  agg->symbol->defPoint->insertBefore(def);
+
+  fn->setMethod(true);
+  fn->addFlag(FLAG_METHOD_PRIMARY);
+
+  preNormalizeInitMethod(fn);
+
+  normalize(fn);
+
+  // BHARSH INIT TODO: Should this be part of normalize(fn)? If we did
+  // that we would emit two use-before-def errors for classes because of
+  // the generated _new function.
+  checkUseBeforeDefs(fn);
+
+  agg->methods.add(fn);
+}
+
+
+
 void AggregateType::buildDefaultInitializer() {
   if (builtDefaultInit == false &&
       symbol->hasFlag(FLAG_REF) == false) {
     SET_LINENO(this);
-    FnSymbol*  fn    = new FnSymbol("init");
-    ArgSymbol* _mt   = new ArgSymbol(INTENT_BLANK, "_mt",  dtMethodToken);
-    ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", this);
-
-    fn->cname = fn->name;
-    fn->_this = _this;
-
-    fn->addFlag(FLAG_COMPILER_GENERATED);
-    fn->addFlag(FLAG_LAST_RESORT);
-    fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+    FnSymbol* fn = startBuildingInitFn(this);
     fn->addFlag(FLAG_DEFAULT_INIT);
-
-    _this->addFlag(FLAG_ARG_THIS);
-
-    fn->insertFormalAtTail(_mt);
-    fn->insertFormalAtTail(_this);
 
     if (!this->isUnion()) {
       std::set<const char*> names;
@@ -2277,40 +2310,63 @@ void AggregateType::buildDefaultInitializer() {
         // NOTE: doesn't handle inherited fields yet!
         update_symbols(fn, &fieldArgMap);
 
-        DefExpr* def = new DefExpr(fn);
-        symbol->defPoint->insertBefore(def);
-
-        fn->setMethod(true);
-        fn->addFlag(FLAG_METHOD_PRIMARY);
-
-        preNormalizeInitMethod(fn);
-
-        normalize(fn);
-
-        // BHARSH INIT TODO: Should this be part of normalize(fn)? If we did
-        // that we would emit two use-before-def errors for classes because of
-        // the generated _new function.
-        checkUseBeforeDefs(fn);
-
-        methods.add(fn);
+        finalizeInitFn(this, fn);
 
       } else {
         USR_FATAL(this, "Unable to generate initializer for type '%s'", this->symbol->name);
       }
-    } else {
-      DefExpr* def = new DefExpr(fn);
-      symbol->defPoint->insertBefore(def);
-
-      fn->setMethod(true);
-      fn->addFlag(FLAG_METHOD_PRIMARY);
-
+    } else {  // Handle unions
+      /* 0-arg initializer */
       fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
                                     fn->_this,
                                     new_IntSymbol(-1)));
 
-      normalize(fn);
+      finalizeInitFn(this, fn);
 
-      methods.add(fn);
+      /* 1-arg initializers */
+      for_fields(fieldDefExpr, this) {
+        SET_LINENO(this);
+        FnSymbol* fn = startBuildingInitFn(this);
+
+        {
+          SET_LINENO(fieldDefExpr);
+          VarSymbol* field = toVarSymbol(fieldDefExpr);
+          if (!field) {
+            INT_FATAL("unexpected: fieldDefExpr can't be made a VarSymbol");
+          }
+          INT_ASSERT(!field->hasFlag(FLAG_SUPER_CLASS));
+
+          DefExpr* defPoint = field->defPoint;
+          const char* name = field->name;
+          ArgSymbol* arg = new ArgSymbol(INTENT_IN, name, dtUnknown);
+
+          if (field->hasEitherFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM)) {
+            USR_FATAL(arg, "union types don't currently support `type` or `param` fields");
+          }
+
+          {
+            SET_LINENO(field);
+
+            if (field->hasFlag(FLAG_UNSAFE))
+              arg->addFlag(FLAG_UNSAFE);
+
+            if (defPoint->exprType == NULL) {
+              USR_FATAL(field, "currently, union fields must have a declared type");
+            } else if (defPoint->init == NULL) {
+              fieldToArgType(defPoint, arg);
+            } else {
+              USR_FATAL(field, "currently, union fields cannot have initializer expressions");
+            }
+            fn->insertFormalAtTail(arg);
+            fn->insertAtTail(new CallExpr("=", new CallExpr(".",
+                                                            fn->_this,
+                                                            new_CStringSymbol(name)),
+                                          arg));
+          }
+        }
+
+        finalizeInitFn(this, fn);
+      }
     }
 
     builtDefaultInit = true;
@@ -2369,9 +2425,7 @@ void AggregateType::buildReaderInitializer() {
   if (builtReaderInit == false &&
       symbol->hasFlag(FLAG_REF) == false) {
     SET_LINENO(this);
-    FnSymbol*  fn    = new FnSymbol("init");
-    ArgSymbol* _mt   = new ArgSymbol(INTENT_BLANK, "_mt",  dtMethodToken);
-    ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", this);
+    FnSymbol* fn = startBuildingInitFn(this);
 
     ArgSymbol* reader = new ArgSymbol(INTENT_BLANK, "reader", dtAny);
     ArgSymbol* deser  = new ArgSymbol(INTENT_REF, "deserializer", dtAny);
@@ -2381,17 +2435,6 @@ void AggregateType::buildReaderInitializer() {
     fn->where = new BlockStmt(new CallExpr("chpl__isFileReader",
                               new CallExpr(PRIM_TYPEOF, reader)));
 
-    fn->cname = fn->name;
-    fn->_this = _this;
-
-    fn->addFlag(FLAG_COMPILER_GENERATED);
-    fn->addFlag(FLAG_LAST_RESORT);
-    fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
-
-    _this->addFlag(FLAG_ARG_THIS);
-
-    fn->insertFormalAtTail(_mt);
-    fn->insertFormalAtTail(_this);
     fn->insertFormalAtTail(reader);
     fn->insertFormalAtTail(deser);
 
@@ -2425,17 +2468,7 @@ void AggregateType::buildReaderInitializer() {
         // Replaces field references with argument references
         // NOTE: doesn't handle inherited fields yet!
         update_symbols(fn, &fieldArgMap);
-
-        DefExpr* def = new DefExpr(fn);
-        symbol->defPoint->insertBefore(def);
-
-        fn->setMethod(true);
-        fn->addFlag(FLAG_METHOD_PRIMARY);
-
-        preNormalizeInitMethod(fn);
-
-        normalize(fn);
-
+        finalizeInitFn(this, fn);
 
         // BHARSH INIT TODO: Should this be part of normalize(fn)? If we did
         // that we would emit two use-before-def errors for classes because of
@@ -3127,9 +3160,10 @@ void AggregateType::discoverParentAndCheck(Expr* storesName,
 }
 
 void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
-  bool isInit = (strcmp(fn->name, "init")   == 0);
+  bool isInit = (strcmp(fn->name, "init") == 0);
+  bool isInitEquals = (strcmp(fn->name, "init=") == 0);
 
-  if (isInit) {
+  if (isInit || isInitEquals) {
     AggregateType* ct = toAggregateType(t->type);
 
     if (ct == NULL) {
@@ -3141,7 +3175,15 @@ void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
       USR_FATAL(fn, "an initializer cannot be declared without parentheses");
     }
 
-    if (ct->hasUserDefinedInit == false) {
+    // For a user-defined union initializer to work properly, the active
+    // field indicator must be initialized to -1
+    if (ct->isUnion()) {
+      fn->insertAtHead(new CallExpr(PRIM_SET_UNION_ID,
+                                    fn->_this,
+                                    new_IntSymbol(-1)));
+    }
+
+    if (isInit && ct->hasUserDefinedInit == false) {
       // We hadn't previously seen an initializer definition.
       // Update the field on the type appropriately.
       if (fn->hasFlag(FLAG_METHOD_PRIMARY) == true ||

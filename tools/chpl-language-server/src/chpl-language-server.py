@@ -800,6 +800,7 @@ class ChapelLanguageServer(LanguageServer):
         self,
         fn: chapel.Function,
         type_str: str,
+        data: Optional[Any] = None,
     ) -> InlayHint:
         """
         Build the InlayHint for a function return type
@@ -829,6 +830,7 @@ class ChapelLanguageServer(LanguageServer):
                 InlayHintLabelPart(padding),
             ],
             text_edits=text_edits,
+            data=data,
         )
 
     def get_fn_inlays(
@@ -853,19 +855,26 @@ class ChapelLanguageServer(LanguageServer):
             return []
 
         type_str = self._fn_return_type_str(fn, sig)
+        is_generic = False
         if type_str is None and self.generic_return_type_inlays:
             type_str = self._try_generic_fn_return_type_str(
                 fn, fi.context.context
             )
+            is_generic = type_str is not None
         if type_str is None:
             return []
 
-        return [self._fn_inlay_from_type_str(fn, type_str)]
+        return [
+            self._fn_inlay_from_type_str(
+                fn, type_str, data={"is_generic": is_generic}
+            )
+        ]
 
     def get_common_fn_inlays(
         self,
         decl: NodeAndRange,
         fi: FileInfo,
+        existing_inlays: List[InlayHint],
     ) -> List[InlayHint]:
 
         if (
@@ -881,9 +890,22 @@ class ChapelLanguageServer(LanguageServer):
 
         # * If there are no instantiations, nothing to show.
         # * If there's only one, we can't distinguish "common" from
-        #   "just in this one", so don't show anything.
+        #   "just in this one". We still compute the common inlays in that case,
+        #   because its still generally useful and confusing to not show them.
+        #   if more instantiations are added later, the inlays will be updated to
+        #   either show or not show based on whether the new instantiation
+        #   matches the existing one.
         insts = list(fi.context.instantiations(fn.unique_id()))
-        if len(insts) < 2:
+        if len(insts) == 0:
+            return []
+
+        # if there are instantiations and its a generic inlay, we should not show common inlays
+        if (
+            len(insts) >= 1
+            and len(existing_inlays) == 1
+            and existing_inlays[0].data
+            and existing_inlays[0].data.get("is_generic")
+        ):
             return []
 
         type_strs = set()
@@ -935,9 +957,13 @@ class ChapelLanguageServer(LanguageServer):
 
         # * If there are no instantiations, nothing to show.
         # * If there's only one, we can't distinguish "common" from
-        #   "just in this one", so don't show anything.
+        #   "just in this one". We still compute the common inlays in that case,
+        #   because its still generally useful and confusing to not show them.
+        #   if more instantiations are added later, the inlays will be updated to
+        #   either show or not show based on whether the new instantiation
+        #   matches the existing one.
         insts = list(fi.context.instantiations(parent_fn.unique_id()))
-        if len(insts) < 2:
+        if len(insts) == 0:
             return inlays
 
         decl_qts = []
@@ -1614,15 +1640,20 @@ def run_lsp():
 
         for decl in decls:
             instantiation = fi.get_inst_segment_at_position(decl.rng.start)
-            inlays.extend(ls.get_decl_inlays(decl, instantiation))
-            inlays.extend(ls.get_fn_inlays(decl, fi, instantiation))
+            decl_inlays = ls.get_decl_inlays(decl, instantiation)
+            fn_inlays = ls.get_fn_inlays(decl, fi, instantiation)
+            inlays.extend(decl_inlays)
+            inlays.extend(fn_inlays)
 
             if instantiation is not None:
                 continue
 
-            # Get inalys gathered if all instantiations show the same hint.
-            inlays.extend(ls.get_common_decl_inlays(decl, fi))
-            inlays.extend(ls.get_common_fn_inlays(decl, fi))
+            # TODO: common inlays should be extended to params as well as types
+            #       both for types of params and values of params
+            common_decl_inlays = ls.get_common_decl_inlays(decl, fi)
+            common_fn_inlays = ls.get_common_fn_inlays(decl, fi, fn_inlays)
+            inlays.extend(common_decl_inlays)
+            inlays.extend(common_fn_inlays)
 
         for call in calls:
             call_range = location_to_range(call.location())
@@ -1755,6 +1786,7 @@ def run_lsp():
                                 decl.node.unique_id(),
                                 i,
                                 from_file.uri,
+                                from_file.context.revision(),
                             ],
                         ),
                         range=decl.rng,
@@ -1781,13 +1813,16 @@ def run_lsp():
 
     @server.command("chpl-language-server/showInstantiation")
     async def show_instantiation(
-        ls: ChapelLanguageServer, data: Tuple[str, str, int, str]
+        ls: ChapelLanguageServer, data: Tuple[str, str, int, str, int]
     ):
-        uri, unique_id, i, source_uri = data
+        uri, unique_id, i, source_uri, revision = data
 
         fi, _ = ls.get_file_info(uri)
         source_fi, _ = ls.get_file_info(source_uri)
         decl = fi.find_decl_by_unique_id(unique_id)
+
+        if source_fi.context.revision() != revision:
+            return
 
         if decl is None:
             return

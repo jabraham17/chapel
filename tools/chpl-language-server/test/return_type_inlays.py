@@ -451,9 +451,20 @@ async def test_fn_type_inlay_per_instantiation(client: LanguageClient):
             for z in idk1I(10) do {}
             for z in idk1I(10.0) do {}
            """
+    proc_file_single = """
+            proc idk1(x) { return x; }
+            idk1("mystr");
+    """
+    iter_file_single = """
+            iter idk1I(x) { yield x; }
+            for z in idk1I("mystr") do {}
+    """
     # 3 lenses: "Show Generic" + 2 instantiations
     proc_lens = (pos((0, 5)), 3)
     iter_lens = (pos((0, 5)), 3)
+    # 2 lenses: "Show Generic" + 1 instantiation
+    proc_lens_single = (pos((0, 5)), 2)
+    iter_lens_single = (pos((0, 5)), 2)
 
     proc_generic_inlays: EXPECTED_INLAYS = [(pos((0, 12)), ": x.type", None)]
     proc_int_inlays: EXPECTED_INLAYS = [(pos((0, 12)), ": int(64)", None)]
@@ -462,6 +473,15 @@ async def test_fn_type_inlay_per_instantiation(client: LanguageClient):
     iter_generic_inlays: EXPECTED_INLAYS = [(pos((0, 13)), ": x.type", None)]
     iter_int_inlays: EXPECTED_INLAYS = [(pos((0, 13)), ": int(64)", None)]
     iter_real_inlays: EXPECTED_INLAYS = [(pos((0, 13)), ": real(64)", None)]
+
+    proc_generic_inlays_single: EXPECTED_INLAYS = [
+        (pos((0, 12)), ": x.type", None)
+    ]
+    proc_str_inlays_single: EXPECTED_INLAYS = [(pos((0, 12)), ": string", None)]
+    iter_generic_inlays_single: EXPECTED_INLAYS = [
+        (pos((0, 13)), ": x.type", None)
+    ]
+    iter_str_inlays_single: EXPECTED_INLAYS = [(pos((0, 13)), ": string", None)]
 
     await click_lenses_and_check_inlays(
         client,
@@ -474,6 +494,45 @@ async def test_fn_type_inlay_per_instantiation(client: LanguageClient):
         iter_lens,
         [iter_generic_inlays, iter_int_inlays, iter_real_inlays],
         A=iter_file,
+    )
+    await click_lenses_and_check_inlays(
+        client,
+        proc_lens_single,
+        [proc_generic_inlays_single, proc_str_inlays_single],
+        A=proc_file_single,
+    )
+    await click_lenses_and_check_inlays(
+        client,
+        iter_lens_single,
+        [iter_generic_inlays_single, iter_str_inlays_single],
+        A=iter_file_single,
+    )
+
+
+@pytest.mark.asyncio
+async def test_fn_type_inlay_type_proc(client: LanguageClient):
+    """
+    For functions whose return type depends on the instantiation (i.e.,
+    is not common), ensure that clicking a particular instantiation shows
+    an appropriate inlay for that instantiation.
+    """
+    proc_file = """
+            proc foo(type x, type z) type { return x; }
+            foo(int, string);
+            foo(real, string);
+           """
+    # 3 lenses: "Show Generic" + 2 instantiations
+    proc_lens = (pos((0, 5)), 3)
+
+    proc_generic_inlays: EXPECTED_INLAYS = [(pos((0, 29)), ": x", None)]
+    proc_int_inlays: EXPECTED_INLAYS = [(pos((0, 29)), ": int(64)", None)]
+    proc_real_inlays: EXPECTED_INLAYS = [(pos((0, 29)), ": real(64)", None)]
+
+    await click_lenses_and_check_inlays(
+        client,
+        proc_lens,
+        [proc_generic_inlays, proc_int_inlays, proc_real_inlays],
+        A=proc_file,
     )
 
 

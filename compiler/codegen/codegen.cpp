@@ -1380,6 +1380,9 @@ static void genConfigGlobalsAndAbout() {
     restoreDriverTmp(compileCommandFilename, [](std::string_view restoredCommand) {
       compileCommand = astr(restoredCommand);
     });
+    restoreDriverTmp(compileEnvsFilename, [](std::string_view restoredEnvs) {
+      compileEnvs = astr(restoredEnvs);
+    });
   }
 
   genGlobalString("chpl_compileCommand", compileCommand);
@@ -1400,9 +1403,9 @@ static void genConfigGlobalsAndAbout() {
   genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote, false);
   genGlobalInt("CHPL_INTERLEAVE_MEM", fEnableMemInterleaving, false);
 
-  for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
-    if (env->first != "CHPL_HOME") {
-      genGlobalString(env->first.c_str(), env->second);
+  for (const auto& env: envMap) {
+    if (env.first != "CHPL_HOME") {
+      genGlobalString(env.first.c_str(), env.second);
     }
   }
 
@@ -1434,12 +1437,16 @@ static void genConfigGlobalsAndAbout() {
   }
 
   codegenCallPrintf(astr("Compilation command: ", compileCommand, "\\n"));
+  if (compileEnvs.size() != 0) {
+    codegenCallPrintf("Compilation environment:\\n");
+    codegenCallPrintf(compileEnvs.c_str());
+  }
   codegenCallPrintf(astr("Chapel compiler version: ", compileVersion, "\\n"));
   codegenCallPrintf("Chapel environment:\\n");
   codegenCallPrintf(astr("  CHPL_HOME: ", CHPL_HOME.c_str(), "\\n"));
-  for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
-    if (env->first != "CHPL_HOME") {
-      codegenCallPrintf(astr("  ", env->first.c_str(), ": ", env->second, "\\n"));
+  for (const auto& env: envMap) {
+    if (env.first != "CHPL_HOME") {
+      codegenCallPrintf(astr("  ", env.first.c_str(), ": ", env.second, "\\n"));
     }
   }
 
@@ -2231,7 +2238,8 @@ static void codegen_header(std::set<const char*> & cnames,
     current.move(next);
     current.set_to_vec();
 
-    qsort(current.v, current.n, sizeof(current.v[0]), compareSymbol2);
+    if (current.n)
+      qsort(current.v, current.n, sizeof(current.v[0]), compareSymbol2);
 
     next.clear();
   }
@@ -3711,12 +3719,9 @@ GenInfo::GenInfo()
              globalToWideInfo()
 #endif
 {
-#if HAVE_LLVM_VER >= 150 && HAVE_LLVM_VER < 160
-#ifdef LLVM_NO_OPAQUE_POINTERS
-  gContext->llvmContext().setOpaquePointers(false);
-#else
+// with LLVM 15, we have to explicitly opt in to opaque pointers
+#if LLVM_VERSION_MAJOR == 15
   gContext->llvmContext().setOpaquePointers(true);
-#endif
 #endif
 }
 

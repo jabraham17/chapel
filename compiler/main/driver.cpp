@@ -362,6 +362,8 @@ char stopAfterPass[128] = "";
 
 const char* compileCommandFilename = "compileCommand.tmp";
 const char* compileCommand = NULL;
+const char* compileEnvsFilename = "compileEnvs.tmp";
+std::string compileEnvs = "";
 char compileVersion[64];
 
 std::array<std::string, 2> editions ({{"2.0", "preview"}});
@@ -564,7 +566,7 @@ static void setupChplLLVM(void) {
 #endif
 }
 
-static void recordCodeGenStrings(int argc, char* argv[]) {
+static void recordCodeGenStrings(ArgumentState* argState, int argc, char* argv[]) {
   compileCommand = astr("chpl ");
   // WARNING: This does not handle arbitrary sequences of escaped characters
   //  in string arguments
@@ -591,6 +593,11 @@ static void recordCodeGenStrings(int argc, char* argv[]) {
   }
 
   get_version(compileVersion, sizeof(compileVersion));
+
+  for (int i = 0; i < argState->nenv_arguments; i += 2) {
+    compileEnvs += std::string("  ") + argState->env_argument[i] + "=" +
+                                       argState->env_argument[i+1] + "\\n";
+  }
 }
 
 static void setHome(const ArgumentDescription* desc, const char* arg) {
@@ -769,13 +776,6 @@ static void setLLVMRemarksFunctions(const ArgumentDescription* desc, const char*
   }
 }
 
-static void setLLVMPrintPasses(const ArgumentDescription* desc, const char* arg) {
-#ifdef LLVM_USE_OLD_PASSES
-  printf("Cannot use '--llvm-print-passes' with this version of LLVM");
-  clean_exit(1);
-#endif
-}
-
 static void handleLibrary(const ArgumentDescription* desc, const char* arg_unused) {
  addLibFile(libraryFilename.c_str(), /* fromCmdLine */ true);
 }
@@ -851,6 +851,7 @@ static void runAsCompilerDriver(int argc, char* argv[]) {
 
   // Save initial compilation command before re-invocations.
   saveDriverTmp(compileCommandFilename, compileCommand);
+  saveDriverTmp(compileEnvsFilename, compileEnvs);
 
   // invoke compilation phase
   if ((status = runDriverCompilationPhase(argc, argv)) != 0) {
@@ -1447,7 +1448,7 @@ static ArgumentDescription arg_desc[] = {
  {"inline-iterators", ' ', NULL, "Enable [disable] iterator inlining", "n", &fNoInlineIterators, "CHPL_DISABLE_INLINE_ITERATORS", NULL},
  {"inline-iterators-yield-limit", ' ', "<limit>", "Limit number of yields permitted in inlined iterators", "I", &inline_iter_yield_limit, "CHPL_INLINE_ITER_YIELD_LIMIT", NULL},
  {"live-analysis", ' ', NULL, "Enable [disable] live variable analysis", "n", &fNoLiveAnalysis, "CHPL_DISABLE_LIVE_ANALYSIS", NULL},
- {"loop-invariant-code-motion", ' ', NULL, "Enable [disable] loop invariant code motion", "n", &fNoLoopInvariantCodeMotion, NULL, NULL},
+ {"loop-invariant-code-motion", ' ', NULL, "Enable [disable] loop invariant code motion", "n", &fNoLoopInvariantCodeMotion, "CHPL_LOOP_INVARIANT_CODE_MOTION", NULL},
  {"optimize-forall-unordered-ops", ' ', NULL, "Enable [disable] optimization of foralls to unordered operations", "n", &fNoOptimizeForallUnordered, "CHPL_DISABLE_OPTIMIZE_FORALL_UNORDERED_OPS", NULL},
  {"optimize-range-iteration", ' ', NULL, "Enable [disable] optimization of iteration over anonymous ranges", "n", &fNoOptimizeRangeIteration, "CHPL_DISABLE_OPTIMIZE_RANGE_ITERATION", NULL},
  {"optimize-loop-iterators", ' ', NULL, "Enable [disable] optimization of iterators composed of a single loop", "n", &fNoOptimizeLoopIterators, "CHPL_DISABLE_OPTIMIZE_LOOP_ITERATORS", NULL},
@@ -1587,7 +1588,7 @@ static ArgumentDescription arg_desc[] = {
  {"llvm-print-ir-file", ' ', "<file>", "Specifies the filename to write the LLVM IR to", "S", NULL, "CHPL_LLVM_PRINT_IR_FILE", &setPrintIrFile},
  {"llvm-remarks", ' ', "<regex>", "Print LLVM optimization remarks", "S", NULL, NULL, &setLLVMRemarksFilters},
  {"llvm-remarks-function", ' ', "<name>", "Print LLVM optimization remarks only for these functions", "S", NULL, NULL, &setLLVMRemarksFunctions},
- {"llvm-print-passes", ' ', NULL, "Print the LLVM optimizations to be run", "F", &fLlvmPrintPasses, NULL, &setLLVMPrintPasses},
+ {"llvm-print-passes", ' ', NULL, "Print the LLVM optimizations to be run", "F", &fLlvmPrintPasses, NULL, NULL},
  {"verify", ' ', NULL, "Run consistency checks during compilation", "N", &fVerify, "CHPL_VERIFY", NULL},
  {"parse-only", ' ', NULL, "Stop compiling after 'parse' pass for syntax checking", "N", &fParseOnly, NULL, NULL},
  {"parser-debug", ' ', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
@@ -1721,7 +1722,9 @@ static ArgumentDescription arg_desc[] = {
 };
 
 static ArgumentState sArgState = {
+  NULL,
   0,
+  NULL,
   0,
   "program",
   "path",
@@ -2134,6 +2137,20 @@ static void checkClientServerLibrary() {
 
   // To get things to work right, consider this a type of library.
   fLibraryCompile = true;
+}
+
+static void checkNoBuiltinRuntime() {
+  // Runtime is "builtin" to program, nothing to do.
+  if (fBuiltinRuntime) return;
+
+  // Otherwise, we need "CHPL_LIB_PIC=pic".
+  bool isPic = !strcmp(CHPL_LIB_PIC, "pic");
+  if (!isPic) {
+    USR_FATAL("The '--no-builtin-runtime' flag requires position-independent "
+              "code. Rebuild Chapel with 'CHPL_LIB_PIC=pic'");
+  }
+
+  // TODO: Make sure the dynamic library file actually exists?
 }
 
 static void setMaxCIdentLen() {
@@ -2551,6 +2568,8 @@ static void postprocess_args() {
 
   checkClientServerLibrary();
 
+  checkNoBuiltinRuntime();
+
   checkMacOsxLinkStyle();
 
   checkMultiLocaleLibraryConstraints();
@@ -2815,7 +2834,7 @@ int main(int argc, char* argv[]) {
 
     initCompilerGlobals(); // must follow argument parsing
 
-    recordCodeGenStrings(argc, argv);
+    recordCodeGenStrings(&sArgState, argc, argv);
   } // astlocMarker scope
 
   // We print things (--help*, --copyright, etc.) before validating

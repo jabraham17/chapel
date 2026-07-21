@@ -240,7 +240,9 @@ static void checkProjectVersion(const ArgumentDescription* desc, const char* arg
   {0}
 
 static ArgumentState sArgState = {
+  NULL,
   0,
+  NULL,
   0,
   "program",
   "path",

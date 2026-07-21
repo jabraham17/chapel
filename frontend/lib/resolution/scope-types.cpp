@@ -287,12 +287,7 @@ void MatchingIdsWithName::removeDuplicateIds(std::vector<ResultVisibilityTrace>*
 
 void MatchingIdsWithName::truncate(int sz) {
   CHPL_ASSERT(0 <= sz && sz <= (int) idvs_.size());
-#if LLVM_VERSION_MAJOR >= 14
   idvs_.truncate(sz);
-#else
-  idvs_.resize(sz);
-#endif
-
 }
 
 void MatchingIdsWithName::clear() {
