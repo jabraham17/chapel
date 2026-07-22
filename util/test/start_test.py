@@ -257,7 +257,7 @@ def test_files(files, num_workers):
         return
 
     if args.performance or not args.gen_graphs:
-        run_sub_tests_for_files(files, num_workers)
+        run_sub_tests(files, num_workers)
 
     if args.gen_graphs:
         for test in files:
@@ -428,7 +428,7 @@ def test_directory(test, test_type, num_workers):
                         ):
                             parallel_dirs.append((dir, root))
                         else:
-                            run_sub_tests_for_directories(
+                            run_sub_tests(
                                 [(dir, root)], num_workers
                             )
 
@@ -443,7 +443,7 @@ def test_directory(test, test_type, num_workers):
 
     # run any deferred directories concurrently
     if parallel_mode and parallel_dirs:
-        run_sub_tests_for_directories(parallel_dirs, num_workers)
+        run_sub_tests(parallel_dirs, num_workers)
 
 
 def summarize():
@@ -625,40 +625,11 @@ def invoke_sub_tests(work, num_workers):
             yield (item, status, output)
 
 
-def run_sub_tests_for_files(files, num_workers):
-    if not files:
-        return
-
-    if num_workers > 1:
-        logger.write()
-        logger.write(
-            "[Running sub_test on {0} files using {1} parallel workers]".format(
-                len(files), num_workers
-            )
-        )
-
-    work = [(test, os.path.dirname(test), test) for test in files]
-    for test, status, output in invoke_sub_tests(work, num_workers):
-        path_to_test = os.path.relpath(test)
-        logger.write()
-        logger.write("[Working on file {0}]".format(path_to_test))
-        logger.write(output)
-        if status != 0:
-            logger.write(
-                "[Error running sub_test (code {1}) for {0}]".format(
-                    path_to_test, status
-                )
-            )
-        logger.flush()
-
-        if args.progress:
-            sys.stderr.write(
-                "[done testing {0}]\n".format(os.path.dirname(test))
-            )
-
-
-def run_sub_tests_for_directories(directories, num_workers):
-    if not directories:
+def run_sub_tests(items, num_workers):
+    """
+    items is either a list of files or a list of tuples of (dir, root) for directories
+    """
+    if not items:
         return
 
     parallel_log_str = (
@@ -666,30 +637,39 @@ def run_sub_tests_for_directories(directories, num_workers):
         if num_workers > 1
         else ""
     )
+    for_files = isinstance(items[0], str)
+    item_type = "files" if for_files else "directories"
+    log_str = "[Running sub_test on {0} {1}{2}]".format(len(items), item_type, parallel_log_str)
     logger.write()
-    logger.write(
-        "[Running sub_test on {0} directories{1}]".format(
-            len(directories), parallel_log_str
-        )
-    )
+    logger.write(log_str)
 
-    work = [
-        ((test_dir_path, root), test_dir_path, None)
-        for test_dir_path, root in directories
-    ]
+    # each work item is a tuple of (item, test_dir_path, test)
+    # for directories, test is None
+    if for_files:
+        work = [(item, os.path.dirname(item), item) for item in items]
+    else:
+        work = [(item, item[0], None) for item in items]
+
     for item, status, output in invoke_sub_tests(work, num_workers):
-        _, root = item
+        path_for_log = item[1] if not for_files else os.path.relpath(item)
         logger.write()
-        if num_workers > 1:
-            logger.write("[Working on directory {0}]".format(root))
+        if for_files:
+            logger.write("[Working on file {0}]".format(path_for_log))
+        elif num_workers > 1:
+            logger.write("[Working on directory {0}]".format(path_for_log))
         logger.write(output)
         if status != 0:
             logger.write(
-                "[Error running sub_test (code {1}) in {0}]".format(
-                    root, status
+                "[Error running sub_test (code {1}) for {0}]".format(
+                    path_for_log, status
                 )
             )
         logger.flush()
+
+        if args.progress and for_files:
+            sys.stderr.write(
+                "[done testing {0}]\n".format(os.path.dirname(item))
+            )
 
 
 def generate_graphs(test=False):
