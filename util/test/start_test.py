@@ -428,7 +428,9 @@ def test_directory(test, test_type, num_workers):
                         ):
                             parallel_dirs.append((dir, root))
                         else:
-                            run_sub_tests_for_directories([(dir, root)], num_workers)
+                            run_sub_tests_for_directories(
+                                [(dir, root)], num_workers
+                            )
 
             # let user know no tests were found
             else:
