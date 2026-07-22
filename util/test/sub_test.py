@@ -1487,18 +1487,7 @@ def main():
         testsrc = list()
         testsrc.append(onetestsrc)
 
-    original_compiler = compiler
-
-    compperfdir = compperfdir if compperftest else None
-    tempDatFilesDir = tempDatFilesDir if compperftest else None
-    keyfile = keyfile if compperftest else None
-    perfdir = perfdir if perftest else None
-
-    # All state needed to run a single test is gathered into a dictionary so
-    # that the per-test work can live in a standalone, thread-safe function
-    # (run_test) rather than relying on closure over main's locals.
     common_test_args_to_pack = [
-        "original_compiler",
         "is_chpldoc",
         "uniquifyTests",
         "perftest",
@@ -1550,14 +1539,15 @@ def main():
         "printpassesfile",
         "run_compileline",
         "dirlist",
-        "compperfdir",
-        "tempDatFilesDir",
-        "keyfile",
-        "perfdir",
     ]
     common_test_args = SimpleNamespace(
         **{k: locals()[k] for k in common_test_args_to_pack}
     )
+    common_test_args.original_compiler = compiler
+    common_test_args.compperfdir = compperfdir if compperftest else None
+    common_test_args.tempDatFilesDir = tempDatFilesDir if compperftest else None
+    common_test_args.keyfile = keyfile if compperftest else None
+    common_test_args.perfdir = perfdir if perftest else None
 
     run_tests(testsrc, common_test_args)
 
