@@ -153,7 +153,6 @@ import atexit
 import io
 import concurrent.futures
 from types import SimpleNamespace
-import functools
 
 
 def elapsed_sub_test_time():
@@ -1556,20 +1555,13 @@ def main():
         "keyfile",
         "perfdir",
     ]
-    common_test_args = SimpleNamespace(**{k: locals()[k] for k in common_test_args_to_pack})
-
+    common_test_args = SimpleNamespace(
+        **{k: locals()[k] for k in common_test_args_to_pack}
+    )
 
     run_tests(testsrc, common_test_args)
 
     sys.exit(0)
-
-
-def _run_test_capture(test_args, testname):
-    """Run a single test, capturing all of its output into a string that is
-    returned to the caller. Safe to run from a worker thread."""
-    buffer = io.StringIO()
-    run_test(test_args, testname, out=buffer)
-    return buffer.getvalue()
 
 
 def parallel_sub_test_workers():
@@ -1595,8 +1587,13 @@ def run_tests(testsrc, common_test_args):
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=num_workers
     ) as executor:
-        run_test_with_args = functools.partial(_run_test_capture, test_args=common_test_args)
-        for output in executor.map(run_test_with_args, testsrc):
+
+        def _run_test_capture(testname):
+            buffer = io.StringIO()
+            run_test(common_test_args, testname, out=buffer)
+            return buffer.getvalue()
+
+        for output in executor.map(_run_test_capture, testsrc):
             sys.stdout.write(output)
             sys.stdout.flush()
 
@@ -1827,11 +1824,16 @@ def run_test(test_args, testname, out=sys.stdout):
                 break
         elif suffix == TA.timeoutsuffix and os.access(f, os.R_OK):
             fileTimeout = ReadIntegerValue(f, localdir)
-            if fileTimeout < TA.defaultTimeout or fileTimeout > TA.globalTimeout:
+            if (
+                fileTimeout < TA.defaultTimeout
+                or fileTimeout > TA.globalTimeout
+            ):
                 timeout = fileTimeout
                 out.write("[Overriding default timeout with %d]\n" % (timeout))
         elif (
-            TA.perftest and suffix == PerfSfx("timeexec") and os.access(f, os.R_OK)
+            TA.perftest
+            and suffix == PerfSfx("timeexec")
+            and os.access(f, os.R_OK)
         ):  # e.g. .perftimeexec
             timer = GetTimer(f)
 
@@ -1862,7 +1864,9 @@ def run_test(test_args, testname, out=sys.stdout):
             numlocales = ReadIntegerValue(f, localdir)
 
         elif suffix == TA.futureSuffix and os.access(f, os.R_OK):
-            with open("./" + test_filename + TA.futureSuffix, "r") as futurefile:
+            with open(
+                "./" + test_filename + TA.futureSuffix, "r"
+            ) as futurefile:
                 futuretest = "Future (" + futurefile.readline().strip() + ") "
 
         elif suffix == ".noexec" and os.access(f, os.R_OK):
@@ -1916,7 +1920,9 @@ def run_test(test_args, testname, out=sys.stdout):
         return
     # 3: test futures that have a .skipif file
     elif (
-        TA.testfutures == 3 and testfuturesfile == True and testskipiffile == False
+        TA.testfutures == 3
+        and testfuturesfile == True
+        and testskipiffile == False
     ):
         out.write(
             "[Skipping future test without a skipif: %s/%s]\n"
@@ -3023,14 +3029,20 @@ def run_test(test_args, testname, out=sys.stdout):
                     file=out,
                 )
 
-                if TA.execTimeWarnLimit and elapsedExecTime > TA.execTimeWarnLimit:
+                if (
+                    TA.execTimeWarnLimit
+                    and elapsedExecTime > TA.execTimeWarnLimit
+                ):
                     out.write(
                         "[Warning: %s/%s took over %.0f seconds to "
                         "execute]\n"
                         % (localdir, test_filename, TA.execTimeWarnLimit)
                     )
 
-                if TA.execTimeSkipTrials and elapsedExecTime > TA.execTimeSkipTrials:
+                if (
+                    TA.execTimeSkipTrials
+                    and elapsedExecTime > TA.execTimeSkipTrials
+                ):
                     skip_remaining_trials = True
 
                 if catfiles:
