@@ -152,6 +152,8 @@ from functools import reduce, cache
 import atexit
 import io
 import concurrent.futures
+from types import SimpleNamespace
+import functools
 
 
 def elapsed_sub_test_time():
@@ -1488,78 +1490,85 @@ def main():
 
     original_compiler = compiler
 
+    compperfdir = compperfdir if compperftest else None
+    tempDatFilesDir = tempDatFilesDir if compperftest else None
+    keyfile = keyfile if compperftest else None
+    perfdir = perfdir if perftest else None
+
     # All state needed to run a single test is gathered into a dictionary so
     # that the per-test work can live in a standalone, thread-safe function
     # (run_test) rather than relying on closure over main's locals.
-    common_test_args = {
-        "original_compiler": original_compiler,
-        "is_chpldoc": is_chpldoc,
-        "uniquifyTests": uniquifyTests,
-        "perftest": perftest,
-        "compperftest": compperftest,
-        "globalCatfiles": globalCatfiles,
-        "globalNumlocales": globalNumlocales,
-        "globalLastcompopts": globalLastcompopts,
-        "globalLastexecopts": globalLastexecopts,
-        "directoryTimeout": directoryTimeout,
-        "globalKillTimeout": globalKillTimeout,
-        "globalNumTrials": globalNumTrials,
-        "globalTimer": globalTimer,
-        "execute": execute,
-        "testnotests": testnotests,
-        "futureSuffix": futureSuffix,
-        "testfutures": testfutures,
-        "chpldocsuffix": chpldocsuffix,
-        "compoptssuffix": compoptssuffix,
-        "compenvsuffix": compenvsuffix,
-        "execenvsuffix": execenvsuffix,
-        "execoptssuffix": execoptssuffix,
-        "timeoutsuffix": timeoutsuffix,
-        "defaultTimeout": defaultTimeout,
-        "globalTimeout": globalTimeout,
-        "globalMaxQueueTime": globalMaxQueueTime,
-        "execTimeWarnLimit": execTimeWarnLimit,
-        "execTimeSkipTrials": execTimeSkipTrials,
-        "maxLocalesAvailable": maxLocalesAvailable,
-        "chpllauncher": chpllauncher,
-        "chplcomm": chplcomm,
-        "valgrindcomp": valgrindcomp,
-        "valgrindcompopts": valgrindcompopts,
-        "valgrindbin": valgrindbin,
-        "valgrindbinopts": valgrindbinopts,
-        "compstdin": compstdin,
-        "directoryCompopts": directoryCompopts,
-        "globalChpldocOpts": globalChpldocOpts,
-        "globalCompenv": globalCompenv,
-        "globalExecopts": globalExecopts,
-        "envExecopts": envExecopts,
-        "globalPrecomp": globalPrecomp,
-        "globalPrediff": globalPrediff,
-        "globalPreexec": globalPreexec,
-        "systemPreexecs": systemPreexecs,
-        "systemPrediffs": systemPrediffs,
-        "launchcmd": launchcmd,
-        "useTimedExec": useTimedExec,
-        "timedexec": timedexec,
-        "printpassesfile": printpassesfile,
-        "run_compileline": run_compileline,
-        "dirlist": dirlist,
-        "compperfdir": compperfdir if compperftest else None,
-        "tempDatFilesDir": tempDatFilesDir if compperftest else None,
-        "keyfile": keyfile if compperftest else None,
-        "perfdir": perfdir if perftest else None,
-    }
+    common_test_args_to_pack = [
+        "original_compiler",
+        "is_chpldoc",
+        "uniquifyTests",
+        "perftest",
+        "compperftest",
+        "globalCatfiles",
+        "globalNumlocales",
+        "globalLastcompopts",
+        "globalLastexecopts",
+        "directoryTimeout",
+        "globalKillTimeout",
+        "globalNumTrials",
+        "globalTimer",
+        "execute",
+        "testnotests",
+        "futureSuffix",
+        "testfutures",
+        "chpldocsuffix",
+        "compoptssuffix",
+        "compenvsuffix",
+        "execenvsuffix",
+        "execoptssuffix",
+        "timeoutsuffix",
+        "defaultTimeout",
+        "globalTimeout",
+        "globalMaxQueueTime",
+        "execTimeWarnLimit",
+        "execTimeSkipTrials",
+        "maxLocalesAvailable",
+        "chpllauncher",
+        "chplcomm",
+        "valgrindcomp",
+        "valgrindcompopts",
+        "valgrindbin",
+        "valgrindbinopts",
+        "compstdin",
+        "directoryCompopts",
+        "globalChpldocOpts",
+        "globalCompenv",
+        "globalExecopts",
+        "envExecopts",
+        "globalPrecomp",
+        "globalPrediff",
+        "globalPreexec",
+        "systemPreexecs",
+        "systemPrediffs",
+        "launchcmd",
+        "useTimedExec",
+        "timedexec",
+        "printpassesfile",
+        "run_compileline",
+        "dirlist",
+        "compperfdir",
+        "tempDatFilesDir",
+        "keyfile",
+        "perfdir",
+    ]
+    common_test_args = SimpleNamespace(**{k: locals()[k] for k in common_test_args_to_pack})
+
 
     run_tests(testsrc, common_test_args)
 
     sys.exit(0)
 
 
-def _run_test_capture(test_args):
+def _run_test_capture(test_args, testname):
     """Run a single test, capturing all of its output into a string that is
     returned to the caller. Safe to run from a worker thread."""
     buffer = io.StringIO()
-    run_test(test_args, out=buffer)
+    run_test(test_args, testname, out=buffer)
     return buffer.getvalue()
 
 
@@ -1579,88 +1588,23 @@ def parallel_sub_test_workers():
 def run_tests(testsrc, common_test_args):
     num_workers = parallel_sub_test_workers()
 
-    test_args_list = [
-        dict(common_test_args, testname=testname) for testname in testsrc
-    ]
-    if not test_args_list:
+    if not testsrc:
         return
-    num_workers = min(num_workers, len(test_args_list))
+    num_workers = min(num_workers, len(testsrc))
 
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=num_workers
     ) as executor:
-        for output in executor.map(_run_test_capture, test_args_list):
+        run_test_with_args = functools.partial(_run_test_capture, test_args=common_test_args)
+        for output in executor.map(run_test_with_args, testsrc):
             sys.stdout.write(output)
             sys.stdout.flush()
 
 
-def run_test(test_args, out=sys.stdout):
-    # Unpack the per-test state. These were previously closure variables from
-    # main; passing them explicitly keeps run_test self-contained and safe to
-    # call from multiple threads. All test output is written to ``out`` (a
-    # per-test buffer when running in parallel, else the real stdout) rather
-    # than directly to sys.stdout, so concurrent tests don't interleave.
-    original_compiler = test_args["original_compiler"]
-    is_chpldoc = test_args["is_chpldoc"]
-    uniquifyTests = test_args["uniquifyTests"]
-    perftest = test_args["perftest"]
-    compperftest = test_args["compperftest"]
-    globalCatfiles = test_args["globalCatfiles"]
-    globalNumlocales = test_args["globalNumlocales"]
-    globalLastcompopts = test_args["globalLastcompopts"]
-    globalLastexecopts = test_args["globalLastexecopts"]
-    directoryTimeout = test_args["directoryTimeout"]
-    globalKillTimeout = test_args["globalKillTimeout"]
-    globalNumTrials = test_args["globalNumTrials"]
-    globalTimer = test_args["globalTimer"]
-    execute = test_args["execute"]
-    testnotests = test_args["testnotests"]
-    futureSuffix = test_args["futureSuffix"]
-    testfutures = test_args["testfutures"]
-    chpldocsuffix = test_args["chpldocsuffix"]
-    compoptssuffix = test_args["compoptssuffix"]
-    compenvsuffix = test_args["compenvsuffix"]
-    execenvsuffix = test_args["execenvsuffix"]
-    execoptssuffix = test_args["execoptssuffix"]
-    timeoutsuffix = test_args["timeoutsuffix"]
-    defaultTimeout = test_args["defaultTimeout"]
-    globalTimeout = test_args["globalTimeout"]
-    globalMaxQueueTime = test_args["globalMaxQueueTime"]
-    execTimeWarnLimit = test_args["execTimeWarnLimit"]
-    execTimeSkipTrials = test_args["execTimeSkipTrials"]
-    maxLocalesAvailable = test_args["maxLocalesAvailable"]
-    chpllauncher = test_args["chpllauncher"]
-    chplcomm = test_args["chplcomm"]
-    valgrindcomp = test_args["valgrindcomp"]
-    valgrindcompopts = test_args["valgrindcompopts"]
-    valgrindbin = test_args["valgrindbin"]
-    valgrindbinopts = test_args["valgrindbinopts"]
-    compstdin = test_args["compstdin"]
-    directoryCompopts = test_args["directoryCompopts"]
-    globalChpldocOpts = test_args["globalChpldocOpts"]
-    globalCompenv = test_args["globalCompenv"]
-    globalExecopts = test_args["globalExecopts"]
-    envExecopts = test_args["envExecopts"]
-    globalPrecomp = test_args["globalPrecomp"]
-    globalPrediff = test_args["globalPrediff"]
-    globalPreexec = test_args["globalPreexec"]
-    systemPreexecs = test_args["systemPreexecs"]
-    systemPrediffs = test_args["systemPrediffs"]
-    launchcmd = test_args["launchcmd"]
-    useTimedExec = test_args["useTimedExec"]
-    timedexec = test_args["timedexec"]
-    printpassesfile = test_args["printpassesfile"]
-    run_compileline = test_args["run_compileline"]
-    dirlist = test_args["dirlist"]
-    compperfdir = test_args.get("compperfdir")
-    tempDatFilesDir = test_args.get("tempDatFilesDir")
-    keyfile = test_args.get("keyfile")
-    perfdir = test_args.get("perfdir")
-
-    testname = test_args["testname"]
+def run_test(test_args, testname, out=sys.stdout):
+    TA = test_args
     out.flush()
-
-    compiler = original_compiler
+    compiler = TA.original_compiler
 
     # print testname
     printTestName(os.path.join(localdir, testname), out=out)
@@ -1677,7 +1621,7 @@ def run_test(test_args, out=sys.stdout):
         )
         return
     execname = test_filename
-    if uniquifyTests:
+    if TA.uniquifyTests:
         execname += ".{0}".format(os.getpid())
     # print test_filename
 
@@ -1695,30 +1639,30 @@ def run_test(test_args, out=sys.stdout):
 
     # If the test name ends with .doc.chpl or the compiler was set to chpldoc
     # (i.e. is_chpldoc=True), run this test with chpldoc options.
-    if testname.endswith(".doc.chpl") or is_chpldoc:
+    if testname.endswith(".doc.chpl") or TA.is_chpldoc:
         test_is_chpldoc = True
     else:
         test_is_chpldoc = False
 
     # Test specific settings
-    catfiles = globalCatfiles
-    numlocales = globalNumlocales
+    catfiles = TA.globalCatfiles
+    numlocales = TA.globalNumlocales
     lastcompopts = list()
-    if globalLastcompopts:
-        lastcompopts += globalLastcompopts
+    if TA.globalLastcompopts:
+        lastcompopts += TA.globalLastcompopts
     # sys.stdout.write("lastcompopts=%s\n"%(lastcompopts))
     lastexecopts = list()
-    if globalLastexecopts:
-        lastexecopts += globalLastexecopts
+    if TA.globalLastexecopts:
+        lastexecopts += TA.globalLastexecopts
     # sys.stdout.write("lastexecopts=%s\n"%(lastexecopts))
 
     # Get the list of files starting with 'test_filename.'
-    test_filename_files = fnmatch.filter(dirlist, test_filename + ".*")
-    test_filename_files += fnmatch.filter(dirlist, "SUPPRESSIF")
+    test_filename_files = fnmatch.filter(TA.dirlist, test_filename + ".*")
+    test_filename_files += fnmatch.filter(TA.dirlist, "SUPPRESSIF")
     # print test_filename_files, dirlist
 
     if (
-        perftest
+        TA.perftest
         and (test_filename_files.count(PerfTFile(test_filename, "keys")) == 0)
         and (
             test_filename_files.count(PerfTFile(test_filename, "execopts")) == 0
@@ -1730,11 +1674,11 @@ def run_test(test_args, out=sys.stdout):
         out.write("[Skipping noperf test: %s/%s]\n" % (localdir, test_filename))
         return
 
-    timeout = directoryTimeout
-    killtimeout = globalKillTimeout
-    numTrials = globalNumTrials
-    if perftest:
-        timer = globalTimer
+    timeout = TA.directoryTimeout
+    killtimeout = TA.globalKillTimeout
+    numTrials = TA.globalNumTrials
+    if TA.perftest:
+        timer = TA.globalTimer
     else:
         timer = None
     futuretest = ""
@@ -1742,7 +1686,7 @@ def run_test(test_args, out=sys.stdout):
     if test_is_chpldoc:
         executebin = False
     else:
-        executebin = execute
+        executebin = TA.execute
 
     testfuturesfile = False
     testskipiffile = False
@@ -1795,7 +1739,7 @@ def run_test(test_args, out=sys.stdout):
             continue  # on to next file
 
         elif suffix == ".notest" and (
-            os.access(f, os.R_OK) and testnotests == "0"
+            os.access(f, os.R_OK) and TA.testnotests == "0"
         ):
             out.write(
                 "[Skipping notest test: %s/%s]\n" % (localdir, test_filename)
@@ -1881,13 +1825,13 @@ def run_test(test_args, out=sys.stdout):
                 )
                 do_not_test = True
                 break
-        elif suffix == timeoutsuffix and os.access(f, os.R_OK):
+        elif suffix == TA.timeoutsuffix and os.access(f, os.R_OK):
             fileTimeout = ReadIntegerValue(f, localdir)
-            if fileTimeout < defaultTimeout or fileTimeout > globalTimeout:
+            if fileTimeout < TA.defaultTimeout or fileTimeout > TA.globalTimeout:
                 timeout = fileTimeout
                 out.write("[Overriding default timeout with %d]\n" % (timeout))
         elif (
-            perftest and suffix == PerfSfx("timeexec") and os.access(f, os.R_OK)
+            TA.perftest and suffix == PerfSfx("timeexec") and os.access(f, os.R_OK)
         ):  # e.g. .perftimeexec
             timer = GetTimer(f)
 
@@ -1917,8 +1861,8 @@ def run_test(test_args, out=sys.stdout):
         elif suffix == PerfSfx("numlocales") and os.access(f, os.R_OK):
             numlocales = ReadIntegerValue(f, localdir)
 
-        elif suffix == futureSuffix and os.access(f, os.R_OK):
-            with open("./" + test_filename + futureSuffix, "r") as futurefile:
+        elif suffix == TA.futureSuffix and os.access(f, os.R_OK):
+            with open("./" + test_filename + TA.futureSuffix, "r") as futurefile:
                 futuretest = "Future (" + futurefile.readline().strip() + ") "
 
         elif suffix == ".noexec" and os.access(f, os.R_OK):
@@ -1948,7 +1892,7 @@ def run_test(test_args, out=sys.stdout):
             else:
                 redirectin = f
 
-        if suffix == futureSuffix:
+        if suffix == TA.futureSuffix:
             testfuturesfile = True
 
     del test_filename_files
@@ -1958,21 +1902,21 @@ def run_test(test_args, out=sys.stdout):
         return
 
     # 0: test no futures
-    if testfutures == 0 and testfuturesfile == True:
+    if TA.testfutures == 0 and testfuturesfile == True:
         out.write("[Skipping future test: %s/%s]\n" % (localdir, test_filename))
         return
     # 1: test all futures
-    elif testfutures == 1:
+    elif TA.testfutures == 1:
         pass
     # 2: test only futures
-    elif testfutures == 2 and testfuturesfile == False:
+    elif TA.testfutures == 2 and testfuturesfile == False:
         out.write(
             "[Skipping non-future test: %s/%s]\n" % (localdir, test_filename)
         )
         return
     # 3: test futures that have a .skipif file
     elif (
-        testfutures == 3 and testfuturesfile == True and testskipiffile == False
+        TA.testfutures == 3 and testfuturesfile == True and testskipiffile == False
     ):
         out.write(
             "[Skipping future test without a skipif: %s/%s]\n"
@@ -1981,14 +1925,14 @@ def run_test(test_args, out=sys.stdout):
         return
 
     # c tests don't have a way to launch themselves
-    if is_c_or_cpp_test and chpllauncher != "none":
+    if is_c_or_cpp_test and TA.chpllauncher != "none":
         out.write(
             "[Skipping %s test: %s/%s]\n" % (c_or_cpp, localdir, test_filename)
         )
         return
 
     # .ml-test.c tests should only run when we are in a multilocale setting
-    if is_ml_c_or_cpp_test and chplcomm == "none":
+    if is_ml_c_or_cpp_test and TA.chplcomm == "none":
         out.write(
             "[Skipping multilocale-only %s test: %s/%s]\n"
             % (c_or_cpp, localdir, test_filename)
@@ -1996,17 +1940,17 @@ def run_test(test_args, out=sys.stdout):
         return
 
     # Set numlocales
-    if (numlocales == 0) or (chplcomm == "none") or is_c_or_cpp_test:
+    if (numlocales == 0) or (TA.chplcomm == "none") or is_c_or_cpp_test:
         numlocexecopts = None
     else:
-        if maxLocalesAvailable is not None:
-            if numlocales > maxLocalesAvailable:
+        if TA.maxLocalesAvailable is not None:
+            if numlocales > TA.maxLocalesAvailable:
                 out.write(
                     "[Skipping test {0} because it requires "
                     "{1} locales but only {2} are available]\n".format(
                         os.path.join(localdir, test_filename),
                         numlocales,
-                        maxLocalesAvailable,
+                        TA.maxLocalesAvailable,
                     )
                 )
                 return
@@ -2026,7 +1970,7 @@ def run_test(test_args, out=sys.stdout):
 
     # if any performance test has a timeout longer than the default we only
     # want to run it once
-    if timeout > globalTimeout:
+    if timeout > TA.globalTimeout:
         if numTrials != 1:
             out.write(
                 "[Lowering number of trials for {0} to 1]\n".format(
@@ -2039,33 +1983,33 @@ def run_test(test_args, out=sys.stdout):
     # Default to [' ']
     compoptslist = list(" ")
 
-    chpldoc_opts_filename = test_filename + chpldocsuffix
+    chpldoc_opts_filename = test_filename + TA.chpldocsuffix
     if test_is_chpldoc and os.access(chpldoc_opts_filename, os.R_OK):
         compoptslist = ReadFileWithComments(chpldoc_opts_filename, False)
         if os.stat(chpldoc_opts_filename).st_size == 0:
             out.write(
                 "[Warning: ignoring an empty chpldocopts file %s]\n"
-                % (test_filename + compoptssuffix)
+                % (test_filename + TA.compoptssuffix)
             )
-    elif os.access(test_filename + compoptssuffix, os.R_OK):
+    elif os.access(test_filename + TA.compoptssuffix, os.R_OK):
         compoptslist = ReadFileWithComments(
-            test_filename + compoptssuffix, False
+            test_filename + TA.compoptssuffix, False
         )
-        if os.stat(test_filename + compoptssuffix).st_size == 0:
+        if os.stat(test_filename + TA.compoptssuffix).st_size == 0:
             # cf. for execoptslist no warning is issued
             out.write(
                 "[Warning: ignoring an empty compopts file %s]\n"
-                % (test_filename + compoptssuffix)
+                % (test_filename + TA.compoptssuffix)
             )
 
     compoptslist = compoptslist or list(" ")
-    directoryCompopts = directoryCompopts or list(" ")
+    TA.directoryCompopts = TA.directoryCompopts or list(" ")
 
     # Merge global compopts list with local compopts.
     # Use the "product" of the two if they are both provided.
     usecompoptslist = []
     # Note -- this could use itertools.product
-    for dir_compopts in directoryCompopts:
+    for dir_compopts in TA.directoryCompopts:
         for file_compopts in compoptslist:
             useopt = [dir_compopts, file_compopts]
             usearg = " ".join(useopt)
@@ -2075,22 +2019,22 @@ def run_test(test_args, out=sys.stdout):
             usecompoptslist += [usearg]
     compoptslist = usecompoptslist
 
-    if os.access(test_filename + compenvsuffix, os.R_OK):
-        compenv = ReadFileWithComments(test_filename + compenvsuffix)
+    if os.access(test_filename + TA.compenvsuffix, os.R_OK):
+        compenv = ReadFileWithComments(test_filename + TA.compenvsuffix)
     else:
         compenv = list()
 
     testcompenv = {}
-    for var, val in [env.split("=", 1) for env in globalCompenv]:
+    for var, val in [env.split("=", 1) for env in TA.globalCompenv]:
         testcompenv[var.strip()] = val.strip()
     for var, val in [env.split("=", 1) for env in compenv]:
         testcompenv[var.strip()] = val.strip()
 
     # Get list of test specific exec options
-    if os.access(test_filename + execoptssuffix, os.R_OK):
+    if os.access(test_filename + TA.execoptssuffix, os.R_OK):
         execoptsfile = True
         execoptslist = ReadFileWithComments(
-            test_filename + execoptssuffix, False
+            test_filename + TA.execoptssuffix, False
         )
     else:
         execoptslist = list()
@@ -2139,7 +2083,7 @@ def run_test(test_args, out=sys.stdout):
         #
         # Run the precompile script
         #
-        if globalPrecomp:
+        if TA.globalPrecomp:
             out.write(
                 "[Executing ./PRECOMP %s %s %s]\n"
                 % (execname, complog, compiler)
@@ -2176,7 +2120,7 @@ def run_test(test_args, out=sys.stdout):
             args += ["--no-checks"]
 
         if test_is_chpldoc:
-            args += globalChpldocOpts + shlex.split(compopts)
+            args += TA.globalChpldocOpts + shlex.split(compopts)
         else:
             args += envCompopts + shlex.split(compopts)
         args += [testname]
@@ -2187,23 +2131,23 @@ def run_test(test_args, out=sys.stdout):
             args = ["-o", test_filename] + shlex.split(compopts) + [testname]
             cmd = None
             if is_c_test:
-                cmd = run_compileline("--compile", "c compiler")
+                cmd = TA.run_compileline("--compile", "c compiler")
             elif is_ml_c_test:
-                host_c_compiler = run_compileline(
+                host_c_compiler = TA.run_compileline(
                     "--host-c-compiler", "host c compiler"
                 )
-                runtime_includes_and_defines = run_compileline(
+                runtime_includes_and_defines = TA.run_compileline(
                     "--includes-and-defines", "runtime includes and defines"
                 )
                 cmd_pieces = [host_c_compiler, runtime_includes_and_defines]
                 cmd = " ".join(cmd_pieces)
             elif is_cpp_test:
-                cmd = run_compileline("--compile-c++", "c++ compiler")
+                cmd = TA.run_compileline("--compile-c++", "c++ compiler")
             elif is_ml_cpp_test:
-                host_cpp_compiler = run_compileline(
+                host_cpp_compiler = TA.run_compileline(
                     "--host-cxx-compiler", "host c++ compiler"
                 )
-                runtime_includes_and_defines = run_compileline(
+                runtime_includes_and_defines = TA.run_compileline(
                     "--includes-and-defines", "runtime includes and defines"
                 )
                 cmd_pieces = [
@@ -2225,9 +2169,9 @@ def run_test(test_args, out=sys.stdout):
                     )
                     break
 
-            if valgrindcomp:
-                cmd = valgrindcomp
-                args = valgrindcompopts + [compiler] + args
+            if TA.valgrindcomp:
+                cmd = TA.valgrindcomp
+                args = TA.valgrindcompopts + [compiler] + args
             # TODO: temporary way to plugin chpldoc next for testing
             elif "CHPL_CHPLDOC_NEXT" in os.environ:
                 cmd = os.environ["CHPL_CHPLDOC_NEXT"]
@@ -2257,14 +2201,14 @@ def run_test(test_args, out=sys.stdout):
         out.write("[Executing compiler %s" % (cmd))
         if args:
             out.write(" %s" % (" ".join(args)))
-        out.write(" < %s]\n" % (compstdin))
+        out.write(" < %s]\n" % (TA.compstdin))
         out.flush()
-        if useTimedExec:
+        if TA.useTimedExec:
             wholecmd = cmd + " " + " ".join(map(ShellEscape, args))
             status, output, _ = run_process(
-                [timedexec, str(comptimeout), wholecmd],
+                [TA.timedexec, str(comptimeout), wholecmd],
                 env=dict(list(os.environ.items()) + list(testcompenv.items())),
-                stdin=open(compstdin, "r"),
+                stdin=open(TA.compstdin, "r"),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
             )
@@ -2279,14 +2223,14 @@ def run_test(test_args, out=sys.stdout):
                 out.write("[Compilation output was as follows:]\n")
                 out.write(trim_output(output))
                 cleanup(execname, out=out)
-                cleanup(printpassesfile, out=out)
+                cleanup(TA.printpassesfile, out=out)
                 continue  # on to next compopts
 
         else:
             p = subprocess.Popen(
                 [cmd] + args,
                 env=dict(list(os.environ.items()) + list(testcompenv.items())),
-                stdin=open(compstdin, "r"),
+                stdin=open(TA.compstdin, "r"),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
             )
@@ -2303,7 +2247,7 @@ def run_test(test_args, out=sys.stdout):
                 out.write("]\n")
                 KillProc(p, killtimeout)
                 cleanup(execname, out=out)
-                cleanup(printpassesfile, out=out)
+                cleanup(TA.printpassesfile, out=out)
                 continue  # on to next compopts
 
             p.poll()
@@ -2355,8 +2299,8 @@ def run_test(test_args, out=sys.stdout):
             with open(complog, "w") as complogfile:
                 complogfile.write("%s" % (output))
 
-            if systemPrediffs:
-                for sprediff in systemPrediffs:
+            if TA.systemPrediffs:
+                for sprediff in TA.systemPrediffs:
                     out.write(
                         "[Executing system-wide prediff %s]\n" % (sprediff)
                     )
@@ -2376,7 +2320,7 @@ def run_test(test_args, out=sys.stdout):
                     out.write(stdout)
                     out.flush()
 
-            if globalPrediff:
+            if TA.globalPrediff:
                 out.write("[Executing ./PREDIFF]\n")
                 out.flush()
                 stdout = run_process(
@@ -2434,11 +2378,11 @@ def run_test(test_args, out=sys.stdout):
                 out.write("[Compiler output was as follows:]\n")
                 out.write(origoutput)
                 cleanup(execname, out=out)
-                cleanup(printpassesfile, out=out)
+                cleanup(TA.printpassesfile, out=out)
                 continue
 
             if not os.path.isfile(goodfile) or not os.access(goodfile, os.R_OK):
-                if perftest:
+                if TA.perftest:
                     out.write(
                         f"{futuretest}[Error compilation failed for {test_name}]\n"
                     )
@@ -2453,7 +2397,7 @@ def run_test(test_args, out=sys.stdout):
                 out.write("[Compiler output was as follows:]\n")
                 out.write(origoutput)
                 cleanup(execname, out=out)
-                cleanup(printpassesfile, out=out)
+                cleanup(TA.printpassesfile, out=out)
                 continue  # on to next compopts
 
             if dealWithBinary:
@@ -2475,7 +2419,7 @@ def run_test(test_args, out=sys.stdout):
             # systemPrediffs since they shouldn't be filtering all output
             # anyways, and it could create noise for configs that use them.
             if result != 0:
-                if prediff or globalPrediff:
+                if prediff or TA.globalPrediff:
                     out.write(
                         "[Compiler output before prediff was as follows:]\n"
                     )
@@ -2496,7 +2440,7 @@ def run_test(test_args, out=sys.stdout):
                     out.write("]\n")
 
             cleanup(execname, out=out)
-            cleanup(printpassesfile, out=out)
+            cleanup(TA.printpassesfile, out=out)
 
             # no-op exec limiter for the case where a lot of consecutive tests
             # are compile only, in which case the non-stop chpl runs could
@@ -2552,28 +2496,28 @@ def run_test(test_args, out=sys.stdout):
         # Note that compiler performance only times successful compilations.
         # Tests that are designed to fail before compilation is complete will
         # not get timed, so the total time compiling might be off slightly.
-        if compperftest and not is_c_or_cpp_test:
+        if TA.compperftest and not is_c_or_cpp_test:
             # make the compiler performance directories if they don't exist
             timePasses = True
-            if not os.path.isdir(compperfdir) and not os.path.isfile(
-                compperfdir
+            if not os.path.isdir(TA.compperfdir) and not os.path.isfile(
+                TA.compperfdir
             ):
-                py3_compat.makedirs(compperfdir, exist_ok=True)
-            if not os.access(compperfdir, os.R_OK | os.X_OK):
+                py3_compat.makedirs(TA.compperfdir, exist_ok=True)
+            if not os.access(TA.compperfdir, os.R_OK | os.X_OK):
                 out.write(
                     "[Error creating compiler performance test directory %s]\n"
-                    % (compperfdir)
+                    % (TA.compperfdir)
                 )
                 timePasses = False
 
-            if not os.path.isdir(tempDatFilesDir) and not os.path.isfile(
-                tempDatFilesDir
+            if not os.path.isdir(TA.tempDatFilesDir) and not os.path.isfile(
+                TA.tempDatFilesDir
             ):
-                py3_compat.makedirs(tempDatFilesDir, exist_ok=True)
-            if not os.access(compperfdir, os.R_OK | os.X_OK):
+                py3_compat.makedirs(TA.tempDatFilesDir, exist_ok=True)
+            if not os.access(TA.compperfdir, os.R_OK | os.X_OK):
                 out.write(
                     "[Error creating compiler performance temp dat file test directory %s]\n"
-                    % (tempDatFilesDir)
+                    % (TA.tempDatFilesDir)
                 )
                 timePasses = False
 
@@ -2601,9 +2545,9 @@ def run_test(test_args, out=sys.stdout):
                     "[Executing computePerfStats %s %s %s %s %s]\n"
                     % (
                         datFileName,
-                        tempDatFilesDir,
-                        keyfile,
-                        printpassesfile,
+                        TA.tempDatFilesDir,
+                        TA.keyfile,
+                        TA.printpassesfile,
                         "False",
                     )
                 )
@@ -2612,16 +2556,16 @@ def run_test(test_args, out=sys.stdout):
                     [
                         utildir + "/test/computePerfStats",
                         datFileName,
-                        tempDatFilesDir,
-                        keyfile,
-                        printpassesfile,
+                        TA.tempDatFilesDir,
+                        TA.keyfile,
+                        TA.printpassesfile,
                         "False",
                     ],
                     stdout=subprocess.PIPE,
                 )
                 datFiles = [
-                    tempDatFilesDir + "/" + datFileName + ".dat",
-                    tempDatFilesDir + "/" + datFileName + ".error",
+                    TA.tempDatFilesDir + "/" + datFileName + ".dat",
+                    TA.tempDatFilesDir + "/" + datFileName + ".error",
                 ]
 
                 if status == 0:
@@ -2648,7 +2592,7 @@ def run_test(test_args, out=sys.stdout):
                             os.unlink(datFile)
 
             # delete the timing file
-            cleanup(printpassesfile, out=out)
+            cleanup(TA.printpassesfile, out=out)
 
         if os.getenv("CHPL_COMPONLY"):
             out.write(
@@ -2692,8 +2636,8 @@ def run_test(test_args, out=sys.stdout):
                 explicitexecgoodfile = explicitcompgoodfile
             del tlist
 
-            if systemPreexecs:
-                for spreexec in systemPreexecs:
+            if TA.systemPreexecs:
+                for spreexec in TA.systemPreexecs:
                     out.write(
                         "[Executing system-wide preexec %s]\n" % (spreexec)
                     )
@@ -2706,7 +2650,7 @@ def run_test(test_args, out=sys.stdout):
                     out.write(stdout)
                     out.flush()
 
-            if globalPreexec:
+            if TA.globalPreexec:
                 out.write("[Executing ./PREEXEC]\n")
                 out.flush()
                 stdout = run_process(
@@ -2737,7 +2681,7 @@ def run_test(test_args, out=sys.stdout):
                     [execname, execlog, compiler]
                     + envCompopts
                     + shlex.split(compopts)
-                    + globalExecopts
+                    + TA.globalExecopts
                     + shlex.split(execopts)
                 )
                 globalExecenv = ReadFileWithComments("./EXECENV", args=args)
@@ -2755,16 +2699,16 @@ def run_test(test_args, out=sys.stdout):
 
             # The test environment is that of this process,
             # augmented as specified
-            if os.access(test_filename + execenvsuffix, os.R_OK):
+            if os.access(test_filename + TA.execenvsuffix, os.R_OK):
                 args = (
                     [execname, execlog, compiler]
                     + envCompopts
                     + shlex.split(compopts)
-                    + globalExecopts
+                    + TA.globalExecopts
                     + shlex.split(execopts)
                 )
                 execenv = ReadFileWithComments(
-                    test_filename + execenvsuffix, args=args
+                    test_filename + TA.execenvsuffix, args=args
                 )
             else:
                 execenv = list()
@@ -2802,8 +2746,8 @@ def run_test(test_args, out=sys.stdout):
             # time to get the reservation. These are the launchers known to
             # support timing the _real using CHPL_LAUNCHER_REAL_WRAPPER.
             timereal = (
-                chpllauncher in ["pbs-aprun", "aprun", "slurm-srun"]
-                or "slurm-gasnetrun" in chpllauncher
+                TA.chpllauncher in ["pbs-aprun", "aprun", "slurm-srun"]
+                or "slurm-gasnetrun" in TA.chpllauncher
             )
 
             args = list()
@@ -2813,15 +2757,15 @@ def run_test(test_args, out=sys.stdout):
             elif timer:
                 cmd = timer
                 args += ["./" + execname]
-            elif valgrindbin:
-                cmd = valgrindbin
-                args += valgrindbinopts + ["./" + execname]
+            elif TA.valgrindbin:
+                cmd = TA.valgrindbin
+                args += TA.valgrindbinopts + ["./" + execname]
             else:
                 cmd = "./" + execname
 
             # if we're using a launchcmd, build up the command to call
             # launchcmd, and have it run the cmd and args built above
-            if launchcmd:
+            if TA.launchcmd:
                 # have chpl_launchcmd time execution and place results in a
                 # file since sub_test time will include time to get reservation
                 launchcmd_exec_time_file = execname + "_launchcmd_exec_time.txt"
@@ -2836,21 +2780,21 @@ def run_test(test_args, out=sys.stdout):
                 # save old cmd and args and add them after launchcmd args.
                 oldcmd = cmd
                 oldargs = list(args)
-                launch_cmd_list = shlex.split(launchcmd)
+                launch_cmd_list = shlex.split(TA.launchcmd)
                 cmd = launch_cmd_list[0]
                 args = launch_cmd_list[1:]
                 args += [oldcmd]
                 args += oldargs
 
-            args += globalExecopts
+            args += TA.globalExecopts
             args += shlex.split(execopts)
             # envExecopts are meant for chpl programs, dont add them to C tests
-            if not is_c_or_cpp_test and envExecopts != None:
-                args += shlex.split(envExecopts)
+            if not is_c_or_cpp_test and TA.envExecopts != None:
+                args += shlex.split(TA.envExecopts)
             # lastexecopts really must be last, so add any launcher timeout now
             if useLauncherTimeout:
                 args += LauncherTimeoutArgs(
-                    timeout, maxQueueTime=globalMaxQueueTime
+                    timeout, maxQueueTime=TA.globalMaxQueueTime
                 )
             if lastexecopts:
                 args += lastexecopts
@@ -2951,7 +2895,7 @@ def run_test(test_args, out=sys.stdout):
                             out.write("[Execution output was as follows:]\n")
                             out.write(trim_output(output))
 
-                    elif useTimedExec:
+                    elif TA.useTimedExec:
                         wholecmd = cmd + " " + " ".join(map(ShellEscape, args))
 
                         if redirectin == None:
@@ -2960,7 +2904,7 @@ def run_test(test_args, out=sys.stdout):
                             my_stdin = open(redirectin, "r")
 
                         exec_status, stdout, stderr = run_process(
-                            [timedexec, str(timeout), wholecmd],
+                            [TA.timedexec, str(timeout), wholecmd],
                             env=get_process_env(testenv),
                             stdin=my_stdin,
                             stdout=subprocess.PIPE,
@@ -2988,7 +2932,7 @@ def run_test(test_args, out=sys.stdout):
                             # for perf runs print out the 5 processes with the
                             # highest cpu usage. This should help identify if other
                             # processes might have interfered with a test.
-                            if perftest:
+                            if TA.perftest:
                                 print(
                                     "[Reporting processes with top 5 highest cpu usages]",
                                     file=out,
@@ -3054,7 +2998,7 @@ def run_test(test_args, out=sys.stdout):
                 if compExecStr:
                     test_name += " ({0})".format(compExecStr.strip())
 
-                if launchcmd and os.path.exists(launchcmd_exec_time_file):
+                if TA.launchcmd and os.path.exists(launchcmd_exec_time_file):
                     with open(launchcmd_exec_time_file, "r") as fp:
                         try:
                             launchcmd_exec_time = float(fp.read())
@@ -3079,14 +3023,14 @@ def run_test(test_args, out=sys.stdout):
                     file=out,
                 )
 
-                if execTimeWarnLimit and elapsedExecTime > execTimeWarnLimit:
+                if TA.execTimeWarnLimit and elapsedExecTime > TA.execTimeWarnLimit:
                     out.write(
                         "[Warning: %s/%s took over %.0f seconds to "
                         "execute]\n"
-                        % (localdir, test_filename, execTimeWarnLimit)
+                        % (localdir, test_filename, TA.execTimeWarnLimit)
                     )
 
-                if execTimeSkipTrials and elapsedExecTime > execTimeSkipTrials:
+                if TA.execTimeSkipTrials and elapsedExecTime > TA.execTimeSkipTrials:
                     skip_remaining_trials = True
 
                 if catfiles:
@@ -3135,8 +3079,8 @@ def run_test(test_args, out=sys.stdout):
                     out.flush()
 
                 if not exectimeout and not launcher_error:
-                    if systemPrediffs:
-                        for sprediff in systemPrediffs:
+                    if TA.systemPrediffs:
+                        for sprediff in TA.systemPrediffs:
                             out.write(
                                 "[Executing system-wide prediff %s]\n"
                                 % (sprediff)
@@ -3157,7 +3101,7 @@ def run_test(test_args, out=sys.stdout):
                             )[1]
                             out.write(stdout)
 
-                    if globalPrediff:
+                    if TA.globalPrediff:
                         out.write("[Executing ./PREDIFF]\n")
                         out.flush()
                         stdout = run_process(
@@ -3193,7 +3137,7 @@ def run_test(test_args, out=sys.stdout):
                         )[1]
                         out.write(stdout)
 
-                    if not perftest:
+                    if not TA.perftest:
                         # find the good file
 
                         basename = test_filename
@@ -3276,21 +3220,21 @@ def run_test(test_args, out=sys.stdout):
                                 )
                                 out.write("]\n")
 
-                if perftest:
-                    if not os.path.isdir(perfdir) and not os.path.isfile(
-                        perfdir
+                if TA.perftest:
+                    if not os.path.isdir(TA.perfdir) and not os.path.isfile(
+                        TA.perfdir
                     ):
-                        py3_compat.makedirs(perfdir, exist_ok=True)
-                    if not os.access(perfdir, os.R_OK | os.X_OK):
+                        py3_compat.makedirs(TA.perfdir, exist_ok=True)
+                    if not os.access(TA.perfdir, os.R_OK | os.X_OK):
                         out.write(
                             "[Error creating performance test directory %s]\n"
-                            % (perfdir)
+                            % (TA.perfdir)
                         )
                         break  # on to next compopts
 
                     if explicitexecgoodfile == None:
                         perfexecname = test_filename
-                        keyfile = PerfTFile(
+                        TA.keyfile = PerfTFile(
                             test_filename, "keys"
                         )  # e.g. .perfkeys
                     else:
@@ -3303,9 +3247,9 @@ def run_test(test_args, out=sys.stdout):
                             os.path.isfile(explicitexecgoodfile)
                             and test_filename != explicitexecgoodfile
                         ):
-                            keyfile = explicitexecgoodfile
+                            TA.keyfile = explicitexecgoodfile
                         else:
-                            keyfile = PerfTFile(test_filename, "keys")
+                            TA.keyfile = PerfTFile(test_filename, "keys")
 
                     perfdate = os.getenv("CHPL_TEST_PERF_DATE")
                     if perfdate == None:
@@ -3319,8 +3263,8 @@ def run_test(test_args, out=sys.stdout):
                             % (
                                 utildir,
                                 perfexecname,
-                                perfdir,
-                                keyfile,
+                                TA.perfdir,
+                                TA.keyfile,
                                 execlog,
                                 str(exectimeout),
                                 perfdate,
@@ -3331,8 +3275,8 @@ def run_test(test_args, out=sys.stdout):
                             [
                                 utildir + "/test/computePerfStats",
                                 perfexecname,
-                                perfdir,
-                                keyfile,
+                                TA.perfdir,
+                                TA.keyfile,
                                 execlog,
                                 str(exectimeout),
                                 perfdate,
