@@ -200,7 +200,10 @@ def run_tests(tests):
 
     for tests in dirs:
         for t in testruns:
-            test_directory(tests, t)
+            dir_workers = (
+                args.parallel if not args.clean_only and t == "run" else 1
+            )
+            test_directory(tests, t, dir_workers)
 
     # test and graph compiler performance
     if args.comp_performance:
@@ -253,22 +256,21 @@ def test_files(files, num_workers):
     if args.clean_only:
         return
 
-    if not args.gen_graphs:
+    if args.performance or not args.gen_graphs:
         run_sub_tests_for_files(files, num_workers)
-    else:
+
+    if args.gen_graphs:
         for test in files:
             with cd(os.path.dirname(test)):
                 generate_graphs(test)
 
 
-def test_directory(test, test_type):
+def test_directory(test, test_type, num_workers):
     logger.write("[Working from directory {0}]".format(test))
 
     # in parallel mode, defer sub_test to run them concurrently.
     # only defer and run in parallel mode when running normal tests
-    parallel_mode = (
-        not args.clean_only and args.parallel > 1 and test_type == "run"
-    )
+    parallel_mode = num_workers > 1
     parallel_dirs = []
 
     # recurse through directory
@@ -426,7 +428,7 @@ def test_directory(test, test_type):
                         ):
                             parallel_dirs.append((dir, root))
                         else:
-                            run_sub_tests_for_directories([(dir, root)], 1)
+                            run_sub_tests_for_directories([(dir, root)], num_workers)
 
             # let user know no tests were found
             else:
@@ -434,12 +436,12 @@ def test_directory(test, test_type):
         # generate graphs
         else:
             with cd(dir):
-                # generate graphs for all testsin dir
+                # generate graphs for all tests in dir
                 generate_graphs()
 
     # run any deferred directories concurrently
     if parallel_mode and parallel_dirs:
-        run_sub_tests_for_directories(parallel_dirs, args.parallel)
+        run_sub_tests_for_directories(parallel_dirs, num_workers)
 
 
 def summarize():
@@ -657,13 +659,17 @@ def run_sub_tests_for_directories(directories, num_workers):
     if not directories:
         return
 
-    if num_workers > 1:
-        logger.write()
-        logger.write(
-            "[Running sub_test on {0} directories using {1} parallel workers]".format(
-                len(directories), num_workers
-            )
+    parallel_log_str = (
+        " using {0} parallel workers".format(num_workers)
+        if num_workers > 1
+        else ""
+    )
+    logger.write()
+    logger.write(
+        "[Running sub_test on {0} directories{1}]".format(
+            len(directories), parallel_log_str
         )
+    )
 
     work = [
         ((test_dir_path, root), test_dir_path, None)
