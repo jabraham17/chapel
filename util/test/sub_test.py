@@ -1579,10 +1579,8 @@ def parallel_sub_test_workers():
 
 def run_tests(testsrc, common_test_args):
     num_workers = parallel_sub_test_workers()
-
     if not testsrc:
         return
-    num_workers = min(num_workers, len(testsrc))
 
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=num_workers
