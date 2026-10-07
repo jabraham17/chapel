@@ -8,4 +8,5 @@ proc tryit(nums) : bool {
 }
 
 
-tryit(nums);
+var r = tryit(nums);
+writeln(r);

@@ -184,7 +184,10 @@ module ArrayViewReindex {
                                          dist.downdomInst.strides, ranges);
       pragma "no auto destroy"
       var downdomLoc = new _domain(downdomclass);
-      downdomLoc = chpl_reindexConvertDom(inds, updom, dist.downdomInst);
+      // map slices of the dist's updom to the matching subset of its downdom
+      downdomLoc = if chpl_reindexIndsAlignWith(inds, dist.updom)
+                     then chpl_reindexConvertDom(inds, dist.updom, dist.downdomInst)
+                     else chpl_reindexConvertDom(inds, updom, dist.downdomInst);
       downdomLoc._value._free_when_no_arrs = true;
 
       if downdomInst != nil && ownsDownDomInst {
@@ -357,12 +360,12 @@ module ArrayViewReindex {
         if arr.isSliceArrayView() && !arr._containsRCRE() {
           // Only slices below in the view stack, which won't have built up
           // an indexCache.
-          return arr._getActualArray().dsiGetRAD().toSlice(arr.dom).toReindex(dom);
+          return arr._getActualArray().dsiGetRAD().toSlice(dom.downdom).toReindex(dom);
         } else {
-          return arr.indexCache.toReindex(dom);
+          return arr.indexCache.toSlice(dom.downdom).toReindex(dom);
         }
       } else {
-        return arr.dsiGetRAD().toReindex(dom);
+        return arr.dsiGetRAD().toSlice(dom.downdom).toReindex(dom);
       }
     } else {
       return false;
@@ -413,14 +416,8 @@ module ArrayViewReindex {
                       doiBulkTransferFromAny,  doiBulkTransferToAny, doiScan,
                       chpl__serialize, chpl__deserialize;
 
-    proc downdom: arr.dom.type {
-      // TODO: This routine may get a remote domain if this is a view
-      // of a view and is called on a locale other than the
-      // originating one for the domain.  Relax the requirement that
-      // arrays have a field named 'dom' and let arr.dom return
-      // whatever domain class is nearby/cheap.
-      return arr.dom;
-    }
+    // may be a subset of arr.dom when this view came from slicing a reindex
+    proc downdom do return privDom.downdom;
 
     //
     // standard generic aspects of arrays
@@ -621,12 +618,12 @@ module ArrayViewReindex {
           if _ArrInstance.isSliceArrayView() && !_ArrInstance._containsRCRE() {
             // Only slices below in the view stack, which won't have built up
             // an indexCache.
-            return _ArrInstance._getActualArray().dsiGetRAD().toSlice(_ArrInstance.dom).toReindex(dom);
+            return _ArrInstance._getActualArray().dsiGetRAD().toSlice(dom.downdom).toReindex(dom);
           } else {
-            return _ArrInstance.indexCache.toReindex(dom);
+            return _ArrInstance.indexCache.toSlice(dom.downdom).toReindex(dom);
           }
         } else {
-          return _ArrInstance.dsiGetRAD().toReindex(dom);
+          return _ArrInstance.dsiGetRAD().toSlice(dom.downdom).toReindex(dom);
         }
       } else {
         return false;
@@ -698,12 +695,12 @@ module ArrayViewReindex {
       return arr.doiCanBulkTransferRankChange();
 
     proc doiBulkTransferFromKnown(destDom, srcClass, srcDom) : bool {
-      const shifted = chpl_reindexConvertDomMaybeSlice(destDom.dims(), privDom.updom, this.dom.dist.downdomInst);
+      const shifted = chpl_reindexConvertDomMaybeSlice(destDom.dims(), privDom.updom, privDom.downdom);
       return chpl__bulkTransferArray(this.arr, shifted, srcClass, srcDom);
     }
 
     proc doiBulkTransferToKnown(srcDom, destClass, destDom) : bool {
-      const shifted = chpl_reindexConvertDomMaybeSlice(srcDom.dims(), privDom.updom, this.dom.dist.downdomInst);
+      const shifted = chpl_reindexConvertDomMaybeSlice(srcDom.dims(), privDom.updom, privDom.downdom);
       return chpl__bulkTransferArray(destClass, destDom, this.arr, shifted);
     }
   }
@@ -713,6 +710,17 @@ module ArrayViewReindex {
   // Helper routines to convert incoming new/reindex
   // indices/domains back into the original index set.
   //
+
+  // true if each dim of 'inds' is empty or an equally-strided sub-range of 'updom'
+  proc chpl_reindexIndsAlignWith(inds, updom) {
+    for param d in 0..inds.size-1 {
+      const ud = updom.dsiDim(d);
+      if inds(d).sizeAs(int) != 0 &&
+         (inds(d).stride != ud.stride || !ud.contains(inds(d))) then
+        return false;
+    }
+    return true;
+  }
 
   inline proc chpl_reindexConvertIdxDim(i, updom, downdom, dim: int) {
     return downdom.dsiDim(dim).orderToIndex(updom.dsiDim(dim).indexOrder(i));

@@ -496,6 +496,12 @@ module ChapelArray {
     return isSlice || isRankChange || isReindex;
   }
 
+  proc chpl__sliceReindexAsReindex(value, d: domain) param {
+    if value.isReindexArrayView() && d.isRectangular() then
+      return d.strides == strideKind.one;
+    return false;
+  }
+
   //
   // Return the innermost array class (e.g., a DefaultRectangular).
   //
@@ -1147,6 +1153,9 @@ module ChapelArray {
         checkSlice(d, _value);
       d.chpl_checkNegativeStride();
 
+      if chpl__sliceReindexAsReindex(_value, d) {
+        return this((...d.dims()));
+      } else {
       //
       // If this is already a slice array view, we can short-circuit
       // down to the underlying array.
@@ -1167,6 +1176,7 @@ module ChapelArray {
       // underlying array
       d._value.add_arr(a, locking=true, addToList=false);
       return _newArray(a);
+      }
     }
 
     // array slicing by a tuple of ranges
@@ -1186,6 +1196,19 @@ module ChapelArray {
       d._value.definedConst = true;
       d.chpl_checkNegativeStride();
 
+      if _value.isReindexArrayView() &&
+         chpl_strideUnion(ranges) == strideKind.one {
+        // a reindex view over the matching subset of the same array, so
+        // slices of reindexes don't nest view types
+        var a = new unmanaged ArrayViewReindexArr(eltType=this.eltType,
+                                                  _DomPid=d._pid,
+                                                  dom=d._instance,
+                                                  _ArrPid=this._value._ArrPid,
+                                                  _ArrInstance=this._value.arr,
+                                                  ownsArrInstance=false);
+        d._value.add_arr(a, locking=false);
+        return _newArray(a);
+      } else {
       //
       // If this is already a slice array view, we can short-circuit
       // down to the underlying array.
@@ -1206,6 +1229,7 @@ module ChapelArray {
       // call for the underlying array
       d._value.add_arr(a, locking=false, addToList=false);
       return _newArray(a);
+      }
     }
 
     // array rank change
@@ -1496,11 +1520,21 @@ module ChapelArray {
       pragma "no auto destroy"
       const updom = {(...newDims)};
 
-      const redist = new unmanaged ArrayViewReindexDist(downDistPid = this.domain.distribution._pid,
-                                              downDistInst=this.domain.distribution._instance,
-                                              updom = updom._value,
-                                              downdomPid = dom.pid,
-                                              downdomInst = dom);
+      // reindex the underlying array directly so reindex views don't nest
+      param collapse = _value.isReindexArrayView();
+
+      const redist =
+        if collapse
+          then new unmanaged ArrayViewReindexDist(downDistPid = _value.privDom.dist.downDistPid,
+                                                  downDistInst = _value.privDom.dist.downDist,
+                                                  updom = updom._value,
+                                                  downdomPid = _value.privDom.downdomPid,
+                                                  downdomInst = _value.privDom.downdom)
+          else new unmanaged ArrayViewReindexDist(downDistPid = this.domain.distribution._pid,
+                                                  downDistInst=this.domain.distribution._instance,
+                                                  updom = updom._value,
+                                                  downdomPid = dom.pid,
+                                                  downdomInst = dom);
       const redistRec = new _distribution(redist);
       // redist._free_when_no_doms = true;
 
@@ -1511,10 +1545,9 @@ module ChapelArray {
                                  definedConst=true);
       newDom._value._free_when_no_arrs = true;
 
-      // TODO: With additional effort, we could collapse reindexings of
-      // reindexed array views to a single array view, similar to what
-      // we do for slices.
-      const (arr, arrpid) = (this._value, this._pid);
+      const (arr, arrpid) = if collapse
+                              then (_value.arr, _value._ArrPid)
+                              else (this._value, this._pid);
 
       var x = new unmanaged ArrayViewReindexArr(eltType=this.eltType,
                                       _DomPid = newDom._pid,
