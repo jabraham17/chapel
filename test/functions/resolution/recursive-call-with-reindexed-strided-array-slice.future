@@ -1,0 +1,2 @@
+bug: compiler hangs in resolve phase for strided slices of reindexed arrays
+#26376
