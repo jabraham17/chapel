@@ -42,8 +42,10 @@
 #include "wellknown.h"
 
 #ifdef HAVE_LLVM
+#include "llvm/ADT/DenseMap.h"
 #include "llvm/IR/InlineAsm.h"
 #include "llvm/IR/Module.h"
+#include "llvm/IR/ValueHandle.h"
 #include "llvmTracker.h"
 #include "llvmUtil.h"
 #include "llvm/IR/IntrinsicsNVPTX.h"
@@ -438,6 +440,119 @@ static llvm::Value* createInBoundsGEP(llvm::Type* gepType,
   return gep;
 }
 
+// FastISel can't select aggregate loads, stores, extractvalue or insertvalue,
+// so wide pointers and locale IDs are accessed one scalar field at a time.
+static bool isWideOrLocaleIdType(Type* t) {
+  return t->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) ||
+         t == LOCALE_ID_TYPE;
+}
+
+// Fields already read from an aggregate load, keyed by (load, field index).
+static llvm::DenseMap<std::pair<llvm::Value*, unsigned>, llvm::Value*>
+  aggregateFieldCache;
+// Aggregate values that may become unused once their fields are read directly.
+static std::vector<llvm::WeakVH> aggregateValuesToErase;
+
+static void noteAggregateValueToErase(llvm::Value* v) {
+  if (llvm::isa<llvm::Instruction>(v))
+    aggregateValuesToErase.push_back(v);
+}
+
+// Can getAggregateField compute field 'idx' of 'agg' without an extractvalue?
+static bool canGetAggregateField(llvm::Value* agg, unsigned idx) {
+  if (auto c = llvm::dyn_cast<llvm::Constant>(agg))
+    return c->getAggregateElement(idx) != nullptr;
+  if (auto iv = llvm::dyn_cast<llvm::InsertValueInst>(agg)) {
+    if (iv->getIndices()[0] != idx)
+      return canGetAggregateField(iv->getAggregateOperand(), idx);
+    return iv->getNumIndices() == 1;
+  }
+  if (auto ld = llvm::dyn_cast<llvm::LoadInst>(agg))
+    return ld->isSimple() && ld->getType()->isStructTy();
+  return false;
+}
+
+static bool canGetAllAggregateFields(llvm::Value* agg) {
+  auto sTy = llvm::dyn_cast<llvm::StructType>(agg->getType());
+  if (!sTy) return false;
+  for (unsigned i = 0; i < sTy->getNumElements(); i++) {
+    if (!canGetAggregateField(agg, i)) return false;
+  }
+  return true;
+}
+
+// Returns field 'idx' of the struct value 'agg'. Fields of a load are read
+// with a GEP and a scalar load placed right after it, so they see the same
+// memory. Only falls back to an extractvalue when there is no other way.
+static llvm::Value* getAggregateField(llvm::Value* agg, unsigned idx) {
+  GenInfo* info = gGenInfo;
+  llvm::IRBuilder<>* irBuilder = info->irBuilder;
+
+  if (auto c = llvm::dyn_cast<llvm::Constant>(agg)) {
+    if (llvm::Constant* elt = c->getAggregateElement(idx))
+      return elt;
+  } else if (auto iv = llvm::dyn_cast<llvm::InsertValueInst>(agg)) {
+    if (iv->getIndices()[0] != idx)
+      return getAggregateField(iv->getAggregateOperand(), idx);
+    if (iv->getNumIndices() == 1)
+      return iv->getInsertedValueOperand();
+  } else if (canGetAggregateField(agg, idx)) {
+    auto ld = llvm::cast<llvm::LoadInst>(agg);
+    auto key = std::make_pair(agg, idx);
+    auto it = aggregateFieldCache.find(key);
+    if (it != aggregateFieldCache.end())
+      return it->second;
+
+    auto sTy = llvm::cast<llvm::StructType>(ld->getType());
+    const llvm::DataLayout& DL = info->module->getDataLayout();
+    uint64_t offset = DL.getStructLayout(sTy)->getElementOffset(idx);
+
+    llvm::IRBuilderBase::InsertPointGuard guard(*irBuilder);
+    if (llvm::Instruction* next = ld->getNextNode())
+      irBuilder->SetInsertPoint(next);
+    else
+      irBuilder->SetInsertPoint(ld->getParent());
+    irBuilder->SetCurrentDebugLocation(ld->getDebugLoc());
+
+    llvm::Value* gep =
+      irBuilder->CreateStructGEP(sTy, ld->getPointerOperand(), idx);
+    trackLLVMValue(gep);
+    llvm::LoadInst* field =
+      irBuilder->CreateAlignedLoad(sTy->getElementType(idx), gep,
+                                   llvm::commonAlignment(ld->getAlign(),
+                                                         offset));
+    trackLLVMValue(field);
+    field->copyMetadata(*ld, {llvm::LLVMContext::MD_tbaa,
+                              llvm::LLVMContext::MD_alias_scope,
+                              llvm::LLVMContext::MD_noalias,
+                              llvm::LLVMContext::MD_access_group});
+
+    aggregateFieldCache[key] = field;
+    noteAggregateValueToErase(ld);
+    return field;
+  }
+
+  llvm::Value* ret = irBuilder->CreateExtractValue(agg, idx);
+  trackLLVMValue(ret);
+  return ret;
+}
+
+void eraseDeadAggregateValues(llvm::Function* fn) {
+  bool changed = true;
+  while (changed) {
+    changed = false;
+    for (llvm::Value* v : aggregateValuesToErase) {
+      auto inst = llvm::dyn_cast_or_null<llvm::Instruction>(v);
+      if (inst && inst->getFunction() == fn && inst->use_empty()) {
+        inst->eraseFromParent();
+        changed = true;
+      }
+    }
+  }
+  aggregateValuesToErase.clear();
+  aggregateFieldCache.clear();
+}
+
 #endif
 
 enum WideThingField {
@@ -499,10 +614,10 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
     locale = codegenValue(codegenDeref(locale));
   }
   if( !fLLVMWideOpt ) {
-    // Create a stack-local stored wide pointer
-    // of the appropriate type.
-    ret = createTempVar(wideRefType);
     if( info->cfile ) {
+      // Create a stack-local stored wide pointer
+      // of the appropriate type.
+      ret = createTempVar(wideRefType);
       std::string localeAssign;
       std::string addrAssign;
       ret = codegenValue(ret); // remove the & part.
@@ -513,26 +628,31 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
     } else {
 #ifdef HAVE_LLVM
       GenRet genWideRefType = wideRefType;
-      llvm::Type* gepTy = genWideRefType.type;
-      INT_ASSERT(gepTy);
+      auto wideTy = llvm::cast<llvm::StructType>(genWideRefType.type);
 
-      llvm::Value* adr = info->irBuilder->CreateStructGEP(
-          gepTy, ret.val, WIDE_GEP_ADDR);
-      llvm::Value* loc = info->irBuilder->CreateStructGEP(
-          gepTy, ret.val, WIDE_GEP_LOC);
-      trackLLVMValue(adr);
-      trackLLVMValue(loc);
+      llvm::Value* loc = locale.val;
+      llvm::Type* locTy = wideTy->getElementType(WIDE_GEP_LOC);
+      if (loc->getType() != locTy)
+        loc = convertValueToType(loc, locTy, false, true);
+      llvm::Value* addr = raddr.val;
+      llvm::Type* addrTy = wideTy->getElementType(WIDE_GEP_ADDR);
+      if (addr->getType() != addrTy)
+        addr = convertValueToType(addr, addrTy, false, true);
+      INT_ASSERT(loc && addr);
 
-      llvm::Value* addrVal = raddr.val;
+      // Erased at the end of the function if only its fields end up used.
+      llvm::Value* wide = llvm::PoisonValue::get(wideTy);
+      wide = info->irBuilder->CreateInsertValue(wide, loc, WIDE_GEP_LOC);
+      trackLLVMValue(wide);
+      noteAggregateValueToErase(wide);
+      wide = info->irBuilder->CreateInsertValue(wide, addr, WIDE_GEP_ADDR);
+      trackLLVMValue(wide);
+      noteAggregateValueToErase(wide);
 
-      llvm::StoreInst* st1 = info->irBuilder->CreateStore(addrVal, adr);
-      llvm::StoreInst* st2 = info->irBuilder->CreateStore(locale.val, loc);
-      trackLLVMValue(st1);
-      trackLLVMValue(st2);
+      ret.val = wide;
+      ret.isUnsigned = !isSignedType(wideRefType);
 #endif
     }
-    // Load whatever we stored...
-    ret = codegenValue(ret);
   } else {
 #ifdef HAVE_LLVM
     GenRet wideTy = wideRefType; // get the LLVM type for the wide ref.
@@ -640,17 +760,32 @@ void codegenInvariantStart(llvm::Type *valType, llvm::Value *addr)
 // appropriate metadata based upon the Chapel type of val.
 //
 static
-llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
-                                  llvm::Value* ptr,
-                                  Type* valType = NULL,
-                                  Type* surroundingStruct = NULL,
-                                  uint64_t fieldOffset = 0,
-                                  llvm::MDNode* fieldTbaaTypeDescriptor = NULL,
-                                  llvm::MDNode* aliasScope = NULL,
-                                  llvm::MDNode* noalias = NULL,
-                                  bool isStoreOfLocalVar = true)
+void codegenStoreLLVM(llvm::Value* val,
+                      llvm::Value* ptr,
+                      Type* valType = NULL,
+                      Type* surroundingStruct = NULL,
+                      uint64_t fieldOffset = 0,
+                      llvm::MDNode* fieldTbaaTypeDescriptor = NULL,
+                      llvm::MDNode* aliasScope = NULL,
+                      llvm::MDNode* noalias = NULL,
+                      bool isStoreOfLocalVar = true)
 {
   GenInfo *info = gGenInfo;
+
+  // Each field store gets the metadata the whole store would have had.
+  if (valType && isWideOrLocaleIdType(valType) &&
+      canGetAllAggregateFields(val)) {
+    auto sTy = llvm::cast<llvm::StructType>(val->getType());
+    for (unsigned i = 0; i < sTy->getNumElements(); i++) {
+      llvm::Value* fieldPtr = info->irBuilder->CreateStructGEP(sTy, ptr, i);
+      trackLLVMValue(fieldPtr);
+      codegenStoreLLVM(getAggregateField(val, i), fieldPtr, valType,
+                       surroundingStruct, fieldOffset, fieldTbaaTypeDescriptor,
+                       aliasScope, noalias, isStoreOfLocalVar);
+    }
+    return;
+  }
+
   llvm::StoreInst* ret = info->irBuilder->CreateStore(val, ptr);
   trackLLVMValue(ret);
   llvm::MDNode* tbaa = NULL;
@@ -678,16 +813,14 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
     if (loopData.markMemoryOps)
       ret->setMetadata("llvm.access.group", loopData.accessGroup);
   }
-
-  return ret;
 }
 
 
 
 static
-llvm::StoreInst* codegenStoreLLVM(GenRet val,
-                                  GenRet ptr,
-                                  Type* valType = NULL)
+void codegenStoreLLVM(GenRet val,
+                      GenRet ptr,
+                      Type* valType = NULL)
 {
   if( val.chplType && !valType ) valType = val.chplType;
   if( ptr.chplType && !valType ) {
@@ -709,11 +842,11 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
     val.val = v;
   }
 
-  return codegenStoreLLVM(val.val, ptr.val, valType, ptr.surroundingStruct,
-                          ptr.fieldOffset, ptr.fieldTbaaTypeDescriptor,
-                          ptr.aliasScope,
-                          ptr.noalias,
-                          !ptr.mustPointOutsideOrderIndependentLoop);
+  codegenStoreLLVM(val.val, ptr.val, valType, ptr.surroundingStruct,
+                   ptr.fieldOffset, ptr.fieldTbaaTypeDescriptor,
+                   ptr.aliasScope,
+                   ptr.noalias,
+                   !ptr.mustPointOutsideOrderIndependentLoop);
 }
 
 // in some cases, we really really want pointers to stay flat pointers and not
@@ -1036,8 +1169,7 @@ static GenRet codegenWideThingField(GenRet ws, WideThingField field)
         trackLLVMValue(ret.val);
       } else {
         ret.isLVPtr = GEN_VAL;
-        ret.val = info->irBuilder->CreateExtractValue(ws.val, field, fname);
-        trackLLVMValue(ret.val);
+        ret.val = getAggregateField(ws.val, field);
       }
       assert(ret.val);
     } else {
@@ -1146,10 +1278,22 @@ static GenRet codegenRnode(GenRet wide){
   Type* type = NODE_ID_TYPE;
 
   if( !fLLVMWideOpt ) {
-    ret = codegenCallExpr("chpl_nodeFromLocaleID",
-                          codegenValue(
-                              codegenWideThingField(wide, WIDE_GEP_LOC)),
-                          /*ln*/codegenZero(), /*fn*/codegenZero32());
+    GenRet loc = codegenValue(codegenWideThingField(wide, WIDE_GEP_LOC));
+    if (gGenInfo->cfile) {
+      ret = codegenCallExpr("chpl_nodeFromLocaleID", loc,
+                            /*ln*/codegenZero(), /*fn*/codegenZero32());
+    } else {
+#ifdef HAVE_LLVM
+      // Same as chpl_nodeFromLocaleID, without passing the struct by value.
+      static int nodeField = -1;
+      if (nodeField < 0) {
+        bool isCArrayField = false;
+        nodeField = getCRecordMemberGEP("chpl_localeID_t", "node",
+                                        isCArrayField);
+      }
+      ret.val = getAggregateField(loc.val, nodeField);
+#endif
+    }
   } else {
 #ifdef HAVE_LLVM
     Type* wideRefType = NULL;

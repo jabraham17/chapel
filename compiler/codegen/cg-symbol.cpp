@@ -3279,6 +3279,7 @@ void FnSymbol::codegenDef() {
   body->codegen();
   flushStatements();
 #ifdef HAVE_LLVM
+  if (!outfile) eraseDeadAggregateValues(func);
   info->currentStackVariables.clear();
   info->currentFunctionABI = NULL;
 #endif
