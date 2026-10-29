@@ -401,6 +401,7 @@ std::string llvmFlags;
 std::string llvmRemarksFilters;
 std::vector<std::string> llvmRemarksFunctionsToShow;
 bool fLlvmPrintPasses = false;
+bool fLlvmSaveLL = false;
 
 bool fPrintAdditionalErrors;
 
@@ -1609,6 +1610,7 @@ static ArgumentDescription arg_desc[] = {
  {"llvm-remarks", ' ', "<regex>", "Print LLVM optimization remarks", "S", NULL, NULL, &setLLVMRemarksFilters},
  {"llvm-remarks-function", ' ', "<name>", "Print LLVM optimization remarks only for these functions", "S", NULL, NULL, &setLLVMRemarksFunctions},
  {"llvm-print-passes", ' ', NULL, "Print the LLVM optimizations to be run", "F", &fLlvmPrintPasses, NULL, NULL},
+ {"llvm-save-ll", ' ', NULL, "With --savec, also save LLVM bitcode files as textual IR", "F", &fLlvmSaveLL, NULL, NULL},
  {"verify", ' ', NULL, "Run consistency checks during compilation", "N", &fVerify, "CHPL_VERIFY", NULL},
  {"parse-only", ' ', NULL, "Stop compiling after 'parse' pass for syntax checking", "N", &fParseOnly, NULL, NULL},
  {"parser-debug", ' ', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
@@ -1707,7 +1709,7 @@ static ArgumentDescription arg_desc[] = {
  {"replace-array-accesses-with-ref-temps", ' ', NULL, "Enable [disable] replacing array accesses with reference temps (experimental)", "N", &fReplaceArrayAccessesWithRefTemps, NULL, NULL },
  {"return-by-ref", ' ', NULL, "Enable return-by-ref of structs in the generated code", "N", &fReturnByRef, NULL, NULL},
  {"incremental", ' ', NULL, "Enable [disable] using incremental compilation", "N", &fIncrementalCompilation, "CHPL_INCREMENTAL_COMP", NULL},
- {"parallel-make", 'j', NULL, "Specify degree of parallelism for C back-end", "I", &fParMake, "CHPL_PAR_MAKE", &turnIncrementalOn},
+ {"parallel-make", 'j', NULL, "Specify degree of parallelism for the back-end", "I", &fParMake, "CHPL_PAR_MAKE", &turnIncrementalOn},
  {"print-chpl-settings", ' ', NULL, "Print current chapel settings and exit", "F", &fPrintChplSettings, NULL,NULL},
  {"print-additional-errors", ' ', NULL, "Print additional errors", "F", &fPrintAdditionalErrors, NULL,NULL},
  {"stop-after-pass", ' ', "<passname>", "Stop compilation after reaching this pass", "S128", &stopAfterPass, "CHPL_STOP_AFTER_PASS", NULL},
@@ -2559,10 +2561,19 @@ static void checkLLVMCodeGen() {
       USR_FATAL("CHPL_TARGET_COMPILER=llvm not yet supported for this architecture");
     }
 
-    if (fIncrementalCompilation) {
-      const char* flag = (fParMake ? "-j'/'--parallel-make" : "--incremental");
-      USR_WARN("'chpl' does not currently support '%s' when using the LLVM "
-               "back-end (flag ignored)", flag);
+    // '-j' also sets fIncrementalCompilation; for LLVM it sets codegen threads
+    if (fIncrementalCompilation && fParMake <= 0) {
+      USR_WARN("'chpl' does not currently support '--incremental' when using "
+               "the LLVM back-end (flag ignored)");
+    }
+
+    if (fLlvmSaveLL && saveCDir.empty()) {
+      USR_WARN("'--llvm-save-ll' has no effect without '--savec'");
+    }
+
+    if (fParMake > 1 && !fMungeUserIdents) {
+      USR_WARN("with '-j' and '--no-munge-user-idents', Chapel symbols may be "
+               "replaced by symbols with the same name in other object files");
     }
   }
 
@@ -2617,7 +2628,7 @@ static void checkEditionFlag() {
 
 static void checkIncrementalAndOptimized() {
   auto optimizationsEnabled = ccflags.find("-O") != std::string::npos;
-  if (fWarnIncrementalOptimized && fIncrementalCompilation &&
+  if (fWarnIncrementalOptimized && fIncrementalCompilation && !fLlvmCodegen &&
       (optimizeCCode || optimizationsEnabled))
     USR_WARN("Compiling with '--incremental' or '--parallel-make' with "
              "optimizations enabled may lead to a slower execution time "

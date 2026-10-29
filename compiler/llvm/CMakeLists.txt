@@ -21,6 +21,7 @@ set(SRCS
     llvmDumpIR.cpp
     llvmExtractIR.cpp
     llvmGlobalToWide.cpp
+    llvmParallelCodegen.cpp
     llvmUtil.cpp
    )
 add_compiler_sources("${SRCS}" "${CMAKE_CURRENT_SOURCE_DIR}")

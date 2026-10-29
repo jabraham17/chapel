@@ -48,11 +48,14 @@ struct fileinfo {
   const char* pathname;
 };
 
+// 'extraSrcFiles' are listed in CHPLSRC after 'mainfile'
 void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL,
                       const char** tmpservername=NULL,
                       bool skip_compile_link=false,
                       const std::vector<const char *>& splitFiles
-                        = std::vector<const char*>());
+                        = std::vector<const char*>(),
+                      const std::vector<std::string>& extraSrcFiles
+                        = std::vector<std::string>());
 
 void ensureDirExists(const char* dirname, const char* explanation,
                      bool checkWriteable = true);

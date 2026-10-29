@@ -88,6 +88,8 @@ struct LoopData
 /* Holds names of files used by LLVM codegen. */
 struct LLVMGenFilenames {
   std::string moduleFilename;
+  // object files generated for the module
+  std::vector<std::string> moduleObjFilenames;
   std::string preOptFilename;
   std::string opt1Filename;
   std::string opt2Filename;

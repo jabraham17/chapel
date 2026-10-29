@@ -62,6 +62,9 @@ files:
  * ``chpl__module.bc`` is the version that will be linked
  * ``chpl__module-nopt.bc`` is the generated code without optimizations applied.
 
+Passing ``--llvm-save-ll`` along with ``--savec`` also runs ``llvm-dis`` on
+each of these files to produce a textual ``.ll`` file next to it.
+
 Inspecting Individual LLVM Passes
 ---------------------------------
 

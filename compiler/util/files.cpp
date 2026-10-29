@@ -756,7 +756,8 @@ static std::string genMakefileEnvCache() {
 void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
                       const char** tmpservername,
                       bool skip_compile_link,
-                      const std::vector<const char*>& splitFiles) {
+                      const std::vector<const char*>& splitFiles,
+                      const std::vector<std::string>& extraSrcFiles) {
   const char* tmpDirName = gContext->tmpDir().c_str();
   const char* strippedExeFilename = stripdirectories(executableFilename.c_str());
   const char* exeExt = getLibraryExtension();
@@ -939,7 +940,11 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
 
   } else {
     fprintf(makefile.fptr, "CHPLSRC = \\\n");
-    fprintf(makefile.fptr, "\t%s \\\n\n", mainfile->pathname);
+    fprintf(makefile.fptr, "\t%s \\\n", mainfile->pathname);
+    for (const std::string& src : extraSrcFiles) {
+      fprintf(makefile.fptr, "\t%s \\\n", src.c_str());
+    }
+    fprintf(makefile.fptr, "\n");
   }
 
   // List object files needed to compile this deliverable.

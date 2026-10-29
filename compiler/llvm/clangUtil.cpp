@@ -130,6 +130,7 @@ using LlvmOptimizationLevel = llvm::OptimizationLevel;
 #include "build.h"
 
 #include "llvmDebug.h"
+#include "llvmParallelCodegen.h"
 #include "llvmTracker.h"
 #include "llvmVer.h"
 
@@ -2123,6 +2124,9 @@ static llvm::TargetOptions getTargetOptions(
   return Options;
 }
 
+// Backs the lazily loaded module from loadModuleFromBitcode.
+static std::unique_ptr<llvm::MemoryBuffer> moduleBitcode;
+
 // deserialize the module from previously-outputted LLVM bitcode file
 static void loadModuleFromBitcode() {
   // should only be used for the backend to retrieve codegen results
@@ -2139,12 +2143,24 @@ static void loadModuleFromBitcode() {
   auto fileResult = MemoryBuffer::getFile(bitcodeFilename);
   INT_ASSERT(fileResult && "could not load bitcode file into memory");
   std::unique_ptr<llvm::MemoryBuffer> bitcodeFile = std::move(fileResult.get());
-  auto bitcodeResult =
-      llvm::parseBitcodeFile(bitcodeFile->getMemBufferRef(),
-                             gContext->llvmContext());
-  INT_ASSERT(bitcodeResult &&
-             "could not deserialize module from loaded bitcode");
-  info->module = bitcodeResult.get().release();
+
+  if (fParMake > 1) {
+    // Function bodies are only loaded if the module was not split for codegen.
+    moduleBitcode = std::move(bitcodeFile);
+    auto bitcodeResult =
+        llvm::getLazyBitcodeModule(moduleBitcode->getMemBufferRef(),
+                                   gContext->llvmContext());
+    INT_ASSERT(bitcodeResult &&
+               "could not deserialize module from loaded bitcode");
+    info->module = bitcodeResult.get().release();
+  } else {
+    auto bitcodeResult =
+        llvm::parseBitcodeFile(bitcodeFile->getMemBufferRef(),
+                               gContext->llvmContext());
+    INT_ASSERT(bitcodeResult &&
+               "could not deserialize module from loaded bitcode");
+    info->module = bitcodeResult.get().release();
+  }
 }
 
 static void setupModule()
@@ -4683,7 +4699,7 @@ void checkAdjustedDataLayout() {
   INT_ASSERT(dl.getTypeSizeInBits(testTy) == GLOBAL_PTR_SIZE);
 }
 
-static void handlePrintAsm(std::string dotOFile);
+static void handlePrintAsm(const std::vector<std::string>& dotOFiles);
 static void makeLLVMStaticLibrary(std::string moduleFilename,
                                   const char* tmpbinname,
                                   std::vector<std::string> dotOFiles);
@@ -4910,6 +4926,17 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
   mysystem(bundlerCmd.c_str(), ".out file to fatbin file");
 }
 
+// For --llvm-save-ll, write a textual copy of a saved bitcode file
+static void saveLLFileIfNeeded(const std::string& bcFilename) {
+  if (!fLlvmSaveLL || saveCDir.empty()) return;
+
+  llvm::SmallString<256> llFilename(bcFilename);
+  llvm::sys::path::replace_extension(llFilename, "ll");
+  std::vector<std::string> cmd = {findSiblingClangToolPath("llvm-dis"),
+                                  "-o", llFilename.str().str(), bcFilename};
+  mysystem(cmd, "Disassemble LLVM bitcode");
+}
+
 // Save the current state of the LLVM IR to an LLVM bitcode file if needed
 static void saveIrToBcFileIfNeeded(const std::string& filename,
                                    bool forceSave = false) {
@@ -4925,6 +4952,8 @@ static void saveIrToBcFileIfNeeded(const std::string& filename,
     WriteBitcodeToFile(*info->module, output.os());
     output.keep();
     output.os().flush();
+
+    saveLLFileIfNeeded(filename);
   }
 }
 
@@ -5173,19 +5202,30 @@ void makeBinaryLLVM(void) {
     // For this reason, we create a makefile. codegen_makefile
     // also gives us the name of the temporary place to save
     // the generated program.
+    const std::vector<std::string>& moduleObjFiles =
+      filenames->moduleObjFilenames;
     fileinfo mainfile;
     mainfile.filename = "chpl__module.o";
-    mainfile.pathname = filenames->moduleFilename.c_str();
+    mainfile.pathname = moduleObjFiles[0].c_str();
+    std::vector<std::string> extraObjFiles(moduleObjFiles.begin() + 1,
+                                           moduleObjFiles.end());
     const char* tmpbinname = NULL;
     const char* tmpservername = NULL;
 
     if (fClientServerLibrary) {
-      codegen_makefile(&mainfile, &tmpbinname, &tmpservername, true);
+      codegen_makefile(&mainfile, &tmpbinname, &tmpservername, true, {},
+                       extraObjFiles);
       INT_ASSERT(tmpservername && strlen(tmpservername) > 0);
       INT_ASSERT(tmpbinname && strlen(tmpbinname) > 0);
     } else {
-      codegen_makefile(&mainfile, &tmpbinname, NULL, true);
+      codegen_makefile(&mainfile, &tmpbinname, NULL, true, {}, extraObjFiles);
       INT_ASSERT(tmpbinname && strlen(tmpbinname) > 0);
+    }
+
+    std::string moduleObjs;
+    for (const std::string& obj : moduleObjFiles) {
+      if (!moduleObjs.empty()) moduleObjs += " ";
+      moduleObjs += obj;
     }
 
     if (fLibraryCompile && !fClientServerLibrary) {
@@ -5193,10 +5233,10 @@ void makeBinaryLLVM(void) {
       // The default library link style for Chapel is _static_.
       case LS_DEFAULT:
       case LS_STATIC:
-        makeLLVMStaticLibrary(filenames->moduleFilename, tmpbinname, dotOFiles);
+        makeLLVMStaticLibrary(moduleObjs, tmpbinname, dotOFiles);
         break;
       case LS_DYNAMIC:
-        makeLLVMDynamicLibrary(useLinkCXX, options, filenames->moduleFilename, tmpbinname,
+        makeLLVMDynamicLibrary(useLinkCXX, options, moduleObjs, tmpbinname,
                                dotOFiles, clangLDArgs);
         break;
       default:
@@ -5207,7 +5247,7 @@ void makeBinaryLLVM(void) {
       const char* outbin = fClientServerLibrary ? tmpservername : tmpbinname;
 
       // Runs the LLVM link command for executables.
-      runLLVMLinking(useLinkCXX, options, filenames->moduleFilename, maino, outbin,
+      runLLVMLinking(useLinkCXX, options, moduleObjs, maino, outbin,
                      dotOFiles, clangLDArgs);
     }
 
@@ -5284,31 +5324,55 @@ static void llvmEmitObjectFile(void) {
     bool disableVerify = !developer;
 
     if (gCodegenGPU == false) {
-      llvm::raw_fd_ostream outputOfile(filenames->moduleFilename, error, flags);
-      if (error || outputOfile.has_error())
-        USR_FATAL("Could not open output file %s", filenames->moduleFilename.c_str());
+      unsigned numPartitions =
+        fParMake > 1 ? getCodegenPartitionCount(*info->module) : 1;
 
-#if HAVE_LLVM_VER >= 180
-      llvm::CodeGenFileType FileType = llvm::CodeGenFileType::ObjectFile;
-#else
-      llvm::CodeGenFileType FileType = llvm::CGFT_ObjectFile;
-#endif
+      if (numPartitions > 1) {
+        filenames->moduleObjFilenames.clear();
+        std::vector<std::string> bcFilenames;
+        for (unsigned i = 0; i < numPartitions; i++) {
+          std::string base = "chpl__module." + std::to_string(i);
+          filenames->moduleObjFilenames.push_back(
+            genIntermediateFilename((base + ".o").c_str()));
+          if (!saveCDir.empty()) {
+            bcFilenames.push_back(
+              genIntermediateFilename((base + ".bc").c_str()));
+          }
+        }
 
-      {
-        llvm::legacy::PassManager emitPM;
+        llvm::SmallVector<char, 0> buffer;
+        llvm::MemoryBufferRef bitcode;
+        if (moduleBitcode) {
+          bitcode = moduleBitcode->getMemBufferRef();
+        } else {
+          // each thread loads its partition from bitcode into its own context
+          llvm::raw_svector_ostream os(buffer);
+          WriteBitcodeToFile(*info->module, os);
+          bitcode = llvm::MemoryBufferRef(
+            llvm::StringRef(buffer.data(), buffer.size()), "chpl__module");
+        }
+        emitPartitionedObjectFiles(bitcode, *info->targetMachine,
+                                   filenames->moduleObjFilenames, bcFilenames);
+        for (const std::string& bcFilename : bcFilenames) {
+          saveLLFileIfNeeded(bcFilename);
+        }
+      } else {
+        filenames->moduleObjFilenames = {filenames->moduleFilename};
 
-        emitPM.add(createTargetTransformInfoWrapperPass(
-                   info->targetMachine->getTargetIRAnalysis()));
+        if (llvm::Error err = info->module->materializeAll()) {
+          USR_FATAL("Could not load LLVM module: %s",
+                    llvm::toString(std::move(err)).c_str());
+        }
 
-        info->targetMachine->addPassesToEmitFile(emitPM, outputOfile, nullptr,
-                                                 FileType, disableVerify);
+        llvm::raw_fd_ostream outputOfile(filenames->moduleFilename, error, flags);
+        if (error || outputOfile.has_error())
+          USR_FATAL("Could not open output file %s", filenames->moduleFilename.c_str());
 
-        emitPM.run(*info->module);
-
+        emitObjectFile(*info->module, *info->targetMachine, outputOfile);
+        outputOfile.close();
       }
-      outputOfile.close();
 
-      handlePrintAsm(filenames->moduleFilename);
+      handlePrintAsm(filenames->moduleObjFilenames);
 
     } else {
 
@@ -5386,17 +5450,14 @@ static void llvmRunOptimizations(void) {
 
   // Run optimizations with the new PassManager
   runModuleOptPipeline(fLLVMWideOpt);
-  saveIrToBcFileIfNeeded(filenames->opt1Filename,
-                         /* forceSave */ !fDriverDoMonolithic && !fLLVMWideOpt);
 
   if (fLLVMWideOpt) {
+    saveIrToBcFileIfNeeded(filenames->opt1Filename);
+
     // the GlobalToWide pass creates calls to inline functions, among
     // other things, that will need to be optimized. So run an additional
     // battery of optimizations now.
     runModuleOptPipeline(/* don't add global to wide opts */ false);
-
-    saveIrToBcFileIfNeeded(filenames->opt2Filename,
-                           /* forceSave */ !fDriverDoMonolithic);
   }
 
   // Handle --llvm-print-ir-stage=full
@@ -5413,10 +5474,17 @@ static void llvmRunOptimizations(void) {
     completePrintLlvmIrStage(llvmStageNum::FULL);
   }
 #endif
+
+  // After printing, so that printed IR keeps the original linkage.
+  partitionModuleForCodegen(*info->module);
+
+  saveIrToBcFileIfNeeded(fLLVMWideOpt ? filenames->opt2Filename
+                                      : filenames->opt1Filename,
+                         /* forceSave */ !fDriverDoMonolithic);
 }
 
 // Output assembly dump to file if it was requested.
-static void handlePrintAsm(std::string dotOFile) {
+static void handlePrintAsm(const std::vector<std::string>& dotOFiles) {
   if (llvmPrintIrStageNum == llvmStageNum::ASM ||
       llvmPrintIrStageNum == llvmStageNum::EVERY) {
     // TODO: llvm-print-ir-file is not handled here, since 'llvm-objdump' does't
@@ -5453,7 +5521,13 @@ static void handlePrintAsm(std::string dotOFile) {
       std::string arg = disSymArg; // e.g. --disassemble=
       arg += name;
       cmd.push_back(arg);
-      cmd.push_back(dotOFile);
+      unsigned part = 0;
+      if (dotOFiles.size() > 1) {
+        if (llvm::Function* fn = gGenInfo->module->getFunction(name)) {
+          part = getCodegenPartition(*fn);
+        }
+      }
+      cmd.push_back(dotOFiles[part]);
 
       mysystem(cmd, "disassemble a symbol",
                /* ignoreStatus */ true,

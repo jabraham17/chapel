@@ -162,6 +162,7 @@ _chpl ()
 --llvm-print-passes \
 --llvm-remarks \
 --llvm-remarks-function \
+--llvm-save-ll \
 --llvm-wide-opt \
 --local \
 --local-checks \
