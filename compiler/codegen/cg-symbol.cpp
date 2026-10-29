@@ -991,6 +991,24 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
   }
 }
 
+#ifdef HAVE_LLVM
+// Stores zero one scalar at a time; FastISel can't select aggregate stores.
+static void storeZeroByField(llvm::Type* ty, llvm::Value* ptr) {
+  llvm::IRBuilder<>* irBuilder = gGenInfo->irBuilder;
+  if (auto sTy = llvm::dyn_cast<llvm::StructType>(ty)) {
+    for (unsigned i = 0; i < sTy->getNumElements(); i++) {
+      llvm::Value* fieldPtr = irBuilder->CreateStructGEP(sTy, ptr, i);
+      trackLLVMValue(fieldPtr);
+      storeZeroByField(sTy->getElementType(i), fieldPtr);
+    }
+  } else {
+    llvm::StoreInst* store =
+      irBuilder->CreateStore(llvm::Constant::getNullValue(ty), ptr);
+    trackLLVMValue(store);
+  }
+}
+#endif
+
 void VarSymbol::codegenDef() {
   GenInfo* info = gGenInfo;
 
@@ -1062,9 +1080,7 @@ void VarSymbol::codegenDef() {
          ctype->symbol->hasFlag(FLAG_WIDE_REF) ||
          ctype->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         if(isFnSymbol(defPoint->parentSymbol)) {
-          llvm::StoreInst* store = info->irBuilder->CreateStore(
-              llvm::Constant::getNullValue(varType), varAlloca);
-          trackLLVMValue(store);
+          storeZeroByField(varType, varAlloca);
         }
       }
     }

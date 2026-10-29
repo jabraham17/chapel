@@ -447,6 +447,13 @@ static bool isWideOrLocaleIdType(Type* t) {
          t == LOCALE_ID_TYPE;
 }
 
+// When not optimizing (FastISel), copy other aggregates with memcpy like clang.
+static bool shouldMemcpyAggregate(Type* t) {
+  if (optimizeCCode || gCodegenGPU || isWideOrLocaleIdType(t)) return false;
+  llvm::Type* ty = t->codegen().type;
+  return ty && ty->isAggregateType();
+}
+
 // Fields already read from an aggregate load, keyed by (load, field index).
 static llvm::DenseMap<std::pair<llvm::Value*, unsigned>, llvm::Value*>
   aggregateFieldCache;
@@ -4062,6 +4069,8 @@ void codegenCopy(GenRet dest, GenRet src, Type* chplType=NULL)
       if( chplType && chplType->symbol->hasFlag(FLAG_STAR_TUPLE) ) {
         // Always use memcpy for star tuples.
         useMemcpy = true;
+      } else if( chplType && shouldMemcpyAggregate(chplType) ) {
+        useMemcpy = true;
       } else if( eltTy && isTypeSizeSmallerThan(info->module->getDataLayout(),
                                        eltTy,
                                        256 /* max bytes to load/store */)) {
@@ -4354,10 +4363,16 @@ void codegenAssign(GenRet to_ptr, GenRet from)
 #ifdef HAVE_LLVM
         // LLVM codegen assignment (non-wide, non-tuple)
         assert(from.val);
-        GenRet value = codegenValue(from);
-        assert(value.val);
+        if (from.isLVPtr == GEN_PTR && from.chplType &&
+            shouldMemcpyAggregate(type) &&
+            from.chplType->codegen().type == type->codegen().type) {
+          codegenCopy(to_ptr, from, type);
+        } else {
+          GenRet value = codegenValue(from);
+          assert(value.val);
 
-        codegenStoreLLVM(value, to_ptr, type);
+          codegenStoreLLVM(value, to_ptr, type);
+        }
 #endif
       }
     }
